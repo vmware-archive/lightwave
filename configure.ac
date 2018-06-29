@@ -1055,6 +1055,17 @@ AC_DEFINE_UNQUOTED(VMDIR_DB_DIR, "$VMDIR_DB_DIR", [Database directory])
 
 #--------------------------------------------------------------------
 
+if test x"$localstatedir" = x"/var"; then
+    lwtmpdir="$localstatedir/lib/vmware/lightwave_tmp"
+else
+    lwtmpdir="$localstatedir/lightwave_tmp"
+fi
+AC_SUBST(lwtmpdir)
+AS_AC_EXPAND(LIGHTWAVE_TMP_DIR, ["${lwtmpdir}"])
+AC_DEFINE_UNQUOTED(LIGHTWAVE_TMP_DIR, "$LIGHTWAVE_TMP_DIR", [Temporary directory])
+
+#--------------------------------------------------------------------
+
 AS_AC_EXPAND(VMDIR_SBIN, ["${sbindir}"])
 VMDIR_SBIN_DIR=$VMDIR_SBIN
 AC_SUBST(VMDIR_SBIN_DIR)

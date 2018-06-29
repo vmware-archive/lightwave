@@ -19,56 +19,16 @@ int
 _VmDirUpdateReplicationAgreement(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     VMDIR_REPLICATION_AGREEMENT *   replAgr,
-    VDIR_BERVALUE *                 lastLocalUsnProcessed);
+    VDIR_BERVALUE *                 lastLocalUsnProcessed
+    );
 
 static
 int
 _VmDirUpdateServerObject(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     VDIR_BERVALUE *                 utdVector,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr);
-
-static
-DWORD
-_VmDirCreateServerObjects(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr);
-
-static
-DWORD
-_VmDirSrvCreateReplAgrObj(
-    PVDIR_SCHEMA_CTX pSchemaCtx,
-    PCSTR            pszReplURI,
-    PCSTR            pszLastLocalUsnProcessed,
-    PSTR             pszReplAgrsContainerDN
+    VMDIR_REPLICATION_AGREEMENT *   replAgr
     );
-
-DWORD
-VmDirReplCookieCreate(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    struct berval *                 syncDoneCtrlVal,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr)
-{
-    DWORD   dwError = 0;
-
-    dwError = _VmDirCreateServerObjects(
-            pSchemaCtx,
-            replAgr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirReplCookieUpdate(
-            pSchemaCtx,
-            syncDoneCtrlVal,
-            replAgr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%u)", dwError);
-    goto cleanup;
-}
 
 int
 VmDirReplCookieUpdate(
@@ -137,44 +97,6 @@ cleanup:
     return retVal;
 
 error:
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirCreateServerObjects(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    VMDIR_REPLICATION_AGREEMENT*    replAgr)
-{
-    DWORD   dwError = 0;
-
-    // 1st replication cycle case. Perform some after-1st-replication-cycle server initialization tasks.
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Creating initial server objects", __FUNCTION__);
-
-    dwError = VmDirSetGlobalServerId();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirKrbInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateServerObj(pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvCreateReplAgrsContainer(pSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirSrvCreateReplAgrObj(
-            pSchemaCtx,
-            replAgr->ldapURI,
-            replAgr->lastLocalUsnProcessed.lberbv.bv_val,
-            replAgr->dn.lberbv.bv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%u)", dwError);
     goto cleanup;
 }
 
@@ -349,30 +271,4 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%u)", __FUNCTION__, retVal);
     goto cleanup;
-}
-
-static
-DWORD
-_VmDirSrvCreateReplAgrObj(
-    PVDIR_SCHEMA_CTX pSchemaCtx,
-    PCSTR            pszReplURI,
-    PCSTR            pszLastLocalUsnProcessed,
-    PSTR             pszReplAgrDN
-    )
-{
-    DWORD dwError = 0;
-    PSTR  ppszReplAgrObjAttrs[] =
-    {
-            ATTR_OBJECT_CLASS,                  OC_REPLICATION_AGREEMENT,
-            ATTR_OBJECT_CLASS,                  OC_TOP,
-            ATTR_LABELED_URI,                   (PSTR) pszReplURI,
-            ATTR_LAST_LOCAL_USN_PROCESSED,      (PSTR) pszLastLocalUsnProcessed,
-            NULL
-    };
-
-    dwError = VmDirSimpleEntryCreate(pSchemaCtx, ppszReplAgrObjAttrs, pszReplAgrDN, 0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-error:
-    return dwError;
 }

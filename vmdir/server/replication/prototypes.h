@@ -135,22 +135,9 @@ VmDirReplicationFreePageEntryContent(
     PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
     );
 
-int
-VmDirComposeNodeUtdVector(
-    PCSTR   pszHostname,
-    PSTR*   ppszUtdVector,
-    PSTR*   ppszMaxUSN
-    );
-
 VOID
 VmDirShutdownDB(
     VOID
-    );
-
-int
-VmDirSwapDB(
-    PCSTR   dbHomeDir,
-    BOOLEAN bHasXlog
     );
 
 int
@@ -159,17 +146,36 @@ VmDirPatchDSERoot(
     );
 
 // replcookies.c
-DWORD
-VmDirReplCookieCreate(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    struct berval *                 syncDoneCtrlVal,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr);
-
 int
 VmDirReplCookieUpdate(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     struct berval *                 syncDoneCtrlVal,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr);
+    VMDIR_REPLICATION_AGREEMENT *   replAgr
+    );
+
+// dbswap.c
+DWORD
+VmDirSwapDB(
+    PCSTR   dbHomeDir
+    );
+
+DWORD
+VmDirPrepareSwapDBInfo(
+    PCSTR                   pszHostName,    // partner server object cn
+    PVMDIR_SWAP_DB_INFO*    ppSwapDBInfo
+    );
+
+VOID
+VmDirFreeSwapDBInfo(
+    PVMDIR_SWAP_DB_INFO pSwapDBInfo
+    );
+
+// dbcopy.c
+int
+VmDirCopyRemoteDB(
+    PCSTR   pszHostname,
+    PCSTR   dbHomeDir
+    );
 
 #ifdef __cplusplus
 }

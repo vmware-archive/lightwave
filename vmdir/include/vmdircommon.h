@@ -2555,6 +2555,16 @@ VmDirSetThreadLogContextValue(
     );
 
 VOID
+VmDirUnsetAndFreeThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx
+    );
+
+DWORD
+VmDirAllocAndSetThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
+    );
+
+VOID
 VmDirFreeThreadContext(
     VOID
     );

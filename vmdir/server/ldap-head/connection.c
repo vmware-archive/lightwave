@@ -128,10 +128,7 @@ VmDirAllocateConnection(
 
     if (!pLocalLogCtx)
     {   // no pThrLogCtx set yet
-        dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pConn->pThrLogCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSetThreadLogContextValue(pConn->pThrLogCtx);
+        dwError = VmDirAllocAndSetThrLogCtx(&pConn->pThrLogCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -172,8 +169,7 @@ VmDirDeleteConnection(
 
         if ((*conn)->pThrLogCtx)
         {
-            VmDirSetThreadLogContextValue(NULL);
-            VmDirFreeThreadLogContext((*conn)->pThrLogCtx);
+            VmDirUnsetAndFreeThrLogCtx((*conn)->pThrLogCtx);
         }
         VmDirFreeAccessInfo(&((*conn)->AccessInfo));
         _VmDirScrubSuperLogContent(LDAP_REQ_UNBIND, &( (*conn)->SuperLogRec) );

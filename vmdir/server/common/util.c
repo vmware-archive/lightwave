@@ -1483,6 +1483,11 @@ VmDirInternalGetDSERootServerCN(
     PVDIR_ENTRY     pEntry = NULL;
     PVDIR_ATTRIBUTE pAttrServerDN = NULL;
 
+    if (!ppServerCN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
     dwError = VmDirSimpleDNToEntry(PERSISTED_DSE_ROOT_DN, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1513,6 +1518,11 @@ VmDirInternalSearchSeverObj(
 {
     DWORD           dwError = 0;
     PVDIR_FILTER    pSearchFilter = NULL;
+
+    if (!pszServerObjName || !pSearchOp)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     pSearchOp->pBEIF = VmDirBackendSelect(NULL);
     assert(pSearchOp->pBEIF);
@@ -1546,46 +1556,6 @@ cleanup:
 
 error:
     DeleteFilter(pSearchFilter);
-    goto cleanup;
-}
-
-VOID
-VmDirFreeThrLogCtx(
-    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx
-    )
-{
-    VmDirSetThreadLogContextValue(NULL);
-    VmDirFreeThreadLogContext(pThrLogCtx);
-}
-
-DWORD
-VmDirSetThrLogCtx(
-    PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
-    )
-{
-    DWORD   dwError = 0;
-    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
-
-    dwError = VmDirGetThreadLogContextValue(&pLocalLogCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!pLocalLogCtx)
-    {   // no pThrLogCtx set yet
-        dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pLocalLogCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSetThreadLogContextValue(pLocalLogCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        *ppThrLogCtx = pLocalLogCtx;
-        pLocalLogCtx = NULL;
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VmDirFreeThrLogCtx(pLocalLogCtx);
     goto cleanup;
 }
 

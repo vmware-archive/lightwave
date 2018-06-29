@@ -78,3 +78,13 @@ typedef struct _VMDIR_DR_DC_INFO
     PSTR pszUPN;
     PSTR pszSite;
 } VMDIR_DR_DC_INFO, *PVMDIR_DR_DC_INFO;
+
+typedef struct _VMDIR_SWAP_DB_INFO
+{
+    PSTR    pszOrgDBServerName;     // remote db was taken from this server object name
+    PSTR    pszOrgDBUTDVector;
+    PSTR    pszOrgDBMaxUSN;
+    PSTR    pszPartnerServerName;   // optional partner server object name
+    PSTR    pszMyUTDVcetor;
+    PSTR    pszMyHighWaterMark;
+} VMDIR_SWAP_DB_INFO, *PVMDIR_SWAP_DB_INFO;
