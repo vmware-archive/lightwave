@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="CompilerConfiguration">
+    <wildcardResourcePatterns>
+      <entry name="!?*.java" />
+      <entry name="!?*.form" />
+      <entry name="!?*.class" />
+      <entry name="!?*.groovy" />
+      <entry name="!?*.scala" />
+      <entry name="!?*.flex" />
+      <entry name="!?*.kt" />
+      <entry name="!?*.clj" />
+    </wildcardResourcePatterns>
+    <annotationProcessing>
+      <profile name="Maven default annotation processors profile" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <module name="lightwaveui" />
+        <module name="openidconnect-client-lib" />
+        <module name="openidconnect-common" />
+        <module name="openidconnect-protocol" />
+        <module name="openidconnect-sample-rp" />
+        <module name="openidconnect-server" />
+        <module name="ROOT" />
+        <module name="samlauthority" />
+        <module name="samltoken" />
+        <module name="sts" />
+        <module name="vmware-directory-rest-client" />
+        <module name="vmware-directory-rest-common" />
+        <module name="vmware-directory-rest-server" />
+        <module name="vmware-identity-diagnostics" />
+        <module name="vmware-identity-idm-client" />
+        <module name="vmware-identity-idm-interface" />
+        <module name="vmware-identity-idm-server" />
+        <module name="vmware-identity-install" />
+        <module name="vmware-identity-platform" />
+        <module name="vmware-identity-rest-afd-client" />
+        <module name="vmware-identity-rest-afd-common" />
+        <module name="vmware-identity-rest-afd-server" />
+        <module name="vmware-identity-rest-core-client" />
+        <module name="vmware-identity-rest-core-common" />
+        <module name="vmware-identity-rest-core-server" />
+        <module name="vmware-identity-rest-idm-client" />
+        <module name="vmware-identity-rest-idm-common" />
+        <module name="vmware-identity-rest-idm-samples" />
+        <module name="vmware-identity-rest-idm-server" />
+        <module name="vmware-identity-sso-config" />
+        <module name="vmware-identity-tomcat-extensions" />
+        <module name="vmware-identity-websso-client" />
+        <module name="vmware-identity-wsTrustClient" />
+        <module name="websso" />
+      </profile>
+    </annotationProcessing>
+  </component>
+</project>
