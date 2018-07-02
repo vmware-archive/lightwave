@@ -7476,7 +7476,7 @@ public class IdentityManager implements IIdentityManager {
                         CONFIG_IDENTITY_ROOT_KEY,
                         IS_LIGHTWAVE_KEY,
                         true);
-            	if(isLightwave != 0 ) {
+            	if(isLightwave!= null && isLightwave.intValue() != 0 ) {
                     logger.info("Configuring branding name for Lightwave instance");
                     _configStore.setBrandName(tenantName, "Lightwave Authentication Service");
                 }

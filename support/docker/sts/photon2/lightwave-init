@@ -1,4 +1,4 @@
-#!/bin/bash
+#!/bin/bash -x
 
 LW_CONFIG_PATH=/var/lib/vmware/config/lightwave-server.cfg
 
@@ -28,7 +28,7 @@ trap clean_up SIGHUP SIGINT SIGTERM
 # Need haveged for vmca
 /usr/sbin/haveged -w 1024 -v 1
 
-/opt/vmware/bin/configure-lightwave-server --config-file $LW_CONFIG_PATH
+/opt/vmware/bin/configure-lightwave-server --config-file $LW_CONFIG_PATH 2>&1 > /tmp/configure-lightwave-server.log
 
 if [ $? -ne 0 ]; then
     echo "failed to configure lightwave server"

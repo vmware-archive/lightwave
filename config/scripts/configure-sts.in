@@ -112,9 +112,14 @@ if [ -z "$LOTUS_HOSTNAME" ]; then
     LOTUS_HOSTNAME=`hostname -f`
 fi
 
-$JAVA -Djava.security.properties=$JAVA_SEC_PROP -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
-                    -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
---hostname $LOTUS_HOSTNAME --username $LOTUS_ADMIN_DEFAULT --domain $LOTUS_DOMAIN_DEFAULT --password $LOTUS_ADMIN_PASSWORD_DEFAULT $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
+$JAVA -Djava.security.properties=$JAVA_SEC_PROP \
+      -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
+      -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
+      --hostname $LOTUS_HOSTNAME \
+      --username $LOTUS_ADMIN_DEFAULT \
+      --domain $LOTUS_DOMAIN_DEFAULT \
+      --password $LOTUS_ADMIN_PASSWORD_DEFAULT \
+      $LOTUS_SSL_SUBJECT_ALT_NAME_ARG
 
 if [ $? -ne 0 ]; then
         echo  "Failed to start Secure Token Service."

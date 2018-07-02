@@ -227,6 +227,9 @@ if [ -f "$LOTUS_CONFIG_FILE" ]; then
     LOTUS_SSL_SUBJECT_ALT_NAME=$(grep "^ssl-subject-alt-name=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     DISABLE_DNS=$(grep "^disable-dns=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     DISABLE_STS=$(grep "^disable-sts=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
+    if [ -z "$DISABLE_STS" ]; then
+        DISABLE_STS=0
+    fi
     LOTUS_PARENT_DOMAIN_DEFAULT=$(grep "^parent-domain=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_PARENT_DC_DEFAULT=$(grep "^parent-dc=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
     LOTUS_PARENT_ADMIN_DEFAULT=$(grep "^parent-admin=" $LOTUS_CONFIG_FILE | $AWK -F"=" '{print $2}')
