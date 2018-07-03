@@ -29,11 +29,12 @@ const (
 )
 
 type clientConfigImpl struct {
-	issuer         string
-	clientID       string
-	retries        int
-	intervalMillis int
-	httpConfig     HTTPClientConfig
+	issuer          string
+	clientID        string
+	retries         int
+	intervalMillis  int
+	httpConfig      HTTPClientConfig
+	certRefreshHook func() (*x509.CertPool, error)
 }
 
 // NewDefaultClientConfig creates a new client config given the issuer and sets the default config values for HTTP Client and retries
@@ -76,6 +77,11 @@ func (c clientConfigImpl) HTTPConfig() HTTPClientConfig {
 	return c.httpConfig
 }
 
+//CertRefreshHook returns the hook to handle root cert refresh
+func (c clientConfigImpl) CertRefreshHook() CertRefreshHook {
+	return c.certRefreshHook
+}
+
 //WithClientID sets the clientID and returns the config
 func (c clientConfigImpl) WithClientID(clientID string) clientConfigImpl {
 	c.clientID = clientID
@@ -97,6 +103,12 @@ func (c clientConfigImpl) WithRetryInterval(interval int) clientConfigImpl {
 //WithHTTPConfig sets the HTTP client configuration and returns the config
 func (c clientConfigImpl) WithHTTPConfig(config HTTPClientConfig) clientConfigImpl {
 	c.httpConfig = config
+	return c
+}
+
+//WithCertRefreshHook sets the hook to refresh root certs on unknown cert error
+func (c clientConfigImpl) WithCertRefreshHook(hook CertRefreshHook) clientConfigImpl {
+	c.certRefreshHook = hook
 	return c
 }
 

@@ -7,21 +7,27 @@ import (
 	"errors"
 	"flag"
 	"fmt"
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"gopkg.in/yaml.v2"
 	"io/ioutil"
 	"os"
+	"os/exec"
 	"strings"
 	"testing"
 	"time"
+	"sync"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 const (
 	scope = "openid at_groups rs_admin_server rs_vmdir"
 	// Stress test config
-	threads = 20
-	runs    = 40
+	threads          = 20
+	runs             = 40
+	certRemoveScript = "remove_certs.sh"
+	tempCertPath     = "/tmp/certs"
+	systemCertPath   = "/etc/ssl/certs"
 )
 
 type TestConfig struct {
@@ -41,6 +47,8 @@ type TestConfig struct {
 	Username string `yaml:"Username"`
 	// Password to use to get token
 	Password string `yaml:"Password"`
+	// Domain of DC to point to
+	Domain string `yaml:"Domain"`
 	// Private Key of Solution User
 	PrivateKey *rsa.PrivateKey
 	// No-op Logger to used for testing
@@ -50,6 +58,7 @@ type TestConfig struct {
 var privateKeyPath = flag.String("privateKey", "", "Path to file containing private key")
 var configPath = flag.String("config", "", "Path to file containing config in yaml format")
 var runStress = flag.Bool("stress", false, "Run the stress test")
+var runCertTest = flag.Bool("certRefresh", false, "Run the cert refresh test")
 
 var config *TestConfig
 
@@ -88,6 +97,98 @@ func setup() error {
 	return err
 }
 
+func TestCertsRefresh(t *testing.T) {
+	if *runCertTest == false || config.Domain == "" {
+		return
+	}
+
+	reqID := "Test-CertsRefresh"
+	logger := config.NoopLogger
+	httpConfig := NewHTTPClientConfig()
+	certRefresh := false
+
+	hook := func() (*x509.CertPool, error) {
+		err := restoreCerts()
+		if err != nil {
+			return nil, err
+		}
+
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		certRefresh = true
+
+		return certPool, err
+	}
+
+	removeCerts(config.Domain)
+	clientcfg := NewClientConfigBuilder().WithHTTPConfig(httpConfig).WithCertRefreshHook(hook).Build()
+	_, err := NewOidcClient(config.Issuer1, clientcfg, logger, reqID)
+	assert.Nil(t, err, "Error in building Oidc Client: %+v", err)
+	assert.True(t, certRefresh, "Certs were not refreshed properly")
+}
+
+func TestCertsRefreshConcurrent(t *testing.T) {
+	if *runCertTest == false {
+		return
+	}
+	certRefresh := false
+	lock := &sync.Mutex{}
+	reqID := "Test-CertsRefresh-Concurrent"
+	hook := func() (*x509.CertPool, error) {
+		lock.Lock()
+		defer lock.Unlock()
+
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+		certRefresh = true
+
+		return certPool, err
+	}
+
+	logger := config.NoopLogger
+	httpConfig := NewHTTPClientConfig()
+
+	clientcfg := NewClientConfigBuilder().WithHTTPConfig(httpConfig).WithCertRefreshHook(hook).Build()
+	client, err := NewOidcClient(config.Issuer1, clientcfg, logger, reqID)
+	assert.Nil(t, err, "Error in building Oidc Client: %+v", err)
+
+	done := make(chan bool)
+
+	for i := 0; i < threads; i++ {
+		go func(t *testing.T, id int) {
+			for !certRefresh {
+				// Once certs are deleted, they should eventually be refreshed
+				checkAcquireTokensByPassword(t, client, "", "", config.Username, config.Password, logger)
+			}
+			done <- true
+		}(t, i)
+	}
+	// removes certs after 1s
+	go func() {
+		// Force trigger refresh certs
+		time.Sleep(time.Second)
+		clientimpl, ok := client.(*oidcClientImpl)
+		if ok {
+			trans, ok := clientimpl.httpClient.Transport.(*retryableTransportWrapper)
+			if ok {
+				t := httpTransportFromConfig(trans.httpConfig)
+				t.TLSClientConfig.RootCAs = x509.NewCertPool()
+				trans.transport.Store(t)
+			}
+		}
+	}()
+
+	for i := 0; i < threads; i++ {
+		// Each thread should complete
+		<-done
+	}
+	assert.True(t, certRefresh, "Certs were not refreshed properly")
+}
+
 func TestAcquireTokensByPassword(t *testing.T) {
 	reqID := "Test-AcquireTokensByPassword"
 	logger := getLogger(reqID)
@@ -103,7 +204,6 @@ func TestAcquireTokensByPassword(t *testing.T) {
 	if err != nil {
 		t.Fatalf("Error in building Oidc Client")
 	}
-
 	checkAcquireTokensByPassword(t, oidcClient, "", "", config.Username, config.Password, logger)
 }
 
@@ -452,4 +552,22 @@ func getLogger(reqID string) Logger {
 	}
 
 	return NewLoggerBuilder().Register(LogLevelError, errorFunc).Build()
+}
+
+func removeCerts(domain string) {
+	err := exec.Command("bash", certRemoveScript, domain).Run()
+	if err != nil {
+		fmt.Errorf("Failed to remove certs: %s", err.Error())
+	}
+}
+
+func restoreCerts() error {
+	cmd := fmt.Sprintf("mv %s/* %s/", tempCertPath, systemCertPath)
+	err := exec.Command("bash", "-c", cmd).Run()
+	if err != nil {
+		fmt.Errorf("Failed to restore certs: %s", err.Error())
+		return err
+	}
+
+	return nil
 }
