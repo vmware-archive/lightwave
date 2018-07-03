@@ -226,6 +226,7 @@ _VmDirCreateServiceEntry(
     PSTR    pszLocalServiceFullName = NULL;
     PSTR    pszLocalServiceUPN = NULL;
     PSTR    pszLocalServiceDN = NULL;
+    PSTR    pszLocalPassword = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
@@ -250,6 +251,11 @@ _VmDirCreateServiceEntry(
         pDCParam->pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirGenerateRandomInternalPassword(
+        pDCParam->pszUpperCaseDomain,
+        &pszLocalPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     {
         PSTR    ppszAttributes[] =
         {
@@ -257,6 +263,7 @@ _VmDirCreateServiceEntry(
             ATTR_CN,                (PSTR)pszLocalServiceFullName,
             ATTR_SAM_ACCOUNT_NAME,  (PSTR)pszLocalServiceFullName,
             ATTR_KRB_UPN,           (PSTR)pszLocalServiceUPN,
+            ATTR_USER_PASSWORD,     (PSTR)pszLocalPassword,
             NULL
         };
 
@@ -272,6 +279,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszLocalServiceFullName);
     VMDIR_SAFE_FREE_MEMORY(pszLocalServiceUPN);
     VMDIR_SAFE_FREE_MEMORY(pszLocalServiceDN);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalPassword);
 
     VmDirSchemaCtxRelease(pSchemaCtx);
 

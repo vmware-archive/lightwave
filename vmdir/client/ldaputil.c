@@ -2373,6 +2373,8 @@ VmDirLdapSetupServiceAccount(
     PSTR        pszMSADN = NULL;
     LDAP*       pLocalLd = NULL;
     PSTR        pszDomainDN = NULL;
+    PBYTE       pByteMSAPasswd = NULL;
+    DWORD       dwMSAPasswdSize = 0;
     PSTR        pszUPN = NULL;
     PSTR        pszName = NULL;
     PSTR        pszUpperCaseDomainName = NULL;
@@ -2387,9 +2389,12 @@ VmDirLdapSetupServiceAccount(
     char* modv_cn[] = {(PSTR)NULL, NULL};
     char* modv_sam[] = {(PSTR)NULL, NULL};
     char* modv_upn[] = {(PSTR)NULL, NULL};
+    BerValue    bvPasswd = {0};
+    BerValue*   pbvPasswd[2] = { NULL, NULL};
 
     LDAPMod modObjectClass = {0};
     LDAPMod modCn = {0};
+    LDAPMod modPwd = {0};
     LDAPMod modSamAccountName = {0};
     LDAPMod modUserPrincipalName = {0};
 
@@ -2397,6 +2402,7 @@ VmDirLdapSetupServiceAccount(
     {
             &modObjectClass,
             &modCn,
+            &modPwd,
             &modSamAccountName,
             &modUserPrincipalName,
             NULL
@@ -2414,6 +2420,11 @@ VmDirLdapSetupServiceAccount(
     modCn.mod_op = LDAP_MOD_ADD;
     modCn.mod_type = ATTR_CN;
     modCn.mod_values = modv_cn;
+
+    modPwd.mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
+    modPwd.mod_type = ATTR_USER_PASSWORD;
+    modPwd.mod_bvalues = &(pbvPasswd[0]);
+    pbvPasswd[0] = &bvPasswd;
 
     modSamAccountName.mod_op = LDAP_MOD_ADD;
     modSamAccountName.mod_type = ATTR_SAM_ACCOUNT_NAME;
@@ -2466,20 +2477,57 @@ VmDirLdapSetupServiceAccount(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = ldap_add_ext_s(pLocalLd, pszMSADN, &pDCMods[0], NULL, NULL);
-    if (dwError == LDAP_ALREADY_EXISTS)
+    while( TRUE )
     {
-        bAcctExists = TRUE;
-        dwError = 0;
-    }
-    BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirGeneratePassword( pszHostName, // partner host in DC join scenario
+                                         pszSRPUPN,
+                                         pszPassword,
+                                         (PBYTE*)(&pByteMSAPasswd),
+                                         &dwMSAPasswdSize );
+        BAIL_ON_VMDIR_ERROR(dwError);
 
+        bvPasswd.bv_val = pByteMSAPasswd;
+        bvPasswd.bv_len = dwMSAPasswdSize;
+
+        // and the ldap_add_ext_s is a synchronous call
+        dwError = ldap_add_ext_s(pLocalLd, pszMSADN, &pDCMods[0], NULL, NULL);
+        if ( dwError == LDAP_SUCCESS )
+        {
+            break;
+        }
+        else if ( dwError == LDAP_ALREADY_EXISTS )
+        {
+            bAcctExists = TRUE;
+
+            // reset ServiceAccount password. NOTE pByteDCAccountPasswd is null terminted.
+            dwError = VmDirLdapModReplaceAttribute( pLocalLd, pszMSADN, ATTR_USER_PASSWORD, pByteMSAPasswd );
+            if (dwError == LDAP_CONSTRAINT_VIOLATION)
+            {
+                VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);
+                dwMSAPasswdSize = 0;
+                continue;
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+            break;
+        }
+        else if (dwError == LDAP_CONSTRAINT_VIOLATION)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);
+            dwMSAPasswdSize = 0;
+            continue;
+        }
+        else
+        {
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Service account (%s) created (recycle %s)", pszMSADN, bAcctExists ? "T":"F");
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszMSADN);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);
     VMDIR_SAFE_FREE_MEMORY(pszUPN);
     VMDIR_SAFE_FREE_MEMORY(pszName);
     VMDIR_SAFE_FREE_MEMORY(pszUpperCaseDomainName);
