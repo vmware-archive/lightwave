@@ -32,6 +32,11 @@ InitializeEventLog(
     VOID
     );
 
+static
+VOID
+VMCAEnableSuidDumpable(
+    VOID
+    );
 // init global/static in single thread mode during server startup
 DWORD
 VMCAInitialize(
@@ -40,6 +45,8 @@ VMCAInitialize(
     )
 {
     DWORD dwError = 0;
+
+    VMCAEnableSuidDumpable();
 
     dwError = VMCACommonInit();
     BAIL_ON_VMCA_ERROR(dwError);
@@ -258,4 +265,21 @@ error:
     return dwError;
 }
 
-
+/*
+ * Any process which has changed privilege levels will not be dumped.
+ * Enable it explicitly
+ */
+static
+VOID
+VMCAEnableSuidDumpable(
+    VOID
+    )
+{
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) == -1)
+    {
+        VMCA_LOG_ERROR(
+            "%s: coredumps will not be generated error: %d",
+            __FUNCTION__,
+            errno);
+    }
+}

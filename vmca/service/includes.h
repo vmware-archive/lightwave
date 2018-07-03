@@ -21,6 +21,8 @@ extern "C" {
 
 #ifndef _WIN32
 
+#include <sys/prctl.h>
+
 #include <config.h>
 #include <vmcasys.h>
 #include <vmafdclient.h>

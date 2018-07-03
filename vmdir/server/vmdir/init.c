@@ -109,6 +109,11 @@ VmDirCheckRestoreStatus(
     VDIR_SERVER_STATE* pTargetState
     );
 
+static
+VOID
+_VmDirEnableSuidDumpable(
+    VOID
+    );
 /*
  * load krb master key into gVmdirKrbGlobals.bervMasterKey
  */
@@ -325,6 +330,8 @@ VmDirInit(
     BOOLEAN bWaitTimeOut = FALSE;
     VDIR_SERVER_STATE targetState = VmDirdGetTargetState();
     BOOLEAN bDirtyShutdown = FALSE;
+
+    _VmDirEnableSuidDumpable();
 
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1962,4 +1969,24 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+/*
+ * Any process which has changed privilege levels will not be dumped.
+ * Enable it explicitly
+ */
+static
+VOID
+_VmDirEnableSuidDumpable(
+    VOID
+    )
+{
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) == -1)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: coredumps will not be generated error: %d",
+            __FUNCTION__,
+            errno);
+    }
 }
