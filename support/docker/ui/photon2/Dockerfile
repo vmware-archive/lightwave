@@ -10,7 +10,9 @@ ENTRYPOINT ["/lightwave-init"]
 
 # Build hook
 
-RUN tdnf install -y lightwave-ui-1.3.1 && \
+RUN tdnf install -y lightwave-client-1.3.1 \
+                    lightwave-ui-0.1 \
+                    util-linux && \
     rpm -e --nodeps systemd && \
     rpm -e createrepo_c && \
     rm -rf /usr/share/doc/* && \

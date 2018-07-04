@@ -86,6 +86,8 @@ rm -rf $DOCKER_ROOT/*
 
 cp -r $PROJECT_ROOT/build/rpmbuild/RPMS/x86_64 $DOCKER_ROOT
 
+cp -r $PROJECT_ROOT/ui/stage/RPMS/x86_64/*.rpm $DOCKER_ROOT/x86_64/
+
 cp $DOCKER_SRC_ROOT/lightwave-init $DOCKER_ROOT
 LIGHTWAVE_REPO_FILE=$DOCKER_SRC_ROOT/lightwave.repo
 if [ -f $LIGHTWAVE_REPO_FILE ]; then

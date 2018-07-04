@@ -84,6 +84,11 @@ targets:
     after:
       - 'build-*-photon2'
 
+  build-ui-photon2:
+    cmds:
+      - ./support/scripts/build-ui.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
   pack-photon1:
     description: Create RPM Package
     after:
