@@ -8,6 +8,8 @@ STAGEDIR = $(BUILDROOT)/stage
 MAKEROOT=$(SRCROOT)/support/make
 include $(MAKEROOT)/makedefs.mk
 
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = \
         vmmetrics \
         vmevent \

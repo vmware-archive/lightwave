@@ -77,12 +77,12 @@ targets:
   build-[osver:photon1,photon2]:
     description: build source code
     after:
-      - 'build-*-$[osver]'
+      - 'build-lightwave-$[osver]'
 
   build:
     description: build source code
     after:
-      - 'build-*-photon2'
+      - 'build-lightwave-*-photon2'
 
   build-ui-photon2:
     cmds:
