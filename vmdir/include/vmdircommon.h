@@ -54,6 +54,12 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #include <openssl/ssl.h>
 #include <type_spec.h>
 
+#define VMDIR_SIZE_16           16
+#define VMDIR_SIZE_32           32
+#define VMDIR_SIZE_64           64
+#define VMDIR_SIZE_128          128
+#define VMDIR_SIZE_256          256
+#define VMDIR_SIZE_512          512
 #define VMDIR_SIZE_1024         1024
 #define VMDIR_SIZE_2048         2048
 #define VMDIR_SIZE_4096         4096
@@ -82,13 +88,6 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 
 #define VMKDC_RANDPWD_MAX_RETRY         128 /* Prevents RpcVmDirCreateUser() from looping forever */
 
-#define VMDIR_SIZE_16       16
-#define VMDIR_SIZE_32       32
-#define VMDIR_SIZE_64       64
-#define VMDIR_SIZE_128      128
-#define VMDIR_SIZE_256      256
-#define VMDIR_SIZE_512      512
-#define VMDIR_SIZE_1024     1024
 
 // Versions and DFLs
 #define VMDIR_DFL_UNKNOWN "UNKNOWN"
@@ -1075,6 +1074,7 @@ typedef enum
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
 #define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
 #define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB "JoinWithPreCopiedDB"
+#define VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID   "JoinWithPreSetMaxServerID"
 
 //
 // The expiration period for deleted entries. Any entries older than this will
@@ -2702,9 +2702,24 @@ VmDirRegReadKrb5Conf(
     PSTR* ppszKrb5Conf
     );
 
+DWORD
+VmDirRegReadPreSetMaxServerId(
+    DWORD*  pdwMaxServerId
+    );
+
+DWORD
+VmDirRegSetPreSetMaxServerId(
+    DWORD   dwMaxServerId
+    );
+
 BOOLEAN
 VmDirRegReadJoinWithPreCopiedDB(
     VOID
+    );
+
+DWORD
+VmDirRegSetJoinWithPreCopiedDB(
+    BOOLEAN bValue
     );
 
 DWORD

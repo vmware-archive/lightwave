@@ -54,6 +54,12 @@ _VmDirFirstCycleCreateSrvObjTree(
     PCSTR           pszLastLocalUsnProcessed
     );
 
+static
+DWORD
+_VmDirInitJoinDBInfoGlobal(
+    VOID
+    );
+
 int
 VmDirFirstReplicationCycle(
     PCSTR                           pszPartnerHostname,    // partner node DSE Root ATTR_SERVER_NAME (server object cn).
@@ -61,7 +67,6 @@ VmDirFirstReplicationCycle(
 {
     int retVal = LDAP_SUCCESS;
     BOOLEAN bWriteInvocationId = FALSE;
-    BOOLEAN bJoinWithPreCopiedDB;
     const char  *dbHomeDir = VMDIR_DB_DIR;
 
     assert(gFirstReplCycleMode == FIRST_REPL_CYCLE_MODE_COPY_DB);
@@ -73,9 +78,10 @@ VmDirFirstReplicationCycle(
     //Shutdown local database
     VmDirShutdownDB();
 
-    bJoinWithPreCopiedDB = VmDirRegReadJoinWithPreCopiedDB();
+    retVal = _VmDirInitJoinDBInfoGlobal();
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (bJoinWithPreCopiedDB)
+    if (gVdirReplJoinFlowInfo.bJoinWithPreCopiedDB)
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s Join with pre-warm DB", __FUNCTION__);
     }
@@ -97,7 +103,7 @@ VmDirFirstReplicationCycle(
     retVal = LoadServerGlobals(&bWriteInvocationId);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (bJoinWithPreCopiedDB)
+    if (gVdirReplJoinFlowInfo.bJoinWithPreCopiedDB)
     {
         assert(gVmdirKrbGlobals.pszRealm);
         assert(gVmdirServerGlobals.bvServerObjName.lberbv_val);
@@ -165,15 +171,22 @@ _VmDirFirstCycleCreateSrvObjTree(
     int     retVal = 0;
     PSTR    pszLdapURI = NULL;
 
-    // Update global server ID and update maxServerId in the system domain object
-    retVal = VmDirSetGlobalServerId();
-    BAIL_ON_VMDIR_ERROR(retVal);
+    // set global serverID
+    if (gVdirReplJoinFlowInfo.bJoinWithPreCopiedDB)
+    {
+        gVmdirServerGlobals.serverId = gVdirReplJoinFlowInfo.dwPreSetMaxServerId +1;
+    }
+    else
+    {
+        retVal = VmDirSetGlobalServerId();
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
     // Update gVmdirKrbGlobals
     retVal = VmDirKrbInit();
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // Create  Server object
+    // Create Server object and update maxServerID in system domain object
     retVal = VmDirSrvCreateServerObj(pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -377,5 +390,28 @@ cleanup:
 
 error:
     retVal = LDAP_OPERATIONS_ERROR;
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirInitJoinDBInfoGlobal(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    gVdirReplJoinFlowInfo.bJoinWithPreCopiedDB = VmDirRegReadJoinWithPreCopiedDB();
+    if (gVdirReplJoinFlowInfo.bJoinWithPreCopiedDB)
+    {
+        dwError = VmDirRegReadPreSetMaxServerId(&gVdirReplJoinFlowInfo.dwPreSetMaxServerId);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, " error (%d)", dwError);
     goto cleanup;
 }

@@ -30,6 +30,8 @@
 
 #define SLEEP_INTERVAL_IN_3_SECS  3
 
+#define SLEEP_INTERVAL_IN_5_SECS  5
+
 #define MAX_REPL_STATE_USN_SEARCH   64
 
 #define VMDIR_LOCALHOST         "localhost"

@@ -700,6 +700,22 @@ VmDirUpdateKeytabFile(
     BOOLEAN bIsServer
     );
 
+DWORD
+VmDirJoinPreSetMaxServerIdRegKey(
+    PCSTR   pszHostName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+DWORD
+VmDirJoinWaitForDCEntryConverge(
+    PCSTR   pszHostName,
+    PCSTR   pszNodeDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+
 /*
  * HA Topolgy Management APIs
  */

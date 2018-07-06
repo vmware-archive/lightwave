@@ -435,6 +435,46 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirRegReadPreSetMaxServerId(
+    DWORD*  pdwMaxServerId
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwLocalID = 0;
+
+    if (!pdwMaxServerId)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirGetRegKeyValueDword(
+        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+        VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID,
+        &dwLocalID,
+        0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pdwMaxServerId = dwLocalID;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirRegSetPreSetMaxServerId(
+    DWORD   dwMaxServerId
+    )
+{
+    return VmDirSetRegKeyValueDword(
+            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+            VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID,
+            dwMaxServerId);
+}
+
 BOOLEAN
 VmDirRegReadJoinWithPreCopiedDB(
     VOID
@@ -449,6 +489,17 @@ VmDirRegReadJoinWithPreCopiedDB(
         0);
 
     return dwPreCopiedDB == 1;
+}
+
+DWORD
+VmDirRegSetJoinWithPreCopiedDB(
+    BOOLEAN bValue
+    )
+{
+    return VmDirSetRegKeyValueDword(
+            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+            VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB,
+            bValue);
 }
 
 DWORD

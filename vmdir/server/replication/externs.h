@@ -13,3 +13,5 @@
  */
 
 extern VMDIR_REPLICATION_METRICS_CACHE gVdirReplMetricsCache;
+
+extern VMDIR_JOIN_FLOW_INFO  gVdirReplJoinFlowInfo;

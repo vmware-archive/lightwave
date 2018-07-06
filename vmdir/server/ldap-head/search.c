@@ -121,6 +121,13 @@ _VmDirSearchPreCondition(
             BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
                     "Server in not in normal mode, not allowing outward replication.");
         }
+        else if (pOperation->request.searchReq.attrs)
+        {
+            // VmDirSendSearchEntry does not handle (computational) attr in replication request sceanrio.
+            dwError = pResult->errCode = LDAP_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg,
+                    "Invalid sync request search.");
+        }
     }
 
 cleanup:

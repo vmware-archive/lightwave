@@ -35,6 +35,11 @@ VmDirPluginReplAgrPostAddCommit(
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
+        if (VmDirIsTombStoneObject(pEntry->dn.lberbv_val))
+        {
+            goto cleanup;
+        }
+
         if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
         {
             VmDirClusterSetCacheReload(); //Recalculate Cluster State Cache for any replication topology change.
@@ -91,6 +96,11 @@ VmDirPluginReplAgrPostDeleteCommit(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    if (VmDirIsTombStoneObject(pEntry->dn.lberbv_val))
+    {
+        goto cleanup;
+    }
+
     if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
     {
         //Check whether to mark the node as inActive and reload Cluster State Cache
@@ -132,6 +142,11 @@ VmDirPluginServerEntryPostAddCommit(
     DWORD   dwError = 0;
     PCSTR   pszErrorContext = NULL;
 
+    if (VmDirIsTombStoneObject(pEntry->dn.lberbv_val))
+    {
+        goto cleanup;
+    }
+
     if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
     {
         pszErrorContext = "Add a new set of replication metrics";
@@ -158,6 +173,11 @@ VmDirPluginServerEntryPostDeleteCommit(
     PCSTR   pszHostname = NULL;
     PCSTR   pszErrorContext = NULL;
     PVDIR_ATTRIBUTE pAttr = NULL;
+
+    if (VmDirIsTombStoneObject(pEntry->dn.lberbv_val))
+    {
+        goto cleanup;
+    }
 
     if (VmDirEntryIsObjectclass(pEntry, OC_DIR_SERVER))
     {

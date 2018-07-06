@@ -4237,11 +4237,141 @@ VmDirFreeDCVersionInfo(
     }
 }
 
+/*
+ * Query partner domain entry vmwMaxServerId attribute
+ * Set reg key VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID
+ */
+DWORD
+VmDirJoinPreSetMaxServerIdRegKey(
+    PCSTR   pszHostName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_CONNECTION   pConnection = NULL;
+    PSTR*   ppszMaxServerID = NULL;
+    DWORD   dwNum = 0;
+    DWORD   dwMaxServerID = 0;
+
+    dwError = VmDirConnectionOpenByHost(
+        pszHostName,
+        pszDomainName,
+        pszUserName,
+        pszPassword,
+        &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetObjectAttribute(
+        pConnection->pLd,
+        pszDomainName,
+        "",
+        "*",
+        ATTR_MAX_SERVER_ID,
+        LDAP_SCOPE_BASE,
+        &ppszMaxServerID,
+        &dwNum);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwNum != 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwMaxServerID = (DWORD)VmDirStringToLA(ppszMaxServerID[0], NULL, 10);
+    if (dwMaxServerID < 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirRegSetPreSetMaxServerId(dwMaxServerID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirConnectionClose(pConnection);
+    VmDirFreeStringArray(ppszMaxServerID, dwNum);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error (%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+/*
+ * In JoinWithPreCopedDB case, wait for partner node to pull my domain controller entry.
+ * So my replication thread can start picking up changes from partner.
+ */
+DWORD
+VmDirJoinWaitForDCEntryConverge(
+    PCSTR   pszHostName,
+    PCSTR   pszNodeDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_CONNECTION   pConnection = NULL;
+    PSTR    pszNodeDN = NULL;
+    PSTR    pszDomainDN = NULL;
+    DWORD   dwCnt = 0;
+    DWORD   dwMaxCnt = 24;
+
+
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // domain controller account DN
+    dwError = VmDirAllocateStringPrintf(&pszNodeDN,
+        "%s=%s,%s,%s",
+        ATTR_CN,
+        pszNodeDCName,
+        "ou=Domain Controllers",
+        pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectionOpenByHost(
+        pszHostName,
+        pszDomainName,
+        pszUserName,
+        pszPassword,
+        &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0; dwCnt < dwMaxCnt; dwCnt++)
+    {
+         if (VmDirIfDNExist(pConnection->pLd, pszNodeDN))
+         {
+             break;
+         }
+
+         VmDirSleep(SLEEP_INTERVAL_IN_5_SECS * 1000);
+    }
+
+    if (dwCnt == dwMaxCnt)
+    {   // my domain controller not found in partner after 2 mins
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszNodeDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    VmDirConnectionClose(pConnection);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error (%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
 DWORD
 VmDirGetObjectAttribute(
     LDAP*   pLd,
     PCSTR   pszDomain,
-    PCSTR   pszSearchDNPrefix,
+    PCSTR   pszSearchDNPrefix,  // optional
     PCSTR   pszObjectClass,
     PCSTR   pszAttribute,
     int     scope,
@@ -4262,7 +4392,6 @@ VmDirGetObjectAttribute(
 
     if (!pLd ||
         IsNullOrEmptyString(pszDomain) ||
-        IsNullOrEmptyString(pszSearchDNPrefix) ||
         IsNullOrEmptyString(pszObjectClass) ||
         IsNullOrEmptyString(pszAttribute)
         )
@@ -4274,10 +4403,17 @@ VmDirGetObjectAttribute(
     dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pszSearchBase,
+    if (!IsNullOrEmptyString(pszSearchDNPrefix))
+    {
+        dwError = VmDirAllocateStringPrintf(&pszSearchBase,
                                             "%s,%s",
                                             pszSearchDNPrefix,
                                             pszDomainDN);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringA(pszDomainDN, &pszSearchBase);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(

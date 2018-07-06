@@ -862,6 +862,7 @@ VmDirJoin(
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
     PVM_DIR_CONNECTION pIPCConnection = NULL;
+    BOOLEAN bJoinWithPreCopiedDB = FALSE;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -939,7 +940,19 @@ VmDirJoin(
     // IMPORTANT: In general, the following sequence of operations should be strictly kept like this, otherwise SASL
     // binds in replication may break.
 
-    if (!VmDirRegReadJoinWithPreCopiedDB())
+    bJoinWithPreCopiedDB = VmDirRegReadJoinWithPreCopiedDB();
+
+    if (bJoinWithPreCopiedDB)
+    {
+        // join with pre-copied DB, query partner for max server id and set reg key
+        dwError = VmDirJoinPreSetMaxServerIdRegKey(
+                                    pszPartnerServerName,
+                                    pszDomainName,
+                                    pszUserName,
+                                    pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
     {   // hot partner DB copy scenario
         dwError = VmDirSetupDefaultAccount(
                                     pszDomainName,
@@ -1003,6 +1016,19 @@ VmDirJoin(
                                     pszLotusServerNameCanon,
                                     dwHighWatermark);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bJoinWithPreCopiedDB)
+    {
+        dwError = VmDirJoinWaitForDCEntryConverge(
+            pszPartnerServerName,
+            pszLotusServerNameCanon,
+            pszDomainName,
+            pszUserName,
+            pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirRegSetJoinWithPreCopiedDB(FALSE);  // ignore error
+    }
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "VmDirJoin (%s)(%s)(%s) passed",

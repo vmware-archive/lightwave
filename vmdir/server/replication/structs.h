@@ -88,3 +88,9 @@ typedef struct _VMDIR_SWAP_DB_INFO
     PSTR    pszMyUTDVcetor;
     PSTR    pszMyHighWaterMark;
 } VMDIR_SWAP_DB_INFO, *PVMDIR_SWAP_DB_INFO;
+
+typedef struct _VMDIR_JOIN_FLOW_INFO
+{
+    BOOLEAN bJoinWithPreCopiedDB;
+    DWORD   dwPreSetMaxServerId;
+} VMDIR_JOIN_FLOW_INFO, *PVMDIR_JOIN_FLOW_INFO;
