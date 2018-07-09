@@ -150,6 +150,8 @@ typedef struct _VDIR_SCHEMA_DIFF*           PVDIR_SCHEMA_DIFF;
 typedef struct _VDIR_ACL_CTX*               PVDIR_ACL_CTX;
 typedef struct _VMDIR_BKGD_TASK_CTX*        PVMDIR_BKGD_TASK_CTX;
 
+typedef char PSZ_METADATA_BUF[VMDIR_MAX_ATTR_META_DATA_LEN];
+
 typedef struct _VDIR_BERVALUE
 {
 #define lberbv_val   lberbv.bv_val
@@ -282,6 +284,15 @@ typedef struct _VDIR_CONNECTION_CTX
 
 typedef struct _VDIR_SCHEMA_AT_DESC*    PVDIR_SCHEMA_AT_DESC;
 
+typedef struct _VMDIR_ATTRIBUTE_METADATA
+{
+    USN     localUsn;
+    UINT64  version;
+    PSTR    pszOrigInvoId;
+    PSTR    pszOrigTime;
+    USN     origUsn;
+} VMDIR_ATTRIBUTE_METADATA, *PVMDIR_ATTRIBUTE_METADATA;
+
 typedef struct _VDIR_ATTRIBUTE
 {
    PVDIR_SCHEMA_AT_DESC pATDesc;
@@ -293,10 +304,7 @@ typedef struct _VDIR_ATTRIBUTE
    VDIR_BERVARRAY       vals;
    unsigned             numVals;
 
-   /* Multi-master replication meta data
-    * Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-    */
-   char                 metaData[VMDIR_MAX_ATTR_META_DATA_LEN];
+   PVMDIR_ATTRIBUTE_METADATA   pMetaData;
 
    /* A queue of attr-value-meta-data elements to add to the backend index database.
     * Each element contains a VDIR_BERVALUE variable, and its bv_val is in format:
@@ -317,7 +325,7 @@ typedef struct _VDIR_ATTRIBUTE
 typedef struct _ATTRIBUTE_META_DATA_NODE
 {
     USHORT  attrID;
-    char    metaData[VMDIR_MAX_ATTR_META_DATA_LEN];
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData;
 } ATTRIBUTE_META_DATA_NODE, *PATTRIBUTE_META_DATA_NODE;
 
 #define VDIR_DEFAULT_FORCE_VERSION_GAP  512
@@ -1883,6 +1891,74 @@ VmDirExternalEntryAttributeReplace(
     PCSTR               pszEntryDn,
     PCSTR               pszAttrName,
     PVDIR_BERVALUE      pBervAttrValue
+    );
+
+//metadata.c
+DWORD
+VmDirMetaDataDeserialize(
+    PCSTR                        pszMetadata,
+    PVMDIR_ATTRIBUTE_METADATA*   ppMetadata
+    );
+
+DWORD
+VmDirMetaDataSerialize(
+    PVMDIR_ATTRIBUTE_METADATA    pMetadata,
+    PSTR                         pszMetadata
+    );
+
+DWORD
+VmDirAttributeMetaDataToHashMap(
+    PVDIR_ATTRIBUTE   pAttrAttrMetaData,
+    PLW_HASHMAP*      ppMetaDataMap
+    );
+
+DWORD
+VmDirMetaDataCopyContent(
+    PVMDIR_ATTRIBUTE_METADATA    pSrcMetaData,
+    PVMDIR_ATTRIBUTE_METADATA    pDestMetaData
+    );
+
+DWORD
+VmDirMetaDataCreate(
+    USN                           localUsn,
+    UINT64                        version,
+    PCSTR                         pszOrigInvoId,
+    PCSTR                         pszOrigTimeStamp,
+    USN                           origUsn,
+    PVMDIR_ATTRIBUTE_METADATA*    ppMetaData
+    );
+
+DWORD
+VmDirMetaDataSetLocalUsn(
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData,
+    USN                          localUsn
+    );
+
+BOOLEAN
+VmDirMetaDataIsEmpty(
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData
+    );
+
+VOID
+VmDirFreeMetaDataContent(
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData
+    );
+
+VOID
+VmDirFreeMetaData(
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData
+    );
+
+VOID
+VmDirFreeAttrMetaDataNode(
+    PATTRIBUTE_META_DATA_NODE   pAttrMetaData,
+    DWORD                       dwNumAttrMetaData
+    );
+
+VOID
+VmDirFreeMetaDataMapPair(
+    PLW_HASHMAP_PAIR    pPair,
+    PVOID               pUnused
     );
 
 #ifdef __cplusplus

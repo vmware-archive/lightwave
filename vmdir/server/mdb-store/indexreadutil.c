@@ -112,6 +112,7 @@ VmDirMDBGetAttrMetaData(
     VDIR_DB_DBT           value = {0};
     unsigned char         keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
     unsigned char *       pWriter = NULL;
+    PSZ_METADATA_BUF      pszMetaData = {'\0'};
     VDIR_DB               mdbDBi = 0;
     int                   indTypes = 0;
     BOOLEAN               bIsUniqueVal = FALSE;
@@ -147,8 +148,11 @@ VmDirMDBGetAttrMetaData(
     dwError = mdb_get(pTxn, mdbDBi, &key, &value);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    assert(value.mv_size <= sizeof(attr->metaData));
-    dwError = VmDirCopyMemory(&attr->metaData[0], value.mv_size, value.mv_data, value.mv_size);
+    assert(value.mv_size < sizeof(pszMetaData));
+    dwError = VmDirCopyMemory(&pszMetaData[0], value.mv_size, value.mv_data, value.mv_size);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMetaDataDeserialize(&pszMetaData[0], &attr->pMetaData);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -191,6 +195,7 @@ VmDirMDBGetAllAttrsMetaData(
     VDIR_DB_DBT           value = {0};
     VDIR_DB_DBT           currKey = {0};
     char                  keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
+    char                  metaData[VMDIR_MAX_ATTR_META_DATA_LEN] = {'\0'};
     unsigned char *       pReader = NULL;
     VDIR_DB               mdbDBi = 0;
     int                   indTypes = 0;
@@ -263,10 +268,12 @@ VmDirMDBGetAllAttrsMetaData(
             break;
         }
 
-        // set metaData
-        assert(value.mv_size <= sizeof(pDataNode->metaData));
-        dwError = VmDirCopyMemory(   &(pDataNode[iNumNode].metaData[0]),
-                                    value.mv_size, value.mv_data, value.mv_size);
+        assert(value.mv_size < sizeof(metaData));
+        memset(&metaData[0], '\0', VMDIR_MAX_ATTR_META_DATA_LEN);
+        dwError = VmDirCopyMemory(&metaData[0], value.mv_size, value.mv_data, value.mv_size);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirMetaDataDeserialize(&metaData[0], &pDataNode[iNumNode].pMetaData);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         // set attrID
@@ -277,12 +284,12 @@ VmDirMDBGetAllAttrsMetaData(
         if (iNumNode == iMaxNumNode)
         {
             iMaxNumNode += BE_DB_META_NODE_INC_SIZE;
-            if (VmDirReallocateMemory(  (PVOID)pDataNode,
-                                        (PVOID *)&pDataNode,
-                                        iMaxNumNode * sizeof( ATTRIBUTE_META_DATA_NODE )) != 0)
+            if (VmDirReallocateMemory((PVOID)pDataNode,
+                                      (PVOID *)&pDataNode,
+                                      iMaxNumNode * sizeof( ATTRIBUTE_META_DATA_NODE )) != 0)
             {
                 dwError = ERROR_BACKEND_OPERATIONS;
-                BAIL_ON_VMDIR_ERROR( dwError );
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
 
@@ -307,7 +314,7 @@ error:
     ppAttrMetaDataNode = NULL;
     pNumAttrMetaData = 0;
 
-    VMDIR_SAFE_FREE_MEMORY(pDataNode);
+    VmDirFreeAttrMetaDataNode(pDataNode, iNumNode);
 
     VMDIR_LOG_ERROR( LDAP_DEBUG_REPL_ATTR, "MdbGetAllAttrsMetaData: error (%d),(%s)",
               dwError, mdb_strerror(dwError) );

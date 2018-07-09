@@ -639,7 +639,7 @@ WriteSyncStateControl(
         // We are sending back this attribute's meta data. => Attribute is in
         // replication scope. SJ-TBD: we are overloading pAttr->metaData
         // field. Should we have another field (e.g. inReplScope) in Attribute
-        if (pAttr->metaData[0] != '\0' && !bHasFinalSyncState)
+        if (!IS_VMDIR_ATTRIBUTE_NOT_IN_SCOPE(pAttr->pMetaData) && !bHasFinalSyncState)
         {
             if ( VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_IS_DELETED, FALSE ) == 0 &&
                  VmDirStringCompareA( pAttr->vals[0].lberbv.bv_val, VMDIR_IS_DELETED_TRUE_STR, FALSE ) == 0)
@@ -1485,7 +1485,7 @@ _ParseStatePingControlVal(
         }
         else if (VmDirStringCompareA(pszKey, pszMaxOrigUsnKey, FALSE) == 0)
         {
-            retVal = VmDirStringToUSN(pszVal, &pPingCtrlVal->maxOrigUsn);
+            retVal = VmDirStringToINT64(pszVal, &pPingCtrlVal->maxOrigUsn);
             BAIL_ON_VMDIR_ERROR(retVal);
         }
     }

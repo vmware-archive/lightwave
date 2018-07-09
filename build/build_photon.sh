@@ -23,7 +23,9 @@ if [[ $ARG == "" || $ARG == "--with-ui" ]]; then
   && \
  make \
   && \
- make package DIST=$DIST
+ make package DIST=$DIST \
+  && \
+ make check
 fi
 
 if [[ $ARG == "--with-ui" || $ARG == "--only-ui" ]]; then

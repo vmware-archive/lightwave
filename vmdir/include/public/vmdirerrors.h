@@ -211,6 +211,7 @@
 #define VMDIR_ERROR_BACKEND_ENTRY_EXISTS              (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 6 )  // 9706
 #define VMDIR_ERROR_BACKEND_OPERATIONS                (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 7 )  // 9707
 #define VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND   (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 8 )  // 9708
+#define VMDIR_ERROR_BACKEND_INVALID_METADATA          (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 9 )  // 9709
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // REST server error (range 9900 - 9999)

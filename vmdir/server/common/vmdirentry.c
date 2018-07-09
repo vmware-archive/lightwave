@@ -814,6 +814,9 @@ VmDirFreeAttribute(
     {
         VmDirFreeAttrValueMetaDataContent(&pAttr->valueMetaDataToDelete);
     }
+
+    VmDirFreeMetaData(pAttr->pMetaData);
+
     VmDirFreeBervalContent(&pAttr->type);
     VmDirFreeBervalArrayContent(pAttr->vals, pAttr->numVals);
     VMDIR_SAFE_FREE_MEMORY(pAttr->vals);

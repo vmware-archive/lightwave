@@ -913,6 +913,12 @@ AC_CHECK_LIB([curl],
     [],
     [$CURL_LDFLAGS])
 
+AC_CHECK_LIB([cmocka],
+    [_cmocka_run_group_tests],
+    [CMOCKA_LIBS="-lcmocka"],
+    [],
+    [$CMOCKA_LDFLAGS])
+
 AC_CHECK_LIB([copenapi],
     [coapi_load_from_file],
     [COPENAPI_LIBS="-lcopenapi"]
@@ -1033,6 +1039,7 @@ AC_SUBST(DOMAINJOIN_LIBS)
 AC_SUBST(LWSM_LIBS)
 AC_SUBST(CARES_LIBS)
 AC_SUBST(CURL_LIBS)
+AC_SUBST(CMOCKA_LIBS)
 
 #--------------------------------------------------------------------
 
@@ -1410,6 +1417,26 @@ AC_SUBST(CURL_INCLUDES)
 AC_SUBST(CURL_LDFLAGS)
 
 #--------------------------------------------------------------------
+# CMOCKA components
+
+AC_ARG_WITH([cmocka],
+    [AC_HELP_STRING([--with-cmocka=<dir>], [use CMOCKA binaries rooted at prefix <dir> ])],
+    [
+        CMOCKA_BASE_PATH="$withval"
+    ],
+    [
+        CMOCKA_BASE_PATH="/usr"
+    ])
+
+CMOCKA_INCLUDES="-I$CMOCKA_BASE_PATH/include"
+CMOCKA_LDFLAGS="-L$CMOCKA_BASE_PATH/lib"
+
+
+AC_SUBST(CMOCKA_BASE_PATH)
+AC_SUBST(CMOCKA_INCLUDES)
+AC_SUBST(CMOCKA_LDFLAGS)
+
+#--------------------------------------------------------------------
 # Commons Daemon component
 
 AC_ARG_WITH([commons-daemon],
@@ -1658,6 +1685,9 @@ AC_CONFIG_FILES([Makefile
                  vmdir/gssapi-plugins/ntlm/Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile
+                 vmdir/unit-tests/Makefile
+                 vmdir/unit-tests/server/Makefile
+                 vmdir/unit-tests/server/common/Makefile
                  vmdns/Makefile
                  vmdns/include/Makefile
                  vmdns/include/public/Makefile

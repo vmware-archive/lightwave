@@ -46,32 +46,6 @@ VmDirIsSensitiveAttr(
     return bSensitiveAttr;
 }
 
-/*
- * convert string to USN
- */
-DWORD
-VmDirStringToUSN(
-    PCSTR   pszUSNStr,
-    USN*    poutUSN
-    )
-{
-    DWORD   dwError = 0;
-    PSTR pszEnd = NULL;
-
-    if (!pszUSNStr || !poutUSN)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    *poutUSN = VmDirStringToLA(pszUSNStr, &pszEnd, 10);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 DWORD
 VmDirServerDNToSite(
     PCSTR   pszServerDN,
@@ -3341,10 +3315,7 @@ VmDirDNToRDNList(
     *ppRDNStrList = pStrList;
 
 cleanup:
-    if (ppRDN)
-    {
-        ldap_value_free(ppRDN);
-    }
+    ldap_value_free(ppRDN);
 
     return dwError;
 

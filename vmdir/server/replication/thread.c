@@ -901,7 +901,7 @@ _VmDirFetchReplicationPage(
     }
 
     // Get last local USN processed from the cookie
-    retVal = VmDirStringToUSN(
+    retVal = VmDirStringToINT64(
             pPage->searchResCtrls[0]->ldctl_value.bv_val,
             &(pPage->lastSupplierUsnProcessed));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);

@@ -14,6 +14,7 @@ SUBDIRS += \
     server \
     tools \
     config \
-    testing
+    testing \
+    unit-tests
 
 endif

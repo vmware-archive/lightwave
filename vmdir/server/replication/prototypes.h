@@ -177,6 +177,22 @@ VmDirCopyRemoteDB(
     PCSTR   dbHomeDir
     );
 
+// metadata.c
+DWORD
+VmDirReplSetAttrNewMetaData(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pSupplierEntry,
+    PLW_HASHMAP*        ppMetaDataMap
+    );
+
+// conflictresolution.c
+int
+VmDirReplResolveConflicts(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pSupplierEntry,
+    PLW_HASHMAP         pMetaDataMap
+    );
+
 #ifdef __cplusplus
 }
 #endif

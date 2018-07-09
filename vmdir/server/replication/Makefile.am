@@ -2,6 +2,7 @@
 noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
+    conflictresolution.c \
     deadlockdetectionvector.c \
     dbcopy.c \
     dbswap.c \
@@ -9,6 +10,7 @@ libreplication_la_SOURCES = \
     firstreplcycle.c \
     globals.c \
     libmain.c \
+    metadata.c \
     metrics.c \
     replcookies.c \
     replentry.c \
