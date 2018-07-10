@@ -1572,7 +1572,9 @@ VMCACreateCertificateName(
     LPSTR pszCountry = NULL;
     LPSTR pszState = NULL;
     LPSTR pszLocality = NULL;
+    LPSTR pszOrganizationList = NULL;
     LPSTR pszOrganization = NULL;
+    LPSTR pszNextOrgToken = NULL;
     LPSTR pszOU = NULL;
 
     DWORD dwError = 0;
@@ -1642,13 +1644,19 @@ VMCACreateCertificateName(
 
     if (pCertRequest->pszOrganization) {
 
-            dwError = VMCAAllocateStringAFromW(pCertRequest->pszOrganization, &pszOrganization);
+            dwError = VMCAAllocateStringAFromW(pCertRequest->pszOrganization, &pszOrganizationList);
             BAIL_ON_ERROR(dwError);
 
-            dwError = X509_NAME_add_entry_by_txt(pCertName,
-                "O", MBSTRING_UTF8,
-                pszOrganization, -1, -1, 0);
-            BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
+            pszOrganization = VMCAStringTokA(pszOrganizationList, ",", &pszNextOrgToken);
+            while (pszOrganization)
+            {
+                dwError = X509_NAME_add_entry_by_txt(pCertName,
+                    "O", MBSTRING_UTF8,
+                    pszOrganization, -1, -1, 0);
+                BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
+
+                pszOrganization = VMCAStringTokA(NULL, ",", &pszNextOrgToken);
+            }
     }
 
     if (pCertRequest->pszOU) {
@@ -1669,7 +1677,7 @@ error :
     VMCA_SAFE_FREE_STRINGA(pszCountry);
     VMCA_SAFE_FREE_STRINGA(pszState);
     VMCA_SAFE_FREE_STRINGA(pszLocality);
-    VMCA_SAFE_FREE_STRINGA(pszOrganization);
+    VMCA_SAFE_FREE_STRINGA(pszOrganizationList);
     VMCA_SAFE_FREE_STRINGA(pszOU);
 
     return dwError;
