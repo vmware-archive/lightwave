@@ -10,7 +10,7 @@ targets:
     watches:
       - support/toolchain/docker/photon1
     build: support/toolchain/docker/photon1
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
     cache: false
 
   rebuild-toolchain-photon2:
@@ -33,7 +33,7 @@ targets:
       - '**/**/*.ac'
     cmds:
       - ./support/scripts/bootstrap.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   bootstrap-lightwave-photon2:
     description: Bootstraps build
@@ -58,7 +58,7 @@ targets:
       - '**/**/*.java'
     cmds:
       - ./support/scripts/build.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   build-lightwave-photon2:
     description: build Lightwave source code for linux
@@ -95,7 +95,7 @@ targets:
       - build-photon1
     cmds:
       - ./support/scripts/pack.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   pack-photon2:
     description: Create RPM Package
@@ -125,14 +125,14 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon1 server
     always: true
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   docker-lightwave-client-pre-photon1:
     description: Prepare for container build
     cmds:
       - ./support/scripts/prep-container-build.sh photon1 client
     always: true
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   docker-lightwave-pre-photon2:
     description: Prepare for container build
@@ -205,7 +205,7 @@ targets:
     always: true
     cmds:
       - ./support/scripts/clean.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   clean-photon2:
     description: Cleanup
@@ -238,7 +238,7 @@ commands:
       - PROJECT_ROOT=$(pwd)
       - cd $PROJECT_ROOT/vmidentity
       - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there
@@ -248,7 +248,7 @@ commands:
     always: true
     cmds:
       - './support/scripts/test-vmidentity.sh $@'
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there
