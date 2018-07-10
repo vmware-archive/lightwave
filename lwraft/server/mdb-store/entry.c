@@ -147,10 +147,17 @@ VmDirMDBMaxEntryId(
     MDB_val         key = {0};
     MDB_val         value  = {0};
     ENTRYID         eId = LOG_ENTRY_EID_PREFIX;
+    ENTRYID         eIdPrefix = LOG_ENTRY_EID_PREFIX;
     unsigned char   EIDBytes[sizeof(ENTRYID)] = {0};
     PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
     assert(pEId && pDB);
+
+    if (pBE == VmDirBackendSelect(ALIAS_MAIN))
+    {
+        eId =  NEW_ENTRY_EID_PREFIX;
+        eIdPrefix = NEW_ENTRY_EID_PREFIX;
+    }
 
     dwError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -173,7 +180,7 @@ VmDirMDBMaxEntryId(
 
         MDBDBTToEntryId(&key, &eId);
     }
-    while (eId >= LOG_ENTRY_EID_PREFIX);
+    while (eId >= eIdPrefix);
 
     mdb_cursor_close(pCursor);
     pCursor = NULL;
