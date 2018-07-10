@@ -70,6 +70,10 @@ LightwaveCommand(
     {
         iRetCode = LightwaveDns(argc-1, &argv[1]);
     }
+    else if (!strcmp(argv[0], "ca"))
+    {
+        iRetCode = LightwaveCa(argc-1, &argv[1]);
+    }
     else
     {
         ShowUsage();
@@ -91,7 +95,8 @@ ShowUsage(
         "\n"
         "Commands:\n"
         "    domain   promote, demote, join, or leave a Lightwave domain\n"
-        "    dns      delete"
+        "    dns      delete\n"
+        "    ca       get-cert"
         "\n"
         "Run 'lightwave COMMAND --help' for more information on a particular command'\n";
 

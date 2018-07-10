@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,21 +12,27 @@
  * under the License.
  */
 
+typedef struct _VMW_CA_PARAMS
+{
+    json_t* pJsonConfig;
 
-int
-LightwaveDomain(
-    int argc,
-    char* argv[]
-    );
+    PSTR    pszServer;
+    PSTR    pszDomain;
+    PSTR    pszUsername;
+    PSTR    pszPassword;
 
-int
-LightwaveDns(
-    int argc,
-    char* argv[]
-    );
+    PSTR    pszCertDuration;
+    size_t  privKeySize;
 
-int
-LightwaveCa(
-    int argc,
-    char* argv[]
-    );
+    PSTR    pszPrivKeyFilePath;
+    PSTR    pszCertFilePath;
+
+    BOOL    bInsecure;
+
+} VMW_CA_PARAMS, *PVMW_CA_PARAMS;
+
+typedef struct _VMW_CA_REST_RESPONSE
+{
+    PSTR    pszBuffer;
+    size_t  bufferSize;
+} VMW_CA_REST_RESPONSE, *PVMW_CA_REST_RESPONSE;

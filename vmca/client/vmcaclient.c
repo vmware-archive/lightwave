@@ -447,12 +447,17 @@ VMCAFreePKCS10DataW(
 //     None
 {
     if ( pCertRequestData != NULL) {
-        VMCASetPKCSMemberW(&pCertRequestData->pszName,       NULL);
-        VMCASetPKCSMemberW(&pCertRequestData->pszDomainName, NULL);
-        VMCASetPKCSMemberW(&pCertRequestData->pszOU,         NULL);
-        VMCASetPKCSMemberW(&pCertRequestData->pszState,      NULL);
-        VMCASetPKCSMemberW(&pCertRequestData->pszEmail,      NULL);
-        VMCASetPKCSMemberW(&pCertRequestData->pszIPAddress,  NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszName,         NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszDomainName,   NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszCountry,      NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszLocality,     NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszOrganization, NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszOU,           NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszState,        NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszDNSName,      NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszURIName,      NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszEmail,        NULL);
+        VMCASetPKCSMemberW(&pCertRequestData->pszIPAddress,    NULL);
         VMCAFreeMemory(pCertRequestData);
     }
     pCertRequestData = NULL;
@@ -470,12 +475,17 @@ VMCAFreePKCS10DataA(
 //     None
 {
     if ( pCertRequestData != NULL) {
-        VMCASetPKCSMemberA(&pCertRequestData->pszName,       NULL);
-        VMCASetPKCSMemberA(&pCertRequestData->pszDomainName, NULL);
-        VMCASetPKCSMemberA(&pCertRequestData->pszOU,         NULL);
-        VMCASetPKCSMemberA(&pCertRequestData->pszState,      NULL);
-        VMCASetPKCSMemberA(&pCertRequestData->pszEmail,      NULL);
-        VMCASetPKCSMemberA(&pCertRequestData->pszIPAddress,  NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszName,         NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszDomainName,   NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszCountry,      NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszLocality,     NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszOrganization, NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszOU,           NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszState,        NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszDNSName,      NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszURIName,      NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszEmail,        NULL);
+        VMCASetPKCSMemberA(&pCertRequestData->pszIPAddress,    NULL);
         VMCAFreeMemory(pCertRequestData);
     }
     pCertRequestData = NULL;

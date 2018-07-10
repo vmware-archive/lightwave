@@ -1771,6 +1771,7 @@ AC_CONFIG_FILES([Makefile
                  config/tools/ic-promote/Makefile
                  config/tools/ic-join/Makefile
                  config/tools/lightwave/Makefile
+                 config/tools/lightwave/ca/Makefile
                  config/tools/lightwave/domain/Makefile
                  config/tools/lightwave/dns/Makefile
                  config/scripts/Makefile
