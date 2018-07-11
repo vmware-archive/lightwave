@@ -1519,11 +1519,11 @@ vmmetricsconfdir="$datadir/config"
 AC_SUBST(vmmetricsconfdir)
 
 AC_CONFIG_FILES([Makefile
-                 vmmetrics/Makefile
-                 vmmetrics/include/Makefile
-                 vmmetrics/include/public/Makefile
-                 vmmetrics/config/Makefile
-                 vmmetrics/testing/Makefile
+                 vmcommon/Makefile
+                 vmcommon/include/Makefile
+                 vmcommon/include/public/Makefile
+                 vmcommon/config/Makefile
+                 vmcommon/testing/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile

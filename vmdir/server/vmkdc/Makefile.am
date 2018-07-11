@@ -32,7 +32,7 @@ libvmkdcserv_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
     -I$(top_srcdir)/vmdir/build/server/kdcsrvcommon \
     -I$(top_srcdir)/vmdir/server/kdcsrvcommon \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

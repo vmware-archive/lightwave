@@ -8,7 +8,7 @@ mdb_walflush_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include/public \
     -I$(top_srcdir)/lwraft/server/include \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/mdb \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

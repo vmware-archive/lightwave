@@ -11,7 +11,7 @@ include $(MAKEROOT)/makedefs.mk
 ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = \
-        vmmetrics \
+        vmcommon \
         vmevent \
         vmidentity/ssoclients \
         lwraft \

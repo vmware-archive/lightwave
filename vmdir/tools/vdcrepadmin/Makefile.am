@@ -10,7 +10,7 @@ vdcrepadmin_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmdir/tools/include \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

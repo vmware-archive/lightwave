@@ -52,7 +52,7 @@ postd_CPPFLAGS = \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
     -I$(top_srcdir)/vmevent/include/public \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
@@ -78,7 +78,7 @@ postd_LDADD = \
     $(top_builddir)/lwraft/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
-    $(top_builddir)/vmmetrics/libvmmetrics.la \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

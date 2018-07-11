@@ -87,7 +87,7 @@ VmMetricsHistogramWithLabelTest()
     }
 
 cleanup:
-    VM_METRICS_SAFE_FREE_MEMORY(pszData);
+    VM_COMMON_SAFE_FREE_MEMORY(pszData);
     VmMetricsDestroy(pContext);
     return dwError;
 
@@ -163,7 +163,7 @@ VmMetricsHistogramWithoutLabelTest()
     }
 
 cleanup:
-    VM_METRICS_SAFE_FREE_MEMORY(pszData);
+    VM_COMMON_SAFE_FREE_MEMORY(pszData);
     VmMetricsDestroy(pContext);
 
     return dwError;
@@ -204,7 +204,7 @@ VmMetricsHistogramWithInvalidLabelTest()
                         &pHistogram);
     switch (dwError)
     {
-        case VM_METRICS_ERROR_INVALID_PARAMETER:
+        case VM_COMMON_ERROR_INVALID_PARAMETER:
             printf("PASS: Expected Result for test: HistogramWithInvalidLabel\n");
             dwError = 0;
             break;

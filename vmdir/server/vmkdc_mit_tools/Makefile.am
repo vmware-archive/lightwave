@@ -25,7 +25,7 @@ MIT_TOOLS_INCLUDES = \
     -I$(thirdparty_srcdir)/heimdal/krb5-crypto \
     -I$(thirdparty_srcdir)/heimdal/asn1 \
     -I$(top_srcdir)/vmdir/server/vmkdc \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 

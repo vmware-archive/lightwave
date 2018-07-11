@@ -12,25 +12,23 @@
  * under the License.
  */
 
-#ifndef _VM_METRICS_MEMORY_H__
-#define _VM_METRICS_MEMORY_H__
+#ifndef __VM_COMMON_DEFINE_H__
+#define __VM_COMMON_DEFINE_H__
 
-DWORD
-VmMetricsAllocateMemory(
-    size_t  dwSize,
-    PVOID*  ppMemory
-    );
+#define BUFFER_SIZE 1024
 
-DWORD
-VmMetricsReallocateMemory(
-    PVOID  ppMemory,
-    PVOID*  ppNewMemory,
-    size_t  dwSize
-    );
+#define VM_COMMON_SAFE_FREE_MEMORY(PTR)       \
+    do {                                       \
+        if ((PTR)) {                           \
+            VmFreeMemory(PTR);          \
+            (PTR) = NULL;                      \
+        }                                      \
+    } while(0)
 
-VOID
-VmMetricsFreeMemory(
-    PVOID   pMemory
-    );
+#define BAIL_ON_VM_COMMON_ERROR(dwError)      \
+    if (dwError)                               \
+    {                                          \
+        goto error;                            \
+    }
 
-#endif /* __VM_METRICS_MEMORY_H__ */
+#endif /* __VM_COMMON_DEFINE_H__ */

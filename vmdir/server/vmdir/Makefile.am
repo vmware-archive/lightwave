@@ -59,7 +59,7 @@ vmdird_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmevent/include/public \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
@@ -87,7 +87,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
-    $(top_builddir)/vmmetrics/libvmmetrics.la \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

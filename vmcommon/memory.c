@@ -15,7 +15,7 @@
 #include "includes.h"
 
 DWORD
-VmMetricsAllocateMemory(
+VmAllocateMemory(
     size_t   dwSize,
     PVOID*   ppMemory
     )
@@ -25,16 +25,16 @@ VmMetricsAllocateMemory(
 
     if (!ppMemory || !dwSize)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pMemory = calloc(1, dwSize);
 
     if (!pMemory)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
 cleanup:
@@ -43,14 +43,14 @@ cleanup:
     return dwError;
 
 error:
-    VM_METRICS_SAFE_FREE_MEMORY(pMemory);
+    VM_COMMON_SAFE_FREE_MEMORY(pMemory);
     pMemory = NULL;
 
     goto cleanup;
 }
 
 DWORD
-VmMetricsReallocateMemory(
+VmReallocateMemory(
     PVOID        pMemory,
     PVOID*       ppNewMemory,
     size_t       dwSize
@@ -61,8 +61,8 @@ VmMetricsReallocateMemory(
 
     if (!ppNewMemory)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (pMemory)
@@ -71,14 +71,14 @@ VmMetricsReallocateMemory(
     }
     else
     {
-        dwError = VmMetricsAllocateMemory(dwSize, &pNewMemory);
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VmAllocateMemory(dwSize, &pNewMemory);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (!pNewMemory)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     *ppNewMemory = pNewMemory;
@@ -91,7 +91,7 @@ error:
 }
 
 VOID
-VmMetricsFreeMemory(
+VmFreeMemory(
     PVOID   pMemory
     )
 {

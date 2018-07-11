@@ -72,19 +72,19 @@ VmMetricsInit(
 
     if (!ppContext)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_CONTEXT),
             (PVOID*)&pContext);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     pContext->pMetrics = NULL;
 
     dwError = pthread_rwlock_init(&pContext->rwLock, NULL);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     *ppContext = pContext;
 
@@ -92,7 +92,7 @@ cleanup:
     return dwError;
 
 error:
-    VM_METRICS_SAFE_FREE_MEMORY(pContext);
+    VM_COMMON_SAFE_FREE_MEMORY(pContext);
     goto cleanup;
 }
 
@@ -115,31 +115,31 @@ VmMetricsCounterNew(
 
     if (!ppCounter || !pContext || !pszName || !pszDescription)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_LIST_ENTRY),
             (PVOID*)&pEntry);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_COUNTER),
             (PVOID*)&pCounter);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     pCounter->pszName = strdup(pszName);
     if (!pCounter->pszName)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (pLabel && iLabelCount)
     {
         dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pCounter->pszLabel);
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
     else
     {
@@ -149,8 +149,8 @@ VmMetricsCounterNew(
     pCounter->pszDescription = strdup(pszDescription);
     if (!pCounter->pszDescription)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pCounter->value = 0;
@@ -176,12 +176,12 @@ cleanup:
 error:
     if (pCounter)
     {
-        VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszName);
-        VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszLabel);
-        VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszDescription);
-        VM_METRICS_SAFE_FREE_MEMORY(pCounter);
+        VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszName);
+        VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszLabel);
+        VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszDescription);
+        VM_COMMON_SAFE_FREE_MEMORY(pCounter);
     }
-    VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+    VM_COMMON_SAFE_FREE_MEMORY(pEntry);
 
     goto cleanup;
 }
@@ -205,31 +205,31 @@ VmMetricsGaugeNew(
 
     if (!ppGauge || !pContext || !pszName || !pszDescription)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_LIST_ENTRY),
             (PVOID*)&pEntry);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_GAUGE),
             (PVOID*)&pGauge);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     pGauge->pszName = strdup(pszName);
     if (!pGauge->pszName)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (pLabel && iLabelCount)
     {
         dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pGauge->pszLabel);
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
     else
     {
@@ -239,8 +239,8 @@ VmMetricsGaugeNew(
     pGauge->pszDescription = strdup(pszDescription);
     if (!pGauge->pszDescription)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pGauge->value = 0;
@@ -266,12 +266,12 @@ cleanup:
 error:
     if (pGauge)
     {
-        VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszName);
-        VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszLabel);
-        VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszDescription);
-        VM_METRICS_SAFE_FREE_MEMORY(pGauge);
+        VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszName);
+        VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszLabel);
+        VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszDescription);
+        VM_COMMON_SAFE_FREE_MEMORY(pGauge);
     }
-    VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+    VM_COMMON_SAFE_FREE_MEMORY(pEntry);
 
     goto cleanup;
 }
@@ -298,31 +298,31 @@ VmMetricsHistogramNew(
 
     if (!ppHistogram || !pContext || !pszName || !pszDescription)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_LIST_ENTRY),
             (PVOID*)&pEntry);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             sizeof(VM_METRICS_HISTOGRAM),
             (PVOID*)&pHistogram);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     pHistogram->pszName = strdup(pszName);
     if (!pHistogram->pszName)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (pLabel && iLabelCount)
     {
         dwError = _VmMetricsMakeLabel(pLabel, iLabelCount, &pHistogram->pszLabel);
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
     else
     {
@@ -331,21 +331,21 @@ VmMetricsHistogramNew(
     pHistogram->pszDescription = strdup(pszDescription);
     if (!pHistogram->pszDescription)
     {
-        dwError = VM_METRICS_ERROR_NO_MEMORY;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pHistogram->bucketSize = iBucketSize;
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             iBucketSize * sizeof(int64_t),
             (PVOID*)&pHistogram->pBucketKeys);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             iBucketSize * sizeof(int64_t),
             (PVOID*)&pHistogram->pBucketValues);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     for (i=0; i<pHistogram->bucketSize; i++)
     {
@@ -374,14 +374,14 @@ cleanup:
 error:
     if (pHistogram)
     {
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszName);
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszLabel);
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszDescription);
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
-        VM_METRICS_SAFE_FREE_MEMORY(pHistogram);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszName);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszLabel);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszDescription);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
+        VM_COMMON_SAFE_FREE_MEMORY(pHistogram);
     }
-    VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+    VM_COMMON_SAFE_FREE_MEMORY(pEntry);
 
     goto cleanup;
 }
@@ -530,12 +530,12 @@ VmMetricsGetPrometheusData(
             LwRtlHashDigestPstrCaseless,
             LwRtlHashEqualPstrCaseless,
             NULL);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmMetricsAllocateMemory(
+    dwError = VmAllocateMemory(
             BUFFER_SIZE,
             (PVOID*)&pszData);
-    BAIL_ON_VM_METRICS_ERROR(dwError);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
     pthread_rwlock_rdlock(&pContext->rwLock);
     pEntry = pContext->pMetrics;
@@ -554,7 +554,7 @@ VmMetricsGetPrometheusData(
                 else
                 {
                     dwError = LwRtlHashMapInsert(pNamesMap, pCounter->pszName, 0, NULL);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                 }
 
                 bufLen = _VmMetricsGetCounterData(pCounter, NULL, 0, 0, bNameUsed);
@@ -566,11 +566,11 @@ VmMetricsGetPrometheusData(
                 }
                 if (realloc)
                 {
-                    dwError = VmMetricsReallocateMemory(
+                    dwError = VmReallocateMemory(
                                 (PVOID)pszData,
                                 (PVOID*)&pszData,
                                 allocatedSize);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                     realloc = FALSE;
                 }
 
@@ -592,7 +592,7 @@ VmMetricsGetPrometheusData(
                 else
                 {
                     dwError = LwRtlHashMapInsert(pNamesMap, pGauge->pszName, 0, NULL);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                 }
 
                 bufLen = _VmMetricsGetGaugeData(pGauge, NULL, 0, 0, bNameUsed);
@@ -604,11 +604,11 @@ VmMetricsGetPrometheusData(
                 }
                 if (realloc)
                 {
-                    dwError = VmMetricsReallocateMemory(
+                    dwError = VmReallocateMemory(
                                 (PVOID)pszData,
                                 (PVOID*)&pszData,
                                 allocatedSize);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                     realloc = FALSE;
                 }
 
@@ -630,7 +630,7 @@ VmMetricsGetPrometheusData(
                 else
                 {
                     dwError = LwRtlHashMapInsert(pNamesMap, pHistogram->pszName, 0, NULL);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                 }
 
                 bufLen = _VmMetricsGetHistogramData(pHistogram, NULL, 0, 0, bNameUsed);
@@ -642,11 +642,11 @@ VmMetricsGetPrometheusData(
                 }
                 if (realloc)
                 {
-                    dwError = VmMetricsReallocateMemory(
+                    dwError = VmReallocateMemory(
                                 (PVOID)pszData,
                                 (PVOID*)&pszData,
                                 allocatedSize);
-                    BAIL_ON_VM_METRICS_ERROR(dwError);
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
                     realloc = FALSE;
                 }
 
@@ -674,7 +674,7 @@ cleanup:
     return dwError;
 
 error:
-    VM_METRICS_SAFE_FREE_MEMORY(pszData);
+    VM_COMMON_SAFE_FREE_MEMORY(pszData);
     goto cleanup;
 }
 
@@ -686,7 +686,7 @@ VmMetricsFreePrometheusData(
     PSTR pszData
     )
 {
-    VM_METRICS_SAFE_FREE_MEMORY(pszData);
+    VM_COMMON_SAFE_FREE_MEMORY(pszData);
 }
 
 /*
@@ -704,8 +704,8 @@ VmMetricsCounterDelete(
 
     if (!pContext || !pCounter)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pthread_rwlock_wrlock(&pContext->rwLock);
@@ -722,11 +722,11 @@ VmMetricsCounterDelete(
             {
                 pPrev->pNext = pEntry->pNext;
             }
-            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszName);
-            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszLabel);
-            VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszDescription);
-            VM_METRICS_SAFE_FREE_MEMORY(pCounter);
-            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszName);
+            VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszLabel);
+            VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszDescription);
+            VM_COMMON_SAFE_FREE_MEMORY(pCounter);
+            VM_COMMON_SAFE_FREE_MEMORY(pEntry);
             break;
         }
         pPrev = pEntry;
@@ -757,8 +757,8 @@ VmMetricsGaugeDelete(
 
     if (!pContext || !pGauge)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pthread_rwlock_wrlock(&pContext->rwLock);
@@ -775,11 +775,11 @@ VmMetricsGaugeDelete(
             {
                 pPrev->pNext = pEntry->pNext;
             }
-            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszName);
-            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszLabel);
-            VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszDescription);
-            VM_METRICS_SAFE_FREE_MEMORY(pGauge);
-            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszName);
+            VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszLabel);
+            VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszDescription);
+            VM_COMMON_SAFE_FREE_MEMORY(pGauge);
+            VM_COMMON_SAFE_FREE_MEMORY(pEntry);
             break;
         }
         pPrev = pEntry;
@@ -810,8 +810,8 @@ VmMetricsHistogramDelete(
 
     if (!pContext || !pHistogram)
     {
-        dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     pthread_rwlock_wrlock(&pContext->rwLock);
@@ -828,13 +828,13 @@ VmMetricsHistogramDelete(
             {
                 pPrev->pNext = pEntry->pNext;
             }
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszName);
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszLabel);
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszDescription);
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
-            VM_METRICS_SAFE_FREE_MEMORY(pHistogram);
-            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszName);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszLabel);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszDescription);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
+            VM_COMMON_SAFE_FREE_MEMORY(pHistogram);
+            VM_COMMON_SAFE_FREE_MEMORY(pEntry);
             break;
         }
         pPrev = pEntry;
@@ -874,30 +874,30 @@ VmMetricsDestroy(
                 case VM_METRICS_TYPE_COUNTER:
                 {
                     pCounter = pEntry->pData;
-                    VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszName);
-                    VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszLabel);
-                    VM_METRICS_SAFE_FREE_MEMORY(pCounter->pszDescription);
-                    VM_METRICS_SAFE_FREE_MEMORY(pCounter);
+                    VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszName);
+                    VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszLabel);
+                    VM_COMMON_SAFE_FREE_MEMORY(pCounter->pszDescription);
+                    VM_COMMON_SAFE_FREE_MEMORY(pCounter);
                     break;
                 }
                 case VM_METRICS_TYPE_GAUGE:
                 {
                     pGauge = pEntry->pData;
-                    VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszName);
-                    VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszLabel);
-                    VM_METRICS_SAFE_FREE_MEMORY(pGauge->pszDescription);
-                    VM_METRICS_SAFE_FREE_MEMORY(pGauge);
+                    VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszName);
+                    VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszLabel);
+                    VM_COMMON_SAFE_FREE_MEMORY(pGauge->pszDescription);
+                    VM_COMMON_SAFE_FREE_MEMORY(pGauge);
                     break;
                 }
                 case VM_METRICS_TYPE_HISTOGRAM:
                 {
                     pHistogram = pEntry->pData;
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszName);
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszLabel);
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pszDescription);
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
-                    VM_METRICS_SAFE_FREE_MEMORY(pHistogram);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszName);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszLabel);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pszDescription);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketKeys);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram->pBucketValues);
+                    VM_COMMON_SAFE_FREE_MEMORY(pHistogram);
                     break;
                 }
                 default:
@@ -908,11 +908,11 @@ VmMetricsDestroy(
 
             pContext->pMetrics = pEntry->pNext;
             pEntry->pNext = NULL;
-            VM_METRICS_SAFE_FREE_MEMORY(pEntry);
+            VM_COMMON_SAFE_FREE_MEMORY(pEntry);
         }
 
         pthread_rwlock_destroy(&pContext->rwLock);
-        VM_METRICS_SAFE_FREE_MEMORY(pContext);
+        VM_COMMON_SAFE_FREE_MEMORY(pContext);
     }
 }
 
@@ -937,8 +937,8 @@ _VmMetricsMakeLabel(
     {
         if (!pLabel->pszKey || !pLabel->pszValue)
         {
-            dwError = VM_METRICS_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VM_METRICS_ERROR(dwError);
+            dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
         }
         if (!appendExtra)
         {
@@ -952,11 +952,11 @@ _VmMetricsMakeLabel(
         }
         len = len + extraLen;
 
-        dwError = VmMetricsReallocateMemory(
+        dwError = VmReallocateMemory(
                 (PVOID)pszLabel,
                 (PVOID*)&pszLabel,
                 len);
-        BAIL_ON_VM_METRICS_ERROR(dwError);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
 
         snprintf( pszLabel+strlen(pszLabel), extraLen, "%s%s=\"%s\"",
                     appendExtra,
@@ -974,7 +974,7 @@ cleanup:
     return dwError;
 
 error:
-    VM_METRICS_SAFE_FREE_MEMORY(pszLabel);
+    VM_COMMON_SAFE_FREE_MEMORY(pszLabel);
     goto cleanup;
 }
 

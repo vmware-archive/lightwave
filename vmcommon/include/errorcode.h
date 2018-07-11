@@ -12,10 +12,10 @@
  * under the License.
  */
 
-#ifndef _VM_METRICS_ERRORCODE_H__
-#define _VM_METRICS_ERRORCODE_H__
+#ifndef _VM_COMMON_ERRORCODE_H__
+#define _VM_COMMON_ERRORCODE_H__
 
-#define VM_METRICS_ERROR_NO_MEMORY            8         // ERROR_NOT_ENOUGH_MEMORY windows code
-#define VM_METRICS_ERROR_INVALID_PARAMETER    87        // ERROR_INVALID_PARAMETER windows code
+#define VM_COMMON_ERROR_NO_MEMORY            8         // ERROR_NOT_ENOUGH_MEMORY windows code
+#define VM_COMMON_ERROR_INVALID_PARAMETER    87        // ERROR_INVALID_PARAMETER windows code
 
-#endif /* __VM_METRICS_ERRORCODE_H__ */
+#endif /* __VM_COMMON_ERRORCODE_H__ */
