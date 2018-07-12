@@ -127,6 +127,12 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 
 #define VMCA_UNKNOW_ERROR                   (VMCA_ROOT_CA_MISSING + 101)
 
+#define VMCA_POLICY_VALIDATION_ERROR        (VMCA_ROOT_CA_MISSING + 110)
+#define VMCA_POLICY_CONFIG_ERROR            (VMCA_ROOT_CA_MISSING + 111)
+#define VMCA_ERROR_ENTRY_NOT_FOUND          (VMCA_ROOT_CA_MISSING + 112)
+#define VMCA_ERROR_INVALID_STATE            (VMCA_ROOT_CA_MISSING + 113)
+#define VMCA_ERROR_INVALID_ENTRY            (VMCA_ROOT_CA_MISSING + 114)
+
 #define VMCA_ERROR_TABLE_INITIALIZER \
 { \
     { VMCA_ROOT_CA_MISSING          , "VMCA_ROOT_CA_MISSING", "The Root CA certificate is missing or failed to Initialize" }, \

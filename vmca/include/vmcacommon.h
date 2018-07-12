@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -457,6 +457,14 @@ VMCAFreeStringW(
     RP_PWSTR pszString
     );
 
+DWORD
+VMCACopyStringArrayA(
+    PSTR            **pppszDst,
+    DWORD           dwDstLen,
+    PSTR            *ppszSrc,
+    DWORD           dwSrcLen
+    );
+
 VOID
 VMCAFreeStringArrayA(
     PSTR* ppszStrings,
@@ -541,8 +549,8 @@ DWORD
 VMCAStringCountSubstring(
     PSTR pszHaystack,
     PCSTR pszNeedle,
-    int** ppnCount
-);
+    int *pnCount
+    );
 
 DWORD
 VMCAStringCatA(
@@ -1329,6 +1337,13 @@ VMCAUpdateCrlCAAttribute(
 VOID
 VMCALdapClose(
     PVMCA_LDAP_CONTEXT pHandle
+    );
+
+DWORD
+VMCAConvertUPNToDN(
+    PVMCA_LDAP_CONTEXT          pConnection,
+    PCSTR                       pszUPN,
+    PSTR*                       ppszOutDN
     );
 
 DWORD

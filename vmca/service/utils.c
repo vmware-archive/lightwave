@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -213,10 +213,12 @@ error:
 DWORD
 VMCASignedRequestPrivate(
     PVMCA_X509_CA pCA,
+    PVMCA_REQ_CONTEXT pReqContext,
     PSTR pszPKCS10Request,
     PSTR *ppszCertificate,
     time_t tmNotBefore,
-    time_t tmNotAfter
+    time_t tmNotAfter,
+    PBOOLEAN pbIsValid
 )
 // VMCASignedRequestPrivate takes and CSR and signs the request
 //
@@ -226,6 +228,7 @@ VMCASignedRequestPrivate(
 //      ppszCertificate : Points to a PEM encoded Signed Cert
 //      tmNotBefore : A Valid Time String that indicates when the Certificate is Valid From
 //      tmNotAfter : The End of certificates validity
+//      pbIsValid : Return value indicating policy validation
 // Returns :
 //  Error Code
 {
@@ -242,10 +245,14 @@ VMCASignedRequestPrivate(
     const EVP_MD *digest = EVP_sha256();
     ASN1_INTEGER *aiSerial = NULL;
     time_t tmNow = 0;
+    BOOLEAN bIsValid = FALSE;
 
     if  ( (pCA == NULL) ||
-          ( pszPKCS10Request == NULL ) ||
-          (ppszCertificate == NULL)) {
+          (pszPKCS10Request == NULL) ||
+          (pReqContext == NULL) ||
+          (ppszCertificate == NULL) ||
+          (pbIsValid == NULL) )
+    {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
     }
@@ -301,6 +308,26 @@ VMCASignedRequestPrivate(
         dwError = VMCA_INVALID_CSR_FIELD;
         BAIL_ON_VMCA_ERROR(dwError);
     }
+
+    dwError = VMCAPolicyValidate(
+                        gVMCAServerGlobals.gppPolicies,
+                        pszPKCS10Request,
+                        pReqContext,
+                        &bIsValid);
+
+    if (bIsValid == FALSE || dwError == VMCA_POLICY_VALIDATION_ERROR)
+    {
+        VMCA_LOG_INFO(
+                "[%s,%d] Failed to validate CSR! User (%s)",
+                __FUNCTION__,
+                __LINE__,
+                pReqContext->pszAuthPrincipal);
+        // TODO (shahneel): remove comments and error override after policy enforcement works e2e
+        dwError = 0;
+        //dwError = VMCA_POLICY_VALIDATION_ERROR;
+        //BAIL_ON_VMCA_ERROR(dwError);
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
 
     pCertificate = X509_new();
     if(pCertificate == NULL) {
@@ -435,6 +462,8 @@ VMCASignedRequestPrivate(
         *ppszCertificate = pTempCertString;
         pTempCertString = NULL;
     }
+    *pbIsValid = bIsValid;
+
 
 cleanup:
 
@@ -474,6 +503,11 @@ cleanup:
     return dwError;
 
 error:
+
+    if (pbIsValid)
+    {
+        *pbIsValid = FALSE;
+    }
     if (ppszCertificate)
     {
         *ppszCertificate = NULL;

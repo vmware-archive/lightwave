@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -84,6 +84,11 @@ typedef struct _VMCA_DIR_SYNC_PARAMS
 
 } VMCA_DIR_SYNC_PARAMS, *PVMCA_DIR_SYNC_PARAMS;
 
+typedef struct _VMCA_REQ_CONTEXT
+{
+    PSTR            pszAuthPrincipal;
+} VMCA_REQ_CONTEXT, *PVMCA_REQ_CONTEXT;
+
 /* VMCA Policy */
 
 typedef enum _VMCA_POLICY_TYPE
@@ -97,14 +102,14 @@ typedef enum _VMCA_POLICY_TYPE
 typedef struct _VMCA_SNPOLICY_OPERATION
 {
     PSTR            pszData;
+    PSTR            pszCondition;
     PSTR            pszWith;
 } VMCA_SNPOLICY_OPERATION, *PVMCA_SNPOLICY_OPERATION;
 
 typedef struct _VMCA_SNPOLICY
 {
     BOOLEAN                         bEnabled;
-    DWORD                           dwMatchLen;
-    PVMCA_SNPOLICY_OPERATION        *ppMatch;
+    PVMCA_SNPOLICY_OPERATION        pMatch;
     DWORD                           dwValidateLen;
     PVMCA_SNPOLICY_OPERATION        *ppValidate;
 } VMCA_SNPOLICY, *PVMCA_SNPOLICY;
@@ -131,11 +136,19 @@ typedef VOID (*VMCA_POLICY_FREE_FUNC) (
     PVMCA_POLICY_RULES      pPolicyRules;
     );
 
+typedef DWORD (*VMCA_POLICY_VALIDATE_FUNC) (
+    PVMCA_POLICY            pPolicy;
+    PSTR                    pszPKCS10Request;
+    PVMCA_REQ_CONTEXT       pReqContext;
+    PBOOLEAN                pbIsValid;
+    );
+
 typedef struct _VMCA_POLICY_METHODS
 {
     VMCA_POLICY_TYPE            type;
     VMCA_POLICY_LOAD_FUNC       pfnLoad;
     VMCA_POLICY_FREE_FUNC       pfnFree;
+    VMCA_POLICY_VALIDATE_FUNC   pfnValidate;
 } VMCA_POLICY_METHODS;
 
 typedef struct _VMCA_SERVER_GLOBALS

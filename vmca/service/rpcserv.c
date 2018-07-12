@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -65,15 +65,17 @@ VMCAGetClientName(handle_t IDL_handle)
 
 DWORD
 VMCACheckAccess(
-    handle_t IDL_handle,
-    BOOL bNeedAdminPrivilage
+    handle_t                    IDL_handle,
+    BOOL                        bNeedAdminPrivilage,
+    PVMCA_REQ_CONTEXT           *ppReqContext
     )
 {
-    DWORD dwError = 0;
-    rpc_authz_cred_handle_t hPriv = { 0 };
-    DWORD dwProtectLevel = 0;
-    ULONG rpc_status = rpc_s_ok;
-    unsigned char *authPrinc = NULL;
+    DWORD                       dwError = 0;
+    rpc_authz_cred_handle_t     hPriv = { 0 };
+    DWORD                       dwProtectLevel = 0;
+    ULONG                       rpc_status = rpc_s_ok;
+    unsigned char               *authPrinc = NULL;
+    PVMCA_REQ_CONTEXT           pReqContext = NULL;
 
     rpc_binding_inq_auth_caller(
                             IDL_handle,
@@ -111,12 +113,40 @@ VMCACheckAccess(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-error:
+    if (ppReqContext)
+    {
+        dwError = VMCAAllocateMemory(
+                        sizeof(VMCA_REQ_CONTEXT),
+                        (PVOID *)&pReqContext);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        dwError = VMCAAllocateStringA(
+                        authPrinc,
+                        &pReqContext->pszAuthPrincipal);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        *ppReqContext = pReqContext;
+    }
+
+
+cleanup:
+
     if (authPrinc)
     {
         rpc_string_free((unsigned_char_t **)&authPrinc, &rpc_status);
     }
+
     return dwError;
+
+error:
+
+    VMCAFreeReqContext(pReqContext);
+    if (ppReqContext)
+    {
+        *ppReqContext = NULL;
+    }
+
+    goto cleanup;
 }
 
 /* Here is the Truth Table that we are using for this Access Check
@@ -141,7 +171,7 @@ RpcVMCASetServerOption(
     unsigned int    dwCurrentOption = 0;
     unsigned int    dwNewOption = 0;
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
@@ -171,7 +201,7 @@ RpcVMCAUnsetServerOption(
     unsigned int    dwCurrentOption = 0;
     unsigned int    dwNewOption = 0;
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwCurrentOption);
@@ -206,7 +236,7 @@ RpcVMCAGetServerOption(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAConfigGetDword(VMCA_REG_KEY_SERVER_OPTION, &dwOption);
@@ -230,13 +260,13 @@ RpcVMCAGetServerVersion(
     VMCA_CERTIFICATE_CONTAINER **pServerVersion)
 {
     DWORD dwError = 0;
-    PSTR pTempServerVersion = NULL; 
+    PSTR pTempServerVersion = NULL;
     VMCA_CERTIFICATE_CONTAINER *pTempVersion = NULL;
     /*
      * TBD: Probably don't care if this is accessable remotely
      * Currently VMCA API wiki states this should be SRP authenticated. (??)
      */
-    dwError = VMCACheckAccess(IDL_handle, FALSE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
@@ -288,7 +318,7 @@ RpcVMCAInitEnumCertificatesHandle(
     DWORD dwError = 0;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
 error:
@@ -368,7 +398,7 @@ RpcVMCAEnumCertificates(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAEnumCertificates(
@@ -421,7 +451,7 @@ RpcVMCAAddRootCertificate(
 
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     if (pszRootCertificate == NULL) {
@@ -457,6 +487,7 @@ RpcVMCAGetSignedCertificate(
         VMCA_CERTIFICATE_CONTAINER **ppCertContainer)
 {
     DWORD dwError = 0;
+    PVMCA_REQ_CONTEXT pReqContext = NULL;
     VMCA_CERTIFICATE_CONTAINER* pCertContainer = NULL;
     VMCA_CERTIFICATE_CONTAINER* pTempCertContainer = NULL;
 
@@ -468,13 +499,14 @@ RpcVMCAGetSignedCertificate(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, FALSE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE, &pReqContext);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAGetSignedCertificate(
                         pszPEMEncodedCSRRequest,
                         dwValidFrom,
                         dwDurationInSeconds,
+                        pReqContext,
                         &pTempCertContainer);
     BAIL_ON_VMCA_ERROR(dwError);
 
@@ -489,6 +521,7 @@ RpcVMCAGetSignedCertificate(
 
 cleanup:
     VMCAFreeCertificateContainer (pTempCertContainer);
+    VMCAFreeReqContext(pReqContext);
     VMCA_LOG_DEBUG("Exiting %s, Status = %d", __FUNCTION__, dwError);
     return dwError;
 error:
@@ -525,7 +558,7 @@ RpcVMCAGetRootCACertificate(
  * interface to determine vmcad is up and responding.
  */
     /* Restrict access to this RPC. Should use VECS APIs */
-    dwError = VMCACheckAccess(IDL_handle, FALSE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     if (ppCertContainer == NULL)
@@ -581,7 +614,7 @@ RpcVMCARevokeCertificate(
     DWORD dwError = 0;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     if(pszCertificate == NULL)
@@ -618,7 +651,7 @@ RpcVMCAVerifyCertificate(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     // dw status never used?
@@ -651,7 +684,7 @@ RpcVMCAFindCertificates(
 {
     DWORD dwError = 0;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
-    dwError = VMCACheckAccess(IDL_handle, FALSE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
@@ -680,7 +713,7 @@ RpcVMCAGetCertificateCount(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAGetCertificateCount(
@@ -721,7 +754,7 @@ RpcVMCAGetCRL(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCACheckAccess(IDL_handle, FALSE);
+    dwError = VMCACheckAccess(IDL_handle, FALSE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError =  VMCAGetCRL(
@@ -793,7 +826,7 @@ VMCARpcReGenCRL(
     DWORD dwError = 0;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VmcaSrvReGenCRL(NULL);
@@ -839,7 +872,7 @@ RpcVMCAPublishRootCerts(
 
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCASrvPublishRootCerts();
@@ -864,7 +897,7 @@ VMCARpcRevokeCertificate(
     VMCA_CRL_REASON certRevokeReason = CRL_REASON_UNSPECIFIED;
     VMCA_LOG_DEBUG("Entering %s", __FUNCTION__);
 
-    dwError = VMCACheckAccess(IDL_handle, TRUE);
+    dwError = VMCACheckAccess(IDL_handle, TRUE, NULL);
     BAIL_ON_VMCA_ERROR(dwError);
 
     if(pszCertificate == NULL)

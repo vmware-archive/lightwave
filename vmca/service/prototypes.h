@@ -4,7 +4,7 @@
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -220,6 +220,14 @@ VMCAPolicyInit(
     PVMCA_POLICY        **pppPolicies
     );
 
+DWORD
+VMCAPolicyValidate(
+    PVMCA_POLICY            *ppPolicies,
+    PSTR                    pszPKCS10Request,
+    PVMCA_REQ_CONTEXT       pReqContext,
+    PBOOLEAN                pbIsValid
+    );
+
 VOID
 VMCAPolicyFree(
     PVMCA_POLICY        pPolicy
@@ -236,6 +244,14 @@ DWORD
 VMCAPolicySNLoad(
     json_t              *pJsonPolicy,
     PVMCA_POLICY        pPolicy
+    );
+
+DWORD
+VMCAPolicySNValidate(
+    PVMCA_POLICY                    pPolicy,
+    PSTR                            pszPKCS10Request,
+    PVMCA_REQ_CONTEXT               pReqContext,
+    PBOOLEAN                        pbIsValid
     );
 
 VOID
@@ -327,6 +343,7 @@ VMCAGetSignedCertificate(
     unsigned char *pszPEMEncodedCSRRequest,
     unsigned int dwValidFrom,
     unsigned int dwDurationInSeconds,
+    PVMCA_REQ_CONTEXT pReqContext,
     PVMCA_CERTIFICATE_CONTAINER * ppCertContainer
     );
 
@@ -472,12 +489,13 @@ VMCAWritePrivateKeyToFile(
 //  Error Code
 
 
+// VMCACheckAccess checks if the person has sufficient privilege to make the call.
 DWORD
 VMCACheckAccess(
-    handle_t IDL_handle, 
-    BOOL bAdminAccess
+    handle_t            IDL_handle,
+    BOOL                bAdminAccess,
+    PVMCA_REQ_CONTEXT   *ppReqContext
     );
-// VMCACheckAccess checks if the person has sufficient privilege to make the call.
 
 // utils.c
 DWORD
@@ -594,6 +612,11 @@ VMCABackupRootCAFiles(
     PCSTR pszRootCAPasswordFile
     );
 
+VOID
+VMCAFreeReqContext(
+    PVMCA_REQ_CONTEXT       pReqContext
+    );
+
 //vmcaservice.c
 DWORD
 VmcaSrvRevokeCertificate(
@@ -626,6 +649,11 @@ VMCALdapAccessCheck(
     VMCA_USER_TYPE userType
     );
 
+DWORD
+VMCAOpenLocalLdapServer(
+    PVMCA_LDAP_CONTEXT* pLd
+    );
+
 //utils.c
 
 DWORD
@@ -648,10 +676,12 @@ VMCACopyExtensions(
 DWORD
 VMCASignedRequestPrivate(
     PVMCA_X509_CA pCA,
+    PVMCA_REQ_CONTEXT pReqContext,
     PSTR pszPKCS10Request,
     PSTR *ppszCertificate,
     time_t tmNotBefore,
-    time_t tmNotAfter
+    time_t tmNotAfter,
+    PBOOLEAN pbIsValid
     );
 
 #ifdef REST_ENABLED

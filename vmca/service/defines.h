@@ -313,6 +313,10 @@ if (bLocked) \
 
 // VMCA Policy
 #define VMCA_POLICY_FILE_PATH               VMCA_CONFIG_DIR "/vmca-policy.json"
+#define VMCA_POLICY_REQ_UPN_DN              "req.upn.dn"
+#define VMCA_POLICY_COND_BEGINS             "begins"
+#define VMCA_POLICY_REQ_UPN_RDN             "req.upn.dn.rdn"
+#define VMCA_POLICY_REQ_CSR_SUBJ_ORGS       "req.csr.subj.o"
 
 #define VMCA_POLICY_NUM                     1
 #define VMCA_POLICY_SN_NAME                 "SNValidate"

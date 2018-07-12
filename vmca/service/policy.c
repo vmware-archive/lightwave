@@ -14,12 +14,19 @@
 
 #include "includes.h"
 
-static VMCA_POLICY_METHODS VMCAPolicyMethodMap[] =
+static const VMCA_POLICY_METHODS VMCAPolicyMethodMap[] =
     {
-        {VMCA_POLICY_TYPE_SN,       VMCAPolicySNLoad,
-                                    VMCAPolicySNFree}
+        {
+            VMCA_POLICY_TYPE_SN,        // SNPolicy method map.  SN Policy will verify requestor's
+                                        // account lives in hierarchy that can be comprised by
+                                        // values in CSR subject field.
+
+                VMCAPolicySNLoad,       // Function to parse and load policy from config.
+                VMCAPolicySNFree,       // Function to free SN policy object.
+                VMCAPolicySNValidate    // Function to validate request compliant with policy
+        }
     };
-static DWORD VMCAPolicyMethodMapSize =
+static const DWORD VMCAPolicyMethodMapSize =
     sizeof(VMCAPolicyMethodMap) / sizeof(VMCA_POLICY_METHODS);
 
 DWORD
@@ -126,6 +133,65 @@ error:
     if (pppPolicies)
     {
         *pppPolicies = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VMCAPolicyValidate(
+    PVMCA_POLICY            *ppPolicies,
+    PSTR                    pszPKCS10Request,
+    PVMCA_REQ_CONTEXT       pReqContext,
+    PBOOLEAN                pbIsValid
+    )
+{
+    DWORD                   dwError = 0;
+    DWORD                   dwIdx = 0;
+    BOOLEAN                 bIsValid = FALSE;
+
+    if (!ppPolicies)
+    {
+        bIsValid = TRUE;
+        goto ret;
+    }
+
+    if (IsNullOrEmptyString(pszPKCS10Request) ||
+        !pReqContext ||
+        !pbIsValid)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    for (; dwIdx < VMCAPolicyMethodMapSize; ++dwIdx)
+    {
+        dwError = VMCAPolicyMethodMap[dwIdx].pfnValidate(ppPolicies[dwIdx],
+                                                         pszPKCS10Request,
+                                                         pReqContext,
+                                                         &bIsValid);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        if (bIsValid == FALSE)
+        {
+            break;
+        }
+    }
+
+
+ret:
+
+    *pbIsValid = bIsValid;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pbIsValid)
+    {
+        *pbIsValid = FALSE;
     }
 
     goto cleanup;
