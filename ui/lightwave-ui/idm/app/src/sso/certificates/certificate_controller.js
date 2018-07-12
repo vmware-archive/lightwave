@@ -36,7 +36,7 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
             }
 
             function showUpdateChain() {
-                var template = 'sso/certificates/chain.update.html';
+                var template = 'idm/sso/certificates/chain.update.html';
                 var controller = 'ChainCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -102,7 +102,7 @@ module.controller('CertificateCntrl', ['$scope', '$rootScope', 'CertificateServi
                 $rootScope.globals.errors = null;
 
                 if ($scope.vm.currentCert) {
-                    var template = 'shared/components/certificate/certificate.view.html';
+                    var template = 'idm/shared/components/certificate/certificate.view.html';
                     var controller = 'CertificateViewerCntrl';
                     Util.viewCertificate($scope, $scope.vm.currentCert.encoded, template, controller);
                 }

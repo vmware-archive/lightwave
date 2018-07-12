@@ -100,7 +100,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function addSignatureAlgorithm() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = true;
-                var template = 'sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
                 var controller = 'SignatureAlgorithmCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -108,7 +108,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function addSlo() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = true;
-                var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
                 var controller = 'SingleLogoutCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -116,7 +116,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function addAttributeConsumerService() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = true;
-                var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
                 var controller = 'AttributeConsumerServiceCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -124,7 +124,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function addAssertionConsumerService() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = true;
-                var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
                 var controller = 'AssertionConsumerServiceCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -132,7 +132,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function editSignatureAlgorithm() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = false;
-                var template = 'sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/signatureAlgorithm/signatureAlgorithm.add.html';
                 var controller = 'SignatureAlgorithmCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -140,7 +140,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function editSlo() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = false;
-                var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.add.html';
                 var controller = 'SingleLogoutCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -148,7 +148,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function editAttributeConsumerService() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = false;
-                var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.add.html';
                 var controller = 'AttributeConsumerServiceCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -156,7 +156,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function editAssertionConsumerService() {
                 $rootScope.globals.popup_errors = null;
                 $scope.vm.isAddRelyingParty = false;
-                var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.add.html';
                 var controller = 'AssertionConsumerServiceCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -218,7 +218,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
             function viewCertificate(rp){
                 $rootScope.globals.popup_errors = null;
                 if(rp.certificate) {
-                    var template = 'shared/components/certificate/certificate.view.html';
+                    var template = 'idm/shared/components/certificate/certificate.view.html';
                     var controller = 'CertificateViewerCntrl';
                     Util.viewCertificate($scope, rp.certificate.encoded, template, controller);
                 }
@@ -228,7 +228,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(slo) {
                     $scope.vm.selectedSlo = slo;
-                    var template = 'sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.view.html';
+                    var template = 'idm/sso/serviceproviders/relyingparty/singleLogoutService/singleLogoutService.view.html';
                     var controller = 'SingleLogoutCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -237,7 +237,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(acs) {
                     $scope.vm.selectedAttributeConsumerService = acs;
-                    var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.view.html';
+                    var template = 'idm/sso/serviceproviders/relyingparty/attributeConsumerService/attributeConsumerService.view.html';
                     var controller = 'AttributeConsumerServiceCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -246,7 +246,7 @@ module.controller('RelyingPartyCntrl', [ '$scope', '$rootScope', 'Util', 'popupU
                 $rootScope.globals.popup_errors = null;
                 if(acs) {
                     $scope.vm.selectedAssertionConsumerService = acs;
-                    var template = 'sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.view.html';
+                    var template = 'idm/sso/serviceproviders/relyingparty/assertionConsumerService/assertConsumerService.view.html';
                     var controller = 'AssertionConsumerServiceCntrl';
                     popupUtil.open($scope, template, controller);
                 }

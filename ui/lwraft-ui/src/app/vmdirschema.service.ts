@@ -25,17 +25,19 @@ import { UtilsService } from './utils.service';
 @Injectable()
 export class VmdirSchemaService {
     getUrl:string
-    domain:string = '';
+    postServer:string = '';
     listing:any;
     error: any;
+    postPort:number;
     schemaArr: any[];
     schema:string = '';
     constructor(private utilsService:UtilsService, private configService:ConfigService, private authService: AuthService, private httpClient:HttpClient) {}
 
     getSchema(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.postServer = this.authService.getPostServer();
+        this.postPort = this.authService.getPostPort();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         console.log("root DN:" + rootDn);
         this.getUrl += '?dn='+encodeURIComponent('cn='+rootDn+',cn=schemacontext');
         console.log(this.getUrl);

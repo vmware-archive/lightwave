@@ -53,7 +53,7 @@ module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util', 'po
 
                 function viewCertificate(certificate){
                         if(certificate) {
-                                var template = 'shared/components/certificate/certificate.view.html';
+                                var template = 'idm/shared/components/certificate/certificate.view.html';
                                 var controller = 'CertificateViewerCntrl';
                                 Util.viewCertificate($scope, certificate.encoded, template, controller);
                         }
@@ -139,7 +139,7 @@ module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util', 'po
 
                 function addSubjectFormat() {
                         $rootScope.globals.popup_errors = null;
-                        var template = 'sso/serviceproviders/identityprovider/subjectFormat/subjectFormat.add.html';
+                        var template = 'idm/sso/serviceproviders/identityprovider/subjectFormat/subjectFormat.add.html';
                         var controller = 'SubjectFormatCntrl';
                         popupUtil.open($scope, template, controller);
                 }
@@ -154,7 +154,7 @@ module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util', 'po
                 function addSso(){
                         $rootScope.globals.errors = '';
                         $rootScope.globals.popup_errors = null;
-                        var template = 'sso/serviceproviders/identityprovider/ssoService/ssoService.add.html';
+                        var template = 'idm/sso/serviceproviders/identityprovider/ssoService/ssoService.add.html';
                         var controller = 'SsoServiceCntrl';
                         popupUtil.open($scope, template, controller);
                 }
@@ -173,7 +173,7 @@ module.controller('IdentityProviderCntrl', [ '$scope', '$rootScope', 'Util', 'po
 
                 function addSlo(){
                         $rootScope.globals.popup_errors = null;
-                        var template = 'sso/serviceproviders/identityprovider/sloService/sloService.add.html';
+                        var template = 'idm/sso/serviceproviders/identityprovider/sloService/sloService.add.html';
                         var controller = 'SloServiceCntrl';
                         popupUtil.open($scope, template, controller);
                 }

@@ -18,7 +18,6 @@ import {HttpHeaders} from '@angular/common/http';
 @Injectable()
 export class ConfigService{
     public currentUser:any;
-    public API_PORT=7578;
     public errors:any;
     public currentSelection:string;
     // Server Uri

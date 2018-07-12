@@ -2,12 +2,10 @@
     "knownServers":[
         {
          "server": "<server url>",
-         "tenant": "<tenant name>",
 	 "oidcClientId": "<OIDC client id>"
         },
         {
 	 "server": "<server url>",
-         "tenant": "<tenant name>",
          "oidcClientId": "<OIDC client id>"
         }
     ]

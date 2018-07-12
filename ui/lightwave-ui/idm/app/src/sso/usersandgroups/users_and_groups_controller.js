@@ -125,7 +125,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
                     .then(function (res) {
                         if (res.status == 200) {
                             $scope.vm.selectedUser = res.data;
-                            var template = 'sso/usersandgroups/user/user.view.html';
+                            var template = 'idm/sso/usersandgroups/user/user.view.html';
                             var controller = 'UserCntrl';
                             popupUtil.open($scope, template, controller);
                         }
@@ -140,7 +140,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function viewSolutionUser(solutionuser) {
             if (solutionuser) {
                 $scope.vm.selectedSolutionUser = solutionuser;
-                var template = 'sso/usersandgroups/solutionuser/solutionuser.view.html';
+                var template = 'idm/sso/usersandgroups/solutionuser/solutionuser.view.html';
                 var controller = 'SolutionUserCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -148,7 +148,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
 
 
         function addSolutionUser() {
-            var template = 'sso/usersandgroups/solutionuser/solutionuser.add.html';
+            var template = 'idm/sso/usersandgroups/solutionuser/solutionuser.add.html';
             var controller = 'SolutionUserCntrl';
             popupUtil.open($scope, template, controller);
         }
@@ -156,7 +156,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function viewGroup(group) {
             if (group) {
                 $scope.vm.selectedGroup = group;
-                var template = 'sso/usersandgroups/group/group.view.html';
+                var template = 'idm/sso/usersandgroups/group/group.view.html';
                 var controller = 'GroupCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -198,13 +198,13 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         }
 
         function showSetPassword(user) {
-            var template = 'sso/usersandgroups/user/user.password.html';
+            var template = 'idm/sso/usersandgroups/user/user.password.html';
             var controller = 'UserCntrl';
             popupUtil.open($scope, template, controller);
         }
 
         function addUser() {
-            var template = 'sso/usersandgroups/user/user.add.html';
+            var template = 'idm/sso/usersandgroups/user/user.add.html';
             var controller = 'UserCntrl';
             popupUtil.open($scope, template, controller);
         }
@@ -212,7 +212,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function editUser(user) {
             if (user) {
                 $scope.vm.selectedUser = user;
-                var template = 'sso/usersandgroups/user/user.edit.html';
+                var template = 'idm/sso/usersandgroups/user/user.edit.html';
                 var controller = 'UserCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -221,7 +221,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function editSolutionUser(user) {
             if (user) {
                 $scope.vm.selectedSolutionUser = user;
-                var template = 'sso/usersandgroups/solutionuser/solutionuser.edit.html';
+                var template = 'idm/sso/usersandgroups/solutionuser/solutionuser.edit.html';
                 var controller = 'SolutionUserCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -230,7 +230,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function editGroup(group) {
             if (group) {
                 $scope.vm.selectedGroup = group;
-                var template = 'sso/usersandgroups/group/group.edit.html';
+                var template = 'idm/sso/usersandgroups/group/group.edit.html';
                 var controller = 'GroupCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -239,7 +239,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         function editGroupMembership(group) {
             if (group) {
                 $scope.vm.selectedGroup = group;
-                var template = 'sso/usersandgroups/group/group.members.edit.html';
+                var template = 'idm/sso/usersandgroups/group/group.members.edit.html';
                 var controller = 'GroupMembersCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -250,7 +250,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
 
 
                 $scope.vm.selectedGroup = group;
-                var template = 'sso/usersandgroups/groupmembers/group.members.view.html';
+                var template = 'idm/sso/usersandgroups/groupmembers/group.members.view.html';
                 var controller = 'GroupMembersCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -406,7 +406,7 @@ module.controller('UsersAndGroupsCntrl', ['$scope', '$rootScope', 'popupUtil', '
         }
 
         function addGroup() {
-            var template = 'sso/usersandgroups/group/group.add.html';
+            var template = 'idm/sso/usersandgroups/group/group.add.html';
             var controller = 'GroupCntrl';
             popupUtil.open($scope, template, controller);
         }

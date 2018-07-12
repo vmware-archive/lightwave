@@ -25,12 +25,14 @@ import { UtilsService } from './utils.service';
 export class VmdirService {
     getUrl:string
     listing:any;
-    domain:string
+    postServer:string
+    postPort
     constructor(private utilsService:UtilsService, private configService:ConfigService, private authService: AuthService, private httpClient:HttpClient) {}
     getDirListing(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
+        this.postServer = this.authService.getPostServer();
+        this.postPort = this.authService.getPostPort();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         if(rootDn == null) {
             rootDn = this.authService.getRootDnQuery();
         }
@@ -45,9 +47,8 @@ export class VmdirService {
     }
 
     getAttributes(rootDn:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         if(rootDn == null) {
             rootDn = this.authService.getRootDnQuery();
         }
@@ -62,7 +63,7 @@ export class VmdirService {
 
     getACLString(rootDn:string): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=base&dn=' + rootDn + '&attrs=vmwaclstring';
         console.log(url);
         return this.httpClient.get(url, {headers})
@@ -127,7 +128,7 @@ export class VmdirService {
     updateAttributes(rootDn:string, originalValMap:Map<string,any>, attribsArr:string[], modifiedAttributesMap:Map<string,any>, schemaMap:Map<string,any>): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
         let body = this.constructJsonBody(originalValMap, attribsArr, modifiedAttributesMap, schemaMap);
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let updateUrl = this.getUrl + '?dn='+rootDn;
         console.log(updateUrl);
         return this.httpClient.patch(updateUrl, body, {headers})
@@ -183,7 +184,7 @@ export class VmdirService {
         jsonObj.dn = rootDn;
         jsonObj.attributes = this.constructObjectAddJsonBody(mustAttrMap, mayAttrMap, opAttrMap);
         let body = JSON.stringify(jsonObj);
-        let addUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        let addUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         console.log(addUrl);
         return this.httpClient.put(addUrl, body, {headers})
                .share()
@@ -194,7 +195,7 @@ export class VmdirService {
     updateAclString(rootDn:string, aclStrVal:string){
         let headers = this.authService.getAuthHeader();
         let body  = this.constructSDJsonBody(aclStrVal);
-        let url = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        let url = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         url += '?dn=' + encodeURIComponent(rootDn);
         console.log(url);
         return this.httpClient.patch(url, body, {headers})
@@ -205,7 +206,7 @@ export class VmdirService {
 
     delete(rootDn:string) {
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap'
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap'
         let deleteUrl = this.getUrl +  '?dn='+rootDn;
         console.log(deleteUrl);
         return this.httpClient.delete(deleteUrl, {headers})
@@ -215,9 +216,8 @@ export class VmdirService {
     }
 
     getObjectBySID(objectSid:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid='+objectSid);
         console.log(url);
         return this.httpClient.get(url, {headers})
@@ -227,9 +227,8 @@ export class VmdirService {
     }
 
     getAllStrObjectClasses():Observable<any> {
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=one&dn=' + encodeURIComponent('cn=schemacontext') + '&filter=' + encodeURIComponent('objectclass=classschema') + '&attrs='+encodeURIComponent('subClassOf,cn,systemMustContain,systemMayContain,auxiliaryClass,mayContain,mustContain,objectClassCategory');
         console.log(url);
         return this.httpClient.get(url, {headers})
@@ -239,9 +238,8 @@ export class VmdirService {
     }
 
     getAuxObjectClass(objectClass:string):Observable<string[]> {
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=base&dn=' + encodeURIComponent('cn='+objectClass+',cn=schemacontext') + '&attrs=auxiliaryClass';
         console.log(url);
         return this.httpClient.get(url, {headers})
@@ -251,9 +249,8 @@ export class VmdirService {
     }
 
     getAllUsersAndGroups(){
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid=*')+
                   '&attrs=objectsid,cn,objectclass';
         console.log(url);
@@ -264,9 +261,8 @@ export class VmdirService {
     }
 
     getObjectByGUID(objectGuid:string): Observable<string[]> {
-        this.domain = this.authService.getDomain();
         let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.domain + ':' + this.configService.API_PORT + '/v1/post/ldap';
+        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
         let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectguid='+objectGuid);
         console.log(url);
         return this.httpClient.get(url, {headers})
