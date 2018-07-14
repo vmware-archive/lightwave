@@ -312,10 +312,10 @@ VmDirRESTEncodeDNToObjectPath(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirDNToRDNList(pszDN, 0, &pRDNList);
+    dwError = VmDirDNToRDNList(pszDN, FALSE, &pRDNList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirDNToRDNList(pszTenantDN, 0, &pTenantRDNList);
+    dwError = VmDirDNToRDNList(pszTenantDN, FALSE, &pTenantRDNList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwLocalRDNs = pRDNList->dwCount - pTenantRDNList->dwCount;

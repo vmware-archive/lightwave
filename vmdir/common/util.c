@@ -3284,3 +3284,72 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pData);
     goto cleanup;
 }
+
+/*
+ * convert DN to a list of RDN.
+ *
+ * say dc=lwraft,dc=local
+ * if bNotypes == false, {"dc=vmdir", "dc=local"} is returned;
+ * otherwise {"vmdir", "local"} is returned.
+ */
+DWORD
+VmDirDNToRDNList(
+    PCSTR               pszDN,
+    BOOLEAN             bNotypes,
+    PVMDIR_STRING_LIST* ppRDNStrList
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwCount = 0;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+    PSTR*               ppRDN = NULL;
+    PSTR*               ppTmp = NULL;
+
+    if (!pszDN || !ppRDNStrList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (bNotypes)
+    {
+        ppRDN = ldap_explode_dn(pszDN, 1);
+    }
+    else
+    {
+        ppRDN = ldap_explode_dn(pszDN, 0);
+    }
+
+    if (!ppRDN)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_DN);
+    }
+
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwCount++;
+    }
+
+    dwError = VmDirStringListInitialize(&pStrList, dwCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwError = VmDirStringListAddStrClone(*ppTmp, pStrList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppRDNStrList = pStrList;
+
+cleanup:
+    if (ppRDN)
+    {
+        ldap_value_free(ppRDN);
+    }
+
+    return dwError;
+
+error:
+    VmDirStringListFree(pStrList);
+
+    goto cleanup;
+}

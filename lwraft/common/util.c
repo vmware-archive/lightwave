@@ -3578,17 +3578,18 @@ VmDirCompareVersion(
  * convert DN to a list of RDN.
  *
  * say dc=lwraft,dc=local
- * if iNotypes == 0, {"dc=lwraft", "dc=local"} is returned;
+ * if bNotypes == false, {"dc=lwraft", "dc=local"} is returned;
  * otherwise {"lwraft", "local"} is returned.
  */
 DWORD
 VmDirDNToRDNList(
     PCSTR               pszDN,
-    int                 iNotypes,
+    BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
     )
 {
     DWORD               dwError = 0;
+    DWORD               dwCount = 0;
     PVMDIR_STRING_LIST  pStrList = NULL;
     PSTR*               ppRDN = NULL;
     PSTR*               ppTmp = NULL;
@@ -3598,13 +3599,26 @@ VmDirDNToRDNList(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    ppRDN = ldap_explode_dn(pszDN, iNotypes);
+    if (bNotypes)
+    {
+        ppRDN = ldap_explode_dn(pszDN, 1);
+    }
+    else
+    {
+        ppRDN = ldap_explode_dn(pszDN, 0);
+    }
+
     if (!ppRDN)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_DN);
     }
 
-    dwError = VmDirStringListInitialize(&pStrList, 10);
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwCount++;
+    }
+
+    dwError = VmDirStringListInitialize(&pStrList, dwCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (ppTmp = ppRDN; *ppTmp; ppTmp++)
@@ -3614,7 +3628,6 @@ VmDirDNToRDNList(
     }
 
     *ppRDNStrList = pStrList;
-    pStrList = NULL;
 
 cleanup:
     if (ppRDN)

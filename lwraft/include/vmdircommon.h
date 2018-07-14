@@ -1832,7 +1832,7 @@ VmDirUPNToNameAndDomain(
 DWORD
 VmDirDNToRDNList(
     PCSTR               pszDN,
-    int                 iNotypes,
+    BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
     );
 
