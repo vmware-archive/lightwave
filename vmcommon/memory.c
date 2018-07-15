@@ -90,6 +90,90 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmCopyMemory(
+    PVOID   pDestination,
+    size_t  destinationSize,
+    const void* pSource,
+    size_t  maxCount
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pDestination || !pSource || maxCount > destinationSize)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    memcpy(pDestination, pSource, maxCount);
+
+error:
+    return dwError;
+}
+
+DWORD
+VmAllocateStringOfLenA(
+    PCSTR   pszSource,
+    size_t  nLength,
+    PSTR*   ppszDestination
+    )
+{
+    DWORD  dwError = 0;
+    PSTR   pszNewString = NULL;
+
+    if (!pszSource || !ppszDestination || VmStringLenA(pszSource) < nLength)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmAllocateMemory(nLength + 1, (PVOID *)&pszNewString);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    memcpy(pszNewString, pszSource, nLength);
+
+    *ppszDestination = pszNewString;
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_MEMORY(pszNewString);
+    goto cleanup;
+}
+
+DWORD
+VmAllocateStringA(
+    PCSTR   pszString,
+    PSTR*   ppszString
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszNewString = NULL;
+
+    if (!pszString || !ppszString)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmAllocateStringOfLenA(
+                  pszString,
+                  VmStringLenA(pszString),
+                  &pszNewString);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    *ppszString = pszNewString;
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_MEMORY(pszNewString);
+    goto cleanup;
+}
+
 VOID
 VmFreeMemory(
     PVOID   pMemory

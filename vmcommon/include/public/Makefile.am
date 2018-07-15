@@ -1,2 +1,4 @@
 vmwincludedir=$(includedir)
-vmwinclude_HEADERS=vmmetrics.h
+vmwinclude_HEADERS=\
+    vmhttpclient.h \
+    vmmetrics.h

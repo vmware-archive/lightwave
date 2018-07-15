@@ -31,4 +31,24 @@
         goto error;                            \
     }
 
+#define VM_COMMON_SAFE_STRING(str) ((str) ? (str) : "")
+
+#define BAIL_AND_LOG_ON_VM_COMMON_ERROR(x, str) \
+    if ((x) != 0)                                            \
+    {                                                        \
+        fprintf(stderr, "error [%u] in file [%s] function [%s] at line [%d] with message [%s]\n", x, __FILE__, __FUNCTION__, __LINE__, VM_COMMON_SAFE_STRING(str)); \
+        goto error;                                          \
+    }
+
+#define BAIL_AND_LOG_ON_VM_COMMON_CURL_ERROR(x, curlCode) \
+    if (curlCode != CURLE_OK)                             \
+    {                                                     \
+        x = VM_COMMON_ERROR_CURL_FAILURE;                 \
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(x, curl_easy_strerror(curlCode)); \
+    }
+
+#ifndef IsNullOrEmptyString
+#define IsNullOrEmptyString(str) (!(str) || !*(str))
+#endif
+
 #endif /* __VM_COMMON_DEFINE_H__ */

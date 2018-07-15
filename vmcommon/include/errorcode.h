@@ -15,7 +15,24 @@
 #ifndef _VM_COMMON_ERRORCODE_H__
 #define _VM_COMMON_ERRORCODE_H__
 
-#define VM_COMMON_ERROR_NO_MEMORY            8         // ERROR_NOT_ENOUGH_MEMORY windows code
-#define VM_COMMON_ERROR_INVALID_PARAMETER    87        // ERROR_INVALID_PARAMETER windows code
+#define VM_COMMON_ERROR_BASE                 11000
+
+#define VM_COMMON_RANGE(n,x,y) (((x) <= (n)) && ((n) <= (y)))
+
+// common error space 11000~11999
+#define IS_VM_COMMON_ERROR_SPACE(n) \
+    VM_COMMON_RANGE( \
+        (n), \
+        (VM_COMMON_ERROR_BASE), \
+        (VM_COMMON_ERROR_BASE + 999))
+
+#define VM_COMMON_ERROR_NO_MEMORY            (VM_COMMON_ERROR_BASE + 8)    /* 11008 */
+#define VM_COMMON_ERROR_INVALID_PARAMETER    (VM_COMMON_ERROR_BASE + 87)   /* 11087 */
+#define VM_COMMON_ERROR_NO_DATA              (VM_COMMON_ERROR_BASE + 88)   /* 11088 */
+
+#define VM_COMMON_ERROR_CURL_FAILURE         (VM_COMMON_ERROR_BASE + 129)  /* 11129 */
+#define VM_COMMON_ERROR_CURL_INIT_FAILURE    (VM_COMMON_ERROR_BASE + 130)  /* 11130 */
+
+#define VM_COMMON_ERROR_JSON_LOAD_FAILURE    (VM_COMMON_ERROR_BASE + 131)  /* 11131 */
 
 #endif /* __VM_COMMON_ERRORCODE_H__ */

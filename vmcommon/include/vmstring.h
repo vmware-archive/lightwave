@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the ?~@~\License?~@~]); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,24 +12,29 @@
  * under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <pthread.h>
-#include <errno.h>
+#ifndef _VM_COMMON_STRING_H__
+#define _VM_COMMON_STRING_H__
 
-#include <lw/types.h>
-#include <lw/hash.h>
+DWORD
+VmAllocateStringPrintf(
+    PSTR* ppszString,
+    PCSTR pszFormat,
+    ...
+    );
 
-#include <curl/curl.h>
-#include <jansson.h>
+DWORD
+VmStringPrintFA(
+    PSTR pDestination,
+    size_t destinationSize,
+    PCSTR pszFormat,
+    ...
+);
 
-#include "defines.h"
-#include "errorcode.h"
-#include "memory.h"
-#include "vmstring.h"
-#include "structs.h"
-#include "vmhttpclient.h"
-#include "vmjsonresult.h"
-#include "vmmetrics.h"
+int
+VmStringCompareA(
+    PCSTR pszStr1,
+    PCSTR pszStr2,
+    BOOLEAN bIsCaseSensitive
+    );
+
+#endif /* __VM_COMMON_STRING_H__ */
