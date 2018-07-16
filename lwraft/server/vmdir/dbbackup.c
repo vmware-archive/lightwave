@@ -202,22 +202,20 @@ VmDirSrvBackupDB(
     dwError = _VmDirSrvCopyDB(mdbMode, LWRAFT_DB_DIR, bufBackupMainDBPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        dwError = VmDirStringPrintFA(
-                      bufBackupLog1DBPath,
-                      VMDIR_MAX_FILE_NAME_LEN,
-                      "%s/%s",
-                      bufBackupMainDBPath,
-                      LOG1_DB_DIR);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirStringPrintFA(
+                  bufBackupLog1DBPath,
+                  VMDIR_MAX_FILE_NAME_LEN,
+                  "%s/%s",
+                  bufBackupMainDBPath,
+                  LOG1_DB_DIR);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError  = _VmDirValidateBackupPath(bufBackupLog1DBPath);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError  = _VmDirValidateBackupPath(bufBackupLog1DBPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirSrvCopyDB(mdbMode, LOG1_DB_PATH, bufBackupLog1DBPath);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = _VmDirSrvCopyDB(mdbMode, LOG1_DB_PATH, bufBackupLog1DBPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
 
     return dwError;

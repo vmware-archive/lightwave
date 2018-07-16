@@ -76,13 +76,6 @@ _VmDirExternalModsSanityCheck(
     PVDIR_MODIFICATION  pMods
     );
 
-static
-int
-_VmDirPatchBadMemberData(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PVDIR_ENTRY         pEntry
-    );
-
 int
 VmDirModifyEntryCoreLogic(
     VDIR_OPERATION *    pOperation, /* IN */
@@ -138,10 +131,6 @@ VmDirModifyEntryCoreLogic(
             retVal, pszLocalErrMsg,
             "VmDirSrvAccessCheck failed - (%u)",
             retVal);
-
-    // update vmwRaftLogChanged attribute
-    retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
-    BAIL_ON_VMDIR_ERROR(retVal);
 
     // Apply modify operations to the current entry (in pack format)
     retVal = VmDirApplyModsToEntryStruct(
@@ -285,10 +274,11 @@ VmDirMLModify(
                 "Not bind/authenticate yet");
     }
 
-    if (VmDirRaftDisallowUpdates("Modify"))
+    if (!VmDirValidTxnState(pOperation->pBECtx, pOperation->reqCode))
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+       dwError = LDAP_UNWILLING_TO_PERFORM;
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+                "%s: invaid request for transaction state", __func__);
     }
 
     // Mod request sanity check
@@ -377,6 +367,19 @@ VmDirInternalModifyEntry(
                 retVal);
     }
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
+            retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+
+    if (bHasTxn)
+    {
+       retVal = VmDirValidateOp(pOperation, __func__);
+       BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // Execute pre modify plugin logic
     VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
 
@@ -391,18 +394,6 @@ VmDirInternalModifyEntry(
     // Normalize attribute values in mods
     retVal = VmDirNormalizeMods(pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg);
     BAIL_ON_VMDIR_ERROR(retVal);
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
-
-    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal, pszLocalErrMsg,
-            "txn begin (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
-    bHasTxn = TRUE;
 
     // Read current entry from DB
     retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(modReq->dn), &entryId);
@@ -425,17 +416,20 @@ VmDirInternalModifyEntry(
             "CoreLogicModifyEntry failed. (%u)",
             retVal);
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+    if (bHasTxn)
+    {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
-    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+        retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "txn commit (%u)(%s)",
             retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
-    bHasTxn = FALSE;
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    }
 
     if (!pOperation->bSuppressLogInfo)
     {
@@ -447,6 +441,7 @@ VmDirInternalModifyEntry(
 
 cleanup:
 
+    if (retVal == 0)
     {
         int iPostCommitPluginRtn = 0;
 
@@ -481,9 +476,7 @@ error:
 
     if (bHasTxn)
     {
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
@@ -621,96 +614,6 @@ error:
     goto cleanup;
 }
 
-////////////////////////////////////////////////////////////////////////////////
-// BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG BUGBUG
-// We have run into issue where member of a group does not exists in the system.
-// We do not know how this happens. Most likely due to replication.
-// We need to clean it up. Otherwise, no new member can be added to this group.
-////////////////////////////////////////////////////////////////////////////////
-static
-int
-_VmDirPatchBadMemberData(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PVDIR_ENTRY         pEntry
-    )
-{
-    int                 retVal = LDAP_SUCCESS;
-    unsigned            iCnt = 0;
-    unsigned            iMatch = 0;
-    PVDIR_ATTRIBUTE     pAttrMembers = NULL;
-    PVDIR_ATTRIBUTE     pLocalAttr = NULL;
-    PVDIR_ENTRY         pLocalEntry = NULL;
-    PSTR*               ppList = NULL;
-
-    pAttrMembers = VmDirEntryFindAttribute(ATTR_MEMBER, pEntry);
-    if (pAttrMembers != NULL)
-    {
-        retVal = VmDirAllocateMemory(sizeof(PSTR) * pAttrMembers->numVals, (PVOID)&ppList);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        for (iCnt=0; iCnt<pAttrMembers->numVals; iCnt++)
-        {
-            retVal = VmDirNormalizeDN(&(pAttrMembers->vals[iCnt]), pEntry->pSchemaCtx);
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            VmDirFreeEntry(pLocalEntry);
-            pLocalEntry = NULL;
-
-            retVal = VmDirSimpleDNToEntry(pAttrMembers->vals[iCnt].bvnorm_val, &pLocalEntry);
-            if (retVal == 0)
-            {
-                ppList[iMatch++] = pAttrMembers->vals[iCnt].lberbv_val;
-            }
-            else if (retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
-            {
-                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "Bad member [%s] in group [%s]",
-                                   pAttrMembers->vals[iCnt].lberbv_val,
-                                   pEntry->dn.lberbv_val);
-            }
-            else
-            {
-                BAIL_ON_VMDIR_ERROR(retVal);
-            }
-        }
-    }
-
-    if (ppList && iMatch < pAttrMembers->numVals)
-    {
-        retVal = VmDirAttributeAllocate(ATTR_MEMBER,
-                                         iMatch,
-                                         pEntry->pSchemaCtx,
-                                         &pLocalAttr);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        for (iCnt = 0; iCnt < iMatch; iCnt++)
-        {
-            retVal = VmDirAllocateStringA(ppList[iCnt],
-                                           &(pLocalAttr->vals[iCnt].lberbv_val));
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            pLocalAttr->vals[iCnt].lberbv_len = VmDirStringLenA(pLocalAttr->vals[iCnt].lberbv_val);
-            pLocalAttr->vals[iCnt].bOwnBvVal = TRUE;
-        }
-
-        // replace pAttrMembers with pLocalAttr
-        retVal = VmDirEntryReplaceAttribute(pEntry, pLocalAttr);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        pLocalAttr = NULL;
-    }
-
-cleanup:
-    VmDirFreeEntry(pLocalEntry);
-    VmDirFreeAttribute(pLocalAttr);
-    VMDIR_SAFE_FREE_MEMORY(ppList);
-
-    return retVal;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s:%d failed, error (%d)", __FUNCTION__, __LINE__,retVal);
-
-    goto cleanup;
-}
-
 /*
  * ApplyModsToEntryStruct: Applies the list of given modification operations (ADD/DELETE/REPLACE) to the Entry read
  * from DB.
@@ -749,11 +652,6 @@ VmDirApplyModsToEntryStruct(
                                         "EntryUnpack failed failed (%s)",
                                         VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
     }
-
-    retVal = _VmDirPatchBadMemberData(pSchemaCtx, pEntry);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                    "Patch Bad member data failed (%s)",
-                                    VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
 
     for (currMod = modReq->mods; currMod != NULL; )
     {

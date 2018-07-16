@@ -278,7 +278,8 @@ typedef DWORD (*PFN_BACKEND_GET_CANDIDATES)(
  */
 typedef DWORD (*PFN_BACKEND_TXN_BEGIN)(
                     PVDIR_BACKEND_CTX        pBECtx,
-                    VDIR_BACKEND_TXN_MODE    txnMode
+                    VDIR_BACKEND_TXN_MODE    txnMode,
+                    PBOOLEAN                 pBnewTxn
                     );
 /*
  * Abort a transaction
@@ -288,6 +289,17 @@ typedef DWORD (*PFN_BACKEND_TXN_BEGIN)(
 typedef DWORD (*PFN_BACKEND_TXN_ABORT)(
                     PVDIR_BACKEND_CTX   pBECtx
                     );
+
+
+/*
+ * get a transaction' context
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_TXN_GETCTX)(
+                    PVDIR_BACKEND_CTX   pBECtx
+                    );
+
 /*
  * Commit a transaction
  * return error -

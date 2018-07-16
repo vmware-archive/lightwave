@@ -210,6 +210,28 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_USER_TXN_RECV_TIMEOUT_MS,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_LDAP_USER_TXN_RECV_TIMEOUT_MS, \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_LDAP_USER_TXN_MAXTIME_MS,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 65535,                            \
+        /*.dwDefault      = */ DEFAULT_LDAP_USER_TXN_MAXTIME_MS, \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
@@ -413,17 +435,6 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 32,                               \
         /*.dwDefault      = */ 32,                               \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_RAFT_USE_LOGDB,     \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ 1,                                \
-        /*.dwDefault      = */ 1,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

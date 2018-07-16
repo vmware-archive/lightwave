@@ -12,8 +12,6 @@
  * under the License.
  */
 
-
-
 /*
  * Module Name: Replication thread
  *
@@ -43,14 +41,15 @@ static DWORD _VmDirRaftLogCompactThread();
 static DWORD _VmDirRaftLogApplyThread();
 static DWORD _VmDirRaftCompactLogs(int);
 static DWORD _VmDirStartProxies(VOID);
-static VOID _VmDirApplyLogsUpto(UINT64 indexToApply);
-static DWORD _VmDirApplyLog(unsigned long long);
+static VOID _VmDirApplyLogsUpto(UINT64 indexToApply, BOOLEAN bFollowerOnly);
+static DWORD _VmDirApplyLog(unsigned long long, BOOLEAN bFollowerOnly);
 static VOID _VmDirWaitPeerThreadsShutdown();
 static DWORD _VmDirDeleteRaftProxy(char *dn_norm);
 static VOID _VmDirRemovePeerInLock(PCSTR pHostname);
 static DWORD _VmDirGetRaftQuorumOverride(BOOLEAN bForceKeyRead);
 static VOID _VmDirEvaluateVoteResult(UINT64 *waitTime);
 static VOID _VmDirFixLogsForDR();
+static DWORD _VmDirRaftAddLog(PVDIR_OPERATION pOp, PVDIR_RAFT_LOG pChgLog);
 
 DWORD VmDirRaftGetFollowers(PDEQUE followers);
 
@@ -114,13 +113,13 @@ InitializeReplicationThread(
     {
         dwError = LDAP_OPERATIONS_ERROR;
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-          "InitializeReplicationThread: Raft parameter Error %d: %s must be greater than twice of %s",
-          dwError, "RaftElectionTimeoutMS", "RaftPingIntervalMS");
+          "%s: Raft parameter Error %d: %s must be greater than twice of %s",
+          __func__, dwError, "RaftElectionTimeoutMS", "RaftPingIntervalMS");
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "InitializeReplicationThread Raft parameters: %s=%d, %s=%d",
-      "RaftElectionTimeoutMS", gVmdirGlobals.dwRaftElectionTimeoutMS,
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Raft parameters: %s=%d, %s=%d",
+      __func__, "RaftElectionTimeoutMS", gVmdirGlobals.dwRaftElectionTimeoutMS,
       "RaftPingIntervalMS", gVmdirGlobals.dwRaftPingIntervalMS);
 
     dwError = VmDirSrvThrInit(
@@ -169,7 +168,7 @@ _VmDirRaftVoteSchdThread()
     UINT64 waitTime = (gVmdirGlobals.dwRaftElectionTimeoutMS << 1) + 5000;
     BOOLEAN bLock = FALSE;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: started.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: started.", __func__);
 
     while(1)
     {
@@ -180,7 +179,7 @@ _VmDirRaftVoteSchdThread()
             goto done;
         }
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirRaftVoteSchdThread wait %llu ms", waitTime);
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: wait %llu ms", __func__, waitTime);
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
 
         VmDirConditionTimedWait(gRaftRequestVoteCond, gRaftStateMutex, waitTime);
@@ -217,8 +216,8 @@ _VmDirRaftVoteSchdThread()
             if (waitTimeRemain >= gVmdirGlobals.dwRaftElectionTimeoutMS)
             {
                 //Hasn't recieved ping for an duration of gVmdirGlobals.dwRaftElectionTimeoutMS - switch to candidate
-                VMDIR_LOG_INFO(
-                        VMDIR_LOG_MASK_ALL, "(ELECTION)Follower starting vote. Did not recieve ping in %d ms", waitTimeRemain);
+                VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)%s: follower starting vote. Did not recieve ping in %d ms",
+                        __func__,  waitTimeRemain);
                 gRaftState.role = VDIR_RAFT_ROLE_CANDIDATE;
                 goto startVote;
             } else
@@ -256,7 +255,7 @@ startVote:
             VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
             if (dwError != ETIMEDOUT)
             {
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: wait gPeersReadyCond error: %d", dwError);
+                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: wait gPeersReadyCond error: %d", __func__, dwError);
             }
             continue;
         }
@@ -280,7 +279,8 @@ startVote:
             gRaftState.votedFor.lberbv_len > 0)
         {
             //I have voted for someone else in this term via RequestVoteGetReply,
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)Voted for another node become follower in term: %d", term);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)%s: voted for another node become follower in term: %d",
+                           __func__, term);
             gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
             gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
             waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
@@ -299,8 +299,8 @@ startVote:
         //Now invoke paralle RPC calls to all (available) peers
         VmDirConditionBroadcast(gRaftRequestPendingCond);
 
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRaftVoteSchdThread: wait vote result; role %d term %d",
-                       gRaftState.role, gRaftState.currentTerm);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)%s: wait vote result; role %d term %d",
+                       __func__, gRaftState.role, gRaftState.currentTerm);
 
         //Wait for (majority of) peer threads to complete their RRC calls or timeout.
         VmDirConditionTimedWait(gGotVoteResultCond, gRaftStateMutex, gVmdirGlobals.dwRaftElectionTimeoutMS);
@@ -312,8 +312,9 @@ startVote:
     }
 
 done:
+    VmDirMDBTxnAbortAll();
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: shutdown completed.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: shutdown completed.", __func__);
     return dwError;
 }
 
@@ -332,8 +333,8 @@ VmDirRaftFollowerInitiateVoteSrv(VOID)
     // if not a follower ignore the call
     if (gRaftState.role != VDIR_RAFT_ROLE_FOLLOWER)
     {
-        VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL, "Ignoring initiate vote as role is not Follower");
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                       "%s: ignoring initiate vote as role is not Follower", __func__);
         goto cleanup;
     }
 
@@ -394,21 +395,18 @@ VmDirRaftStartVoteSrv(VOID)
                 NULL, pszDcAccountPwd, 0, NULL, &pServer);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                "Starting forced vote from node %s to node %s",
-                szHostName,
-                pszFollower);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                "%s: starting forced vote from node %s to node %s",
+                __func__, szHostName, pszFollower);
 
         // RPC call
         dwError = VmDirRaftFollowerInitiateVote(pServer);
         if (dwError)
         {
             // do not bail keep trying next follower
-            VMDIR_LOG_INFO(
-                    VMDIR_LOG_MASK_ALL,
-                    "Initiate vote failed for %s, trying next follower",
-                    pszFollower);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                    "%s: initiate vote failed for %s, trying next follower",
+                    __func__, pszFollower);
         }
         else
         {
@@ -443,38 +441,6 @@ VOID VmDirRaftPostCommit(void *ctx);
 VOID VmDirRaftCommitFail(void *ctx);
 
 /*
- * when using log db, PrepareCommit will complete log commit.
- * handle special cases such as no-op log commit which only
- * commits to log db.
- *
-*/
-static
-DWORD
-_VmDirRaftLogOnlyCommit(
-    )
-{
-    DWORD dwError = 0;
-    void *pCtx = NULL;
-
-    dwError = VmDirRaftPrepareCommit(&pCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VmDirRaftPostCommit(pCtx);
-
-cleanup:
-    return dwError;
-
-error:
-    if (pCtx)
-    {
-        VmDirRaftCommitFail(pCtx);
-    }
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "_VmDirRaftLogOnlyCommit: error %d", dwError);
-    goto cleanup;
-}
-
-/*
  * Logs from lastApplied to highest index may or maynot committed though the highest committed
  * log must have been persisted in this server per the committing and voting algorithm.
  * Those logs should be indirectly committed via a no-op entry as suggested in secion 5.4.2 and 8.
@@ -490,6 +456,7 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     unsigned long long logIdx = 0;
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     VDIR_OPERATION ldapOp = {0};
+    VDIR_BACKEND_CTX mainBeCtx = {0};
     char logEntryDn[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     VDIR_ENTRY raftEntry = {0};
     char termStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
@@ -497,40 +464,33 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     char objectGuidStr[VMDIR_GUID_STR_LEN];
     uuid_t guid = {0};
     BOOLEAN bHasTxn = FALSE;
+    BOOLEAN bHasMainTxn = FALSE;
     unsigned long long logIdxToCommit = 0;
     unsigned long long applyIdxStart = 0;
     unsigned int logTermToCommit = 0;
+    void *pCtx = NULL;
 
     //This mutex serializes with other Raft RPC handlers
     VMDIR_LOCK_MUTEX(bLockRpcReply, gRaftRpcReplyMutex);
 
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirInitStackOperation(&ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_MODIFY, pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ldapOp.pBEIF = VmDirBackendSelect(RAFT_LOGS_CONTAINER_DN);
-    assert(ldapOp.pBEIF);
+    mainBeCtx.pBE = VmDirBackendSelect(NULL);
+    assert(mainBeCtx.pBE);
 
     //Once returned successfully, it would block any other write transactions
-    dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = mainBeCtx.pBE->pfnBETxnBegin(&mainBeCtx, VDIR_BACKEND_TXN_WRITE, &bHasMainTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    bHasTxn = TRUE;
-
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
 
     //block external updates until leader transition complete or end of this function.
     gRaftState.disallowUpdates = TRUE;
 
     //Now evalute vote outcome
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-      "(ELECTION)_VmDirEvaluateVoteResult: evaluting vote outcome: term %d role %d consensusTerm %d consensusCnt %d",
-      gRaftState.currentTerm, gRaftState.role, gRaftState.voteConsensusTerm, gRaftState.voteConsensusCnt);
+      "(ELECTION)%s: evaluting vote outcome: term %d role %d consensusTerm %d consensusCnt %d",
+      __func__, gRaftState.currentTerm, gRaftState.role, gRaftState.voteConsensusTerm, gRaftState.voteConsensusCnt);
 
     uWaitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
 
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (gRaftState.role != VDIR_RAFT_ROLE_CANDIDATE)
     {
         //Become follower via other means
@@ -550,14 +510,13 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     applyIdxStart = gRaftState.lastApplied + 1;
     logIdxToCommit = gRaftState.lastLogIndex + 1;
     logTermToCommit = gRaftState.currentTerm;
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
     //Create a no-op Log, gLogEntry can be set or cleared only
     //  when a thread holds MDB write transaction mutex.
     gLogEntry.index = logIdxToCommit;
     gLogEntry.term = logTermToCommit;
     gLogEntry.entryId = 0;
-    gLogEntry.requestCode = 0;
+    gLogEntry.requestCode = RAFT_NOOP;
     gLogEntry.chglog.lberbv_len = 0;
     gLogEntry.chglog.lberbv_val = NULL;
 
@@ -572,6 +531,9 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringPrintFA(logIndexStr, sizeof(logIndexStr), "%llu", gLogEntry.index);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     {
@@ -600,6 +562,15 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     dwError = VmDirEntryAddBervArrayAttribute(&raftEntry, ATTR_RAFT_LOG_ENTRIES, &gLogEntry.packRaftLog, 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirInitStackOperation(&ldapOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_MODIFY, pSchemaCtx );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    ldapOp.pBEIF = VmDirBackendSelect(RAFT_LOGS_CONTAINER_DN);
+    assert(ldapOp.pBEIF);
+
+    dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirComputeObjectSecurityDescriptor(NULL, &raftEntry, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -607,49 +578,61 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
     dwError = ldapOp.pBEIF->pfnBEEntryAdd(ldapOp.pBECtx, &raftEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        /*
-         * pass ownership of ctx to gLogEntry.
-         * note ldapOp.pBECtx is empty after this.
-        */
-        dwError = VmDirBackendCtxMoveContents(ldapOp.pBECtx, &gLogEntry.beCtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _VmDirRaftLogOnlyCommit(&ldapOp);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    //VmDirRaftPrepareCommit now owns gLogEntry
+    //Commit the log entry
+    dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
     bHasTxn = FALSE;
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gRaftState.lastLogIndex = logIdxToCommit;
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    // Commit a non-op to peers.
+    //VmDirRaftPrepareCommit now owns gLogEntry
+    dwError = VmDirRaftPrepareCommit(&pCtx);
+    if (dwError == 0)
+    {
+        VmDirRaftPostCommit(pCtx);
+    } else
+    {
+        VmDirRaftCommitFail(pCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (bHasMainTxn)
+    {
+        //This mainDb txn is only used for a mutex preventing other external
+        //  write operation sneak in, no actual db operation.
+        mainBeCtx.pBE->pfnBETxnAbort(&mainBeCtx);
+        bHasMainTxn = FALSE;
+    }
 
     for (logIdx = applyIdxStart; logIdx < logIdxToCommit; logIdx++)
     {
-        _VmDirApplyLog(logIdx);
+        dwError = _VmDirApplyLog(logIdx, FALSE);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-      "_VmDirEvaluateVoteResult: completed log (%llu %u)", logIdxToCommit, logTermToCommit);
+      "%s: completed log (%llu %u)", __func__, logIdxToCommit, logTermToCommit);
 
 cleanup:
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    gRaftState.disallowUpdates = FALSE;
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    VMDIR_UNLOCK_MUTEX(bLockRpcReply, gRaftRpcReplyMutex);
+    gRaftState.disallowUpdates = FALSE;
+
+    if (bHasMainTxn)
+    {
+        mainBeCtx.pBE->pfnBETxnAbort(&mainBeCtx);
+    }
 
     if (bHasTxn)
     {
-        _VmDirChgLogFree(&gLogEntry);
+        _VmDirChgLogFree(&gLogEntry, FALSE);
         if (ldapOp.pBEIF)
         {
             ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
         }
     }
-    VMDIR_UNLOCK_MUTEX(bLockRpcReply, gRaftRpcReplyMutex);
     VmDirFreeOperationContent(&ldapOp);
     VmDirFreeEntryContent(&raftEntry);
     if (pSchemaCtx)
@@ -663,7 +646,7 @@ error:
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "_VmDirEvaluateVoteResult: log(%llu, %d) error %d", logIdxToCommit, logTermToCommit, dwError);
+      "%s: log(%llu, %d) error %d", __func__, logIdxToCommit, logTermToCommit, dwError);
     goto cleanup;
 }
 
@@ -700,8 +683,8 @@ _VmDirRaftPeerThread(
             goto done;
         }
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: wait RequestPendingCond (peer %s); role %d term %d",
-                        pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: wait RequestPendingCond (peer %s); role %d term %d",
+                        __func__, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
 
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
 
@@ -722,9 +705,8 @@ appendEntriesRepeat:
             goto done;
         }
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: exit RequestPendingCond (peer %s); role %d term %d",
-                        pPeerHostName, gRaftState.role, gRaftState.currentTerm);
-
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: exit RequestPendingCond (peer %s); role %d term %d",
+                        __func__, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
 
         cmd = gRaftState.cmd;
@@ -735,14 +717,13 @@ appendEntriesRepeat:
         {
             if (cmd == ExecNone)
             {
-                VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: current gRaftState.cmd %d (peer %s); role %d term %d",
-                                gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
-
+                VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: current gRaftState.cmd %d (peer %s); role %d term %d",
+                                __func__, gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
                 if ((now - prevPingTime) >= gVmdirGlobals.dwRaftPingIntervalMS)
                 {
                     cmd = ExecPing;
-                    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: will ExecPing to peer %s; role %d term %d",
-                                    pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+                    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: will ExecPing to peer %s; role %d term %d",
+                                    __func__, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
                 }
                 else
                 {
@@ -762,8 +743,8 @@ appendEntriesRepeat:
 
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: to exe gRaftState.cmd %d (peer %s); role %d term %d",
-                        gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+        VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: to exe gRaftState.cmd %d (peer %s); role %d term %d",
+                        __func__, gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
 
         pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
 
@@ -781,7 +762,8 @@ appendEntriesRepeat:
             case ExecNone:
                  continue;
             default:
-                 VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread request type unknown %d", gRaftState.cmd);
+                 VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: request type unknown %d",
+                                __func__, gRaftState.cmd);
                  continue;
         }
 
@@ -825,7 +807,8 @@ appendEntriesRepeat:
     }
 
 done:
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirRaftPeerThread: thread for peer %s exits", pPeerHostName);
+    VmDirMDBTxnAbortAll();
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: thread for peer %s exits", __func__, pPeerHostName);
     pProxySelf->isDeleted = TRUE;
     pProxySelf->tid = 0;
     return 0;
@@ -850,7 +833,8 @@ _VmDirRemovePeerInLock(PCSTR pHostname)
         {
             curProxy->isDeleted = TRUE;
             gRaftState.clusterSize--;
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRemovePeerInLock: raft cluster size changed to %d", gRaftState.clusterSize);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: raft cluster size changed to %d",
+                           __func__, gRaftState.clusterSize);
         }
     }
 }
@@ -908,12 +892,12 @@ _VmDirNewPeerProxyInLock(PCSTR pHostname, VDIR_RAFT_PROXY_STATE state)
     dwError = VmDirCreateThread(&pPp->tid, TRUE, _VmDirRaftPeerThread, (PVOID)pPp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirNewPeerProxy: added new peer proxy for host %s", pHostname);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: added new peer proxy for host %s", __func__, pHostname);
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirNewPeerProxy: added new peer proxy for host %s error %d", pHostname, dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: added new peer proxy for host %s error %d", __func__, pHostname, dwError);
     goto cleanup;
 }
 
@@ -946,7 +930,7 @@ _VmDirReplicationThrFun(
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
         dwError = 0;
 
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: waiting for promoting ...");
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: waiting for promoting ...", __func__);
         //server has not complete vdcpromo, wait signal triggered by vdcpromo
 
         //In case lwraftd restart while waiting for promo, this call will advance raft logs.
@@ -968,11 +952,11 @@ _VmDirReplicationThrFun(
             dwError=VmDirFirstReplicationCycle(gNewPartner);
             BAIL_ON_VMDIR_ERROR( dwError );
 
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: complete vdcpromo from partner %s.", gNewPartner);
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: complete vdcpromo from partner %s.", __func__,  gNewPartner);
         } else
         {
             firstServer = TRUE;
-            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: complete vdcpromo as first server.");
+            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: complete vdcpromo as first server.", __func__);
         }
 
         if (firstServer)
@@ -1061,7 +1045,7 @@ _VmDirReplicationThrFun(
     VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: started.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: started.", __func__);
 
     while (1)
     {
@@ -1090,13 +1074,13 @@ _VmDirReplicationThrFun(
         }
         VmDirSleep( 3000 );
     }
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirReplicationThrFun: shutdown completed.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: shutdown completed.", __func__);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInReplAgrsLock, gVmdirGlobals.replAgrsMutex);
     VMDIR_UNLOCK_MUTEX(bInReplCycleDoneLock, gVmdirGlobals.replCycleDoneMutex);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-
+    VmDirMDBTxnAbortAll();
     return 0;
 
 error:
@@ -1104,7 +1088,7 @@ error:
     {
         VmDirdStateSet( VMDIRD_STATE_FAILURE );
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                    "_VmDirReplicationThrFun: Replication has failed with unrecoverable error %d", dwError);
+                    "%s: Replication has failed with unrecoverable error %d", __func__, dwError);
     }
 
     if (pRaftVoteSchdThreadInfo)
@@ -1184,8 +1168,8 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
         } else
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-               "(ELECTION)_VmDirRequestVoteRpc: RPC call VmDirRaftRequestVote failed to peer %s error %d role %d term %d",
-               pPeerHostName, dwError, gRaftState.role, gRaftState.currentTerm);
+               "(ELECTION)%s: RPC call VmDirRaftRequestVote failed to peer %s error %d role %d term %d",
+               __func__, pPeerHostName, dwError, gRaftState.role, gRaftState.currentTerm);
         }
         goto done;
     }
@@ -1215,24 +1199,24 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
 
         VmDirPersistTerm(reqVoteArgs.currentTerm);
 
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRequestVoteRpc: peer (%s) term %d > current term %d, change role to follower",
-                       pPeerHostName, reqVoteArgs.currentTerm, oldTerm);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)%s: peer (%s) term %d > current term %d, change role to follower",
+                       __func__, pPeerHostName, reqVoteArgs.currentTerm, oldTerm);
         goto done;
     }
 
     if (gRaftState.role != VDIR_RAFT_ROLE_CANDIDATE)
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "(ELECTION)_VmDirRequestVoteRpc: server role was changed to %d - forfeit this RPC result; term %d; peer: (%s)(term %d)",
-          gRaftState.role, gRaftState.currentTerm, pPeerHostName, reqVoteArgs.currentTerm);
+          "(ELECTION)%s: server role was changed to %d - forfeit this RPC result; term %d; peer: (%s)(term %d)",
+          __func__, gRaftState.role, gRaftState.currentTerm, pPeerHostName, reqVoteArgs.currentTerm);
         goto done;
     }
 
     if (reqVoteArgs.voteGranted != 0)
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-           "(ELECTION)_VmDirRequestVoteRpc: vote denied from peer %s role %d term %d granted-code %d",
-          pPeerHostName, gRaftState.role, gRaftState.currentTerm, reqVoteArgs.voteGranted);
+           "(ELECTION)%s: vote denied from peer %s role %d term %d granted-code %d",
+          __func__, pPeerHostName, gRaftState.role, gRaftState.currentTerm, reqVoteArgs.voteGranted);
         gRaftState.voteDeniedCnt++;
         if (reqVoteArgs.voteGranted == 2)
         {
@@ -1256,14 +1240,14 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
             VmDirConditionSignal(gGotVoteResultCond);
 
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-              "(ELECTION)_VmDirRequestVoteRpc: vote granted from %s and reached majority consensusCount %d for term %d; become leader in term %d",
-              pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm, gRaftState.currentTerm);
+              "(ELECTION)%s: vote granted from %s and reached majority consensusCount %d for term %d; become leader in term %d",
+              __func__, pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm, gRaftState.currentTerm);
             goto done;
         }
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRequestVoteRpc: vote granted from peer %s voteConsensusCnt %d (term %d)",
-                   pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)%s: vote granted from peer %s voteConsensusCnt %d (term %d)",
+                   __func__, pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm);
 
 done:
     if (!waitSignaled && (gRaftState.voteConsensusCnt - 1 + gRaftState.voteDeniedCnt) >= _VmDirPeersConnectedInLock())
@@ -1300,8 +1284,8 @@ _VmDirAppendEntriesRpc(PVMDIR_PEER_PROXY pProxySelf, int cmd)
         {
             //caller has given up and removed gEntries.
             VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-              "_VmDirAppendEntriesRpc: ExecAppendEntries gEntry==%s, peer %s, term %d, lastLogIndex %llu",
-              gEntries?"notNull":"null", pPeerHostName, gRaftState.currentTerm, gRaftState.lastLogIndex);
+              "%s: ExecAppendEntries gEntry==%s, peer %s, term %d, lastLogIndex %llu",
+              __func__, gEntries?"notNull":"null", pPeerHostName, gRaftState.currentTerm, gRaftState.lastLogIndex);
             goto cleanup;
         }
         args.entriesSize = gEntries->packRaftLog.lberbv_len;
@@ -1324,8 +1308,8 @@ _VmDirAppendEntriesRpc(PVMDIR_PEER_PROXY pProxySelf, int cmd)
     } else
     {
          VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-           "_VmDirAppendEntriesRpc invalid cmd %d peer (%s), preLogIndex %llu, firstLogIndex %llu",
-           cmd, pPeerHostName, args.preLogIndex, gRaftState.firstLogIndex);
+           "%s: invalid cmd %d peer (%s), preLogIndex %llu, firstLogIndex %llu",
+           __func__, cmd, pPeerHostName, args.preLogIndex, gRaftState.firstLogIndex);
          assert(0);
     }
 
@@ -1338,8 +1322,8 @@ ReplicateLog:
     {
         //Check the role again to present sending outdated RPC calls.
        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-         "_VmDirAppendEntriesRpc no longer a leader (no RPC sent), peer %s preLog (%llu %d) role %d",
-         pPeerHostName, args.preLogIndex,args.term, gRaftState.role);
+         "%s: no longer a leader (no RPC sent), peer %s preLog (%llu %d) role %d",
+         __func__, pPeerHostName, args.preLogIndex,args.term, gRaftState.role);
        goto cleanup;
     }
 
@@ -1347,16 +1331,16 @@ ReplicateLog:
     {
        dwError = LDAP_OPERATIONS_ERROR;
        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                       "_VmDirAppendEntriesRpc error: no log exists for follower (%s), preLogIndex %llu, firstLogIndex %llu",
-                       pPeerHostName, args.preLogIndex, gRaftState.firstLogIndex);
+                       "%s: error: no log exists for follower (%s), preLogIndex %llu, firstLogIndex %llu",
+                       __func__, pPeerHostName, args.preLogIndex, gRaftState.firstLogIndex);
        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-      "_VmDirAppendEntriesRpc: startLogIdx %llu term %u preLogIdx %llu preLogTerm %u entSize %u peer %s",
-      startLogIndex, args.term, args.preLogIndex, args.preLogTerm, args.entriesSize, pPeerHostName);
+      "%s: startLogIdx %llu term %u preLogIdx %llu preLogTerm %u entSize %u peer %s",
+      __func__, startLogIndex, args.term, args.preLogIndex, args.preLogTerm, args.entriesSize, pPeerHostName);
 
     dwError = VmDirRaftLdapRpcAppendEntries(pProxySelf, args.term, args.leader,
                                    args.preLogIndex, args.preLogTerm,
@@ -1368,20 +1352,20 @@ ReplicateLog:
         if (pProxySelf->proxy_state == RPC_DISCONN)
         {
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-              "_VmDirAppendEntriesRpc: not connected or disconnected peer %s dcerpc error %d", pPeerHostName, dwError);
+              "%s: not connected or disconnected peer %s dcerpc error %d", __func__, pPeerHostName, dwError);
             VmDirLdapRpcConnect(pProxySelf);
         } else if (dwError == VMDIR_ERROR_UNWILLING_TO_PERFORM)
         {
             //Peer may be in process of starting up
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-              "_VmDirAppendEntriesRpc: peer %s rejected, peer term %d term %d priTerm %d error %d",
-              pPeerHostName, args.currentTerm, gRaftState.currentTerm, args.term, dwError);
+              "%s: peer %s rejected, peer term %d term %d priTerm %d error %d",
+              __func__, pPeerHostName, args.currentTerm, gRaftState.currentTerm, args.term, dwError);
             VmDirSleep(1000);
         } else
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-              "_VmDirAppendEntriesRpc: cmd %d peer %s commitIdx %llu leaderComit %llu startLogIdx %llu preLogIdx %llu term %d error %d",
-              cmd, pPeerHostName, gRaftState.commitIndex, args.leaderCommit, startLogIndex, args.preLogIndex, gRaftState.currentTerm, dwError);
+              "%s: cmd %d peer %s commitIdx %llu leaderComit %llu startLogIdx %llu preLogIdx %llu term %d error %d",
+              __func__, cmd, pPeerHostName, gRaftState.commitIndex, args.leaderCommit, startLogIndex, args.preLogIndex, gRaftState.currentTerm, dwError);
         }
         goto cleanup;
     }
@@ -1405,8 +1389,8 @@ ReplicateLog:
         VmDirPersistTerm(args.currentTerm);
 
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmDirAppendEntriesRpc: peer (%s) term %d > current term %d, change role to follower",
-          pPeerHostName, args.currentTerm, oldTerm);
+          "%s: peer (%s) term %d > current term %d, change role to follower",
+          __func__, pPeerHostName, args.currentTerm, oldTerm);
 
         goto cleanup;
     }
@@ -1415,8 +1399,8 @@ ReplicateLog:
     {
         //Other RPC calls or events changed the server's role, forfeit the current RPC call result.
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "(ELECTION)_VmDirAppendEntriesRpc: server role changed after RPC call; role %d term %d cmd %d; peer: (%s) term %d",
-          gRaftState.role, gRaftState.currentTerm, gRaftState.cmd, pPeerHostName, args.currentTerm);
+          "(ELECTION)%s: server role changed after RPC call; role %d term %d cmd %d; peer: (%s) term %d",
+          __func__, gRaftState.role, gRaftState.currentTerm, gRaftState.cmd, pPeerHostName, args.currentTerm);
         goto cleanup;
     }
 
@@ -1431,7 +1415,7 @@ ReplicateLog:
         args.entries = NULL;
         args.entriesSize = 0;
 
-        _VmDirChgLogFree(&preChgLog);
+        _VmDirChgLogFree(&preChgLog, FALSE);
 
         //When status is not 0, it passes the peer's last log index, we can fetch logs
         //  backward from there (plus a margin) to save time for a much lagged follower.
@@ -1439,8 +1423,8 @@ ReplicateLog:
         {
             peerLogIndexToFetch = args.status + RAFT_PREVLOG_FETCH_MARGIN;
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-              "_VmDirAppendEntriesRpc big logindex gap at follwer %s: (%llu %llu), fetch backward from %llu",
-              pPeerHostName, args.preLogIndex, args.status, peerLogIndexToFetch);
+              "%s: big logindex gap at follwer %s: (%llu %llu), fetch backward from %llu",
+              __func__, pPeerHostName, args.preLogIndex, args.status, peerLogIndexToFetch);
         }
         else
         {
@@ -1453,8 +1437,8 @@ ReplicateLog:
         if (preChgLog.index == 0)
         {
             dwError = LDAP_OPERATIONS_ERROR;
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirAppendEntriesRpc invalid local server missing prev logIndex %llu error %d",
-                            args.preLogIndex, dwError);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: invalid local server missing prev logIndex %llu error %d",
+                            __func__, args.preLogIndex, dwError);
         }
 
         args.entriesSize = preChgLog.packRaftLog.lberbv_len;
@@ -1470,7 +1454,7 @@ ReplicateLog:
     //The peer has confirmed the matching preLogIndex.
     if (args.entries)
     {
-        _VmDirChgLogFree(&curChgLog);
+        _VmDirChgLogFree(&curChgLog, FALSE);
         curChgLog.packRaftLog.lberbv_len = args.entriesSize;
         dwError = VmDirAllocateAndCopyMemory(args.entries, args.entriesSize, (PVOID*)&curChgLog.packRaftLog.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1504,8 +1488,8 @@ ReplicateLog:
             {
                  VmDirConditionSignal(gRaftAppendEntryReachConsensusCond);
             }
-            VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirAppendEntriesRpc: got consent from %s current logIdx %llu term %d",
-                            pPeerHostName, gEntries->index, gRaftState.currentTerm);
+            VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: got consent from %s current logIdx %llu term %d",
+                            __func__, pPeerHostName, gEntries->index, gRaftState.currentTerm);
             goto cleanup;
         }
     } else
@@ -1515,8 +1499,8 @@ ReplicateLog:
         {
             /* Now the peer is now in sycn. */
             VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-                       "_VmDirAppendEntriesRpc: peer %s in sync or closed gap with starting logIndex %llu term %d",
-                       pPeerHostName, startLogIndex, gRaftState.currentTerm);
+                       "%s: peer %s in sync or closed gap with starting logIndex %llu term %d",
+                       __func__, pPeerHostName, startLogIndex, gRaftState.currentTerm);
             goto cleanup;
         }
     }
@@ -1527,8 +1511,8 @@ ReplicateLog:
     }
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-      "_VmDirAppendEntriesRpc: need to catchup logs for peer %s StartLogIndex %llu preLogIndex %llu entries %s",
-      pPeerHostName, startLogIndex, args.preLogIndex, args.entries?"not null":"null");
+      "%s: need to catchup logs for peer %s StartLogIndex %llu preLogIndex %llu entries %s",
+      __func__, pPeerHostName, startLogIndex, args.preLogIndex, args.entries?"not null":"null");
 
     /*
      * For Ping or AppendEntries with gap exists.
@@ -1537,7 +1521,7 @@ ReplicateLog:
 
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-    _VmDirChgLogFree(&preChgLog);
+    _VmDirChgLogFree(&preChgLog, FALSE);
 
     dwError = _VmDirGetNextLog(args.preLogIndex + 1, startLogIndex, &preChgLog,  __LINE__);
     if (preChgLog.index == 0)
@@ -1550,8 +1534,8 @@ ReplicateLog:
 
        dwError =  LDAP_OPERATIONS_ERROR;
        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-         "_VmDirAppendEntriesRpc: fail to close gap for peer %s StartLogIdx %llu preLogIdx %llu cmd %d",
-         pPeerHostName, startLogIndex, args.preLogIndex, cmd);
+         "%s: fail to close gap for peer %s StartLogIdx %llu preLogIdx %llu cmd %d",
+         __func__, pPeerHostName, startLogIndex, args.preLogIndex, cmd);
        goto error;
     }
 
@@ -1562,7 +1546,7 @@ ReplicateLog:
     args.entries = NULL;
     args.entriesSize = 0;
 
-    _VmDirChgLogFree(&curChgLog);
+    _VmDirChgLogFree(&curChgLog, FALSE);
     dwError = _VmDirGetNextLog(args.preLogIndex+1, startLogIndex, &curChgLog,  __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1584,21 +1568,21 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(args.entries);
     args.entries = NULL;
     args.entriesSize = 0;
-    _VmDirChgLogFree(&preChgLog);
-    _VmDirChgLogFree(&curChgLog);
+    _VmDirChgLogFree(&preChgLog, FALSE);
+    _VmDirChgLogFree(&curChgLog, FALSE);
 
     if (dwError == 0)
     {
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-          "_VmDirAppendEntriesRpc: rpc call (cmd %d) completed for peer %s; startLogIdx %llu term %d",
-          cmd, pPeerHostName, startLogIndex, gRaftState.currentTerm);
+          "%s: rpc call (cmd %d) completed for peer %s; startLogIdx %llu term %d",
+          __func__, cmd, pPeerHostName, startLogIndex, gRaftState.currentTerm);
     }
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "_VmDirAppendEntriesRpc: error rpc call (cmd %d) peer %s, startLogIdx %llu term %d error %d",
-      cmd, pPeerHostName, startLogIndex, gRaftState.currentTerm, dwError);
+      "%s: error rpc call (cmd %d) peer %s, startLogIdx %llu term %d error %d",
+      __func__, cmd, pPeerHostName, startLogIndex, gRaftState.currentTerm, dwError);
     goto cleanup;
 }
 
@@ -1657,7 +1641,7 @@ _VmDirStartProxies(
         gRaftState.clusterSize++;
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirStartProxies: raft cluster size %d", gRaftState.clusterSize);
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: raft cluster size %d", __func__, gRaftState.clusterSize);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
@@ -1717,46 +1701,9 @@ int VmDirRaftPrepareCommit(void **ppCtx)
     /* Use very large timeout value for new leader replicating no-op log entry so that a far
      * behind peer can catch up with the leader if that peer is needed for reaching consensus.
      */
-    waitTimeout = gLogEntry.requestCode == 0?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<5);
+    waitTimeout = gLogEntry.requestCode == RAFT_NOOP?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<5);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-
-    /*
-     * if using separate log db, commit the transaction to log db now.
-     * per raft protocol, local log should be committed before checking
-     * for consensus. Because we allow a combined/separate log with
-     * bUseLogDB flag, now is not a good time for refactoring.
-     * TODO: refactor and simplify raft log logic. commit hook not needed.
-    */
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        /* must have log ctx to commit log entry */
-        if (!gLogEntry.beCtx.pBE ||
-            !gLogEntry.beCtx.pBEPrivate)
-        {
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-
-        /* commit log entry now */
-        dwError = gLogEntry.beCtx.pBE->pfnBETxnCommit(&gLogEntry.beCtx);
-        if (dwError)
-        {
-            /* all validations are done at this point. attempt once more before fail */
-            VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "VmDirRaftPrepareCommit: Failed to commit log txn(%d). Retrying.",
-                dwError);
-            dwError = gLogEntry.beCtx.pBE->pfnBETxnCommit(&gLogEntry.beCtx);
-        }
-
-        /* if fail to commit log, set to follower */
-        if (dwError)
-        {
-            gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
     if (_VmDirGetRaftQuorumOverride(FALSE) || gRaftState.clusterSize < 2)
     {
@@ -1823,8 +1770,8 @@ get_consensus_begin:
 
     //Wait for majority peers to replicate the log.
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-      "VmDirRaftPrepareCommit: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
-      gRaftState.role, gRaftState.currentTerm);
+      "%s: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
+      __func__, gRaftState.role, gRaftState.currentTerm);
 
     VmDirConditionTimedWait(gRaftAppendEntryReachConsensusCond, gRaftStateMutex, waitTimeout);
 
@@ -1842,8 +1789,8 @@ get_consensus_begin:
     {
         //Check ConsensusCount again
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-          "VmDirRaftPrepareCommit: no consensus reached on log entry: logIndex %lu role %d term %d, will retry",
-          gLogEntry.index, gRaftState.role, gRaftState.currentTerm);
+          "%s: no consensus reached on log entry: logIndex %lu role %d term %d, will retry",
+          __func__, gLogEntry.index, gRaftState.role, gRaftState.currentTerm);
 
         if (getConsensusRetry >= 2)
         {
@@ -1860,26 +1807,21 @@ get_consensus_begin:
     }
 
 raft_commit_done:
-    //The log entry can be committed locally,
     gRaftState.opCounts++;
     if (gLogEntry.index > 0)
     {
-        if (gVmdirGlobals.bUseLogDB)
+        /*
+         * with separate log db, log state can be updated.
+         * commit ctx not required.
+        */
+        gRaftState.commitIndex = gRaftState.lastLogIndex = gLogEntry.index;
+        gRaftState.commitIndexTerm = gRaftState.lastLogTerm = gLogEntry.term;
+        if (gLogEntry.requestCode != RAFT_NOOP)
         {
-            /*
-             * with separate log db, log state can be updated.
-             * commit ctx not required.
-             * TODO: simplify when bUseLogDB is default
-            */
-            gRaftState.commitIndex = gRaftState.lastLogIndex = gLogEntry.index;
-            gRaftState.commitIndexTerm = gRaftState.lastLogTerm = gLogEntry.term;
-            if (gLogEntry.requestCode != 0)
-            {
-                //not non-op
-                gRaftState.lastApplied = gLogEntry.index;
-            }
-            gRaftState.cmd = ExecNone;
+            //not non-op
+            gRaftState.lastApplied = gLogEntry.index;
         }
+        gRaftState.cmd = ExecNone;
 
         dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_COMMIT_CTX), (PVOID*)&pCtx);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1892,8 +1834,8 @@ raft_commit_done:
         //either VmDirRaftPostCommit or VmDirRaftCommitFail (but not both)
         //  owns pCtx who will free the memory and unlock gRaftStateMutex
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-          "VmDirRaftPrepareCommit: succeeded; server role %d term %d lastApplied %llu",
-          gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
+          "%s: succeeded; server role %d term %d logIndex %llu lastApplied %llu",
+          __func__, gRaftState.role, gRaftState.currentTerm, gLogEntry.index, gRaftState.lastApplied);
     }
     else
     {
@@ -1901,21 +1843,21 @@ raft_commit_done:
     }
 
 cleanup:
-    _VmDirChgLogFree(&gLogEntry);
+    _VmDirChgLogFree(&gLogEntry, FALSE);
     gEntries = NULL;
     if (dwError==0)
     {
       VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
-        "VmDirRaftPrepareCommit: succeeded; server role %d term %d lastApplied %llu",
-        gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
+        "%s: succeeded; server role %d term %d lastApplied %llu",
+        __func__, gRaftState.role, gRaftState.currentTerm, gRaftState.lastApplied);
     }
     return dwError;
 
 error:
     gRaftState.cmd = ExecNone;
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "VmDirRaftPrepareCommit: logEntry index %llu role %d term %d(%d) lastLogIndex %llu changeToFollower %d error %d",
-      gLogEntry.index, gRaftState.role, gRaftState.currentTerm, currentTerm,
+      "%s: logEntry index %llu role %d term %d(%d) lastLogIndex %llu changeToFollower %d error %d",
+      __func__, gLogEntry.index, gRaftState.role, gRaftState.currentTerm, currentTerm,
       gRaftState.lastLogIndex, changeToFollower, dwError);
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     goto cleanup;
@@ -1923,34 +1865,18 @@ error:
 
 /* This is the callback invoted by MDB txn_commit when it has successfully
  * committed (persisted) the transaction, and the callback can safely set
- * its volatile state variablies
+ * its volatile state variablies.
+ * We expand the gRaftStateMutex until we the mdb txn either commit or abort
+ * in case MDB txn (on mainDB now) flush cannot completed sucessfully.
+ * Otherwise a raise condition may cause Raft state change before mdb completed commit.
  */
 VOID
 VmDirRaftPostCommit(void *ctx)
 {
-    PVDIR_RAFT_COMMIT_CTX pCtx = NULL;
-
     if (ctx)
     {
         BOOLEAN bLock = TRUE;
 
-        /* prepare already updated state when using logdb */
-        if (!gVmdirGlobals.bUseLogDB)
-        {
-            pCtx = (PVDIR_RAFT_COMMIT_CTX)ctx;
-
-            gRaftState.commitIndex = gRaftState.lastLogIndex = pCtx->logIndex;
-            gRaftState.commitIndexTerm = gRaftState.lastLogTerm = pCtx->logTerm;
-            if (pCtx->logRequestCode != 0)
-            {
-                //not non-op
-                gRaftState.lastApplied = pCtx->logIndex;
-            }
-            gRaftState.cmd = ExecNone;
-
-            VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPostCommit: log (%llu %d) lastApplied %llu logOp %d",
-                pCtx->logIndex, pCtx->logTerm, gRaftState.lastApplied, pCtx->logRequestCode);
-        }
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
         VMDIR_SAFE_FREE_MEMORY(ctx);
     }
@@ -1985,6 +1911,7 @@ DWORD VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp)
     char *p = NULL;
     BOOLEAN bLock = FALSE;
     VDIR_BERVALUE encodedEntry = VDIR_BERVALUE_INIT;
+    PVDIR_RAFT_LOG pChgLog = NULL;
 
     if (pEntry->eId < NEW_ENTRY_EID_PREFIX)
     {
@@ -2015,32 +1942,34 @@ DWORD VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp)
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    gLogEntry.index = gRaftState.commitIndex + 1;
-    gLogEntry.term = gRaftState.currentTerm;
-    gLogEntry.entryId = pEntry->eId;
-    gLogEntry.requestCode = LDAP_REQ_ADD;
-
     dwError = VmDirEncodeEntry( pEntry, &encodedEntry );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gLogEntry.chglog.lberbv_len = encodedEntry.lberbv.bv_len;
-    gLogEntry.chglog.lberbv_val = encodedEntry.lberbv.bv_val;
-    gLogEntry.chglog.bOwnBvVal = TRUE;
-
-    dwError = _VmDirPackLogEntry(&gLogEntry);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_LOG), (PVOID*)&pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    pChgLog->index = gRaftState.lastLogIndex + 1;
+    pChgLog->term = gRaftState.currentTerm;
+    pChgLog->entryId = pEntry->eId;
+    pChgLog->requestCode = LDAP_REQ_ADD;
+    pChgLog->chglog.lberbv_len = encodedEntry.lberbv.bv_len;
+    pChgLog->chglog.lberbv_val = encodedEntry.lberbv.bv_val;
+    pChgLog->chglog.bOwnBvVal = TRUE;
 
-    dwError = VmDirAddRaftEntry(pEntry->pSchemaCtx, &gLogEntry, pAddOp);
+    dwError = _VmDirRaftAddLog(pAddOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    if (dwError)
+    {
+        //The user tranaction cannot continue if cannot add log, e.g. when role changed to follower.
+        VmDirMDBTxnAbortAll();
+    }
     return dwError;
 
 error:
-    _VmDirChgLogFree(&gLogEntry);
+    _VmDirChgLogFree(pChgLog, TRUE);
     goto cleanup;
 }
 
@@ -2055,6 +1984,7 @@ DWORD VmDirModifyRaftPreCommit(
     char *p = NULL;
     BOOLEAN bLock = FALSE;
     VDIR_BERVALUE encodedMods = VDIR_BERVALUE_INIT;
+    PVDIR_RAFT_LOG pChgLog = NULL;
 
     if ((p=VmDirStringCaseStrA(dn, RAFT_CONTEXT_DN)) &&
         VmDirStringCompareA(p, RAFT_CONTEXT_DN, FALSE)==0)
@@ -2076,29 +2006,33 @@ DWORD VmDirModifyRaftPreCommit(
     dwError = VmDirEncodeMods(pmods, &encodedMods);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gLogEntry.index = gRaftState.commitIndex + 1;
-    gLogEntry.term = gRaftState.currentTerm;
-    gLogEntry.entryId = entryId;
-    gLogEntry.requestCode = LDAP_REQ_MODIFY;
-    gLogEntry.chglog.lberbv_len = encodedMods.lberbv.bv_len;
-    gLogEntry.chglog.lberbv_val = encodedMods.lberbv.bv_val;
-    gLogEntry.chglog.bOwnBvVal = TRUE;
-    encodedMods.lberbv.bv_val = NULL;
-    encodedMods.lberbv.bv_len = 0;
-    dwError = _VmDirPackLogEntry(&gLogEntry);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_LOG), (PVOID*)&pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    pChgLog->index = gRaftState.lastLogIndex + 1;
+    pChgLog->term = gRaftState.currentTerm;
+    pChgLog->entryId = entryId;
+    pChgLog->requestCode = LDAP_REQ_MODIFY;
+    pChgLog->chglog.lberbv_len = encodedMods.lberbv.bv_len;
+    pChgLog->chglog.lberbv_val = encodedMods.lberbv.bv_val;
+    pChgLog->chglog.bOwnBvVal = TRUE;
+    encodedMods.lberbv.bv_val = NULL;
+    encodedMods.lberbv.bv_len = 0;
 
-    dwError = VmDirAddRaftEntry(pSchemaCtx, &gLogEntry, pModifyOp);
+    dwError = _VmDirRaftAddLog(pModifyOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    if (dwError)
+    {
+        //The user tranaction cannot continue if cannot add log, e.g. when role changed to follower.
+        VmDirMDBTxnAbortAll();
+    }
     return dwError;
 
 error:
-    _VmDirChgLogFree(&gLogEntry);
+    _VmDirChgLogFree(pChgLog, TRUE);
     VmDirFreeBervalContent(&encodedMods);
     goto cleanup;
 }
@@ -2112,6 +2046,7 @@ DWORD VmDirDeleteRaftPreCommit(
     DWORD dwError = 0;
     char *p = NULL;
     BOOLEAN bLock = FALSE;
+    PVDIR_RAFT_LOG pChgLog = NULL;
 
     if ((p=VmDirStringCaseStrA(dn, RAFT_CONTEXT_DN)) &&
         VmDirStringCompareA(p, RAFT_CONTEXT_DN, FALSE)==0)
@@ -2133,26 +2068,28 @@ DWORD VmDirDeleteRaftPreCommit(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    gLogEntry.index = gRaftState.commitIndex + 1;
-    gLogEntry.term = gRaftState.currentTerm;
-    gLogEntry.entryId = eid;
-    gLogEntry.requestCode = LDAP_REQ_DELETE;
-    gLogEntry.chglog.lberbv_len = 0;
-    gLogEntry.chglog.lberbv_val = NULL;
-    dwError = _VmDirPackLogEntry(&gLogEntry);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_LOG), (PVOID*)&pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    pChgLog->index = gRaftState.lastLogIndex + 1;
+    pChgLog->term = gRaftState.currentTerm;
+    pChgLog->entryId = eid;
+    pChgLog->requestCode = LDAP_REQ_DELETE;
 
-    dwError = VmDirAddRaftEntry(pSchemaCtx, &gLogEntry, pDeleteOp);
+    dwError = _VmDirRaftAddLog(pDeleteOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    if (dwError)
+    {
+        //The user tranaction cannot continue if cannot add log, e.g. when role changed to follower.
+        VmDirMDBTxnAbortAll();
+    }
     return dwError;
 
 error:
-    _VmDirChgLogFree(&gLogEntry);
+    _VmDirChgLogFree(pChgLog, TRUE);
     goto cleanup;
 }
 
@@ -2213,77 +2150,6 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirUpdateRaftLogChangedAttr(
-    PVDIR_OPERATION pOperation,
-    PVDIR_ENTRY     pEntry
-    )
-{
-    DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
-    UINT64  iLogIdxChgd = 0;
-    PSTR    pszLogIdxChgd = NULL;
-    VDIR_BERVALUE   bvLogIdxChgd = {0};
-
-    if (!pOperation || !pEntry)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    if (pOperation->opType == VDIR_OPERATION_TYPE_REPL ||
-        (pEntry->eId &&
-         (pEntry->eId < NEW_ENTRY_EID_PREFIX ||
-          pEntry->eId >= LOG_ENTRY_EID_PREFIX)))
-    {
-        goto cleanup;
-    }
-
-    VMDIR_LOCK_MUTEX(bInLock, gRaftStateMutex);
-    iLogIdxChgd = gRaftState.commitIndex + 1;
-    VMDIR_UNLOCK_MUTEX(bInLock, gRaftStateMutex);
-
-    dwError = VmDirAllocateStringPrintf(&pszLogIdxChgd, "%"PRIu64, iLogIdxChgd);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    switch (pOperation->reqCode)
-    {
-    case LDAP_REQ_ADD:
-
-        dwError = VmDirEntryAddSingleValueStrAttribute(
-                pEntry, ATTR_RAFT_LOG_CHANGED, pszLogIdxChgd);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        break;
-
-    case LDAP_REQ_MODIFY:
-
-        bvLogIdxChgd.lberbv.bv_val = pszLogIdxChgd;
-        bvLogIdxChgd.lberbv.bv_len = VmDirStringLenA(pszLogIdxChgd);
-
-        dwError = VmDirOperationAddModReq(
-                pOperation,
-                LDAP_MOD_REPLACE,
-                ATTR_RAFT_LOG_CHANGED,
-                &bvLogIdxChgd,
-                1);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        break;
-
-    default:
-
-        break;
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLogIdxChgd);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError);
-    goto cleanup;
-}
-
 static
 DWORD
 _VmDirDeleteRaftProxy(char *dn_norm)
@@ -2318,7 +2184,7 @@ _VmDirDeleteRaftProxy(char *dn_norm)
          *  3. Shutdown the server with the account deleted above (better to rename the data.mdb once it is shutdown).
          */
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirDeleteRaftProxy: deleting account with raft leader is not allowed; error %d", dwError);
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: deleting account with raft leader is not allowed; error %d", __func__, dwError);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -2361,91 +2227,66 @@ error:
 
 static
 VOID
-_VmDirApplyLogsUpto(UINT64 indexToApply)
+_VmDirApplyLogsUpto(UINT64 indexToApply, BOOLEAN bFollowerOnly)
 {
      UINT64 logIdx = 0;
-     UINT64 logIdxStart = gRaftState.lastApplied + 1;
+     UINT64 logIdxStart = 0;
+     BOOLEAN bLock = FALSE;
+     DWORD dwError = 0;
 
-     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "_VmDirApplyLogsUpto: logIdxStart %llu upto logIdx %llu", logIdxStart, indexToApply);
+     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+     logIdxStart = gRaftState.lastApplied + 1;
+     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: logIdxStart %llu upto logIdx %llu", __func__, logIdxStart, indexToApply);
      for (logIdx = logIdxStart; logIdx <= indexToApply; logIdx++)
      {
-         _VmDirApplyLog(logIdx);
+         //Don't apply next if previous apply failed.
+         // This may occur for transient error, e.g. update an uniqeness scope while there is a reindixing task.
+         dwError = _VmDirApplyLog(logIdx, bFollowerOnly);
+         BAIL_ON_VMDIR_ERROR(dwError);
      }
+
+error:
+     return;
 }
 
 static
 DWORD
-_VmDirApplyLog(unsigned long long indexToApply)
+_VmDirApplyOneLogEntry(PVDIR_RAFT_LOG pLogEntry, unsigned long long indexToApply, PVDIR_BACKEND_CTX pBECtx)
 {
     DWORD dwError = 0;
-    VDIR_RAFT_LOG logEntry = {0};
     VDIR_ENTRY entry = {0};
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     VDIR_OPERATION ldapOp = {0};
     VDIR_OPERATION modOp = {0};
-    char logEntryDn[RAFT_CONTEXT_DN_MAX_LEN] = {0};
+    BOOLEAN bHasTxn = FALSE;
+    BOOLEAN bHasSecondTxn = FALSE;
     VDIR_BERVALUE bvIndexApplied = VDIR_BERVALUE_INIT;
     PSTR pszLocalErrorMsg = NULL;
     char logIndexStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     char opStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
-    BOOLEAN bLock = FALSE;
-    BOOLEAN bHasTxn = FALSE;
-    unsigned long long priCommitIndex = 0;
     int logEntrySize = 0;
     /* unpacked logs are always applied to main database */
     PVDIR_BACKEND_INTERFACE pBEMain = VmDirBackendSelect(ALIAS_MAIN);
 
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (indexToApply <= gRaftState.lastApplied)
-    {
-        //already applied.
-        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: ignore allready applied LogIndex %llu lastApplied %llu",
-                     indexToApply, gRaftState.lastApplied);
-        goto cleanup;
-    }
-    priCommitIndex = gRaftState.commitIndex;
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-
-    dwError = _VmDirFetchLogEntry(indexToApply, &logEntry, __LINE__);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    logEntrySize = logEntry.chglog.lberbv_len;
-    if (logEntry.requestCode == 0)
-    {
-        //no-op
-        VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-        gRaftState.lastApplied = indexToApply;
-        if ( gRaftState.commitIndex < logEntry.index)
-        {
-             gRaftState.commitIndex = logEntry.index;
-             gRaftState.commitIndexTerm = logEntry.term;
-        }
-        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmDirApplyLog: log-no-op (%llu %u) indexToApply: %llu priCommitIdx %llu commitIndex %llu term %d",
-          logEntry.index, logEntry.term, indexToApply, priCommitIndex,
-          gRaftState.commitIndex, gRaftState.currentTerm);
-        goto cleanup;
-    }
-
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (logEntry.requestCode == LDAP_REQ_ADD)
+    if (pLogEntry->requestCode == LDAP_REQ_ADD)
     {
         dwError = VmDirStringCpyA(opStr, sizeof(opStr), "Add");
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        entry.encodedEntrySize = logEntry.chglog.lberbv_len;
-        dwError = VmDirAllocateAndCopyMemory(logEntry.chglog.lberbv_val, entry.encodedEntrySize,
+        logEntrySize = entry.encodedEntrySize = pLogEntry->chglog.lberbv_len;
+        dwError = VmDirAllocateAndCopyMemory(pLogEntry->chglog.lberbv_val, entry.encodedEntrySize,
                                              (PVOID *)&entry.encodedEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirDecodeEntry(pSchemaCtx, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirDecodeEntry with logIndx %llu", indexToApply);
 
-        entry.eId = logEntry.entryId;
+        entry.eId = pLogEntry->entryId;
 
         dwError = VmDirGetParentDN(&entry.dn, &entry.pdn );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirGetParentDN with logIndx %llu", indexToApply);
@@ -2457,25 +2298,26 @@ _VmDirApplyLog(unsigned long long indexToApply)
         ldapOp.request.addReq.pEntry = &entry;
 
         ldapOp.pBEIF = pBEMain;
+        ldapOp.pBECtx->pBE = pBEMain;
+        ldapOp.bNoRaftLog = TRUE;
         assert(ldapOp.pBEIF);
 
         dwError = VmDirEntryAttrValueNormalize(ldapOp.pBECtx, &entry, FALSE /*all attributes*/);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirSchemaModMutexAcquire(&ldapOp);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "SchemaModMutexAcquire - PreAdd");
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "SchemaModMutexAcquire");
+
+        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirReplSchemaEntryPreAdd(&ldapOp, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirReplSchemaEntryPreAdd");
 
-        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        bHasTxn = TRUE;
-
         dwError = ldapOp.pBEIF->pfnBEEntryAdd(ldapOp.pBECtx, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
               "pfnBEEntryAdd  %s from logIndx %llu", entry.dn.lberbv_val, indexToApply);
-    } else if (logEntry.requestCode == LDAP_REQ_MODIFY)
+    } else if (pLogEntry->requestCode == LDAP_REQ_MODIFY)
     {
         dwError = VmDirStringCpyA(opStr, sizeof(opStr), "Modify");
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2487,20 +2329,23 @@ _VmDirApplyLog(unsigned long long indexToApply)
         BAIL_ON_VMDIR_ERROR(dwError);
 
         ldapOp.pBEIF = pBEMain;
+        ldapOp.pBECtx->pBE = pBEMain;
+        ldapOp.bNoRaftLog = TRUE;
         assert(ldapOp.pBEIF);
 
         modReq = &(ldapOp.request.modifyReq);
 
-        dwError = VmDirDecodeMods(pSchemaCtx, logEntry.chglog.lberbv_val, &modReq->mods);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirDecodeMods from logIndx %llu", indexToApply);
+        dwError = VmDirDecodeMods(pSchemaCtx, pLogEntry->chglog.lberbv_val, &modReq->mods);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirDecodeMods logIndx %llu", indexToApply);
 
-        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
+        logEntrySize = pLogEntry->chglog.lberbv_len;
+
+        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
         BAIL_ON_VMDIR_ERROR(dwError);
-        bHasTxn = TRUE;
 
         dwError = ldapOp.pBEIF->pfnBEIdToEntry(ldapOp.pBECtx, pSchemaCtx,
-                                               logEntry.entryId, &entry, VDIR_BACKEND_ENTRY_LOCK_WRITE);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "pfnBEIdToEntry from logIndx %llu", indexToApply);
+                                               pLogEntry->entryId, &entry, VDIR_BACKEND_ENTRY_LOCK_WRITE);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "pfnBEIdToEntry logIndx %llu", indexToApply);
 
         dwError = VmDirBervalContentDup(&entry.dn, &modReq->dn);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2518,7 +2363,7 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = ldapOp.pBEIF->pfnBEEntryModify(ldapOp.pBECtx, modReq->mods, &entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "BEEntryModify, (%s)",
                                       VDIR_SAFE_STRING(ldapOp.pBEErrorMsg));
-    } else if (logEntry.requestCode == LDAP_REQ_DELETE)
+    } else if (pLogEntry->requestCode == LDAP_REQ_DELETE)
     {
         dwError = VmDirStringCpyA(opStr, sizeof(opStr),  "Delete");
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2530,16 +2375,17 @@ _VmDirApplyLog(unsigned long long indexToApply)
         BAIL_ON_VMDIR_ERROR(dwError);
 
         ldapOp.pBEIF = pBEMain;
+        ldapOp.pBECtx->pBE = pBEMain;
+        ldapOp.bNoRaftLog = TRUE;
         assert(ldapOp.pBEIF);
 
-        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
+        dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
         BAIL_ON_VMDIR_ERROR(dwError);
-        bHasTxn = TRUE;
 
         dwError = ldapOp.pBEIF->pfnBEIdToEntry(ldapOp.pBECtx, pSchemaCtx,
-                                               logEntry.entryId, &entry, VDIR_BACKEND_ENTRY_LOCK_WRITE);
+                                               pLogEntry->entryId, &entry, VDIR_BACKEND_ENTRY_LOCK_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg),
-                                     "Delete entry pfnBEIdToEntry eId %llu", logEntry.entryId);
+                                     "Delete entry pfnBEIdToEntry eId %llu", pLogEntry->entryId);
 
         dwError = VmDirEntryUnpack(&entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "Delete entry VmDirEntryUnpack");
@@ -2580,15 +2426,8 @@ _VmDirApplyLog(unsigned long long indexToApply)
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrorMsg, "Invalid log format");
     }
 
-    dwError = VmDirCloneStackOperation(&ldapOp, &modOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
+    dwError = VmDirInitStackOperation( &modOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringPrintFA(logEntryDn, sizeof(logEntryDn),  "%s=%llu,%s",
-                    ATTR_CN, logEntry.index, RAFT_LOGS_CONTAINER_DN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    modOp.reqDn.lberbv.bv_val = logEntryDn;
-    modOp.reqDn.lberbv.bv_len = VmDirStringLenA(logEntryDn);
 
     dwError = VmDirStringPrintFA(logIndexStr, sizeof(logIndexStr), "%llu", indexToApply);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2602,14 +2441,26 @@ _VmDirApplyLog(unsigned long long indexToApply)
           "VmDirAddModSingleAttributeReplace mode on %s = %llu ", ATTR_RAFT_LAST_APPLIED, logIndexStr);
 
     modOp.bSuppressLogInfo = TRUE;
+    modOp.pBEIF = pBEMain;
+    modOp.pBECtx->pBE = pBEMain;
+    modOp.bNoRaftLog = TRUE;
+
+    dwError = modOp.pBEIF->pfnBETxnBegin(modOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasSecondTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bHasSecondTxn)
+    {
+        //This shouldn't occur unless the backend is a different one from VmDirBackendSelect
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    assert(modOp.pBECtx->pBEPrivate);
+
     dwError = VmDirInternalModifyEntry(&modOp);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
           "VmDirInternalModifyEntry mod on %s = %llu ", ATTR_RAFT_LAST_APPLIED, logIndexStr);
 
-    dwError = ldapOp.pBEIF->pfnBETxnCommit(ldapOp.pBECtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (logEntry.requestCode == LDAP_REQ_ADD)
+    if (pLogEntry->requestCode == LDAP_REQ_ADD)
     {
         dwError = VmDirEntryUnpack(&entry);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrorMsg, "VmDirEntryUnpack)");
@@ -2617,36 +2468,23 @@ _VmDirApplyLog(unsigned long long indexToApply)
         dwError = VmDirReplSchemaEntryPostAdd(&ldapOp, &entry);
         if (dwError)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: VmDirReplSchemaEntryPostAdd %s - error(%d)",
-                    entry.dn.lberbv_val, dwError);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: VmDirReplSchemaEntryPostAdd %s - error(%d)",
+                    __func__, entry.dn.lberbv_val, dwError);
             dwError = 0; //don't hold off applying the next raft log since the base transaction has committed.
         }
-    } else if (logEntry.requestCode == LDAP_REQ_MODIFY)
+        dwError = VmDirAddRaftProxy(&entry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirAddRaftProxy %s",
+                                 VDIR_SAFE_STRING(entry.dn.lberbv.bv_val));
+    } else if (pLogEntry->requestCode == LDAP_REQ_MODIFY)
     {
         dwError = VmDirReplSchemaEntryPostMoidify(&ldapOp, &entry);
         if (dwError)
         {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: VmDirReplSchemaEntryPostMoidify %s - error(%d)",
-                      entry.dn.lberbv_val, dwError);
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: VmDirReplSchemaEntryPostMoidify %s - error(%d)",
+                      __func__, entry.dn.lberbv_val, dwError);
             dwError = 0; //don't hold off applying the next raft log since the base transaction has committed.
         }
-    }
-
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    gRaftState.lastApplied = indexToApply;
-    if ( gRaftState.commitIndex < logEntry.index)
-    {
-         gRaftState.commitIndex = logEntry.index;
-         gRaftState.commitIndexTerm = logEntry.term;
-    }
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-
-    if (logEntry.requestCode == LDAP_REQ_ADD)
-    {
-        dwError = VmDirAddRaftProxy(&entry);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirAddRaftProxy %s",
-                                 VDIR_SAFE_STRING(entry.dn.lberbv.bv_val));
-    } else if (logEntry.requestCode == LDAP_REQ_DELETE)
+    } else if (pLogEntry->requestCode == LDAP_REQ_DELETE)
     {
         dwError = _VmDirDeleteRaftProxy(BERVAL_NORM_VAL(entry.dn));
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg), "VmDirDeleteRaftProxy %s",
@@ -2654,17 +2492,17 @@ _VmDirApplyLog(unsigned long long indexToApply)
     }
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-      "_VmDirApplyLog: size %d succeeded %llu %s %s priCommitIdx %llu commitIndex %llu term %d",
-      logEntrySize, indexToApply, opStr, VDIR_SAFE_STRING(entry.dn.lberbv.bv_val), priCommitIndex,
+      "%s: size %d succeeded %llu %s %s commitIndex %llu term %d", __func__,
+      logEntrySize, indexToApply, opStr, VDIR_SAFE_STRING(entry.dn.lberbv.bv_val),
       gRaftState.commitIndex, gRaftState.currentTerm);
 
 cleanup:
-    if (modOp.pBECtx)
+    if (bHasTxn)
     {
-        modOp.pBECtx->pBEPrivate = NULL; //Make sure that calls commit/abort only once.
+        *pBECtx = *ldapOp.pBECtx;
     }
     VmDirFreeOperationContent(&modOp);
-    (VOID)VmDirSchemaModMutexRelease(&ldapOp);
+    VmDirSchemaModMutexRelease(&ldapOp);
     ldapOp.request.addReq.pEntry = NULL;
     VmDirFreeOperationContent(&ldapOp);
     VmDirFreeEntryContent(&entry);
@@ -2673,28 +2511,144 @@ cleanup:
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    _VmDirChgLogFree(&logEntry);
     return dwError;
 
 error:
-    if (bHasTxn)
+    if (bHasTxn && ldapOp.pBECtx)
     {
         ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
+        bHasTxn = FALSE;
     }
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmDirApplyLog: dn %s error: %s errcode: %d", logEntryDn, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: logIndex %llu error: %s errcode: %d",
+      __func__, indexToApply, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
     goto cleanup;
 }
 
-/* Currently assume each MDB transaction have only one LDAP Add
- * To support more than one LDAP Add, a (static) major id might bitOR into pEntryId
- *  - like VmDirRaftLogIndexToCommit
- * The major id would be reset for each MDB transaction.
- * To support this, raftLog needs to pack multiple LDAP Add(s) into one log.
+static
+DWORD
+_VmDirApplyLog(unsigned long long indexToApply, BOOLEAN bFollowerOnly)
+{
+    DWORD dwError = 0;
+    VDIR_RAFT_LOG logEntry = {0};
+    PVDIR_RAFT_LOG pLogEntry = NULL;
+    BOOLEAN bLock = FALSE;
+    BOOLEAN alreadyApplied = FALSE;
+    DEQUE encodedLogs = {0};
+    VDIR_BACKEND_CTX beCtx = {0};
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (indexToApply <= gRaftState.lastApplied)
+    {
+        alreadyApplied = TRUE;
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: ignore allready applied LogIndex %llu lastApplied %llu",
+                     __func__, indexToApply, gRaftState.lastApplied);
+        goto cleanup;
+    }
+    if (bFollowerOnly && gRaftState.role != VDIR_RAFT_ROLE_FOLLOWER)
+    {
+       BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+    }
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    dwError = _VmDirFetchLogEntry(indexToApply, &logEntry, __LINE__);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (logEntry.requestCode == RAFT_NOOP)
+    {
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+          "%s: log-no-op (%llu %u) indexToApply: %llu commitIndex %llu term %d",
+          __func__, logEntry.index, logEntry.term, indexToApply,
+          gRaftState.commitIndex, gRaftState.currentTerm);
+        VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    } else if (logEntry.requestCode == RAFT_MULTILOG)
+    {
+        VmDirUnpackLogEntries(&encodedLogs, &logEntry);
+        while(!dequeIsEmpty(&encodedLogs))
+        {
+           dequePopLeft(&encodedLogs, (PVOID*)&pLogEntry);
+           dwError = _VmDirApplyOneLogEntry(pLogEntry, indexToApply, &beCtx);
+           BAIL_ON_VMDIR_ERROR(dwError);
+           _VmDirChgLogFree(pLogEntry, TRUE);
+           pLogEntry = NULL;
+        }
+
+        //The first call to _VmDirApplyOneLogEntry will start a new transaction,
+        //  and the Txn context is passed back with beCtx,
+        //  so that we can commit log applications together here.
+        //  The returned backend (beCtx->pBE) is ensured to be identical
+        //  in all logEntry(s) with the user defined transaction implementation.
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        beCtx.pBEPrivate = NULL;
+    } else
+    {
+        dwError = _VmDirApplyOneLogEntry(&logEntry, indexToApply, &beCtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        beCtx.pBEPrivate = NULL;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    gRaftState.lastApplied = indexToApply;
+    if ( gRaftState.commitIndex < logEntry.index)
+    {
+        gRaftState.commitIndex = logEntry.index;
+        gRaftState.commitIndexTerm = logEntry.term;
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    _VmDirChgLogFree(pLogEntry, TRUE);
+    _VmDirChgLogFree(&logEntry, FALSE);
+    return dwError;
+
+error:
+    if (beCtx.pBE && beCtx.pBEPrivate)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
+    if (logEntry.index <= gRaftState.lastApplied)
+    {
+        //The log was applied through other thread,
+        //  both voteEvaluate thread and logApplyThread may apply the same log
+        dwError = 0;
+    } else
+    {
+       VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+      "%s: indexToApply: logIndx/Term (%llu, %d) %llu commitIndex %llu term %d errcode: %d",
+       __func__, logEntry.index, logEntry.term, indexToApply,
+      gRaftState.commitIndex, gRaftState.currentTerm, dwError);
+      assert(0);
+    }
+    goto cleanup;
+}
+
+/*
+ * the scheme supports more than one entryId(s)
+ * created for reach raft commit, like user defined transactions
  */
 VOID
 VmDirRaftNextNewEntryId(ENTRYID *pEntryId)
 {
-    *pEntryId = NEW_ENTRY_EID_PREFIX | (gRaftState.commitIndex + 1);
+    static UINT64 prevIdx = 0;
+    static UINT64 idxMajor = 0;
+    UINT64 commitIndex = 0;
+    BOOLEAN bLock = FALSE;
+
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    if (gRaftState.commitIndex == prevIdx)
+    {
+        idxMajor++;
+    } else
+    {
+        prevIdx = gRaftState.commitIndex;
+        idxMajor = 0;
+    }
+    commitIndex = NEW_ENTRY_EID_PREFIX | (gRaftState.commitIndex + 1) | (idxMajor << 32);
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+
+    *pEntryId = commitIndex;
 }
 
 /*
@@ -2724,25 +2678,25 @@ UINT64 VmDirRaftLogIndexToCommit()
     return commitIndex;
 }
 
-BOOLEAN
-VmDirRaftDisallowUpdates(PCSTR caller)
+//This is called by external operations when it just started a write transaction
+// (VmDirMDBTxnBegin) to block the operation during leader transition.
+DWORD
+VmDirValidateOp(PVDIR_OPERATION op, PCSTR caller)
 {
-    BOOLEAN bDisallowUpdates = FALSE;
-    BOOLEAN bLock = FALSE;
+    DWORD dwError = 0;
 
-    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
-    if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gRaftState.disallowUpdates)
+    if (op->opType == VDIR_OPERATION_TYPE_EXTERNAL && gRaftState.disallowUpdates)
     {
-        bDisallowUpdates = TRUE;
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
     }
-    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-    if (bDisallowUpdates)
-    {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "VmDirRaftDisallowUpdates: %s not a leader or during leader transition", caller);
-    }
-    return bDisallowUpdates;
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+          "%s: %s not a leader or during leader transition", __func__, caller);
+    goto cleanup;
 }
 
 /*
@@ -2836,7 +2790,7 @@ _VmDirRaftLogApplyThread()
     BOOLEAN bLock = FALSE;
     unsigned long long indexToApply = 0;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftLogApplyThread: started.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: started.", __func__);
 
     while(1)
     {
@@ -2865,10 +2819,11 @@ _VmDirRaftLogApplyThread()
         indexToApply = gRaftState.indexToApply;
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-        _VmDirApplyLogsUpto(indexToApply);
+        _VmDirApplyLogsUpto(indexToApply, TRUE);
     }
 
 done:
+    VmDirMDBTxnAbortAll();
     return dwError;
 }
 
@@ -2881,7 +2836,7 @@ _VmDirRaftLogCompactThread()
     int     iLogsRemain = 0;
     VDIR_RAFT_LOG_TRIM_SCORE   dwScore = RAFT_LOG_TRIM_SCORE_HIGH;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftLogCompactThread: started.");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: started.", __func__);
 
     while(1)
     {
@@ -2983,8 +2938,8 @@ _VmDirRaftCompactLogs(int compactLogsUpto)
         if ((now - prevLogTime) > 30)
         {
             prevLogTime = now;
-            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftCompactLogs %d logs processed, firstLog %llu commitIndex %llu failed deletion %d",
-                       logsCompactedRound, gRaftState.firstLogIndex, gRaftState.commitIndex, failDeleteCnt);
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: %d logs processed, firstLog %llu commitIndex %llu failed deletion %d",
+                           __func__, logsCompactedRound, gRaftState.firstLogIndex, gRaftState.commitIndex, failDeleteCnt);
             logsCompactedRound = 0;
             failDeleteCnt = 0;
         }
@@ -3285,7 +3240,7 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
 
             if (preLogIndex==0)
             {
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,  "_VmdirDeleteLog: no prev logIndex found for %llu", logIndex-1);
+                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,  "%s: no prev logIndex found for %llu", __func__, logIndex-1);
                 dwError = LDAP_OPERATIONS_ERROR;
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
@@ -3295,8 +3250,8 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmdirDeleteLog deleted log %llu prevLogIndex %llu lastLogIndex %llu lastLogterm %llu currentTerm %d lastApplied %llu commitLogIndex %llu role %d",
-          logIndex, preLogIndex, gRaftState.lastLogIndex, gRaftState.lastLogTerm, gRaftState.currentTerm, gRaftState.lastApplied,
+          "%s deleted log %llu prevLogIndex %llu lastLogIndex %llu lastLogterm %llu currentTerm %d lastApplied %llu commitLogIndex %llu role %d",
+          __func__, logIndex, preLogIndex, gRaftState.lastLogIndex, gRaftState.lastLogTerm, gRaftState.currentTerm, gRaftState.lastApplied,
           gRaftState.commitIndex, gRaftState.role);
     }
 
@@ -3310,7 +3265,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "_VmdirDeleteLog: entry %s error %d", pDn,  dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: entry %s error %d", __func__, pDn,  dwError);
     goto cleanup;
 }
 
@@ -3369,8 +3324,8 @@ cleanup:
     return;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirPersistTerm: %s error %d term %d currentTerm %d; server role %d",
-                    VDIR_SAFE_STRING(pszLocalErrorMsg), dwError, term, gRaftState.currentTerm, gRaftState.role);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: %s error %d term %d currentTerm %d; server role %d",
+                    __func__, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError, term, gRaftState.currentTerm, gRaftState.role);
     goto cleanup;
 }
 /*
@@ -3420,7 +3375,7 @@ _VmDirFixLogsForDR()
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: apply logs from %llu to %llu",
           __func__, gRaftState.lastLogIndex, gRaftState.commitIndex + 1);
-        _VmDirApplyLogsUpto(gRaftState.lastLogIndex);
+        _VmDirApplyLogsUpto(gRaftState.lastLogIndex, FALSE);
         if ( gRaftState.lastLogIndex != gRaftState.commitIndex)
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
@@ -3428,4 +3383,127 @@ _VmDirFixLogsForDR()
               __func__, gRaftState.lastLogIndex, gRaftState.commitIndex);
         }
     }
+}
+
+static
+DWORD
+_VmDirRaftAddLog(PVDIR_OPERATION pOp, PVDIR_RAFT_LOG pChgLog)
+{
+    DWORD dwError = 0;
+    PVMDIR_THREAD_TXN_CONTEXT pThreadTxnContext = NULL;
+    PVMDIR_TXN_CONTEXT pTxnContext = NULL;
+    PSTR    pszLocalErrMsg = NULL;
+    unsigned long long index = 0;
+
+    dwError = VmDirGetThreadTxnContextValue(&pThreadTxnContext);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "No ThreadTxnContext");
+
+    assert(pThreadTxnContext);
+    assert(pOp->pBECtx);
+    assert(pOp->pBECtx->pBE);
+
+    if (!pChgLog)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "No ThreadTxnContext");
+    } else
+    {
+        index = pChgLog->index;
+    }
+
+    pTxnContext = &pThreadTxnContext->mainDbTxnCtx;
+
+    if (pTxnContext->txnState == TXN_NONE)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "txnState==TXN_NONE");
+    }
+
+    assert(pTxnContext->pBE);
+
+    if (pTxnContext->pBE != pOp->pBECtx->pBE)
+    {
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "wong mainDB backend");
+    }
+
+    dequePush(&(pThreadTxnContext->chgLogs), pChgLog);
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: pushed index %llu chgLogs %d", __func__,
+                    index, pThreadTxnContext->chgLogs.iSize);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,  "%s: %s log %llu error %d", __func__,
+                    VDIR_SAFE_STRING(pszLocalErrMsg), index, dwError);
+    goto cleanup;
+}
+
+// This is invoked right before calling mdb_txn_commit() on main backend
+DWORD
+VmDirEncodeLogEntry()
+{
+    DWORD dwError = 0;
+    PVMDIR_THREAD_TXN_CONTEXT pThreadTxnContext = NULL;
+    VDIR_RAFT_LOG packedChgLogs = {0};
+    PVDIR_RAFT_LOG pPackedChgLog = NULL;
+    PSTR pszLocalErrorMsg = NULL;
+    BOOLEAN bLock = FALSE;
+    //DEQUE unPackedChgLogs = {0};
+
+    dwError = VmDirGetThreadTxnContextValue(&pThreadTxnContext);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirGetThreadTxnContextValue");
+
+    if (pThreadTxnContext==NULL)
+    {
+        dwError = LDAP_OPERATIONS_ERROR;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "pThreadTxnContext not set");
+    }
+
+    if (pThreadTxnContext->chgLogs.iSize < 1)
+    {
+       //transaction started/commited without operation, e.g. search with begin/commit
+       goto cleanup;
+    } else if (pThreadTxnContext->chgLogs.iSize == 1)
+    {
+        //Old encoding format for backward compatability
+        dequePopLeft(&pThreadTxnContext->chgLogs, (PVOID*)&pPackedChgLog);
+        dwError = _VmDirPackLogEntry(pPackedChgLog);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "_VmDirPackLogEntry failed with one log");
+
+        dwError = VmDirAddRaftEntry(pPackedChgLog);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddRaftEntry failed with one log");
+
+        VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+        gLogEntry = *pPackedChgLog; //Now gLogEntry own the log entry.
+        VMDIR_SAFE_FREE_MEMORY(pPackedChgLog);
+        pPackedChgLog = NULL;
+        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+        goto cleanup;
+    } else
+    {
+        dwError = VmDirPackLogEntries(&packedChgLogs, &pThreadTxnContext->chgLogs);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirPackLogEntries failed with %d logs",
+                                     pThreadTxnContext->chgLogs.iSize);
+
+        dwError = VmDirAddRaftEntry(&packedChgLogs);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirAddRaftEntry failed with %d logs",
+                                     pThreadTxnContext->chgLogs.iSize);
+
+        VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+        gLogEntry = packedChgLogs; //Now gLogEntry own the log entry.
+        VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,  "%s: %s error %d", __func__,
+                    VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
+    VMDIR_SAFE_FREE_MEMORY(pPackedChgLog);
+    goto cleanup;
 }

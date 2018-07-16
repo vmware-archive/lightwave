@@ -58,9 +58,8 @@ VmDirIndexLibInit(
 
     beCtx.pBE = VmDirBackendSelect(NULL);
 
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     // get fields to continue indexing from where it left last time
     dwError = beCtx.pBE->pfnBEUniqKeyGetValue(
@@ -80,9 +79,12 @@ VmDirIndexLibInit(
         gVdirIndexGlobals.offset = VmDirStringToIA(pszLastOffset);
     }
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -113,26 +115,23 @@ VmDirIndexLibInit(
         pIndexCfg = NULL;
     }
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        dwError = _VmDirIndexLibInitLogDB();
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = _VmDirIndexLibInitLogDB();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeIndexingThread();
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
-    }
     VmDirBackendCtxContentFree(&beCtx);
     VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszLastOffset);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_LOG_ERROR(
             VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)",

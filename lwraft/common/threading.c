@@ -538,6 +538,7 @@ ThreadFunction(
     PVMDIR_START_ROUTINE pThreadStart = NULL;
     PVOID pThreadArgs = NULL;
     PVMDIR_THREAD_LOG_CONTEXT   pLogCtx = NULL;
+    PVMDIR_THREAD_TXN_CONTEXT   pTxnCtx = NULL;
 
     union
     {
@@ -567,11 +568,15 @@ ThreadFunction(
     dwError = VmDirAllocAndSetThrLogCtx(&pLogCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocAndSetThrTxnCtx(&pTxnCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = pThreadStart( pThreadArgs );
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
     VmDirUnsetAndFreeThrLogCtx(pLogCtx);
+    VmDirUnsetAndFreeThrTxnCtx(pTxnCtx);
 
     VMDIR_SAFE_FREE_MEMORY( pArgs );
 

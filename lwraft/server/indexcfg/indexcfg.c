@@ -104,9 +104,8 @@ VmDirDefaultIndexCfgInit(
     pIndexCfg->iTypes = pDefIdxCfg->iTypes;
 
     beCtx.pBE = VmDirBackendSelect(NULL);
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = VmDirIndexCfgRestoreProgress(&beCtx, pIndexCfg, &bRestore);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -139,22 +138,25 @@ VmDirDefaultIndexCfgInit(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     *ppIndexCfg = pIndexCfg;
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
-    }
     VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_SAFE_FREE_MEMORY(pszScope);
     VmDirFreeIndexCfg(pIndexCfg);
     goto cleanup;
@@ -187,9 +189,8 @@ VmDirCustomIndexCfgInit(
     pIndexCfg->bIsNumeric = VmDirSchemaAttrIsNumeric(pATDesc);
 
     beCtx.pBE = VmDirBackendSelect(NULL);
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = VmDirIndexCfgRestoreProgress(&beCtx, pIndexCfg, &bRestore);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -226,22 +227,25 @@ VmDirCustomIndexCfgInit(
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     *ppIndexCfg = pIndexCfg;
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
-    }
     VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_SAFE_FREE_MEMORY(pszScope);
     VmDirFreeIndexCfg(pIndexCfg);
     goto cleanup;

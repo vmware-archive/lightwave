@@ -183,15 +183,12 @@ VmDirInitBackend(
     dwError = pBE->pfnBEInit(TRUE, pInstance->pszDbPath, &pInstance->hDB);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Start: Initialize additional databases");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Start: Initialize additional databases");
 
-        dwError = VmDirIterateDBInstances(VmDirInitDBInstanceCB, NULL);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirIterateDBInstances(VmDirInitDBInstanceCB, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "End: Initialize additional databases");
-    }
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "End: Initialize additional databases");
 
     /*
      * Attribute indices are configured by attribute type entries.
@@ -217,12 +214,9 @@ VmDirInitBackend(
     dwError = VmDirBackendInitUSNList(pBE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        /* run init tasks for additional logs */
-        dwError = VmDirBackendMapPreviousLogs();
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    /* run init tasks for additional logs */
+    dwError = VmDirBackendMapPreviousLogs();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     /* init raft state will have to create entries in main and log databases */
     dwError = VmDirInitRaftPsState();
@@ -629,9 +623,8 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
     op.pBEIF = VmDirBackendSelect(PERSISTED_DSE_ROOT_DN);
     assert(op.pBEIF);
 
-    dwError = op.pBEIF->pfnBETxnBegin( op.pBECtx, VDIR_BACKEND_TXN_READ);
+    dwError = op.pBEIF->pfnBETxnBegin( op.pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR( dwError );
-    bHasTxn = TRUE;
 
     dwError = op.pBEIF->pfnBEIdToEntry( op.pBECtx, op.pSchemaCtx, DSE_ROOT_ENTRY_ID, &dseRoot, VDIR_BACKEND_TXN_READ);
     BAIL_ON_VMDIR_ERROR( dwError );
@@ -922,9 +915,12 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
         *pbWriteInvocationId = FALSE;
     }
 
-    dwError = op.pBEIF->pfnBETxnCommit( op.pBECtx );
-    bHasTxn = FALSE;
-    BAIL_ON_VMDIR_ERROR( dwError );
+    if (bHasTxn)
+    {
+        dwError = op.pBEIF->pfnBETxnCommit( op.pBECtx );
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR( dwError );
+    }
 
     // Set the domain functional level
     // TODO: update global when dfl is changed.

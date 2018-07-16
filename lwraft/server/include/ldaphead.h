@@ -239,6 +239,14 @@ VmDirSendLdapResult(
    VDIR_OPERATION *   op
    );
 
+void
+VmDirSendLdapTxnResult(
+    VDIR_OPERATION * op,
+    PCSTR responseData,
+    PCSTR err_str,
+    BOOLEAN * pBresultSent
+    );
+
 VOID
 VmDirSendSASLBindResponse(
     PVDIR_OPERATION     pOperation

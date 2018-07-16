@@ -206,6 +206,12 @@ VmDirFreeOperationContent(
             VMDIR_SAFE_FREE_MEMORY(op->requestVoteCtrl->value.requestVoteCtrlVal.candidateId);
         }
 
+        if (op->txnSpecCtrl)
+        {
+            op->pBECtx->pszTxnId = NULL;
+            VMDIR_SAFE_FREE_MEMORY(op->txnSpecCtrl->value.txnSpecCtrlVal.pszTxnId);
+        }
+
         if (op->reqControls)
         {
             DeleteControls(&(op->reqControls));

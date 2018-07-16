@@ -238,13 +238,6 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwRaftKeeplogs = pEntry->dwValue * 1024;  // reg key value in K
         }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_RAFT_USE_LOGDB,
-                    TRUE))
-        {
-            gVmdirGlobals.bUseLogDB = pEntry->dwValue ? TRUE : FALSE; /* use separate log db for logs */
-        }
         else if(!VmDirStringCompareA(
                     pEntry->pszName,
                     VMDIR_REG_KEY_CURL_TIMEOUT_SEC,
@@ -286,6 +279,19 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirServerGlobals.dwRESTLogLevelOverride = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_LDAP_USER_TXN_RECV_TIMEOUT_MS,
+                    TRUE))
+        {
+            gVmdirGlobals.dwLdapUserTxnRecvTimeoutMS = pEntry->dwValue;
+        } else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_LDAP_USER_TXN_MAXTIME_MS,
+                    TRUE))
+        {
+            gVmdirGlobals.dwLdapUserTxnMaxtimeMS = pEntry->dwValue;
         }
     }
 

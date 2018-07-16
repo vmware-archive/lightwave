@@ -293,6 +293,14 @@ VmDirMDBInitializeDB(
     dwError = _VmDirMDBInitializeDBEntry(dbHomeDir, &pDB);
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    if (bMainDB)
+    {
+      pDB->bIsMainDB = TRUE;
+    } else
+    {
+      pDB->bIsMainDB = FALSE;
+    }
+
     dwError = (sizeof(ENTRYID) == sizeof(VDIR_DB_SEQ_T)) ? 0 : ERROR_BACKEND_ERROR;
     BAIL_ON_VMDIR_ERROR( dwError );
 
@@ -400,6 +408,8 @@ VmDirMDBInitializeDB(
 //TODO, what if open failed?  how to recover??
     BAIL_ON_VMDIR_ERROR( dwError );
 
+    mdb_set_error_log_func(&VmDirMdbErrorLog);
+
     /* Open main database. */
     dwError = MDBOpenMainDB(pDB);
     BAIL_ON_VMDIR_ERROR( dwError );
@@ -429,6 +439,9 @@ VmDirMDBInitializeDB(
     }
 
     *phHandle = pDB;
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: succeeded with dbHomeDir %s", __func__, dbHomeDir); 
+
 cleanup:
     VmDirLog( LDAP_DEBUG_TRACE, "MDBInitializeDB: End" );
 
@@ -877,4 +890,15 @@ MDBCloseDBs(
     }
 
     VmDirLog( LDAP_DEBUG_TRACE, "MdbCloseDBs: End" );
+}
+
+VOID
+VmDirMdbErrorLog(
+    int errnum,
+    int param,
+    const char *funname,
+    int lineno)
+{
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: error %d param %d func %s line %d",
+                    __func__,  errnum, param, funname, lineno);
 }

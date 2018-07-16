@@ -233,6 +233,13 @@ VmDirPerformSearch(
        // Referral is not sent because the raft state might have changed. Go throughput normal procedure.
    }
 
+   if (pOperation->pBECtx->pszTxnId && sr->scope != LDAP_SCOPE_BASE)
+   {
+       retVal = pResult->errCode = LDAP_UNWILLING_TO_PERFORM;
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
+         "%s: onelevel or subtree search not supported within user transaction", __func__);
+   }
+
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 

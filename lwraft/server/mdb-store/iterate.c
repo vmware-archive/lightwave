@@ -29,17 +29,20 @@ VmDirMDBIndexIteratorInit(
     VDIR_DB_DBT     value = {0};
     PSTR            pszVal = NULL;
     ENTRYID         eId = 0;
-    PVDIR_DB_TXN    pTxn = NULL;
     PVDIR_DB_DBC    pCursor = NULL;
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator = NULL;
     PVDIR_MDB_INDEX_ITERATOR        pMdbIterator = NULL;
     PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+    BOOLEAN bHasTxn = FALSE;
+    VDIR_BACKEND_CTX mdbBECtx = {0};
 
     if (!pDB || !pIndexCfg || !ppIterator)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    mdbBECtx.pBE = pBE;
 
     dwError = VmDirAllocateMemory(
             sizeof(VDIR_BACKEND_INDEX_ITERATOR),
@@ -56,12 +59,10 @@ VmDirMDBIndexIteratorInit(
     dwError = VmDirMDBIndexGetDBi(pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    dwError = VmDirMDBTxnBegin(&mdbBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pMdbIterator->pTxn = pTxn;
-
-    dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+    dwError = mdb_cursor_open(mdbBECtx.pBEPrivate, mdbDBi, &pCursor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMdbIterator->pCursor = pCursor;
@@ -99,12 +100,19 @@ VmDirMDBIndexIteratorInit(
     {
         pIterator->bHasNext = FALSE;
         dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
-        pMdbIterator->bAbort = dwError ? TRUE : FALSE;
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMdbIterator->pszVal = pszVal;
     pMdbIterator->eId = eId;
+
+    if (bHasTxn)
+    {
+        dwError = VmDirAllocateAndCopyMemory(&mdbBECtx, sizeof(mdbBECtx), (PVOID*)&pMdbIterator->pBECtx);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pMdbIterator->bHasTxn = TRUE;
+    }
 
     *ppIterator = pIterator;
 
@@ -113,6 +121,11 @@ cleanup:
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        VmDirMDBTxnAbort(&mdbBECtx);
+    }
+
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
@@ -203,15 +216,15 @@ VmDirMDBIndexIteratorFree(
             {
                 mdb_cursor_close(pMdbIterator->pCursor);
             }
-            if (pMdbIterator->pTxn)
+            if (pMdbIterator->pBECtx && pMdbIterator->bHasTxn)
             {
                 if (pMdbIterator->bAbort)
                 {
-                    mdb_txn_abort(pMdbIterator->pTxn);
+                    VmDirMDBTxnAbort(pMdbIterator->pBECtx);
                 }
                 else
                 {
-                    mdb_txn_commit(pMdbIterator->pTxn);
+                    VmDirMDBTxnCommit(pMdbIterator->pBECtx);
                 }
             }
             VMDIR_SAFE_FREE_MEMORY(pMdbIterator->pszVal);

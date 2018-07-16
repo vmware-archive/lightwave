@@ -77,12 +77,20 @@ typedef struct _VMDIR_REPLICATION_CONTEXT
     PSTR pszKrb5ErrorMsg;
 } VMDIR_REPLICATION_CONTEXT, *PVMDIR_REPLICATION_CONTEXT;
 
+#define RAFT_NOOP 0
+#define RAFT_MULTILOG 1
 typedef struct _VDIR_RAFT_LOG
 {
     UINT64 index;
     UINT32 term;
     UINT64 entryId;           //For entryId to be add/modified/deleted.
-    UINT32 requestCode;       //LDAP_REQ_ADD, LDAP_REQ_DELETE, LDAP_REQ_MODIFY or 0 for nonop (used for raft leader change)
+    /* requestCode:
+     * LDAP_REQ_ADD, LDAP_REQ_DELETE, LDAP_REQ_MODIFY, RAFT_NOLOG for nonop (used for raft leader change),
+     * RAFT_MULTILOG (used for user defined transaction - RFC 5805) for multiple logs, i.e. chglog contains
+     * multiple operations, where entryId(s), and requestCode(s) are encoded individually,
+     * and entryId in this structure is set to 0 for backward compatability.
+     */
+    UINT32 requestCode;
     VDIR_BERVALUE chglog;     //packed entry (LDAP_REQ_ADD), mods(LDAP_REQ_MODIFY) or empty value (LDAP_REQ_DELETE)
     VDIR_BERVALUE packRaftLog; //packed for MDB persist or RPC transport in format below
                                //encoded log index(8 bytes), term(4 bytes), entryid(8 bytes),

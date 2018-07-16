@@ -37,6 +37,7 @@ extern "C" {
 #define LARGE_TIMEOUT_VALUE_MS 36000000
 #define RAFT_PREVLOG_FETCH_MARGIN 64
 #define RPC_LATENCY_STATS_CNT 10000
+#define RAFT_APPLIED_GAP_MAX 5000
 
 extern VDIR_RAFT_STATE gRaftState;
 
@@ -80,9 +81,7 @@ VmDirLoadRaftState(
 
 DWORD
 VmDirAddRaftEntry(
-    PVDIR_SCHEMA_CTX pSchemaCtx,
-    PVDIR_RAFT_LOG pLogEntry,
-    PVDIR_OPERATION pOp
+    PVDIR_RAFT_LOG pLogEntry
     );
 
 DWORD
@@ -187,7 +186,8 @@ _VmDirDecodeUINT64(
 
 VOID
 _VmDirChgLogFree(
-    PVDIR_RAFT_LOG chgLog
+    PVDIR_RAFT_LOG chgLog,
+    BOOLEAN freeSelf
     );
 
 DWORD

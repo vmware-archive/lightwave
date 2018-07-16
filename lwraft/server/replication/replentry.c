@@ -18,8 +18,6 @@
 
 #include "includes.h"
 
-static DWORD _VmDirGetLastIndex(UINT64 *index, UINT32 *term);
-
 static int
 _VmDirCompareLogIdx(
     const void * logIdx1,
@@ -119,14 +117,12 @@ VmDirInitRaftPsState(
     dwError = _VmDirInitRaftPsStateInBE(pBE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        /* init log db */
-        pBE = VmDirBackendSelect(ALIAS_LOG_CURRENT);
+    /* init log db */
+    pBE = VmDirBackendSelect(ALIAS_LOG_CURRENT);
 
-        dwError = _VmDirInitRaftPsStateInBE(pBE);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = _VmDirInitRaftPsStateInBE(pBE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 error:
     return dwError;
 }
@@ -142,6 +138,11 @@ VmDirLoadRaftState(
     VDIR_ENTRY_ARRAY entryArray = {0};
     PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
     VDIR_RAFT_LOG logEntry = {0};
+    ENTRYID maxEId = 0;
+    PVDIR_BACKEND_INTERFACE pLogBE = NULL;
+
+    pLogBE = VmDirBackendSelect(ALIAS_LOG_CURRENT);
+    assert(pLogBE);
 
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -182,7 +183,7 @@ VmDirLoadRaftState(
     gRaftState.firstLogIndex = VmDirStringToLA(pAttr->vals[0].lberbv.bv_val, NULL, 10);
 
     /* Populate previous log db details if any */
-    if (gVmdirGlobals.bUseLogDB && VmDirHasBackend(ALIAS_LOG_PREVIOUS))
+    if (VmDirHasBackend(ALIAS_LOG_PREVIOUS))
     {
         gRaftState.bHasPrevLog = TRUE;
     }
@@ -197,8 +198,15 @@ VmDirLoadRaftState(
     gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
     gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for request vote timeout.
 
-    dwError = _VmDirGetLastIndex(&gRaftState.lastLogIndex, &gRaftState.lastLogTerm);
+    dwError = pLogBE->pfnBEMaxEntryId(pLogBE, &maxEId);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    _VmDirChgLogFree(&logEntry, FALSE);
+    dwError = _VmDirFetchLogEntry(maxEId & (~LOG_ENTRY_EID_PREFIX), &logEntry, __LINE__);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gRaftState.lastLogIndex = logEntry.index;
+    gRaftState.lastLogTerm = logEntry.term;
 
     gRaftState.initialized = TRUE;
 
@@ -209,7 +217,7 @@ cleanup:
     {
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
-    _VmDirChgLogFree(&logEntry);
+    _VmDirChgLogFree(&logEntry, FALSE);
 
     if (dwError==0)
     {
@@ -226,21 +234,41 @@ error:
 }
 
 DWORD
-VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_OPERATION pOp)
+VmDirAddRaftEntry(PVDIR_RAFT_LOG pLogEntry)
 {
     DWORD dwError = 0;
     char logEntryDn[RAFT_CONTEXT_DN_MAX_LEN] = {0};
     VDIR_ENTRY raftEntry = {0};
-    VDIR_OPERATION modOp = {0};
     char termStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     char logIndexStr[VMDIR_MAX_I64_ASCII_STR_LEN] = {0};
     char objectGuidStr[VMDIR_GUID_STR_LEN];
     VDIR_BERVALUE bvIndexApplied = VDIR_BERVALUE_INIT;
     uuid_t guid;
+    VDIR_BACKEND_CTX logBeCtx = {0};
+    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
+    VDIR_OPERATION op = {0};
+    PSTR pszLocalErrorMsg = NULL;
     BOOLEAN bHasTxn = FALSE;
-    PVDIR_BACKEND_CTX pCtxTemp = NULL;
+    BOOLEAN bLock = FALSE;
 
-    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirAddRaftEntry: log index %llu", pLogEntry->index);
+    VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: log index %llu", __func__, pLogEntry->index);
+
+    dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirSchemaCtxAcquire");
+
+    dwError = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx );
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "VmDirInitStackOperation");
+
+    dwError = VmDirStringPrintFA(logIndexStr, sizeof(logIndexStr), "%llu", pLogEntry->index);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bvIndexApplied.lberbv.bv_val  = logIndexStr;
+    bvIndexApplied.lberbv.bv_len = VmDirStringLenA(logIndexStr);
+
+    op.pBEIF = VmDirBackendSelect(RAFT_PERSIST_STATE_DN);
+    dwError = VmDirAddModSingleAttributeReplace(&op, RAFT_PERSIST_STATE_DN,
+                                                ATTR_RAFT_LAST_APPLIED, &bvIndexApplied);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringPrintFA(logEntryDn, sizeof(logEntryDn), "%s=%llu,%s",
                 ATTR_CN, pLogEntry->index, RAFT_LOGS_CONTAINER_DN);
@@ -249,7 +277,8 @@ VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_O
     dwError = VmDirStringPrintFA(termStr, sizeof(termStr), "%d", pLogEntry->term);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringPrintFA(logIndexStr, sizeof(logIndexStr), "%llu", pLogEntry->index);
+    op.bSuppressLogInfo = TRUE;
+    dwError = VmDirInternalModifyEntry(&op);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     {
@@ -283,58 +312,44 @@ VmDirAddRaftEntry(PVDIR_SCHEMA_CTX pSchemaCtx, PVDIR_RAFT_LOG pLogEntry, PVDIR_O
 
     raftEntry.eId = VmDirRaftLogEntryId(pLogEntry->index);
 
-    if (gVmdirGlobals.bUseLogDB)
+    logBeCtx.pBE = VmDirBackendSelect(RAFT_LOGS_CONTAINER_DN);
+
+    dwError = logBeCtx.pBE->pfnBETxnBegin(&logBeCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = logBeCtx.pBE->pfnBEEntryAdd(&logBeCtx, &raftEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (bHasTxn)
     {
-        /* this ctx is owned by gLogEntry and will be freed accordingly */
-        pCtxTemp = &pLogEntry->beCtx;
-        pCtxTemp->pBE = VmDirBackendSelect(RAFT_LOGS_CONTAINER_DN);
-
-        dwError = pCtxTemp->pBE->pfnBETxnBegin(pCtxTemp, VDIR_BACKEND_TXN_WRITE);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        bHasTxn = TRUE;
-
-        dwError = pCtxTemp->pBE->pfnBEEntryAdd(pCtxTemp, &raftEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        dwError = pOp->pBEIF->pfnBEEntryAdd(pOp->pBECtx, &raftEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = logBeCtx.pBE->pfnBETxnCommit(&logBeCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "pfnBETxnCommit adding raftEntry");
     }
 
-    dwError = VmDirCloneStackOperation(pOp, &modOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    bvIndexApplied.lberbv.bv_val  = logIndexStr;
-    bvIndexApplied.lberbv.bv_len = VmDirStringLenA(logIndexStr);
-
-    dwError = VmDirAddModSingleAttributeReplace(&modOp, RAFT_PERSIST_STATE_DN,
-                                                ATTR_RAFT_LAST_APPLIED, &bvIndexApplied);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    modOp.bSuppressLogInfo = TRUE;
-    bHasTxn = FALSE;
-    dwError = VmDirInternalModifyEntry(&modOp);
-
-    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+    gRaftState.lastLogIndex = pLogEntry->index;
+    VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
 cleanup:
-
-    if (modOp.pBECtx)
-    {
-        modOp.pBECtx->pBEPrivate = NULL; //Make sure that calls commit/abort only once.
-    }
-    VmDirFreeOperationContent(&modOp);
+    VmDirFreeOperationContent(&op);
     VmDirFreeEntryContent(&raftEntry);
+    if (pSchemaCtx)
+    {
+        VmDirSchemaCtxRelease(pSchemaCtx);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return dwError;
 
 error:
-
+    if (bHasTxn)
+    {
+        logBeCtx.pBE->pfnBETxnAbort(&logBeCtx);
+    }
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "VmDirAddRaftEntry: log(%llu, %d, %d) term %d lastLogIndex %llu commitIndex %llu error %d",
-      pLogEntry->index, pLogEntry->term, pLogEntry->requestCode, gRaftState.currentTerm,
-      gRaftState.lastLogIndex, gRaftState.commitIndex, dwError);
+      "%s: log(%llu, %d, %d) term %d lastLogIndex %llu commitIndex %llu %s error %d",
+      __func__, pLogEntry->index, pLogEntry->term, pLogEntry->requestCode, gRaftState.currentTerm,
+      gRaftState.lastLogIndex, gRaftState.commitIndex, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
     goto cleanup;
 }
 
@@ -368,7 +383,7 @@ _VmDirLogLookup(
     *pbTermMatch = bTermMatch;
 
 cleanup:
-    _VmDirChgLogFree(&logEntry);
+    _VmDirChgLogFree(&logEntry, FALSE);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return dwError;
 
@@ -589,7 +604,7 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirChgLogFree(pLogEntry);
+    _VmDirChgLogFree(pLogEntry, FALSE);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s line %d", VDIR_SAFE_STRING(pszLocalErrorMsg), from);
     goto cleanup;
 }
@@ -620,7 +635,7 @@ _VmDirGetPrevLogArgs(unsigned long long *pPrevIndex, UINT32 *pPrevTerm, UINT64 s
     *pPrevTerm = prevTerm;
 
 cleanup:
-    _VmDirChgLogFree(&prevLogEntry);
+    _VmDirChgLogFree(&prevLogEntry, FALSE);
     return dwError;
 error:
     goto cleanup;
@@ -747,11 +762,84 @@ error:
     goto cleanup;
 }
 
+//Pack multiple log entries into pLogEntry
+//Assume chglog in pChgLogs is not packed yet.
+DWORD
+VmDirPackLogEntries(PVDIR_RAFT_LOG pLogEntry, PDEQUE pChglogs)
+{
+    DWORD dwError = 0;
+    PDEQUE_NODE pDeque = NULL;
+    PVDIR_RAFT_LOG pChgLog = NULL;
+    VDIR_RAFT_LOG chgLog = {0};
+    int chglog_size = 0;
+    int iSize = 0;
+    unsigned long long logIndex = 0;
+    int logTerm = 0;
+    unsigned long long entryId;
+    int requestCode = 0;
+    unsigned char *writer = NULL;
+
+    // Calculate total size of packing individual logs into one.
+    for (pDeque = pChglogs->pHead; pDeque != NULL; pDeque = pDeque->pNext)
+    {
+        pChgLog = (PVDIR_RAFT_LOG)pDeque->pElement;
+        chglog_size += RAFT_LOG_HEADER_LEN + pChgLog->chglog.lberbv_len + sizeof(UINT64);
+        if (logIndex == 0)
+        {
+            logIndex = pChgLog->index;
+            logTerm = pChgLog->term;
+            requestCode = 1;
+            entryId = 0;
+        }
+    }
+
+    chglog_size += RAFT_LOG_HEADER_LEN;
+
+    dwError = VmDirAllocateMemory(chglog_size, (PVOID*)&(chgLog.packRaftLog.lberbv_val));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    writer = chgLog.packRaftLog.lberbv_val;
+    _VmDirEncodeUINT64(&writer, logIndex);
+    _VmDirEncodeUINT32(&writer, logTerm);
+    _VmDirEncodeUINT64(&writer, entryId);
+    _VmDirEncodeUINT32(&writer, requestCode);
+
+    // Each individual change log is encoded as:
+    // size of that changelog, followed by encoded change log as the orignal format.
+    while(!dequeIsEmpty(pChglogs))
+    {
+        dequePopLeft(pChglogs, (PVOID*)&pChgLog);
+        iSize = pChgLog->chglog.lberbv_len + RAFT_LOG_HEADER_LEN;
+        _VmDirEncodeUINT64(&writer, iSize);
+        _VmDirEncodeUINT64(&writer, pChgLog->index);
+        _VmDirEncodeUINT32(&writer, pChgLog->term);
+        _VmDirEncodeUINT64(&writer, pChgLog->entryId);
+        _VmDirEncodeUINT32(&writer, pChgLog->requestCode);
+        if (pChgLog->chglog.lberbv_len > 0)
+        {
+            memcpy(writer, pChgLog->chglog.lberbv_val, pChgLog->chglog.lberbv_len);
+            writer += pChgLog->chglog.lberbv_len;
+        }
+        _VmDirChgLogFree(pChgLog, TRUE);
+    }
+
+    pLogEntry->packRaftLog.lberbv_val = chgLog.packRaftLog.lberbv_val;
+    pLogEntry->packRaftLog.lberbv_len = chglog_size;
+    pLogEntry->packRaftLog.bOwnBvVal = TRUE;
+    pLogEntry->index = logIndex;
+    pLogEntry->term = logTerm;
+    pLogEntry->entryId = entryId;
+    pLogEntry->requestCode = requestCode;
+
+error:
+    return dwError;
+}
+
 DWORD
 _VmDirUnpackLogEntry(PVDIR_RAFT_LOG pLogEntry)
 {
     DWORD dwError = 0;
-    unsigned char *writer = pLogEntry->packRaftLog.lberbv_val;
+    unsigned char *reader = pLogEntry->packRaftLog.lberbv_val;
 
     if (pLogEntry->packRaftLog.lberbv_val == NULL ||
         pLogEntry->packRaftLog.lberbv_len < RAFT_LOG_HEADER_LEN)
@@ -759,21 +847,73 @@ _VmDirUnpackLogEntry(PVDIR_RAFT_LOG pLogEntry)
          dwError = ERROR_INVALID_PARAMETER;
          BAIL_ON_VMDIR_ERROR(dwError);
     }
-    pLogEntry->index = _VmDirDecodeUINT64(&writer);
-    pLogEntry->term = _VmDirDecodeUINT32(&writer);
-    pLogEntry->entryId = _VmDirDecodeUINT64(&writer);
-    pLogEntry->requestCode = _VmDirDecodeUINT32(&writer);
+    pLogEntry->index = _VmDirDecodeUINT64(&reader);
+    pLogEntry->term = _VmDirDecodeUINT32(&reader);
+    pLogEntry->entryId = _VmDirDecodeUINT64(&reader);
+    pLogEntry->requestCode = _VmDirDecodeUINT32(&reader);
     if (pLogEntry->packRaftLog.lberbv_len > RAFT_LOG_HEADER_LEN)
     {
         pLogEntry->chglog.lberbv_len = pLogEntry->packRaftLog.lberbv_len - RAFT_LOG_HEADER_LEN;
         dwError = VmDirAllocateMemory(pLogEntry->chglog.lberbv_len, (PVOID*)&pLogEntry->chglog.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
-        memcpy(pLogEntry->chglog.lberbv_val, writer, pLogEntry->chglog.lberbv_len);
+        memcpy(pLogEntry->chglog.lberbv_val, reader, pLogEntry->chglog.lberbv_len);
         pLogEntry->chglog.bOwnBvVal = TRUE;
     } else
     {
        pLogEntry->chglog.lberbv_val = NULL;
        pLogEntry->chglog.lberbv_len = 0;
+    }
+
+cleanup:
+    return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirUnpackLogEntries(PDEQUE pChglogs, PVDIR_RAFT_LOG pLogEntry)
+{
+    DWORD dwError = 0;
+    VDIR_RAFT_LOG logEntry = {0};
+    PVDIR_RAFT_LOG pRaftLog = NULL;
+    int iSize = 0;
+
+    unsigned char *reader = pLogEntry->packRaftLog.lberbv_val;
+    unsigned char *end = pLogEntry->packRaftLog.lberbv_val + pLogEntry->packRaftLog.lberbv_len;
+
+    if (pLogEntry->packRaftLog.lberbv_val == NULL ||
+        pLogEntry->packRaftLog.lberbv_len < RAFT_LOG_HEADER_LEN)
+    {
+         dwError = ERROR_INVALID_PARAMETER;
+         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    pLogEntry->index = _VmDirDecodeUINT64(&reader);
+    pLogEntry->term = _VmDirDecodeUINT32(&reader);
+    pLogEntry->entryId = _VmDirDecodeUINT64(&reader);
+    pLogEntry->requestCode = _VmDirDecodeUINT32(&reader);
+    while(reader < (unsigned char *)(end - RAFT_LOG_HEADER_LEN))
+    {
+       iSize = _VmDirDecodeUINT64(&reader);
+       if ((reader + iSize) > end)
+       {
+           BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+       }
+       logEntry.packRaftLog.lberbv_val = reader;
+       logEntry.packRaftLog.lberbv_len = iSize;
+       dwError = _VmDirUnpackLogEntry(&logEntry);
+       BAIL_ON_VMDIR_ERROR(dwError);
+
+       dwError = VmDirAllocateMemory(sizeof(VDIR_RAFT_LOG), (PVOID*)&pRaftLog);
+       BAIL_ON_VMDIR_ERROR(dwError);
+
+       *pRaftLog = logEntry;
+       dequePush(pChglogs, pRaftLog);
+       reader += iSize;
+    }
+
+    if (reader != end)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
 cleanup:
@@ -847,14 +987,15 @@ _VmDirDecodeUINT64(
 
 VOID
 _VmDirChgLogFree(
-    PVDIR_RAFT_LOG chgLog
+    PVDIR_RAFT_LOG chgLog,
+    BOOLEAN freeSelf
 )
 {
     if (chgLog == NULL)
     {
         return;
     }
-    if (chgLog->beCtx.pBE)
+    if (chgLog->beCtx.pBE && chgLog->beCtx.pBEPrivate)
     {
         chgLog->beCtx.pBE->pfnBETxnAbort(&chgLog->beCtx);
     }
@@ -862,95 +1003,10 @@ _VmDirChgLogFree(
     VmDirFreeBervalContent(&chgLog->packRaftLog);
     VmDirFreeBervalContent(&chgLog->chglog);
     memset(chgLog, 0, sizeof(VDIR_RAFT_LOG));
-}
-
-static
-DWORD
-_VmDirGetLastIndex(UINT64 *index, UINT32 *term)
-{
-    DWORD dwError = 0;
-    int i = 0;
-    VDIR_ENTRY_ARRAY entryArray = {0};
-    PVDIR_ATTRIBUTE pAttr = NULL;
-    char filterStr[RAFT_CONTEXT_DN_MAX_LEN] = {0};
-    UINT64 lastLogIndex = 0;
-    UINT64 curLogIndex = 0;
-    VDIR_RAFT_LOG logEntry = {0};
-    PVDIR_BACKEND_INTERFACE pBEPrevLog = NULL;
-
-    dwError = VmDirStringPrintFA(filterStr, sizeof(filterStr), "(%s>=%llu)",
-                                 ATTR_RAFT_LOGINDEX, gRaftState.lastApplied);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirFilterInternalSearch(
-                  RAFT_LOGS_CONTAINER_DN,
-                  LDAP_SCOPE_ONE,
-                  filterStr,
-                  0,
-                  NULL,
-                  &entryArray);
-    if (entryArray.iSize <= 0 || dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
+    if (freeSelf)
     {
-        /*
-         * if there is a previous log, this just means log db does not have
-         * any entries. initialize from previous log. Otherwise, fail.
-        */
-        if (gRaftState.bHasPrevLog)
-        {
-            pBEPrevLog = VmDirBackendSelect(ALIAS_LOG_PREVIOUS);
-            assert(pBEPrevLog);
-
-            VmDirFreeEntryArrayContent(&entryArray);
-
-            dwError = VmDirFilterInternalSearchInBE(
-                          pBEPrevLog,
-                          RAFT_LOGS_CONTAINER_DN,
-                          LDAP_SCOPE_ONE,
-                          filterStr,
-                          0,
-                          NULL,
-                          &entryArray);
-        }
+        VMDIR_SAFE_FREE_MEMORY(chgLog);
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (i = 0; i < entryArray.iSize; i++)
-    {
-        pAttr = VmDirFindAttrByName(&(entryArray.pEntry[i]), ATTR_RAFT_LOGINDEX);
-        curLogIndex = VmDirStringToLA(pAttr->vals[0].lberbv.bv_val, NULL, 10);
-        if (curLogIndex > lastLogIndex)
-        {
-            lastLogIndex = curLogIndex;
-        }
-    }
-
-    if (lastLogIndex == 0)
-    {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirFetchLogEntry(lastLogIndex, &logEntry, __LINE__);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (logEntry.index == 0)
-    {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    *index = lastLogIndex;
-    *term = logEntry.term;
-
-cleanup:
-    VmDirFreeEntryArrayContent(&entryArray);
-    _VmDirChgLogFree(&logEntry);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-      "_VmDirGetLastIndex: lastLogIndex %llu, error %d", lastLogIndex, dwError);
-    goto cleanup;
 }
 
 DWORD
@@ -965,7 +1021,7 @@ _VmDirGetLogTerm(UINT64 index, UINT32 *term)
      *term = logEntry.term;
 
 cleanup:
-    _VmDirChgLogFree(&logEntry);
+    _VmDirChgLogFree(&logEntry, FALSE);
     return dwError;
 
 error:

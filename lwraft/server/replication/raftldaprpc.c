@@ -104,6 +104,11 @@ VmDirRaftLdapRpcAppendEntries(
                                 NULL, ppszAttrs, TRUE, srvCtrls, NULL, &tv, 0, &searchRes);
     if (retVal)
     {
+       if (retVal == VMDIR_ERROR_UNWILLING_TO_PERFORM)
+       {
+           BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+       }
+
        pProxySelf->proxy_state = RPC_DISCONN;
        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CANNOT_CONNECT_VMDIR);
     }
@@ -293,6 +298,11 @@ VmDirRaftLdapRpcRequestVote(
                                 NULL, ppszAttrs, TRUE, srvCtrls, NULL, &tv, 0, &searchRes);
     if (retVal)
     {
+       if (retVal == VMDIR_ERROR_UNWILLING_TO_PERFORM)
+       {
+           BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+       }
+
        pProxySelf->proxy_state = RPC_DISCONN;
        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_CANNOT_CONNECT_VMDIR);
     }
@@ -612,6 +622,7 @@ _VmDirAppendEntriesGetReply(
         gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec(); //Set for election timeout
         VmDirConditionSignal(gRaftAppendEntryReachConsensusCond); //wake up thread waiting for commit consensus
     }
+
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
     if (preLogIndex == 0)
@@ -664,6 +675,14 @@ _VmDirAppendEntriesGetReply(
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
     }
 
+    if ((gRaftState.lastApplied + RAFT_APPLIED_GAP_MAX) < gRaftState.lastLogIndex)
+    {
+        //Applied index is too much behind, let the leader slow down on this peer.
+        // allowing the local server to catch up.
+        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *status = 0;
 
 cleanup:
@@ -675,8 +694,8 @@ cleanup:
             prevLogTime = now;
             //Log once every 30 seconds, over 10 calls
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-              "VmDirAppendEntriesGetReply: entSize %d leader %s term %d leaderCommit %llu preLogIdx %llu preLogTerm %d commitIdx %llu priCommitIdx %llu currentTerm %d oldTerm %d role %d status %llu",
-              entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm,
+              "%s: entSize %d leader %s term %d leaderCommit %llu preLogIdx %llu preLogTerm %d commitIdx %llu priCommitIdx %llu currentTerm %d oldTerm %d role %d status %llu",
+              __func__, entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm,
               gRaftState.commitIndex, priCommitIndex, *currentTerm, oldTerm,
               gRaftState.role, *status);
         }
@@ -689,7 +708,7 @@ cleanup:
         VmDirPersistTerm(newTerm);
     }
 
-    _VmDirChgLogFree(&chgLog);
+    _VmDirChgLogFree(&chgLog, FALSE);
 
     //Raft inconsistency may occur if fatal error detected.
     assert(!bFatalError);
@@ -718,9 +737,9 @@ cleanup:
 
 error:
      VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-              "VmDirAppendEntriesGetReply: entSize %d leader %s term %d leaderCommit %llu preLogIdx %llu preLogTerm %d commitIdx %llu priCommitIdx %llu currentTerm %d oldTerm %d role %d error %d",
-              entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm,
+              "%s: entSize %d leader %s term %d leaderCommit %llu preLogIdx %llu preLogTerm %d commitIdx %llu priCommitIdx %llu currentTerm %d oldTerm %d lastApplied %llu role %d error %d",
+              __func__, entrySize, leader, term, leaderCommit, preLogIndex, preLogTerm,
               gRaftState.commitIndex, priCommitIndex, *currentTerm, oldTerm,
-              gRaftState.role, dwError);
+              gRaftState.lastApplied, gRaftState.role, dwError);
     goto cleanup;
 }

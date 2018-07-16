@@ -1073,3 +1073,57 @@ done:
 error:
    goto done;
 }
+
+void
+VmDirSendLdapTxnResult(
+   VDIR_OPERATION *pOp,
+   PCSTR pszTxnId,
+   PCSTR pszErrStr,
+   BOOLEAN * pBresultSent
+)
+{
+    DWORD dwError = 0;
+    BerElementBuffer    berbuf = {0};
+    BerElement *        ber = (BerElement *) &berbuf;
+    BerValue berv = {0};
+    BOOLEAN bResultSent = FALSE;
+
+    assert(pBresultSent);
+
+    if (pOp == NULL || IsNullOrEmptyString(pszTxnId) || pszErrStr == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    ber_init2( ber, NULL, LBER_USE_DER );
+
+    dwError = ber_printf(ber, "{it{ess" /*"}}"*/,
+                        pOp->msgId,                  // message sequence id
+                        GetResultTag(pOp->reqCode),  // ldap response type
+                        pOp->ldapResult.errCode,     // ldap return code
+                        "",
+                        pszErrStr);                  // error text detail
+    BAIL_ON_LBER_ERROR(dwError);
+
+    berv.bv_val = (PSTR)pszTxnId;
+    berv.bv_len = VmDirStringLenA(pszTxnId);
+    dwError = ber_printf( ber, "tO", LDAP_TAG_EXOP_RES_VALUE,  &berv);
+    BAIL_ON_LBER_ERROR(dwError);
+
+    dwError = ber_printf(ber, "N}N}" );
+    BAIL_ON_LBER_ERROR(dwError);
+
+    dwError = WriteBerOnSocket(pOp->conn, ber );
+    BAIL_ON_LBER_ERROR(dwError);
+
+    bResultSent = TRUE;
+
+cleanup:
+    *pBresultSent = bResultSent;
+    ber_free_buf( ber );
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,  "%s: error %d", __func__, dwError);
+    goto cleanup;
+}

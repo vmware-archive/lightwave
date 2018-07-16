@@ -451,30 +451,35 @@ VmDirFindMemberOfAttribute(
 LDAP_REQ_SEARCH, NULL );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    searchOp.pBEIF = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
-    assert(searchOp.pBEIF);
+    searchOp.pBECtx->pBE = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
+    assert(searchOp.pBECtx->pBE);
 
     // start txn
-    dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ );
+    dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    bHasTxn = TRUE;
 
     dwError = VmDirBuildMemberOfAttribute( &searchOp, pEntry, &pMemberOfAttr );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (bHasTxn)
+    {
+        dwError = searchOp.pBEIF->pfnBETxnCommit( searchOp.pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *ppMemberOfAttr = pMemberOfAttr;
 
 cleanup:
-    if (bHasTxn)
-    {
-        searchOp.pBEIF->pfnBETxnCommit( searchOp.pBECtx);
-    }
     VmDirFreeOperationContent(&searchOp);
 
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        searchOp.pBEIF->pfnBETxnAbort( searchOp.pBECtx);
+    }
     VmDirFreeAttribute(pMemberOfAttr);
     goto cleanup;
 }
