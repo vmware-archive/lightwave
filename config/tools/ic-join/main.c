@@ -39,6 +39,7 @@ VmwDeployBuildParams(
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
+    BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
@@ -199,6 +200,7 @@ ParseArgs(
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
     BOOLEAN bDisableDNS = FALSE;
+    BOOLEAN bGenMachineSSL = TRUE;
     BOOLEAN bAtomicJoin = FALSE;
 
     enum PARSE_MODE
@@ -263,6 +265,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--prejoined"))
                 {
                     bMachinePreJoined = TRUE;
+                }
+                else if (!strcmp(pszArg, "--skip-gen-machine-ssl"))
+                {
+                    bGenMachineSSL = FALSE;
                 }
                 else if (!strcmp(pszArg, "--atomic"))
                 {
@@ -429,6 +435,7 @@ ParseArgs(
                     bDisableDNS,
                     bUseMachineAccount,
                     bMachinePreJoined,
+                    bGenMachineSSL,
                     bAtomicJoin,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
@@ -466,6 +473,7 @@ VmwDeployBuildParams(
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
     BOOLEAN bMachinePreJoined,
+    BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
@@ -565,6 +573,7 @@ VmwDeployBuildParams(
     pSetupParams->bDisableDNS = bDisableDNS;
     pSetupParams->bUseMachineAccount = bUseMachineAccount;
     pSetupParams->bMachinePreJoined = bMachinePreJoined;
+    pSetupParams->bGenMachineSSL = bGenMachineSSL;
     pSetupParams->bAtomicJoin = bAtomicJoin;
 
     *ppSetupParams = pSetupParams;
@@ -609,5 +618,7 @@ ShowUsage(
            "[--username <username>]\n"
            "[--password <password>]\n"
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
-           "[--site <sitename>] Specific region to join to\n");
+           "[--site <sitename>] Specific region to join to\n"
+           "[--skip-gen-machine-ssl] Skip generation of machine SSL certificate\n"
+           "[--atomic] Perform atomic domain join\n");
 }
