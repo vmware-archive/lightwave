@@ -330,9 +330,8 @@
     <args4j.version>2.33</args4j.version>
     <asm.version>5.0.3</asm.version>
     <aspect.version>1.6.9</aspect.version>
-    <bouncycastle.version>1.50</bouncycastle.version>
+    <bouncycastle.version>1.60</bouncycastle.version>
     <cglib.version>2.2</cglib.version>
-    <commons-ssl.version>0.3.9</commons-ssl.version>
     <commons.beanutils.version>1.9.3</commons.beanutils.version>
     <commons.cli.version>1.2</commons.cli.version>
     <commons.codec.version>1.9</commons.codec.version>

@@ -76,11 +76,6 @@
       <version>${joda.version}</version>
     </dependency>
     <dependency>
-      <groupId>ca.juliusdavies</groupId>
-      <artifactId>not-yet-commons-ssl</artifactId>
-      <version>${commons-ssl.version}</version>
-    </dependency>
-    <dependency>
       <groupId>javax.servlet</groupId>
       <artifactId>javax.servlet-api</artifactId>
       <version>${javax.servlet.version}</version>
