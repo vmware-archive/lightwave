@@ -587,6 +587,7 @@ build/vmdns/
 build/vmevent/
 build/vmidentity/
 build/vmmetrics/
+build/vmcommon/
 build/rpmbuild/
 build/docker
 
