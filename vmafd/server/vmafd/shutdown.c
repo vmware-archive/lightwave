@@ -94,6 +94,11 @@ VmAfdServerShutdown(
 
     VmAfdLogTerminate();
 
+    if (gVmafdGlobals.bUseVmDirREST)
+    {
+        OidcClientGlobalCleanup();
+    }
+
     VmAfdCleanupGlobals();
 
     VmAfdOpenSSLShutdown();

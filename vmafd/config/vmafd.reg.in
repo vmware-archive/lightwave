@@ -81,3 +81,7 @@
     default = "/etc/ssl/certs"
     doc     = "CA Certs Path"
 }
+"UseVmDirREST" = {
+    default = dword:00000000
+    doc     = "Use REST api to communicate with remote Directory service"
+}

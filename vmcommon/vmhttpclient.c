@@ -94,7 +94,8 @@ error:
 
 DWORD
 VmHttpClientInit(
-    PVM_HTTP_CLIENT *ppClient
+    PVM_HTTP_CLIENT *ppClient,
+    PCSTR pszCAPath
     )
 {
     DWORD dwError = 0;
@@ -113,6 +114,33 @@ VmHttpClientInit(
     if (!pClient->pCurl)
     {
         dwError = VM_COMMON_ERROR_CURL_INIT_FAILURE;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszCAPath))
+    {
+        dwError = VmAllocateStringA(pszCAPath, &pClient->pszCAPath);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        /* set ca path and cert verify options*/
+        dwError = _VmHttpClientSetCurlOptInt(pClient, CURLOPT_SSL_VERIFYPEER, 1);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = _VmHttpClientSetCurlOptInt(pClient, CURLOPT_SSL_VERIFYHOST, 2);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = _VmHttpClientSetCurlOptPtr(
+                      pClient,
+                      CURLOPT_CAPATH,
+                      pClient->pszCAPath);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+    else /* skip cert verify */
+    {
+        dwError = _VmHttpClientSetCurlOptInt(pClient, CURLOPT_SSL_VERIFYPEER, 0);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = _VmHttpClientSetCurlOptInt(pClient, CURLOPT_SSL_VERIFYHOST, 0);
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
@@ -490,7 +518,7 @@ VmHttpClientFreeHandle(
 {
     if (pClient)
     {
-        VM_COMMON_SAFE_FREE_MEMORY(pClient->pszTlsCAPath);
+        VM_COMMON_SAFE_FREE_MEMORY(pClient->pszCAPath);
         VM_COMMON_SAFE_FREE_MEMORY(pClient->pszResult);
         VM_COMMON_SAFE_FREE_MEMORY(pClient->pszBody);
         if (pClient->pQueryParamsMap)

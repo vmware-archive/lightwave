@@ -267,6 +267,7 @@ typedef struct _VMAFD_GLOBALS
     pthread_t                       pIPCServerThread;
     DWORD                           dwCertCheckSec; // Frequency to check certificates in Seconds
     BOOLEAN                         bEnableRPC;
+    BOOLEAN                         bUseVmDirREST;
 
     PVM_AFD_CONNECTION              pConnection;
     pthread_mutex_t                 mutexConnection;

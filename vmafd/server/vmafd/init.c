@@ -88,6 +88,12 @@ VmAfdInit(
 
     InitializeGlobals(&gVmafdGlobals);
 
+    /* initialize oidc client globals */
+    if (gVmafdGlobals.bUseVmDirREST)
+    {
+        OidcClientGlobalInit();
+    }
+
     dwError = VmAfdVmDirClientInit();
     BAIL_ON_VMAFD_ERROR(dwError);
 

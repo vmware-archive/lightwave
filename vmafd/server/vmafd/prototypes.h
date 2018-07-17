@@ -2454,6 +2454,17 @@ VmAfSrvGetUpgradeState(
     PBOOL pbIsUpgradeInProgress
     );
 
+//rest.c
+DWORD
+VmAfdRestPasswordRefresh(
+    PCSTR pszServer,
+    PCSTR pszDomain,
+    PCSTR pszUser,
+    PCSTR pszPass,
+    BOOLEAN bForce,
+    PSTR *ppszNewPass
+    );
+
 #ifdef __cplusplus
 }
 #endif

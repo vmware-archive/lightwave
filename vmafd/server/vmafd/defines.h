@@ -97,6 +97,7 @@
 #define VMAFD_REG_KEY_MAX_OLD_LOGS "MaximumOldLogs"
 #define VMAFD_REG_KEY_MAX_LOG_SIZE "MaximumLogSize"
 
+
 #define ATTR_AUTOREFRESH           "AutoRefresh"
 
 #define VECS_DB_CURRENT_VERSION     650
@@ -111,6 +112,9 @@
 #define DEFAULT_VECS_CERT_SEC       60 // default value at which certs are pulled down by VECS, in Seconds
 #define VECS_STOREHASH_MAP_SIZE     128
 #define VMAFD_FILE_COPY_BUFSZ       1024
+
+/* default value to determine if directory communications should use REST */
+#define DEFAULT_VMAFD_USE_VMDIR_REST 0
 
 /*
  * Table to define and initialize VMAFD configuration data.
@@ -198,6 +202,15 @@
         UINT32_MAX,                           \
         {1, NULL},                            \
         {1, NULL},                            \
+    },                                        \
+    {                                         \
+        VMAFD_REG_KEY_USE_VMDIR_REST,         \
+        VMAFD_CONFIG_VALUE_TYPE_DWORD,        \
+        REG_DWORD,                            \
+        0,                                    \
+        UINT32_MAX,                           \
+        {DEFAULT_VMAFD_USE_VMDIR_REST, NULL}, \
+        {0, NULL},                            \
     }                                         \
 }
 
@@ -345,3 +358,7 @@ if (bLocked) \
       0\
   }\
 }
+
+#define VMDIR_REST_API_HTTPS_PORT           7479
+#define VMDIR_REST_API_BASE                 "/v1/vmdir/api"
+#define VMDIR_REST_API_PASSWORD_REFRESH_CMD "password/refresh"

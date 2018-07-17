@@ -259,15 +259,29 @@ VmAfdHandlePassRefresh(
     dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmDirResetActPassword(
-                    pszDCName,
-                    pArgs->pszDomain,
-                    pArgs->pszAccountUPN,
-                    pArgs->pszAccountDN,
-                    pArgs->pszPassword,
-                    bForceRefresh,
-                    &pszActPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (gVmafdGlobals.bUseVmDirREST)
+    {
+        dwError = VmAfdRestPasswordRefresh(
+                        pszDCName,
+                        pArgs->pszDomain,
+                        pArgs->pszAccount,
+                        pArgs->pszPassword,
+                        bForceRefresh,
+                        &pszActPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDirResetActPassword(
+                        pszDCName,
+                        pArgs->pszDomain,
+                        pArgs->pszAccountUPN,
+                        pArgs->pszAccountDN,
+                        pArgs->pszPassword,
+                        bForceRefresh,
+                        &pszActPassword);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     if (!IsNullOrEmptyString(pszActPassword))
     {

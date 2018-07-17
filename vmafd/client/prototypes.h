@@ -503,6 +503,14 @@ VmAfdOidcClientDelete(
     POIDC_CLIENT pClient
     );
 
+DWORD
+VmAfdAcquireTokenForVmDirREST(
+    PCSTR pszServer,
+    PCSTR pszDomain,
+    PCSTR pszUser,
+    PCSTR pszPass,
+    PSTR *ppszToken
+    );
 // oidctoafderror.c
 
 DWORD

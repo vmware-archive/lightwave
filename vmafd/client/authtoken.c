@@ -238,3 +238,49 @@ VmAfdOidcClientDelete(
         OidcClientDelete(pClient);
     }
 }
+
+DWORD
+VmAfdAcquireTokenForVmDirREST(
+    PCSTR pszServer,
+    PCSTR pszDomain,
+    PCSTR pszUser,
+    PCSTR pszPass,
+    PSTR *ppszToken
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszToken = NULL;
+    POIDC_CLIENT pClient = NULL;
+
+    if (IsNullOrEmptyString(pszServer) ||
+        IsNullOrEmptyString(pszDomain) ||
+        IsNullOrEmptyString(pszUser) ||
+        IsNullOrEmptyString(pszPass) ||
+        !ppszToken)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdOidcClientBuild(pszServer, pszDomain, &pClient);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdOidcClientAcquireToken(
+                  pClient,
+                  pszDomain,
+                  pszUser,
+                  pszPass,
+                  "openid rs_vmdir",
+                  &pszToken);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszToken = pszToken;
+
+cleanup:
+    VmAfdOidcClientDelete(pClient);
+    return dwError;
+
+error:
+    VMAFD_SAFE_FREE_STRINGA(pszToken);
+    goto cleanup;
+}
