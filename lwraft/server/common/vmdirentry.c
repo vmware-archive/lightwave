@@ -1070,13 +1070,15 @@ VmDirSimpleEntryCreate(
                                           NULL);
 }
 
+static
 DWORD
-VmDirSimpleEntryCreateWithGuid(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PSTR*               ppszEntryInitializer,
-    PSTR                pszDN,
-    ENTRYID             ulEntryId,
-    PSTR                pszGuid /* Optional */
+_VmDirSimpleEntryCreateInBEWithGuid(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_SCHEMA_CTX        pSchemaCtx,
+    PSTR*                   ppszEntryInitializer,
+    PSTR                    pszDN,
+    ENTRYID                 ulEntryId,
+    PSTR                    pszGuid /* Optional */
     )
 {
     DWORD                   dwError = 0;
@@ -1088,7 +1090,7 @@ VmDirSimpleEntryCreateWithGuid(
                                        pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = pBE;
     assert(ldapOp.pBEIF);
 
     ldapOp.reqDn.lberbv.bv_val = pszDN;
@@ -1120,6 +1122,64 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+DWORD
+VmDirSimpleEntryCreateWithGuid(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PSTR*               ppszEntryInitializer,
+    PSTR                pszDN,
+    ENTRYID             ulEntryId,
+    PSTR                pszGuid /* Optional */
+    )
+{
+    PVDIR_BACKEND_INTERFACE pBE = VmDirBackendSelect(pszDN);
+    assert(pBE);
+
+    return _VmDirSimpleEntryCreateInBEWithGuid(
+               pBE,
+               pSchemaCtx,
+               ppszEntryInitializer,
+               pszDN,
+               ulEntryId,
+               pszGuid);
+}
+
+DWORD
+VmDirSimpleEntryCreateInBEWithGuid(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_SCHEMA_CTX        pSchemaCtx,
+    PSTR*                   ppszEntryInitializer,
+    PSTR                    pszDN,
+    ENTRYID                 ulEntryId,
+    PSTR                    pszGuid /* Optional */
+    )
+{
+    return _VmDirSimpleEntryCreateInBEWithGuid(
+               pBE,
+               pSchemaCtx,
+               ppszEntryInitializer,
+               pszDN,
+               ulEntryId,
+               pszGuid);
+}
+
+DWORD
+VmDirSimpleEntryCreateInBE(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_SCHEMA_CTX        pSchemaCtx,
+    PSTR*                   ppszEntryInitializer,
+    PSTR                    pszDN,
+    ENTRYID                 ulEntryId
+    )
+{
+    return _VmDirSimpleEntryCreateInBEWithGuid(
+               pBE,
+               pSchemaCtx,
+               ppszEntryInitializer,
+               pszDN,
+               ulEntryId,
+               NULL);
 }
 
 VOID
@@ -1418,7 +1478,7 @@ VmDirDeleteEntry(
     dwError = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    op.pBEIF = VmDirBackendSelect(NULL);
+    op.pBEIF = VmDirBackendSelect(op.reqDn.lberbv.bv_val);
     op.reqDn.lberbv_val = pEntry->dn.lberbv.bv_val;
     op.reqDn.lberbv_len = pEntry->dn.lberbv.bv_len;
 

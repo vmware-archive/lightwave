@@ -51,6 +51,9 @@ extern "C" {
 #define DEFAULT_HTTPS_PORT_NUM           7478
 #define DEFAULT_HTTPS_PORT_STR          "7478"
 
+#define DEFAULT_HTTPS_API_PORT_NUM      7479
+#define DEFAULT_HTTPS_API_PORT_STR      "7479"
+
 #define LEGACY_DEFAULT_LDAP_PORT_NUM       11711
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
@@ -521,6 +524,7 @@ extern "C" {
 #define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 // vmw OID for password export/import. This does NOT apply to srp/krb secrets.
 #define VDIR_LDAP_CONTROL_PASSWD_BLOB           "1.3.6.1.4.1.6876.40.10.8"
+#define LDAP_DB_COPY_CONTROL                    "1.3.6.1.4.1.6876.40.10.9"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

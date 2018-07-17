@@ -108,9 +108,7 @@ if [ -z "$LW_USER" ]; then
 fi
 
 if [ -z "$LW_PASSWORD" ]; then
-    stty -echo
-    read -p "Password for $LW_USER@$LW_DOMAIN: " LW_PASSWORD
-    stty echo
+    read -s -p "Password for $LW_USER@$LW_DOMAIN: " LW_PASSWORD
 fi
 
 getAccessToken()
@@ -217,9 +215,22 @@ registerOIDCClient()
         exit
     fi
     echo $OIDC_CLIENT_ID>/opt/vmware/share/config/oidc-client-id.conf
+    echo "Success! OIDC client ID:"
+    echo $OIDC_CLIENT_ID
+
+    cat > /opt/vmware/lightwaveui/config/lightwaveui.json <<-EOF
+	{
+	   "knownServers": [
+	        {
+	            "server": "$LW_SERVER",
+	            "tenant": "$LW_DOMAIN",
+	            "oidcClientId": "$OIDC_CLIENT_ID"
+	        }
+	    ]
+	}
+	EOF
 
     rm -f $tmpfile
-    echo "SUCCESS!"
 }
 checkPreReq
 case "$OPERATION" in

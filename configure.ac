@@ -214,6 +214,27 @@ AC_ARG_ENABLE([server],
 AM_CONDITIONAL(ENABLE_SERVER, [$ENABLE_SERVER])
 
 #--------------------------------------------------------------------
+# go dependency flag
+
+GO_ENABLED=false
+AC_ARG_ENABLE([go],
+    [AC_HELP_STRING([--enable-go],
+                    [enable go dependencies (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            GO_ENABLED=true
+        fi
+    ])
+
+if $GO_ENABLED
+then
+AC_DEFINE_UNQUOTED(GO_ENABLED, 1, [ Enable go dependencies ])
+fi
+
+AM_CONDITIONAL(GO_ENABLED, [$GO_ENABLED])
+
+#--------------------------------------------------------------------
 # openssl component
 
 case "${host_os}:${host_cpu}" in
@@ -1034,6 +1055,17 @@ AC_DEFINE_UNQUOTED(VMDIR_DB_DIR, "$VMDIR_DB_DIR", [Database directory])
 
 #--------------------------------------------------------------------
 
+if test x"$localstatedir" = x"/var"; then
+    lwtmpdir="$localstatedir/lib/vmware/lightwave_tmp"
+else
+    lwtmpdir="$localstatedir/lightwave_tmp"
+fi
+AC_SUBST(lwtmpdir)
+AS_AC_EXPAND(LIGHTWAVE_TMP_DIR, ["${lwtmpdir}"])
+AC_DEFINE_UNQUOTED(LIGHTWAVE_TMP_DIR, "$LIGHTWAVE_TMP_DIR", [Temporary directory])
+
+#--------------------------------------------------------------------
+
 AS_AC_EXPAND(VMDIR_SBIN, ["${sbindir}"])
 VMDIR_SBIN_DIR=$VMDIR_SBIN
 AC_SUBST(VMDIR_SBIN_DIR)
@@ -1275,7 +1307,7 @@ AC_SUBST(javaetcdir)
 vmafdjarsdir="$prefix/jars"
 AC_SUBST(vmafdjarsdir)
 
-jreextdir=$JRE_EXT
+jreextdir="/usr/java/packages/lib/ext"
 AC_SUBST(jreextdir)
 
 #--------------------------------------------------------------------
@@ -1354,6 +1386,9 @@ AC_SUBST(vmcapyutilsdir)
 
 vmcajarsdir="$prefix/jars"
 AC_SUBST(vmcajarsdir)
+
+lwcertooldir=$prefix/bin
+AC_SUBST(lwcertooldir)
 
 #--------------------------------------------------------------------
 # CURL components
@@ -1484,11 +1519,11 @@ vmmetricsconfdir="$datadir/config"
 AC_SUBST(vmmetricsconfdir)
 
 AC_CONFIG_FILES([Makefile
-                 vmmetrics/Makefile
-                 vmmetrics/include/Makefile
-                 vmmetrics/include/public/Makefile
-                 vmmetrics/config/Makefile
-                 vmmetrics/testing/Makefile
+                 vmcommon/Makefile
+                 vmcommon/include/Makefile
+                 vmcommon/include/public/Makefile
+                 vmcommon/config/Makefile
+                 vmcommon/testing/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile
@@ -1528,7 +1563,6 @@ AC_CONFIG_FILES([Makefile
                  lwraft/testing/unittests/Makefile
                  lwraft/testing/unittests/libcommon/Makefile
                  lwraft/tools/Makefile
-                 lwraft/tools/lwraftpromo/Makefile
                  lwraft/tools/lwraft-cli/Makefile
                  lwraft/tools/vdcaclmgr/Makefile
                  lwraft/tools/vdcadmintool/Makefile
@@ -1564,6 +1598,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/schema/Makefile
                  vmdir/server/acl/Makefile
                  vmdir/server/ldap-head/Makefile
+                 vmdir/server/api/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
                  vmdir/server/clusterstate/Makefile
@@ -1684,6 +1719,8 @@ AC_CONFIG_FILES([Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
+                 vmca/tools/Makefile
+                 vmca/tools/lw-certool/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/vmware-stsd.sh
@@ -1734,11 +1771,11 @@ AC_CONFIG_FILES([Makefile
                  config/tools/ic-promote/Makefile
                  config/tools/ic-join/Makefile
                  config/tools/lightwave/Makefile
+                 config/tools/lightwave/ca/Makefile
                  config/tools/lightwave/domain/Makefile
                  config/tools/lightwave/dns/Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
-                 config/scripts/configure-identity-server
                  config/scripts/configure-sts
                 ])
 

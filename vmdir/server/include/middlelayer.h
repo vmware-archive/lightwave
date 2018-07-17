@@ -223,9 +223,14 @@ VmDirKrbSimpleDNToRealm(
     );
 
 DWORD
-VmDirGenerateRandomPasswordByDefaultPolicy
-(
+VmDirGenerateRandomPasswordByDefaultPolicy(
     PSTR *ppRandPwd
+    );
+
+DWORD
+VmDirGenerateRandomInternalPassword(
+    PCSTR   pszDomain,
+    PSTR*   ppszRandPwd
     );
 
 // util.c
@@ -235,6 +240,11 @@ VmDirAuditWriteOp(
     PVDIR_OPERATION  pOp,
     PCSTR            pszDN,
     PVDIR_ENTRY      pEntry
+    );
+
+DWORD
+VmDirExecDbCopyCtrl(
+    PVDIR_OPERATION pOperation
     );
 
 #endif /* ML_INTERFACE_H_ */

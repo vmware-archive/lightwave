@@ -13,8 +13,19 @@
  */
 package com.vmware.identity;
 
+import static com.vmware.identity.SharedUtils.bootstrap;
+import static com.vmware.identity.SharedUtils.createSamlLogoutRequest;
+import static com.vmware.identity.SharedUtils.encodeRequest;
+import static com.vmware.identity.SharedUtils.getAssertionConsumerService;
+import static com.vmware.identity.SharedUtils.getMockIdmAccessorFactory;
+import static com.vmware.identity.SharedUtils.getSTSCertificate;
+import static com.vmware.identity.SharedUtils.getSTSPrivateKey;
+import static com.vmware.identity.SharedUtils.messageSource;
+import static com.vmware.identity.SharedUtils.prepareMockIdmClient;
 import static org.easymock.EasyMock.capture;
 import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
+import static org.easymock.EasyMock.expectLastCall;
 import static org.easymock.EasyMock.isA;
 import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
@@ -23,20 +34,18 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
 import java.io.ByteArrayOutputStream;
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.URL;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
-import java.security.Key;
-import java.security.KeyStore;
 import java.security.PrivateKey;
 import java.security.Signature;
 import java.util.Calendar;
+import java.util.Collection;
 import java.util.Date;
 import java.util.GregorianCalendar;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.Map;
 import java.util.zip.Inflater;
@@ -46,26 +55,34 @@ import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.apache.http.client.methods.CloseableHttpResponse;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.easymock.Capture;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.opensaml.saml2.core.LogoutRequest;
 import org.opensaml.saml2.core.LogoutResponse;
 import org.opensaml.xml.util.Base64;
-import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.ui.Model;
 import org.springframework.validation.support.BindingAwareModelMap;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.AssertionConsumerService;
 import com.vmware.identity.idm.PrincipalId;
+import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.ServerConfig;
+import com.vmware.identity.idm.ServiceEndpoint;
+import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.saml.SignatureAlgorithm;
+import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
+import com.vmware.identity.samlservice.IdmAccessor;
+import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.Shared;
+import com.vmware.identity.samlservice.impl.CasIdmAccessor;
 import com.vmware.identity.samlservice.impl.LogoutStateProcessingFilter;
 import com.vmware.identity.session.Session;
 import com.vmware.identity.session.impl.SessionManagerImpl;
@@ -74,12 +91,12 @@ import com.vmware.identity.session.impl.SessionManagerImpl;
  * Single Logout Controller test
  *
  */
-@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SloControllerTest {
     private static SloController controller;
     private static PrivateKey privateKey;
     private static IDiagnosticsLogger log;
     private static String tenant;
+    private static final int tenantId = 0;
     private static String sigAlgParameter;
     private static SessionManagerImpl sessionManager;
 
@@ -91,34 +108,18 @@ public class SloControllerTest {
         log = DiagnosticsLoggerFactory.getLogger(SloControllerTest.class);
 
         controller = new SloController();
-        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
-        ms.setBasename("messages");
-        controller.setMessageSource(ms);
+        controller.setMessageSource(messageSource());
         LogoutStateProcessingFilter filter = new LogoutStateProcessingFilter();
         controller.setProcessor(filter);
         sessionManager = new SessionManagerImpl();
         controller.setSessionManager(sessionManager);
 
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        InputStream is = new FileInputStream(SsoControllerTest.class
-                .getResource("/sts-store.jks").getFile());
-        char[] stsKeystorePassword = "ca$hc0w".toCharArray();
-        ks.load(is, stsKeystorePassword);
-
-        String stsAlias = "stskey";
-        Key key = ks.getKey(stsAlias, stsKeystorePassword);
-
-        privateKey = (PrivateKey) key;
         Shared.bootstrap();
-        SharedUtils.bootstrap(false); // use real data
-        tenant = ServerConfig.getTenant(0);
+        bootstrap();
+        tenant = ServerConfig.getTenant(tenantId);
+        privateKey = getSTSPrivateKey();
 
         sigAlgParameter = TestConstants.SIGNATURE_ALGORITHM;
-    }
-
-    @AfterClass
-    public static void cleanUp() throws Exception {
-        SharedUtils.cleanupTenant();
     }
 
     /**
@@ -142,11 +143,8 @@ public class SloControllerTest {
      * 2) RP1 sends SLO response to IDP expecting no response and no exception.
      * @throws Exception
      */
-    @Ignore("bugzilla#1175962")
     @Test
     public final void testSloMultiSP() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         // Step 1.  create a (fake) session for logout to succeed
         Calendar calendar = new GregorianCalendar();
         calendar.add(Calendar.MINUTE, Shared.TOKEN_LIFETIME_MINUTES);
@@ -159,7 +157,7 @@ public class SloControllerTest {
         sessionManager.add(session);
 
         // add our relying party as participant
-        String tenantName = ServerConfig.getTenant(0);
+        String tenantName = ServerConfig.getTenant(tenantId);
         String rpName = ServerConfig.getRelyingParty(tenantName, 0);
         String issuerUrl = ServerConfig.getRelyingPartyUrl(rpName);
         String participantSessionId = session.ensureSessionParticipant(issuerUrl);
@@ -175,8 +173,7 @@ public class SloControllerTest {
 
         //construct RP issued SLO request URL
         StringBuffer sbRequestUrl = new StringBuffer();
-        LogoutRequest logoutRequest =
-                SharedUtils.createSamlLogoutRequest("42", participantSessionId);
+        LogoutRequest logoutRequest = createSamlLogoutRequest("42", participantSessionId);
         sbRequestUrl.append(logoutRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
@@ -211,17 +208,23 @@ public class SloControllerTest {
                 TestConstants.AUTHORIZATION, null,tenantId);
 
         // build mock servlet response object
-        Capture<String> capturedOutboundRequest = new Capture<String>();
         Capture<String> capturedOutboundSLOResponse = new Capture<String>();
-        HttpServletResponse response = buildMockResponseSuccessObjectForTwoRPs(
-                capturedOutboundRequest,
-                capturedOutboundSLOResponse, true);
+        HttpServletResponse response = buildMockResponseSuccessObject(capturedOutboundSLOResponse, true);
+        Capture<HttpGet> capturedOutboundRequest = new Capture<HttpGet>();
+        CloseableHttpClient httpClient = createMock(CloseableHttpClient.class);
+        CloseableHttpResponse closeableResponse = createMock(CloseableHttpResponse.class);
+        closeableResponse.close();
+        expectLastCall().once();
+        expect(httpClient.execute(capture(capturedOutboundRequest))).andReturn(closeableResponse);
+        replay(closeableResponse);
+        replay(httpClient);
 
         //Simulating receiving slo request from RP 0
-        assertSlo(model, request, response);
+        assertSlo(model, request, response, httpClient, null);
 
         // parse request sent to non-initiator participating RP
-        String decodedSamlRequest = extractRequest(capturedOutboundRequest);
+        String requestUrl = capturedOutboundRequest.getValue().getURI().toString();;
+        String decodedSamlRequest = extractRequest(requestUrl);
         assertNotNull(decodedSamlRequest);
 
         // parse response sent to initiator RP
@@ -291,8 +294,7 @@ public class SloControllerTest {
         return outputString;
     }
 
-    private String extractRequest(Capture<String> captured) throws Exception {
-        String redirectUrl = captured.getValue();
+    private String extractRequest(String redirectUrl) throws Exception{
         URL url = new URL(redirectUrl);
 
         String samlRequestParameter = URLDecoder.decode(getQueryMap(url.getQuery()).get(Shared.SAML_REQUEST_PARAMETER), "UTF-8");
@@ -338,35 +340,19 @@ public class SloControllerTest {
         return response;
     }
 
-
-    //Mock a HttpServletResponse object in SLO expecting sending two redirect calls.
-    //This can be used in testing SLO messages sent to two RPs by sso service.
-    private HttpServletResponse buildMockResponseSuccessObjectForTwoRPs(
-            Capture<String> capturedRequest, Capture<String> capturedResponse,
-            boolean expectCookie) throws IOException {
-        HttpServletResponse response = createMock(HttpServletResponse.class);
-        if (expectCookie) {
-            //sso session cookie
-            response.addCookie(isA(Cookie.class));
-            //IWA context id cookie
-            response.addCookie(isA(Cookie.class));
-        }
-        response.sendRedirect(capture(capturedRequest));
-        response.sendRedirect(capture(capturedResponse));
-        replay(response);
-        return response;
+    private void assertSlo(Model model, HttpServletRequest request, HttpServletResponse response) throws Exception {
+        assertSlo(model, request, response, null, null);
     }
 
-    private void assertSlo(Model model, HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        controller.slo(Locale.US, tenant, model, request, response);
+    private void assertSlo(Model model, HttpServletRequest request, HttpServletResponse response,
+            CloseableHttpClient httpClient, IdmAccessorFactory factory) throws Exception {
+        factory = factory == null ? getMockIdmAccessorFactory(0, 0, 1) : factory;
+        controller.slo(Locale.US, tenant, model, request, response, factory, httpClient);
         assertEquals(tenant, model.asMap().get("tenant"));
         assertNull(model.asMap().get("serverTime"));
     }
 
     private void testSlo(boolean isSPSupportSLO) throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         // create a (fake) session for logout to succeed
         Calendar calendar = new GregorianCalendar();
         calendar.add(Calendar.MINUTE, Shared.TOKEN_LIFETIME_MINUTES);
@@ -386,12 +372,11 @@ public class SloControllerTest {
         sessionManager.update(session);
 
         StringBuffer sbRequestUrl = new StringBuffer();
-        LogoutRequest logoutRequest =
-                SharedUtils.createSamlLogoutRequest("42", participantSessionId);
+        LogoutRequest logoutRequest = createSamlLogoutRequest("42", participantSessionId);
         sbRequestUrl.append(logoutRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
-        String samlRequestParameter = SharedUtils.encodeRequest(logoutRequest);
+        String samlRequestParameter = encodeRequest(logoutRequest);
 
         // produce signature
         SignatureAlgorithm algo = SignatureAlgorithm
@@ -419,7 +404,7 @@ public class SloControllerTest {
         HttpServletRequest request = SharedUtils.buildMockRequestObject(
                 logoutRequest, null,
                 sigAlgParameter, signature, sbRequestUrl,
-                TestConstants.AUTHORIZATION, null,tenantId);
+                TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         Capture<String> captured = new Capture<String>();
@@ -432,12 +417,39 @@ public class SloControllerTest {
             String decodedSamlResponse = extractResponse(captured);
             assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
         } else {
-            // Remove SLO setting in SP.
-            SharedUtils.removeSLOfromRelyingParties(SloControllerTest.tenant);
-            assertSlo(model, request, response);
+            CasIdmClient mockIdmClient = prepareMockIdmClient(tenantId);
+            prepareMockRPWithNoSLO(mockIdmClient);
+            IdmAccessor idmAccessor = new CasIdmAccessor(mockIdmClient);
+            IdmAccessorFactory mockIdmAccessorFactory = createMock(IdmAccessorFactory.class);
+            expect(mockIdmAccessorFactory.getIdmAccessor()).andReturn(idmAccessor).anyTimes();
+            replay(mockIdmAccessorFactory);
+            replay(mockIdmClient);
+            assertSlo(model, request, response, null, mockIdmAccessorFactory);
 
             // parse response, redirect should not happen and nothing should be captured.
             assertTrue(!captured.hasCaptured());
         }
+    }
+
+    private static void prepareMockRPWithNoSLO(CasIdmClient mockIdmClient) throws Exception {
+        String tenant = ServerConfig.getTenant(tenantId);
+        String rpName = ServerConfig.getRelyingParty(tenant, 0);
+        String rpEntityId = ServerConfig.getRelyingPartyUrl(ServerConfig.getRelyingParty(tenant, 0));
+
+        Collection<ServiceEndpoint> sloServices = new HashSet<>();
+
+        Collection<AssertionConsumerService> assertionServices = new HashSet<>();
+        assertionServices.add(getAssertionConsumerService(0, 0, 0, OasisNames.HTTP_REDIRECT));
+        assertionServices.add(getAssertionConsumerService(0, 0, 0, OasisNames.HTTP_POST));
+        RelyingParty mockRP = createMock(RelyingParty.class);
+        String defaultAcs = ServerConfig.getDefaultAssertionConsumerService(rpName);
+
+        expect(mockRP.getDefaultAssertionConsumerService()).andReturn(defaultAcs).anyTimes();
+        expect(mockRP.getCertificate()).andReturn(getSTSCertificate()).anyTimes();
+        expect(mockRP.getAssertionConsumerServices()).andReturn(assertionServices).anyTimes();
+        expect(mockRP.getSingleLogoutServices()).andReturn(sloServices).anyTimes();
+        expect(mockRP.isAuthnRequestsSigned()).andReturn(false).anyTimes();
+        expect(mockIdmClient.getRelyingPartyByUrl(tenant, rpEntityId)).andReturn(mockRP).anyTimes();
+        replay(mockRP);
     }
 }

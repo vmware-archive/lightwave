@@ -8,8 +8,10 @@ STAGEDIR = $(BUILDROOT)/stage
 MAKEROOT=$(SRCROOT)/support/make
 include $(MAKEROOT)/makedefs.mk
 
+ACLOCAL_AMFLAGS = -I m4
+
 SUBDIRS = \
-        vmmetrics \
+        vmcommon \
         vmevent \
         vmidentity/ssoclients \
         lwraft \
@@ -21,8 +23,8 @@ SUBDIRS = \
         config
 
 PACKAGES=\
-    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LIGHTWAVE_RPM) \
-    $(LIGHTWAVE_STAGE_DIR)/x86_64/$(LIGHTWAVE_CLIENT_RPM)
+    $(LIGHTWAVE_STAGE_DIR)/$(ARCH)/$(LIGHTWAVE_RPM) \
+    $(LIGHTWAVE_STAGE_DIR)/$(ARCH)/$(LIGHTWAVE_CLIENT_RPM)
 
 RPMBUILD=/usr/bin/rpmbuild
 
@@ -51,6 +53,7 @@ stage:
 
 package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 	cd $(RPMBUILD_ROOT) && \
+	$(RM) -f $(RPMBUILD_RPMS)/$(ARCH)/*.rpm && \
 	$(RPMBUILD) \
               -v \
               --bb \

@@ -302,6 +302,14 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_BER(pBerElement)    \
+    do {                                    \
+        if ((pBerElement)) {                \
+            ber_free(pBerElement, 1);       \
+            (pBerElement) = NULL;           \
+        }                                   \
+    } while(0)
+
 #define VMDIR_LOCK_MUTEX(bInLock, mutex)        \
     do {                                        \
         if (!(bInLock))                         \
@@ -613,6 +621,14 @@ extern "C" {
 #define VMDIR_SAFE_FREE_VMDIR_FILTER(pfilter)       \
     do {                                            \
       DeleteFilter(pfilter);                        \
+    } while(0)
+
+#define VMDIR_SAFE_FREE_VDIR_MODIFICTION(pMod)      \
+    do {                                    \
+        if (pMod)                           \
+        {                                   \
+            VmDirModificationFree(pMod);    \
+        }                                   \
     } while(0)
 
 #define VMDIR_SAFE_BER_MEMFREE(pBerMem)             \

@@ -164,6 +164,7 @@
 
 #define VMDIR_ERROR_NO_LEADER                         (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 0 )   // 9500
 #define VMDIR_ERROR_INVALID_ROLE                      (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 1 )   // 9501
+#define VMDIR_ERROR_NO_SUCH_DB                        (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 2 )   // 9502
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)
@@ -212,6 +213,7 @@
 #define VMDIR_ERROR_BACKEND_ENTRY_EXISTS              (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 6 )  // 9706
 #define VMDIR_ERROR_BACKEND_OPERATIONS                (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 7 )  // 9707
 #define VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND   (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 8 )  // 9708
+#define VMDIR_ERROR_BACKEND_INSTANCE_NOT_FOUND        (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 9 )  // 9709
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // post rest proxy error (range 9800 - 9899)

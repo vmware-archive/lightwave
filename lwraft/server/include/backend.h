@@ -71,6 +71,21 @@ extern "C" {
 
 #define BE_OUTSTANDING_USN_LIST_SIZE        32
 
+#define LOG1_DB_PATH LWRAFT_DB_DIR"/postlog1"
+#define LOG2_DB_PATH LWRAFT_DB_DIR"/postlog2"
+#define MAIN_DB_DIR  "post"
+#define LOG1_DB_DIR  "postlog1"
+#define LOG2_DB_DIR  "postlog2"
+
+/*
+ * name aliases of databases in post instance
+ * these are used for selecting a particular database for
+ * a specific operation.
+*/
+#define ALIAS_MAIN         "_backend_main"
+#define ALIAS_LOG_CURRENT  "_backend_log_current"
+#define ALIAS_LOG_PREVIOUS "_backend_log_previous"
+
 typedef enum
 {
     VDIR_BACKEND_ENTRY_LOCK_READ = 0,
@@ -84,6 +99,9 @@ typedef enum
     VDIR_BACKEND_TXN_WRITE
 
 } VDIR_BACKEND_TXN_MODE;
+
+/* opaque handle for a database entry */
+typedef PVOID PVDIR_DB_HANDLE;
 
 typedef struct _VDIR_BACKEND_INDEX_ITERATOR
 {
@@ -100,7 +118,8 @@ typedef struct _VDIR_BACKEND_USN_LIST*          PVDIR_BACKEND_USN_LIST;
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_MAX_ENTRY_ID)(
-                    ENTRYID*        pEId
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    ENTRYID*                pEId
                     );
 /*
  * Convenient id to entry lookup
@@ -110,8 +129,9 @@ typedef DWORD (*PFN_BACKEND_MAX_ENTRY_ID)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_SIMPLE_ID_TO_ENTRY)(
-                    ENTRYID         eId,
-                    PVDIR_ENTRY     pEntry
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    ENTRYID                 eId,
+                    PVDIR_ENTRY             pEntry
                     );
 
 /*
@@ -122,8 +142,9 @@ typedef DWORD (*PFN_BACKEND_SIMPLE_ID_TO_ENTRY)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_SIMPLE_DN_TO_ENTRY)(
-                    PSTR          pszObjectDn,
-                    PVDIR_ENTRY   pEntry
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    PSTR                    pszObjectDn,
+                    PVDIR_ENTRY             pEntry
                     );
 
 /*
@@ -281,7 +302,9 @@ typedef DWORD (*PFN_BACKEND_TXN_COMMIT)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INIT)(
-                    VOID
+                    BOOLEAN        bMainDB,
+                    PCSTR          pszDbHomeDir,
+                    PVDIR_DB_HANDLE *phHandle
                     );
 /*
  * Open index database
@@ -289,7 +312,8 @@ typedef DWORD (*PFN_BACKEND_INIT)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_OPEN)(
-                    PVDIR_INDEX_CFG     pIndexCfg
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    PVDIR_INDEX_CFG         pIndexCfg
                     );
 /*
  * Check if index database exists
@@ -297,7 +321,8 @@ typedef DWORD (*PFN_BACKEND_INDEX_OPEN)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef BOOLEAN (*PFN_BACKEND_INDEX_EXIST)(
-                    PVDIR_INDEX_CFG     pIndexCfg
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    PVDIR_INDEX_CFG         pIndexCfg
                     );
 /*
  * Delete index database
@@ -305,7 +330,8 @@ typedef BOOLEAN (*PFN_BACKEND_INDEX_EXIST)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_DELETE)(
-                    PVDIR_INDEX_CFG     pIndexCfg
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    PVDIR_INDEX_CFG         pIndexCfg
                     );
 /*
  * Populate indices with entries in the given range
@@ -315,9 +341,10 @@ typedef DWORD (*PFN_BACKEND_INDEX_DELETE)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_POPULATE)(
-                    PLW_HASHMAP pIndexCfgs,
-                    ENTRYID     startEntryId,
-                    DWORD       dwBatchSize
+                    PVDIR_BACKEND_INTERFACE pBE,
+                    PLW_HASHMAP             pIndexCfgs,
+                    ENTRYID                 startEntryId,
+                    DWORD                   dwBatchSize
                     );
 /*
  * Initialize index table iterator
@@ -325,6 +352,7 @@ typedef DWORD (*PFN_BACKEND_INDEX_POPULATE)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_ITERATOR_INIT)(
+                    PVDIR_BACKEND_INTERFACE         pBE,
                     PVDIR_INDEX_CFG                 pIndexCfg,
                     PSTR                            pszInitVal,
                     PVDIR_BACKEND_INDEX_ITERATOR*   ppIterator
@@ -353,7 +381,7 @@ typedef VOID (*PFN_BACKEND_INDEX_ITERATOR_FREE)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_SHUTDOWN)(
-                    VOID
+                    PVDIR_DB_HANDLE
                     );
 
 typedef DWORD (*PFN_BACKEND_GET_ATTR_META_DATA)(
@@ -408,6 +436,7 @@ typedef DWORD (*PFN_BACKEND_UNIQKEY_SET_VALUE)(
                     PCSTR);
 
 typedef DWORD (*PFN_BACKEND_CONFIGURE_FSYNC)(
+                    PVDIR_DB_HANDLE,
                     BOOLEAN);
 
 /*******************************************************************************
@@ -635,19 +664,53 @@ typedef struct _VDIR_BACKEND_INTERFACE
 
 } VDIR_BACKEND_INTERFACE;
 
+typedef struct _VDIR_BACKEND_INSTANCE
+{
+    PSTR                                  pszDbPath;
+    PVDIR_BACKEND_INTERFACE               pBE;
+    PVDIR_DB_HANDLE                       hDB;
+} VDIR_BACKEND_INSTANCE, *PVDIR_BACKEND_INSTANCE;
+
+typedef DWORD (*PFN_ITERATE_DB_INSTANCE_CB)(
+                    PVDIR_BACKEND_INSTANCE,
+                    PVOID pUserData
+                    );
+
 typedef struct _VDIR_BACKEND_GLOBALS
 {
-    // NOTE: order of fields MUST stay in sync with struct initializer...
-    PCSTR                           pszBERootDN;
+    /* to support existing code. points to main db backend */
     PVDIR_BACKEND_INTERFACE         pBE;
+    /*
+     * map from db path to instance. this is the only place
+     * an on disk database path to instance data is kept.
+     * startup and shutdown relies on this
+    */
+    PLW_HASHMAP                     pInstanceMap;
+    /*
+     * map from backend to instance. lookup helper
+     * essentially pInstance->pBE to pInstance
+     * see shutdown for cleanup sequence.
+    */
+    PLW_HASHMAP                     pBEToInstanceMap;
+    /*
+     * map from dn to backend.
+     * application specific dn to backend mapping
+     * used in select backend
+    */
+    PLW_HASHMAP                     pDNToBEMap;
+//TODO: Not applicable for post. Remove.
     USN                             usnFirstNext;
-
 } VDIR_BACKEND_GLOBALS, *PVDIR_BACKEND_GLOBALS;
 
 // backend.c
 DWORD
 VmDirBackendConfig(
     VOID);
+
+DWORD
+VmDirBackendMapPreviousLogs(
+    VOID
+    );
 
 VOID
 VmDirBackendGetFirstNextUSN(
@@ -658,9 +721,26 @@ PVDIR_BACKEND_INTERFACE
 VmDirBackendSelect(
     PCSTR   pszDN);
 
+BOOLEAN
+VmDirHasBackend(
+    PCSTR pszDN
+    );
+
+DWORD
+VmDirInstanceFromBE(
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_BACKEND_INSTANCE *ppInstance
+    );
+
 VOID
 VmDirBackendContentFree(
     PVDIR_BACKEND_INTERFACE     pBE
+    );
+
+DWORD
+VmDirBackendCtxMoveContents(
+    PVDIR_BACKEND_CTX pBECtxFrom,
+    PVDIR_BACKEND_CTX pBECtxTo
     );
 
 VOID
@@ -671,6 +751,11 @@ VmDirBackendCtxFree(
 VOID
 VmDirBackendCtxContentFree(
     PVDIR_BACKEND_CTX   pBECtx
+    );
+
+VOID
+VmDirShutdownAndFreeAllBackends(
+    VOID
     );
 
 DWORD
@@ -705,6 +790,32 @@ VmDirBackendUniqKeySetValue(
     PCSTR       pKey,
     PCSTR       pValue,
     BOOLEAN     bForce
+    );
+
+DWORD
+VmDirIterateDBInstances(
+    PFN_ITERATE_DB_INSTANCE_CB pfnCB,
+    PVOID pUserData
+    );
+
+PVDIR_BACKEND_INTERFACE
+VmDirSafeBEFromCtx(
+    PVDIR_BACKEND_CTX pBECtx
+    );
+
+PVDIR_DB_HANDLE
+VmDirSafeDBFromCtx(
+    PVDIR_BACKEND_CTX pBECtx
+    );
+
+PVDIR_DB_HANDLE
+VmDirSafeDBFromBE(
+    PVDIR_BACKEND_INTERFACE pBE
+    );
+
+PVDIR_DB_HANDLE
+VmDirSafeDBFromPath(
+    PCSTR pszDbPath
     );
 
 // util.c

@@ -12,7 +12,6 @@
  * under the License.
  */
 
-
 typedef struct _VDIR_CFG_MDB_DATAFILE_DESC
 {
     MDB_dbi     mdbDBi;
@@ -57,7 +56,7 @@ typedef struct _VDIR_MDB_INDEX_ITERATOR
 
 } VDIR_MDB_INDEX_ITERATOR, *PVDIR_MDB_INDEX_ITERATOR;
 
-typedef struct _VDIR_MDB_GLOBALS
+typedef struct _VDIR_MDB_DB
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
     VDIR_MDB_ENTRY_DATABASE         mdbEntryDB;
@@ -66,16 +65,27 @@ typedef struct _VDIR_MDB_GLOBALS
     MDB_dbi                         mdbSeqDBi;
     MDB_dbi                         mdbGenericDupKeyDBi;
     MDB_dbi                         mdbGenericUniqKeyDBi;
+    PSTR                            pszDBPath;
+    struct _VDIR_MDB_DB *           pNext;
+}VDIR_MDB_DB, *PVDIR_MDB_DB;
 
+typedef struct _VDIR_MDB_GLOBALS
+{
+    PVDIR_MDB_DB                 pDBs;
 } VDIR_MDB_GLOBALS, *PVDIR_MDB_GLOBALS;
 
 typedef struct _VDIR_MDB_STATE_GLOBALS
 {
     PVMDIR_MUTEX    pMutex;
-    DWORD           dwDBCopyCount;
+    PLW_HASHMAP     pDbPathToStateMap;
+} VDIR_MDB_STATE_GLOBALS, *PVDIR_MDB_STATE_GLOBALS;
+
+typedef struct _VDIR_MDB_STATE
+{
+    int             nDBCopyCount;
     unsigned long   xLogNum;
     unsigned long   dbSizeMb;
     unsigned long   dbMapMb;
     CHAR            bufDBPath[VMDIR_MAX_FILE_NAME_LEN];
-} VDIR_MDB_STATE_GLOBALS, *PVDIR_MDB_STATE_GLOBALS;
-
+    PLW_HASHMAP     pActiveFileHandleMap;
+} VDIR_MDB_STATE, *PVDIR_MDB_STATE;

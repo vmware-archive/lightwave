@@ -234,11 +234,22 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR(
-            LDAP_DEBUG_ANY,
-            "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
-            VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
-            retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    if (retVal == VMDIR_LDAP_ERROR_PRE_CONDITION)
+    {
+        VMDIR_LOG_VERBOSE(
+                LDAP_DEBUG_ANY,
+                "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
+                VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
+                retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    }
+    else
+    {
+        VMDIR_LOG_ERROR(
+                LDAP_DEBUG_ANY,
+                "CoreLogicModifyEntry failed, DN = %s, (%u)(%s)",
+                VDIR_SAFE_STRING(modReq->dn.lberbv.bv_val),
+                retVal, VDIR_SAFE_STRING(pszLocalErrMsg));
+    }
 
     if (pOperation->ldapResult.pszErrMsg == NULL)
     {
@@ -514,7 +525,7 @@ VmDirInternalEntryAttributeReplace(
             &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(pszNormDN);
     assert(ldapOp.pBEIF);
 
     ldapOp.reqDn.lberbv.bv_val = (PSTR)pszNormDN;

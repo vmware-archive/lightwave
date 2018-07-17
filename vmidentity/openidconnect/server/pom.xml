@@ -124,6 +124,13 @@
       <scope>test</scope>
     </dependency>
 
+    <dependency>
+      <groupId>org.easymock</groupId>
+      <artifactId>easymock</artifactId>
+      <version>${easymock.version}</version>
+      <scope>test</scope>
+    </dependency>
+
     <!-- Transitive Dependencies -->
     <dependency>
       <groupId>commons-lang</groupId>
@@ -142,8 +149,21 @@
       <artifactId>log4j-api</artifactId>
       <version>${apache.log4j.version}</version>
     </dependency>
-  </dependencies>
 
+    <!--  Metrics Dependencies -->
+    <!-- The client -->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+    <!-- Hotspot JVM metrics-->
+    <dependency>
+      <groupId>io.prometheus</groupId>
+      <artifactId>simpleclient_hotspot</artifactId>
+      <version>${prometheus.version}</version>
+    </dependency>
+  </dependencies>
   <properties>
     <rootDirectory>${basedir}/../..</rootDirectory>
   </properties>

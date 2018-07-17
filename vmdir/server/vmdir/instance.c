@@ -627,6 +627,12 @@ VmDirSrvSetupHostInstance(
                 VMDIR_RIGHT_DS_READ_PROP);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        dwError = VmDirSetSdGlobals();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirInitSrvDFLGlobal();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
         // 1st replica => no replication agreements => 1st replication cycle done
         VMDIR_LOCK_MUTEX(bInLockReplCycle, gVmdirGlobals.replCycleDoneMutex);
         VmDirConditionSignal(gVmdirGlobals.replCycleDoneCondition);

@@ -1,0 +1,33 @@
+#!/bin/bash
+
+LIGHTWAVE_DOMAIN=lightwave.local
+LIGHTWAVE_PASSWORD='Admin!23'
+LIGHTWAVE_SITE=Default-first-site
+LIGHTWAVE_HOSTNAME=lw-ui-0.lightwave.local
+
+LIGHTWAVE_HOME=$HOME/lightwave
+LIGHTWAVE_CONFIG_DIR=$LIGHTWAVE_HOME/config-lw-ui-0
+LIGHTWAVE_CONFIG_PATH=$LIGHTWAVE_CONFIG_DIR/lightwave-client.cfg
+
+mkdir -p $LIGHTWAVE_CONFIG_DIR
+
+cat << EOF > $LIGHTWAVE_CONFIG_PATH
+domain=$LIGHTWAVE_DOMAIN
+hostname=$LIGHTWAVE_HOSTNAME
+admin=Administrator
+password=$LIGHTWAVE_PASSWORD
+site-name=$LIGHTWAVE_SITE
+EOF
+
+docker run -d \
+           --name lightwave-ui-1 \
+           --net lightwave \
+           --hostname $LIGHTWAVE_HOSTNAME \
+           --ip 192.168.114.7 \
+           --dns 192.168.114.3 \
+           --dns 192.168.114.4 \
+           --dns 192.168.114.5 \
+           --dns-search lightwave.local \
+           -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+           -v $LIGHTWAVE_CONFIG_DIR:/var/lib/vmware/config \
+           vmware/lightwave-ui-photon2

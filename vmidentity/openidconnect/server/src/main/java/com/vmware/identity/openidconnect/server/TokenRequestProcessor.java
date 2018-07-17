@@ -66,6 +66,8 @@ import com.vmware.identity.openidconnect.protocol.TokenErrorResponse;
 import com.vmware.identity.openidconnect.protocol.TokenRequest;
 import com.vmware.identity.openidconnect.protocol.TokenSuccessResponse;
 
+import io.prometheus.client.Histogram.Timer;
+
 /**
  * @author Yehia Zayour
  */
@@ -230,7 +232,8 @@ public class TokenRequestProcessor {
                 entry.getAuthenticationRequest().getScope(),
                 entry.getAuthenticationRequest().getNonce(),
                 entry.getSessionId(),
-                true /* refreshTokenAllowed */);
+                true /* refreshTokenAllowed */,
+                GrantType.AUTHORIZATION_CODE.toString());
     }
 
     private TokenSuccessResponse processPasswordGrant(SolutionUser solutionUser) throws ServerException {
@@ -252,7 +255,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                true /* refreshTokenAllowed */);
+                true /* refreshTokenAllowed */,
+                GrantType.PASSWORD.toString());
     }
 
     private TokenSuccessResponse processSolutionUserCredentialsGrant(SolutionUser solutionUser) throws ServerException {
@@ -264,7 +268,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                false /* refreshTokenAllowed */);
+                false /* refreshTokenAllowed */,
+                GrantType.SOLUTION_USER_CREDENTIALS.toString());
     }
 
     private TokenSuccessResponse processClientCredentialsGrant(SolutionUser solutionUser) throws ServerException {
@@ -276,7 +281,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                false /* refreshTokenAllowed */);
+                false /* refreshTokenAllowed */,
+                GrantType.CLIENT_CREDENTIALS.toString());
     }
 
     private TokenSuccessResponse processPersonUserCertificateGrant(SolutionUser solutionUser) throws ServerException {
@@ -304,7 +310,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                true /* refreshTokenAllowed */);
+                true /* refreshTokenAllowed */,
+                GrantType.PERSON_USER_CERTIFICATE.toString());
     }
 
     private TokenSuccessResponse processGssTicketGrant(SolutionUser solutionUser) throws ServerException {
@@ -335,7 +342,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                true /* refreshTokenAllowed */);
+                true /* refreshTokenAllowed */,
+                GrantType.GSS_TICKET.toString());
     }
 
     private TokenSuccessResponse processSecurIDGrant(SolutionUser solutionUser) throws ServerException {
@@ -369,7 +377,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce) null,
                 (SessionID) null,
-                true /* refreshTokenAllowed */);
+                true /* refreshTokenAllowed */,
+                GrantType.SECURID.toString());
     }
 
     private TokenSuccessResponse processRefreshTokenGrant(SolutionUser solutionUser) throws ServerException {
@@ -392,7 +401,8 @@ public class TokenRequestProcessor {
                 refreshToken.getScope(),
                 refreshToken.getNonce(),
                 refreshToken.getSessionID(),
-                false /* refreshTokenAllowed */);
+                false /* refreshTokenAllowed */,
+                GrantType.REFRESH_TOKEN.toString());
     }
 
     private TokenSuccessResponse processFederatedTokenGrant(SolutionUser solutionUser) throws ServerException {
@@ -433,7 +443,8 @@ public class TokenRequestProcessor {
                 this.tokenRequest.getScope(),
                 (Nonce)null,
                 (SessionID)(null),
-                false /* refreshTokenAllowed */);
+                false /* refreshTokenAllowed */,
+                GrantType.FEDERATION_TOKEN.toString());
     }
 
     private TokenSuccessResponse process(
@@ -443,10 +454,28 @@ public class TokenRequestProcessor {
             Scope scope,
             Nonce nonce,
             SessionID sessionId,
-            boolean refreshTokenAllowed) throws ServerException {
+            boolean refreshTokenAllowed,
+            String grantType) throws ServerException {
         User user = (personUser != null) ? personUser : solutionUser;
-        Set<ResourceServerInfo> resourceServerInfos = this.serverInfoRetriever.retrieveResourceServerInfos(this.tenant, scope);
-        UserInfo userInfo = this.userInfoRetriever.retrieveUserInfo(user, scope, resourceServerInfos);
+        Timer rsInfoTimer = MetricUtils.startRequestTimer(this.tenant, TokenController.metricsResource, "retrieveResourceServerInfo_" + grantType);
+        Set<ResourceServerInfo> resourceServerInfos;
+        try {
+            resourceServerInfos = this.serverInfoRetriever.retrieveResourceServerInfos(this.tenant, scope);
+        } finally {
+            if (rsInfoTimer != null) {
+                rsInfoTimer.observeDuration();
+            }
+        }
+
+        Timer userInfoTimer = MetricUtils.startRequestTimer(this.tenant, TokenController.metricsResource, "retrieveUserInfo_" + grantType);
+        UserInfo userInfo;
+        try {
+            userInfo = this.userInfoRetriever.retrieveUserInfo(user, scope, resourceServerInfos);
+        } finally {
+            if (userInfoTimer != null) {
+                userInfoTimer.observeDuration();
+            }
+        }
 
         if (personUser != null && solutionUser != null) {
             boolean isMemberOfActAsGroup = this.userInfoRetriever.isMemberOfGroup(solutionUser, "ActAsUsers");

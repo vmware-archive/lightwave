@@ -71,7 +71,6 @@ VmDirFirstReplicationCycle(
 
 DWORD
 VmDirInitRaftPsState(
-    VOID
     );
 
 DWORD
@@ -262,6 +261,17 @@ int
 VmDirSwapDB(
     PCSTR   dbHomeDir,
     BOOLEAN bHasXlog
+    );
+
+int
+VmDirSwapDBs(
+    BOOLEAN bHasXLog
+    );
+
+
+PVDIR_BACKEND_INTERFACE
+VmDirBackendForLogIndex(
+    unsigned long long logIndex
     );
 
 #ifdef __cplusplus

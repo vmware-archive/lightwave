@@ -16,7 +16,7 @@
 
 #define MAX_DC_CONNECT_DURATION_TIME_SEC    60*10*6
 
-#define MAX_DC_CONNECT_SLEEP_TIME_SEC       60*10
+#define MAX_DC_CONNECT_SLEEP_TIME_SEC       60
 
 #define UNIT_DC_CONNECT_SLEEP_TIME_SEC      5
 
@@ -309,6 +309,14 @@ error:
     pDCConn->dwlastFailedError = dwError;
     pDCConn->iLastFailedTime = time(NULL);
     pDCConn->dwConsecutiveFailAttempt++;
+
+    if (dwError == VMDIR_ERROR_USER_INVALID_CREDENTIAL  &&
+        VmDirRegReadJoinWithPreCopiedDB())
+    {
+        // in JoinWithPreCopiedDB case, wait for 5 second per-retry.
+        dwError = VMDIR_ERROR_SERVER_DOWN;
+        pDCConn->dwConsecutiveFailAttempt = 1;
+    }
 
     // TODO
     // metric set connection failed count

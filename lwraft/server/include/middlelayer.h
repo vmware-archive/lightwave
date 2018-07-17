@@ -50,8 +50,9 @@ VmDirMLAdd(
 
 int
 VmDirEntryAttrValueNormalize(
-    PVDIR_ENTRY    pEntry,
-    BOOLEAN   bIndexAttributeOnly
+    PVDIR_BACKEND_CTX   pBECtx,
+    PVDIR_ENTRY         pEntry,
+    BOOLEAN             bIndexAttributeOnly
     );
 
 // delete.c

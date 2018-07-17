@@ -538,7 +538,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
 
     pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEIndexIteratorInit(pIndexCfg, NULL, &pIterator);
+    dwError = pBE->pfnBEIndexIteratorInit(pBE, pIndexCfg, NULL, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     /*
@@ -574,7 +574,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
             VMDIR_SAFE_FREE_MEMORY(pszVal);
         }
 
-        dwError = pBE->pfnBESimpleIdToEntry(eId, &entry);
+        dwError = pBE->pfnBESimpleIdToEntry(pBE, eId, &entry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pNode = pNewScopes->pTail;

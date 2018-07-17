@@ -238,3 +238,14 @@ VmDirGenRandomImpl(
     PDWORD pdwRandomNumber
     );
 
+DWORD
+VmDirMkdir(
+    PCSTR path,
+    int mode
+    );
+
+DWORD
+VmDirDirectoryExists(
+    PCSTR       pszDirName,
+    PBOOLEAN    pbFound
+    );

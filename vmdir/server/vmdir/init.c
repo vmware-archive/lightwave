@@ -64,6 +64,12 @@ InitializeGlobalVars(
 
 static
 DWORD
+InitializeServerOperationsGlobals(
+    VOID
+    );
+
+static
+DWORD
 _VmDirWriteBackInvocationId(
     VOID
     );
@@ -103,6 +109,11 @@ VmDirCheckRestoreStatus(
     VDIR_SERVER_STATE* pTargetState
     );
 
+static
+VOID
+_VmDirEnableSuidDumpable(
+    VOID
+    );
 /*
  * load krb master key into gVmdirKrbGlobals.bervMasterKey
  */
@@ -229,8 +240,8 @@ VmDirInitBackend(
     dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // prepare USNList to guarantee safe USN for replication
-    dwError = VmDirBackendInitUSNList(pBE);
+    // Guarantee safe USN for replication where there is no I/O
+    dwError = VmDirInitMaxCommittedUSN(pBE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (bInitializeEntries)
@@ -320,6 +331,8 @@ VmDirInit(
     VDIR_SERVER_STATE targetState = VmDirdGetTargetState();
     BOOLEAN bDirtyShutdown = FALSE;
 
+    _VmDirEnableSuidDumpable();
+
     dwError = VmDirCheckForDirtyShutdown(&bDirtyShutdown);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -330,6 +343,9 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = InitializeServerStatusGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = InitializeServerOperationsGlobals();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSuperLoggingInit(&gVmdirGlobals.pLogger);
@@ -358,9 +374,12 @@ VmDirInit(
     dwError = VmDirInitBackend(&bLegacyDataLoaded);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirVmAclInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // load server globals before any write operations
     dwError = LoadServerGlobals(&bWriteInvocationId);
-    if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
+    if (dwError == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND)
     {
         dwError = 0;    // vmdir not yet promoted
     }
@@ -370,9 +389,6 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirKrbInit();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirVmAclInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
@@ -619,6 +635,14 @@ _VmDirRestoreInstance(
     PSTR    pszDCAccount = NULL;
     PSTR*   ppszServerInfo = NULL;
     size_t  dwInfoCount = 0;
+
+    dwError = LDAP_OPERATIONS_ERROR;
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
+            "%s: restore not supported: %d.",
+            __FUNCTION__,
+            dwError);
 
     VMDIR_LOG_INFO(
             VMDIR_LOG_MASK_ALL,
@@ -1107,6 +1131,72 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirSetSdGlobals()
+{
+    DWORD       dwError                    = 0;
+    PSTR        pszUserAdminSid            = NULL;
+    PSTR        pszBuiltinAdminSid         = NULL;
+    PSTR        pszDCAdminSid              = NULL;
+    PSTR        pszACL                     = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE pSecDesc = NULL;
+    ber_len_t   dwSecDescLen               = 0;
+
+    /*Get sid for cn=Administrator,cn=Users*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_USER_RID_ADMIN,
+                    &pszUserAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*Get sid for cn=Administrators,cn=Builtin*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_ALIAS_RID_ADMINS,
+                    &pszBuiltinAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*Get sid for cn=DCAdmins,cn=Builtin*/
+    dwError = VmDirGenerateWellknownSid(
+                    gVmdirServerGlobals.systemDomainDN.lberbv_val,
+                    VMDIR_DOMAIN_ADMINS_RID,
+                    &pszDCAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                            &pszACL,
+                            "O:%sG:%sD:AI(A;;GX;;;%s)(A;;GX;;;%s)(A;;GX;;;%s)",
+                            pszUserAdminSid,
+                            pszBuiltinAdminSid,
+                            pszDCAdminSid,
+                            pszBuiltinAdminSid,
+                            pszUserAdminSid);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwNtStatusToWin32Error(RtlAllocateSecurityDescriptorFromSddlCString(
+                                        &pSecDesc,
+                                        (PULONG)&dwSecDescLen,
+                                        pszACL,
+                                        SDDL_REVISION_1));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gVmdirdSDGlobals.pSDdcAdminGX = pSecDesc;
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set gVmdirdSDGlobals security descriptor", __FUNCTION__);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszBuiltinAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszDCAdminSid);
+    VMDIR_SAFE_FREE_STRINGA(pszACL);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "error %d", dwError);
+    VMDIR_SAFE_FREE_MEMORY(pSecDesc);
+    goto cleanup;
+}
+
 //
 // LoadServerGlobals()
 //
@@ -1136,7 +1226,6 @@ LoadServerGlobals(
     PSTR                pszLocalErrMsg = NULL;
     PSTR                pszDcAccountPwd = NULL;
     PSTR                pszServerName = NULL;
-    DWORD               dwCurrentDfl = VDIR_DFL_DEFAULT;
 
     dwError = VmDirInitStackOperation(
             &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
@@ -1386,31 +1475,6 @@ LoadServerGlobals(
     {
         goto cleanup;
     }
-    else
-    { // Hack
-        dwError = VmDirReadDCAccountPassword(&pszDcAccountPwd);
-        if (dwError == ERROR_FILE_NOT_FOUND) // registry key not found => not vdcpromed yet.
-        { // Replica server not configured/promoted yet.
-          // This is the scenario where DB has been copied from the partner i.e. where gVmdirServerGlobals.serverObjDN
-          // exists in the DSE Root entry exists but DC account password file does NOT exist.
-          // (bit of an hack logic to detect this scenario). Generate invocation ID now.
-
-            dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
-
-            // Server object will be updated with this invocation ID during vdcpromo. Also till
-            // vdcpromo is done, values in gVmdirServerGlobals.serverObjDN, gVmdirServerGlobals.dcAccountDN, and
-            // gVmdirServerGlobals.dcAccountUPN are that of this server's partner's and not it's own.
-            if (_VmDirGenerateInvocationId() != 0)
-            {
-                dwError = VMDIR_ERROR_GENERIC;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                        dwError,
-                        pszLocalErrMsg,
-                        "VmDirGenerateInvocationId() failed.");
-            }
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
     // Load Server object
     op.pBEIF = VmDirBackendSelect(gVmdirServerGlobals.serverObjDN.lberbv.bv_val);
@@ -1488,6 +1552,7 @@ LoadServerGlobals(
             gVmdirServerGlobals.serverId = atoi(attr->vals[0].lberbv.bv_val);
         }
     }
+
     if (gVmdirServerGlobals.invocationId.lberbv.bv_len == 0)
     {
         if (serverGuid.lberbv.bv_len == 0) // for data migration scenario: not even serverGuid is present.
@@ -1523,25 +1588,11 @@ LoadServerGlobals(
             gVmdirServerGlobals.serverId,
             gVmdirServerGlobals.invocationId.lberbv_val);
 
-   // Set the domain functional level
-    dwError = VmDirSrvGetDomainFunctionalLevel(&dwCurrentDfl);
+    dwError = VmDirInitSrvDFLGlobal();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (dwCurrentDfl > VMDIR_MAX_DFL)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "Server cannot support domain functional level (%d)",
-                dwCurrentDfl);
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
-    }
-
-    gVmdirServerGlobals.dwDomainFunctionalLevel = dwCurrentDfl;
-
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "Domain Functional Level (%d)",
-            gVmdirServerGlobals.dwDomainFunctionalLevel);
+    dwError = VmDirSetSdGlobals();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set promoted flag to TRUE
     gVmdirServerGlobals.bPromoted = TRUE;
@@ -1783,6 +1834,31 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+InitializeServerOperationsGlobals(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirAllocateMutex(&gVmDirServerOpsGlobals.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_WRITE_QUEUE), (PVOID)&gVmDirServerOpsGlobals.pWriteQueue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&gVmDirServerOpsGlobals.pWriteQueue->pList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
 /*
  * This function provides a mechanism to determine if vmdird needs to run
  * in restore or in read-only mode because of a previously failed restore
@@ -1893,4 +1969,24 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+/*
+ * Any process which has changed privilege levels will not be dumped.
+ * Enable it explicitly
+ */
+static
+VOID
+_VmDirEnableSuidDumpable(
+    VOID
+    )
+{
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) == -1)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: coredumps will not be generated error: %d",
+            __FUNCTION__,
+            errno);
+    }
 }

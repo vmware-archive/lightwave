@@ -67,6 +67,9 @@ VmDirInitStackOperation(
     dwError = VmDirAllocateConnection(&pOp->conn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirWriteQueueElementAllocate(&pOp->pWriteQueueEle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     pOp->bOwnConn = TRUE;
     pOp->pSchemaCtx = pLocalSchemaCtx;
     pLocalSchemaCtx = NULL;
@@ -117,14 +120,15 @@ VmDirExternalOperationCreate(
    retVal = VmDirSchemaCtxAcquire(&pOperation->pSchemaCtx);
    BAIL_ON_VMDIR_ERROR( retVal );
 
-   pOperation->lowestPendingUncommittedUsn = 0;
-
    if ( pOperation->reqCode == LDAP_REQ_ADD )
    {
        retVal = VmDirAllocateMemory( sizeof(*(pOperation->request.addReq.pEntry)),
                                      (PVOID)&(pOperation->request.addReq.pEntry) );
        BAIL_ON_VMDIR_ERROR( retVal );
    }
+
+   retVal = VmDirWriteQueueElementAllocate(&pOperation->pWriteQueueEle);
+   BAIL_ON_VMDIR_ERROR(retVal);
 
    *ppOperation = pOperation;
 
@@ -206,6 +210,12 @@ VmDirFreeOperationContent(
             VMDIR_SAFE_FREE_MEMORY(op->syncDoneCtrl);
         }
 
+        if (op->dbCopyCtrl)
+        {
+            VMDIR_SAFE_FREE_MEMORY(op->dbCopyCtrl->value.dbCopyCtrlVal.pszPath);
+            VMDIR_SAFE_FREE_MEMORY(op->dbCopyCtrl->value.dbCopyCtrlVal.pszData);
+        }
+
         switch (op->reqCode)
         {
             case LDAP_REQ_BIND:
@@ -252,6 +262,9 @@ VmDirFreeOperationContent(
         {
             VmDirDeleteConnection(&op->conn);
         }
+
+        VmDirWriteQueueElementFree(op->pWriteQueueEle);
+        op->pWriteQueueEle = NULL;
 
         VmDirSchemaCtxRelease(op->pSchemaCtx);
    }

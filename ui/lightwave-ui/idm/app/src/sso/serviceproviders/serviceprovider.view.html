@@ -1,0 +1,380 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+
+<div class="content-container">
+    <div class="content-header">
+        <img src="idm/assets/serviceprovider.png"
+             width="24px"
+             height="24px"/> Service Providers
+    </div>
+    <div class='error' ng-show="globals.errors && !globals.errors.success">
+        <img src="idm/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}} {{globals.errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.errors && globals.errors.success">
+        <img src="idm/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.errors = null;">X
+        </button>
+        {{globals.errors.details}}
+    </div>
+    <div style="margin-top:5px;">
+
+        <!-- Set of Tabs for Service Provider view -->
+        <uib-tabset active="active">
+
+            <!-- Relying party tab -->
+            <uib-tab index="0" select="vm.getallrelyingparty(vm.searchrelyingparty)" heading="Relying Party">
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewRelyingParty()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editRelyingParty(vm.selectedRelyingParty)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedRelyingParty"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedRelyingParty"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="vm.deleteRelyingParty(vm.selectedRelyingParty)"
+                                ng-confirm-click="Do you want to delete relying party {{vm.selectedRelyingParty.name}}?">
+                            DELETE
+                        </button>
+                        <form name="form"
+                              ng-submit="vm.getallrelyingparty(vm.searchrelyingparty)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchrelyingparty"
+                                   id="searchrelyingparty"
+                                   ng-model="vm.searchrelyingparty"
+                                   class="search-box"
+                                   placeholder="search by relying party name"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-4">
+                                Name
+                            </div>
+                            <div class="large-grid-header-cell col-xs-8">
+                                URL
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.rpdataLoading"
+                                 src="idm/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.rpdataLoading && (!vm.relyingparties || vm.relyingparties.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No relying party  found.
+                            </div>
+                            <div ng-repeat="currentrelyingparty in vm.relyingparties"
+                                     ng-if="vm.relyingparties"
+                                     tabindex="1"
+                                     class="large-grid-content-row"
+                                     ng-click="vm.selectedRelyingParty = currentrelyingparty;">
+                                    <div class="col-xs-4"
+                                         uib-tooltip="{{currentrelyingparty.name}}">
+                                        <img src="idm/assets/serviceprovider.png"
+                                             width="16px"
+                                             height="16px"/>
+                                        <button type="button"
+                                                class="btn btn-link"
+                                                ng-click="vm.selectedRelyingParty = currentrelyingparty; vm.viewrelyingparty()"
+                                                style="margin-top:-10px;">
+                                            {{
+                                                currentrelyingparty.name.length > 30 ?
+                                                currentrelyingparty.name.substring(0,30) + '...' :
+                                                currentrelyingparty.name;
+                                            }}
+                                        </button>
+                                    </div>
+                                    <div class="col-xs-8"
+                                         uib-tooltip="{{currentrelyingparty.url}}">
+                                        {{
+                                            currentrelyingparty.url.length > 80 ?
+                                            currentrelyingparty.url.substring(0,80) + '...' :
+                                            currentrelyingparty.url;
+                                        }}
+                                    </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+            </uib-tab>
+ 
+            <!-- Identity Provider tab -->
+            <uib-tab index="1" select="vm.getallidentityprovider(vm.searchidentityprovider)" heading="Identity Provider">
+
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewIdentityProvider()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editIdentityProvider(vm.selectedIdentityProvider)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedIdentityProvider"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedIdentityProvider"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="vm.deleteIdentityProvider(vm.selectedIdentityProvider)"
+                                ng-confirm-click="Do you want to delete identity provider {{vm.selectedIdentityProvider.clientId}}?">
+                            DELETE
+                        </button>
+                        <!-- Search box to search all the relying party -->
+                        <form name="form"
+                              ng-submit="vm.getallidentityprovider(vm.searchidentityprovider)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchidentityprovider"
+                                   id="searchidentityprovider"
+                                   ng-model="vm.searchidentityprovider"
+                                   class="search-box"
+                                   placeholder="search by identity provider ID"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-6">
+                                ID
+                            </div>
+                            <div class="large-grid-header-cell col-xs-5">
+                                Alias
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                JIT
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.idpdataLoading"
+                                 src="idm/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.idpdataLoading && (!vm.identityproviders || vm.identityproviders.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No identity providers  found.
+                            </div>
+                            <div ng-repeat="currentidentityprovider in vm.identityproviders"
+                                 ng-if="vm.identityproviders"
+                                 tabindex="1"
+                                 class="large-grid-content-row"
+                                 ng-click="vm.selectedIdentityProvider = currentidentityprovider;">
+                                <div class="col-xs-6"
+                                     uib-tooltip="{{currentidentityprovider.entityID}}">
+                                    <img src="idm/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px"/>
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="vm.selectedIdentityProvider = currentidentityprovider; vm.viewidentityprovider()"
+                                            style="margin-top:-10px;">
+                                        {{
+                                        currentidentityprovider.entityID.length > 50 ?
+                                        currentidentityprovider.entityID.substring(0,50) + '...' :
+                                        currentidentityprovider.entityID;
+                                        }}
+                                    </button>
+                                </div>
+                                <div class="col-xs-5"
+                                     uib-tooltip="{{currentrelyingparty.alias}}">
+                                    {{
+                                        currentidentityprovider.alias.length > 30 ?
+                                        currentidentityprovider.alias.substring(0,30) + '...' :
+                                        currentidentityprovider.alias;
+                                    }}
+                                </div>
+                                <div class="col-xs-1">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="currentidentityprovider.jitEnabled"
+                                         style="margin-top:-5px;"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!currentidentityprovider.jitEnabled"
+                                         style="margin-top:-5px;"/>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+
+            </uib-tab>
+
+            <!-- Open Id Connect Client tab -->
+            <uib-tab index="2" select="vm.getalloidcclient(vm.searchoidcclient)" heading="Open ID Connect Client">
+                <div class="tab-container">
+
+                    <div style="margin-bottom:5px;">
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator'"
+                                ng-click="vm.addNewOidcClient()"
+                                style="float:left;margin-left:10px;">
+                            ADD
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-click="vm.editOidcClient(vm.selectedOIDCClient)"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedOIDCClient
+                                && vm.canEditIdentityProvider()"
+                                style="float:left;margin-left:10px;">
+                            EDIT
+                        </button>
+                        <button type="button" class="btn btn-link"
+                                ng-show="globals.currentUser.role == 'Administrator' && vm.selectedOIDCClient
+                                && vm.canDeleteIdentityProvider()"
+                                style="float:left;margin-left:10px;"
+                                confirmed-click="vm.deleteOidcClient(vm.selectedOIDCClient)"
+                                ng-confirm-click="Do you want to delete OIDC Client {{vm.selectedOIDCClient.entityID}}?">
+                            DELETE
+                        </button>
+                        <!-- Search box to search all the relying party -->
+                        <form name="form"
+                              ng-submit="vm.getalloidcclient(vm.searchoidcclient)"
+                              role="form"
+                              style="float:right;">
+                            <input type="text"
+                                   name="searchoidcclient"
+                                   id="searchoidcclient"
+                                   ng-model="vm.searchoidcclient"
+                                   class="search-box"
+                                   placeholder="search by OIDC Client ID"/>
+                            <button type="submit"
+                                    class="btn btn-primary btn-sm">
+                                Search
+                            </button>
+                        </form>
+                    </div>
+
+                    <br/><br/>
+                    <div class="large-grid">
+                        <div class="large-grid-header">
+                            <div class="large-grid-header-cell col-xs-4">
+                                Client ID
+                            </div>
+                            <div class="large-grid-header-cell col-xs-2">
+                                Token Auth Method
+                            </div>
+                            <div class="large-grid-header-cell col-xs-1">
+                                Certificate
+                            </div>
+                            <div class="large-grid-header-cell col-xs-5">
+                                Logout URI
+                            </div>
+                        </div>
+                        <div class="large-grid-content">
+                            <img ng-if="vm.oidcdataLoading"
+                                 src="idm/assets/progress.gif"
+                                 style="padding:20px;"/>
+                            <div ng-if="!vm.oidcdataLoading && (!vm.oidcclients || vm.oidcclients.length == 0)"
+                                 style="padding:60px;"
+                                 class="row">
+                                No OIDC Clients  found.
+                            </div>
+                            <div ng-repeat="currentoidcclient in vm.oidcclients"
+                                 ng-if="vm.oidcclients"
+                                 tabindex="1"
+                                 class="large-grid-content-row"
+                                 ng-click="vm.selectedOIDCClient = currentoidcclient;">
+                                <div class="col-xs-4"
+                                     uib-tooltip="{{currentoidcclient.clientId}}">
+                                    <img src="idm/assets/serviceprovider.png"
+                                         width="16px"
+                                         height="16px" style="margin-top:-5px;"/>
+                                    <button type="button"
+                                            class="btn btn-link"
+                                            ng-click="vm.selectedOIDCClient = currentoidcclient; vm.viewoidcclient()"
+                                            style="margin-top:-10px;">
+                                        {{
+                                            currentoidcclient.clientId.length > 50 ?
+                                            currentoidcclient.clientId.substring(0,50) + '...' :
+                                            currentoidcclient.clientId;
+                                        }}
+                                    </button>
+                                </div>
+                                <div class="col-xs-2"
+                                     uib-tooltip="{{currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod}}">
+                                    {{currentoidcclient.oidcclientMetadataDTO.tokenEndpointAuthMethod}}
+                                </div>
+                                <div class="col-xs-1">
+                                    <img src="idm/assets/enabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="currentoidcclient.oidcclientMetadataDTO.certSubjectDN"/>
+                                    <img src="idm/assets/disabled.png"
+                                         width="16px"
+                                         height="16px"
+                                         ng-show="!currentoidcclient.oidcclientMetadataDTO.certSubjectDN"/>
+                                </div>
+                                <div class="col-xs-5"
+                                     uib-tooltip="{{currentrelyingparty.oidcclientMetadataDTO.logoutUri}}">
+                                    {{
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri.length > 50 ?
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri.substring(0,50) + '...' :
+                                    currentoidcclient.oidcclientMetadataDTO.logoutUri;
+                                    }}
+                                </div>
+                            </div>
+                        </div>
+                        <div class="large-grid-footer">
+                        </div>
+                    </div>
+                </div>
+
+            </uib-tab>
+            
+        </uib-tabset>
+    </div>
+</div>

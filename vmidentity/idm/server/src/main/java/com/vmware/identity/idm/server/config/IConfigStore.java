@@ -79,7 +79,7 @@ public interface IConfigStore
     /*
      *  Tenant
      */
-    public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception;
+    public void addTenant(Tenant tenant) throws Exception;
 
     public void deleteTenant(String name) throws Exception;
 

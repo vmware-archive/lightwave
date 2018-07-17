@@ -40,15 +40,6 @@ VmDirSrvAccessCheckSelf(
 
 static
 DWORD
-VmDirSrvAccessCheckEntry(
-    PACCESS_TOKEN                   pToken,
-    PSECURITY_DESCRIPTOR_ABSOLUTE   pSecDescAbs,
-    ACCESS_MASK                     accessDesired,
-    ACCESS_MASK *                   psamGranted
-    );
-
-static
-DWORD
 _VmDirLoadSecurityDescriptorForEntry(
     PVDIR_ENTRY pEntry,
     PSECURITY_DESCRIPTOR_ABSOLUTE *ppSecDescAbs
@@ -310,7 +301,6 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
 VmDirSrvAccessCheckEntry(
     PACCESS_TOKEN                   pToken,

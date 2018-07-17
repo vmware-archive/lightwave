@@ -289,6 +289,7 @@ VmDirKrbUPNKeySet(
 cleanup:
 
     VmDirFreeBervalContent(&bervKeyBlob);
+    VmDirFreeEntryArrayContent(&entryArray);
 
     return dwError;
 

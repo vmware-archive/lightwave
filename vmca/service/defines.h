@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -214,10 +214,10 @@ typedef DWORD VMCA_FUNC_LEVEL;
         dwError = ERROR_OUTOFMEMORY;            \
     }
 
-#define HANDLE_NULL_PARAM(input, dwerror)       \
+#define HANDLE_NULL_PARAM(input, dwError)       \
     if (input == NULL)                          \
     {                                           \
-        dwerror = ERROR_INVALID_PARAMETER;      \
+        dwError = ERROR_INVALID_PARAMETER;      \
     }
 
 // C REST ENGINE CONFIG VALUES
@@ -310,3 +310,9 @@ if (bLocked) \
   pthread_rwlock_unlock (pmutex); \
   (bLocked) = FALSE; \
 }
+
+// VMCA Policy
+#define VMCA_POLICY_FILE_PATH               VMCA_CONFIG_DIR "/vmca-policy.json"
+
+#define VMCA_POLICY_NUM                     1
+#define VMCA_POLICY_SN_NAME                 "SNValidate"

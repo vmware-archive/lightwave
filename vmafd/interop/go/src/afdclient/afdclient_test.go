@@ -257,6 +257,17 @@ func TestVmAfdCreateComputerAccountWithDC(t *testing.T) {
 	fmt.Printf("Created Machine account %s with password %s", machineAccount, machinePassword)
 }
 
+func TestVmAfdGetMachineAccountInfo(t *testing.T) {
+	machineAccount, machinePassword, err := VmAfdGetMachineAccountInfo()
+	if err != nil {
+		assert.FailNow(t, "Error getting machine account info", "Error: %+v", err)
+	}
+
+	assert.NotEmpty(t, machineAccount, "Machine account is empty")
+	assert.NotEmpty(t, machinePassword, "Machine password is empty")
+	return
+}
+
 func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo {
 	if status == nil {
 		assert.FailNow(t, "Heartbeat Status is null")

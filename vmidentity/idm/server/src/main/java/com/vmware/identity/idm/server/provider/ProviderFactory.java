@@ -33,7 +33,10 @@ import com.vmware.identity.idm.server.provider.vmwdirectory.VMwareDirectoryProvi
 public class ProviderFactory implements IProviderFactory
 {
     public
-    IIdentityProvider buildProvider(String tenantName, IIdentityStoreData store, Collection<X509Certificate> trustedCertificates) throws Exception
+    IIdentityProvider buildProvider(
+        String tenantName, IIdentityStoreData store,
+        Collection<X509Certificate> trustedCertificates,
+        IAccountProvider acctProvider ) throws Exception
     {
         IIdentityProvider provider = null;
         IIdentityStoreDataEx storeDataEx = null;
@@ -74,11 +77,15 @@ public class ProviderFactory implements IProviderFactory
                          ( ServerUtils.isNullOrEmpty(storeDataEx.getAlias()) == false ) )
                     {
 
-                        provider = new SystemDomainAliasedProvider(tenantName, store, settings.getServiceProviderSystemDomianUserAliases() );
+                        provider = new SystemDomainAliasedProvider(
+                            tenantName, store,
+                            settings.getServiceProviderSystemDomianUserAliases(),
+                            acctProvider );
                     }
                     else
                     {
-                        provider = new VMwareDirectoryProvider(tenantName, store, isSystemDomain);
+                        provider = new VMwareDirectoryProvider(
+                            tenantName, store, isSystemDomain, acctProvider);
                     }
                     break;
                 }

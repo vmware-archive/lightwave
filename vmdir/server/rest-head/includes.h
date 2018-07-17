@@ -41,6 +41,7 @@
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
 #include <srvcommon.h>
+#include <srvcommonapi.h>
 
 #include <backend.h>
 #include <middlelayer.h>

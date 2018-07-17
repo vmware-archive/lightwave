@@ -52,12 +52,6 @@ _VmDirDeleteManagedService(
 
 static
 DWORD
-_VmDirDeriveDRNodeUtdVector(
-    PSTR*   ppszUtdVector
-    );
-
-static
-DWORD
 _VmDirPingListenerPorts(
     DWORD   dwIPFamily
     );
@@ -103,12 +97,9 @@ VmDirSrvServerReset(
     BOOLEAN             bWriteInvocationId = FALSE;
     DEQUE               deqDCObjUPN = {0};
     PVMDIR_DR_DC_INFO   pDcInfo = NULL;
-    PSTR                pszUtdVector = NULL;
-    BOOLEAN             bMdbWalEnable = FALSE;
     BOOLEAN             bLdapThrStopped = FALSE;
+    PVMDIR_SWAP_DB_INFO pSwapDBInfo = NULL;
     VDIR_BERVALUE       bvUtdVector = VDIR_BERVALUE_INIT;
-
-    VmDirGetMdbWalEnable(&bMdbWalEnable);
 
     VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
@@ -136,15 +127,14 @@ VmDirSrvServerReset(
     // close current DB
     VmDirShutdownDB();
 
-    //swap current vmdir database file with the foriegn one under partner/
-    dwError = VmDirSwapDB(dbHomeDir, bMdbWalEnable);
+    //swap current vmdir database file with the foreign one under partner/
+    dwError = VmDirSwapDB(dbHomeDir);
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Swap DB", __FUNCTION__);
 
     VmDirSetACLMode();
 
-    // from backup db, derive proper utdvector for DR node.
-    dwError = _VmDirDeriveDRNodeUtdVector(&pszUtdVector);
+    dwError = VmDirPrepareSwapDBInfo(NULL, &pSwapDBInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirDeleteDCObject(&deqDCObjUPN);
@@ -183,8 +173,8 @@ VmDirSrvServerReset(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Create Directory Server object", __FUNCTION__);
 
     // set utdvector of server object
-    bvUtdVector.lberbv_val = pszUtdVector;
-    bvUtdVector.lberbv_len = VmDirStringLenA(pszUtdVector);
+    bvUtdVector.lberbv_val = pSwapDBInfo->pszMyUTDVcetor;
+    bvUtdVector.lberbv_len = VmDirStringLenA(pSwapDBInfo->pszMyUTDVcetor);
     dwError = VmDirInternalEntryAttributeReplace(
         pSchemaCtx,
         gVmdirServerGlobals.serverObjDN.lberbv.bv_val,
@@ -216,7 +206,7 @@ VmDirSrvServerReset(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
+    VmDirFreeSwapDBInfo(pSwapDBInfo);
     VmDirSchemaCtxRelease(pSchemaCtx);
 
     while(!dequeIsEmpty(&deqDCObjUPN))
@@ -323,48 +313,6 @@ _VmDirStartLDAPListener(
     }
 
 cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirDeriveDRNodeUtdVector(
-    PSTR*   ppszUtdVector
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszFQDN = NULL;
-    PSTR    pszLocalUtdVector = NULL;
-    PSTR    pszLocalMaxUSN = NULL;
-    PVDIR_ENTRY     pEntry = NULL;
-    PVDIR_ATTRIBUTE pAttrServerDN = NULL;
-
-    dwError = VmDirSimpleDNToEntry(PERSISTED_DSE_ROOT_DN, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pAttrServerDN = VmDirEntryFindAttribute(ATTR_SERVER_NAME, pEntry);
-    assert(pAttrServerDN);
-
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s backup DB was taken from %s", __FUNCTION__, pAttrServerDN->vals[0].lberbv_val);
-
-    dwError = VmDirDnLastRDNToCn(pAttrServerDN->vals[0].lberbv_val, &pszFQDN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirComposeNodeUtdVector(pszFQDN, &pszLocalUtdVector, &pszLocalMaxUSN);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszUtdVector = pszLocalUtdVector;
-    pszLocalUtdVector = NULL;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszFQDN);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalUtdVector);
-    VMDIR_SAFE_FREE_MEMORY(pszLocalMaxUSN);
-    VmDirFreeEntry(pEntry);
-
     return dwError;
 
 error:

@@ -1,0 +1,122 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Lightwave VmDir API",
+        "version": "1.3.0"
+    },
+    "schemes": [
+        "https"
+    ],
+    "host": "IPADDRESS_MARKER",
+    "basePath": "/v1",
+    "produces": [
+        "application/json",
+        "text/plain"
+    ],
+    "tags": [
+        {
+            "name": "certs",
+            "description": "cert operations"
+        },
+        {
+            "name": "password",
+            "description": "password operations"
+        }
+    ],
+    "paths": {
+        "/vmdir/api/certs/rootcerts": {
+            "get": {
+                "summary": "Get all root certs",
+                "description": "Get all root certs",
+                "produces": [
+                    "text/plain"
+                ],
+                "parameters": [
+                    {
+                        "name": "ca_cn_filter",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "detail",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Certs Response",
+                        "schema": {
+                            "type": "array",
+                            "items": {
+                                "$ref": "#/definitions/CertsResponse"
+                            }
+                        }
+                    }
+                },
+                "tags": [
+                    "certs"
+                ]
+            }
+        },
+        "/vmdir/api/password/refresh": {
+            "post": {
+                "summary": "Refresh password",
+                "description": "Refresh password",
+                "produces": [
+                    "text/plain"
+                ],
+                "parameters": [
+                    {
+                        "name": "force",
+                        "in": "query",
+                        "required": true,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Password refresh response",
+                        "schema": {
+                            "$ref": "#/definitions/PasswordRefreshResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "password"
+                ]
+            }
+        }
+    },
+    "definitions": {
+        "PasswordRefreshResponse": {
+            "type": "object",
+            "properties": {
+                "refreshed":  {"type": "boolean"},
+                "password":  {"type": "string"}
+            }
+        },
+        "CertData": {
+            "type": "object",
+            "properties": {
+                "cert":       {"type": "string"},
+                "crl":        {"type": "string"},
+                "cn":         {"type": "string"},
+                "subjectdn":  {"type": "string"}
+            }
+        },
+        "CertsResponse": {
+            "type": "object",
+            "properties": {
+                "certs": {
+                    "type": "array",
+                    "items": {
+                        "$ref": "#/definitions/CertData"
+                    }
+                }
+            }
+        }
+    }
+}

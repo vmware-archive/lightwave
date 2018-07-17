@@ -1,43 +1,6 @@
-#!/bin/bash
+#!/bin/bash -x
 
-# entry into container
-
-JSVC_BIN=/var/opt/commons-daemon-1.0.15/bin/jsvc
-JAVA_HOME=/etc/alternatives/jre/../
-
-function stop_idmd {
-    local SERVICE_NAME=vmware-idmd
-    local PIDFILE=/var/run/vmware-idmd.pid
-    local DAEMON_CLASS=com.vmware.identity.idm.server.IdmServer
-
-    $JSVC_BIN -procname $SERVICE_NAME \
-              -stop \
-              -home $JAVA_HOME \
-              -pidfile $PIDFILE \
-              $DAEMON_CLASS
-    rc=$?
-    if [ $rc -ne 0 ]; then
-        echo "failed to stop IDM service. Error code : $rc"
-    fi
-
-}
-
-function stop_stsd {
-    local SERVICE_NAME=vmware-sts-stsd
-    local STSD_LOG_DIR="/var/log/vmware/sso"
-    local STSD_SERVICE_PID="$STSD_LOG_DIR/tcserver.pid"
-    local DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
-
-    $JSVC_BIN -procname $SERVICE_NAME \
-              -stop \
-              -home $JAVA_HOME \
-              -pidfile $STSD_SERVICE_PID \
-              $DAEMON_CLASS
-    rc=$?
-    if [ $rc -ne 0 ]; then
-        echo "failed to stop STS service. Error code : $rc"
-    fi
-}
+LW_CONFIG_PATH=/var/lib/vmware/config/lightwave-server.cfg
 
 function clean_up {
 
@@ -45,8 +8,7 @@ function clean_up {
     echo "shutdown signal handled"
 
     # stop java processes
-    stop_stsd
-    stop_idmd
+    /opt/vmware/sbin/vmware-stsd.sh stop
 
     # stop lwsm
     if [ `pidof lwsmd` ];  then
@@ -61,10 +23,12 @@ function clean_up {
 
 trap clean_up SIGHUP SIGINT SIGTERM
 
+# entry into container
+
 # Need haveged for vmca
 /usr/sbin/haveged -w 1024 -v 1
 
-/opt/vmware/bin/configure-lightwave-server --config-file /var/lib/vmware/config/lightwave-server.cfg
+/opt/vmware/bin/configure-lightwave-server --config-file $LW_CONFIG_PATH 2>&1 > /tmp/configure-lightwave-server.log
 
 if [ $? -ne 0 ]; then
     echo "failed to configure lightwave server"
@@ -84,10 +48,10 @@ fi
 
 sleep 1
 
-/opt/vmware/bin/configure-identity-server
+/opt/vmware/sbin/vmware-stsd.sh start
 
 if [ $? -ne 0 ]; then
-    echo "failed to initialize identity services"
+    echo "failed to start secure token service"
     clean_up 1
 fi
 

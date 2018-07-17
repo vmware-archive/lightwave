@@ -23,6 +23,9 @@ import com.vmware.identity.idm.IIdentityStoreData;
 
 public interface IProviderFactory {
 
-    public IIdentityProvider buildProvider(String tenantName, IIdentityStoreData store,  Collection<X509Certificate> trustedCertificates) throws Exception;
+    public IIdentityProvider buildProvider(
+        String tenantName, IIdentityStoreData store,
+        Collection<X509Certificate> trustedCertificates,
+        IAccountProvider acctProvider ) throws Exception;
 
 }

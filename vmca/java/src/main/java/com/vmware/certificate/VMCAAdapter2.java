@@ -101,6 +101,16 @@ public final class VMCAAdapter2 {
       }
    }
 
+    public static void VMCAInitOpenSSL() throws VMCAException {
+        int error = VMCA.INSTANCE.VMCAClientInitOpenSSL();
+        THROW_IF_NEEDED(error);
+    }
+
+    public static void VMCACleanupOpenSSL() throws VMCAException {
+        int error = VMCA.INSTANCE.VMCAClientCleanupOpenSSL();
+        THROW_IF_NEEDED(error);
+    }
+
    public static VMCAServerContext
    getServerContext(
       String pszNetworkAddress,
@@ -798,5 +808,7 @@ public final class VMCAAdapter2 {
 
       int  VMCAGetShortError( int errcode, PointerByReference pMsg);
       int  VMCAGetErrorString( int errcode, PointerByReference pMsg);
+      int  VMCAClientInitOpenSSL();
+      int  VMCAClientCleanupOpenSSL();
    }
 }

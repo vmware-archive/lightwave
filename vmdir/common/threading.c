@@ -562,10 +562,7 @@ ThreadFunction(
     VMDIR_SAFE_FREE_MEMORY(pArgs);
 
     // set thread log context so error logs will show function name and line number
-    dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pLogCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSetThreadLogContextValue(pLogCtx);
+    dwError = VmDirAllocAndSetThrLogCtx(&pLogCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // run the start routine
@@ -573,9 +570,7 @@ ThreadFunction(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
-    // unset and free thread log context
-    VmDirSetThreadLogContextValue(NULL);
-    VmDirFreeThreadLogContext(pLogCtx);
+    VmDirUnsetAndFreeThrLogCtx(pLogCtx);
 
     VMDIR_SAFE_FREE_MEMORY(pArgs);
 

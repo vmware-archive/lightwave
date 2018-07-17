@@ -1,0 +1,31 @@
+{
+  "name": "lightwave-ui",
+  "private": true,
+  "version": "0.0.1",
+  "description": "HTML 5 based UI for Lightwave ",
+  "repository": "https://github.com/vmware/lightwave",
+  "license": "Apache 2.0",
+  "devDependencies": {
+    "minimatch": "3.0.2",
+    "gulp": "4.0.0",
+    "gulp-rename": "1.2.3",
+    "gulp-concat": "2.6.1",
+    "gulp-clean": "0.4.0",
+    "gulp-html-minifier": "0.1.8",
+    "gulp-clean-css": "3.9.4",
+    "angular-mocks": "1.5.6",
+    "bower": "1.8.4"
+  },
+  "scripts": {
+    "prestart": "npm install",
+    "pretest": "npm install",
+    "gulp-install": "npm i -g gulp@3.9.1",
+    "bower-install": "npm i -g bower@1.8.4",
+    "test": "karma start karma.conf.js",
+    "test-single-run": "karma start karma.conf.js  --single-run",
+    "preupdate-webdriver": "npm install",
+    "update-webdriver": "webdriver-manager update",
+    "update-index-async": "node -e \"require('shelljs/global'); sed('-i', /\\/\\/@@NG_LOADER_START@@[\\s\\S]*\\/\\/@@NG_LOADER_END@@/, '//@@NG_LOADER_START@@\\n' + sed(/sourceMappingURL=angular-loader.min.js.map/,'sourceMappingURL=bower_components/angular-loader/angular-loader.min.js.map','app/bower_components/angular-loader/angular-loader.min.js') + '\\n//@@NG_LOADER_END@@', 'app/index-async.html');\""
+  },
+  "dependencies": {}
+}

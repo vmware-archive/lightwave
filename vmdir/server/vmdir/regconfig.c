@@ -180,6 +180,13 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
+                    VMDIR_REG_KEY_HTTPS_API_LISTEN_PORT,
+                    TRUE))
+        {
+            gVmdirGlobals.dwHTTPSApiListenPort = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
                     VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,
                     TRUE))
         {
@@ -310,6 +317,13 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.dwSupplierThrTimeoutInMilliSec = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.dwWriteTimeoutInMilliSec = pEntry->dwValue;
         }
     }
 
@@ -943,7 +957,7 @@ VmDirGetMdbWalEnable(
                             &keyValue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *pbMdbEnableWal = (keyValue!=0);
+    *pbMdbEnableWal = (BOOLEAN)(keyValue!=0);
 
 cleanup:
     if (pCfgHandle)
@@ -991,6 +1005,45 @@ VmDirGetMdbChkptInterval(
     }
 
     *pdwMdbChkptInterval = keyValue;
+
+cleanup:
+    if (pCfgHandle)
+    {
+        VmDirRegConfigHandleClose(pCfgHandle);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirGetLdapCopyEnable(
+    BOOLEAN *pbLdapCopyEnable
+    )
+{
+    DWORD keyValue = 0;
+    DWORD dwError = 0;
+    PVMDIR_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
+
+    if (pbLdapCopyEnable == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pbLdapCopyEnable = FALSE;
+
+    dwError = VmDirRegConfigHandleOpen(&pCfgHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRegConfigGetDword(
+                            pCfgHandle,
+                            VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
+                            VMDIR_REG_KEY_LDAP_COPY_ENABLE,
+                            &keyValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pbLdapCopyEnable = (BOOLEAN)(keyValue!=0);
 
 cleanup:
     if (pCfgHandle)

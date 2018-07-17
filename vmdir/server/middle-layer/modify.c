@@ -248,7 +248,6 @@ VmDirInternalModifyEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    int         deadLockRetries = 0;
     VDIR_ENTRY  entry = {0};
     PVDIR_ENTRY pEntry = NULL;
     ModifyReq*  modReq = NULL;
@@ -311,23 +310,12 @@ VmDirInternalModifyEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
     }
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx);
-        bHasTxn = FALSE;
+        retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Failed in waiting for USN dispatch");
     }
 
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    else
     {
         if (pEntry)
         {
@@ -343,51 +331,33 @@ txnretry:
         iBEStartTime = VmDirGetTimeInMilliSec();
 
         // Read current entry from DB
-        retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(modReq->dn), &entryId);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryModify (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+        retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(modReq->dn), &entryId);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "BEEntryModify (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
         {
             // Generate attributes' new meta-data
-            if ((retVal = VmDirGenerateModsNewMetaData( pOperation, modReq->mods, entryId )) != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_LOCK_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                                      "GenerateModsNewMetaData (%u)", retVal );
-                }
-            }
+            retVal = VmDirGenerateModsNewMetaData(pOperation, modReq->mods, entryId);
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrMsg,
+                "GenerateModsNewMetaData (%u)",
+                retVal);
         }
 
         pEntry = &entry;
 
-        if ((retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId, pEntry )) != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_LOCK_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                                                  "CoreLogicModifyEntry failed. (%u)", retVal );
-            }
-        }
+        retVal = VmDirModifyEntryCoreLogic( pOperation, &pOperation->request.modifyReq, entryId, pEntry);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "CoreLogicModifyEntry failed. (%u)",
+            retVal);
 
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
@@ -402,15 +372,16 @@ txnretry:
                     pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
         }
     }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
 
     gVmdirGlobals.dwLdapWrites++;
 
     VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry);
 
 cleanup:
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+    {
+        VmDirWriteQueuePop(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+    }
 
     {
         int iPostCommitPluginRtn = 0;
@@ -455,88 +426,6 @@ error:
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
-    goto cleanup;
-}
-
-/*
- * Convenient function to replace ONE single value attribute via InternalModifyEntry
- * *****************************************************************************
- * WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING WARNING
- * You should NOT call this function while in a backend txn/ctx.
- * *****************************************************************************
- * This may not be easy to determine as we could call this in different places, which
- * may be nested in external and internal OPERATION.
- * A better approach is to pass in pOperation and use the same beCtx if exists.
- * However, this could also cause logic error, e.g. you could lost track if entry/data
- * has already been changed by beCtx and reread them.
- * *****************************************************************************
- */
-DWORD
-VmDirInternalEntryAttributeReplace(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PCSTR               pszNormDN,
-    PCSTR               pszAttrName,
-    PVDIR_BERVALUE      pBervAttrValue
-    )
-{
-    DWORD               dwError = 0;
-    VDIR_OPERATION      ldapOp = {0};
-    PVDIR_MODIFICATION  pMod = NULL;
-
-    if ( !pszNormDN || !pszAttrName || !pBervAttrValue)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirInitStackOperation( &ldapOp,
-                                       VDIR_OPERATION_TYPE_INTERNAL,
-                                       LDAP_REQ_MODIFY,
-                                       pSchemaCtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
-    assert(ldapOp.pBEIF);
-
-    ldapOp.reqDn.lberbv.bv_val = (PSTR)pszNormDN;
-    ldapOp.reqDn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
-
-    dwError = VmDirAllocateMemory(
-                    sizeof(*pMod)*1,
-                    (PVOID)&pMod);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pMod->next = NULL;
-    pMod->operation = MOD_OP_REPLACE;
-    dwError = VmDirModAddSingleValueAttribute(
-                    pMod,
-                    ldapOp.pSchemaCtx,
-                    pszAttrName,
-                    pBervAttrValue->lberbv.bv_val,
-                    pBervAttrValue->lberbv.bv_len);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    ldapOp.request.modifyReq.dn.lberbv.bv_val = (PSTR)pszNormDN;
-    ldapOp.request.modifyReq.dn.lberbv.bv_len = VmDirStringLenA(pszNormDN);
-    ldapOp.request.modifyReq.mods = pMod;
-    pMod = NULL;
-    ldapOp.request.modifyReq.numMods = 1;
-
-    dwError = VmDirInternalModifyEntry(&ldapOp);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-
-    VmDirFreeOperationContent(&ldapOp);
-
-    if (pMod)
-    {
-        VmDirModificationFree(pMod);
-    }
-
-    return dwError;
-
-error:
     goto cleanup;
 }
 

@@ -1085,52 +1085,55 @@ VmwDeploySetupClientWithDC(
         dwError = 0;
     }
 
-    VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
-
-    dwRetryCount = 0;
-    bAcquiredCertificate = FALSE;
-    do
+    if (pParams->bGenMachineSSL)
     {
-        // As per https://tools.ietf.org/html/rfc6125
-        // CN portion of the certificate will ignored
-        // for certificate validation if SAN is present 
-        // CN has a limitation of 64 chars and 
-        // FQDN can be upto 256 chars. Passing a
-        // hard coded value machine ssl certificate 
-        dwError = VmwDeployCreateMachineSSLCert(
-                        pParams->pszServer,
-                        pParams->pszDomainName,
-                        pParams->pszUsername,
-                        pParams->pszPassword,
-                        "machine_ssl_cert",
-                        pParams->pszSubjectAltName ?
-                            pParams->pszSubjectAltName : pParams->pszHostname,
-                        &pszPrivateKey,
-                        &pszSSLCert);
-            if (dwError)
-            {
-                if (!VmwDeployIsRetriableError(dwError))
+        VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
+
+        dwRetryCount = 0;
+        bAcquiredCertificate = FALSE;
+        do
+        {
+            // As per https://tools.ietf.org/html/rfc6125
+            // CN portion of the certificate will ignored
+            // for certificate validation if SAN is present 
+            // CN has a limitation of 64 chars and 
+            // FQDN can be upto 256 chars. Passing a
+            // hard coded value machine ssl certificate 
+            dwError = VmwDeployCreateMachineSSLCert(
+                            pParams->pszServer,
+                            pParams->pszDomainName,
+                            pParams->pszUsername,
+                            pParams->pszPassword,
+                            "machine_ssl_cert",
+                            pParams->pszSubjectAltName ?
+                                pParams->pszSubjectAltName : pParams->pszHostname,
+                            &pszPrivateKey,
+                            &pszSSLCert);
+                if (dwError)
                 {
-                    BAIL_ON_DEPLOY_ERROR(dwError);
+                    if (!VmwDeployIsRetriableError(dwError))
+                    {
+                        BAIL_ON_DEPLOY_ERROR(dwError);
+                    }
+                    VMW_DEPLOY_LOG_INFO(
+                        "Failed to get Certfificate from Lightwave (error %d). Retrying...",
+                        dwError);
+                    VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+                    ++dwRetryCount;
+                    continue;
                 }
-                VMW_DEPLOY_LOG_INFO(
-                    "Failed to get Certfificate from Lightwave (error %d). Retrying...",
-                    dwError);
-                VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
-                ++dwRetryCount;
-                continue;
-            }
-            else
-            {
-                bAcquiredCertificate = TRUE;
-            }
-    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
-    BAIL_ON_DEPLOY_ERROR(dwError);
+                else
+                {
+                    bAcquiredCertificate = TRUE;
+                }
+        } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+        BAIL_ON_DEPLOY_ERROR(dwError);
 
-    VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
+        VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
 
-    dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+        dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     if (pParams->bMachinePreJoined)
     {
@@ -1335,50 +1338,53 @@ VmwDeploySetupClient(
         dwError = 0;
     }
 
-    dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
-
-    dwRetryCount = 0;
-    bAcquiredCertificate = FALSE;
-    do
+    if (pParams->bGenMachineSSL)
     {
-        dwError = VmwDeployCreateMachineSSLCert(
-                    pszDC,
-                    pParams->pszDomainName,
-                    pParams->pszUsername,
-                    pParams->pszPassword,
-                    "machine_ssl_cert",
-                    pParams->pszSubjectAltName ?
-                        pParams->pszSubjectAltName : pParams->pszHostname,
-                    &pszPrivateKey,
-                    &pszSSLCert);
-        if (dwError)
+        dwError = VmAfdGetDCNameA(pszHostname, &pszDC);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+
+        VMW_DEPLOY_LOG_INFO("Generating Machine SSL cert");
+
+        dwRetryCount = 0;
+        bAcquiredCertificate = FALSE;
+        do
         {
-            if (!VmwDeployIsRetriableError(dwError))
+            dwError = VmwDeployCreateMachineSSLCert(
+                        pszDC,
+                        pParams->pszDomainName,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        "machine_ssl_cert",
+                        pParams->pszSubjectAltName ?
+                            pParams->pszSubjectAltName : pParams->pszHostname,
+                        &pszPrivateKey,
+                        &pszSSLCert);
+            if (dwError)
             {
-                BAIL_ON_DEPLOY_ERROR(dwError);
+                if (!VmwDeployIsRetriableError(dwError))
+                {
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+                VMW_DEPLOY_LOG_INFO(
+                    "Failed to get Certificate from Lightwave (error %d). Retrying...",
+                    dwError);
+                VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
+                ++dwRetryCount;
+                continue;
             }
-            VMW_DEPLOY_LOG_INFO(
-                "Failed to get Certificate from Lightwave (error %d). Retrying...",
-                dwError);
-            VmwDeploySleep(VMW_DOMAIN_JOIN_RETRY_DELAY_SECS * 1000);
-            ++dwRetryCount;
-            continue;
-        }
-        else
-        {
-            bAcquiredCertificate = TRUE;
-        }
-    } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
-    BAIL_ON_DEPLOY_ERROR(dwError);
+            else
+            {
+                bAcquiredCertificate = TRUE;
+            }
+        } while (!bAcquiredCertificate && (dwRetryCount <= VMW_DOMAIN_JOIN_MAX_RETRIES));
+        BAIL_ON_DEPLOY_ERROR(dwError);
 
 
-    VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
+        VMW_DEPLOY_LOG_INFO("Setting Machine SSL certificate");
 
-    dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+        dwError = VmAfdSetSSLCertificate(pszHostname, pszSSLCert, pszPrivateKey);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     if (pParams->bMachinePreJoined)
     {

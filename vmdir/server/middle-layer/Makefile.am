@@ -32,6 +32,8 @@ libmiddle_layer_la_SOURCES = \
     specialsearch.c \
     srputil.c \
     util.c \
+    usn.c \
+    writequeue.c \
     libmain.c
 
 libmiddle_layer_la_CPPFLAGS = \
@@ -41,7 +43,7 @@ libmiddle_layer_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/vmdir/server/include \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 

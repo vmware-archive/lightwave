@@ -161,6 +161,34 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirUTDVectorLookup(
+    PLW_HASHMAP pUtdVectorMap,
+    PCSTR   pszInvocationId,
+    USN*    pUsn
+    )
+{
+    DWORD   dwError = 0;
+    uintptr_t   usn = 0;
+
+    if (!pUtdVectorMap || IsNullOrEmptyString(pszInvocationId) || !pUsn)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwRtlHashMapFindKey(pUtdVectorMap, (PVOID*)&usn, pszInvocationId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *pUsn = (USN)usn;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
 VOID
 VmDirUTDVectorCacheShutdown(
     VOID

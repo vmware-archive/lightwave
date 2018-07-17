@@ -417,4 +417,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_RAFT_USE_LOGDB,     \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_BOOLEAN,  \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 1,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    }                                                            \
 }

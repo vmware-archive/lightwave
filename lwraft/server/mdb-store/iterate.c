@@ -16,6 +16,7 @@
 
 DWORD
 VmDirMDBIndexIteratorInit(
+    PVDIR_BACKEND_INTERFACE         pBE,
     PVDIR_INDEX_CFG                 pIndexCfg,
     PSTR                            pszInitVal,
     PVDIR_BACKEND_INDEX_ITERATOR*   ppIterator
@@ -32,8 +33,9 @@ VmDirMDBIndexIteratorInit(
     PVDIR_DB_DBC    pCursor = NULL;
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator = NULL;
     PVDIR_MDB_INDEX_ITERATOR        pMdbIterator = NULL;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
-    if (!pIndexCfg || !ppIterator)
+    if (!pDB || !pIndexCfg || !ppIterator)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -51,10 +53,10 @@ VmDirMDBIndexIteratorInit(
 
     pIterator->pIterator = (PVOID)pMdbIterator;
 
-    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    dwError = VmDirMDBIndexGetDBi(pBE, pIndexCfg, &mdbDBi);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    dwError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMdbIterator->pTxn = pTxn;

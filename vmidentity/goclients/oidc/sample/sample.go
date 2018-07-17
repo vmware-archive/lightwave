@@ -5,9 +5,13 @@ import (
 	"fmt"
 	"errors"
 	"os"
-	"github.com/vmware/lightwave/vmidentity/goclients/oidc"
 	"io/ioutil"
 	"gopkg.in/yaml.v2"
+	"crypto/x509"
+	"strings"
+
+	"github.com/vmware/lightwave/vmafd/interop/go/src/vecsclient"
+	"github.com/vmware/lightwave/vmidentity/goclients/oidc"
 )
 
 var configPath = flag.String("config", "", "Path to file containing config in yaml format")
@@ -51,12 +55,12 @@ func setup() (*Config, error) {
 // Sets up a logger for OIDC and registers some callbacks
 func getLogger() oidc.Logger {
 	errorFunc := func(format string, args ...interface{}) {
-		msg := fmt.Sprintf("[Error - SampleOidc] ")
+		msg := fmt.Sprintf("\n[Error - SampleOidc] ")
 		fmt.Printf(msg + format, args...)
 	}
 
 	infoFunc := func(format string, args ...interface{}) {
-		msg := fmt.Sprintf("[Info - SampleOidc] ")
+		msg := fmt.Sprintf("\n[Info - SampleOidc] ")
 		fmt.Printf(msg + format, args...)
 	}
 
@@ -79,11 +83,30 @@ func main() {
 
 	// To create client config, pass in an issuer. The other arguments are configurable, but set to default values
 	// To configure other parameters, see the With*() methods defined in the interface
-	// For this sample, we will create an HTTP config, set skipSSLVerify to true, and pass it to the config. For basic
-	// uses, NewClientConfig(issuer) is fine.
+	// For this sample, we will create an HTTP config, set skipSSLVerify to true, and pass it to the config.
+	// For basic uses, NewClientConfig(issuer) is fine.
 	httpConfig := oidc.NewHTTPClientConfig()
 	httpConfig.SkipCertValidationField = true
-	clientConfig := oidc.NewClientConfigBuilder().WithHTTPConfig(httpConfig).Build()
+
+	// Define callback function to be used when certificate error is returned (optional). We are using VecsForceRefresh here
+	// The cert refresh hook should return the new cert pool and any error if encountered to log
+	hook := func() (*x509.CertPool, error) {
+		err := vecsclient.VecsForceRefreshCerts("localhost", "", "")
+		// We are ignoring "ERROR_FILE_NOT_FOUND" here because force refresh will print this out even if it succeeds
+		if err != nil && !strings.Contains(err.Error(), "ERROR_FILE_NOT_FOUND (2)") {
+			return nil, err
+		}
+
+		certPool, err := x509.SystemCertPool()
+		if err != nil {
+			return nil, err
+		}
+
+		return certPool, err
+	}
+
+	// Create client config using config builder to set custom http config and cert refresh hook
+	clientConfig := oidc.NewClientConfigBuilder().WithHTTPConfig(httpConfig).WithCertRefreshHook(hook).Build()
 
 	// Set a logger to be used by client. The logger will have callbacks which will need to be registered for certain
 	// log levels. If no callback is registered for a log level, nothing will be logged or printed.
@@ -102,7 +125,7 @@ func main() {
 		return
 	}
 
-	fmt.Printf("[AcquireTokensByPassword]\nAccess Token: %s\nID Token: %s\nToken Type: %s\nExpires In: %d\n",
+	fmt.Printf("\n[AcquireTokensByPassword]\nAccess Token: %s\nID Token: %s\nToken Type: %s\nExpires In: %d\n",
 		tokens.AccessToken(), tokens.IDToken(), tokens.TokenType(), tokens.ExpiresIn())
 
 	// Parse and get validated Access Token from result

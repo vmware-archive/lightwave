@@ -1300,6 +1300,13 @@ Srv_RpcVmDirOpenDatabaseFile(
                                       pszDBFileName, strerror(errno) );
 #endif
     }
+    /*
+     * add this handle to active handles in db state. This is
+     * used to clear db state on handle run down events.
+    */
+    dwError = VmDirAddActiveHandleToMdbState(pFileHandle, pszDBFileName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppFileHandle = pFileHandle;
     VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDatabaseFile: opened DB file (%s)", pszDBFileName);
 
@@ -1427,6 +1434,12 @@ Srv_RpcVmDirCloseDatabaseFile(
 
     VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC,  "Srv_RpcVmDirCloseDatabaseFile: DB file fd (%d)", fileno(*ppFileHandle));
 
+    /*
+     * remove handle from active handle map
+    */
+    dwError = VmDirRemoveActiveHandleFromMdbState((FILE *)*ppFileHandle);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (fclose((FILE *)*ppFileHandle) != 0)
     {
         dwError = VMDIR_ERROR_IO;
@@ -1480,7 +1493,7 @@ Srv_RpcVmDirSetBackendState(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (pDbPath == NULL || dwDbPathSize <= 0)
+    if (pDbPath == NULL || dwDbPathSize <= 0 || dwDbPathSize < pDbPath->dwCount)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1488,6 +1501,10 @@ Srv_RpcVmDirSetBackendState(
 
     dwError = VmDirRpcAllocateMemory( dwDbPathSize, (PVOID*)&(pData) );
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyMemory(pData, pDbPath->dwCount, pDbPath->data, pDbPath->dwCount);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirSetMdbBackendState(op, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1718,7 +1735,8 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
         }
     }
     // Clear backend READ-ONLY mode when dbcp connection interrupted.
-    VmDirSrvSetMDBStateClear();
+    VmDirClearMdbStateByFileHandle(pFileHandle);
+
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: MdbBackendState cleared,");
     // Set vmdir state to NORMAL
     VmDirdStateSet(VMDIRD_STATE_NORMAL);

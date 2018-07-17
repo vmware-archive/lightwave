@@ -174,6 +174,7 @@ VmDirSetRecursiveSecurityDescriptorForDn(
     VDIR_ENTRY_ARRAY entryArray = {0};
     int iCnt = 0;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
+    PVDIR_DB_HANDLE hDB = NULL;
 
     dwError = VmDirFilterInternalSearch(pszObjectDn,
                                         LDAP_SCOPE_SUBTREE,
@@ -183,8 +184,11 @@ VmDirSetRecursiveSecurityDescriptorForDn(
                                         &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEConfigureFsync(FALSE);
+    pBE = VmDirBackendSelect(pszObjectDn);
+
+    hDB = VmDirSafeDBFromBE(pBE);
+
+    dwError = pBE->pfnBEConfigureFsync(hDB, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
@@ -198,7 +202,7 @@ VmDirSetRecursiveSecurityDescriptorForDn(
     }
 
 cleanup:
-    dwError = pBE->pfnBEConfigureFsync(TRUE);
+    dwError = pBE->pfnBEConfigureFsync(hDB, TRUE);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
 
@@ -331,7 +335,7 @@ VmDirSetDefaultSecurityDescriptorForClass(
             &ldapOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
     ldapOp.bSuppressLogInfo = TRUE;
     ldapOp.reqDn.lberbv_val = pszClassDN;
     ldapOp.reqDn.lberbv_len = VmDirStringLenA(pszClassDN);

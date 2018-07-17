@@ -13,22 +13,23 @@
  */
 package com.vmware.identity;
 
+import static com.vmware.identity.SharedUtils.bootstrap;
+import static com.vmware.identity.SharedUtils.buildMockResponseSuccessObject;
+import static com.vmware.identity.SharedUtils.getMockIdmAccessorFactory;
+import static com.vmware.identity.SharedUtils.logUrl;
+import static com.vmware.identity.SharedUtils.messageSource;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.IOException;
 import java.io.StringWriter;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletResponse;
 
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
-import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.ui.Model;
 import org.springframework.validation.support.BindingAwareModelMap;
 
@@ -42,7 +43,6 @@ import com.vmware.identity.samlservice.Shared;
  * MetadataController unit test
  *
  */
-@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class MetadataControllerTest {
 
     private static WebssoMetadataController controller;
@@ -58,18 +58,11 @@ public class MetadataControllerTest {
         log = DiagnosticsLoggerFactory.getLogger(MetadataControllerTest.class);
 
         controller = new WebssoMetadataController();
-        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
-        ms.setBasename("messages");
-        controller.setMessageSource(ms);
+        controller.setMessageSource(messageSource());
 
         Shared.bootstrap();
-        SharedUtils.bootstrap(false); // use real data
+        bootstrap();
         tenant = ServerConfig.getTenant(0);
-    }
-
-    @AfterClass
-    public static void cleanUp() throws Exception {
-        SharedUtils.cleanupTenant();
     }
 
    /**
@@ -81,22 +74,19 @@ public class MetadataControllerTest {
      */
     @Test
     public final void testMetadata() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         // get destination
         String destination = ServerConfig.getTenantEntityId(tenant);
         StringBuffer sbRequestUrl = new StringBuffer();
         sbRequestUrl.append(destination);
 
         // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, null, null, null, null, null);
+        logUrl(log, sbRequestUrl, null, null, null, null, null);
 
         model = new BindingAwareModelMap();
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw,
+        HttpServletResponse response = buildMockResponseSuccessObject(sw,
                         Shared.METADATA_CONTENT_TYPE, false, "attachment; filename=vsphere.local.xml");
 
         assertMetadata(model, response);
@@ -115,11 +105,10 @@ public class MetadataControllerTest {
      *
      * @param model
      * @param response
-     * @throws IOException
+     * @throws Exception
      */
-    private void assertMetadata(Model model, HttpServletResponse response)
-            throws IOException {
-        controller.metadata(Locale.US, tenant, model, response);
+    private void assertMetadata(Model model, HttpServletResponse response) throws Exception {
+        controller.metadata(Locale.US, tenant, model, response, getMockIdmAccessorFactory(0, 0));
         assertEquals(tenant, model.asMap().get("tenant"));
         assertNull(model.asMap().get("serverTime"));
     }

@@ -141,6 +141,13 @@ typedef struct _VMDIR_SERVER_GLOBALS
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
 
+typedef struct _VMDIRD_SD_GLOBALS
+{
+    PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminGX;
+} VMDIRD_SD_GLOBALS;
+
+extern VMDIRD_SD_GLOBALS gVmdirdSDGlobals;
+
 typedef struct _VMDIRD_STATE_GLOBALS
 {
     PVMDIR_MUTEX  pMutex;
@@ -174,6 +181,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapsConnectPorts;
     DWORD                           dwHTTPListenPort;
     DWORD                           dwHTTPSListenPort;
+    DWORD                           dwHTTPSApiListenPort;
 
     DWORD                           dwLdapRecvTimeoutSec;
     DWORD                           dwLdapConnectTimeoutSec;
@@ -181,6 +189,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
     DWORD                           dwEmptyPageCnt;
     DWORD                           dwSupplierThrTimeoutInMilliSec;
+    DWORD                           dwWriteTimeoutInMilliSec;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
@@ -275,6 +284,20 @@ typedef struct _VMDIR_INTEGRITY_CHECK_GLOBALS
 } VMDIR_INTEGRITY_CHECK_GLOBALS, *PVMDIR_INTEGRITY_CHECK_GLOBALS;
 
 extern VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck;
+
+typedef struct _VMDIR_WRITE_QUEUE
+{
+    PVDIR_LINKED_LIST  pList;
+} VMDIR_WRITE_QUEUE, *PVMDIR_WRITE_QUEUE;
+
+typedef struct _VMDIR_SERVER_OPERATIONS_GLOBALS
+{
+    PVMDIR_MUTEX         pMutex;
+    USN                  maxCommittedUSN;
+    PVMDIR_WRITE_QUEUE   pWriteQueue;
+} VMDIR_SERVER_OPERATIONS_GLOBALS, *PVMDIR_SERVER_OPERATIONS_GLOBALS;
+
+extern VMDIR_SERVER_OPERATIONS_GLOBALS gVmDirServerOpsGlobals;
 
 typedef enum
 {
@@ -566,6 +589,13 @@ VmDirSrvStatMetricsUpdate(
 VOID
 VmDirSrvStatMetricsShutdown(
     VOID
+    );
+
+// promote/dcactmgmt.c
+DWORD
+VmDirCreateDomainController(
+    PCSTR   pszDomain,
+    PCSTR   pszDCName
     );
 
 #ifdef __cplusplus

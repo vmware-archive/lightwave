@@ -2,6 +2,7 @@ package oidc
 
 import (
 	"crypto/rsa"
+	"crypto/x509"
 	"gopkg.in/square/go-jose.v2"
 	"time"
 )
@@ -89,9 +90,14 @@ type ClientConfig interface {
 	Retries() int
 	RetryIntervalMillis() int
 	HTTPConfig() HTTPClientConfig
+	CertRefreshHook() CertRefreshHook
 }
 
 // IssuerSigners represents a set of Issuer signing certificates
 type IssuerSigners interface {
 	Combine(signers ...IssuerSigners) IssuerSigners
 }
+
+// CertRefreshHook can be registered with the client to be be called upon any unknown cert errors
+// The registered hook should be thread safe as multiple threads can try to refresh certs
+type CertRefreshHook func() (*x509.CertPool, error)

@@ -98,6 +98,17 @@ extern "C" {
         }                                 \
     } while(0)
 
+#define VMAFD_SECURE_FREE_STRINGA(PTR)    \
+    do {                                  \
+        if ((PTR)) {                      \
+            if (*(PTR)) {                 \
+                memset(PTR, 0, strlen(PTR)); \
+            }                             \
+            VmAfdFreeStringA(PTR);        \
+            (PTR) = NULL;                 \
+        }                                 \
+    } while(0)
+
 #define VMAFD_SAFE_FREE_MEMORY(PTR)       \
     do {                                  \
         if ((PTR)) {                      \

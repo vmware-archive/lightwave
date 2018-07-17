@@ -69,53 +69,6 @@ error:
 }
 
 ULONG
-VmDirRpcAllocateStringA(
-    PWSTR  pwszSrc,
-    PWSTR* ppwszDst
-    )
-{
-    ULONG  ulError = 0;
-    size_t len = 0;
-    PWSTR  pwszDst = NULL;
-
-    if (!pwszSrc || !ppwszDst)
-    {
-        ulError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(ulError);
-    }
-
-    ulError = VmDirGetStringLengthW(pwszSrc, &len);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcAllocateMemory(
-                    sizeof(WCHAR) * (len + 1),
-                    (PVOID*)&pwszDst);
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    memcpy((PBYTE)pwszDst, (PBYTE)pwszSrc, sizeof(WCHAR) * len);
-
-    *ppwszDst = pwszDst;
-
-cleanup:
-
-    return ulError;
-
-error:
-
-    if (ppwszDst)
-    {
-        *ppwszDst = NULL;
-    }
-
-    if (pwszDst)
-    {
-        VmDirRpcFreeMemory(pwszDst);
-    }
-
-    goto cleanup;
-}
-
-ULONG
 VmDirRpcAllocateStringWFromA(
     PSTR    pszSrc,
     PWSTR*  ppszDst
@@ -123,8 +76,8 @@ VmDirRpcAllocateStringWFromA(
 {
     ULONG  ulError = 0;
     size_t len = 0;
-    PWSTR  pszDst = NULL;
-    PWSTR  pszTemp = NULL;
+    PWSTR  pwszDst = NULL;
+    PWSTR  pwszTemp = NULL;
 
     if (!pszSrc || !ppszDst)
     {
@@ -134,25 +87,25 @@ VmDirRpcAllocateStringWFromA(
 
     ulError = VmDirAllocateStringWFromA(
                                     pszSrc,
-                                    &pszTemp
+                                    &pwszTemp
                                     );
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirGetStringLengthW(pszTemp, &len);
+    ulError = VmDirGetStringLengthW(pwszTemp, &len);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     ulError = VmDirRpcAllocateMemory(
                                 ((len+1)*sizeof(WCHAR)),
-                                (PVOID*)&pszDst);
+                                (PVOID*)&pwszDst);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    memcpy((PBYTE)pszDst, (PBYTE)pszTemp,len*sizeof(WCHAR));
+    memcpy((PBYTE)pwszDst, (PBYTE)pwszTemp,len*sizeof(WCHAR));
 
-    *ppszDst = pszDst;
+    *ppszDst = pwszDst;
 
 cleanup:
 
-    VMDIR_SAFE_FREE_MEMORY(pszTemp);
+    VMDIR_SAFE_FREE_MEMORY(pwszTemp);
     return ulError;
 
 error:
@@ -162,9 +115,9 @@ error:
         *ppszDst = NULL;
     }
 
-    if (pszDst)
+    if (pwszDst)
     {
-        VmDirRpcFreeMemory(pszDst);
+        VmDirRpcFreeMemory(pwszDst);
     }
 
     goto cleanup;
@@ -187,18 +140,11 @@ VmDirRpcAllocateStringAFromW(
         BAIL_ON_VMDIR_ERROR(ulError);
     }
 
-    ulError = VmDirGetStringLengthW(pwszSrc, &len);
+    ulError = VmDirAllocateStringAFromW(pwszSrc, &pszTemp);
     BAIL_ON_VMDIR_ERROR(ulError);
 
-    ulError = VmDirAllocateStringAFromW(
-                                    pwszSrc,
-                                    &pszTemp
-                                    );
-    BAIL_ON_VMDIR_ERROR(ulError);
-
-    ulError = VmDirRpcAllocateMemory(
-                                (len + 1),
-                                (PVOID*)&pszDst);
+    len = VmDirStringLenA(pszTemp);
+    ulError = VmDirRpcAllocateMemory((len + 1), (PVOID*)&pszDst);
     BAIL_ON_VMDIR_ERROR(ulError);
 
     memcpy((PBYTE)pszDst, (PBYTE)pszTemp,len);

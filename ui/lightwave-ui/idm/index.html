@@ -1,0 +1,139 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+
+<html>
+<head>
+	<link rel="icon" href="idm/assets/tenant.png">
+	<link rel="stylesheet" href="idm/css/bootstrap.min.css">
+	<link rel="stylesheet" href="idm/css/lightwave-ui.1.0.2.0.min.css">
+	<link rel="stylesheet" href="idm/css/lightwave-ui-vendor.1.0.2.0.min.css">
+	<meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+	<title>Cascade Identity Services</title>
+	<style>
+	.headerLogo {
+		margin-left:10px;
+		border-radius: 3px;
+		margin-right:5px;
+	}
+
+	.contentRow{
+		margin-top:100px;
+		width:900px;
+	}
+
+	.formRow {
+		margin-top:40px;
+		width:400px;
+		margin-left:100px;
+	}
+
+	.margin-top-bottom-10{
+		margin-top:10px;
+		margin-bottom: 10px;
+	}
+
+	.caption {
+		font-size: 24px;
+	    line-height: 48px;
+	    margin-top: 24px;
+	    margin-bottom: 0;
+	    font-weight: 400;
+	}
+	</style>
+</head>
+<body>
+<div class="container">
+
+		<div class="title">
+		 	<img src="idm/assets/vm_logo.png" height="32px;" width="32px" class="headerLogo"/>
+			Cascade Identity Services
+		</div>
+		<div class="row content contentRow">
+			<div class="caption">Cascade Identity Services</div><br/>
+			<strong>Cascade Identity Services </strong> comprises of enterprise-grade, identity and access management services targeting critical security, governance & compliance challenges for Cloud-Native Apps within the enterprise.
+			<br/><br/>
+			Lightwave includes ...<br/><br/>
+			<div><strong>Lightwave Authentication Services </strong><br/>A cloud authentication services with support for Kerberos, OAuth 2.0/OpenID Connect, SAML and WSTrust.</div><br/>
+			<div><strong>Lightwave Directory Service</strong><br/>A standards based, multi-tenant, multi-master, highly scalable LDAP v3 directory service.</div><br/>
+			<div><strong>Lightwave Certificate Authority </strong><br/>A directory integrated certificate authority across the infrastructure.</div><br/>
+			<div><strong>Lightwave Certificate Store </strong><br/>An endpoint certificate store to store certificate credentials.</div>
+		</div>
+		<div class="row content formRow">
+			<label>Lightwave Server</label><br>
+                        <input type="text" id="lightwave" class="form-control pull-left margin-top-bottom-10"
+                                   placeholder="hostname.lightwave.local" />
+			<label>Tenant Name</label>
+			<input type="text" id="tenant" class="form-control pull-left margin-top-bottom-10"
+				   placeholder="lightwave.local" />
+			<button type="submit" class="btn btn-primary pull-right"
+				    onclick="redirect()">Take me to Lightwave Admin ...</button>
+		</div>
+</div>
+<script type="text/javascript">
+document.getElementById("tenant")
+    .addEventListener("keyup", function(event) {
+    event.preventDefault();
+    if (event.keyCode == 13) {
+        redirect();
+    }
+});
+function redirect(){
+	var tenantName = document.getElementById('tenant').value;
+    var server = getserver();
+    hostName = getHostName();
+	if(tenantName == null || tenantName == '')
+	{
+		alert('Plesae provide a tenant name');
+	}
+	else
+	{
+		var uri = "https://"+ hostName + "/lightwaveui/idm?tenant=" + tenantName + "&server=" + server;
+		if ( location.hash === '#local' )
+		{
+			uriParams = uriParams + "&local=true"
+			sessionStorage.setItem("lwLoginParams", "&local=true")
+		}
+		window.location = uri;
+	}
+}
+
+function getHostName(){
+    var parts = location.href.split('://');
+    var protocol = parts[0];
+    var server_uri = parts[1] 
+    var server_with_port = server_uri.split('/')[0];
+    return server_with_port;
+}
+    
+function getserver(){
+	var serverURI = document.getElementById('lightwave').value;
+	var server_uri;
+	if (serverURI == null || serverURI == ''){
+	    alert('Please enter the lightwave server end-point')
+	}
+	var parts = serverURI.split('://');
+	if (parts.length == 2){
+	    server_uri = parts[1]
+	}else if(parts.length == 1){
+	    server_uri = parts[0]
+	}
+    return server_uri;
+}
+
+</script>
+</body>
+</html>

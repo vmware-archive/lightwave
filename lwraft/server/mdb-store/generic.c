@@ -30,12 +30,15 @@ VmDirMDBDupKeyGetValues(
     unsigned int        cursorFlags;
     PVMDIR_STRING_LIST  pStrList = NULL;
     PSTR                pValue = NULL;
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)VmDirSafeDBFromCtx(pBECtx);
+
+    assert(pDB);
 
     dwError = VmDirStringListInitialize(&pStrList, 128);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = mdb_cursor_open((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-            gVdirMdbGlobals.mdbGenericDupKeyDBi, &pCursor);
+            pDB->mdbGenericDupKeyDBi, &pCursor);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     memset(&currKey, 0, sizeof(currKey));
@@ -93,6 +96,7 @@ VmDirMDBDupKeySetValues(
     VDIR_DB_DBT value = {0};
     PSTR        pszkeyData = NULL;
     DWORD       dwIdx = 0;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromCtx(pBECtx);
 
     dwError = VmDirAllocateStringA(pszKey, &pszkeyData);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -100,7 +104,7 @@ VmDirMDBDupKeySetValues(
     key.mv_data = pszkeyData;
     key.mv_size = VmDirStringLenA(pszKey);
 
-    dwError = VmDirMDBConfigureFsync(FALSE);
+    dwError = VmDirMDBConfigureFsync(pDB, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwIdx= 0; dwIdx < pStrList->dwCount; dwIdx++)
@@ -109,14 +113,14 @@ VmDirMDBDupKeySetValues(
         value.mv_size = VmDirStringLenA(pStrList->pStringList[dwIdx]);
 
         dwError = mdb_put((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-                gVdirMdbGlobals.mdbGenericDupKeyDBi,
+                pDB->mdbGenericDupKeyDBi,
                 &key, &value, BE_DB_FLAGS_ZERO);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszkeyData);
-    dwError = VmDirMDBConfigureFsync(TRUE);
+    dwError = VmDirMDBConfigureFsync(pDB, TRUE);
     return dwError;
 
 error:
@@ -137,12 +141,15 @@ VmDirMDBUniqKeyGetValue(
     VDIR_DB_DBT key = {0};
     VDIR_DB_DBT value = {0};
     PSTR        pszValue = NULL;
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)VmDirSafeDBFromCtx(pBECtx);
+
+    assert(pDB);
 
     key.mv_size = VmDirStringLenA(pszKey);
     key.mv_data = (PVOID)pszKey;
 
     dwError =  mdb_get((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-            gVdirMdbGlobals.mdbGenericUniqKeyDBi,
+            pDB->mdbGenericUniqKeyDBi,
             &key, &value);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -177,6 +184,9 @@ VmDirMDBUniqKeySetValue(
     DWORD       dwError = 0;
     VDIR_DB_DBT key = {0};
     VDIR_DB_DBT value = {0};
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)VmDirSafeDBFromCtx(pBECtx);
+
+    assert(pDB);
 
     key.mv_data = (PVOID)pszKey;
     key.mv_size = VmDirStringLenA(pszKey);
@@ -185,7 +195,7 @@ VmDirMDBUniqKeySetValue(
     value.mv_size = VmDirStringLenA(pszValue);
 
     dwError = mdb_put((PVDIR_DB_TXN)pBECtx->pBEPrivate,
-            gVdirMdbGlobals.mdbGenericUniqKeyDBi,
+            pDB->mdbGenericUniqKeyDBi,
             &key, &value, BE_DB_FLAGS_ZERO);
     BAIL_ON_VMDIR_ERROR(dwError);
 

@@ -14,12 +14,12 @@ Requires:	nginx
 A web based UI for browsing the post node that interacts with the REST interface of post daemon.
 
 %build
-cd  ../..
+cd  ../../lwraft-ui
 npm install
 npm run prod
 
 %install
-cd ../..
+cd ../../lwraft-ui
 mkdir -p %{buildroot}
 mkdir -p %{buildroot}/opt/vmware/lwraft/ui
 install -m644 build/nginx.conf %{buildroot}/opt/vmware/lwraft/

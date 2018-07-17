@@ -133,3 +133,16 @@ typedef struct _VMDIR_BKGD_GLOBALS
     BOOLEAN             bShutdown;
 
 } VMDIR_BKGD_GLOBALS, *PVMDIR_BKGD_GLOBALS;
+
+typedef struct _VDIR_DC_ACT_PARAM
+{
+    PSTR    pszDomainDN;
+    PSTR    pszDCDN;
+    PSTR    pszDCName;
+    PSTR    pszPassword;
+    PSTR    pszUPN;
+    PSTR    pszMachineGUID;
+    PSTR    pszUpperCaseDomain;
+    PSTR    pszLowerCaseDCName;
+
+} VDIR_DC_ACT_PARAM, *PVDIR_DC_ACT_PARAM;

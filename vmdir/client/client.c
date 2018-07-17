@@ -128,28 +128,8 @@ _VmDirResetActPassword(
     );
 
 static
-DWORD
-_VmDirCopyFromRpcKrbInfo(
-    PVMDIR_KRB_INFO  pKrbInfoIn,
-    PVMDIR_KRB_INFO* ppKrbInfoOut
-    );
-
-static
-DWORD
-_VmDirCopyFromRpcMachineInfo(
-    PVMDIR_MACHINE_INFO_W  pMachineInfoIn,
-    PVMDIR_MACHINE_INFO_A* ppMachineInfoOut
-    );
-
-static
-DWORD
-_VmDirWriteToKeyTabFile(
-    PVMDIR_KRB_INFO pKrbInfo
-    );
-
-static
 VOID
-_VmDirClearServerInfo(
+_VmDirClearServerInfoContent(
     PVMDIR_SERVER_INFO pServerInfo
     );
 
@@ -882,6 +862,7 @@ VmDirJoin(
     LDAP*   pLd = NULL;
     PVMDIR_REPL_STATE pReplState = NULL;
     PVM_DIR_CONNECTION pIPCConnection = NULL;
+    BOOLEAN bJoinWithPreCopiedDB = FALSE;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -959,13 +940,28 @@ VmDirJoin(
     // IMPORTANT: In general, the following sequence of operations should be strictly kept like this, otherwise SASL
     // binds in replication may break.
 
-    dwError = VmDirSetupDefaultAccount(
-                                pszDomainName,
-                                pszPartnerServerName,       // remote lotus server FQDN/IP
-                                pszLotusServerNameCanon,    // local lotus name
-                                pszUserName,
-                                pszPassword);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    bJoinWithPreCopiedDB = VmDirRegReadJoinWithPreCopiedDB();
+
+    if (bJoinWithPreCopiedDB)
+    {
+        // join with pre-copied DB, query partner for max server id and set reg key
+        dwError = VmDirJoinPreSetMaxServerIdRegKey(
+                                    pszPartnerServerName,
+                                    pszDomainName,
+                                    pszUserName,
+                                    pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {   // hot partner DB copy scenario
+        dwError = VmDirSetupDefaultAccount(
+                                    pszDomainName,
+                                    pszPartnerServerName,       // remote lotus server FQDN/IP
+                                    pszLotusServerNameCanon,    // local lotus name
+                                    pszUserName,
+                                    pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = VmDirSetupHostInstanceEx(
                                  pszDomainName,
@@ -1021,6 +1017,19 @@ VmDirJoin(
                                     dwHighWatermark);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    if (bJoinWithPreCopiedDB)
+    {
+        dwError = VmDirJoinWaitForDCEntryConverge(
+            pszPartnerServerName,
+            pszLotusServerNameCanon,
+            pszDomainName,
+            pszUserName,
+            pszPassword);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirRegSetJoinWithPreCopiedDB(FALSE);  // ignore error
+    }
+
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "VmDirJoin (%s)(%s)(%s) passed",
                     VDIR_SAFE_STRING(pszPartnerHostName),
@@ -1028,6 +1037,7 @@ VmDirJoin(
                     VDIR_SAFE_STRING(pszLotusServerNameCanon) );
 
 cleanup:
+
     VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pszPartnerServerName);
     VMDIR_SAFE_FREE_MEMORY(pszLotusServerNameCanon);
@@ -2986,7 +2996,7 @@ VmDirGetServers(
         dwError = VmDirAllocateMemory(
                 dwInfoCount*sizeof(VMDIR_SERVER_INFO),
                 (PVOID*)&pServerInfo
-        );
+                );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         for ( i=0; i<dwInfoCount; i++)
@@ -2994,7 +3004,7 @@ VmDirGetServers(
             dwError = VmDirAllocateStringA(
                     pInternalServerInfo[i].pszServerDN,
                     &(pServerInfo[i].pszServerDN)
-            );
+                    );
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -4603,7 +4613,7 @@ _VmDirLdapCheckVmDirStatus(
     LDAP *      pLd = NULL;
     DWORD       i = 0;
     BOOLEAN     bFirst = TRUE;
-    DWORD       dwTimeout = 15; //wait 2.5 minutes for 1st Ldu
+    DWORD       dwTimeout = 50; //wait 2.5 minutes for 1st Ldu
     VDIR_SERVER_STATE vmdirState = VMDIRD_STATE_UNDEFINED;
 
     if (!IsNullOrEmptyString(pszPartnerHostName))
@@ -4638,11 +4648,11 @@ _VmDirLdapCheckVmDirStatus(
         printf(".");
         fflush(stdout);
 
-        VmDirSleep(SLEEP_INTERVAL_IN_SECS*1000);
+        VmDirSleep(SLEEP_INTERVAL_IN_3_SECS*1000);
 
         i++;
         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "LDAP connect (%s) failed (%u), %d seconds passed",
-                           VDIR_SAFE_STRING(pszLocalServerReplURI), dwError, i * SLEEP_INTERVAL_IN_SECS);
+                           VDIR_SAFE_STRING(pszLocalServerReplURI), dwError, i * SLEEP_INTERVAL_IN_3_SECS);
 
         if( !bFirst )
         {
@@ -6548,327 +6558,7 @@ error:
     goto cleanup;
 }
 
-/*
- * APIs for HA Topology Management ends here
- */
-DWORD
-VmDirClientJoinAtomic(
-    PCSTR                   pszServerName,
-    PCSTR                   pszUserName,
-    PCSTR                   pszPassword,
-    PCSTR                   pszDomainName,
-    PCSTR                   pszMachineName,
-    PCSTR                   pszOrgUnit,
-    DWORD                   dwFlags,
-    PVMDIR_MACHINE_INFO_A   *ppMachineInfo
-    )
-{
-    DWORD dwError = 0;
-    PVMDIR_MACHINE_INFO_A  pMachineInfo = NULL;
-    PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
-    PVMDIR_KRB_INFO      pKrbInfo = NULL;
-    PVMDIR_KRB_INFO      pRpcKrbInfo = NULL;
-    handle_t hBinding = NULL;
-    PSTR pszSRPUPN = NULL;
-    PSTR pszSRPUPNAlloc = NULL;
-    PWSTR pwszMachineName = NULL;
-    PWSTR pwszDomainName = NULL;
-    PWSTR pwszOrgUnit = NULL;
-    PWSTR pwszPassword = NULL;
 
-    if (IsNullOrEmptyString(pszServerName) ||
-        IsNullOrEmptyString(pszUserName) ||
-        IsNullOrEmptyString(pszPassword) ||
-        IsNullOrEmptyString(pszDomainName) ||
-        IsNullOrEmptyString(pszMachineName) ||
-        !ppMachineInfo
-       )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszDomainName,
-                              &pwszDomainName
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszMachineName,
-                              &pwszMachineName
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pszOrgUnit))
-    {
-        dwError = VmDirAllocateStringWFromA(
-                              pszOrgUnit,
-                              &pwszOrgUnit
-                              );
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszPassword,
-                              &pwszPassword
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!VmDirStringChrA(pszUserName, '@'))
-    {
-        dwError = VmDirAllocateStringPrintf(
-                    &pszSRPUPNAlloc,
-                    "%s@%s",
-                    pszUserName,
-                    pszDomainName
-                    );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pszSRPUPN = pszSRPUPNAlloc;
-    }
-    else
-    {
-        pszSRPUPN = (PSTR)pszUserName;
-    }
-
-    dwError = VmDirCreateBindingHandleAuthA(
-                    pszServerName,
-                    NULL,
-                    pszSRPUPN,
-                    NULL,
-                    pszPassword,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-
-        if (dwFlags & VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
-        {
-            dwError = RpcVmDirGetComputerAccountInfo(
-                        hBinding,
-                        pwszDomainName,
-                        pwszPassword,
-                        pwszMachineName,
-                        &pRpcMachineInfo,
-                        &pRpcKrbInfo
-                        );
-        }
-        else
-        {
-            dwError = RpcVmDirClientJoin(
-                        hBinding,
-                        pwszDomainName,
-                        pwszMachineName,
-                        pwszOrgUnit,
-                        &pRpcMachineInfo,
-                        &pRpcKrbInfo
-                        );
-        }
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pRpcKrbInfo)
-    {
-        dwError = _VmDirCopyFromRpcKrbInfo(
-                          pRpcKrbInfo,
-                          &pKrbInfo
-                          );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _VmDirWriteToKeyTabFile(pKrbInfo);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = _VmDirCopyFromRpcMachineInfo(
-                              pRpcMachineInfo,
-                              &pMachineInfo
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirConfigSetDCAccountInfo(
-                                    pszMachineName,
-                                    pMachineInfo->pszComputerDN,
-                                    pMachineInfo->pszPassword,
-                                    strlen(pMachineInfo->pszPassword),
-                                    pMachineInfo->pszMachineGUID
-                                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppMachineInfo = pMachineInfo;
-
-cleanup:
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-    if (pRpcKrbInfo)
-    {
-        VmDirClientRpcFreeKrbInfo(pRpcKrbInfo);
-    }
-    if (pRpcMachineInfo)
-    {
-        VmDirClientRpcFreeMachineInfoW(pRpcMachineInfo);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pszSRPUPNAlloc);
-    VMDIR_SAFE_FREE_MEMORY(pwszMachineName);
-    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pwszOrgUnit);
-    VMDIR_SAFE_FREE_MEMORY(pwszPassword);
-    return dwError;
-error:
-
-    if (ppMachineInfo)
-    {
-        *ppMachineInfo = NULL;
-    }
-    if (pMachineInfo)
-    {
-        VmDirFreeMachineInfoA(pMachineInfo);
-    }
-    goto cleanup;
-}
-
-DWORD
-VmDirCreateComputerAccountAtomic(
-    PCSTR                   pszServerName,
-    PCSTR                   pszSRPUPN,
-    PCSTR                   pszPassword,
-    PCSTR                   pszDomainName,
-    PCSTR                   pszMachineName,
-    PCSTR                   pszOrgUnit,
-    PVMDIR_MACHINE_INFO_A   *ppMachineInfo
-    )
-{
-    DWORD dwError = 0;
-    PVMDIR_MACHINE_INFO_A  pMachineInfo = NULL;
-    PVMDIR_MACHINE_INFO_W  pRpcMachineInfo = NULL;
-    handle_t hBinding = NULL;
-    PWSTR pwszMachineName = NULL;
-    PWSTR pwszDomainName = NULL;
-    PWSTR pwszOrgUnit = NULL;
-    PWSTR pwszPassword = NULL;
-
-    if (IsNullOrEmptyString(pszServerName) ||
-        IsNullOrEmptyString(pszSRPUPN) ||
-        IsNullOrEmptyString(pszPassword) ||
-        IsNullOrEmptyString(pszDomainName) ||
-        IsNullOrEmptyString(pszMachineName) ||
-        !ppMachineInfo
-       )
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszDomainName,
-                              &pwszDomainName
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszMachineName,
-                              &pwszMachineName
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pszOrgUnit))
-    {
-        dwError = VmDirAllocateStringWFromA(
-                              pszOrgUnit,
-                              &pwszOrgUnit
-                              );
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateStringWFromA(
-                              pszPassword,
-                              &pwszPassword
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-
-    dwError = VmDirCreateBindingHandleAuthA(
-                    pszServerName,
-                    NULL,
-                    pszSRPUPN,
-                    NULL,
-                    pszPassword,
-                    &hBinding);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_RPC_TRY
-    {
-
-        dwError = RpcVmDirCreateComputerAccount(
-                                            hBinding,
-                                            pwszDomainName,
-                                            pwszMachineName,
-                                            pwszOrgUnit,
-                                            &pRpcMachineInfo
-                                            );
-    }
-    VMDIR_RPC_CATCH
-    {
-        VMDIR_RPC_GETERROR_CODE(dwError);
-    }
-    VMDIR_RPC_ENDTRY;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirCopyFromRpcMachineInfo(
-                              pRpcMachineInfo,
-                              &pMachineInfo
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppMachineInfo = pMachineInfo;
-
-cleanup:
-
-    if (hBinding)
-    {
-        VmDirFreeBindingHandle(&hBinding);
-    }
-    if (pRpcMachineInfo)
-    {
-        VmDirClientRpcFreeMachineInfoW(pRpcMachineInfo);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pwszMachineName);
-    VMDIR_SAFE_FREE_MEMORY(pwszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pwszOrgUnit);
-    VMDIR_SAFE_FREE_MEMORY(pwszPassword);
-    return dwError;
-error:
-
-    if (ppMachineInfo)
-    {
-        *ppMachineInfo = NULL;
-    }
-    if (pMachineInfo)
-    {
-        VmDirFreeMachineInfoA(pMachineInfo);
-    }
-    goto cleanup;
-}
-
-VOID
-VmDirClientFreeMachineInfo(
-    PVMDIR_MACHINE_INFO_A pMachineInfo
-    )
-{
-    if (pMachineInfo)
-    {
-        VmDirFreeMachineInfoA(pMachineInfo);
-    }
-}
 
 DWORD
 VmDirSetupTenantInstanceEx(
@@ -6970,7 +6660,6 @@ VmDirDeleteTenantEx(
         IsNullOrEmptyString(pszDomainName) ||
         IsNullOrEmptyString(pszUsername) ||
         IsNullOrEmptyString(pszPassword))
-
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -7095,7 +6784,7 @@ VmDirGetServersDetailed(
         dwError = VmDirAllocateMemory(
                 dwInfoCount*sizeof(VMDIR_SERVER_INFO),
                 (PVOID*)&pServerInfo
-        );
+                );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         for ( i=0; i<dwInfoCount; ++i)
@@ -7103,7 +6792,7 @@ VmDirGetServersDetailed(
             dwError = VmDirAllocateStringA(
                     pInternalServerInfo[i].pszServerDN,
                     &(pServerInfo[i].pszServerDN)
-            );
+                    );
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = VmDirAllocateStringA(
@@ -7169,25 +6858,25 @@ VmDirFreeServerInfo(
     PVMDIR_SERVER_INFO pServerInfo
     )
 {
-    _VmDirClearServerInfo(pServerInfo);
+    _VmDirClearServerInfoContent(pServerInfo);
     VMDIR_SAFE_FREE_MEMORY(pServerInfo);
 }
 
 VOID
 VmDirFreeServerInfoArray(
-    PVMDIR_SERVER_INFO pServerInfo,
+    PVMDIR_SERVER_INFO pServerInfoArray,
     DWORD              dwCount
     )
 {
-    if (pServerInfo && dwCount)
+    if (pServerInfoArray && dwCount)
     {
         DWORD dwIndex = 0;
         for ( dwIndex = 0; dwIndex<dwCount; ++dwIndex)
         {
-            _VmDirClearServerInfo(&pServerInfo[dwIndex]);
+            _VmDirClearServerInfoContent(&pServerInfoArray[dwIndex]);
         }
     }
-    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pServerInfoArray);
 }
 
 static
@@ -7256,201 +6945,8 @@ error:
 }
 
 static
-DWORD
-_VmDirCopyFromRpcMachineInfo(
-    PVMDIR_MACHINE_INFO_W  pMachineInfoIn,
-    PVMDIR_MACHINE_INFO_A* ppMachineInfoOut
-    )
-{
-    DWORD dwError = 0;
-    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
-
-    if (!pMachineInfoIn || !ppMachineInfoOut)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-                          sizeof(VMDIR_MACHINE_INFO_A),
-                          (PVOID*)&pMachineInfo
-                          );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                          pMachineInfoIn->pwszPassword,
-                          &pMachineInfo->pszPassword
-                          );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                          pMachineInfoIn->pwszSiteName,
-                          &pMachineInfo->pszSiteName
-                          );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                          pMachineInfoIn->pwszComputerDN,
-                          &pMachineInfo->pszComputerDN
-                          );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                          pMachineInfoIn->pwszMachineGUID,
-                          &pMachineInfo->pszMachineGUID
-                          );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppMachineInfoOut = pMachineInfo;
-
-cleanup:
-
-    return dwError;
-error:
-
-    if (ppMachineInfoOut)
-    {
-        *ppMachineInfoOut = NULL;
-    }
-    if (pMachineInfo)
-    {
-        VmDirFreeMachineInfoA(pMachineInfo);
-    }
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirCopyFromRpcKrbInfo(
-    PVMDIR_KRB_INFO  pKrbInfoIn,
-    PVMDIR_KRB_INFO* ppKrbInfoOut
-    )
-{
-    DWORD dwError = 0;
-    PVMDIR_KRB_INFO pKrbInfo = NULL;
-
-    if (!pKrbInfoIn || !ppKrbInfoOut)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    dwError = VmDirAllocateMemory(
-                              sizeof(VMDIR_KRB_INFO),
-                              (PVOID*)&pKrbInfo
-                              );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (pKrbInfoIn->dwCount)
-    {
-        DWORD dwIndex = 0;
-        dwError = VmDirAllocateMemory(
-                                  sizeof(VMDIR_KRB_BLOB)*pKrbInfoIn->dwCount,
-                                  (PVOID)&pKrbInfo->pKrbBlobs
-                                  );
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-
-        for (; dwIndex < pKrbInfoIn->dwCount; ++dwIndex)
-        {
-            VMDIR_KRB_BLOB pCursorIn = pKrbInfoIn->pKrbBlobs[dwIndex];
-            VMDIR_KRB_BLOB pCursor = pKrbInfo->pKrbBlobs[dwIndex];
-
-            if (pCursorIn.dwCount)
-            {
-                dwError = VmDirAllocateMemory(
-                                      pCursorIn.dwCount,
-                                      (PVOID*)&pCursor.krbBlob
-                                      );
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                pCursor.dwCount = pCursorIn.dwCount;
-
-                dwError = VmDirCopyMemory(
-                                      pCursor.krbBlob,
-                                      pCursor.dwCount,
-                                      pCursorIn.krbBlob,
-                                      pCursor.dwCount
-                                      );
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-        pKrbInfo->dwCount = dwIndex;
-    }
-
-    *ppKrbInfoOut = pKrbInfo;
-cleanup:
-
-    return dwError;
-error:
-
-    if (ppKrbInfoOut)
-    {
-        *ppKrbInfoOut = NULL;
-    }
-    if (pKrbInfo)
-    {
-        VmDirFreeKrbInfo(pKrbInfo);
-    }
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirWriteToKeyTabFile(
-    PVMDIR_KRB_INFO pKrbInfo
-    )
-{
-    DWORD                   dwError = 0;
-    PVMDIR_KEYTAB_HANDLE    pKeyTabHandle = NULL;
-    CHAR                    pszKeyTabFileName[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    DWORD                   dwIndex = 0;
-    DWORD                   dwWriteLen = 0;
-
-    if (!pKrbInfo)
-    {
-        dwError = VmDirGetRegKeyTabFile(pszKeyTabFileName);
-        if (dwError)
-        {
-            dwError = ERROR_SUCCESS;
-            goto cleanup;
-        }
-
-        dwError = VmDirKeyTabOpen(pszKeyTabFileName, "a", &pKeyTabHandle);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        for (; dwIndex < pKrbInfo->dwCount; ++dwIndex)
-        {
-            DWORD dwByteSize = pKrbInfo->pKrbBlobs[dwIndex].dwCount;
-            dwWriteLen = (DWORD)fwrite(
-                                    pKrbInfo->pKrbBlobs[dwIndex].krbBlob,
-                                    1,
-                                    dwByteSize,
-                                    pKeyTabHandle->ktfp
-                                    );
-            if (dwWriteLen != dwByteSize)
-            {
-                dwError = ERROR_IO;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-    }
-
-cleanup:
-
-    if (pKeyTabHandle)
-    {
-        VmDirKeyTabClose(pKeyTabHandle);
-    }
-    return dwError;
-error:
-
-    goto cleanup;
-}
-
-static
 VOID
-_VmDirClearServerInfo(
+_VmDirClearServerInfoContent(
     PVMDIR_SERVER_INFO pServerInfo
     )
 {

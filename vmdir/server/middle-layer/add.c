@@ -89,7 +89,6 @@ VmDirInternalAddEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    int         deadLockRetries = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
     PVDIR_ENTRY pEntry = pOperation->request.addReq.pEntry;
@@ -168,23 +167,9 @@ VmDirInternalAddEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BECtx.wTxnUSN not set");
     }
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
-    {
-        pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        bHasTxn = FALSE;
-    }
+    retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Failed in waiting for USN dispatch");
 
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    else
     {
         if (pEntry->pParentEntry)
         {
@@ -217,21 +202,13 @@ txnretry:
                 VmDirFreeEntryContent(pParentEntry);
                 VMDIR_SAFE_FREE_MEMORY(pParentEntry);
 
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    case VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) not found, (%s)",
-                                                              pEntry->pdn.lberbv_val,
-                                                              VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "parent (%s) lookup failed, (%s)",
-                                                              pEntry->pdn.lberbv_val,
-                                                              VDIR_SAFE_STRING(pOperation->pBEErrorMsg) );
-                }
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                    retVal,
+                    pszLocalErrMsg,
+                    "parent (%s) not found, (%s) retVal (%u)",
+                    pEntry->pdn.lberbv_val,
+                    VDIR_SAFE_STRING(pOperation->pBEErrorMsg),
+                    retVal);
             }
 
             pEntry->pParentEntry = pParentEntry;        // pEntry takes over pParentEntry
@@ -259,36 +236,21 @@ txnretry:
 
             // check and read lock dn referenced entries
             retVal = pOperation->pBEIF->pfnBEChkDNReference( pOperation->pBECtx, pEntry );
-            if (retVal != 0)
-            {
-                switch (retVal)
-                {
-                    case VMDIR_ERROR_BACKEND_DEADLOCK:
-                        goto txnretry; // Possible retry.
-
-                    default:
-                        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEChkDNRef (%u)(%s)",
-                                                      retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-                }
-            }
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                retVal,
+                pszLocalErrMsg,
+                "BEChkDNRef (%u)(%s)",
+                retVal,
+                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         }
 
         retVal = pOperation->pBEIF->pfnBEEntryAdd( pOperation->pBECtx, pEntry );
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                case VMDIR_ERROR_BACKEND_PARENT_NOTFOUND:
-                    // SJ-TBD: Max matching object to be returned. Error codes need to be sorted out.
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "BEEntryAdd (%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal,
+            pszLocalErrMsg,
+            "BEEntryAdd (%u)(%s)",
+            retVal,
+            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
@@ -303,15 +265,15 @@ txnretry:
                     pOperation->pBECtx, pOperation->pBECtx->wTxnUSN);
         }
     }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
 
     gVmdirGlobals.dwLdapWrites++; //occasionally concurrent update error is fine on the counter
 
     VmDirAuditWriteOp(pOperation, VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry);
 
 cleanup:
+
+    VmDirWriteQueuePop(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
+
     {
         int iPostCommitPluginRtn = 0;
 

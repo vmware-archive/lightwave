@@ -602,7 +602,7 @@ DWORD
 VMCACommonInit()
 {
     DWORD dwError = ERROR_SUCCESS;
-    dwError = VMCAIntializeOpenSSL();
+    dwError = VMCAInitializeOpenSSL();
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:

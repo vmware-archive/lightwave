@@ -18,7 +18,7 @@ static
 VOID
 _FreeIdxDBMapPair(
     PLW_HASHMAP_PAIR    pPair,
-    LW_PVOID            pUnused
+    LW_PVOID            pUserData
     );
 
 static
@@ -30,13 +30,19 @@ _NewIndexedAttrValueNormalize(
 
 DWORD
 VmDirMDBInitializeIndexDB(
-    VOID
+    PVDIR_DB_HANDLE hDB
     )
 {
     DWORD   dwError = 0;
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)hDB;
+
+    if (!pDB)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     dwError = LwRtlCreateHashMap(
-            &gVdirMdbGlobals.mdbIndexDBs,
+            &pDB->mdbIndexDBs,
             LwRtlHashDigestPstrCaseless,
             LwRtlHashEqualPstrCaseless,
             NULL);
@@ -54,27 +60,31 @@ error:
 
 VOID
 VmDirMDBShutdownIndexDB(
-    VOID
+    PVDIR_DB_HANDLE hDB
     )
 {
-    if (gVdirMdbGlobals.mdbIndexDBs)
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)hDB;
+
+    if (pDB && pDB->mdbIndexDBs)
     {
-        LwRtlHashMapClear(gVdirMdbGlobals.mdbIndexDBs, _FreeIdxDBMapPair, NULL);
-        LwRtlFreeHashMap(&gVdirMdbGlobals.mdbIndexDBs);
-        gVdirMdbGlobals.mdbIndexDBs = NULL;
+        LwRtlHashMapClear(pDB->mdbIndexDBs, _FreeIdxDBMapPair, pDB);
+        LwRtlFreeHashMap(&pDB->mdbIndexDBs);
+        pDB->mdbIndexDBs = NULL;
     }
 }
 
 DWORD
 VmDirMDBIndexOpen(
-    PVDIR_INDEX_CFG     pIndexCfg
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg
     )
 {
     DWORD   dwError = 0;
     unsigned int    iDbFlags = 0;
     PVDIR_MDB_INDEX_DATABASE    pMdbIndexDB = NULL;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
-    if (!pIndexCfg)
+    if (!pDB || !pIndexCfg)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -87,6 +97,7 @@ VmDirMDBIndexOpen(
             BE_DB_FLAGS_ZERO : MDB_DUPSORT;
 
     dwError = MDBOpenDB(
+            pDB,
             &pMdbIndexDB->pMdbDataFiles[0].mdbDBi,
             pMdbIndexDB->pMdbDataFiles[0].pszDBName,
             pMdbIndexDB->pMdbDataFiles[0].pszDBFile,
@@ -95,7 +106,7 @@ VmDirMDBIndexOpen(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = LwRtlHashMapInsert(
-            gVdirMdbGlobals.mdbIndexDBs,
+            pDB->mdbIndexDBs,
             pMdbIndexDB->pszAttrName,
             pMdbIndexDB,
             NULL);
@@ -108,14 +119,18 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
-    MDBCloseDB(pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
-    MdbIndexDescFree(pMdbIndexDB);
+    if (pDB && pMdbIndexDB)
+    {
+        MDBCloseDB(pDB, pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
+        MdbIndexDescFree(pMdbIndexDB);
+    }
     goto cleanup;
 }
 
 BOOLEAN
 VmDirMDBIndexExist(
-    PVDIR_INDEX_CFG     pIndexCfg
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg
     )
 {
     int     iError = 0;
@@ -124,8 +139,9 @@ VmDirMDBIndexExist(
     PSTR    pszDBName = NULL;
     MDB_txn*    pTxn = NULL;
     VDIR_DB     mdbDBi  = 0;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
-    if (pIndexCfg)
+    if (pDB && pIndexCfg)
     {
         iError = VmDirAllocateStringA(pIndexCfg->pszAttrName, &pszDBName);
         BAIL_ON_VMDIR_ERROR(iError);
@@ -135,8 +151,7 @@ VmDirMDBIndexExist(
             pszDBName[i] = tolower(pszDBName[i]);
         }
 
-        iError = mdb_txn_begin(
-                gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+        iError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
         BAIL_ON_VMDIR_ERROR(iError);
 
         iError = mdb_open(pTxn, pszDBName, 0, &mdbDBi);
@@ -157,27 +172,29 @@ error:
 
 DWORD
 VmDirMDBIndexDelete(
-    PVDIR_INDEX_CFG     pIndexCfg
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg
     )
 {
     DWORD   dwError = 0;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
     PVDIR_MDB_INDEX_DATABASE    pMdbIndexDB = NULL;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
-    if (!pIndexCfg)
+    if (!pDB || !pIndexCfg)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     dwError = LwRtlHashMapRemove(
-            gVdirMdbGlobals.mdbIndexDBs,
+            pDB->mdbIndexDBs,
             pIndexCfg->pszAttrName,
             &pair);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMdbIndexDB = (PVDIR_MDB_INDEX_DATABASE)pair.pValue;
-    (VOID)MDBDropDB(pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
+    (VOID)MDBDropDB(pDB, pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
     MdbIndexDescFree(pMdbIndexDB);
 
 cleanup:
@@ -195,9 +212,10 @@ error:
  */
 DWORD
 VmDirMDBIndicesPopulate(
-    PLW_HASHMAP pIndexCfgs,
-    ENTRYID     startEntryId,
-    DWORD       dwBatchSize
+    PVDIR_BACKEND_INTERFACE pBE,
+    PLW_HASHMAP             pIndexCfgs,
+    ENTRYID                 startEntryId,
+    DWORD                   dwBatchSize
     )
 {
     DWORD   dwError = 0;
@@ -207,15 +225,22 @@ VmDirMDBIndicesPopulate(
     PVDIR_ENTRY         pEntry = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     VDIR_BACKEND_CTX    mdbBECtx = {0};
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+
+    if (!pDB || !pIndexCfgs)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pTxn);
+    dwError = mdb_txn_begin(pDB->mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // use mdbBECtx just to make VmDirMDBEIdToEntry happy
     mdbBECtx.pBEPrivate = pTxn;
+    mdbBECtx.pBE = pBE;
 
     for (dwCnt = 0; dwCnt < dwBatchSize; dwCnt ++)
     {
@@ -248,7 +273,8 @@ VmDirMDBIndicesPopulate(
             if (LwRtlHashMapFindKey(pIndexCfgs, NULL, pszAttrName) == 0)
             {
                 // create indices
-                dwError = MdbUpdateIndicesForAttr(  pTxn,
+                dwError = MdbUpdateIndicesForAttr(  pBE,
+                                                    pTxn,
                                                     &pEntry->dn,
                                                     &pAttr->type,
                                                     pAttr->vals,
@@ -268,6 +294,7 @@ VmDirMDBIndicesPopulate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    mdbBECtx.pBE = NULL;
     mdbBECtx.pBEPrivate = NULL;
     VmDirBackendCtxContentFree(&mdbBECtx);
     VmDirSchemaCtxRelease(pSchemaCtx);
@@ -293,19 +320,26 @@ error:
 
 DWORD
 VmDirMDBIndexGetDBi(
-    PVDIR_INDEX_CFG pIndexCfg,
-    VDIR_DB*        pDBi
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg,
+    VDIR_DB*                pDBi
     )
 {
     DWORD   dwError = 0;
     PVDIR_MDB_INDEX_DATABASE    pMdbIndexDB = NULL;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+
+    if (!pDB || !pDBi)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     *pDBi = 0;
 
     if (pIndexCfg)
     {
         dwError = LwRtlHashMapFindKey(
-                gVdirMdbGlobals.mdbIndexDBs,
+                pDB->mdbIndexDBs,
                 (PVOID*)&pMdbIndexDB,
                 pIndexCfg->pszAttrName);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -328,13 +362,14 @@ static
 VOID
 _FreeIdxDBMapPair(
     PLW_HASHMAP_PAIR    pPair,
-    LW_PVOID            pUnused
+    LW_PVOID            pUserData
     )
 {
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)pUserData;
     PVDIR_MDB_INDEX_DATABASE pMdbIndexDB = NULL;
 
     pMdbIndexDB = (PVDIR_MDB_INDEX_DATABASE)pPair->pValue;
-    MDBCloseDB(pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
+    MDBCloseDB(pDB, pMdbIndexDB->pMdbDataFiles[0].mdbDBi);
     MdbIndexDescFree(pMdbIndexDB);
 }
 

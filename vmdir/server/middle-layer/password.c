@@ -257,58 +257,84 @@ VmDirPasswordSchemeFree(
 }
 
 DWORD
-VmDirGenerateRandomPasswordByDefaultPolicy
-(
-    PSTR *ppRandPwd)
+VmDirGenerateRandomPasswordByDefaultPolicy(
+    PSTR *ppRandPwd
+    )
+{
+    return VmDirGenerateRandomInternalPassword(NULL, ppRandPwd);
+}
+
+DWORD
+VmDirGenerateRandomInternalPassword(
+    PCSTR   pszDomain,
+    PSTR*   ppszRandPwd
+    )
 {
     DWORD   dwError = 0;
     int     iCnt = 0;
     DWORD   pwdLen = VMDIR_KDC_RANDOM_PWD_LEN;
     VDIR_BERVALUE pwdBerv = VDIR_BERVALUE_INIT;
     VDIR_PASSWD_LOCKOUT_POLICY  policy = {0};
-    PSTR pRandPwd = NULL;
+    PSTR    pszRandPwd = NULL;
+    PSTR    pszLocalPolicyDN = NULL;
 
-    *ppRandPwd = NULL;
-
-    if ( gVmdirServerGlobals.systemDomainDN.bvnorm_val == NULL )
-    {   // instance not yet initialized
-        dwError = ERROR_NOT_JOINED;
-        BAIL_ON_VMDIR_ERROR( dwError );
+    if (!ppszRandPwd)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+    else if (!gVmdirServerGlobals.systemDomainDN.bvnorm_val)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_NOT_JOINED);
     }
 
-    dwError = VdirGetPasswdAndLockoutPolicy(gVmdirServerGlobals.systemDomainDN.bvnorm_val, &policy);
+    if (pszDomain)
+    {
+        dwError = VmDirDomainToPasswordPolicyDN(pszDomain, &pszLocalPolicyDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VdirGetPasswdAndLockoutPolicy(
+        pszLocalPolicyDN ? pszLocalPolicyDN : gVmdirServerGlobals.systemDomainDN.bvnorm_val,
+        &policy);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (VMDIR_KDC_RANDOM_PWD_LEN > policy.iMaxLen)
     {
         pwdLen = policy.iMaxLen;
-    } else if (VMDIR_KDC_RANDOM_PWD_LEN < policy.iMinLen)
+    }
+    else if (VMDIR_KDC_RANDOM_PWD_LEN < policy.iMinLen)
     {
         pwdLen = policy.iMaxLen;
     }
 
     do
     {
-        VMDIR_SAFE_FREE_MEMORY(pRandPwd);
-        dwError = VmKdcGenerateRandomPassword(pwdLen, &pRandPwd);
-        BAIL_ON_VMDIR_ERROR( dwError );
-        pwdBerv.lberbv.bv_val = pRandPwd;
+        VMDIR_SAFE_FREE_MEMORY(pszRandPwd);
+
+        dwError = VmKdcGenerateRandomPassword(pwdLen, &pszRandPwd);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pwdBerv.lberbv.bv_val = pszRandPwd;
         pwdBerv.lberbv.bv_len = VmDirStringLenA(pwdBerv.lberbv.bv_val);
         dwError = PasswordStrengthCheck(&pwdBerv, &policy);
     }
     while ( dwError == VMDIR_ERROR_PASSWORD_POLICY_VIOLATION && iCnt++ < VMKDC_RANDPWD_MAX_RETRY);
     BAIL_ON_VMDIR_ERROR(dwError);
-    *ppRandPwd = pRandPwd;
+
+    *ppszRandPwd = pszRandPwd;
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalPolicyDN);
+
     return dwError;
 
 error:
-    if ( dwError != ERROR_NOT_JOINED )
+    if (dwError != ERROR_NOT_JOINED)
     {
         VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: fail to gernerate password error %d", __func__, dwError);
     }
-    VMDIR_SAFE_FREE_MEMORY(pRandPwd);
+    VMDIR_SAFE_FREE_MEMORY(pszRandPwd);
+
     goto cleanup;
 }
 

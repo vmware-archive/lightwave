@@ -154,7 +154,6 @@ VmDirInternalBindEntry(
     )
 {
     DWORD                   retVal = LDAP_SUCCESS;
-    int                     deadLockRetries = 0;
     BOOLEAN                 bHasTxn = FALSE;
     VDIR_ENTRY              entry = {0};
     PVDIR_ENTRY             pEntry = NULL;
@@ -173,23 +172,6 @@ VmDirInternalBindEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    if (bHasTxn)
-    {
-        pOperation->pBEIF->pfnBETxnAbort( pOperation->pBECtx );
-        bHasTxn = FALSE;
-    }
-
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        retVal = VMDIR_ERROR_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-    else
     {
         if (pEntry)
         {
@@ -210,19 +192,8 @@ txnretry:
                                     &pOperation->reqDn,
                                     &entry,
                                     VDIR_BACKEND_ENTRY_LOCK_READ);
-        if (retVal != 0)
-        {
-            switch (retVal)
-            {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                    goto txnretry;
-
-                default:
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "(%u)(%s)",
-                                                  retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-            }
-        }
-
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "(%u)(%s)",
+                retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
@@ -230,9 +201,6 @@ txnretry:
 
         pEntry = &entry;
     }
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
 
     retVal = _VmDirBindSetupAccessInfo(&pOperation->conn->AccessInfo, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);

@@ -153,6 +153,9 @@
 // vector processing 9300 ~ 9310
 #define VMDIR_ERROR_INVALID_VECTOR_STR                 (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 200 )    // 9300
 
+// write operations error 9311 ~ 9320
+#define VMDIR_ERROR_ML_WRITE_TIMEOUT                   (VMDIR_ERROR_BASE + VMDIR_GENERIC_ERROR_BASE + 211 )    //9311
+
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // customized LDAP return code (range 9300 - 9399)
 //////////////////////////////////////////////////////////////////////////////////////////////////

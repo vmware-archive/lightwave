@@ -33,6 +33,7 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
+import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.Shared;
 
@@ -55,13 +56,19 @@ public class WebssoMetadataController {
      */
     @RequestMapping(value = "/websso/SAML2/Metadata/{tenant:.*}", method = RequestMethod.GET)
     public void  metadata(Locale locale, @PathVariable(value = "tenant") String tenant, Model model, HttpServletResponse response) throws IOException {
+        metadata(locale, tenant, model, response, null);
+    }
+
+    void metadata(Locale locale, String tenant, Model model, HttpServletResponse response, IdmAccessorFactory factory) throws IOException {
         logger.info("Welcome to Metadata handler! " +
                 "The client locale is "+ locale.toString() + ", tenant is " + tenant);
 
-        //TODO - check for correlation id in the headers PR1561606
-        String correlationId = UUID.randomUUID().toString();
-        DefaultIdmAccessorFactory factory = new DefaultIdmAccessorFactory(correlationId);
         try {
+            if (factory == null) {
+                //TODO - check for correlation id in the headers PR1561606
+                String correlationId = UUID.randomUUID().toString();
+                factory = new DefaultIdmAccessorFactory(correlationId);
+            }
             IdmAccessor accessor = factory.getIdmAccessor();
             accessor.setTenant(tenant);
             String metadata = accessor.exportConfigurationAsString();

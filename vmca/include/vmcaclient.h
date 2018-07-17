@@ -409,5 +409,10 @@ VMCAJavaGenCertA(
 //     VMCA_CERTIFICATE_CONTAINER ** ppCertContainer
 // );
 
+DWORD
+VMCAClientInitOpenSSL();
+
+DWORD
+VMCAClientCleanupOpenSSL();
 
 #endif // _VMCACLIENT_H_

@@ -84,6 +84,8 @@ import com.vmware.identity.idm.server.ServerUtils;
 import com.vmware.identity.idm.server.config.IdmServerConfig;
 import com.vmware.identity.idm.server.performance.IIdmAuthStatRecorder;
 import com.vmware.identity.idm.server.provider.BaseLdapProvider;
+import com.vmware.identity.idm.server.provider.IAccountInfo;
+import com.vmware.identity.idm.server.provider.IAccountProvider;
 import com.vmware.identity.idm.server.provider.ILdapConnectionProvider;
 import com.vmware.identity.idm.server.provider.IPooledConnectionProvider;
 import com.vmware.identity.idm.server.provider.ISystemDomainIdentityProvider;
@@ -421,22 +423,25 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
 
     private final boolean _isSystemDomainProvider;
 
-    private final String tenantName;
+    private final IAccountProvider accountProvider;
 
-    public VMwareDirectoryProvider(String tenantName, IIdentityStoreData store, boolean isSystemDomainProvider)
+    public VMwareDirectoryProvider(String tenantName, IIdentityStoreData store, boolean isSystemDomainProvider, IAccountProvider provider)
     {
-        this( tenantName, store, isSystemDomainProvider, null, null);
+        this( tenantName, store, isSystemDomainProvider, provider, null, null);
     }
 
     public VMwareDirectoryProvider(
         String tenantName, IIdentityStoreData store,
         boolean isSystemDomainProvider,
+        IAccountProvider provider,
         IPooledConnectionProvider pooledConnectionProvider,
         ILdapConnectionProvider ldapConenctionProvider)
     {
         super(tenantName, store, null, pooledConnectionProvider, ldapConenctionProvider);
 
         _isSystemDomainProvider = isSystemDomainProvider;
+
+        this.accountProvider = provider;
 
         Validate.isTrue(
                 getStoreDataEx().getProviderType() == IdentityStoreType.IDENTITY_STORE_TYPE_VMWARE_DIRECTORY,
@@ -446,7 +451,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
         _specialAttributes = new HashSet<String>();
 
         _specialAttributes.add(ATTR_SUBJECT_TYPE);
-        this.tenantName = tenantName;
 
         this._everyoneGroup = new Group(
             new PrincipalId(
@@ -6365,10 +6369,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
   @Override
   public String generatePassword() throws Exception {
     Exception latestEx = null;
+    IAccountInfo acct = this.getAccount();
     for (String uri : getStoreDataEx().getConnectionStrings()) {
       try {
         URI connectionUri = new URI(uri);
-        return Directory.GeneratePassword(connectionUri.getHost(), getUsername(), getPassword());
+        return Directory.GeneratePassword(connectionUri.getHost(), acct.userName(), acct.password());
       } catch (Exception e) {
         latestEx = e;
       }
@@ -6380,11 +6385,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     protected ILdapConnectionEx getConnection(Collection<String> connectStrs, boolean useGcPort)
           throws Exception
     {
+        IAccountInfo acct = this.getAccount();
+
        return this.getConnection(
              connectStrs,
-             getUsername(),
-             getPassword(),
-             getAuthType(),
+             acct.userName(),
+             acct.password(),
+             acct.authentication(),
              useGcPort);
     }
 
@@ -6392,10 +6399,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     protected ILdapConnectionEx getConnection(boolean useGcPort)
           throws Exception
     {
+        IAccountInfo acct = this.getAccount();
        return this.getConnection(
-             getUsername(),
-             getPassword(),
-             getAuthType(),
+             acct.userName(),
+             acct.password(),
+             acct.authentication(),
              useGcPort);
     }
 
@@ -6403,47 +6411,64 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     protected ILdapConnectionEx getConnection()
        throws Exception
     {
+        IAccountInfo acct = this.getAccount();
        return this.getConnection(
-             getUsername(),
-             getPassword(),
-             getAuthType(),
+             acct.userName(),
+             acct.password(),
+             acct.authentication(),
              false);
     }
 
-    private String getUsername()
-    {
-       String username;
-       if (_isSystemDomainProvider) {
-          username = IdmServerConfig.getInstance().getDirectoryConfigStoreUserName();
-       } else {
-          username = this.getStoreDataEx().getUserName();
-       }
+    private IAccountInfo getAccount() {
+        if (_isSystemDomainProvider) {
+            return new Account(
+                IdmServerConfig.getInstance().getDirectoryConfigStoreUserName(),
+                IdmServerConfig.getInstance().getDirectoryConfigStorePassword(),
+                IdmServerConfig.getInstance().getDirectoryConfigStoreAuthType()
+            );
+         } else {
+             if ( ServerUtils.isNullOrEmpty(this.getStoreDataEx().getPassword() )) {
+                return this.accountProvider.getAccount();
+             } else {
+                return new Account(
+                    this.getStoreDataEx().getUserName(),
+                    this.getStoreDataEx().getPassword(),
+                    this.getStoreDataEx().getAuthenticationType()
+                );
+            }
+         }
 
-       return username;
     }
 
-    private String getPassword()
-    {
-       String password;
-       if (_isSystemDomainProvider) {
-          password = IdmServerConfig.getInstance().getDirectoryConfigStorePassword();
-       } else {
-          password = this.getStoreDataEx().getPassword();
-       }
+    class Account implements IAccountInfo {
+        private String account;
+        private String password;
+        private AuthenticationType authType;
 
-       return password;
-    }
+        public Account(
+            String account,
+            String password,
+            AuthenticationType authType
+        ) {
+            ValidateUtil.validateNotEmpty(account, "account");
+            ValidateUtil.validateNotEmpty(password, "password");
 
-    private AuthenticationType getAuthType()
-    {
-       AuthenticationType authType;
-       if (_isSystemDomainProvider) {
-           authType = IdmServerConfig.getInstance().getDirectoryConfigStoreAuthType();
-       } else {
-           authType = this.getStoreDataEx().getAuthenticationType();
-       }
+            this.account = account;
+            this.password = password;
+            this.authType = authType;
+        }
 
-       return authType;
+        public String userName() {
+            return this.account;
+        }
+
+        public String password() {
+            return this.password;
+        }
+
+        public AuthenticationType authentication() {
+            return this.authType;
+        }
     }
 
     /**
@@ -6607,7 +6632,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     }
 
     private PooledLdapConnection borrowConnection() throws Exception {
-        return borrowConnection(getStoreDataEx().getConnectionStrings(), getUsername(), getPassword(), getAuthType(), false);
+        IAccountInfo acct = this.getAccount();
+        return borrowConnection(
+            getStoreDataEx().getConnectionStrings(),
+            acct.userName(), acct.password(), acct.authentication(),
+            false);
     }
 
     private String GetUpnAttributeValue(ILdapEntry entry)

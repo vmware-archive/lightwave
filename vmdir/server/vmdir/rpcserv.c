@@ -116,7 +116,8 @@ VmDirSrvInitializeHost(
                     pTrustInfoA );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeHost success: (%s)(%s)(%s)(%s)",
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s success: (%s)(%s)(%s)(%s)",
+                                     __FUNCTION__,
                                      VDIR_SAFE_STRING(pszFQDomainName),
                                      VDIR_SAFE_STRING(pszSystemDomainAdminName),
                                      VDIR_SAFE_STRING(pszSiteName),
@@ -135,7 +136,9 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvInitializeHost failed (%u)(%s)(%s)(%s)(%s)(%u)", dwError,
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%s)(%s)(%s)(%s)(%u)",
+                                     __FUNCTION__,
+                                     dwError,
                                      VDIR_SAFE_STRING(pszFQDomainName),
                                      VDIR_SAFE_STRING(pszSystemDomainAdminName),
                                      VDIR_SAFE_STRING(pszSiteName),
@@ -178,7 +181,7 @@ VmDirSrvForceResetPassword(
     pContainer->dwCount = (DWORD)VmDirStringLenA(pLocalPassword);
     pContainer->data    = pLocalPassword;
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirSrvForceResetPassword (%s)", VDIR_SAFE_STRING(pszTargetUPN) );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTargetUPN) );
 
 cleanup:
 
@@ -191,8 +194,8 @@ error:
     VMDIR_SAFE_FREE_MEMORY( pLocalPassword );
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvForceResetPassword failed (%u)(%u)(%s)",
-                                      dwError, dwAPIError, VDIR_SAFE_STRING(pszTargetUPN) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)(%s)",
+        __FUNCTION__, dwError, dwAPIError, VDIR_SAFE_STRING(pszTargetUPN) );
 
     goto cleanup;
 }
@@ -222,8 +225,8 @@ cleanup:
 error:
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-		     "VmDirSrvGetServerState failed (%u)",
-		     dwError );
+		     "%s  failed (%u)",
+		     __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -303,7 +306,7 @@ error:
     VmDirRpcFreeMemory( pContainerBlob );
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGeneratePassword failed (%u)(%u)", dwError, dwAPIError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)", __FUNCTION__, dwError, dwAPIError);
 
     goto cleanup;
 }
@@ -379,7 +382,7 @@ Srv_RpcVmDirGetKeyTabRecBlob(
     pContainer->data    = pContainerBlob;
     pContainerBlob      = NULL;
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "RpcVmDirGetKeyTabRecBlob (%s)", VDIR_SAFE_STRING(pszUPN) );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszUPN) );
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY( pLocalByte );
@@ -400,8 +403,8 @@ error:
     VmDirRpcFreeMemory( pContainerBlob );
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKeyTabRecBlob failed (%u)(%u)(%s)",
-                                      dwError, dwAPIError, VDIR_SAFE_STRING(pszUPN) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)(%s)",
+        __FUNCTION__, dwError, dwAPIError, VDIR_SAFE_STRING(pszUPN) );
 
     goto cleanup;
 }
@@ -428,6 +431,7 @@ Srv_RpcVmDirGetKrbMasterKey(
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken = NULL;
     PSTR pszDomainDn = NULL;
 
+//SUNG to deprecate
     VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError);
 
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, pszDomainDn, &pAccessToken);
@@ -482,8 +486,8 @@ error:
     VmDirRpcFreeMemory( pLocalRPCByte );
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKrbMasterKey failed (%u)(%u)(%s)",
-                                      dwError, dwAPIError, VDIR_SAFE_STRING(pszDomainName) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)(%s)",
+        __FUNCTION__, dwError, dwAPIError, VDIR_SAFE_STRING(pszDomainName) );
 
     goto cleanup;
 }
@@ -518,7 +522,7 @@ VmDirSrvSetSRPSecret(
                                        pszSecret);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "VmDirSrvSetSRPSecret (%s)", VDIR_SAFE_STRING(pszUPN) );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszUPN) );
 
 cleanup:
 
@@ -529,8 +533,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSrvSetSRPSecret failed (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszUPN) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%s)",
+        __FUNCTION__, dwError, VDIR_SAFE_STRING(pszUPN) );
 
     goto cleanup;
 }
@@ -595,7 +599,7 @@ Srv_RpcVmDirGetKrbUPNKey(
     pContainer->dwCount = dwKeySize;
     pLocalRPCByte = NULL;
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "RpcVmDirGetKrbUPNKey (%s)", VDIR_SAFE_STRING(pszUpnName) );
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszUpnName) );
 
 cleanup:
     if (pAccessToken)
@@ -612,8 +616,8 @@ error:
     VmDirRpcFreeMemory( pLocalRPCByte );
     VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirGetKrbUPNKey failed (%u)(%u)(%s)",
-                                     dwError, dwAPIError, VDIR_SAFE_STRING(pszUpnName) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)(%s)",
+        __FUNCTION__, dwError, dwAPIError, VDIR_SAFE_STRING(pszUpnName) );
     goto cleanup;
 }
 
@@ -735,8 +739,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_RpcVmDirCreateUserInternal failed (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszUPNName) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%s)",
+        __FUNCTION__, dwError, VDIR_SAFE_STRING(pszUPNName) );
     goto cleanup;
 
 }
@@ -791,8 +795,7 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirCreateUser failed (%u)",
-                                      dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -874,7 +877,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirReplNow failed (%u)", dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -917,9 +920,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "RpcVmDirSetLogLevel failed (%u)",
-                    dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -962,7 +963,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetLogMask failed (%u)(%u)", dwError, iVmDirLogMask );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)", __FUNCTION__, dwError, iVmDirLogMask);
     goto cleanup;
 }
 
@@ -1015,7 +1016,7 @@ Srv_RpcVmDirSetState(
     // no return value
     VmDirdStateSet(dwState);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState: VmDir State (%u)", dwState );
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: VmDir State (%u)", __FUNCTION__, dwState);
 
 cleanup:
     if (pAccessToken)
@@ -1025,7 +1026,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetState failed (%u)(%u)", dwError, dwState );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)", __FUNCTION__, dwError, dwState);
     goto cleanup;
 }
 
@@ -1035,7 +1036,7 @@ Srv_RpcVmDirOpenDBFile(
     PWSTR       pwszDBFileName,
     vmdir_ftp_handle_t  *   ppFileHandle)
 {
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDBFile is obsolete.");
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s is obsolete.", __FUNCTION__);
     return LDAP_OPERATIONS_ERROR;
 }
 
@@ -1046,7 +1047,7 @@ Srv_RpcVmDirReadDBFile(
     UINT32      dwCount,
     VMDIR_FTP_DATA_CONTAINER  * pReadBufferContainer)
 {
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDBFile is obsolete.");
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s is obsolete.", __FUNCTION__);
     return LDAP_OPERATIONS_ERROR;
 }
 
@@ -1055,7 +1056,7 @@ Srv_RpcVmDirCloseDBFile(
     handle_t    hBinding,
     vmdir_ftp_handle_t pFileHandle)
 {
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDBFile is obsolete.");
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s is obsolete.", __FUNCTION__);
     return LDAP_OPERATIONS_ERROR;
 }
 
@@ -1103,13 +1104,13 @@ _VmDirRPCCheckAccess(
          &rpc_status);
     if (rpc_status != rpc_s_ok)
     {
-        VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "_VmDirRPCCheckAccess: rpc_binding_to_string_binding failed");
+        VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "%s: rpc_binding_to_string_binding failed", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     VMDIR_LOG_VERBOSE(LDAP_DEBUG_RPC,
-             "_VmDirRPCCheckAccess: request from %s", pszRpcHandle);
+             "%s: request from %s", __FUNCTION__, pszRpcHandle);
 
     if (strncmp(pszRpcHandle, "ncalrpc:", 8) == 0)
     {
@@ -1164,14 +1165,14 @@ _VmDirRPCCheckAccess(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "VmDirRPCCheckAccess: Authenticated user %s", authPrinc);
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s: Authenticated user %s", __FUNCTION__, authPrinc);
 
     if ( dwRpcFlags & VMDIR_RPC_FLAG_REQUIRE_AUTHZ )
     {
         dwError = VmDirAdministratorAccessCheck(authPrinc, (PCSTR) pszDomainDn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "VmDirRPCCheckAccess: Authorized user %s", authPrinc);
+        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s: Authorized user %s", __FUNCTION__, authPrinc);
     }
 
     dwError = VmDirSrvCreateAccessToken((PCSTR)authPrinc, &pAccessToken);
@@ -1193,7 +1194,8 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                     "VmDirRPCCheckAccess: Authenticated user (%s), handle (%s), failed code (%u)(%d)",
+                     "%s: Authenticated user (%s), handle (%s), failed code (%u)(%d)",
+                     __FUNCTION__,
                      VDIR_SAFE_STRING( (PSTR)authPrinc ),
                      VDIR_SAFE_STRING(pszRpcHandle),
                      rpc_status, dwError);
@@ -1304,7 +1306,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogQueryServerData failed (%u)", dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -1347,7 +1349,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogEnable failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1390,7 +1392,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogDisable failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1435,7 +1437,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirIsSuperLogEnabled failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1478,7 +1480,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogFlush failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1522,7 +1524,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogSetSize failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1566,7 +1568,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogGetSize failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1647,7 +1649,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "RpcVmDirSuperLogGetEntriesLdapOperation failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -1690,7 +1692,7 @@ Srv_RpcVmDirOpenDatabaseFile(
     dwError = _VmDirRemoteDBCopyWhiteList(pszDBFileName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDatabaseFile: Request to open the DB file: %s", pszDBFileName );
+    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "%s: Request to open the DB file: %s", __FUNCTION__, pszDBFileName );
 
     if ((pFileHandle = fopen(pszDBFileName, "rb")) == NULL)
     {
@@ -1709,12 +1711,12 @@ Srv_RpcVmDirOpenDatabaseFile(
             dwError = ERROR_IO;
         }
         BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                      "Srv_RpcVmDirOpenDatabaseFile: fopen() call failed, DB file: (%s), error: (%s)",
-                                      pszDBFileName, strerror(errno) );
+                                      "%s: fopen() call failed, DB file: (%s), error: (%s)",
+                                      __FUNCTION__, pszDBFileName, strerror(errno) );
 #endif
     }
     *ppFileHandle = pFileHandle;
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "Srv_RpcVmDirOpenDatabaseFile: opened DB file (%s)", pszDBFileName);
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s: opened DB file (%s)", __FUNCTION__, pszDBFileName);
 
 cleanup:
     if (pAccessToken)
@@ -1732,8 +1734,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirOpenDatabaseFile failed  (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg)  );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed  (%u)(%s)",
+        __FUNCTION__, dwError, VDIR_SAFE_STRING(pszLocalErrMsg)  );
     if (pFileHandle != NULL)
     {
         fclose(pFileHandle);
@@ -1774,8 +1776,8 @@ Srv_RpcVmDirReadDatabaseFile(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "Srv_RpcVmDirReadDatabaseFile: file handle (%x), read (%d) bytes to transfer",
-                                        pFileHandle, dwCount );
+    VMDIR_LOG_VERBOSE( LDAP_DEBUG_RPC, "%s: file handle (%x), read (%d) bytes to transfer",
+        __FUNCTION__, pFileHandle, dwCount );
 
     dwError = VmDirRpcAllocateMemory( dwCount, (PVOID*)&(pData) );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1790,7 +1792,7 @@ Srv_RpcVmDirReadDatabaseFile(
             dwError = ERROR_IO;
 #endif
             BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, pszLocalErrMsg,
-                                          "Srv_RpcVmDirReadDatabaseFile: read() call failed, error: %d.", dwError);
+                    "%s: read() call failed, error: %d.", __FUNCTION__, dwError);
         }
     }
 
@@ -1812,8 +1814,8 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirReadDatabaseFile failed (%u)(%s)",
-                                      dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%s)",
+        __FUNCTION__, dwError, VDIR_SAFE_STRING(pszLocalErrMsg) );
     VmDirRpcFreeMemory(pData);
     pReadBufferContainer->dwCount = 0;
     goto cleanup;
@@ -1846,7 +1848,7 @@ Srv_RpcVmDirCloseDatabaseFile(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC,  "Srv_RpcVmDirCloseDatabaseFile: DB file fd (%d)", fileno(*ppFileHandle));
+    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC,  "%s: DB file fd (%d)", __FUNCTION__, fileno(*ppFileHandle));
 
     if (fclose((FILE *)*ppFileHandle) != 0)
     {
@@ -1868,7 +1870,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirCloseDatabaseFile failed (%u)", dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -1916,6 +1918,8 @@ Srv_RpcVmDirSetBackendState(
     dwError = VmDirSetMdbBackendState(fileTransferState, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s db state set to (%u)", __FUNCTION__, fileTransferState);
+
     *pdwXlogNum = dwXlogNum;
     *pdwDbSizeMb = dwDbSizeMb;
     *pdwDbMapSizeMb = dwDbMapSizeMb;
@@ -1935,7 +1939,7 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "Srv_RpcVmDirSetBackendState failed (%u)", dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     VmDirRpcFreeMemory(pData);
     pDbPath->dwCount = 0;
     goto cleanup;
@@ -1986,6 +1990,7 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -2034,6 +2039,7 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -2082,6 +2088,7 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -2136,23 +2143,23 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
 UINT32
 Srv_RpcVmDirGetComputerAccountInfo(
     handle_t                  hBinding,
-    PWSTR                     pszDomainName,
-    PWSTR                     pszPassword,
-    PWSTR                     pszMachineName,
+    PWSTR                     pwszDomainName,
+    PWSTR                     pwszPassword,
+    PWSTR                     pwszMachineName,
     PVMDIR_MACHINE_INFO_W     *ppMachineInfo,
     PVMDIR_KRB_INFO           *ppKrbInfo
     )
 {
     DWORD dwError = 0;
-    PSTR paszDomainName = NULL;
-    PSTR paszMachineName = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszMachineName = NULL;
     PSTR pszMachineUPN = NULL;
     DWORD dwRpcFlags = VMDIR_RPC_FLAG_ALLOW_NCALRPC
                        | VMDIR_RPC_FLAG_ALLOW_TCPIP
@@ -2169,9 +2176,9 @@ Srv_RpcVmDirGetComputerAccountInfo(
 
     VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError);
 
-    if (IsNullOrEmptyString(pszMachineName) ||
-        IsNullOrEmptyString(pszDomainName) ||
-        IsNullOrEmptyString(pszPassword) ||
+    if (IsNullOrEmptyString(pwszMachineName) ||
+        IsNullOrEmptyString(pwszDomainName) ||
+        IsNullOrEmptyString(pwszPassword) ||
         !ppMachineInfo || !ppKrbInfo
        )
     {
@@ -2183,22 +2190,22 @@ Srv_RpcVmDirGetComputerAccountInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                        pszMachineName,
-                        &paszMachineName
+                        pwszMachineName,
+                        &pszMachineName
                         );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                        pszDomainName,
-                        &paszDomainName
+                        pwszDomainName,
+                        &pszDomainName
                         );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
                             &pszMachineUPN,
                             "%s@%s",
-                            paszMachineName,
-                            paszDomainName
+                            pszMachineName,
+                            pszDomainName
                             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2228,8 +2235,8 @@ Srv_RpcVmDirGetComputerAccountInfo(
 
     dwError = VmDirSrvGetComputerAccountInfo(
                                          pConnection,
-                                         paszDomainName,
-                                         paszMachineName,
+                                         pszDomainName,
+                                         pszMachineName,
                                          &pMachineInfo->pszComputerDN,
                                          &pMachineInfo->pszMachineGUID,
                                          &pMachineInfo->pszSiteName
@@ -2237,15 +2244,15 @@ Srv_RpcVmDirGetComputerAccountInfo(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringAFromW(
-                                pszPassword,
+                                pwszPassword,
                                 &pMachineInfo->pszPassword
                                 );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvGetKeyTabInfoClient(
                                   pConnection,
-                                  paszDomainName,
-                                  paszMachineName,
+                                  pszDomainName,
+                                  pszMachineName,
                                   &pKrbInfo
                                   );
     if (!dwError)
@@ -2288,12 +2295,14 @@ cleanup:
     {
         VmDirSrvReleaseAccessToken(pAdminCheckAccessToken);
     }
-    VMDIR_SAFE_FREE_STRINGA(paszDomainName);
-    VMDIR_SAFE_FREE_STRINGA(paszMachineName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+    VMDIR_SAFE_FREE_STRINGA(pszMachineName);
     VMDIR_SAFE_FREE_STRINGA(pszMachineUPN);
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+
     if (ppMachineInfo)
     {
         *ppMachineInfo = NULL;
@@ -2449,6 +2458,7 @@ Srv_RpcVmDirClientJoin(
                             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s, join %s", __FUNCTION__, pszMachineName);
 
     *ppMachineInfo = pRpcMachineInfo;
     *ppKrbInfo = pRpcKrbInfo;
@@ -2476,7 +2486,7 @@ cleanup:
     }
     return dwError;
 error:
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     if (ppMachineInfo)
     {
       *ppMachineInfo = NULL;
@@ -2591,6 +2601,7 @@ Srv_RpcVmDirCreateComputerAccount(
                             );
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s, create %s", __FUNCTION__, pszMachineName);
 
     *ppMachineInfo = pRpcMachineInfo;
 
@@ -2613,7 +2624,7 @@ cleanup:
     }
     return dwError;
 error:
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     if (ppMachineInfo)
     {
       *ppMachineInfo = NULL;
@@ -2641,13 +2652,13 @@ void vmdir_dbcp_handle_t_rundown(void *ctx)
     {
         if (fileno(pFileHandle) != -1)
         {
-            VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "vmdir_dbcp_handle_t_rundown closing file with fd: %d", fileno(pFileHandle));
+            VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s closing file with fd: %d", __FUNCTION__, fileno(pFileHandle));
             fclose(pFileHandle);
         }
     }
     // Clear backend READ-ONLY/KeeXlog mode when dbcp connection interrupted.
     VmDirSrvSetMDBStateClear();
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "vmdir_dbcp_handle_t_rundown: MdbBackendState cleared,");
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: MdbBackendState cleared", __FUNCTION__);
 }
 
 UINT32
@@ -2743,7 +2754,7 @@ _RpcVmDirCreateDomainTrustInternal(
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTrustName) );
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s create trusted domain (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTrustName) );
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDnTrusts);
@@ -2805,10 +2816,7 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                     "%s failed (%u)",
-                     __FUNCTION__,
-                     dwError );
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError );
     goto cleanup;
 }
 
@@ -2851,10 +2859,7 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                     "%s failed (%u)",
-                     __FUNCTION__,
-                     dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -2887,6 +2892,8 @@ Srv_RpcVmDirDeleteTenant(
     dwError = VmDirSrvDeleteTenant((PCSTR) pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s, tenant %s deleted", __FUNCTION__, pszDomainName);
+
 cleanup:
     if (pAccessToken)
     {
@@ -2900,9 +2907,6 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                     "%s failed (%u)",
-                     __FUNCTION__,
-                     dwError );
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
     goto cleanup;
 }

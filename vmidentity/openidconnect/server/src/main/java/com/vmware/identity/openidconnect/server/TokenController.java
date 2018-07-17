@@ -31,8 +31,13 @@ import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.openidconnect.common.ErrorObject;
+import com.vmware.identity.openidconnect.common.GrantType;
+import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
+import com.vmware.identity.openidconnect.protocol.ParameterMapUtils;
+
+import io.prometheus.client.Histogram.Timer;
 
 /**
  * @author Yehia Zayour
@@ -40,6 +45,8 @@ import com.vmware.identity.openidconnect.protocol.HttpResponse;
 @Controller
 public class TokenController {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(TokenController.class);
+
+    public static final String metricsResource = "token";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -73,10 +80,15 @@ public class TokenController {
             HttpServletRequest request,
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
-        HttpResponse httpResponse;
+        String metricsOperation = "acquireTokens";
+        Timer requestTimer = null;
+        HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
 
         try {
+            if (tenant == null) {
+                tenant = new TenantInfoRetriever(this.idmClient).getDefaultTenantName();
+            }
             if (request.getQueryString() != null && !request.getQueryString().isEmpty()) {
                 ErrorObject errorObject = ErrorObject.invalidRequest("query parameters are not allowed at token endpoint");
                 LoggerUtils.logFailedRequest(logger, errorObject);
@@ -84,6 +96,9 @@ public class TokenController {
             } else {
                 HttpRequest httpRequest = HttpRequest.from(request);
                 context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
+                GrantType grantType = GrantType.parse(ParameterMapUtils.getString(httpRequest.getParameters(), "grant_type"));
+                metricsOperation += "_" + grantType.toString(); // group sub metrics based on grant type
+                requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
 
                 TokenRequestProcessor p = new TokenRequestProcessor(
                         this.idmClient,
@@ -92,6 +107,9 @@ public class TokenController {
                         tenant);
                 httpResponse = p.process();
             }
+        }  catch (ParseException e) {
+            LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+            httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
@@ -99,6 +117,13 @@ public class TokenController {
         } finally {
             if (context != null) {
                 context.close();
+            }
+            if (httpResponse != null) {
+                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                        metricsResource, metricsOperation);
+            }
+            if (requestTimer != null) {
+                requestTimer.observeDuration();
             }
         }
 

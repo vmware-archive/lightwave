@@ -336,4 +336,12 @@ VmDirMDBConfigureFsync(
     BOOLEAN bFsyncOn
     );
 
+VOID
+VmDirMdbErrorLog(
+    int errnum,
+    int param,
+    const char *funname,
+    int lineno
+    );
+
 #endif /* MDB_STORE_INTERFACE_H_ */

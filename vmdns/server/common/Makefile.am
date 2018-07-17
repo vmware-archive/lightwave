@@ -36,13 +36,13 @@ libsrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdns/include \
     -I$(top_srcdir)/vmdns/include/public \
     -I$(top_srcdir)/vmdns/server/include \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
 libsrvcommon_la_LIBADD = \
     $(top_builddir)/vmdns/vmsock/api/libvmsock.la \
-    $(top_builddir)/vmmetrics/libvmmetrics.la
+    $(top_builddir)/vmcommon/libvmcommon.la
 
 libsrvcommon_la_LDFLAGS = \
     -static

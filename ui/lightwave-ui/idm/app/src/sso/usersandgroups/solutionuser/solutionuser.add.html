@@ -1,0 +1,100 @@
+<!--
+
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+
+-->
+
+<div class="popup-container">
+    <div class="header-20px">
+        Add New Solution User
+    </div>
+    <div class='error' ng-show="globals.popup_errors && !globals.popup_errors.success">
+        <img src="idm/assets/error.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}} {{globals.popup_errors.cause}}
+    </div>
+    <div class='success' ng-show="globals.popup_errors && globals.popup_errors.success">
+        <img src="idm/assets/success.png" width="16px" height="16px"/>
+        <button type="button"
+                class="btn btn-xs btn-link pull-right"
+                ng-click="globals.popup_errors = null;">X
+        </button>
+        {{globals.popup_errors.details}}
+    </div>
+    <div class="row">
+        <form name="newSolutionUserForm"
+              ng-submit="saveSolutionUser(newSolutionUser)"
+              role="form">
+            <div class="row content popup-content">
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Name
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': newSolutionUserForm.newSolutionUserName.$invalid }">
+                        <input type="text"
+                               autofocus="autofocus"
+                               id="newSolutionUserName"
+                               name="newSolutionUserName"
+                               ng-model="newSolutionUser.name"
+                               class="form-control pull-left"
+                               placeholder="Contoso"
+                               required/>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Description
+                    </div>
+                    <div class="col-xs-8">
+                         <textarea id="newSolutionUserDescription"
+                                   name="newSolutionUserDescription"
+                                   ng-model="newSolutionUser.description"
+                                   class="form-control pull-left"
+                                   cols="200"
+                                   placeholder="Contoso solution user sample description"
+                                   style="resize:none;border:1px solid lightgray;">
+                         </textarea>
+                    </div>
+                </div>
+                <div class="popup-row col-xs-12">
+                    <div class="col-xs-4">
+                        Certificate
+                    </div>
+                    <div class="col-xs-8"
+                         ng-class="{ 'has-error': newSolutionUserForm.encodedcertfilepath.$invalid}">
+                        <input type="file"
+                               on-read-file="setCertificate(newSolutionUser, contents)"
+                               id="encodedcertfilepath"
+                               name="encodedcertfilepath"
+                               ng-model="newSolutionUser.certificate.filepath"
+                               accept=".crt"
+                               required/>
+                    </div>
+                </div>
+
+        </div>
+            <div class="popup-row col-xs-12">
+                <button type="submit"
+                        class="btn btn-primary pull-right btn-popup-footer"
+                        ng-disabled="isValid(newSolutionUser)">Save</button>
+                <button type="button"
+                        class="btn btn-default pull-right btn-popup-footer"
+                        ng-click="closeThisDialog('cancel')">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>

@@ -29,6 +29,6 @@ fi
 if [[ $ARG == "--with-ui" || $ARG == "--only-ui" ]]; then
     make -C ../ui
     mkdir -p rpmbuild/RPMS/x86_64
-    cp ../ui/lwraft-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
-    cp ../ui/lwdir-ui/stage/RPMS/x86_64/*.rpm rpmbuild/RPMS/x86_64/
+    cp ../ui/stage/RPMS/x86_64/lightwave-ui-*.rpm rpmbuild/RPMS/x86_64/
+    cp ../ui/stage/RPMS/x86_64/lwraft-ui-*.rpm rpmbuild/RPMS/x86_64/
 fi

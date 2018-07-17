@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -32,6 +32,11 @@ InitializeEventLog(
     VOID
     );
 
+static
+VOID
+VMCAEnableSuidDumpable(
+    VOID
+    );
 // init global/static in single thread mode during server startup
 DWORD
 VMCAInitialize(
@@ -40,6 +45,8 @@ VMCAInitialize(
     )
 {
     DWORD dwError = 0;
+
+    VMCAEnableSuidDumpable();
 
     dwError = VMCACommonInit();
     BAIL_ON_VMCA_ERROR(dwError);
@@ -148,8 +155,26 @@ VMCASrvInitCA(
     PSTR pszPrivateKeyFile = NULL;
     PSTR pszPasswordFile = NULL;
     PVMCA_X509_CA pCA = NULL;
+    PVMCA_POLICY *ppPolicies = NULL;
     DWORD dwCRLNumberCurrent = 0;
     BOOL bIsHoldingMutex = FALSE;
+
+    dwError = VMCAPolicyInit(&ppPolicies);
+    // TODO (shahneel): once policy parsing/enforcement is verified to work,
+    //                  this must be updated to actually bail on errors.
+    if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
+    {
+        VMCA_LOG_INFO("Failed to load policy config file, will not enforce policies...");
+        dwError = 0;
+    }
+    else if (dwError != 0)
+    {
+        VMCA_LOG_INFO("Failed to load policy config file. Error: %d", dwError);
+        dwError = 0;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    gVMCAServerGlobals.gppPolicies = ppPolicies;
 
     dwError = VMCAGetRootCertificateFilePath(&pszRootCertFile);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -211,7 +236,12 @@ VMCASrvInitCA(
 
 error:
 
-    if ( pPrivateKey != NULL )
+    if (ppPolicies != NULL)
+    {
+        VMCAPolicyArrayFree(ppPolicies);
+        gVMCAServerGlobals.gppPolicies = NULL;
+    }
+    if (pPrivateKey != NULL)
     {
         VMCAFreeKey(pPrivateKey);
     }
@@ -235,4 +265,21 @@ error:
     return dwError;
 }
 
-
+/*
+ * Any process which has changed privilege levels will not be dumped.
+ * Enable it explicitly
+ */
+static
+VOID
+VMCAEnableSuidDumpable(
+    VOID
+    )
+{
+    if (prctl(PR_SET_DUMPABLE, 1, 0, 0, 0) == -1)
+    {
+        VMCA_LOG_ERROR(
+            "%s: coredumps will not be generated error: %d",
+            __FUNCTION__,
+            errno);
+    }
+}

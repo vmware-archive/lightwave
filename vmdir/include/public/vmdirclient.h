@@ -986,7 +986,7 @@ VmDirGetServersDetailed(
     PCSTR               pszHostName,
     PCSTR               pszUserName,
     PCSTR               pszPassword,
-    PVMDIR_SERVER_INFO*  ppServerInfo,   // output
+    PVMDIR_SERVER_INFO* ppServerInfo,   // output
     DWORD*              pdwNumServer    // output
 );
 
@@ -997,7 +997,7 @@ VmDirFreeServerInfo(
 
 VOID
 VmDirFreeServerInfoArray(
-    PVMDIR_SERVER_INFO pServerInfo,
+    PVMDIR_SERVER_INFO pServerInfoArray,
     DWORD              dwCount
 );
 

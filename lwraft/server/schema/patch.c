@@ -35,7 +35,7 @@ _CreateNewLocalSchemaObject(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
     ldapOp.reqDn.lberbv_val = pObjDiff->pszDN;
     ldapOp.reqDn.lberbv_len = VmDirStringLenA(pObjDiff->pszDN);
 
@@ -99,7 +99,7 @@ _ModifyExistingLocalSchemaObject(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapOp.pBEIF = VmDirBackendSelect(NULL);
+    ldapOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
     ldapOp.reqDn.lberbv_val = pObjDiff->pszDN;
     ldapOp.reqDn.lberbv_len = VmDirStringLenA(pObjDiff->pszDN);
 
@@ -150,6 +150,7 @@ VmDirPatchLocalSchemaObjects(
     PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff = NULL;
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
     VDIR_BACKEND_CTX    beCtx = {0};
+    PVDIR_DB_HANDLE hDB = NULL;
 
     if (!pNewCtx)
     {
@@ -163,9 +164,12 @@ VmDirPatchLocalSchemaObjects(
             &pSchemaDiff);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    beCtx.pBE = VmDirBackendSelect(NULL);
+    beCtx.pBE = VmDirBackendSelect(ALIAS_MAIN);
 
-    dwError = beCtx.pBE->pfnBEConfigureFsync(FALSE);
+    hDB = VmDirSafeDBFromCtx(&beCtx);
+    assert(hDB);
+
+    dwError = beCtx.pBE->pfnBEConfigureFsync(hDB, FALSE);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pNode = pSchemaDiff->attrToAdd->pHead;
@@ -210,6 +214,9 @@ VmDirPatchLocalSchemaObjects(
 
 error:
     VmDirFreeLdapSchemaDiff(pSchemaDiff);
-    dwError = beCtx.pBE->pfnBEConfigureFsync(TRUE);
+    if (beCtx.pBE && hDB)
+    {
+        dwError = beCtx.pBE->pfnBEConfigureFsync(hDB, TRUE);
+    }
     return dwError;
 }

@@ -121,8 +121,7 @@ ParseAndFreeSyncStateControl(
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION   pOp,
-    DWORD     dwSentEntryCount,
-    BOOLEAN   bLowestPendingUncommittedUsn
+    DWORD     dwSentEntryCount
     );
 
 int
@@ -155,6 +154,12 @@ VmDirCreateDigestControlContent(
 int
 VmDirCreateStatePingControlContent(
     LDAPControl*    pPingCtrl
+    );
+
+int
+VmDirWriteDbCopyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
     );
 
 // delete.c

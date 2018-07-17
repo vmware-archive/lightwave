@@ -288,7 +288,7 @@ $RECYCLE.BIN/
 *.userprefs
 
 # lwraft-ui
-ui/lwraft-ui/stage/
+ui/stage/
 lwraft-ui/target/
 ui/lwraft-ui/src/app/*.js*
 
@@ -508,6 +508,7 @@ FakesAssemblies/
 # Node.js Tools for Visual Studio
 .ntvs_analysis.dat
 node_modules/
+bower_components/
 node/
 dist/
 

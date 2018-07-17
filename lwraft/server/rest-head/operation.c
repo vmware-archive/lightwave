@@ -392,13 +392,26 @@ VmDirRESTOperationWriteResponse(
 
     if (!VMDIR_IS_HTTP_STATUS_OK(pHttpError->dwHttpStatus))
     {
-        VMDIR_LOG_WARNING(
-                VMDIR_LOG_MASK_ALL,
-                "%s HTTP response status (%d), body (%.*s)",
-                __FUNCTION__,
-                pHttpError->dwHttpStatus,
-                VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
-                pResult->pszBody);
+        if (pHttpError->dwHttpStatus == HTTP_PRECONDITION_FAILED)
+        {
+            VMDIR_LOG_VERBOSE(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s HTTP response status (%d), body (%.*s)",
+                    __FUNCTION__,
+                    pHttpError->dwHttpStatus,
+                    VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
+                    pResult->pszBody);
+        }
+        else
+        {
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s HTTP response status (%d), body (%.*s)",
+                    __FUNCTION__,
+                    pHttpError->dwHttpStatus,
+                    VMDIR_MIN(sentLen, VMDIR_MAX_LOG_OUTPUT_LEN),
+                    pResult->pszBody);
+        }
     }
 
 cleanup:

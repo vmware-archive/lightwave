@@ -64,8 +64,7 @@ func newClient(clientConfig ClientConfig, issuer, requestID string, logger Logge
 		logger:        logger,
 	}
 
-	tr := httpTransportFromConfig(clientConfig.HTTPConfig())
-	retryableTransport := NewRetryableTransportWrapper(*tr, client.retries, client.retryInterval, logger)
+	retryableTransport := NewRetryableTransportWrapper(clientConfig.HTTPConfig(), client.retries, client.retryInterval, clientConfig.CertRefreshHook(), logger)
 	client.httpClient = &http.Client{Transport: retryableTransport}
 
 	metadata, err := getProviderMetadata(issuer, client.httpClient, requestID, logger)
@@ -108,7 +107,7 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 		jsonDecoder := json.NewDecoder(resp.Body)
 		if err := jsonDecoder.Decode(&errResponse); err != nil {
 			PrintLog(logger, LogLevelError, "Unable to parse oidc metadata error response. Error: '%v'", err)
-			return nil,	OIDCMetadataRetrievalError.MakeError("Unable to retrieve oidc metadata.", err)
+			return nil, OIDCMetadataRetrievalError.MakeError("Unable to retrieve oidc metadata.", err)
 		}
 
 		err = errResponse.makeError()
@@ -139,8 +138,8 @@ func getProviderMetadata(issuer string, client *http.Client, requestID string, l
 	}
 
 	if len(metadata.Issuer) <= 0 {
-			PrintLog(logger, LogLevelError,"No issuer found in oidc metadata")
-			return nil, OIDCMetadataError.MakeError("Issuer is required", nil)
+		PrintLog(logger, LogLevelError, "No issuer found in oidc metadata")
+		return nil, OIDCMetadataError.MakeError("Issuer is required", nil)
 	}
 
 	return &metadata, nil

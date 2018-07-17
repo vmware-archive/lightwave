@@ -53,12 +53,14 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapsConnectPorts, 0),
         VMDIR_SF_INIT(.dwHTTPListenPort, 0),
         VMDIR_SF_INIT(.dwHTTPSListenPort, 0),
+        VMDIR_SF_INIT(.dwHTTPSApiListenPort, 0),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwEmptyPageCnt, 0),
         VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
+        VMDIR_SF_INIT(.dwWriteTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
@@ -151,6 +153,11 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),
     };
 
+VMDIRD_SD_GLOBALS gVmdirdSDGlobals =
+    {
+        VMDIR_SF_INIT(.pSDdcAdminGX, NULL),
+    };
+
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
 
 VMDIR_TRACK_LAST_LOGIN_TIME gVmdirTrackLastLoginTime =
@@ -173,6 +180,13 @@ VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pThrInfo, NULL),
         VMDIR_SF_INIT(.bShutdown, FALSE)
+    };
+
+VMDIR_SERVER_OPERATIONS_GLOBALS gVmDirServerOpsGlobals =
+    {
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.maxCommittedUSN, 0),
+        VMDIR_SF_INIT(.pWriteQueue, NULL)
     };
 
 PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];

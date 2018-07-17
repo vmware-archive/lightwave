@@ -281,6 +281,12 @@ typedef void  (MDB_raft_post_commit_func)(void *raft_commit_ctx);
  */
 typedef void  (MDB_raft_commit_fail_func)(void *raft_commit_ctx);
 
+
+/** @brief A callback to log error info
+ *
+ */
+typedef void  (MDB_error_log_func)(int errnum, int param, const char* funcname, int lineno);
+
 /** @defgroup	mdb_env	Environment Flags
  *	@{
  */
@@ -1190,6 +1196,10 @@ void mdb_set_raft_prepare_commit_func(MDB_env *env, MDB_raft_prepare_commit_func
         /** @brief callback for raft post commit - set raft volatle state with logIndex argument when commit succeeded
          */
 void mdb_set_raft_post_commit_func(MDB_env *env, MDB_raft_post_commit_func  *raft_post_commit_func);
+
+        /** @brief Set MDB error log function to log errno, invoking function and lineno
+         */
+void mdb_set_error_log_func(MDB_error_log_func  *error_log_func);
 
 int  mdb_set_relctx(MDB_txn *txn, MDB_dbi dbi, void *ctx);
 

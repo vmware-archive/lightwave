@@ -1,0 +1,34 @@
+version: '3'
+services:
+  lightwave-server:
+    build: server
+    hostname: server.${LIGHTWAVE_DOMAIN}
+    command: scripts/promote.sh
+    volumes:
+     - ./server:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     - lightwave
+    privileged: true
+    environment:
+        - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
+        - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
+    tty: true
+  lightwave-client:
+    build: client
+    hostname: client.${LIGHTWAVE_DOMAIN}
+    command: scripts/join.sh
+    volumes:
+     - ./client:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     - lightwave
+    depends_on:
+     - "lightwave-server"
+    environment:
+        - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
+        - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
+    tty: true
+networks:
+  lightwave:
+    driver: bridge

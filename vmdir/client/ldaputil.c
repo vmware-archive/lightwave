@@ -4237,11 +4237,141 @@ VmDirFreeDCVersionInfo(
     }
 }
 
+/*
+ * Query partner domain entry vmwMaxServerId attribute
+ * Set reg key VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID
+ */
+DWORD
+VmDirJoinPreSetMaxServerIdRegKey(
+    PCSTR   pszHostName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_CONNECTION   pConnection = NULL;
+    PSTR*   ppszMaxServerID = NULL;
+    DWORD   dwNum = 0;
+    DWORD   dwMaxServerID = 0;
+
+    dwError = VmDirConnectionOpenByHost(
+        pszHostName,
+        pszDomainName,
+        pszUserName,
+        pszPassword,
+        &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetObjectAttribute(
+        pConnection->pLd,
+        pszDomainName,
+        "",
+        "*",
+        ATTR_MAX_SERVER_ID,
+        LDAP_SCOPE_BASE,
+        &ppszMaxServerID,
+        &dwNum);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwNum != 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwMaxServerID = (DWORD)VmDirStringToLA(ppszMaxServerID[0], NULL, 10);
+    if (dwMaxServerID < 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirRegSetPreSetMaxServerId(dwMaxServerID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirConnectionClose(pConnection);
+    VmDirFreeStringArray(ppszMaxServerID, dwNum);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error (%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+/*
+ * In JoinWithPreCopedDB case, wait for partner node to pull my domain controller entry.
+ * So my replication thread can start picking up changes from partner.
+ */
+DWORD
+VmDirJoinWaitForDCEntryConverge(
+    PCSTR   pszHostName,
+    PCSTR   pszNodeDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_CONNECTION   pConnection = NULL;
+    PSTR    pszNodeDN = NULL;
+    PSTR    pszDomainDN = NULL;
+    DWORD   dwCnt = 0;
+    DWORD   dwMaxCnt = 24;
+
+
+    dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // domain controller account DN
+    dwError = VmDirAllocateStringPrintf(&pszNodeDN,
+        "%s=%s,%s,%s",
+        ATTR_CN,
+        pszNodeDCName,
+        "ou=Domain Controllers",
+        pszDomainDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectionOpenByHost(
+        pszHostName,
+        pszDomainName,
+        pszUserName,
+        pszPassword,
+        &pConnection);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0; dwCnt < dwMaxCnt; dwCnt++)
+    {
+         if (VmDirIfDNExist(pConnection->pLd, pszNodeDN))
+         {
+             break;
+         }
+
+         VmDirSleep(SLEEP_INTERVAL_IN_5_SECS * 1000);
+    }
+
+    if (dwCnt == dwMaxCnt)
+    {   // my domain controller not found in partner after 2 mins
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszNodeDN);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
+    VmDirConnectionClose(pConnection);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error (%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
 DWORD
 VmDirGetObjectAttribute(
     LDAP*   pLd,
     PCSTR   pszDomain,
-    PCSTR   pszSearchDNPrefix,
+    PCSTR   pszSearchDNPrefix,  // optional
     PCSTR   pszObjectClass,
     PCSTR   pszAttribute,
     int     scope,
@@ -4262,7 +4392,6 @@ VmDirGetObjectAttribute(
 
     if (!pLd ||
         IsNullOrEmptyString(pszDomain) ||
-        IsNullOrEmptyString(pszSearchDNPrefix) ||
         IsNullOrEmptyString(pszObjectClass) ||
         IsNullOrEmptyString(pszAttribute)
         )
@@ -4274,10 +4403,17 @@ VmDirGetObjectAttribute(
     dwError = VmDirDomainNameToDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pszSearchBase,
+    if (!IsNullOrEmptyString(pszSearchDNPrefix))
+    {
+        dwError = VmDirAllocateStringPrintf(&pszSearchBase,
                                             "%s,%s",
                                             pszSearchDNPrefix,
                                             pszDomainDN);
+    }
+    else
+    {
+        dwError = VmDirAllocateStringA(pszDomainDN, &pszSearchBase);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -4348,6 +4484,18 @@ error:
 
 /*
  * Create computer OU under default computer container - ou=computers,dc=...
+ *
+ * If pszOUContainer is "ou=v1,ou=v2,ou=v3", each container will be created recursively
+ *      First, container ou=v3,ou=computers,dc=... will be created
+ *      Then, container ou=v2,ou-v3,ou=computers,dc=... will be created
+ *      Then, container ou=v1,ou=v2,ou=v3,ou=computers,dc=... will be created
+ *      Each of these will be created only if they don't exist
+ *
+ * If pszOUContainer is "v1", new container ou=v1,ou=computers,dc=... will be created
+ *
+ * If pszOUContainer is "v1,ou=v2,ou=v3", new container ou=v1,ou=v2,ou=v3,ou=computers,dc=...
+ *      will be created only if its parent ou=v2,ou=v2,ou=computers,dc=... already exists
+ *      else, it will throw an error
  */
 DWORD
 VmDirLdapCreateComputerOUContainer(
@@ -4356,17 +4504,21 @@ VmDirLdapCreateComputerOUContainer(
     PCSTR pszOUContainer
     )
 {
-    DWORD       dwError = 0;
-    PSTR        pszDomainDN = NULL;
-    PSTR        pszOuDN = NULL;
-    PCSTR       valsOU[]    = {pszOUContainer, NULL};
-    PCSTR       valsClass[] = {OC_TOP, OC_ORGANIZATIONAL_UNIT, NULL};
-    LDAPMod     mod[]={
-                          {LDAP_MOD_ADD, ATTR_OU,           {(PSTR*)valsOU}},
-                          {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
-                      };
-    LDAPMod*    attrs[] = {&mod[0], &mod[1], NULL};
-    PSTR        pszOUPrefix = ATTR_OU "=";
+    DWORD               dwError             = 0;
+    PSTR                pszDomainDN         = NULL;
+    PSTR                pszOuDN             = NULL;
+    PCSTR               valsOU[]            = {pszOUContainer, NULL};
+    PCSTR               valsClass[]         = {OC_TOP, OC_ORGANIZATIONAL_UNIT, NULL};
+    LDAPMod             mod[]               = {
+                                                {LDAP_MOD_ADD, ATTR_OU,           {(PSTR*)valsOU}},
+                                                {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}}
+                                              };
+    LDAPMod*            attrs[]             = {&mod[0], &mod[1], NULL};
+    PSTR                pszOUPrefix         = ATTR_OU "=";
+    PVMDIR_STRING_LIST  pOUContainerList    = NULL;
+    PVMDIR_STRING_LIST  pOUValuesList       = NULL;
+    PSTR                pszTmp              = NULL;
+    int                 idx                 = 0;
 
     if (!pLd || !pszDomainName || !pszOUContainer)
     {
@@ -4381,7 +4533,6 @@ VmDirLdapCreateComputerOUContainer(
     dwError = VmDirDomainNameToDN(pszDomainName, &pszDomainDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-
     // create user specified OU container under default OU=computers container.
     if (VmDirStringNCompareA(pszOUContainer, pszOUPrefix,
                              VmDirStringLenA(pszOUPrefix), FALSE) != 0)
@@ -4395,36 +4546,84 @@ VmDirLdapCreateComputerOUContainer(
                     VMDIR_COMPUTERS_RDN_VAL,
                     pszDomainDN);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        if ( VmDirIfDNExist(pLd, pszOuDN) )
+        {
+            goto cleanup;
+        }
+
+        dwError = ldap_add_ext_s(
+                     pLd,
+                     pszOuDN,
+                     attrs,
+                     NULL,
+                     NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
-        dwError = VmDirAllocateStringPrintf(
-                    &pszOuDN,
-                    "%s,%s=%s,%s",
+        dwError = VmDirDNToRDNList(
                     pszOUContainer,
-                    ATTR_OU,
-                    VMDIR_COMPUTERS_RDN_VAL,
-                    pszDomainDN);
+                    FALSE,
+                    &pOUContainerList);
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
-    if ( VmDirIfDNExist(pLd, pszOuDN) )
-    {
-        goto cleanup;
-    }
+        dwError = VmDirDNToRDNList(
+                    pszOUContainer,
+                    TRUE,
+                    &pOUValuesList);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = ldap_add_ext_s(
-                 pLd,
-                 pszOuDN,
-                 attrs,
-                 NULL,
-                 NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        for ( idx = pOUContainerList->dwCount - 1 ; idx >= 0 ; --idx )
+        {
+            if (idx == pOUContainerList->dwCount - 1)
+            {
+                dwError = VmDirAllocateStringPrintf(
+                            &pszOuDN,
+                            "%s,%s=%s,%s",
+                            pOUContainerList->pStringList[idx],
+                            ATTR_OU,
+                            VMDIR_COMPUTERS_RDN_VAL,
+                            pszDomainDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else
+            {
+                pszTmp = pszOuDN;
+
+                dwError = VmDirAllocateStringPrintf(
+                            &pszOuDN,
+                            "%s,%s",
+                            pOUContainerList->pStringList[idx],
+                            pszTmp);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                VMDIR_SAFE_FREE_STRINGA(pszTmp);
+            }
+
+            if ( VmDirIfDNExist(pLd, pszOuDN) )
+            {
+                continue;
+            }
+
+            valsOU[0] = pOUValuesList->pStringList[idx];
+
+            dwError = ldap_add_ext_s(
+                        pLd,
+                        pszOuDN,
+                        attrs,
+                        NULL,
+                        NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
 
 cleanup:
 
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszOuDN);
+    VmDirStringListFree(pOUContainerList);
+    VmDirStringListFree(pOUValuesList);
 
     return dwError;
 

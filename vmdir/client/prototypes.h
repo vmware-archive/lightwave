@@ -95,40 +95,6 @@ VmDirRpcFreeBinding(
 );
 
 DWORD
-VmDirConfigSetDCAccountInfo(
-    PCSTR pszDCAccount,
-    PCSTR pszDCAccountDN,
-    PCSTR pszDCAccountPassword,
-    DWORD dwPasswordSize,
-    PCSTR pszMachineGUID
-    );
-
-DWORD
-VmDirConfigSetDCAccountPassword(
-    PCSTR pszDCAccountPassword,
-    DWORD dwPasswordSize
-    );
-
-DWORD
-VmDirConfigSetSZKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName,
-    PCSTR pszKeyValue
-    );
-
-DWORD
-VmDirConfigSetDefaultSiteandLduGuid(
-    PCSTR pszDefaultSiteGuid,
-    PCSTR pszDefaultLduGuid
-    );
-
-DWORD
-VmDirGetRegGuid(
-    PCSTR pszKey,
-    PSTR  pszValue
-    );
-
-DWORD
 VmDirGetRegKeyTabFile(
     PSTR  pszKeyTabFile
     );
@@ -212,16 +178,6 @@ DWORD
 VmDirGetDomainName(
     PCSTR pszHostName,
     PSTR* ppszDomainName);
-
-DWORD
-VmDirGetLocalLduGuid(
-    PSTR pszLduGuid
-    );
-
-DWORD
-VmDirGetLocalSiteGuid(
-    PSTR pszSiteGuid
-    );
 
 DWORD
 VmDirGetTargetDN(
@@ -744,6 +700,22 @@ VmDirUpdateKeytabFile(
     BOOLEAN bIsServer
     );
 
+DWORD
+VmDirJoinPreSetMaxServerIdRegKey(
+    PCSTR   pszHostName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+DWORD
+VmDirJoinWaitForDCEntryConverge(
+    PCSTR   pszHostName,
+    PCSTR   pszNodeDCName,
+    PCSTR   pszDomainName,
+    PCSTR   pszUserName,
+    PCSTR   pszPassword
+    );
+
 /*
  * HA Topolgy Management APIs
  */
@@ -854,7 +826,7 @@ VmDirGetServersInfoOnSite(
     PCSTR                   pszSiteName,
     PCSTR                   pszHost,
     PCSTR                   pszDomain,
-    PCSTR*                   ppAttrsArray,
+    PCSTR*                  ppAttrsArray,
     PINTERNAL_SERVER_INFO*  ppInternalServerInfo,
     DWORD*                  pdwInfoCount
     );

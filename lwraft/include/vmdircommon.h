@@ -939,6 +939,7 @@ typedef enum
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 10
 #define VMDIR_REG_KEY_WTXN_OUTSTANDING_THRESH "WtxnOutstandingThresh"
 #define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
+#define VMDIR_REG_KEY_RAFT_USE_LOGDB          "RaftUseLogDB"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1831,7 +1832,7 @@ VmDirUPNToNameAndDomain(
 DWORD
 VmDirDNToRDNList(
     PCSTR               pszDN,
-    int                 iNotypes,
+    BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
     );
 

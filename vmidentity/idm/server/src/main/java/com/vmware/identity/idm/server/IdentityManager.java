@@ -351,6 +351,8 @@ public class IdentityManager implements IIdentityManager {
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_NAME =  "ExternalIDPUsers";
     public static final String WELLKNOWN_EXTERNALIDP_USERS_GROUP_DESCRIPTION = "Well-known external IDP users' group, which registers external IDP users as guests.";
     public static final String WELLKNOWN_CONTAINER_SERVICE_PRINCIPALS = "ServicePrincipals";
+    private static final String WELLKNOWN_STSACCOUNTS_GROUP_NAME = IdmServiceAccountMgr.STS_ACCOUNTS_GROUP_NAME;
+    private static final String WELLKNOWN_STSACCOUNTS_GROUP_DESCRIPTION = "Well-known 'STSAccounts' group which contains all STS service principals.";
 
     /**
      * A singleton IDM instance intend to be used across all other webapps.
@@ -368,6 +370,7 @@ public class IdentityManager implements IIdentityManager {
     private volatile Thread _crlCacheChecker = null;
     private static final PersonDetail EXTERNAL_USER_SAMPLE_PERSON_DETAIL = new PersonDetail.Builder().build();
     private static SsoHealthStatistics ssoHealthStatistics = new SsoHealthStatistics();
+    private IdmServiceAccountMgr accountMgr;
 
     /**
      * Performs IDM bootstrap actions and instantiates tenant cache. Along with, Starts two caching threads for refreshing tenant information CRL info
@@ -398,6 +401,11 @@ public class IdentityManager implements IIdentityManager {
                     WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION);
             ensureWellKnownGroupExists(systemTenant, WELLKNOWN_TENANT_OPERATORS_GROUP_NAME,
                     WELLKNOWN_TENANT_OPERATORS_GROUP_DESCRIPTION);
+            ensureWellKnownGroupExists(systemTenant, WELLKNOWN_STSACCOUNTS_GROUP_NAME,
+                    WELLKNOWN_STSACCOUNTS_GROUP_DESCRIPTION);
+
+            this.accountMgr = new IdmServiceAccountMgr();
+            this.accountMgr.startMonitorRenew();
 
             // Start the Tenant Cache thread
             Thread idmCacheThread = new IdmCachePeriodicChecker();
@@ -479,40 +487,40 @@ public class IdentityManager implements IIdentityManager {
             ValidateUtil.validateNotEmpty(adminAccountName, "adminAccountName");
             ValidateUtil.validateNotEmpty(adminPwd, "adminPwd");
 
-            registerTenant(tenant, adminAccountName, adminPwd);
-
             logger.info(String.format(
-                    "Adding Tenant [%s] in %s",
-                    tenant.getName(), hostname));
+                "Adding Tenant [%s] in %s",
+                tenant.getName(), hostname));
 
             // Create tenant locally
             if (hostname == null || hostname.isEmpty())
             {
                 Directory.createInstance(
-                        tenant.getName(),
-                        adminAccountName,
-                        String.valueOf(adminPwd));
+                    tenant.getName(),
+                    adminAccountName,
+                    String.valueOf(adminPwd));
             }
             else
             {
                 addTenantRemote(hostname, tenant.getName(), adminAccountName, String.valueOf(adminPwd));
             }
 
-            //Add Tenant admin to System Admins group
-            Collection<IIdentityStoreData> stores =
-                    getProviders(tenant.getName(), EnumSet.of(DomainType.SYSTEM_DOMAIN), true/*internal*/);
-            if (stores.size() != 1)
-            {
+            LdapConnectionPool.getInstance().createPool(tenant.getName());
 
-                throw new IllegalStateException("Failed to find tenant's system domain");
-            }
-            stores.iterator().next().getExtendedIdentityStoreData();
+            // add stsaccounts group to administrators
+            // important to do right after domain creation -
+            // subsequent operations depend on this
+            this.accountMgr.ensureAccountAdmin(
+                tenant.getName(),
+                adminAccountName,
+                String.valueOf(adminPwd));
+
+            registerTenant(tenant);
 
             ensureValidTenant(tenant.getName());
 
             // load tenant information to cache when adding tenant
             TenantInformation tenantInfo = loadTenant(tenant.getName());
-            assert(tenantInfo != null);
+            ValidateUtil.validateNotNull(tenantInfo, "tenantInfo");
 
             logger.info(String.format(
                     "Tenant [%s] added successfully",
@@ -2989,7 +2997,9 @@ public class IdentityManager implements IIdentityManager {
         ServerUtils.validateNotEmptyUsername(idsData.getExtendedIdentityStoreData().getUserName());
         ValidateUtil.validateNotNull(idsData.getExtendedIdentityStoreData().getPassword(), "pwd");
 
-        IIdentityProvider provider = providerFactory.buildProvider(tenantName, idsData, idsData.getExtendedIdentityStoreData().getCertificates());
+        IIdentityProvider provider = providerFactory.buildProvider(
+            tenantName, idsData, idsData.getExtendedIdentityStoreData().getCertificates(),
+            this.accountMgr);
         if (!(provider instanceof BaseLdapProvider))
             throw new IllegalArgumentException(String.format("Supported provider type is %s, %s provider is not of supported type.", BaseLdapProvider.class.toString(),
                     provider.getClass().toString()));
@@ -7086,7 +7096,8 @@ public class IdentityManager implements IIdentityManager {
         {
             for (IIdentityStoreData store : stores)
             {
-                IIdentityProvider provider = providerFactory.buildProvider(tenantName, store, trustedCertificatesSet);
+                IIdentityProvider provider = providerFactory.buildProvider(
+                    tenantName, store, trustedCertificatesSet, this.accountMgr);
 
                 if ( ( adProvider == null ) &&
                         ( store.getExtendedIdentityStoreData() != null ) &&
@@ -7274,21 +7285,6 @@ public class IdentityManager implements IIdentityManager {
         return idsStores;
     }
 
-    protected
-    ILdapConnectionEx
-    getSystemDomainConnection() throws Exception
-    {
-        IdmServerConfig settings = IdmServerConfig.getInstance();
-
-        Collection<URI> uris = settings.getSystemDomainConnectionInfo();
-
-        return ServerUtils.getLdapConnectionByURIs(uris,
-                settings.getSystemDomainUserName(),
-                settings.getSystemDomainPassword(),
-                settings.getSystemDomainAuthenticationType(),
-                false);
-    }
-
     private String registerServiceProviderAsTenant() throws Exception
     {
         IdmServerConfig settings = IdmServerConfig.getInstance();
@@ -7312,20 +7308,7 @@ public class IdentityManager implements IIdentityManager {
                 try
                 {
                     // Create a tenant with credentials
-                    String adminUsername = settings.getDirectoryConfigStoreUserName();
-                    String adminPassword = settings.getDirectoryConfigStorePassword();
-                    registerTenant(spTenant, adminUsername, adminPassword.toCharArray());
-                    // Change default password to administrator's password
-
-                    ServerIdentityStoreData systemStoreData =
-                        getSystemDomainIdentityStoreData(spDomain);
-
-                    systemStoreData.setUserName(settings.getDirectoryConfigStoreUserName());
-                    systemStoreData.setPassword(
-                            settings.getDirectoryConfigStorePassword());
-                    systemStoreData.setAuthenticationType(settings.getDirectoryConfigStoreAuthType());
-
-                    _configStore.setProvider(spDomain, systemStoreData);
+                    registerTenant(spTenant);
 
                     _configStore.setSystemTenant(spDomain);
 
@@ -7476,7 +7459,7 @@ public class IdentityManager implements IIdentityManager {
                         CONFIG_IDENTITY_ROOT_KEY,
                         IS_LIGHTWAVE_KEY,
                         true);
-            	if(isLightwave != 0 ) {
+            	if(isLightwave!= null && isLightwave.intValue() != 0 ) {
                     logger.info("Configuring branding name for Lightwave instance");
                     _configStore.setBrandName(tenantName, "Lightwave Authentication Service");
                 }
@@ -7659,9 +7642,9 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
-    private void registerTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception
+    private void registerTenant(Tenant tenant) throws Exception
     {
-        _configStore.addTenant(tenant, adminAccountName, adminPwd);
+        _configStore.addTenant(tenant);
 
         _configStore.setTenantAttributes(
                 tenant.getName(),
@@ -7676,37 +7659,6 @@ public class IdentityManager implements IIdentityManager {
     private void unregisterTenant(String name) throws Exception
     {
         _configStore.deleteTenant(name);
-    }
-
-    private void createTenantDomain(String tenantName) throws Exception
-    {
-        Collection<IIdentityStoreData> stores =
-                getProviders(
-                        tenantName,
-                        EnumSet.of(DomainType.SYSTEM_DOMAIN),
-                        true /* get internal info */);
-
-        if (stores.size() != 1)
-        {
-            throw new IllegalStateException(
-                    "Failed to find tenant's system domain");
-        }
-
-        IIdentityStoreDataEx details =
-                stores.iterator().next().getExtendedIdentityStoreData();
-
-        String upn = details.getUserName();
-        if (upn == null || upn.isEmpty())
-        {
-            throw new IllegalStateException(
-                    "Invalid system domain administrator name");
-        }
-
-        PrincipalId id = ServerUtils.getPrincipalId(upn);
-        Directory.createInstance(
-                tenantName,
-                id.getName(),
-                details.getPassword());
     }
 
     private
@@ -12590,5 +12542,17 @@ public class IdentityManager implements IIdentityManager {
             }
         }
         return idmInstance;
+    }
+
+    public void notifyAppStopping() throws IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", null, "notifyAppStopping")) {
+            try {
+                // future - we should make sure to handle all backgroupd threads
+                this.accountMgr.stopMonitorRenew();
+            } catch(Exception ex) {
+                logger.error("notifyAppStopping failed", ex);
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
     }
 }

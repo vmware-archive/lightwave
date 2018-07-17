@@ -66,3 +66,8 @@ the buffer size will always be adequate.
 #define VMAFD_SPNEGO_OID_LENGTH 6
 #define VMAFD_SPNEGO_OID "\x2b\x06\x01\x05\x05\x02"
 #endif
+
+#define VMAFD_DEFAULT_SERVER "localhost"
+#define VMAFD_OIDC_PORT 443
+
+#define VMAFD_OIDC_VMDIR_SCOPE "openid rs_vmdir"

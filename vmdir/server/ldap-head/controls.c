@@ -76,6 +76,21 @@ _ParseStatePingControlVal(
     VDIR_LDAP_RESULT*               lr              // Output
     );
 
+static
+int
+_ParseDbCopyControlVal(
+    VDIR_OPERATION*                 op,
+    BerValue*                       pControlValue,  // Input: control value encoded as ber
+    VDIR_DB_COPY_CONTROL_VALUE*     pDbCopyCtrlVal, // Output
+    VDIR_LDAP_RESULT*               lr              // Output
+    );
+
+static
+DWORD
+_VmDirCheckDbCopyCtrlAccess(
+    PVDIR_OPERATION pOperation
+    );
+
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -291,7 +306,18 @@ ParseRequestControls(
 
                 op->statePingCtrl = *control;
             }
+            if (VmDirStringCompareA((*control)->type, LDAP_DB_COPY_CONTROL, TRUE) == 0)
+            {
+                retVal = _ParseDbCopyControlVal(
+                        op, &lberBervCtlValue, &((*control)->value.dbCopyCtrlVal), lr);
 
+                BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                        retVal,
+                        pszLocalErrorMsg,
+                        "ParseRequestControls: _ParseDbCopyControlVal failed.");
+
+                op->dbCopyCtrl = *control;
+            }
             if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -351,8 +377,7 @@ DeleteControls(
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION pOp,
-    DWORD           dwSentEntryCount,
-    BOOLEAN         bLowestPendingUncommittedUsn
+    DWORD           dwSentEntryCount
     )
 {
     BOOLEAN   bConsumingPartner = FALSE;
@@ -381,8 +406,7 @@ VmDirUpdateSyncDoneCtl(
 
         if ((pOp->request.searchReq.sizeLimit > 0 &&
              pOp->request.searchReq.sizeLimit == dwSentEntryCount) ||
-             bConsumingPartner ||
-             bLowestPendingUncommittedUsn)
+             bConsumingPartner)
         {
             pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
         }
@@ -1067,7 +1091,8 @@ ParseSyncRequestControlVal(
     }
 
     backendCtx.pBE = VmDirBackendSelect("");
-    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN(&backendCtx, FALSE) - 1;
+
+    maxPartnerVisibleUSN = VmDirGetMaxCommittedUSN()+1;
 
     if (syncReqCtrlVal->intLastLocalUsnProcessed > maxPartnerVisibleUSN)
     {
@@ -1477,6 +1502,71 @@ error:
     goto cleanup;
 }
 
+static
+int
+_ParseDbCopyControlVal(
+    VDIR_OPERATION *                pOp,
+    BerValue *                      controlValue,   // Input: control value encoded as ber
+    VDIR_DB_COPY_CONTROL_VALUE *    dbCopyCtrlVal,  // Output
+    VDIR_LDAP_RESULT *              lr              // Output
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    BerElementBuffer    berbuf = {0};
+    BerElement *        ber = (BerElement *)&berbuf;
+    PSTR                pszLocalErrorMsg = NULL;
+    ber_int_t           localFd = 0;
+    ber_int_t           localBlock = 0;
+    BerValue            localPath = {0};
+
+    retVal = _VmDirCheckDbCopyCtrlAccess(pOp);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    ber_init2( ber, controlValue, LBER_USE_DER );
+
+    if (ber_scanf(ber, "{mii}", &localPath, &localBlock, &localFd) == LBER_ERROR)
+    {
+        lr->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Error in reading db copy control value");
+    }
+
+    if ((localFd != -1 && localPath.bv_len != 0) ||
+        (localFd == -1 && localPath.bv_len == 0) ||
+        (localFd != -1 && localFd != pOp->conn->ConnCtrlResource.dbCopyCtrlFd))
+    {
+        lr->errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Invalid parameters");
+    }
+
+    if (localFd == -1 && localPath.bv_val)
+    {
+        retVal = VmDirAllocateStringA(localPath.bv_val, &(dbCopyCtrlVal->pszPath));
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+    else
+    {
+        dbCopyCtrlVal->pszPath = NULL;
+    }
+
+    dbCopyCtrlVal->dwBlockSize = localBlock;
+    dbCopyCtrlVal->fd = localFd;
+
+    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Got control DB COPY %s %d %d", dbCopyCtrlVal->pszPath,
+                     dbCopyCtrlVal->dwBlockSize, dbCopyCtrlVal->fd );
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return retVal;
+
+error:
+    VMDIR_APPEND_ERROR_MSG(lr->pszErrMsg, pszLocalErrorMsg);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, retVal);
+    goto cleanup;
+}
+
+
 int
 VmDirCreateDigestControlContent(
     PCSTR           pszDigest,
@@ -1490,14 +1580,12 @@ VmDirCreateDigestControlContent(
 
     if (!pszDigest || !pDigestCtrl)
     {
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if ((pBer = ber_alloc()) == NULL)
     {
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_MEMORY);
     }
 
     localBV.bv_val = (char*)pszDigest;
@@ -1505,13 +1593,7 @@ VmDirCreateDigestControlContent(
 
     if (ber_printf(pBer, "{O}", &localBV) == -1)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: ber_printf failed.",
-                __FUNCTION__);
-
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
     }
 
     memset(pDigestCtrl, 0, sizeof(LDAPControl));
@@ -1520,8 +1602,7 @@ VmDirCreateDigestControlContent(
 
     if (ber_flatten2(pBer, &pDigestCtrl->ldctl_value, 1))
     {
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
     }
 
 cleanup:
@@ -1532,7 +1613,7 @@ cleanup:
     }
     return retVal;
 
-ldaperror:
+error:
     VmDirFreeCtrlContent(pDigestCtrl);
     goto cleanup;
 }
@@ -1713,5 +1794,94 @@ ldaperror:
             retVal);
 
     VmDirFreeCtrlContent(pPingCtrl);
+    goto cleanup;
+}
+
+int
+VmDirWriteDbCopyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    )
+{
+    int         retVal = 0;
+    BerValue    lberCtrlBVIn = {0};
+    BerValue    lberCtrlBVOut = {0};
+
+    if (!pOp || !pBer)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (pOp->dbCopyCtrl)
+    {
+        lberCtrlBVIn.bv_val = pOp->dbCopyCtrl->value.dbCopyCtrlVal.pszData;
+        lberCtrlBVIn.bv_len = pOp->dbCopyCtrl->value.dbCopyCtrlVal.dwDataLen;
+
+        retVal = VmDirCreateDBCopyReplyControlContent(pOp->dbCopyCtrl->value.dbCopyCtrlVal.fd,
+                                                    &lberCtrlBVIn,
+                                                    &lberCtrlBVOut);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, LDAP_DB_COPY_CONTROL, &lberCtrlBVOut ) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+        }
+    }
+
+cleanup:
+
+    VMDIR_SAFE_FREE_MEMORY(lberCtrlBVOut.bv_val);
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirCheckDbCopyCtrlAccess(
+    PVDIR_OPERATION pOperation
+    )
+{
+    DWORD                         dwError     = 0;
+    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
+    ACCESS_MASK                   samGranted  = 0;
+
+    if (!pOperation)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (!gVmdirdSDGlobals.pSDdcAdminGX)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    /*Convert relative SD to absolute*/
+    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+                            &pSecDescAbs,
+                            gVmdirdSDGlobals.pSDdcAdminGX);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /*Check access rights*/
+    dwError = VmDirSrvAccessCheckEntry(
+                            pOperation->conn->AccessInfo.pAccessToken,
+                            pSecDescAbs,
+                            VMDIR_ENTRY_GENERIC_EXECUTE,
+                            &samGranted);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (samGranted != VMDIR_ENTRY_GENERIC_EXECUTE)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    }
+
+cleanup:
+    VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "error %d, access granted: %d", dwError, samGranted);
     goto cleanup;
 }

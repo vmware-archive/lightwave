@@ -25,7 +25,7 @@ vmdnsd_CPPFLAGS = \
     -I$(top_srcdir)/vmdns/server/include \
     -I$(top_srcdir)/vmdns/server/service \
     -I$(top_srcdir)/vmdir/include/public \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 

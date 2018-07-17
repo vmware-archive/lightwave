@@ -19,6 +19,7 @@ import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
 
+import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,9 +36,11 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private boolean isLightwave = false;
     private boolean initialized = false;
     private boolean setReverseProxy = false;
+    private final VmIdentityParams params;
 
-    public IdentityManagerInstaller(boolean setReverseProxy, boolean isUpgrade) {
-        if (!isUpgrade) {
+    public IdentityManagerInstaller(boolean setReverseProxy, VmIdentityParams installParams) {
+        this.params = installParams;
+        if (!this.params.isUpgradeMode()) {
             this.setReverseProxy = setReverseProxy;
         }
     }
@@ -64,16 +67,24 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
     @Override
     public void upgrade() {
-        if (isHostnameFilePresent()) {
+        String hostname = null;
+        try {
+            hostname = HostnameReader.readHostNameFromRegistry();
+        } catch (Exception e) {
+            log.warn("Failed to read hostname registry.", e);
+        }
+        // set hostname registry with hostname file only if it is not set
+        // for backward compatibility
+        if (StringUtils.isEmpty(hostname) && isHostnameFilePresent()) {
             try {
                 this.hostnameURL = readHostnameFromFile();
+            } catch (Exception ex) {
+                log.warn("Falied to read hostname file.", ex);
+            }
+            try {
                 if (this.hostnameURL == null) {
                     initialize();
                 }
-            } catch (Exception ex) {
-              this.hostnameURL = VmAfClientUtil.getHostnameURL();
-            }
-            try {
                 writeHostinfo();
                 removeHostnameFile();
             } catch (Exception ex){
@@ -102,9 +113,10 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
     private void initialize() {
         if (!initialized) {
-            String hostnameURL = VmAfClientUtil.getHostnameURL();
-
-            this.hostnameURL = hostnameURL;
+            this.hostnameURL = this.params.getEndpoint();
+            if (StringUtils.isEmpty(this.hostnameURL)) {
+                this.hostnameURL = VmAfClientUtil.getHostnameURL();
+            }
 
             try {
                 this.isLightwave = ReleaseUtil.isLightwave();

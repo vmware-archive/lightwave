@@ -24,7 +24,9 @@
  *    using VmDirMDBIndexOpen()
  */
 DWORD
-MDBInitConfig()
+MDBInitConfig(
+    PVDIR_MDB_DB pDB
+    )
 {
     DWORD   dwError = 0;
 
@@ -32,22 +34,22 @@ MDBInitConfig()
 
    // Initialize entry database
    dwError = VmDirAllocateMemory( sizeof(VDIR_CFG_MDB_DATAFILE_DESC) * 1,
-                                  (PVOID)&gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles);
+                                  (PVOID)&pDB->mdbEntryDB.pMdbDataFiles);
    BAIL_ON_VMDIR_ERROR(dwError);
 
-   gVdirMdbGlobals.mdbEntryDB.usNumDataFiles = 1;
+   pDB->mdbEntryDB.usNumDataFiles = 1;
 
-   gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].bIsUnique = TRUE;
+   pDB->mdbEntryDB.pMdbDataFiles[0].bIsUnique = TRUE;
 
    dwError = VmDirAllocateStringA( VMDIR_ENTRY_DB,
-                                   &gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBName);
+                                   &pDB->mdbEntryDB.pMdbDataFiles[0].pszDBName);
    BAIL_ON_VMDIR_ERROR(dwError);
 
    dwError = VmDirAllocateStringA( VMDIR_DB_FILE_NAME,
-                                   &gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].pszDBFile);
+                                   &pDB->mdbEntryDB.pMdbDataFiles[0].pszDBFile);
    BAIL_ON_VMDIR_ERROR(dwError);
 
-   gVdirMdbGlobals.mdbEntryDB.btKeyCmpFcn = NULL;
+   pDB->mdbEntryDB.btKeyCmpFcn = NULL;
 
    VmDirLog( LDAP_DEBUG_TRACE, "InitMdbConfig: End" );
 
@@ -62,15 +64,17 @@ error:
 
 DWORD
 VmDirMDBConfigureFsync(
+    PVDIR_DB_HANDLE hDB,
     BOOLEAN bFsyncOn
     )
 {
     DWORD   dwError = 0;
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)hDB;
 
-    dwError = mdb_env_set_flags(gVdirMdbGlobals.mdbEnv, MDB_NOSYNC, !bFsyncOn);
+    dwError = mdb_env_set_flags(pDB->mdbEnv, MDB_NOSYNC, !bFsyncOn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_env_sync(gVdirMdbGlobals.mdbEnv, 1);
+    dwError = mdb_env_sync(pDB->mdbEnv, 1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:

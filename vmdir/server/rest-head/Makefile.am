@@ -21,6 +21,8 @@ librest_head_la_SOURCES += \
     operation.c \
     param.c \
     resource.c \
+    certsapi.c \
+    passwordapi.c \
     result.c \
     utils.c
 
@@ -35,12 +37,15 @@ librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @COPENAPI_INCLUDES@ \
     @CRESTENGINE_INCLUDES@
+
+librest_head_la_LIBADD = \
+    $(top_builddir)/vmdir/server/api/libvmdirserverapi.la
 
 librest_head_la_LDFLAGS = \
     -static

@@ -16,9 +16,12 @@ package com.vmware.identity.sts.ws;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 
+import com.vmware.certificate.VMCAException;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.heartbeat.VmAfdHeartbeat;
+import com.vmware.certificate.VMCAAdapter2;
+import com.vmware.identity.idm.server.IdentityManager;
 
 public class StsApplicationListener implements ServletContextListener {
     private static final int port = 443;
@@ -32,6 +35,9 @@ public class StsApplicationListener implements ServletContextListener {
         try {
             heartbeat.startBeating();
             log.info("Heartbeat started");
+            VMCAAdapter2.VMCAInitOpenSSL();
+        } catch (VMCAException e) {
+            log.error("Failed to init VMCA SSL library", e);
         } catch (Exception e) {
             log.error("Failed to start heartbeat", e);
             throw new IllegalStateException(e);
@@ -43,6 +49,12 @@ public class StsApplicationListener implements ServletContextListener {
         try {
             heartbeat.stopBeating();
             log.info("Heartbeat stopped");
+            IdentityManager.getIdmInstance().notifyAppStopping();
+            log.info("Idm notified of app stop");
+            VMCAAdapter2.VMCACleanupOpenSSL();
+            log.info("VMCA cleaned up");
+        } catch (VMCAException e) {
+            log.error("Failed to cleanup VMCA SSL library", e);
         } catch (Exception e) {
             log.error("Failed to stop heartbeat", e);
         }

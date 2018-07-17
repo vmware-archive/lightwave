@@ -34,6 +34,10 @@ extern "C" {
 
 extern VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs;
 
+#define LOCAL_PARTNER_DIR           "partner"
+#define VMDIR_MDB_DATA_FILE_NAME    "data.mdb"
+#define VMDIR_SWAP_DB_SUFFIX        "swap"
+
 ///////////////////////////////////////////////////////////////////////////////
 // replication library initialize / shutdown
 ///////////////////////////////////////////////////////////////////////////////
@@ -212,6 +216,14 @@ DWORD
 VmDirDDVectorToString(
     PCSTR   pszInvocationId,
     PSTR*   ppDeadlockDetectionVectorStr
+    );
+
+
+DWORD
+VmDirUTDVectorLookup(
+    PLW_HASHMAP pUtdVectorMap,
+    PCSTR   pszInvocationId,
+    USN*    pUsn
     );
 
 #ifdef __cplusplus

@@ -10,7 +10,7 @@ targets:
     watches:
       - support/toolchain/docker/photon1
     build: support/toolchain/docker/photon1
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
     cache: false
 
   rebuild-toolchain-photon2:
@@ -33,7 +33,7 @@ targets:
       - '**/**/*.ac'
     cmds:
       - ./support/scripts/bootstrap.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   bootstrap-lightwave-photon2:
     description: Bootstraps build
@@ -58,7 +58,7 @@ targets:
       - '**/**/*.java'
     cmds:
       - ./support/scripts/build.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   build-lightwave-photon2:
     description: build Lightwave source code for linux
@@ -77,12 +77,17 @@ targets:
   build-[osver:photon1,photon2]:
     description: build source code
     after:
-      - 'build-*-$[osver]'
+      - 'build-lightwave-$[osver]'
 
   build:
     description: build source code
     after:
-      - 'build-*-photon2'
+      - 'build-lightwave-*-photon2'
+
+  build-ui-photon2:
+    cmds:
+      - ./support/scripts/build-ui.sh
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
 
   pack-photon1:
     description: Create RPM Package
@@ -90,7 +95,7 @@ targets:
       - build-photon1
     cmds:
       - ./support/scripts/pack.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   pack-photon2:
     description: Create RPM Package
@@ -120,14 +125,14 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon1 server
     always: true
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   docker-lightwave-client-pre-photon1:
     description: Prepare for container build
     cmds:
       - ./support/scripts/prep-container-build.sh photon1 client
     always: true
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   docker-lightwave-pre-photon2:
     description: Prepare for container build
@@ -149,6 +154,8 @@ targets:
     after:
       - docker-lightwave-pre-photon1
     image: 'vmware/lightwave-sts'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-client-photon1:
     description: build lightwave docker image
@@ -156,6 +163,8 @@ targets:
     after:
       - docker-lightwave-client-pre-photon1
     image: 'vmware/lightwave-client'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-photon2:
     description: build lightwave docker image
@@ -163,6 +172,8 @@ targets:
     after:
       - docker-lightwave-pre-photon2
     image: 'vmware/lightwave-sts-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
 
   docker-lightwave-client-photon2:
     description: build lightwave client docker image
@@ -170,13 +181,53 @@ targets:
     after:
       - docker-lightwave-client-pre-photon2
     image: 'vmware/lightwave-client-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
+
+  docker-lightwave-ui-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2 ui
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  docker-lightwave-ui-photon2:
+    description: build lightwave UI docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-ui-pre-photon2
+    image: 'vmware/lightwave-ui-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
+
+  # deploy a server and client node,
+  # promote the server, join the client
+  deploy_test_env:
+    description: start test environment
+    after:
+      - pack
+    compose: support/tests/lightwave
+
+  # run tests. use the test env from deploy_test_env
+  # note that network name and
+  # image name are prefixed after the
+  # docker compose directory
+  test:
+    description: run tests
+    after:
+      - deploy_test_env
+    always: true
+    image: lightwave_lightwave-client
+    net: lightwave_lightwave
+    cmds:
+      - bash -x support/tests/run_hmake_sanity.sh
 
   clean-photon1:
     description: Cleanup
     always: true
     cmds:
       - ./support/scripts/clean.sh
-    image: 'vmware/lightwave-toolchain:2.0.3'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   clean-photon2:
     description: Cleanup
@@ -209,7 +260,7 @@ commands:
       - PROJECT_ROOT=$(pwd)
       - cd $PROJECT_ROOT/vmidentity
       - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-    image: 'vmware/lightwave-toolchain:2.0.1'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there
@@ -219,7 +270,7 @@ commands:
     always: true
     cmds:
       - './support/scripts/test-vmidentity.sh $@'
-    image: 'vmware/lightwave-toolchain:2.0.1'
+    image: 'vmware/lightwave-toolchain-photon:2.0.3'
 
   # if your lw server setup includes fqdn which is not normally resolvable
   # make sure to create .hmakerc and define docker:hosts settings there

@@ -35,7 +35,7 @@ libldap_head_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/vmdir/server/include \
-    -I$(top_srcdir)/vmmetrics/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmafd/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@

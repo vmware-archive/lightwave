@@ -24,3 +24,9 @@ LightwaveDns(
     int argc,
     char* argv[]
     );
+
+int
+LightwaveCa(
+    int argc,
+    char* argv[]
+    );

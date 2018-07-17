@@ -114,6 +114,19 @@ if [ ! $unitTestsCurrentRet -eq 0 ]; then
     unitTestsRetVal=1
 fi
 
+unitTestsCurrentRet=0
+cd "$PROJECT_ROOT/vmidentity/websso"
+printf "\n=============================================\n"
+printf "\n=    Unit tests vmidentity/websso              =\n"
+printf "\n=============================================\n"
+echo mvn test -DskipIntegrationTests=true -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+mvn test -DskipIntegrationTests=true -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+unitTestsCurrentRet=$?
+if [ ! $unitTestsCurrentRet -eq 0 ]; then
+    echo "Error: unit tests in vmidentity/websso"
+    unitTestsRetVal=1
+fi
+
 # Integration tests
 oidcClientRetVal=0
 restClientRetVal=0

@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -84,29 +84,85 @@ typedef struct _VMCA_DIR_SYNC_PARAMS
 
 } VMCA_DIR_SYNC_PARAMS, *PVMCA_DIR_SYNC_PARAMS;
 
+/* VMCA Policy */
+
+typedef enum _VMCA_POLICY_TYPE
+{
+    VMCA_POLICY_TYPE_UNDEFINED = 0,
+    VMCA_POLICY_TYPE_SN
+} VMCA_POLICY_TYPE, *PVMCA_POLICY_TYPE;
+
+// SN Policy Objects
+
+typedef struct _VMCA_SNPOLICY_OPERATION
+{
+    PSTR            pszData;
+    PSTR            pszWith;
+} VMCA_SNPOLICY_OPERATION, *PVMCA_SNPOLICY_OPERATION;
+
+typedef struct _VMCA_SNPOLICY
+{
+    BOOLEAN                         bEnabled;
+    DWORD                           dwMatchLen;
+    PVMCA_SNPOLICY_OPERATION        *ppMatch;
+    DWORD                           dwValidateLen;
+    PVMCA_SNPOLICY_OPERATION        *ppValidate;
+} VMCA_SNPOLICY, *PVMCA_SNPOLICY;
+
+// High Level Policy Objects
+
+typedef union _VMCA_POLICY_RULES
+{
+    VMCA_SNPOLICY       SN;
+} VMCA_POLICY_RULES, *PVMCA_POLICY_RULES;
+
+typedef struct _VMCA_POLICY
+{
+    VMCA_POLICY_TYPE            type;
+    VMCA_POLICY_RULES           Rules;
+} VMCA_POLICY, *PVMCA_POLICY;
+
+typedef DWORD (*VMCA_POLICY_LOAD_FUNC) (
+    json_t*                 pJsonPolicy;
+    PVMCA_POLICY*           ppPolicy;
+    );
+
+typedef VOID (*VMCA_POLICY_FREE_FUNC) (
+    PVMCA_POLICY_RULES      pPolicyRules;
+    );
+
+typedef struct _VMCA_POLICY_METHODS
+{
+    VMCA_POLICY_TYPE            type;
+    VMCA_POLICY_LOAD_FUNC       pfnLoad;
+    VMCA_POLICY_FREE_FUNC       pfnFree;
+} VMCA_POLICY_METHODS;
+
 typedef struct _VMCA_SERVER_GLOBALS
 {
-    pthread_mutex_t    mutex;
-    pthread_mutex_t    mutexCRL;
-    DWORD              dwCurrentCRLNumber;
+    pthread_mutex_t                 mutex;
+    pthread_mutex_t                 mutexCRL;
+    DWORD                           dwCurrentCRLNumber;
 
-    pthread_rwlock_t   svcMutex;
+    pthread_rwlock_t                svcMutex;
 
-    FILE* fVMCALog;
+    FILE*                           fVMCALog;
 
     // Security descriptor for VMCA-Service resources.
-  //  PSECURITY_DESCRIPTOR_ABSOLUTE gpVMCAServSD;
+    // PSECURITY_DESCRIPTOR_ABSOLUTE   gpVMCAServSD;
 
-    dcethread*          pRPCServerThread;
-    VMCA_SERVER_STATE    vmcadState;
+    dcethread*                      pRPCServerThread;
+    VMCA_SERVER_STATE               vmcadState;
 
-    PVMCA_X509_CA       pCA;
-    VMCA_FUNC_LEVEL     dwFuncLevel;
+    PVMCA_X509_CA                   pCA;
+    VMCA_FUNC_LEVEL                 dwFuncLevel;
 
-    PVMCA_DIR_SYNC_PARAMS pDirSyncParams;
-    PVMCA_THREAD          pDirSyncThr;
+    PVMCA_DIR_SYNC_PARAMS           pDirSyncParams;
+    PVMCA_THREAD                    pDirSyncThr;
 
-    HANDLE              gpEventLog;
+    HANDLE                          gpEventLog;
+
+    PVMCA_POLICY                    *gppPolicies;
 
 } VMCA_SERVER_GLOBALS, *PVMCA_SERVER_GLOBALS;
 

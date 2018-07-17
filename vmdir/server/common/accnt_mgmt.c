@@ -136,10 +136,7 @@ VmDirSrvGetConnectionObj(
     dwError = VmDirUPNToDN(pszUPN, &pszBindDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(
-                          sizeof(VDIR_CONNECTION),
-                          (PVOID*)&pConnection
-                          );
+    dwError = VmDirAllocateConnection(&pConnection);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirExternalOperationCreate(
@@ -168,12 +165,13 @@ cleanup:
       VmDirFreeOperation(pRpcSrvBindOp);
     }
     return dwError;
+
 error:
     if (ppConnection)
     {
         *ppConnection = NULL;
     }
-    VMDIR_SAFE_FREE_MEMORY(pConnection);
+    VmDirDeleteConnection(&pConnection);
     goto cleanup;
 }
 
@@ -247,7 +245,7 @@ VmDirSrvCreateComputerOUContainer(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-
+    VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszOuDN);
 
@@ -566,7 +564,6 @@ VmDirSrvSetupServiceAccount(
     char* modv_upn[] = {(PSTR)NULL, NULL};
     char* modv_passwd[] = {(PSTR)NULL, NULL};
     BerValue    bvPasswd = {0};
-//    BerValue*   pbvPasswd[2] = { NULL, NULL};
 
     LDAPMod modObjectClass = {0};
     LDAPMod modCn = {0};
@@ -839,10 +836,9 @@ VmDirSrvGetComputerAccountInfo(
     PSTR pszMachineGUID = NULL;
     PSTR pszSiteName = NULL;
 
-    if (!ppszComputerDN || !ppszMachineGUID || !ppszSiteName)
+    if (!pConnection || !ppszComputerDN || !ppszMachineGUID || !ppszSiteName)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = _VmDirSrvGetComputerAccountDN(

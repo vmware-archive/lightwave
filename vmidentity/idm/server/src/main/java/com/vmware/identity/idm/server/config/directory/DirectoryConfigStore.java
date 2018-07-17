@@ -156,7 +156,7 @@ public class DirectoryConfigStore implements IConfigStore {
   }
 
   @Override
-  public void addTenant(Tenant tenant, String adminAccountName, char[] adminPwd) throws Exception {
+  public void addTenant(Tenant tenant) throws Exception {
     ValidateUtil.validateNotNull(tenant, "tenant");
     ValidateUtil.validateNotEmpty(tenant.getName(), "tenant.getName()");
 
@@ -186,9 +186,7 @@ public class DirectoryConfigStore implements IConfigStore {
       this.createSystemDomainIdentityProviderForTenant(
               connection,
               tenant.getName(),
-              tenantDn,
-              adminAccountName,
-              adminPwd
+              tenantDn
       );
     }
   }
@@ -4725,9 +4723,7 @@ public class DirectoryConfigStore implements IConfigStore {
   createSystemDomainIdentityProviderForTenant(
       ILdapConnectionEx connection,
       String tenantName,
-      String tenantsRootDn,
-      String adminAccountName,
-      char[] adminPwd
+      String tenantsRootDn
   ) throws Exception {
     IdmServerConfig settings = IdmServerConfig.getInstance();
 
@@ -4743,8 +4739,6 @@ public class DirectoryConfigStore implements IConfigStore {
     serverIdentityStoreData.setSearchTimeoutSeconds(settings.getSystemDomainSearchTimeout());
     serverIdentityStoreData.setUserBaseDn(ServerUtils.getDomainDN(systemDomainName));
     serverIdentityStoreData.setGroupBaseDn(ServerUtils.getDomainDN(systemDomainName));
-    serverIdentityStoreData.setUserName(settings.getTenantAdminUserName(tenantName, adminAccountName));
-    serverIdentityStoreData.setPassword(String.valueOf(adminPwd));
     serverIdentityStoreData.setConnectionStrings(
         ServerUtils.getConnectionStringFromUris(settings.getSystemDomainConnectionInfo())
     );

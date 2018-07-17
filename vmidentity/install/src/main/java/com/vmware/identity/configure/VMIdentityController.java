@@ -256,11 +256,11 @@ public class VMIdentityController {
         List<IPlatformComponentInstaller> components = new ArrayList<IPlatformComponentInstaller>();
         try {
             if(ReleaseUtil.isLightwave()) {
-                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                components.add(new IdentityManagerInstaller(false, standaloneParams));
                 components.add(new SecureTokenServerInstaller(standaloneParams));
                 components.add(new LightwaveUIInstaller(standaloneParams));
             } else {
-                components.add(new IdentityManagerInstaller(false, standaloneParams.isUpgradeMode()));
+                components.add(new IdentityManagerInstaller(false, standaloneParams));
                 // components.add(new LookupServiceInstaller(false));
                 components.add(new SecureTokenServerInstaller(standaloneParams));
                 }

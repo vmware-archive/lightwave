@@ -6,18 +6,22 @@ idl_srcdir=$(top_srcdir)/vmafd/idl
 libvmafdclient_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 libvmafdclient_la_SOURCES = \
     afdlocalclient.c \
+    authtoken.c \
     binding.c \
     cdcclient.c\
     cdclocalclient.c\
     client.c \
     globals.c \
     libmain.c \
+    oidctoafderror.c \
     rpc.c \
     slclient.c \
     vmafd_cstub.c \
@@ -28,6 +32,8 @@ libvmafdclient_la_SOURCES = \
 
 libvmafdclient_la_LIBADD = \
     @top_builddir@/vmafd/common/libcommon.la \
+    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \

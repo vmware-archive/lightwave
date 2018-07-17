@@ -44,6 +44,7 @@ import com.vmware.identity.idm.SolutionDetail;
 import com.vmware.identity.idm.SolutionUser;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.ServerUtils;
+import com.vmware.identity.idm.server.provider.IAccountProvider;
 import com.vmware.identity.idm.server.provider.PrincipalGroupLookupInfo;
 import com.vmware.identity.idm.server.provider.vmwdirectory.VMwareDirectoryProvider;
 
@@ -52,9 +53,12 @@ public class SystemDomainAliasedProvider extends VMwareDirectoryProvider
     private final Map<String, String> _userAliases;
     private final Map<String, String> _userAliasesBackMap;
 
-    public SystemDomainAliasedProvider(String tenantName, IIdentityStoreData store, Map<String, String> systemDomainUserAliases ) throws InvalidArgumentException
+    public SystemDomainAliasedProvider(
+        String tenantName, IIdentityStoreData store,
+        Map<String, String> systemDomainUserAliases, IAccountProvider provider )
+        throws InvalidArgumentException
     {
-        super(tenantName, store, true);
+        super(tenantName, store, true, provider);
 
         ValidateUtil.validateNotEmpty(this.getStoreDataEx().getAlias(), "Alias must not be null.");
 

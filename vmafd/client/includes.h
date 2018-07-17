@@ -27,12 +27,18 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmafderrorcode.h>
 #include <vmsuperlogging.h>
 #include <vecsclient.h>
 #include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
 
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "defines.h"
 #include "vmafd_h.h"
@@ -62,11 +68,18 @@
 
 #include <vmafdcommon.h>
 #include <vmafdclient.h>
+#include <vmafderrorcode.h>
 #include <vmsuperlogging.h>
 #include <vecsclient.h>
 #include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
+
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "defines.h"
 #include "vmafd_h.h"

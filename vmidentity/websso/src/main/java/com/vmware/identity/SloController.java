@@ -14,12 +14,16 @@
 package com.vmware.identity;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
 import java.util.Locale;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
@@ -30,6 +34,7 @@ import org.springframework.web.bind.annotation.RequestMethod;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.LogoutState;
 import com.vmware.identity.samlservice.ProcessingFilter;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
@@ -61,14 +66,36 @@ public final class SloController {
      * Handle SAML LogoutRequest/LogoutResponse
      */
     @RequestMapping(value = "/websso/SAML2/SLO/{tenant:.*}", method = RequestMethod.GET)
-    public void slo(Locale locale, @PathVariable(value = "tenant") String tenant, Model model
-        , HttpServletRequest request, HttpServletResponse response) throws IOException {
-        logger.info("Welcome to Single Logout request/response handler! " +
-                "The client locale is "+ locale.toString() + ", tenant is " + tenant);
+    public void slo(Locale locale, @PathVariable(value = "tenant") String tenant, Model model,
+            HttpServletRequest request, HttpServletResponse response)
+            throws IOException {
+        slo(locale, tenant, model, request, response, null);
+    }
 
+    void slo(Locale locale, String tenant, Model model, HttpServletRequest request, HttpServletResponse response,
+            IdmAccessorFactory idmFactory)
+            throws IOException {
+        CloseableHttpClient httpClient = null;
+        try {
+            try {
+                httpClient = SamlServiceImpl.getCloseableHttpClient();
+            } catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+                logger.error("Failed to initialize http client for sending SLO requests to participants. ", e);
+            }
+            slo(locale, tenant, model, request, response, idmFactory, httpClient);
+        } finally {
+            if (httpClient != null) {
+                httpClient.close();
+            }
+        }
+    }
+
+    void slo(Locale locale, String tenant, Model model, HttpServletRequest request, HttpServletResponse response,
+            IdmAccessorFactory idmFactory, CloseableHttpClient httpClient) throws IOException {
+        logger.info("Welcome to Single Logout request/response handler! " + "The client locale is " + locale.toString()
+        + ", tenant is " + tenant);
         LogoutState logoutState = new LogoutState(request, response
-            , sessionManager, locale, messageSource );
-
+                , sessionManager, locale, messageSource, idmFactory);
         try {
             try {
                 logoutState.parseRequestForTenant(tenant, processor);
@@ -82,9 +109,9 @@ public final class SloController {
             if (logoutState.getValidationResult().isValid()) {
                 externalAuthenticated = logoutState.checkIsExternalAuthenticated();
             }
-            if (logoutState.needLogoutRequest() &&  !externalAuthenticated) {
+            if (logoutState.needLogoutRequest() && !externalAuthenticated && httpClient != null) {
                 //send slo request to all non-initiating relying parties
-                SamlServiceImpl.sendSLORequestsToOtherParticipants(tenant, logoutState);
+                SamlServiceImpl.sendSLORequestsToOtherParticipants(tenant, logoutState, httpClient);
             }
 
             /*

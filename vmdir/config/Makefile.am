@@ -5,6 +5,7 @@ vmdirconf_DATA = \
     vmdird-syslog-ng.conf \
     saslvmdird.conf \
     vmdir-rest.json \
+    vmdir-rest-api.json \
     vmdir-telegraf.conf
 
 bin_SCRIPTS = vmdir_upgrade.sh

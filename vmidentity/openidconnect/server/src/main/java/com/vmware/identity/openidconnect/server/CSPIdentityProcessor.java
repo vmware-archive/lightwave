@@ -98,6 +98,7 @@ import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.JSONUtils;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
 
+import io.prometheus.client.Histogram.Timer;
 import net.minidev.json.JSONObject;
 
 @Controller
@@ -140,10 +141,13 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   // for unit tests
-  public CSPIdentityProcessor(CasIdmClient idmClient, SessionManager sessionManager) {
+  public CSPIdentityProcessor(
+    CasIdmClient idmClient, SessionManager sessionManager,
+    FederationAuthenticationRequestTracker authnRequestTracker) {
     this();
     this.idmClient = idmClient;
     this.sessionManager = sessionManager;
+    this.authnRequestTracker = authnRequestTracker;
   }
 
     @Override
@@ -181,33 +185,31 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     Validate.notNull(request, "http request must not be null.");
     Validate.notNull(relayState, "relay state must not be null.");
     Validate.notNull(idpConfig, "idp config must not be null.");
+
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
-    if (orgLink != null && !orgLink.isEmpty()) {
-      // check tenant name is valid
-      int index = orgLink.lastIndexOf("/") + 1;
-      String orgId = orgLink.substring(index);
-      if (StringUtils.isNotEmpty(relayState.getTenant())
-              && !StringUtils.equalsIgnoreCase(relayState.getTenant(), orgId)) {
-          ErrorObject errorObject = ErrorObject.invalidRequest("invalid tenant name");
-          throw new ServerException(errorObject);
-      }
-
-      relayState = new FederationRelayState.Builder(relayState.getIssuer(),
-              relayState.getClientId(), relayState.getRedirectURI())
-              .withTenant(orgId)
-              .withState(new State())
-              .withNonce(new Nonce())
-              .build();
-
-      validateOIDCClient(relayState);
-
-      authnRequestTracker.add(relayState.getState(), relayState);
-      return processRequestPreAuth(relayState, orgLink, idpConfig);
+    Timer authCodeTimer = MetricUtils.startRequestTimer(relayState.getTenant(), FederationTokenController.metricsResource, "getCSPAuthCode");
+    try {
+        if (orgLink != null && !orgLink.isEmpty()) {
+            validateOIDCClient(relayState);
+            authnRequestTracker.add(relayState.getState(), relayState);
+            return processRequestPreAuth(relayState, orgLink, idpConfig);
+        }
+    } finally {
+        if (authCodeTimer != null) {
+            authCodeTimer.observeDuration();
+        }
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
-    if (code != null && !code.isEmpty()) {
-      return processRequestAuth(request, relayState, code, idpConfig);
+    Timer tokenTimer = MetricUtils.startRequestTimer(relayState.getTenant(), FederationTokenController.metricsResource, "getCSPToken");
+    try {
+        if (code != null && !code.isEmpty()) {
+            return processRequestAuth(request, relayState, code, idpConfig);
+        }
+    } finally {
+        if (tokenTimer != null) {
+            tokenTimer.observeDuration();
+        }
     }
 
     throw new ServerException(ErrorObject.invalidRequest("Error: Invalid request"));
@@ -326,6 +328,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     TenantInfo tenantInfo = getTenantInfo(tenantName);
     PrincipalId user = getPrincipalId(accessToken.getUsername(), accessToken.getDomain());
     FederatedIdentityProvider federatedIdp = new FederatedIdentityProvider(tenantName, this.idmClient);
+    FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
+    FederatedIdentityProviderInfo federatedIdpInfo = null;
+
     boolean isOrgOwner = accessToken.getPermissions().contains(ROLE_CSP_ORG_OWNER);
     if (tenantInfo == null) {
       if (isOrgOwner) {
@@ -334,6 +339,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
           createTenant(partnerDC, tenantName, relayState.getIssuer());
           createOrgOwnerAccount(tenantName, federatedIdp, relayState.getIssuer(), user);
           tenantInfo = getTenantInfo(tenantName);
+          federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+
+          // JIT create groups in idp config
+          federatedIdp.provisionIDPGroups(federatedIdpInfo.getRoleGroupMappings());
       } else {
           ErrorObject errorObject = ErrorObject.invalidRequest(String.format("Tenant [%s] does not exist", tenantName));
           LoggerUtils.logFailedRequest(logger, errorObject);
@@ -346,8 +355,9 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       throw new ServerException(ErrorObject.serverError("The system domain is invalid"));
     }
 
-    FederatedIdentityProviderInfoRetriever federatedInfoRetriever = new FederatedIdentityProviderInfoRetriever(this.idmClient);
-    FederatedIdentityProviderInfo federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+    if (federatedIdpInfo == null) {
+        federatedIdpInfo = federatedInfoRetriever.retrieveInfo(tenantName, relayState.getIssuer());
+    }
 
     // validate perms in the access token against the configured perm roles in the federated idp
     federatedIdp.validateUserPermissions(accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings().keySet());

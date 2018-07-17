@@ -154,3 +154,71 @@ error:
             VMDIR_LOG_MASK_ALL, "VmDirSetThreadLogContextValue failed (%d)", dwError);
     goto cleanup;
 }
+
+VOID
+VmDirUnsetAndFreeThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx
+    )
+{
+    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
+
+    if (pThrLogCtx)
+    {
+        VmDirGetThreadLogContextValue(&pLocalLogCtx);
+        if (pLocalLogCtx)
+        {
+            if (pLocalLogCtx == pThrLogCtx)
+            {
+                VmDirSetThreadLogContextValue(NULL);
+            }
+            else
+            {
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s thrlogctx mismatch. curr ctx (%p), parm ctx (%p)",
+                    __FUNCTION__,
+                    pLocalLogCtx,
+                    pThrLogCtx);
+            }
+        }
+
+        VmDirFreeThreadLogContext(pThrLogCtx);
+    }
+}
+
+DWORD
+VmDirAllocAndSetThrLogCtx(
+    PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_THREAD_LOG_CONTEXT pCurrLogCtx = NULL;
+    PVMDIR_THREAD_LOG_CONTEXT pLocalLogCtx = NULL;
+
+    if (!ppThrLogCtx)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirGetThreadLogContextValue(&pCurrLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pCurrLogCtx)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_LOG_CONTEXT), (PVOID)&pLocalLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetThreadLogContextValue(pLocalLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppThrLogCtx = pLocalLogCtx;
+    pLocalLogCtx = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirUnsetAndFreeThrLogCtx(pLocalLogCtx);
+    goto cleanup;
+}

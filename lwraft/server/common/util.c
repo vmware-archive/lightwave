@@ -451,7 +451,8 @@ VmDirFindMemberOfAttribute(
 LDAP_REQ_SEARCH, NULL );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    searchOp.pBEIF = VmDirBackendSelect(NULL);
+    searchOp.pBEIF = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
+    assert(searchOp.pBEIF);
 
     // start txn
     dwError = searchOp.pBEIF->pfnBETxnBegin( searchOp.pBECtx, VDIR_BACKEND_TXN_READ );

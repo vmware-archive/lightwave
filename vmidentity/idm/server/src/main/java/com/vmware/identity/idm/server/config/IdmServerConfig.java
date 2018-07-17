@@ -51,9 +51,9 @@ import com.vmware.identity.interop.registry.RegistryNoSuchKeyOrValueException;
  * Time: 5:21 PM
  * To change this template use File | Settings | File Templates.
  */
-public class IdmServerConfig
+public class IdmServerConfig implements IIdmConfig
 {
-   private static final String CONFIG_ROOT_KEY =
+   public static final String CONFIG_ROOT_KEY =
          "Software\\VMware\\Identity\\Configuration";
    private static String CONFIG_DIRECTORY_ROOT_KEY;
    private static String CONFIG_DIRECTORY_PARAMETERS_KEY;

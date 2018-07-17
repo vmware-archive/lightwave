@@ -14,19 +14,31 @@
 
 package com.vmware.identity;
 
+import static com.vmware.identity.SharedUtils.bootstrap;
+import static com.vmware.identity.SharedUtils.buildMockRequestObject;
+import static com.vmware.identity.SharedUtils.buildMockRequestObjectFromUrl;
+import static com.vmware.identity.SharedUtils.buildMockResponseSuccessObject;
+import static com.vmware.identity.SharedUtils.createSamlAuthnRequest;
+import static com.vmware.identity.SharedUtils.encodeRequest;
+import static com.vmware.identity.SharedUtils.extractResponse;
+import static com.vmware.identity.SharedUtils.getDefaultTenant;
+import static com.vmware.identity.SharedUtils.getDefaultTenantEndpoint;
+import static com.vmware.identity.SharedUtils.getIdmAccessor;
+import static com.vmware.identity.SharedUtils.getMockIdmAccessorFactory;
+import static com.vmware.identity.SharedUtils.getSTSPrivateKey;
+import static com.vmware.identity.SharedUtils.getSamlRequestSignature;
+import static com.vmware.identity.SharedUtils.messageSource;
 import static org.easymock.EasyMock.createMock;
+import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 
-import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.InputStream;
+import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.net.MalformedURLException;
-import java.security.Key;
-import java.security.KeyStore;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
 import java.util.Calendar;
@@ -38,7 +50,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.joda.time.DateTime;
-import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -66,7 +77,6 @@ import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.ServerConfig;
-import com.vmware.identity.idm.client.CasIdmClient;
 import com.vmware.identity.saml.SamlTokenSpec.AuthenticationData.AuthnMethod;
 import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.SamlServiceException;
@@ -77,7 +87,6 @@ import com.vmware.identity.session.Session;
 import com.vmware.identity.session.impl.SessionManagerImpl;
 
 @SuppressWarnings("unchecked")
-@Ignore // ignored due to IDM process to library change, see PR 1780279.
 public class SsoControllerTest {
     private static final String SIGNATURE = "bogus";
     private static final String AUTH_HEADER = Shared.IWA_AUTH_RESPONSE_HEADER;
@@ -86,6 +95,7 @@ public class SsoControllerTest {
     private static SsoController controller;
     private static PrivateKey privateKey;
     private static IDiagnosticsLogger log;
+    private static final int tenantId = 0;
     private static String tenant;
     private static MessageSource messageSource;
     private static String relayStateParameter;
@@ -94,13 +104,14 @@ public class SsoControllerTest {
     @BeforeClass
     public static void setUp() throws Exception {
         log = DiagnosticsLoggerFactory.getLogger(SsoControllerTest.class);
+        Shared.bootstrap();
+        bootstrap();
 
         controller = new SsoController();
-        ResourceBundleMessageSource ms = new ResourceBundleMessageSource();
-        ms.setBasename("messages");
+        ResourceBundleMessageSource ms = messageSource();
         controller.setMessageSource(ms);
         messageSource = ms;
-        TestAuthnRequestStateAuthenticationFilter filter = new TestAuthnRequestStateAuthenticationFilter();
+        TestAuthnRequestStateAuthenticationFilter filter = new TestAuthnRequestStateAuthenticationFilter(0);
         AuthnRequestStateCookieWrapper cookieFilter = new AuthnRequestStateCookieWrapper(
                 filter);
         controller.setKerbAuthenticator(cookieFilter);
@@ -108,36 +119,16 @@ public class SsoControllerTest {
         controller.setCookieAuthenticator(cookieFilter);
         SessionManagerImpl sessionManager = new SessionManagerImpl();
         controller.setSessionManager(sessionManager);
-
-        KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
-        InputStream is = new FileInputStream(SsoControllerTest.class
-                .getResource("/sts-store.jks").getFile());
-        char[] stsKeystorePassword = "ca$hc0w".toCharArray();
-        ks.load(is, stsKeystorePassword);
-
-        String stsAlias = "stskey";
-        Key key = ks.getKey(stsAlias, stsKeystorePassword);
-
-        privateKey = (PrivateKey) key;
-        Shared.bootstrap();
-        SharedUtils.bootstrap(false); // use real data
-        tenant = ServerConfig.getTenant(0);
+        tenant = ServerConfig.getTenant(tenantId);
+        privateKey = getSTSPrivateKey();
 
         relayStateParameter = Shared.encodeString(TestConstants.RELAY_STATE);
         sigAlgParameter = TestConstants.SIGNATURE_ALGORITHM;
     }
 
-    @AfterClass
-    public static void cleanUp() throws Exception {
-        SharedUtils.cleanupTenant();
-    }
-
     @Test
     public void testSsoNoAuth() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42",tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
@@ -159,18 +150,30 @@ public class SsoControllerTest {
     }
 
     private void assertSso(Model model, HttpServletRequest request,
-            HttpServletResponse response) throws IOException {
-        controller.sso(Locale.US, tenant, model, request, response);
+            HttpServletResponse response) throws Exception {
+        assertSso(model, request, response, 0, false);
+    }
+
+    private void assertSso(Model model, HttpServletRequest request,
+            HttpServletResponse response, boolean requestSigned) throws Exception {
+        assertSso(model, request, response, 0, requestSigned);
+    }
+
+    private void assertSso(Model model, HttpServletRequest request,
+            HttpServletResponse response, int rpId) throws Exception {
+        assertSso(model, request, response, rpId, false);
+    }
+
+    private void assertSso(Model model, HttpServletRequest request, HttpServletResponse response, int rpId,
+            boolean requestSigned) throws Exception {
+        controller.sso(Locale.US, tenant, model, request, response, getMockIdmAccessorFactory(tenantId, rpId, requestSigned));
         assertEquals(tenant, model.asMap().get("tenant"));
         assertNull(model.asMap().get("serverTime"));
     }
 
     @Test
     public void testSso() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
@@ -203,47 +206,8 @@ public class SsoControllerTest {
     }
 
     @Test
-    public void testSsoDefaultTenant() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
-        StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
-        // determine default tenant endpoint
-        authnRequest.setDestination(SharedUtils.getDefaultTenantEndpoint());
-        sbRequestUrl.append(authnRequest.getDestination());
-        Model model = new BindingAwareModelMap();
-
-        // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
-                relayStateParameter, null, null, null);
-
-        // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
-                authnRequest, relayStateParameter, null, null, sbRequestUrl,
-                TestConstants.AUTHORIZATION, null, tenantId);
-
-        // build mock response object
-        StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        true, null);
-
-        controller.ssoDefaultTenant(Locale.US, model, request, response);
-        assertEquals(tenant, model.asMap().get("tenant"));
-        assertNull(model.asMap().get("serverTime"));
-
-        // parse response
-        String decodedSamlResponse = SharedUtils.extractResponse(log, sw);
-        assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
-    }
-
-    @Test
     public void testSsoSignatureFail() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
@@ -260,16 +224,13 @@ public class SsoControllerTest {
         // build mock response object
         HttpServletResponse response = buildMockResponseErrorObject(200,
                 "Responder.RequestDenied", false);
-        assertSso(model, request, response);
 
+        assertSso(model, request, response, true);
     }
 
     @Test
     public void testSsoInvalidAcsIndex() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         authnRequest.setAssertionConsumerServiceIndex(0);
         authnRequest.setAssertionConsumerServiceURL(TestConstants.BAD_PROVIDER); // make
@@ -302,10 +263,7 @@ public class SsoControllerTest {
 
     @Test
     public void testSsoInvalidAcsUrl() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         authnRequest.setAssertionConsumerServiceIndex(null);
         authnRequest.setAssertionConsumerServiceURL(TestConstants.BAD_PROVIDER); // make
@@ -336,14 +294,13 @@ public class SsoControllerTest {
 
     @Test
     public void testSsoInvalidAcsBinding() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
+        String badBinding = "POST";
+        String badBindingMessageCode = "BadRequest.AssertionBinding";
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         authnRequest.setAssertionConsumerServiceIndex(null);
         authnRequest.setAssertionConsumerServiceURL(null);
-        authnRequest.setProtocolBinding("POST"); // make it invalid by
+        authnRequest.setProtocolBinding(badBinding); // make it invalid by
                                                  // specifying bad binding
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
@@ -359,17 +316,14 @@ public class SsoControllerTest {
 
         // build mock response object
         HttpServletResponse response = buildMockResponseErrorObject(400,
-                "BadRequest.AssertionBinding", false);
+                badBindingMessageCode, false);
 
         assertSso(model, request, response);
     }
 
     @Test
     public void testSsoInvalidID() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("",tenantId); // pass
                                                                             // invalid
                                                                             // ID
@@ -400,10 +354,7 @@ public class SsoControllerTest {
 
     @Test
     public void testSsoVersionTooHigh() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         authnRequest.setVersion(SAMLVersion.valueOf(3, 0)); // version too high
         sbRequestUrl.append(authnRequest.getDestination());
@@ -435,10 +386,7 @@ public class SsoControllerTest {
 
     @Test
     public void testSsoVersionTooLow() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         authnRequest.setVersion(SAMLVersion.VERSION_11); // version too low
         sbRequestUrl.append(authnRequest.getDestination());
@@ -470,10 +418,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadIssueInstant() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         // request was "issued" long time ago
         DateTime wayBack = new DateTime().minusWeeks(42);
@@ -482,19 +427,15 @@ public class SsoControllerTest {
         Model model = new BindingAwareModelMap();
 
         // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
-                relayStateParameter, null, null, null);
+        SharedUtils.logUrl(log, sbRequestUrl, authnRequest, relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
-                authnRequest, relayStateParameter, null, null, sbRequestUrl,
-                TestConstants.AUTHORIZATION, null, tenantId);
+        HttpServletRequest request = buildMockRequestObject(authnRequest, relayStateParameter, null, null,
+                sbRequestUrl, TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        false, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, false, null);
 
         assertSso(model, request, response);
 
@@ -505,11 +446,8 @@ public class SsoControllerTest {
 
     @Test
     public void testEmailAsNameID() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId);
         // request email as name id format
         NameIDPolicyBuilder nameIdPolicyBuilder = new NameIDPolicyBuilder();
         NameIDPolicy nameIdPolicy = nameIdPolicyBuilder.buildObject();
@@ -524,20 +462,18 @@ public class SsoControllerTest {
                 relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, null, null, sbRequestUrl,
                 TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        true, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, true, null);
 
         assertSso(model, request, response);
 
         // parse response
-        String decodedSamlResponse = SharedUtils.extractResponse(log, sw);
+        String decodedSamlResponse = extractResponse(log, sw);
         assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
         String expectedNameID = String.format(TestConstants.NAME_ID_FORMAT,
                 OasisNames.IDENTITY_FORMAT_EMAIL_ADDRESS);
@@ -548,10 +484,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadNameIDFormat() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         // request bogus name id format
         NameIDPolicyBuilder nameIdPolicyBuilder = new NameIDPolicyBuilder();
@@ -567,15 +500,13 @@ public class SsoControllerTest {
                 relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, null, null, sbRequestUrl,
                 TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        false, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, false, null);
 
         assertSso(model, request, response);
 
@@ -588,10 +519,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadDestination() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         authnRequest.setDestination("http://bogus"); // set wrong destination
@@ -615,10 +543,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadIssuer() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         authnRequest.setIssuer(null); // no issuer
@@ -642,10 +567,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadSignature() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         org.opensaml.xml.signature.Signature signature = (org.opensaml.xml.signature.Signature) Configuration
@@ -703,10 +625,7 @@ public class SsoControllerTest {
 
     @Test
     public void testBadScoping() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
 
@@ -757,13 +676,10 @@ public class SsoControllerTest {
 
     @Test
     public void testSsoInvalidNoDefault() throws Exception {
-        // make IDM config invalid by removing default assertion consumer
-        // services
-        SharedUtils.bootstrap(true); // alternative config from test resources
-
+        // rp 1 does not have default ACS
+        int rpId = 1;
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId, rpId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
@@ -772,7 +688,7 @@ public class SsoControllerTest {
                 relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, null, null, sbRequestUrl,
                 TestConstants.AUTHORIZATION, null, tenantId);
 
@@ -780,17 +696,13 @@ public class SsoControllerTest {
         HttpServletResponse response = buildMockResponseErrorObject(400,
                 "BadRequest.AssertionNoDefault", false);
 
-        assertSso(model, request, response);
+        assertSso(model, request, response, rpId);
     }
 
     @Test
     public void testSsoInvalidMissingSignature() throws Exception {
-        // load up config which requires signature from relying party
-        SharedUtils.bootstrap(true); // alternative config from test resources
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId);
         // make sure we specify assertion service
         authnRequest.setAssertionConsumerServiceIndex(0);
         sbRequestUrl.append(authnRequest.getDestination());
@@ -801,17 +713,15 @@ public class SsoControllerTest {
                 relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, null, null, sbRequestUrl,
                 TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        false, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, true, null);
 
-        assertSso(model, request, response);
+        assertSso(model, request, response, true);
 
         // parse response
         String decodedSamlResponse = SharedUtils.extractResponse(log, sw);
@@ -821,32 +731,10 @@ public class SsoControllerTest {
 
     @Test
     public void testUnpEntry() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
-        sbRequestUrl.append(authnRequest.getDestination());
-        Model model = new BindingAwareModelMap();
-
-        // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
-                relayStateParameter, null, null, Shared.PASSWORD_ENTRY);
-
-        String viewName = controller.ssoPasswordEntry(Locale.US, tenant, model, null, null);
-
-        assertUnpEntry(model, viewName);
-    }
-
-    @Test
-    public void testDefaultTenantUnpEntry() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
-        StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId);
         // determine default tenant endpoint
-        authnRequest.setDestination(SharedUtils.getDefaultTenantEndpoint());
+        authnRequest.setDestination(getDefaultTenantEndpoint());
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
@@ -854,28 +742,29 @@ public class SsoControllerTest {
         SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
                 relayStateParameter, null, null, Shared.PASSWORD_ENTRY);
 
-        String viewName = controller.ssoDefaultTenantPasswordEntry(Locale.US,
-                model, null, null);
+        // build mock request object
+        HttpServletRequest request = buildMockRequestObject(
+                authnRequest, relayStateParameter, null, null, sbRequestUrl,
+                TestConstants.AUTHORIZATION, null, tenantId);
+
+        HttpServletResponse response = buildMockResponseErrorObject(400, "BadRequest", false);
+
+        String viewName = controller.ssoPasswordEntry(Locale.US, getDefaultTenant(),
+                model, request, response,  getMockIdmAccessorFactory(0, 0));
 
         // parse response
         assertUnpEntry(model, viewName);
     }
 
-
     @Test
     public void testGetBrandName() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-        assertEquals(ServerConfig.getTenantBrandName(tenant), controller.getBrandName(tenant));
-
+        assertEquals(ServerConfig.getTenantBrandName(tenant), controller.getBrandName(tenant, getIdmAccessor(tenantId, 0)));
     }
 
     @Test
     public void testSsoByCookie() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
@@ -883,7 +772,7 @@ public class SsoControllerTest {
         String signature = SharedUtils.getSamlRequestSignature(privateKey, relayStateParameter,
                 samlRequestParameter);
 
-        // print out complete GET url
+        // print out complete GET ur
         SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
                 relayStateParameter, null, null, null);
 
@@ -907,20 +796,18 @@ public class SsoControllerTest {
         }
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, sigAlgParameter, signature,
                 sbRequestUrl, TestConstants.AUTHORIZATION, sessionId, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        true, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, true, null);
 
         assertSso(model, request, response);
 
         // parse response
-        String decodedSamlResponse = SharedUtils.extractResponse(log, sw);
+        String decodedSamlResponse = extractResponse(log, sw);
         assertTrue(decodedSamlResponse.contains(OasisNames.SUCCESS));
         // expect to find [reused] participant session id
         assertTrue(decodedSamlResponse.contains(participantSessionId));
@@ -931,17 +818,13 @@ public class SsoControllerTest {
 
     @Test
     public void testLoginPageControllerSsoByCookie() throws Exception {
-        // this is regression test for PR 964366 - it does same thing as testSsoByCookie but calls different controller method
-        SharedUtils.bootstrap(false); // use real data
-
         StringBuffer sbRequestUrl = new StringBuffer();
-        int tenantId = 0;
-        AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
+        AuthnRequest authnRequest = createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
         Model model = new BindingAwareModelMap();
 
-        String samlRequestParameter = SharedUtils.encodeRequest(authnRequest);
-        String signature = SharedUtils.getSamlRequestSignature(privateKey, relayStateParameter,
+        String samlRequestParameter = encodeRequest(authnRequest);
+        String signature = getSamlRequestSignature(privateKey, relayStateParameter,
                 samlRequestParameter);
 
         // print out complete GET url
@@ -968,17 +851,15 @@ public class SsoControllerTest {
         }
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
+        HttpServletRequest request = buildMockRequestObject(
                 authnRequest, relayStateParameter, sigAlgParameter, signature,
                 sbRequestUrl, TestConstants.AUTHORIZATION, sessionId, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        true, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, true, null);
 
-        assertNull(controller.ssoPasswordEntry(Locale.US, tenant, model, request, response));
+        assertNull(controller.ssoPasswordEntry(Locale.US, tenant, model, request, response, getMockIdmAccessorFactory(tenantId, 0, true)));
         assertEquals(tenant, model.asMap().get("tenant"));
         assertNull(model.asMap().get("serverTime"));
 
@@ -994,35 +875,27 @@ public class SsoControllerTest {
         // ... and try again. We are simulating scenario where cookie exists but server session does not.
         // (PR 970577)
         // In this case, we should stay on login page
-        request = SharedUtils.buildMockRequestObject(
+        request = buildMockRequestObject(
                 authnRequest, relayStateParameter, sigAlgParameter, signature,
                 sbRequestUrl, TestConstants.AUTHORIZATION, sessionId, tenantId);
 
-        String viewName = controller.ssoPasswordEntry(Locale.US, tenant, model, request, null);
+        String viewName = controller.ssoPasswordEntry(Locale.US, tenant, model, request, null, getMockIdmAccessorFactory(tenantId, 0, true));
 
         assertUnpEntry(model, viewName);
     }
 
+    @Ignore
     @Test
     public void testVcdSso() throws Exception {
-        SharedUtils.bootstrap(false); // use real data
-
         Model model = new BindingAwareModelMap();
 
-        // import VCD SP data
-        CasIdmClient idmClient = new CasIdmClient(SharedUtils.getIdmHostName());
-
-        SharedUtils.importConfiguration(idmClient, tenant, "/vcd.xml");
-
         // construct request from a URL
-        HttpServletRequest request = SharedUtils
-                .buildMockRequestObjectFromUrl("http://schai-sule-vm1.vmware.com:7080/websso/SAML2/SSO/csp?SAMLRequest=lZLBTsMwDIbvPEWVe5uk68oWrUUDhEACMdHCgZubmS1Sm4w4LTw%2B3QYCLkgcLdmff%2Fnz4uy9a6MBPRlnCyYTwSK02q2N3RTssb6KZ%2BysPFkQdG26U8s%2BbO0DvvZIIVoSoQ%2Fj3IWz1HfoK%2FSD0fj4cFuwbQg7UpxLkcjsNJmKZJKpLJtw3bp%2BzZ3fcE07vufyqrrn0BogPug1iy5HuLEQDon2nBFDegsmpr7FeOhkMnRv4DHRrlOnYib4GzZEjlfLu9v0gBvZLLpyXuMhcsFeoCVk0c1lwSCVc4B5M8s3kMmXzOi8wUZv9EzLfGyhFRCZAb%2BHiHq8sRTAhoKlQqaxmMYyr%2BVciamaThKZi2cWrbwLTrv23Njj%2FXpvlQMypCx0SCpotY%2Bo0kSo5thE6rquV%2FHqvqpZ9PTlId17GM1YUsfL%2F83afS5m5VGUOiT2Pwl%2FA%2BBLJSv%2FI67DAGsI8G1vwX8GKD%2FL349TfgA%3D&SigAlg=http%3A%2F%2Fwww.w3.org%2F2000%2F09%2Fxmldsig%23rsa-sha1&Signature=IOuETBMw87DUqqpdJRkZYB2nG7kFxxlfsm8F8rzllkbrWzSxcMr0MfltnYSAnMTnlQEr%2Frj4Shkj9j6LPDLDueDhnLk%2FnQW2obfG6kXUG2MMGdkezX%2FsEzSFdld5QDpdeKB%2FaOaX7%2BFuJEmsRebmjYOuZJaTsGuuoEnu28oYuH4%3D");
+        HttpServletRequest request = buildMockRequestObjectFromUrl(
+                "http://schai-sule-vm1.vmware.com:7080/websso/SAML2/SSO/csp?SAMLRequest=lZLBTsMwDIbvPEWVe5uk68oWrUUDhEACMdHCgZubmS1Sm4w4LTw%2B3QYCLkgcLdmff%2Fnz4uy9a6MBPRlnCyYTwSK02q2N3RTssb6KZ%2BysPFkQdG26U8s%2BbO0DvvZIIVoSoQ%2Fj3IWz1HfoK%2FSD0fj4cFuwbQg7UpxLkcjsNJmKZJKpLJtw3bp%2BzZ3fcE07vufyqrrn0BogPug1iy5HuLEQDon2nBFDegsmpr7FeOhkMnRv4DHRrlOnYib4GzZEjlfLu9v0gBvZLLpyXuMhcsFeoCVk0c1lwSCVc4B5M8s3kMmXzOi8wUZv9EzLfGyhFRCZAb%2BHiHq8sRTAhoKlQqaxmMYyr%2BVciamaThKZi2cWrbwLTrv23Njj%2FXpvlQMypCx0SCpotY%2Bo0kSo5thE6rquV%2FHqvqpZ9PTlId17GM1YUsfL%2F83afS5m5VGUOiT2Pwl%2FA%2BBLJSv%2FI67DAGsI8G1vwX8GKD%2FL349TfgA%3D&SigAlg=http%3A%2F%2Fwww.w3.org%2F2000%2F09%2Fxmldsig%23rsa-sha1&Signature=IOuETBMw87DUqqpdJRkZYB2nG7kFxxlfsm8F8rzllkbrWzSxcMr0MfltnYSAnMTnlQEr%2Frj4Shkj9j6LPDLDueDhnLk%2FnQW2obfG6kXUG2MMGdkezX%2FsEzSFdld5QDpdeKB%2FaOaX7%2BFuJEmsRebmjYOuZJaTsGuuoEnu28oYuH4%3D");
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        true, null);
+        HttpServletResponse response = buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, true, null);
 
         assertSso(model, request, response);
 
@@ -1082,9 +955,9 @@ public class SsoControllerTest {
         String message = controller.getMessageSource().getMessage(messageCode, null,
                 Locale.US);
         response.addHeader(Shared.RESPONSE_ERROR_HEADER, Shared.encodeString(message));
-        response.sendError(
-                errorCode,
-                message);
+        response.setContentType(Shared.HTML_CONTENT_TYPE);
+        expect(response.getWriter()).andReturn(new PrintWriter(new StringWriter())).anyTimes();
+        response.sendError(errorCode, message);
         replay(response);
         return response;
     }

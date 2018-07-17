@@ -104,16 +104,19 @@ public abstract class BaseSsoController {
                     new SAMLAuthnResponseSenderFactory();
 
             SAMLResponseSender responseSender = responseSenderFactory.buildResponseSender
-                    (tenant, response, locale,
+                    (response, locale,
                     null,  //for IDP initiated, no relay state in post Response to SP
                     requestState,
                     requestState.getAuthnMethod(),
                     requestState.getSessionId(),
                     requestState.getPrincipalId(),
-                    messageSource,sessionManager);
+                    requestState.getIdmAccessor(),
+                    messageSource,
+                    sessionManager);
 
             AuthnRequest authnReq = requestState.getAuthnRequest();
-            String rpID = authnReq == null? null:authnReq.getIssuer().getValue();   //It is possible rpID is not available due to bad request message
+            //It is possible rpID is not available due to bad request message
+            String rpID = authnReq == null || authnReq.getIssuer() == null ? null : authnReq.getIssuer().getValue();
 
             responseSender.sendResponseToRP(rpID, token);
 

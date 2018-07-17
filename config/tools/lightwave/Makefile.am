@@ -1,4 +1,5 @@
 SUBDIRS = \
+    ca \
     domain \
     dns
 
@@ -6,6 +7,7 @@ bin_PROGRAMS = lightwave
 
 lightwave_SOURCES = \
     main.c \
+    ca.c \
     domain.c \
     dns.c
 
@@ -19,6 +21,7 @@ lightwave_CPPFLAGS = \
     @LW_INCLUDES@
 
 lightwave_LDADD = \
+    @top_builddir@/config/tools/lightwave/ca/libca.la \
     @top_builddir@/config/tools/lightwave/domain/libdomain.la \
     @top_builddir@/config/tools/lightwave/dns/libdns.la \
     @top_builddir@/config/cfgutils/libcfgutils.la \
@@ -26,6 +29,8 @@ lightwave_LDADD = \
     @top_builddir@/vmca/client/libvmcaclient.la \
     @top_builddir@/vmdns/client/libvmdnsclient.la \
     @top_builddir@/vmdir/client/libvmdirclient.la \
+    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la \
     @LWSM_LIBS@ \
     @DCERPC_LIBS@ \
     @LWRSUTILS_LIBS@ \

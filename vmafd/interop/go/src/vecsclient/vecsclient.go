@@ -159,7 +159,7 @@ func (store *VecsStore) Close() (err error) {
 // EntryCount returns the number of entries in the specified store.
 // It returns any encountered errors.
 func (store *VecsStore) EntryCount() (count int, err error) {
-	var c C.DWORD = 0
+	var c C.LW_UINT32 = 0
 	var e C.DWORD = C.VecsGetEntryCount(
 		store.p,
 		&c)

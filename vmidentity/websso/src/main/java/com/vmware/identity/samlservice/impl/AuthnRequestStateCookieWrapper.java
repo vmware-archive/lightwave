@@ -98,7 +98,7 @@ public class AuthnRequestStateCookieWrapper implements AuthenticationFilter<Auth
         Validate.notNull(request, "request");
         SessionManager sessionManager = t.getSessionManager();
         Validate.notNull(sessionManager, "sessionManager");
-        Session currentSession = Shared.getSession(sessionManager, request,t.getIdmAccessor().getTenant());
+        Session currentSession = Shared.getSession(sessionManager, request, t.getIdmAccessor().getTenant());
         if (currentSession != null) {
             log.debug("Found existing session {}", currentSession);
             // use session data here to determine identity

@@ -3,6 +3,7 @@ sbin_PROGRAMS = vmcad
 idl_srcdir=$(top_srcdir)/vmca/idl
 
 vmcad_SOURCES = \
+    policy.c \
     auth.c \
     dirsync.c \
     entrypoints.c \
@@ -15,6 +16,7 @@ vmcad_SOURCES = \
     rpcserv.c \
     service.c \
     signal.c \
+    snpolicy.c \
     state.c \
     thread.c \
     utils.c \

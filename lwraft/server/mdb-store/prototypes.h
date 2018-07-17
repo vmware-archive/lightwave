@@ -20,7 +20,9 @@
 
 // config.c
 DWORD
-MDBInitConfig();
+MDBInitConfig(
+    PVDIR_MDB_DB pDB
+    );
 
 // desc.c
 DWORD
@@ -37,8 +39,9 @@ MdbIndexDescFree(
 // index.c
 DWORD
 VmDirMDBIndexGetDBi(
-    PVDIR_INDEX_CFG pIndexCfg,
-    VDIR_DB*        pDBi
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg,
+    VDIR_DB*                pDBi
     );
 
 // writeutil.c
@@ -61,10 +64,11 @@ MdbDeleteKeyValue(
 
 DWORD
 MdbCreateEIDIndex(
-    PVDIR_DB_TXN     pTxn,
-    ENTRYID          eId,
-    VDIR_BERVALUE *  encodedEntry,
-    BOOLEAN          bIsNewIndex);
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_DB_TXN            pTxn,
+    ENTRYID                 eId,
+    VDIR_BERVALUE *         encodedEntry,
+    BOOLEAN                 bIsNewIndex);
 
 DWORD
 MDBDeleteParentIdIndex(
@@ -74,28 +78,31 @@ MDBDeleteParentIdIndex(
 
 DWORD
 MdbUpdateAttrMetaData(
-    PVDIR_DB_TXN     pTxn,
-    VDIR_ATTRIBUTE * attr,
-    ENTRYID          entryId,
-    ULONG            ulOPMask);
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_DB_TXN            pTxn,
+    VDIR_ATTRIBUTE *        attr,
+    ENTRYID                 entryId,
+    ULONG                   ulOPMask);
 
 DWORD
 MdbUpdateIndicesForAttr(
-    PVDIR_DB_TXN        pTxn,
-    VDIR_BERVALUE *     entryDN,
-    VDIR_BERVALUE *     attrType,
-    VDIR_BERVARRAY      attrVals, // Normalized Attribute Values
-    unsigned            numVals,
-    ENTRYID             entryId,
-    ULONG               ulOPMask
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_DB_TXN            pTxn,
+    VDIR_BERVALUE *         entryDN,
+    VDIR_BERVALUE *         attrType,
+    VDIR_BERVARRAY          attrVals, // Normalized Attribute Values
+    unsigned                numVals,
+    ENTRYID                 entryId,
+    ULONG                   ulOPMask
     );
 
 DWORD
 MdbValidateAttrUniqueness(
-    PVDIR_INDEX_CFG     pIndexCfg,
-    PSTR                pszAttrVal,
-    PSTR                pszEntryDn,
-    ULONG               ulOPMask
+    PVDIR_BACKEND_INTERFACE pBE,
+    PVDIR_INDEX_CFG         pIndexCfg,
+    PSTR                    pszAttrVal,
+    PSTR                    pszEntryDn,
+    ULONG                   ulOPMask
     );
 
 DWORD
@@ -133,6 +140,7 @@ MDBToBackendError(
 
 DWORD
 MDBOpenDB(
+    PVDIR_MDB_DB        pDB,
     PVDIR_DB            pmdbDBi,
     const char *        dbName,
     const char *        fileName,
@@ -141,12 +149,14 @@ MDBOpenDB(
 
 VOID
 MDBCloseDB(
-    VDIR_DB    mdbDBi
+    PVDIR_MDB_DB pDB,
+    VDIR_DB      mdbDBi
     );
 
 DWORD
 MDBDropDB(
-    VDIR_DB    mdbDBi
+    PVDIR_MDB_DB pDB,
+    VDIR_DB      mdbDBi
     );
 
 DWORD

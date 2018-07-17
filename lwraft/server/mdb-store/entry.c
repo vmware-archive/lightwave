@@ -18,6 +18,7 @@
 
 DWORD
 VmDirMDBSimpleEIdToEntry(
+    PVDIR_BACKEND_INTERFACE pBE,
     ENTRYID         eId,
     PVDIR_ENTRY     pEntry)
 {
@@ -26,10 +27,12 @@ VmDirMDBSimpleEIdToEntry(
     VDIR_BACKEND_CTX    mdbBECtx = {0};
     BOOLEAN             bHasTxn = FALSE;
 
-    assert(pEntry);
+    assert(pBE && pEntry);
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    mdbBECtx.pBE = pBE;
 
     dwError = VmDirMDBTxnBegin(&mdbBECtx, VDIR_BACKEND_TXN_READ);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -70,8 +73,9 @@ error:
 
 DWORD
 VmDirMDBSimpleDnToEntry(
-    PSTR        pszEntryDN,
-    PVDIR_ENTRY pEntry
+    PVDIR_BACKEND_INTERFACE pBE,
+    PSTR                    pszEntryDN,
+    PVDIR_ENTRY             pEntry
     )
 {
     DWORD               dwError = 0;
@@ -80,7 +84,9 @@ VmDirMDBSimpleDnToEntry(
     VDIR_BACKEND_CTX    mdbBECtx = {0};
     BOOLEAN             bHasTxn = FALSE;
 
-    assert(pEntry);
+    assert(pBE && pEntry);
+
+    mdbBECtx.pBE = pBE;
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -111,6 +117,7 @@ cleanup:
     }
 
     mdbBECtx.pBEPrivate = NULL;
+    mdbBECtx.pBE = NULL;
     VmDirBackendCtxContentFree(&mdbBECtx);
     VmDirFreeBervalContent(&entryDn);
 
@@ -129,7 +136,9 @@ error:
 // To get the current max ENTRYID
 DWORD
 VmDirMDBMaxEntryId(
-    ENTRYID*            pEId)
+    PVDIR_BACKEND_INTERFACE pBE,
+    ENTRYID*                pEId
+    )
 {
     DWORD           dwError = 0;
     PVDIR_DB_TXN    pTxn = NULL;
@@ -138,14 +147,22 @@ VmDirMDBMaxEntryId(
     MDB_val         key = {0};
     MDB_val         value  = {0};
     ENTRYID         eId = LOG_ENTRY_EID_PREFIX;
+    ENTRYID         eIdPrefix = LOG_ENTRY_EID_PREFIX;
     unsigned char   EIDBytes[sizeof(ENTRYID)] = {0};
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
 
-    assert(pEId);
+    assert(pEId && pDB);
 
-    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    if (pBE == VmDirBackendSelect(ALIAS_MAIN))
+    {
+        eId =  NEW_ENTRY_EID_PREFIX;
+        eIdPrefix = NEW_ENTRY_EID_PREFIX;
+    }
+
+    dwError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    mdbDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+    mdbDBi = pDB->mdbEntryDB.pMdbDataFiles[0].mdbDBi;
 
     dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -163,7 +180,7 @@ VmDirMDBMaxEntryId(
 
         MDBDBTToEntryId(&key, &eId);
     }
-    while (eId >= LOG_ENTRY_EID_PREFIX);
+    while (eId >= eIdPrefix);
 
     mdb_cursor_close(pCursor);
     pCursor = NULL;
@@ -207,8 +224,9 @@ VmDirMDBGetNextUSN(
     USN             localUSN = 0;
     BOOLEAN         bRevertUSN = FALSE;
     BOOLEAN         bUnsetMaxUSN = TRUE;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromCtx(pBECtx);
 
-    assert( pBECtx && pUsn );
+    assert( pBECtx && pUsn && pDB);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
     if (pTxn)
@@ -217,14 +235,14 @@ VmDirMDBGetNextUSN(
     }
     else
     {
-        dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pLocalTxn );
+        dwError = mdb_txn_begin( pDB->mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pLocalTxn );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     key.mv_data = &USNKeyBytes[0];
     MDBEntryIdToDBT(BE_MDB_USN_SEQ_KEY, &key);
 
-    dwError =  mdb_get(pLocalTxn, gVdirMdbGlobals.mdbSeqDBi, &key, &value);
+    dwError =  mdb_get(pLocalTxn, pDB->mdbSeqDBi, &key, &value);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     assert( value.mv_size == sizeof(USN) );
@@ -238,7 +256,7 @@ VmDirMDBGetNextUSN(
     value.mv_size = sizeof(USN);
     value.mv_data = &USNValueBytes[0];
 
-    dwError =  mdb_put(pLocalTxn, gVdirMdbGlobals.mdbSeqDBi, &key, &value, BE_DB_FLAGS_ZERO);
+    dwError =  mdb_put(pLocalTxn, pDB->mdbSeqDBi, &key, &value, BE_DB_FLAGS_ZERO);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pBECtx->wTxnUSN == 0)
@@ -318,7 +336,7 @@ VmDirMDBAddEntry(
     VDIR_BERVALUE     encodedEntry = VDIR_BERVALUE_INIT;
     VDIR_ATTRIBUTE *  nextAttr = NULL;
 
-    assert( pEntry && pBECtx && pBECtx->pBEPrivate );
+    assert( pEntry && pBECtx && pBECtx->pBE && pBECtx->pBEPrivate );
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -354,7 +372,7 @@ VmDirMDBAddEntry(
             dwError = VmDirNormalizeDN( &(nextAttr->vals[0]), pEntry->pSchemaCtx );
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
+            if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
                                                     entryId, BE_INDEX_OP_TYPE_CREATE)) != 0)
             {
                 dwError = MDBToBackendError( dwError,
@@ -364,7 +382,7 @@ VmDirMDBAddEntry(
                                              VDIR_SAFE_STRING(nextAttr->vals[0].bvnorm_val));
                 BAIL_ON_VMDIR_ERROR( dwError );
             }
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_CREATE )) != 0)
+            if ((dwError = MdbUpdateAttrMetaData( pBECtx->pBE, pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_CREATE )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "UpdateDNAttrMetaData");
                 BAIL_ON_VMDIR_ERROR( dwError );
@@ -377,7 +395,7 @@ VmDirMDBAddEntry(
     {
         if (VmDirStringCompareA(nextAttr->type.lberbv.bv_val, ATTR_DN, FALSE) != 0)
         {
-            if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
+            if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
                                                     entryId, BE_INDEX_OP_TYPE_CREATE)) != 0)
             {
                 dwError = MDBToBackendError( dwError,
@@ -387,7 +405,7 @@ VmDirMDBAddEntry(
                                              VDIR_SAFE_STRING(nextAttr->type.lberbv.bv_val));
                 BAIL_ON_VMDIR_ERROR( dwError );
             }
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_CREATE )) != 0)
+            if ((dwError = MdbUpdateAttrMetaData( pBECtx->pBE, pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_CREATE )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
                                             VDIR_SAFE_STRING(nextAttr->type.lberbv.bv_val));
@@ -397,7 +415,7 @@ VmDirMDBAddEntry(
     }
 
     // Update entry/blob database
-    if ((dwError = MdbCreateEIDIndex(pTxn, entryId, &encodedEntry, TRUE /* 1st time new entry creation */)) != 0)
+    if ((dwError = MdbCreateEIDIndex(pBECtx->pBE, pTxn, entryId, &encodedEntry, TRUE /* 1st time new entry creation */)) != 0)
     {
         dwError = MDBToBackendError(dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx, "CreateEIDIndex");
         BAIL_ON_VMDIR_ERROR( dwError );
@@ -504,7 +522,7 @@ VmDirMDBDeleteEntry(
         switch (mod->operation)
         {
             case MOD_OP_DELETE:
-                if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                        pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
                 {
                     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
@@ -595,12 +613,13 @@ VmDirMDBEIdToEntry(
     VDIR_DB_DBT     value = {0};
     unsigned char   eIdBytes[sizeof( ENTRYID )] = {0};
     unsigned char*  pszBlob = NULL;
+    PVDIR_MDB_DB pDB = (PVDIR_MDB_DB)VmDirSafeDBFromCtx(pBECtx);
 
-    assert(pBECtx && pBECtx->pBEPrivate && pSchemaCtx && pEntry);
+    assert(pBECtx && pDB && pBECtx->pBEPrivate && pSchemaCtx && pEntry);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
-    mdbDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+    mdbDBi = pDB->mdbEntryDB.pMdbDataFiles[0].mdbDBi;
 
     // Set key
     key.mv_data = &eIdBytes[0];
@@ -665,7 +684,7 @@ VmDirMDBModifyEntry(
     VDIR_MODIFICATION *     mod = NULL;
     PVDIR_DB_TXN            pTxn = NULL;
 
-    assert( pBECtx && pBECtx->pBEPrivate && pMods && pEntry );
+    assert( pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pMods && pEntry );
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -698,7 +717,7 @@ VmDirMDBModifyEntry(
             switch (mod->operation)
             {
                 case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
                     {
                         dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
@@ -708,7 +727,7 @@ VmDirMDBModifyEntry(
                     break;
 
                 case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
@@ -722,7 +741,7 @@ VmDirMDBModifyEntry(
                     assert( FALSE );
             }
 
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
+            if ((dwError = MdbUpdateAttrMetaData( pBECtx->pBE, pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
                                             VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
@@ -743,7 +762,7 @@ VmDirMDBModifyEntry(
             switch (mod->operation)
             {
                 case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
                     {
                         dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
@@ -753,7 +772,7 @@ VmDirMDBModifyEntry(
                     break;
 
                 case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
+                    if ((dwError = MdbUpdateIndicesForAttr( pBECtx->pBE, pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
                                                            pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
@@ -767,7 +786,7 @@ VmDirMDBModifyEntry(
                     assert( FALSE );
             }
 
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
+            if ((dwError = MdbUpdateAttrMetaData( pBECtx->pBE, pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
                                             VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
@@ -777,7 +796,7 @@ VmDirMDBModifyEntry(
     }
 
     // Update Entry DB.
-    if ((dwError = MdbCreateEIDIndex(pTxn, pEntry->eId, &newEncodedEntry, FALSE /* update current eId key */)) != 0)
+    if ((dwError = MdbCreateEIDIndex(pBECtx->pBE, pTxn, pEntry->eId, &newEncodedEntry, FALSE /* update current eId key */)) != 0)
     {
         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "CreateEIDIndex");
         BAIL_ON_VMDIR_ERROR( dwError );

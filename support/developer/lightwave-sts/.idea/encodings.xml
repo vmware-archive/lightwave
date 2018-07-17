@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<project version="4">
+  <component name="Encoding">
+    <file url="file://$PROJECT_DIR$/../../../vmidentity" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/commons" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/commons/samltoken" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/diagnostics" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/idm" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/idm/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/idm/interface" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/idm/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/install" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/lightwaveui" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect/common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect/protocol" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect/sample" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/openidconnect/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/platform" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/afd" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/afd/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/afd/common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/afd/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/core" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/core/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/core/common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/core/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/idm" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/idm/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/idm/common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/idm/samples" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/idm/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/vmdir" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/vmdir/client" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/vmdir/common" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/rest/vmdir/server" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/samlauthority" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/service" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/sso-config" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/ssolib" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/sts" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/tomcat-extensions" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/websso" charset="UTF-8" />
+    <file url="file://$PROJECT_DIR$/../../../vmidentity/wsTrustClient" charset="UTF-8" />
+  </component>
+</project>

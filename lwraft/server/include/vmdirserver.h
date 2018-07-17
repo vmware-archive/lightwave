@@ -207,6 +207,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwRaftKeeplogs;
 
     SSL_CTX*                        gpVdirSslCtx;
+    /* write raft logs to log db if set. requires postd restart to take effect. */
+    BOOLEAN                         bUseLogDB;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

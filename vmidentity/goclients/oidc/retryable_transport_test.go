@@ -12,16 +12,14 @@ import (
 func TestRetryableTransportWrapper(t *testing.T) {
 	config := NewHTTPClientConfig()
 	config.SkipCertValidationField = true
-	tr := httpTransportFromConfig(config)
 
-	retryableTransport := NewRetryableTransportWrapper(*tr, defaultRetries, 50, NewLogger())
+	retryableTransport := NewRetryableTransportWrapper(config, defaultRetries, 50, nil, NewLogger())
 	httpClient := &http.Client{Transport: retryableTransport}
 
 	testRetryableTransportWrapperRetries(httpClient, 500, defaultRetries, 200, t)
-	testRetryableTransportWrapperRetries(httpClient, 500, defaultRetries + 1, 500, t)
+	testRetryableTransportWrapperRetries(httpClient, 500, defaultRetries+1, 500, t)
 	// no retries
 	testRetryableTransportWrapperRetries(httpClient, 404, defaultRetries, 404, t)
-
 }
 
 func testRetryableTransportWrapperRetries(client *http.Client, code int, retries int, resultCode int, t *testing.T) {

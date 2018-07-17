@@ -78,14 +78,6 @@ VdirPasswordModifyPreCheck(
     PVDIR_OPERATION     pOperation
     );
 
-DWORD
-VmDirInternalEntryAttributeReplace(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PCSTR               pszNormDN,
-    PCSTR               pszAttrName,
-    PVDIR_BERVALUE      pBerv
-    );
-
 // plugin.c
 /*
  * Called before backend add
@@ -468,6 +460,52 @@ VmDirIsSearchForRaftVote(
 BOOLEAN
 VmDirIsSearchForStatePing(
     PVDIR_OPERATION     pOp
+    );
+
+//writequeue.c
+DWORD
+VmDirWriteQueueElementAllocate(
+    PVMDIR_WRITE_QUEUE_ELEMENT*    ppWriteQueueEle
+    );
+
+VOID
+VmDirWriteQueueElementFree(
+    PVMDIR_WRITE_QUEUE_ELEMENT    pWriteQueueEle
+    );
+
+DWORD
+VmDirWriteQueuePush(
+    PVDIR_BACKEND_CTX           pBECtx,
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
+    );
+
+VOID
+VmDirWriteQueuePop(
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
+    );
+
+DWORD
+VmDirWriteQueueWait(
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
+    );
+
+//usn.c
+DWORD
+VmDirInitMaxCommittedUSN(
+    PVDIR_BACKEND_INTERFACE   pBE
+    );
+
+VOID
+VmDirUpdateMaxCommittedUSNInLock(
+    USN   committedUSN
+    );
+
+USN
+VmDirGetMaxCommittedUSN(
+    VOID
     );
 
 #endif

@@ -489,7 +489,7 @@ VmDirSRPSetIdentityData(
     dwError = VmDirInitStackOperation( &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "VmDirSRPSetIdentityData: VmDirInitStackOperation failed: %u", dwError);
 
-    op.pBEIF = VmDirBackendSelect(NULL);
+    op.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
     assert(op.pBEIF);
 
     op.reqDn.lberbv.bv_val = pEntry->dn.lberbv.bv_val;
@@ -577,7 +577,7 @@ VmDirSetAdministratorPasswordNeverExpires(
     dwError = VmDirInitStackOperation( &op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_MODIFY, NULL);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "VmDirSetAdministratorPasswordNeverExpire: VmDirInitStackOperation failed: %u", dwError);
 
-    op.pBEIF = VmDirBackendSelect(NULL);
+    op.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
     assert(op.pBEIF);
 
     op.reqDn.lberbv.bv_val = pEntry->dn.lberbv.bv_val;

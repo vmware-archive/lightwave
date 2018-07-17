@@ -3578,17 +3578,18 @@ VmDirCompareVersion(
  * convert DN to a list of RDN.
  *
  * say dc=lwraft,dc=local
- * if iNotypes == 0, {"dc=lwraft", "dc=local"} is returned;
+ * if bNotypes == false, {"dc=lwraft", "dc=local"} is returned;
  * otherwise {"lwraft", "local"} is returned.
  */
 DWORD
 VmDirDNToRDNList(
     PCSTR               pszDN,
-    int                 iNotypes,
+    BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
     )
 {
     DWORD               dwError = 0;
+    DWORD               dwCount = 0;
     PVMDIR_STRING_LIST  pStrList = NULL;
     PSTR*               ppRDN = NULL;
     PSTR*               ppTmp = NULL;
@@ -3598,13 +3599,26 @@ VmDirDNToRDNList(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    ppRDN = ldap_explode_dn(pszDN, iNotypes);
+    if (bNotypes)
+    {
+        ppRDN = ldap_explode_dn(pszDN, 1);
+    }
+    else
+    {
+        ppRDN = ldap_explode_dn(pszDN, 0);
+    }
+
     if (!ppRDN)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_DN);
     }
 
-    dwError = VmDirStringListInitialize(&pStrList, 10);
+    for (ppTmp = ppRDN; *ppTmp; ppTmp++)
+    {
+        dwCount++;
+    }
+
+    dwError = VmDirStringListInitialize(&pStrList, dwCount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (ppTmp = ppRDN; *ppTmp; ppTmp++)
@@ -3614,7 +3628,6 @@ VmDirDNToRDNList(
     }
 
     *ppRDNStrList = pStrList;
-    pStrList = NULL;
 
 cleanup:
     if (ppRDN)
@@ -3821,4 +3834,57 @@ error:
 
     VMDIR_SAFE_FREE_MEMORY(pData);
     goto cleanup;
+}
+
+DWORD
+VmDirMkdir(
+    PCSTR path,
+    int mode
+    )
+{
+    DWORD   dwError = 0;
+#ifdef _WIN32
+    if(CreateDirectory(path, NULL)==0)
+    {
+        errno = WSAGetLastError();
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+#else
+    if(mkdir(path, mode)!=0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+#endif
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_VmDirMkdir on dir %s failed (%u) errno: (%d)", path, dwError, errno);
+    goto cleanup;
+}
+
+DWORD
+VmDirDirectoryExists(
+    PCSTR       pszDirName,
+    PBOOLEAN    pbFound)
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bFound = FALSE;
+    struct stat statBuf = {0};
+    int         iRetVal = 0;
+
+    BAIL_ON_VMDIR_INVALID_POINTER(pszDirName, dwError);
+    BAIL_ON_VMDIR_INVALID_POINTER(pbFound, dwError);
+
+    iRetVal = stat(pszDirName, &statBuf);
+    if (iRetVal == 0 && S_ISDIR(statBuf.st_mode))
+    {
+        bFound = TRUE;
+    }
+
+    *pbFound = bFound;
+
+error:
+    return dwError;
 }

@@ -25,6 +25,7 @@ VmDirMDBTxnBegin(
     DWORD           dwError = 0;
     PVDIR_DB_TXN    pTxn = NULL;
     unsigned int    iMDBFlag = 0;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromCtx(pBECtx);
 
     assert(pBECtx);
 
@@ -42,7 +43,7 @@ VmDirMDBTxnBegin(
         VmDirWtxnOutstandingInc();
     }
 
-    dwError = mdb_txn_begin( gVdirMdbGlobals.mdbEnv, BE_DB_PARENT_TXN_NULL, iMDBFlag, &pTxn );
+    dwError = mdb_txn_begin( pDB->mdbEnv, BE_DB_PARENT_TXN_NULL, iMDBFlag, &pTxn );
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (txnMode != VDIR_BACKEND_TXN_READ)

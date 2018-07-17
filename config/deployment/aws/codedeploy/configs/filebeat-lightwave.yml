@@ -1,6 +1,0 @@
-filebeat.prospectors:
-- input_type: log
-paths:
-- /var/log/messages
-output.logstash:
-hosts: ["@@LOGSTASH_ELB@@:5043"]

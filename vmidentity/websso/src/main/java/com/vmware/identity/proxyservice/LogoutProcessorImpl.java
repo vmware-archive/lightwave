@@ -15,43 +15,33 @@
 package com.vmware.identity.proxyservice;
 
 import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Date;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
+import java.util.concurrent.ConcurrentHashMap;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang.Validate;
+import org.apache.http.impl.client.CloseableHttpClient;
 import org.joda.time.DateTime;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.LogoutResponse;
 import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.security.SecurityException;
+import org.opensaml.saml2.core.LogoutResponse;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
-import org.xml.sax.SAXException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.samlservice.AuthnRequestState;
 import com.vmware.identity.samlservice.LogoutState;
-import com.vmware.identity.samlservice.OasisNames;
-import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.LogoutState.ProcessingState;
+import com.vmware.identity.samlservice.OasisNames;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.impl.SamlServiceImpl;
 import com.vmware.identity.session.Session;
@@ -79,10 +69,8 @@ public class LogoutProcessorImpl implements LogoutProcessor {
     private static final int THRESHHOLD_HOURS_FOR_MAP_CHECK = 1;
     private static final int THRESHHOLD_SIZE_FOR_MAP_CHECK = 5000;
 
-    // When using nested synchronization, please doing so with same order to
-    // avoid deadlock. The order is sync outgoingReqToIncomingReqMap first, followed by logoutStateMap.
-    private final Map<String, LogoutState> logoutStateMap = Collections.synchronizedMap(new LinkedHashMap<String, LogoutState>());
-    private final Map<String, String> outgoingReqToIncomingReqMap = Collections.synchronizedMap(new LinkedHashMap<String, String>());
+    private volatile Map<String, LogoutState> logoutStateMap = new ConcurrentHashMap<>();
+    private volatile Map<String, String> outgoingReqToIncomingReqMap = new ConcurrentHashMap<>();
 
     /**
      * Error callback in processing logout response or request from external
@@ -102,7 +90,7 @@ public class LogoutProcessorImpl implements LogoutProcessor {
 
         String message;
 
-        LogoutState loState = this.findOriginalRequstState(request);
+        LogoutState loState = this.findOriginalRequestState(request);
         Locale locale = (loState == null) ? null : loState.getLocale();
 
         // The error could be from external idp or from validation of response
@@ -187,10 +175,10 @@ public class LogoutProcessorImpl implements LogoutProcessor {
         loState.removeResponseHeaders();
 
         // 5 Send SLO request to each of the session participants.
-        try {
-            SamlServiceImpl.sendSLORequestsToOtherParticipants(tenant, loState);
-        } catch (IOException e) {
-            logger.error("Caught IOException in sending logout request to service providers.");
+        try (CloseableHttpClient httpClient = SamlServiceImpl.getCloseableHttpClient()){
+            SamlServiceImpl.sendSLORequestsToOtherParticipants(tenant, loState, httpClient);
+        } catch (IOException | KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+            logger.error("Encountered an error in sending logout request to service providers.", e);
         }
     }
 
@@ -241,7 +229,7 @@ public class LogoutProcessorImpl implements LogoutProcessor {
     public void logoutSuccess(Message arg0, HttpServletRequest request,
             HttpServletResponse response) {
 
-        LogoutState logoutState = this.findOriginalRequstState(request);
+        LogoutState logoutState = this.findOriginalRequestState(request);
         if (logoutState == null) {
             logger.error("Unable to find LogoutState associated with original LO request from service provider. "
                     + "Logout at PSC is successful. But was unable to respond to participating service provider.");
@@ -251,14 +239,14 @@ public class LogoutProcessorImpl implements LogoutProcessor {
         String tenant = logoutState.getIdmAccessor().getTenant();
 
         // Send logout request to other participating SP's
-        try {
+        try (CloseableHttpClient httpClient = SamlServiceImpl.getCloseableHttpClient()) {
             if (logoutState.needLogoutRequest()) {
                 // send slo request to all non-initiating relying parties
                 SamlServiceImpl.sendSLORequestsToOtherParticipants(tenant,
-                        logoutState);
+                        logoutState, httpClient);
             }
-        } catch (IOException e) {
-            logger.error("Catch IOException in sending logout requests to other service providers.");
+        } catch (IOException | KeyManagementException | NoSuchAlgorithmException | KeyStoreException e) {
+            logger.error("Encountered an error in sending logout requests to other service providers.", e);
         }
 
         // Send logout response to other initiating SP
@@ -297,7 +285,7 @@ public class LogoutProcessorImpl implements LogoutProcessor {
                 + "external IDP. This means the request or response is understood and validated. "
                 + "But responder can send the response or request to the IDP because of unexpected error.");
 
-        LogoutState logoutState = this.findOriginalRequstState(request);
+        LogoutState logoutState = this.findOriginalRequestState(request);
         try {
             String message;
             if (logoutState != null) {
@@ -331,51 +319,33 @@ public class LogoutProcessorImpl implements LogoutProcessor {
      *            LogoutState object for the logout request came to PSC.
      * @return void
      */
-    public void registerRequestState(String incomingReqID,
-            String outGoingReqID, LogoutState logoutState) {
+    public void registerRequestState(String incomingReqID, String outGoingReqID, LogoutState logoutState) {
         Validate.notEmpty(incomingReqID, "incomingReqID");
         Validate.notEmpty(outGoingReqID, "outGoingReqID");
         if (logoutState == null) {
             logger.warn("Skip null logoutState registration.");
             return;
         }
-        Date noOlderThanDate = new Date(System.currentTimeMillis()
-                - THRESHHOLD_HOURS_FOR_MAP_CHECK * 60 * 60 * 1000);
+        Date noOlderThanDate = new Date(System.currentTimeMillis() - THRESHHOLD_HOURS_FOR_MAP_CHECK * 60 * 60 * 1000);
         this.cleanStaledLogout(noOlderThanDate);
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.logoutStateMap) {
-                this.logoutStateMap.put(incomingReqID, logoutState);
-                this.outgoingReqToIncomingReqMap.put(outGoingReqID, incomingReqID);
-            }
-        }
+        this.logoutStateMap.putIfAbsent(incomingReqID, logoutState);
+        this.outgoingReqToIncomingReqMap.putIfAbsent(outGoingReqID, incomingReqID);
     }
 
-    private void cleanStaledLogout(Date noOlderThanDate) {
+    private synchronized void cleanStaledLogout(Date noOlderThanDate) {
         if (this.logoutStateMap.size() < THRESHHOLD_SIZE_FOR_MAP_CHECK) {
             return;
         }
 
-        DateTime noOlderThanDateTime = new DateTime(
-                noOlderThanDate.getTime());
+        DateTime noOlderThanDateTime = new DateTime(noOlderThanDate.getTime());
 
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.logoutStateMap) {
-                Iterator<Entry<String, String>> it = this.outgoingReqToIncomingReqMap
-                        .entrySet().iterator();
-
-                while (it.hasNext()) {
-                    Entry<String, String> idMapEntry = it.next();
-                    String inReqID = idMapEntry.getValue();
-                    LogoutState state = this.logoutStateMap.get(inReqID);
-                    LogoutRequest loRequest = state.getLogoutRequest();
-                    if (loRequest == null
-                            || loRequest.getIssueInstant().isBefore(
-                                    noOlderThanDateTime)) {
-                        this.logoutStateMap.remove(inReqID);
-                        this.outgoingReqToIncomingReqMap
-                                .remove(idMapEntry.getKey());
-                    }
-                }
+        for (Entry<String, String> idMapEntry : this.outgoingReqToIncomingReqMap.entrySet()) {
+            String inReqID = idMapEntry.getValue();
+            LogoutState state = this.logoutStateMap.get(inReqID);
+            LogoutRequest loRequest = state.getLogoutRequest();
+            if (loRequest == null || loRequest.getIssueInstant().isBefore(noOlderThanDateTime)) {
+                this.logoutStateMap.remove(inReqID);
+                this.outgoingReqToIncomingReqMap.remove(idMapEntry.getKey());
             }
         }
 
@@ -416,7 +386,7 @@ public class LogoutProcessorImpl implements LogoutProcessor {
      * @return AuthnRequestState return null if unable to decode the response,
      *         or there is no inResponseTo attribute, or there was no match
      */
-    private LogoutState findOriginalRequstState(HttpServletRequest request) {
+    private LogoutState findOriginalRequestState(HttpServletRequest request) {
 
         LogoutResponse samlResponse;
         LogoutState logoutState = null;
@@ -437,20 +407,16 @@ public class LogoutProcessorImpl implements LogoutProcessor {
             // could be idp initiated request.
             return null;
         }
-        synchronized (this.outgoingReqToIncomingReqMap) {
-            synchronized (this.logoutStateMap) {
-                String incomingReqID = this.outgoingReqToIncomingReqMap
-                        .remove(outReqID);
 
-                if (null == incomingReqID) {
-                    logger.debug("No source authentication request was matched to the outgoing request id "
-                            + outReqID);
-                    return null;
-                }
-                logger.info("Removing request state for request id " + incomingReqID);
-                logoutState = this.logoutStateMap.remove(incomingReqID);
-            }
+        String incomingReqID = this.outgoingReqToIncomingReqMap.remove(outReqID);
+
+        if (null == incomingReqID) {
+            logger.debug("No source authentication request was matched to the outgoing request id " + outReqID);
+            return null;
         }
+        logger.info("Removing request state for request id " + incomingReqID);
+        logoutState = this.logoutStateMap.remove(incomingReqID);
+
         return logoutState;
     }
 

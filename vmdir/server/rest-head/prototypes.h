@@ -129,7 +129,24 @@ VmDirRESTEncodeEntryArray(
 
 // handler.c
 DWORD
+VmDirRESTLdapRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
+VmDirRESTApiRequestHandler(
+    PVMREST_HANDLE  pRESTHandle,
+    PREST_REQUEST   pRequest,
+    PREST_RESPONSE* ppResponse,
+    uint32_t        paramsCount
+    );
+
+DWORD
 VmDirRESTRequestHandler(
+    PREST_API_DEF   pRestApiDef,
     PVMREST_HANDLE  pRESTHandle,
     PREST_REQUEST   pRequest,
     PREST_RESPONSE* ppResponse,
@@ -138,6 +155,7 @@ VmDirRESTRequestHandler(
 
 DWORD
 VmDirRESTProcessRequest(
+    PREST_API_DEF           pRestApiDef,
     PVDIR_REST_OPERATION    pRestOp,
     PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRequest,
@@ -364,6 +382,13 @@ VmDirRESTResultSetIntData(
     );
 
 DWORD
+VmDirRESTResultSetBooleanData(
+    PVDIR_REST_RESULT   pRestRslt,
+    PSTR                pszKey,
+    BOOLEAN             bVal
+    );
+
+DWORD
 VmDirRESTResultSetObjData(
     PVDIR_REST_RESULT   pRestRslt,
     PSTR                pszKey,
@@ -380,4 +405,28 @@ VmDirRESTResultToResponseBody(
 VOID
 VmDirFreeRESTResult(
     PVDIR_REST_RESULT   pRestRslt
+    );
+
+// certsapi.c
+DWORD
+VmDirRESTGetRootCerts(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTApiGetCertsModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+// passwordapi.c
+DWORD
+VmDirRESTRefreshPassword(
+    void*   pIn,
+    void**  ppOut
+    );
+
+DWORD
+VmDirRESTApiGetPasswordModule(
+    PREST_MODULE*   ppRestModule
     );

@@ -248,6 +248,12 @@ typedef struct _VDIR_CONN_REPL_SUPP_STATE
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
+typedef struct _VDIR_CONNECTION_CTRL_RESOURCE
+{
+    BOOLEAN bOwnDbCopyCtrlFd; //this is added to fix the case where VDIR_CONNECTION is allocated without calling VmDirAllocateConnection
+    int     dbCopyCtrlFd;
+} VDIR_CONNECTION_CTRL_RESOURCE, *PVDIR_CONNECTION_CTRL_RESOURCE;
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -264,6 +270,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_SUPERLOG_RECORD    SuperLogRec;
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
     PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
+    VDIR_CONNECTION_CTRL_RESOURCE ConnCtrlResource;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -618,6 +625,7 @@ typedef union LdapControlValue
     VDIR_RAFT_PING_CONTROL_VALUE        raftPingCtrlVal;
     VDIR_RAFT_VOTE_CONTROL_VALUE        raftVoteCtrlVal;
     VDIR_STATE_PING_CONTROL_VALUE       statePingCtrlVal;
+    VDIR_DB_COPY_CONTROL_VALUE          dbCopyCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -641,6 +649,12 @@ typedef enum
     VDIR_OPERATION_PROTOCOL_REST
 
 } VDIR_OPERATION_PROTOCOL;
+
+typedef struct _VMDIR_WRITE_QUEUE_ELEMENT
+{
+    USN   usn;
+    PVMDIR_COND pCond;
+} VMDIR_WRITE_QUEUE_ELEMENT, *PVMDIR_WRITE_QUEUE_ELEMENT;
 
 typedef struct _VDIR_OPERATION
 {
@@ -667,6 +681,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *       raftVoteCtrl;
     VDIR_LDAP_CONTROL *       statePingCtrl;
     VDIR_LDAP_CONTROL *       passblobCtrl;
+    VDIR_LDAP_CONTROL *       dbCopyCtrl;
 
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
@@ -691,7 +706,6 @@ typedef struct _VDIR_OPERATION
     // fields valid for INTERNAL operations
     ///////////////////////////////////////////////////////////////////////////
     VDIR_ENTRY_ARRAY    internalSearchEntryArray; // internal search result
-    USN                 lowestPendingUncommittedUsn; // recorded at the beginning of replication search operation.
     PSTR                pszFilters; // filter candidates' size recorded in string
     DWORD               dwSentEntries; // number of entries sent back to client
 
@@ -700,6 +714,11 @@ typedef struct _VDIR_OPERATION
     ///////////////////////////////////////////////////////////////////////////
     PCSTR               pszPartner;
     USN                 ulPartnerUSN; // in replication, the partner USN been processed.
+
+    ///////////////////////////////////////////////////////////////////////////
+    // fields valid for write operations
+    ///////////////////////////////////////////////////////////////////////////
+    PVMDIR_WRITE_QUEUE_ELEMENT   pWriteQueueEle;
 
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
@@ -838,6 +857,9 @@ VmDirInitDCConnThread(
 
 DWORD
 VmDirInitBackend();
+
+DWORD
+VmDirSetSdGlobals();
 
 // vmdirentry.c
 
@@ -1079,6 +1101,17 @@ VmDirIsDeletedContainer(
     PCSTR   pszDN
     );
 
+DWORD
+VmDirInternalGetDSERootServerCN(
+    PSTR*   ppServerCN
+    );
+
+DWORD
+VmDirInternalSearchSeverObj(
+    PCSTR               pszServerObjName,
+    PVDIR_OPERATION     pSearchOp
+    );
+
 BOOLEAN
 VmDirIsTombStoneObject(
     PCSTR   pszDN
@@ -1245,6 +1278,11 @@ VmDirSrvGetDomainFunctionalLevel(
     PDWORD pdwLevel
     );
 
+DWORD
+VmDirInitSrvDFLGlobal(
+    VOID
+    );
+
 BOOLEAN
 VmDirValidValueMetaEntry(
     PVDIR_BERVALUE  pValueMetaData
@@ -1281,6 +1319,21 @@ int
 VmDirPVdirBValCmp(
     const void *p1,
     const void *p2
+    );
+
+DWORD
+VmDirCopySingleAttributeString(
+    PVDIR_ENTRY  pEntry,
+    PCSTR        pszAttribute,
+    BOOL         bOptional,
+    PSTR*        ppszOut
+    );
+
+DWORD
+VmDirDNCopySingleAttributeString(
+    PCSTR   pszDN,
+    PCSTR   pszAttr,
+    PSTR    *ppszAttrVal
     );
 
 //accnt_mgmt.c
@@ -1479,6 +1532,28 @@ VmDirModAddSingleStrValueAttribute(
     PCSTR                   pszAttrValue
     );
 
+DWORD
+VmDirInternalEntryAttributeReplace(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBerv
+    );
+
+DWORD
+VmDirInternalEntryAttributeAdd(
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    );
+
+DWORD
+VmDirInternalAddMemberToGroup(
+    PCSTR   pszGroupDN,
+    PCSTR   pszMemberDN
+    );
+
 // ldap-head/operation.c
 DWORD
 VmDirInitStackOperation(
@@ -1517,8 +1592,7 @@ VmDirFilterInternalSearch(
 int
 VmDirSendSearchEntry(
    PVDIR_OPERATION     pOperation,
-   PVDIR_ENTRY         pSrEntry,
-   PBOOLEAN            pbLowestPendingUncommittedUsn
+   PVDIR_ENTRY         pSrEntry
    );
 
 // middle-layer password.c
@@ -1800,6 +1874,15 @@ VmDirStrtoVector(
     PCSTR               pszVector,
     PFN_VEC_STR_TO_PAIR pStrToPair,
     PLW_HASHMAP         pMap
+    );
+
+//externaloputil.c
+DWORD
+VmDirExternalEntryAttributeReplace(
+    PVDIR_CONNECTION    pConn,
+    PCSTR               pszEntryDn,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
     );
 
 #ifdef __cplusplus
