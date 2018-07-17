@@ -3362,14 +3362,14 @@ DirCliDBBackup(
     {
         dwError = DirCliGetStrRegKeyA(
             pConnection,
-            VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_VMDIR_CONFIG_KEY_PATH,
             VMAFD_REG_KEY_DC_ACCOUNT,
             &pszLocalLogin);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = DirCliGetStrRegKeyA(
             pConnection,
-            VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMAFD_VMDIR_CONFIG_KEY_PATH,
             VMAFD_REG_KEY_DC_PASSWORD,
             &pszLocalPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -3618,7 +3618,7 @@ DirCliIsManagementNode(
 
     dwError = DirCliGetStrRegKeyA(
         pConnection,
-        VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        VMAFD_VMDIR_CONFIG_KEY_PATH,
         VMAFD_REG_KEY_DC_ACCOUNT_DN,
         &pszDCAccountDN);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -3701,7 +3701,7 @@ DirCliUpdateLocalPassword(
     dwError = VmAfConfigOpenKey(
                 pConnection,
                 pRootKey,
-                VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                VMAFD_VMDIR_CONFIG_KEY_PATH,
                 0,
                 KEY_SET_VALUE | KEY_READ,
                 &pSubKey);
@@ -3847,7 +3847,7 @@ DirCliMachineAccountReset(
 
     dwError = DirCliGetStrRegKeyA(
                 pConnection,
-                VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                VMAFD_VMDIR_CONFIG_KEY_PATH,
                 VMAFD_REG_KEY_DC_ACCOUNT,
                 &pszMachineAccount);
     BAIL_ON_VMAFD_ERROR(dwError);

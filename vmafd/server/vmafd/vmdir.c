@@ -244,6 +244,7 @@ VmAfSrvPromoteVmDir(
     PWSTR pwszCurDomainName = NULL;
     BOOLEAN bFirstInstance = TRUE;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
+    BOOLEAN bJoinWithPreCopiedDB = FALSE;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszLotusServerName, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
@@ -405,52 +406,98 @@ VmAfSrvPromoteVmDir(
                           pszPartnerHostName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmDirJoin(
-                          pszLotusServerName,
-                          pszUserName,
-                          pszPassword,
-                          pszSiteName,
-                          pszPartnerHostName,
-                          VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
+        dwError = VmAfSrvGetVmDirJoinWithPreCopiedDB(&bJoinWithPreCopiedDB);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmDirGetDomainName(
-                          pszPartnerHostName,
-                          &pszDomainName);
-        BAIL_ON_VMAFD_ERROR(dwError);
+        if (!bJoinWithPreCopiedDB)
+        {   // normal hot db copy join flow
+            dwError = VmDirJoin(
+                              pszLotusServerName,
+                              pszUserName,
+                              pszPassword,
+                              pszSiteName,
+                              pszPartnerHostName,
+                              VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
+            BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwDNSRetry = 0;
+            dwDNSRetry = 0;
 
-        do
-        {
-            dwError = VmAfSrvConfigureDNSW(
-                              pwszPartnerHostName,
-                              pwszPNID,
-                              pwszDomainName,
-                              pwszUserName,
-                              pwszPassword,
-                              pwszSiteName);
-
-            if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+            do
             {
-                VmAfdSleep(VMDNS_RETRY_INTERVAL);
-            }
-            else
-            {
-                break;
-            }
-        }
-        while (TRUE);
+                dwError = VmAfSrvConfigureDNSW(
+                                  pwszPartnerHostName,
+                                  pwszPNID,
+                                  pwszDomainName,
+                                  pwszUserName,
+                                  pwszPassword,
+                                  pwszSiteName);
 
-        if (dwError)
-        {
-            VmAfdLog(
-                VMAFD_DEBUG_ANY,
-                "%s failed to initialize dns. Error(%u)",
-                __FUNCTION__,
-                dwError);
+                if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+                {
+                    VmAfdSleep(VMDNS_RETRY_INTERVAL);
+                }
+                else
+                {
+                    break;
+                }
+            }
+            while (TRUE);
+
+            if (dwError)
+            {
+                VmAfdLog(
+                    VMAFD_DEBUG_ANY,
+                    "%s failed to initialize dns. Error(%u)",
+                    __FUNCTION__,
+                    dwError);
+            }
+            BAIL_ON_VMAFD_ERROR(dwError);
         }
-        BAIL_ON_VMAFD_ERROR(dwError);
+        else
+        {   // join with pre-copied DB. need to create DNS rec before VmDirJoin
+            dwDNSRetry = 0;
+
+             do
+             {
+                 dwError = VmAfSrvConfigureDNSW(
+                                   pwszPartnerHostName,
+                                   pwszPNID,
+                                   pwszDomainName,
+                                   pwszUserName,
+                                   pwszPassword,
+                                   pwszSiteName);
+
+                 if (dwError == ERROR_INVALID_STATE && dwDNSRetry++ < 3)
+                 {
+                     VmAfdSleep(VMDNS_RETRY_INTERVAL);
+                 }
+                 else
+                 {
+                     break;
+                 }
+             }
+             while (TRUE);
+
+             if (dwError)
+             {
+                 VmAfdLog(
+                     VMAFD_DEBUG_ANY,
+                     "%s failed to initialize dns. Error(%u)",
+                     __FUNCTION__,
+                     dwError);
+             }
+             BAIL_ON_VMAFD_ERROR(dwError);
+
+             dwError = VmDirJoin(
+                               pszLotusServerName,
+                               pszUserName,
+                               pszPassword,
+                               pszSiteName,
+                               pszPartnerHostName,
+                               VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
+             BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
     }
 
 
@@ -1289,22 +1336,22 @@ VmAfSrvForceLeave(
     DWORD   dwError = 0;
 
     dwError = VmAfdRegDeleteValue(
-              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              VMAFD_VMDIR_CONFIG_KEY_PATH,
               VMAFD_REG_KEY_DC_ACCOUNT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdRegDeleteValue(
-              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              VMAFD_VMDIR_CONFIG_KEY_PATH,
               VMAFD_REG_KEY_DC_ACCOUNT_DN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdRegDeleteValue(
-              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              VMAFD_VMDIR_CONFIG_KEY_PATH,
               VMAFD_REG_KEY_DC_PASSWORD);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdRegDeleteValue(
-              VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+              VMAFD_VMDIR_CONFIG_KEY_PATH,
               VMAFD_REG_KEY_MACHINE_GUID);
     BAIL_ON_VMAFD_ERROR(dwError);
 

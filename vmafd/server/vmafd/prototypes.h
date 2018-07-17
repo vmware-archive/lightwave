@@ -336,6 +336,11 @@ VmAfSrvChangePNID(
     PCWSTR pwszPNID
     );
 
+DWORD
+VmAfSrvGetVmDirJoinWithPreCopiedDB(
+    PBOOLEAN    pbJoinWithPreCopiedDB           /* OUT */
+    );
+
 /* dcfinder.c */
 
 DWORD

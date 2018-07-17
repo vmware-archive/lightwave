@@ -775,18 +775,18 @@ VmAfSrvSetDCActPassword(
 
     BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
 
-    _ConfigGetString( VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    _ConfigGetString( VMAFD_VMDIR_CONFIG_KEY_PATH,
                       VMAFD_REG_KEY_DC_PASSWORD,
                       &pwszOldPassword);
 
-    dwError = _ConfigSetString( VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = _ConfigSetString( VMAFD_VMDIR_CONFIG_KEY_PATH,
                                 VMAFD_REG_KEY_DC_PASSWORD,
                                 pwszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     if (pwszOldPassword)
     {
-        dwError = _ConfigSetString(VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        dwError = _ConfigSetString(VMAFD_VMDIR_CONFIG_KEY_PATH,
                                    VMAFD_REG_KEY_DC_OLD_PASSWORD,
                                    pwszOldPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -814,7 +814,7 @@ VmAfSrvGetOldPassword(
 
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszPassword, dwError);
 
-    dwError = _ConfigGetString( VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = _ConfigGetString( VMAFD_VMDIR_CONFIG_KEY_PATH,
                         VMAFD_REG_KEY_DC_OLD_PASSWORD,
                         &pwszOldPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -848,12 +848,12 @@ VmAfSrvGetMachineAccountInfo(
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszAccount, dwError);
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszPassword, dwError);
 
-    dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_KEY_PATH,
                                VMAFD_REG_KEY_DC_ACCOUNT,
                                &pwszAccount);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_KEY_PATH,
                                VMAFD_REG_KEY_DC_PASSWORD,
                                &pwszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -861,7 +861,7 @@ VmAfSrvGetMachineAccountInfo(
     /* Optional Argument */
     if (ppwszAccountDN != NULL)
     {
-        dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        dwError = _ConfigGetString(VMAFD_VMDIR_CONFIG_KEY_PATH,
                                VMAFD_REG_KEY_DC_ACCOUNT_DN,
                                &pwszAccountDN);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -1615,7 +1615,8 @@ error:
 
 static
 DWORD
-_ConfigGetInteger(
+_ConfigGetIntegerExt1(
+    PCSTR    pszSubKey,      /* IN     */
     PCSTR    pszValueName,   /* IN     */
     PDWORD   pdwValue        /*    OUT */
     )
@@ -1624,7 +1625,6 @@ _ConfigGetInteger(
     PVMAF_CFG_CONNECTION pConnection = NULL;
     PVMAF_CFG_KEY pRootKey = NULL;
     PVMAF_CFG_KEY pParamsKey = NULL;
-    PCSTR pszSubKey = VMAFD_CONFIG_PARAMETER_KEY_PATH;
     DWORD dwValue = 0;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pdwValue, dwError);
@@ -1678,6 +1678,19 @@ cleanup:
 error:
 
     goto cleanup;
+}
+
+static
+DWORD
+_ConfigGetInteger(
+    PCSTR    pszValueName,   /* IN     */
+    PDWORD   pdwValue        /*    OUT */
+    )
+{
+    return _ConfigGetIntegerExt1(
+                VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                pszValueName,
+                pdwValue);
 }
 
 static
@@ -1873,6 +1886,40 @@ cleanup:
     return dwError;
 
 error:
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetVmDirJoinWithPreCopiedDB(
+    PBOOLEAN    pbJoinWithPreCopiedDB           /* OUT */
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwPreCopiedDB = 0;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pbJoinWithPreCopiedDB, dwError);
+
+    dwError = _ConfigGetIntegerExt1(
+        VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB,
+        &dwPreCopiedDB);
+    if (dwError == ERROR_FILE_NOT_FOUND)
+    {   // value not found, default to 0/FALSE
+        dwError = 0;
+        dwPreCopiedDB = 0;
+    }
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    *pbJoinWithPreCopiedDB = (dwPreCopiedDB == 1);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }

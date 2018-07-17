@@ -432,11 +432,12 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #ifndef _WIN32
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
 #define VMAFD_CONFIG_CREDS_KEY_PATH     "Services\\services\\Parameters\\Credentials"
-#define VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"
+#define VMAFD_VMDIR_CONFIG_KEY_PATH     "Services\\vmdir"
+#define VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir\\Parameters"
 #else
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
 #define VMAFD_CONFIG_CREDS_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters\\Credentials"
-#define VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
+#define VMAFD_VMDIR_CONFIG_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #endif
 
 #define VMAFD_REG_KEY_DOMAIN_NAME     "DomainName"
@@ -468,5 +469,7 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 #define VMAFD_REG_KEY_ENABLE_DDNS      "EnableDnsUpdates"
 #define VMAFD_REG_KEY_HEARTBEAT       "HeartbeatInterval"
+
+#define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB   "JoinWithPreCopiedDB"
 
 #endif /* __VMAFDDEFINES_H__ */

@@ -3394,7 +3394,7 @@ VmAfdIpcGetMachineAccountInfo(
     if (!bIsAllowed)
     {
         dwError = VmAfSrvGetRegKeySecurity(
-                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    VMAFD_VMDIR_CONFIG_KEY_PATH,
                     &pszSecurity);
         BAIL_ON_VMAFD_ERROR (dwError);
 
@@ -4609,7 +4609,7 @@ VmAfdIpcCreateComputerAccount(
     if (!bIsAllowed)
     {
         dwError = VmAfSrvGetRegKeySecurity(
-                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    VMAFD_VMDIR_CONFIG_KEY_PATH,
                     &pszSecurity);
         BAIL_ON_VMAFD_ERROR (dwError);
 
@@ -5527,7 +5527,7 @@ VmAfdIpcTriggerRootCertsRefresh(
     if (!bIsAllowed)
     {
         dwError = VmAfSrvGetRegKeySecurity(
-                    VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    VMAFD_VMDIR_CONFIG_KEY_PATH,
                     &pszSecurity);
         BAIL_ON_VMAFD_ERROR (dwError);
 
