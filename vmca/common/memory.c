@@ -494,7 +494,6 @@ VMCAFreeStringArrayA(
     }
 }
 
-
 void
 VMCASetBit(unsigned long *flag, int bit)
 {

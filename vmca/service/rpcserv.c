@@ -115,14 +115,9 @@ VMCACheckAccess(
 
     if (ppReqContext)
     {
-        dwError = VMCAAllocateMemory(
-                        sizeof(VMCA_REQ_CONTEXT),
-                        (PVOID *)&pReqContext);
-        BAIL_ON_VMCA_ERROR(dwError);
-
-        dwError = VMCAAllocateStringA(
-                        authPrinc,
-                        &pReqContext->pszAuthPrincipal);
+        dwError = VMCAAllocateReqContext(
+                            authPrinc,
+                            &pReqContext);
         BAIL_ON_VMCA_ERROR(dwError);
 
         *ppReqContext = pReqContext;

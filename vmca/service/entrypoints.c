@@ -1540,16 +1540,60 @@ error :
     return dwError;
 }
 
+DWORD
+VMCAAllocateReqContext(
+    PCSTR                   pcszAuthPrincipal,
+    PVMCA_REQ_CONTEXT       *ppReqContext
+    )
+{
+    DWORD                   dwError = 0;
+    PVMCA_REQ_CONTEXT       pReqContext = NULL;
+
+    if (IsNullOrEmptyString(pcszAuthPrincipal) ||
+        !ppReqContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateMemory(
+                        sizeof(VMCA_REQ_CONTEXT),
+                        (PVOID *)&pReqContext
+                        );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAAllocateStringA(
+                    pcszAuthPrincipal,
+                    &pReqContext->pszAuthPrincipal
+                    );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppReqContext = pReqContext;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMCAFreeReqContext(pReqContext);
+    if (ppReqContext)
+    {
+        *ppReqContext = NULL;
+    }
+
+    goto cleanup;
+}
+
 VOID
 VMCAFreeReqContext(
-    PVMCA_REQ_CONTEXT       pReqContext
+    PVMCA_REQ_CONTEXT   pReqContext
     )
 {
     if (pReqContext)
     {
         VMCA_SAFE_FREE_STRINGA(pReqContext->pszAuthPrincipal);
-        pReqContext->pszAuthPrincipal = NULL;
-
         VMCA_SAFE_FREE_MEMORY(pReqContext);
     }
 }

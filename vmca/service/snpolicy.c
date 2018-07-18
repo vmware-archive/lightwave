@@ -148,10 +148,13 @@ cleanup:
 error:
 
     VMCAPolicySNFree(&rules);
-    pPolicy->Rules.SN.bEnabled = FALSE;
-    VMCAPolicySNOperationFree(pPolicy->Rules.SN.pMatch);
-    VMCAPolicySNOperationArrayFree(pPolicy->Rules.SN.ppValidate, pPolicy->Rules.SN.dwValidateLen);
-    pPolicy->Rules.SN.dwValidateLen = 0;
+    if (pPolicy)
+    {
+        pPolicy->Rules.SN.bEnabled = FALSE;
+        VMCAPolicySNOperationFree(pPolicy->Rules.SN.pMatch);
+        VMCAPolicySNOperationArrayFree(pPolicy->Rules.SN.ppValidate, pPolicy->Rules.SN.dwValidateLen);
+        pPolicy->Rules.SN.dwValidateLen = 0;
+    }
 
     goto cleanup;
 }
@@ -672,7 +675,6 @@ VMCAPolicySNGetOrgNamesFromCSR(
 {
     DWORD                           dwError = 0;
     DWORD                           dwIdx = 0;
-    DWORD                           dwOPos = 0;
     DWORD                           dwNumOEntries = 0;
     PSTR                            *ppszOrgNames = NULL;
     PSTR                            *ppszOrgNamesTemp = NULL;
@@ -681,6 +683,7 @@ VMCAPolicySNGetOrgNamesFromCSR(
     X509_NAME                       *pszSubjName = NULL;
     X509_NAME_ENTRY                 *pOEntry = NULL;
     ASN1_STRING                     *pOAsn1 = NULL;
+    int                             iOPos = 0;
     size_t                          szNumDNs = 0;
     size_t                          szEntryLength = 0;
 
@@ -718,18 +721,18 @@ VMCAPolicySNGetOrgNamesFromCSR(
 
     for (;;)
     {
-        dwOPos = X509_NAME_get_index_by_NID(
+        iOPos = X509_NAME_get_index_by_NID(
                         pszSubjName,
                         NID_organizationName,
-                        dwOPos);
-        if (dwOPos == -1)
+                        iOPos);
+        if (iOPos == -1)
         {
             break;
         }
 
         pOEntry = X509_NAME_get_entry(
                         pszSubjName,
-                        dwOPos);
+                        iOPos);
         if (pOEntry == NULL)
         {
             dwError = VMCA_CERT_DECODE_FAILURE;
@@ -779,6 +782,10 @@ VMCAPolicySNGetOrgNamesFromCSR(
 
 cleanup:
 
+    if (pCSR)
+    {
+        X509_REQ_free(pCSR);
+    }
     if (pszOString)
     {
         OPENSSL_free(pszOString);
@@ -861,9 +868,7 @@ VMCAPolicySNMatchAuthOUWithCSR(
         ++dwOUMatchCount;
 
         nCount = 0;
-
         VMCA_SAFE_FREE_STRINGA(pszAuthTok);
-        pszAuthTok = NULL;
     }
 
     if (dwOUMatchCount != dwOrgNamesLen)

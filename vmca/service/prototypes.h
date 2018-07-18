@@ -612,11 +612,6 @@ VMCABackupRootCAFiles(
     PCSTR pszRootCAPasswordFile
     );
 
-VOID
-VMCAFreeReqContext(
-    PVMCA_REQ_CONTEXT       pReqContext
-    );
-
 //vmcaservice.c
 DWORD
 VmcaSrvRevokeCertificate(
@@ -635,6 +630,17 @@ DWORD
 VmcaSrvReGenCRL (
                  X509_CRL **ppCrl
                 );
+
+DWORD
+VMCAAllocateReqContext(
+    PCSTR                   pcszAuthPrincipal,
+    PVMCA_REQ_CONTEXT       *ppReqContext
+    );
+
+VOID
+VMCAFreeReqContext(
+    PVMCA_REQ_CONTEXT       pReqContext
+    );
 
 DWORD
 VMCASrvGetMachineAccountInfoA(

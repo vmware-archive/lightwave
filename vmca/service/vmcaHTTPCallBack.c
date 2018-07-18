@@ -808,16 +808,10 @@ VMCARESTGetSignedCertificate(
 
     dwNotAfter = dwNotBefore + nDuration;
 
-    dwError = VMCAAllocateMemory(
-                        sizeof(VMCA_REQ_CONTEXT),
-                        (PVOID *)&pReqContext
+    dwError = VMCAAllocateReqContext(
+                        request.pAccessToken->pszSubjectName,
+                        &pReqContext
                         );
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VMCAAllocateStringA(
-                    request.pAccessToken->pszSubjectName,
-                    &pReqContext->pszAuthPrincipal
-                    );
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAGetSignedCertificate(

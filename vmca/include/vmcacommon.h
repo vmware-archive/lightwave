@@ -471,7 +471,6 @@ VMCAFreeStringArrayA(
     DWORD dwCount
     );
 
-
 DWORD
 VMCAGetStringLengthW(
     PCWSTR  pwszStr,
