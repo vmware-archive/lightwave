@@ -349,6 +349,35 @@ func VmAfdGetMachineAccountInfo() (account string, password string, err error) {
 	return
 }
 
+// VmAfdLeaveVmDir is used to domain leave client specified in machineName using userName and password
+func VmAfdLeaveVmDir(userName, password, machineName string, forceFlag bool) (err error) {
+	serverNameCStr := goStringToCString("")
+	defer freeCString(serverNameCStr)
+	userNameCStr := goStringToCString(userName)
+	defer freeCString(userNameCStr)
+	passwordCStr := goStringToCString(password)
+	defer freeCString(passwordCStr)
+	machineNameCStr := goStringToCString(machineName)
+	defer freeCString(machineNameCStr)
+
+	var leaveFlag C.DWORD = 0
+	if forceFlag {
+		leaveFlag = 1
+	}
+
+	var e C.DWORD = C.VmAfdLeaveVmDirA(
+		serverNameCStr,
+		userNameCStr,
+		passwordCStr,
+		machineNameCStr,
+		leaveFlag)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to leave vmdir (%s)", cErrorToGoError(e))
+	}
+
+	return
+}
+
 // vmAfdServerFinalize is a wrapper function to set the finalizer for VmAfdServer
 func vmAfdServerFinalize(server *VmAfdServer) {
 	server.Close()

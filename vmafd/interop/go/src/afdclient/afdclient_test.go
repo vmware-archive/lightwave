@@ -7,11 +7,11 @@ import (
 	"fmt"
 	"github.com/stretchr/testify/assert"
 	"log"
+	"math/rand"
 	"os"
 	"os/exec"
-	"time"
-	"math/rand"
 	"strings"
+	"time"
 )
 
 const (
@@ -27,6 +27,7 @@ var domain = flag.String("domain", "", "System tenant domain")
 var password = flag.String("password", "", "System tenant password")
 var otherDC = flag.String("dcname", "", "Other DC to affinitize to on force-refresh case")
 var loadBalancer = flag.String("elb", "", "Load balancer to use for machine account creation test")
+var client = flag.String("client", "", "Machine name of a domain joined client (this will perform domain leave)")
 
 func init() {
 	flag.Parse()
@@ -175,7 +176,7 @@ func TestCdcGetDcStatusInfoThreads(t *testing.T) {
 	}
 
 	for i := 0; i < threads; i++ {
-		<- done
+		<-done
 	}
 }
 
@@ -245,7 +246,7 @@ func TestVmAfdCreateComputerAccountWithDC(t *testing.T) {
 	machineAccount := "machine" + randSeq(5) + "@" + *domain
 	machinePassword, err := VmAfdCreateComputerAccountWithDC(*loadBalancer, "Administrator", *password, machineAccount, "")
 	if err != nil {
-		assert.FailNow(t,"Error in creating machine account",	"Error: %+v, account: %s, password: %s, elb: %s, machine acc: %s",
+		assert.FailNow(t, "Error in creating machine account", "Error: %+v, account: %s, password: %s, elb: %s, machine acc: %s",
 			err,
 			"Administrator",
 			*password,
@@ -266,6 +267,22 @@ func TestVmAfdGetMachineAccountInfo(t *testing.T) {
 	assert.NotEmpty(t, machineAccount, "Machine account is empty")
 	assert.NotEmpty(t, machinePassword, "Machine password is empty")
 	return
+}
+
+// Needs to be run by providing a joined client machine name
+func TestVmAfdLeaveVmDir(t *testing.T) {
+	if *client == "" {
+		t.Skip("Skipping VmAfdLeaveVmdir test. Please pass a joined client to run this test")
+	} else {
+		err := VmAfdLeaveVmDir("Administrator", *password, *client, false)
+		if err != nil {
+			assert.FailNow(t, "Error while leaving vmdir", "Error: %+v, client: %s, account: %s, password: %s\n",
+				err,
+				*client,
+				"Administrator",
+				*password)
+		}
+	}
 }
 
 func getHbInfo(t *testing.T, status *VmAfdHbStatus, service string) *VmAfdHbInfo {
@@ -316,7 +333,7 @@ func randSeq(n int) string {
 	rand.Seed(time.Now().UnixNano())
 	b := make([]byte, n)
 	for i := range b {
-		b[i] = letters[rand.Int63() % int64(len(letters))]
+		b[i] = letters[rand.Int63()%int64(len(letters))]
 	}
 	return string(b)
 }
