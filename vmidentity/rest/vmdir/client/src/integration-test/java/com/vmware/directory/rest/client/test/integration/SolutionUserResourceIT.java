@@ -26,12 +26,22 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
 
     @BeforeClass
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
-        IntegrationTestBase.init(true);
+        IntegrationTestBase.init();
     }
 
     @AfterClass
     public static void cleanup() throws ClientProtocolException, HttpException, ClientException, IOException {
-        IntegrationTestBase.cleanup(true);
+        SolutionUserDTO solutionUser = null;
+        // clean up solution user if it exists
+        try {
+            solutionUser = systemAdminClient.solutionUser().get(systemTenant, TEST_SOLUTION_USER_NAME);
+        }  catch (NotFoundException e) {
+            // Ignore it
+        } finally {
+            if (solutionUser != null) {
+                deleteSolutionUser(TEST_SOLUTION_USER_NAME);
+            }
+        }
     }
 
     @Test
@@ -44,7 +54,7 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
     public void testGet() throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
         SolutionUserDTO testUser = createSolutionUser(TEST_SOLUTION_USER_NAME, TEST_SOLUTION_USER_DESCRIPTION);
 
-        SolutionUserDTO user = testAdminClient.solutionUser().get(TENANT_NAME,  testUser.getName());
+        SolutionUserDTO user = systemAdminClient.solutionUser().get(systemTenant,  testUser.getName());
 
         assertNotNull(user);
         assertSolutionUsersEqual(testUser, user);
@@ -56,7 +66,7 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
     public void testUpdate() throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
         SolutionUserDTO testUser = createSolutionUser(TEST_SOLUTION_USER_NAME, TEST_SOLUTION_USER_DESCRIPTION);
 
-        SolutionUserDTO updated = testAdminClient.solutionUser().update(TENANT_NAME, testUser.getName(), testUser);
+        SolutionUserDTO updated = systemAdminClient.solutionUser().update(systemTenant, testUser.getName(), testUser);
 
         assertSolutionUsersEqual(testUser, updated);
 
@@ -64,18 +74,18 @@ public class SolutionUserResourceIT extends IntegrationTestBase {
     }
 
     private static SolutionUserDTO createSolutionUser(String name, String description) throws ClientProtocolException, ClientException, HttpException, IOException, GeneralSecurityException {
-        SolutionUserDTO testUser = TestGenerator.generateSolutionUser(name, TENANT_NAME, description, TestGenerator.generateCertificate("cn=SomeTestUser"));
-        SolutionUserDTO user = testAdminClient.solutionUser().create(TENANT_NAME, testUser);
+        SolutionUserDTO testUser = TestGenerator.generateSolutionUser(name, systemTenant, description, TestGenerator.generateCertificate("cn=SomeTestUser"));
+        SolutionUserDTO user = systemAdminClient.solutionUser().create(systemTenant, testUser);
 
         assertSolutionUsersEqual(testUser, user);
         return user;
     }
 
     private static void deleteSolutionUser(String user) throws ClientProtocolException, ClientException, HttpException, IOException {
-        testAdminClient.solutionUser().delete(TENANT_NAME, user);
+        systemAdminClient.solutionUser().delete(systemTenant, user);
 
         try {
-            testAdminClient.solutionUser().get(TENANT_NAME, user);
+            systemAdminClient.solutionUser().get(systemTenant, user);
             fail("Found solution user that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it

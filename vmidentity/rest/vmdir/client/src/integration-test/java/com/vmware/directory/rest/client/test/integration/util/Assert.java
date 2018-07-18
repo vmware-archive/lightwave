@@ -14,6 +14,7 @@ package com.vmware.directory.rest.client.test.integration.util;
  */
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import java.util.List;
@@ -35,7 +36,6 @@ public class Assert {
         fail("Unable to find expected Group");
     }
 
-
     public static void assertContainsUser(UserDTO expected, List<UserDTO> actual) {
         for (UserDTO u : actual) {
             if (expected.getName().equals(u.getName()) && expected.getDomain().equals(u.getDomain())) {
@@ -47,23 +47,22 @@ public class Assert {
         fail("Unable to find expected User");
     }
 
-
     public static void assertGroupsEqual(GroupDTO expected, GroupDTO actual) {
         assertEquals(expected.getName(), actual.getName());
-        assertEquals(expected.getDomain(), actual.getDomain());
+        assertTrue(expected.getDomain().equalsIgnoreCase(actual.getDomain()));
         assertEquals(expected.getDetails().getDescription(), actual.getDetails().getDescription());
     }
 
     public static void assertSolutionUsersEqual(SolutionUserDTO expected, SolutionUserDTO actual) {
         assertEquals(expected.getName(), actual.getName());
-        assertEquals(expected.getDomain(), actual.getDomain());
+        assertTrue(expected.getDomain().equalsIgnoreCase(actual.getDomain()));
         assertEquals(expected.getDescription(), actual.getDescription());
         assertEquals(expected.getCertificate().getEncoded(), actual.getCertificate().getEncoded());
     }
 
     public static void assertUsersEqual(UserDTO expected, UserDTO actual) {
         assertEquals(expected.getName(), actual.getName());
-        assertEquals(expected.getDomain(), actual.getDomain());
+        assertTrue(expected.getDomain().equalsIgnoreCase(actual.getDomain()));
         assertEquals(expected.getDetails().getDescription(), actual.getDetails().getDescription());
         assertEquals(expected.getDetails().getFirstName(), actual.getDetails().getFirstName());
         assertEquals(expected.getDetails().getLastName(), actual.getDetails().getLastName());

@@ -56,12 +56,33 @@ public class GroupResourceIT extends IntegrationTestBase {
 
     @BeforeClass
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
-        IntegrationTestBase.init(true);
+        IntegrationTestBase.init();
     }
 
     @AfterClass
     public static void cleanup() throws ClientProtocolException, HttpException, ClientException, IOException {
-        IntegrationTestBase.cleanup(true);
+        UserDTO user = null;
+        GroupDTO group = null;
+        // clean up user if it exists
+        try {
+            user = systemAdminClient.user().get(systemTenant, TEST_USER_NAME, systemTenant);
+        }  catch (NotFoundException e) {
+            // Ignore it
+        } finally {
+            if (user != null) {
+                deleteUser(user);
+            }
+        }
+        // clean up group if it exists
+        try {
+            group = systemAdminClient.group().get(systemTenant, TEST_GROUP_NAME, systemTenant);
+        }  catch (NotFoundException e) {
+            // Ignore it
+        } finally {
+            if (group != null) {
+                deleteGroup(group);
+            }
+        }
     }
 
     @Test
@@ -74,7 +95,7 @@ public class GroupResourceIT extends IntegrationTestBase {
     public void testGet() throws ClientProtocolException, HttpException, ClientException, IOException {
         GroupDTO testGroup = createGroup(TEST_GROUP_NAME, TEST_GROUP_DESCRIPTION);
 
-        GroupDTO group = testAdminClient.group().get(TENANT_NAME, testGroup.getName(), testGroup.getDomain());
+        GroupDTO group = systemAdminClient.group().get(systemTenant, testGroup.getName(), testGroup.getDomain());
 
         assertNotNull(group);
         assertGroupsEqual(testGroup, group);
@@ -94,7 +115,7 @@ public class GroupResourceIT extends IntegrationTestBase {
             .withDetails(updatedDetails)
             .build();
 
-        GroupDTO up = testAdminClient.group().update(TENANT_NAME, testGroup.getName(), testGroup.getDomain(), updatedGroup);
+        GroupDTO up = systemAdminClient.group().update(systemTenant, testGroup.getName(), testGroup.getDomain(), updatedGroup);
 
         assertEquals(updatedDetails.getDescription(), up.getDetails().getDescription());
 
@@ -103,7 +124,7 @@ public class GroupResourceIT extends IntegrationTestBase {
 
     @Test(expected = BadRequestException.class)
     public void testGetMembersWithInvalidGroupName() throws Exception {
-        testAdminClient.group().getMembers(TENANT_NAME, "", TENANT_NAME, MemberType.USER, 200);
+        systemAdminClient.group().getMembers(systemTenant, "", systemTenant, MemberType.USER, 200);
     }
 
     @Test
@@ -113,18 +134,18 @@ public class GroupResourceIT extends IntegrationTestBase {
 
         GroupDTO testGroup = createGroup(TEST_GROUP_NAME, TEST_GROUP_DESCRIPTION);
 
-        testAdminClient.group().addMembers(TENANT_NAME, testGroup.getName(), testGroup.getDomain(),
+        systemAdminClient.group().addMembers(systemTenant, testGroup.getName(), testGroup.getDomain(),
                 Arrays.asList(testUserUPN), MemberType.USER);
 
-        SearchResultDTO result = testAdminClient.group().getMembers(TENANT_NAME, testGroup.getName(), testGroup.getDomain(),
+        SearchResultDTO result = systemAdminClient.group().getMembers(systemTenant, testGroup.getName(), testGroup.getDomain(),
                 MemberType.USER, 200);
 
         assertContainsUser(testUser, new ArrayList<UserDTO>(result.getUsers()));
 
-        testAdminClient.group().removeMembers(TENANT_NAME, testGroup.getName(), testGroup.getDomain(),
+        systemAdminClient.group().removeMembers(systemTenant, testGroup.getName(), testGroup.getDomain(),
                 Arrays.asList(testUserUPN), MemberType.USER);
 
-        result = testAdminClient.group().getMembers(TENANT_NAME, testGroup.getName(), testGroup.getDomain(),
+        result = systemAdminClient.group().getMembers(systemTenant, testGroup.getName(), testGroup.getDomain(),
                 MemberType.USER, 200);
 
         assertNull(result.getUsers());
@@ -140,10 +161,10 @@ public class GroupResourceIT extends IntegrationTestBase {
 
         GroupDTO parentGroup = createGroup(TEST_GROUP_NAME + "parent", TEST_GROUP_DESCRIPTION);
 
-        testAdminClient.group().addMembers(TENANT_NAME, parentGroup.getName(), parentGroup.getDomain(),
+        systemAdminClient.group().addMembers(systemTenant, parentGroup.getName(), parentGroup.getDomain(),
                 Arrays.asList(testGroupUPN), MemberType.GROUP);
 
-        List<GroupDTO> parents = testAdminClient.group().getParents(TENANT_NAME, testGroup.getName(), testGroup.getDomain());
+        List<GroupDTO> parents = systemAdminClient.group().getParents(systemTenant, testGroup.getName(), testGroup.getDomain());
 
         assertContainsGroup(parentGroup, parents);
 
@@ -152,18 +173,18 @@ public class GroupResourceIT extends IntegrationTestBase {
     }
 
     private static GroupDTO createGroup(String name, String description) throws ClientProtocolException, HttpException, ClientException, IOException {
-        GroupDTO testGroup = TestGenerator.generateGroup(name, TENANT_NAME, description);
-        GroupDTO group = testAdminClient.group().create(TENANT_NAME, testGroup);
+        GroupDTO testGroup = TestGenerator.generateGroup(name, systemTenant, description);
+        GroupDTO group = systemAdminClient.group().create(systemTenant, testGroup);
 
         assertGroupsEqual(testGroup, group);
         return group;
     }
 
     private static void deleteGroup(GroupDTO group) throws ClientProtocolException, HttpException, ClientException, IOException {
-        testAdminClient.group().delete(TENANT_NAME, group.getName(), group.getDomain());
+        systemAdminClient.group().delete(systemTenant, group.getName(), group.getDomain());
 
         try {
-            testAdminClient.group().get(TENANT_NAME, group.getName(), group.getDomain());
+            systemAdminClient.group().get(systemTenant, group.getName(), group.getDomain());
             fail("Found group that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it
@@ -171,18 +192,18 @@ public class GroupResourceIT extends IntegrationTestBase {
     }
 
     private static UserDTO createUser(String name, String description) throws ClientProtocolException, ClientException, HttpException, IOException {
-        UserDTO testUser = TestGenerator.generateUser(name, TENANT_NAME, description);
-        UserDTO user = testAdminClient.user().create(TENANT_NAME, testUser);
+        UserDTO testUser = TestGenerator.generateUser(name, systemTenant, description);
+        UserDTO user = systemAdminClient.user().create(systemTenant, testUser);
 
         assertUsersEqual(testUser, user);
         return user;
     }
 
     private static void deleteUser(UserDTO user) throws ClientProtocolException, ClientException, HttpException, IOException {
-        testAdminClient.user().delete(TENANT_NAME, user.getName(), user.getDomain());
+        systemAdminClient.user().delete(systemTenant, user.getName(), user.getDomain());
 
         try {
-            testAdminClient.user().get(TENANT_NAME, user.getName(), user.getDomain());
+            systemAdminClient.user().get(systemTenant, user.getName(), user.getDomain());
             fail("Found user that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it

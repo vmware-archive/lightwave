@@ -31,6 +31,8 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
+import com.vmware.directory.rest.client.VmdirClient;
+import com.vmware.directory.rest.client.test.integration.util.TestClientFactory;
 import com.vmware.directory.rest.client.test.integration.util.TestGenerator;
 import com.vmware.directory.rest.client.test.integration.util.UserGenerator;
 import com.vmware.directory.rest.common.data.GroupDTO;
@@ -39,6 +41,7 @@ import com.vmware.directory.rest.common.data.UserDTO;
 import com.vmware.directory.rest.common.data.UserDetailsDTO;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
+import com.vmware.identity.rest.core.client.exceptions.client.BadRequestException;
 import com.vmware.identity.rest.core.client.exceptions.client.NotFoundException;
 
 public class UserResourceIT extends IntegrationTestBase {
@@ -49,16 +52,35 @@ public class UserResourceIT extends IntegrationTestBase {
     private static final String TEST_GROUP_NAME = "test.group";
     private static final String TEST_GROUP_DESCRIPTION = "This is a test group";
 
-    private static final String TENANT_NAME = "vsphere.local";
-
     @BeforeClass
     public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
-        IntegrationTestBase.init(true);
+        IntegrationTestBase.init();
     }
 
     @AfterClass
     public static void cleanup() throws ClientProtocolException, HttpException, ClientException, IOException {
-        IntegrationTestBase.cleanup(true);
+        UserDTO user = null;
+        GroupDTO group = null;
+        // clean up user if it exists
+        try {
+            user = systemAdminClient.user().get(systemTenant, TEST_USER_NAME, systemTenant);
+        }  catch (NotFoundException e) {
+            // Ignore it
+        } finally {
+            if (user != null) {
+                deleteUser(user);
+            }
+        }
+        // clean up group if it exists
+        try {
+            group = systemAdminClient.group().get(systemTenant, TEST_GROUP_NAME, systemTenant);
+        }  catch (NotFoundException e) {
+            // Ignore it
+        } finally {
+            if (group != null) {
+                deleteGroup(group);
+            }
+        }
     }
 
     @Test
@@ -71,7 +93,7 @@ public class UserResourceIT extends IntegrationTestBase {
     public void testGet() throws ClientProtocolException, ClientException, HttpException, IOException {
         UserDTO testUser = createUser(TEST_USER_NAME, TEST_USER_DESCRIPTION);
 
-        UserDTO user = testAdminClient.user().get(TENANT_NAME, testUser.getName(), testUser.getDomain());
+        UserDTO user = systemAdminClient.user().get(systemTenant, testUser.getName(), testUser.getDomain());
 
         assertNotNull(user);
         assertUsersEqual(testUser, user);
@@ -91,7 +113,7 @@ public class UserResourceIT extends IntegrationTestBase {
             .withDetails(updatedDetails)
             .build();
 
-        UserDTO up = testAdminClient.user().update(TENANT_NAME, testUser.getName(), testUser.getDomain(), updatedUser);
+        UserDTO up = systemAdminClient.user().update(systemTenant, testUser.getName(), testUser.getDomain(), updatedUser);
 
         assertEquals(updatedDetails.getDescription(), up.getDetails().getDescription());
 
@@ -99,20 +121,36 @@ public class UserResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testUpdatePassword() throws ClientProtocolException, ClientException, HttpException, IOException {
+    public void testUpdatePassword() throws Exception {
         UserDTO testUser = createUser(TEST_USER_NAME, TEST_USER_DESCRIPTION);
+        VmdirClient testClient = TestClientFactory.createClient(hostname, systemTenant, testUser.getName(),
+                testUser.getDomain(), testUser.getPasswordDetails().getPassword());
 
-        testAdminClient.user().updatePassword(TENANT_NAME, testUser.getName(), testUser.getDomain(),
+        testClient.user().updatePassword(systemTenant, testUser.getName(), testUser.getDomain(),
                 testUser.getPasswordDetails().getPassword(), UserGenerator.PASSWORD + "a");
 
         deleteUser(testUser);
+    }
+
+    @Test(expected = BadRequestException.class)
+    public void testUpdatePasswordWithInvalidCurrentPassword() throws Exception {
+        UserDTO testUser = createUser(TEST_USER_NAME, TEST_USER_DESCRIPTION);
+        try {
+            VmdirClient testClient = TestClientFactory.createClient(hostname, systemTenant, testUser.getName(),
+                    testUser.getDomain(), testUser.getPasswordDetails().getPassword());
+
+            testClient.user().updatePassword(systemTenant, testUser.getName(), testUser.getDomain(),
+                    testUser.getPasswordDetails().getPassword() + "a", UserGenerator.PASSWORD + "a");
+        } finally {
+            deleteUser(testUser);
+        }
     }
 
     @Test
     public void testResetPassword() throws ClientProtocolException, ClientException, HttpException, IOException {
         UserDTO testUser = createUser(TEST_USER_NAME, TEST_USER_DESCRIPTION);
 
-        testAdminClient.user().resetPassword(TENANT_NAME, testUser.getName(), testUser.getDomain(), UserGenerator.PASSWORD + "a");
+        systemAdminClient.user().resetPassword(systemTenant, testUser.getName(), testUser.getDomain(), UserGenerator.PASSWORD + "a");
 
         deleteUser(testUser);
     }
@@ -124,10 +162,10 @@ public class UserResourceIT extends IntegrationTestBase {
 
         GroupDTO testGroup = createGroup(TEST_GROUP_NAME, TEST_GROUP_DESCRIPTION);
 
-        testAdminClient.group().addMembers(TENANT_NAME, testGroup.getName(), testGroup.getDomain(),
+        systemAdminClient.group().addMembers(systemTenant, testGroup.getName(), testGroup.getDomain(),
                 Arrays.asList(testUserUPN), MemberType.USER);
 
-        List<GroupDTO> groups = testAdminClient.user().getGroups(TENANT_NAME, testUser.getName(), testUser.getDomain(), false);
+        List<GroupDTO> groups = systemAdminClient.user().getGroups(systemTenant, testUser.getName(), testUser.getDomain(), false);
 
         assertContainsGroup(testGroup, groups);
 
@@ -136,18 +174,18 @@ public class UserResourceIT extends IntegrationTestBase {
     }
 
     private static UserDTO createUser(String name, String description) throws ClientProtocolException, ClientException, HttpException, IOException {
-        UserDTO testUser = TestGenerator.generateUser(name, TENANT_NAME, description);
-        UserDTO user = testAdminClient.user().create(TENANT_NAME, testUser);
+        UserDTO testUser = TestGenerator.generateUser(name, systemTenant, description);
+        UserDTO user = systemAdminClient.user().create(systemTenant, testUser);
 
         assertUsersEqual(testUser, user);
-        return user;
+        return testUser;
     }
 
     private static void deleteUser(UserDTO user) throws ClientProtocolException, ClientException, HttpException, IOException {
-        testAdminClient.user().delete(TENANT_NAME, user.getName(), user.getDomain());
+        systemAdminClient.user().delete(systemTenant, user.getName(), user.getDomain());
 
         try {
-            testAdminClient.user().get(TENANT_NAME, user.getName(), user.getDomain());
+            systemAdminClient.user().get(systemTenant, user.getName(), user.getDomain());
             fail("Found user that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it
@@ -155,18 +193,18 @@ public class UserResourceIT extends IntegrationTestBase {
     }
 
     private static GroupDTO createGroup(String name, String description) throws ClientProtocolException, HttpException, ClientException, IOException {
-        GroupDTO testGroup = TestGenerator.generateGroup(name, TENANT_NAME, description);
-        GroupDTO group = testAdminClient.group().create(TENANT_NAME, testGroup);
+        GroupDTO testGroup = TestGenerator.generateGroup(name, systemTenant, description);
+        GroupDTO group = systemAdminClient.group().create(systemTenant, testGroup);
 
         assertGroupsEqual(testGroup, group);
         return group;
     }
 
     private static void deleteGroup(GroupDTO group) throws ClientProtocolException, HttpException, ClientException, IOException {
-        testAdminClient.group().delete(TENANT_NAME, group.getName(), group.getDomain());
+        systemAdminClient.group().delete(systemTenant, group.getName(), group.getDomain());
 
         try {
-            testAdminClient.group().get(TENANT_NAME, group.getName(), group.getDomain());
+            systemAdminClient.group().get(systemTenant, group.getName(), group.getDomain());
             fail("Found group that was previously deleted");
         } catch (NotFoundException e) {
             // Ignore it

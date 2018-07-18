@@ -18,7 +18,6 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 
 import org.apache.http.HttpException;
-import org.apache.http.client.ClientProtocolException;
 
 import com.vmware.directory.rest.client.VmdirClient;
 import com.vmware.directory.rest.client.test.integration.util.TestClientFactory;
@@ -30,33 +29,19 @@ public class IntegrationTestBase {
     protected static IntegrationTestProperties properties;
 
     protected static VmdirClient systemAdminClient;
-    protected static VmdirClient testAdminClient;
+    protected static String systemTenant;
+    protected static String hostname;
 
-    // Choose the name of tenant against which the integration tests are run.
-    protected static final String TENANT_NAME = "vsphere.local";
-
-    public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException {
+    public static void init() throws IOException, GeneralSecurityException, ClientException, HttpException {
         properties = new IntegrationTestProperties();
 
-        systemAdminClient = TestClientFactory.createClient(properties.getHost(),
-                properties.getSystemTenant(),
+        systemTenant = properties.getSystemTenant();
+        hostname = properties.getHost();
+        systemAdminClient = TestClientFactory.createClient(hostname,
+                systemTenant,
                 properties.getSystemAdminUsername(),
                 properties.getSystemDomain(),
                 properties.getSystemAdminPassword());
 
-        if (withTestTenant) {
-        // Run the integration tests against a default tenant : vsphere.local
-        //            testAdminClient = TestClientFactory.createClient(properties.getHost(),
-        //                    testTenant.getName(),
-        //                    testTenant.getUsername(),
-        //                    testTenant.getPassword());
-        }
     }
-
-    public static void cleanup(boolean withTestTenant) throws ClientProtocolException, HttpException, ClientException, IOException {
-        if (withTestTenant && testAdminClient != null) {
-           // testAdminClient.tenant().delete(testTenant.getName());
-        }
-    }
-
 }

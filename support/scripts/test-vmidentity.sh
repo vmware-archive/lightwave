@@ -11,7 +11,8 @@ unitTestsRetVal=0
 unitTestsCurrentRet=0
 #integration tests
 oidcClientRetVal=0
-restClientRetVal=0
+restIdmClientRetVal=0
+restVmdirClientRetVal=0
 idmServerRetVal=0
 wsTrustClientRetVal=0
 
@@ -183,8 +184,6 @@ function run_all_unit_tests
     unit_test_wstrustclient
 }
 
-# Integration tests
-
 function integration_test_idm_server
 {
     local sts_hostname=$1
@@ -231,7 +230,23 @@ function integration_test_rest_idm_client
                -DskipIntegrationTests=false \
                -Dhost=$sts_hostname \
                -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-    restClientRetVal=$?
+    restIdmClientRetVal=$?
+}
+
+function integration_test_rest_vmdir_client
+{
+    local sts_hostname=$1
+
+    cd "$PROJECT_ROOT/vmidentity/rest/vmdir/client/"
+    printf "\n=============================================\n"
+    printf "\n= Integration tests rest/vmdir/client         =\n"
+    printf "\n=============================================\n"
+    echo verify -DskipTests=true -DskipIntegrationTests=false -Dhost=$sts_hostname -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+        mvn verify -DskipTests=true \
+               -DskipIntegrationTests=false \
+               -Dhost=$sts_hostname \
+               -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
+    restVmdirClientRetVal=$?
 }
 
 function integration_test_wstrust_client
@@ -257,6 +272,7 @@ function run_all_integration_tests
     integration_test_idm_server $sts_hostname
     integration_test_openidconnect_client $sts_hostname
     integration_test_rest_idm_client $sts_hostname
+    integration_test_rest_vmdir_client $sts_hostname
     # integration_test_wstrust_client $sts_hostname
 }
 
@@ -277,7 +293,7 @@ fi
 case $TEST_FILTER in
     all)
         run_all_unit_tests
-        run_all_integration_tests
+        run_all_integration_tests $STS_HOSTNAME
         ;;
     unit-test-commons)
         unit_test_commons
@@ -315,6 +331,9 @@ case $TEST_FILTER in
     integration-test-rest-idm-client)
         integration_test_rest_idm_client $STS_HOSTNAME
         ;;
+    integration_test_rest_vmdir_client)
+        integration_test_rest_vmdir_client $STS_HOSTNAME
+        ;;
     integration-test-wstrust-client)
         integration_test_wstrust_client $STS_HOSTNAME
         ;;
@@ -341,9 +360,15 @@ if [ ! $oidcClientRetVal -eq 0 ]; then
     retVal=1
 fi
 
-if [ ! $restClientRetVal -eq 0 ]; then
+if [ ! $restIdmClientRetVal -eq 0 ]; then
     printf "\nError: integration tests: vmidentity/rest/idm/client/\n"
     cat "$PROJECT_ROOT/vmidentity/rest/idm/client/target/failsafe-reports/failsafe-summary.xml"
+    retVal=1
+fi
+
+if [ ! $restVmdirClientRetVal -eq 0 ]; then
+    printf "\nError: integration tests: vmidentity/rest/vmdir/client/\n"
+    cat "$PROJECT_ROOT/vmidentity/rest/vmdir/client/target/failsafe-reports/failsafe-summary.xml"
     retVal=1
 fi
 

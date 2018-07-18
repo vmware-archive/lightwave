@@ -4582,7 +4582,6 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     public void resetUserPassword(String accountName, char[] currentPassword,
             char[] newPassword) throws Exception
     {
-        InvalidCredentialsLdapException srpEx = null;
         ILdapMessage message = null;
         String userDn = null;
         ILdapConnectionEx connection = null;
@@ -4598,23 +4597,13 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 if (connection != null) {
                     connection.close(); // close SRP connection
                 }
-                srpEx = ex;
-            }
-
-            if(srpEx != null){
                 userDn = getUserDn(userId, true);
                 if(userDn != null){
                     logger.warn("The user is not SRP-enabled. Attempting to authenticate using simple bind.");
                     connection = this.getConnection(userDn, new String(currentPassword),
                             AuthenticationType.PASSWORD, false);
                 } else {
-                    logger.error("Original login seems invalid.", srpEx);
-                    // According to admin interface, if not valid password,
-                    // should throw this.
-                    throw new InvalidPrincipalException(String.format(
-                            "Invalid login credential for user %s@%s", accountName,
-                            this.getDomain()), String.format("%s@%s", accountName,
-                            getDomain()));
+                    throw ex;
                 }
             }
 
@@ -4655,6 +4644,14 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
             } else {
                 throw new IDMException("Failed to connection to ldap server.");
             }
+        } catch (InvalidCredentialsLdapException e) {
+            logger.error("Original login seems invalid.", e);
+            // According to admin interface, if not valid password,
+            // should throw this.
+            throw new InvalidPrincipalException(String.format(
+                    "Invalid login credential for user %s@%s", accountName,
+                    this.getDomain()), String.format("%s@%s", accountName,
+                    getDomain()));
         } finally {
             if (connection != null) {
                 connection.close();
