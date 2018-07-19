@@ -51,7 +51,8 @@ vmstsjars_DATA= \
 
 vmstswebapps_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/openidconnect-sample-rp.war \
-    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war
+    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war \
+    @top_builddir@/vmidentity/vmware-sts/packages/ssolib-sample.war
 
 sbin_SCRIPTS = \
     @top_srcdir@/vmidentity/websso/src/main/resources/sso-config.sh \
