@@ -14,7 +14,7 @@ if [[ $ARG == "" || $ARG == "--with-ui" ]]; then
   && \
   ../configure \
     CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
-    LDFLAGS=-ldl \
+    LDFLAGS="-ldl -pie -fPIE" \
     --prefix=/opt/vmware \
     --enable-debug=yes \
     --libdir=/opt/vmware/lib64 \
