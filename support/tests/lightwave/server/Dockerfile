@@ -5,4 +5,4 @@ LABEL vendor="VMware, Inc."
 
 RUN tdnf makecache -q
 RUN tdnf update likewise-open --disablerepo=* --enablerepo=lightwave -qy
-RUN tdnf install net-tools shadow findutils gawk jansson sqlite-devel copenapi -qy
+RUN tdnf install net-tools shadow findutils gawk jansson sqlite-devel copenapi apache-tomcat -qy

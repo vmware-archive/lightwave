@@ -235,8 +235,11 @@ targets:
     always: true
     image: lightwave_lightwave-client
     net: lightwave_lightwave
+    env:
+      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
     cmds:
-      - bash -x support/tests/run_hmake_sanity.sh
+      - bash support/tests/run_hmake_sanity.sh
+      - bash support/tests/run_hmake_afd_rest.sh
 
   clean-photon1:
     description: Cleanup
