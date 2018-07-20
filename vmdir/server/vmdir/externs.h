@@ -31,4 +31,6 @@ extern VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals;
 
 extern PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];
 
-extern PVM_METRICS_GAUGE   gpSrvStatMetrics[METRICS_SRV_STAT_COUNT];
+extern PVM_METRICS_GAUGE gpSrvStatMetrics[METRICS_SRV_STAT_COUNT];
+
+extern PVM_METRICS_GAUGE gpLwGitHashMetrics;

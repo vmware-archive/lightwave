@@ -1518,6 +1518,14 @@ AC_SUBST(pscsetupjarsdir)
 vmmetricsconfdir="$datadir/config"
 AC_SUBST(vmmetricsconfdir)
 
+#--------------------------------------------------------------------
+
+gitcommithash=`echo $(git rev-parse --short HEAD)`
+AC_SUBST(gitcommithash)
+AC_DEFINE_UNQUOTED(GIT_COMMIT_HASH, "$gitcommithash", [Git Commit Hash])
+
+#--------------------------------------------------------------------
+
 AC_CONFIG_FILES([Makefile
                  vmcommon/Makefile
                  vmcommon/include/Makefile
