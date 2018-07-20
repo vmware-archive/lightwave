@@ -304,6 +304,27 @@ func VmAfdForceRefreshDCName() (dcName string, err error) {
 	return
 }
 
+//VmAfdCreateComputerOUContainer recursively creates the OU container under ou=Computers given username, password, and orgunit
+func VmAfdCreateComputerOUContainer(userName, password, orgUnit string) (err error) {
+	userNameCStr := goStringToCString(userName)
+	defer freeCString(userNameCStr)
+	passwordCStr := goStringToCString(password)
+	defer freeCString(passwordCStr)
+	orgUnitCStr := goStringToCString(orgUnit)
+	defer freeCString(orgUnitCStr)
+
+	var e C.DWORD = C.VmAfdCreateComputerOUContainerA(
+		userNameCStr,
+		passwordCStr,
+		orgUnitCStr)
+	if e != 0 {
+		err = fmt.Errorf("[ERROR] Failed to create Computer OU Container (%s)", cErrorToGoError(e))
+		return
+	}
+
+	return
+}
+
 //VmAfdCreateComputerAccountWithDC creates a machine account given the DC name, username, password, machine name, and (optional) orgunit
 func VmAfdCreateComputerAccountWithDC(serverName, userName, password, machineName, orgUnit string) (machinePassword string, err error) {
 	serverNameCStr := goStringToCString(serverName)

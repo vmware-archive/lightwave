@@ -236,6 +236,19 @@ func TestDoubleFree(t *testing.T) {
 	server.Close()
 }
 
+func TestVmAfdCreateComputerOUContainer(t *testing.T) {
+	// Create OU container
+	orgUnit := "ou=" + randSeq(10) + ",ou=" + randSeq(10) + ",ou=" + randSeq(10)
+	err := VmAfdCreateComputerOUContainer("Administrator", *password, orgUnit)
+	if err != nil {
+		assert.FailNow(t, "Error in creating OU container", "Error: %+v, account: %s, password: %s, orgUnit: %s",
+			err,
+			"Administrator",
+			*password,
+			orgUnit)
+	}
+}
+
 func TestVmAfdCreateComputerAccountWithDC(t *testing.T) {
 	if loadBalancer == nil || *loadBalancer == "" {
 		log.Printf("ELB not passed in, skipping CreateMachineAccount test")
