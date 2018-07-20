@@ -537,6 +537,8 @@ ThreadFunction(
     DWORD dwError = ERROR_SUCCESS;
     PVMDIR_START_ROUTINE pThreadStart = NULL;
     PVOID pThreadArgs = NULL;
+    PVMDIR_THREAD_LOG_CONTEXT   pLogCtx = NULL;
+
     union
     {
         DWORD dwError;
@@ -561,10 +563,15 @@ ThreadFunction(
 
     VMDIR_SAFE_FREE_MEMORY( pArgs );
 
+    // set thread log context so error logs will show function name and line number
+    dwError = VmDirAllocAndSetThrLogCtx(&pLogCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = pThreadStart( pThreadArgs );
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
+    VmDirUnsetAndFreeThrLogCtx(pLogCtx);
 
     VMDIR_SAFE_FREE_MEMORY( pArgs );
 

@@ -59,11 +59,8 @@ VmDirSrvServerReset(
 {
     DWORD dwError = 0;
     BOOLEAN     bWriteInvocationId = FALSE;
-    BOOLEAN     bMdbWalEnable = FALSE;
     BOOLEAN     bFatalError = FALSE;
     BOOLEAN     bLdapThrStopped = FALSE;
-
-    VmDirGetMdbWalEnable(&bMdbWalEnable);
 
     VmDirdStateSet(VMDIRD_STATE_SHUTDOWN);
 
@@ -88,7 +85,7 @@ VmDirSrvServerReset(
     VmDirShutdownDB();
 
     //swap current vmdir database file with the foriegn one under partner/
-    dwError = VmDirSwapDBs(bMdbWalEnable);
+    dwError = VmDirSwapDBs();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Swap DB", __FUNCTION__);
