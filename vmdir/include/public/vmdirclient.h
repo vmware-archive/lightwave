@@ -312,6 +312,14 @@ VmDirCreateComputerAccount(
     );
 
 DWORD
+VmDirCreateComputerOUContainer(
+    PCSTR pszServerName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszOrgUnit
+    );
+
+DWORD
 VmDirCreateComputerAccountAtomic(
     PCSTR                   pszServerName,
     PCSTR                   pszSRPUPN,

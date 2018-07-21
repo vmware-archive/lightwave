@@ -494,6 +494,17 @@ VmAfdLocalAPIHandler(
                             );
             break;
 
+        case VMAFD_IPC_CREATE_COMPUTER_OU_CONTAINER:
+
+            dwError = VmAfdIpcCreateComputerOUContainer(
+                            pConnectionContext,
+                            pRequest,
+                            dwRequestSize,
+                            &pResponse,
+                            &dwResponseSize
+                            );
+            break;
+
         case VMAFD_IPC_JOIN_AD:
 
             dwError = VmAfdIpcJoinAD(

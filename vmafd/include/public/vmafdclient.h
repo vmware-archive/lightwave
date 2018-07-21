@@ -540,6 +540,20 @@ VmAfdCreateComputerAccountDCW(
     );
 
 DWORD
+VmAfdCreateComputerOUContainerA(
+    PCSTR pszUserName,        /* IN              */
+    PCSTR pszPassword,        /* IN              */
+    PCSTR pszOrgUnit          /* IN              */
+    );
+
+DWORD
+VmAfdCreateComputerOUContainerW(
+    PCWSTR pszUserName,       /* IN              */
+    PCWSTR pszPassword,       /* IN              */
+    PCWSTR pszOrgUnit         /* IN              */
+    );
+
+DWORD
 VmAfdJoinADA(
     PCSTR pszServerName,     /* IN     OPTIONAL */
     PCSTR pszUserName,       /* IN              */

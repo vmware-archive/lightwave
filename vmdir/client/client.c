@@ -1423,6 +1423,69 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirCreateComputerOUContainer(
+    PCSTR           pszServerName,
+    PCSTR           pszUserName,
+    PCSTR           pszPassword,
+    PCSTR           pszOrgUnit)
+{
+    DWORD           dwError = 0;
+    PSTR            pszDomainName = NULL;
+    LDAP            *pLd = NULL;
+
+    if (IsNullOrEmptyString(pszServerName)  ||
+        IsNullOrEmptyString(pszUserName)    ||
+        IsNullOrEmptyString(pszPassword)    ||
+        IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError =  VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirGetDomainName(pszServerName, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirConnectLDAPServer(
+                        &pLd,
+                        pszServerName,
+                        pszDomainName,
+                        pszUserName,
+                        pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapCreateComputerOUContainer(
+                        pLd,
+                        pszDomainName,
+                        pszOrgUnit);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                   "[%s,%d] (%s)(%s)(%s) passed",
+                   __FUNCTION__,
+                   __LINE__,
+                   VDIR_SAFE_STRING(pszServerName),
+                   VDIR_SAFE_STRING(pszUserName),
+                   VDIR_SAFE_STRING(pszOrgUnit));
+
+cleanup:
+
+    VmDirLdapUnbind(&pLd);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
+
+    return dwError;
+
+error:
+
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                    "[%s,%d] failed. Error(%u)",
+                    __FUNCTION__,
+                    __LINE__,
+                    dwError);
+
+    goto cleanup;
+}
+
 /*
  * In order for a node to leave federation, we need to clean up -
  * 1. Make sure at least one partner is up-to-date with respect to us

@@ -1040,6 +1040,39 @@ typedef struct _VMW_TYPE_SPEC_
     }\
 }
 
+#define CREATE_COMPUTER_OU_CONTAINER_INPUT_PARAMS  \
+{\
+    {\
+        "Server Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "UserName",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Organizational Unit",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
+}
+
+#define CREATE_COMPUTER_OU_CONTAINER_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    }\
+}
+
 #define JOIN_AD_INPUT_PARAMS \
 {\
     {\

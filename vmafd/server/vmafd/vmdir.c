@@ -1724,6 +1724,91 @@ error:
 }
 
 DWORD
+VmAfSrvCreateComputerOUContainer(
+    PCWSTR          pwszServerName,     /* IN            */
+    PCWSTR          pwszUserName,       /* IN            */
+    PCWSTR          pwszPassword,       /* IN            */
+    PCWSTR          pwszOrgUnit         /* IN            */
+    )
+{
+    DWORD           dwError = 0;
+    PSTR            pszUserName = NULL;
+    PSTR            pszPassword = NULL;
+    PSTR            pszOrgUnit = NULL;
+    PWSTR           pwszDCName = NULL;
+    PSTR            pszDCName = NULL;
+    PWSTR           pwszDomain = NULL;
+    PSTR            pszDomainName = NULL;
+
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszUserName, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszPassword, dwError);
+    BAIL_ON_VMAFD_INVALID_POINTER(pwszOrgUnit, dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszUserName, &pszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszPassword, &pszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszOrgUnit, &pszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pwszServerName))
+    {
+        dwError = VmAfSrvGetDCName(&pwszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdAllocateStringAFromW(pwszDCName, &pszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdAllocateStringAFromW(pwszServerName, &pszDCName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfSrvGetDomainName(&pwszDomain);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszDomain, &pszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirCreateComputerOUContainer(
+                        pszDCName,
+                        pszUserName,
+                        pszPassword,
+                        pszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "[%s,%d]: Created computer OU container (%s).",
+             __FUNCTION__,
+             __LINE__,
+             pszOrgUnit);
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszDCName);
+    VMAFD_SAFE_FREE_STRINGA(pszUserName);
+    VMAFD_SAFE_FREE_STRINGA(pszPassword);
+    VMAFD_SAFE_FREE_STRINGA(pszDCName);
+    VMAFD_SAFE_FREE_STRINGA(pszOrgUnit);
+    VMAFD_SAFE_FREE_STRINGA(pszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomain);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "[%s,%d]: Failed to create computer OU container. Error (%u)",
+             __FUNCTION__,
+             __LINE__,
+             dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfSrvForceReplication(
     PWSTR pwszServerName         /* IN               */
     )

@@ -217,6 +217,14 @@ VmAfSrvCreateComputerAccount(
     );
 
 DWORD
+VmAfSrvCreateComputerOUContainer(
+    PCWSTR              pwszServerName,     /* IN            */
+    PCWSTR              pwszUserName,       /* IN            */
+    PCWSTR              pwszPassword,       /* IN            */
+    PCWSTR              pwszOrgUnit         /* IN            */
+    );
+
+DWORD
 VmAfSrvJoinAD(
     PWSTR    pwszUserName,       /* IN              */
     PWSTR    pwszPassword,       /* IN              */
@@ -1324,6 +1332,15 @@ VmAfdIpcCreateComputerAccount(
     );
 
 DWORD
+VmAfdIpcCreateComputerOUContainer(
+    PVM_AFD_CONNECTION_CONTEXT      pConnectionContext,
+    PBYTE                           pRequest,
+    DWORD                           dwRequestSize,
+    PBYTE                           *ppResponse,
+    PDWORD                          pdwResponseSize
+    );
+
+DWORD
 VmAfdIpcJoinAD(
     PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
     PBYTE pRequest,
@@ -2419,15 +2436,6 @@ VmAfdShutdownSrcIpThread(
 DWORD
 VmAfdInitSourceIpThread(
     PSOURCE_IP_CONTEXT* ppSourceIpContext
-    );
-
-DWORD
-VmAfdIpcCreateComputerAccount(
-    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
-    PBYTE pRequest,
-    DWORD dwRequestSize,
-    PBYTE * ppResponse,
-    PDWORD pdwResponseSize
     );
 
 //ha_upgrade.c

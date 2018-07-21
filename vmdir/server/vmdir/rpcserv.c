@@ -2636,8 +2636,6 @@ error:
     goto cleanup;
 }
 
-
-
 /*
  * Rundown function for vmdir_dbcp_handle data. Handle the case where the
  * client/server connection is lost and the existing connection handle (FILE *)
