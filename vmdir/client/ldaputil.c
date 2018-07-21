@@ -4558,6 +4558,10 @@ VmDirLdapCreateComputerOUContainer(
                      attrs,
                      NULL,
                      NULL);
+        if (dwError == LDAP_ALREADY_EXISTS)
+        {
+            goto cleanup;
+        }
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
@@ -4614,6 +4618,10 @@ VmDirLdapCreateComputerOUContainer(
                         attrs,
                         NULL,
                         NULL);
+            if (dwError == LDAP_ALREADY_EXISTS)
+            {
+                continue;
+            }
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
