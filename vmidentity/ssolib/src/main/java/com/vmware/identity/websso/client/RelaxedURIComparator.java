@@ -13,8 +13,9 @@
  */
 package com.vmware.identity.websso.client;
 
-import org.opensaml.common.binding.decoding.BasicURLComparator;
-import org.opensaml.common.binding.decoding.URIComparator;
+import net.shibboleth.utilities.java.support.net.BasicURLComparator;
+import net.shibboleth.utilities.java.support.net.URIComparator;
+import net.shibboleth.utilities.java.support.net.URIException;
 
 /**
  * This replaces default URIComparator from OpenSAML and allows us to accept
@@ -40,9 +41,10 @@ public final class RelaxedURIComparator implements URIComparator {
     /**
      * Protocal relaxed comparison of URI
      * @return true the two URIs are equal
+     * @throws URIException
      * @see org.opensaml.common.binding.decoding.URIComparator#compare(java.lang.String, java.lang.String)
      */
-    public boolean compare(String arg0, String arg1) {
+    public boolean compare(String arg0, String arg1) throws URIException {
         // convert https in the beginning of the url into http and then compare
         // that ensures relaxed protocol check
 

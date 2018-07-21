@@ -217,6 +217,14 @@ VmAfSrvCreateComputerAccount(
     );
 
 DWORD
+VmAfSrvCreateComputerOUContainer(
+    PCWSTR              pwszServerName,     /* IN            */
+    PCWSTR              pwszUserName,       /* IN            */
+    PCWSTR              pwszPassword,       /* IN            */
+    PCWSTR              pwszOrgUnit         /* IN            */
+    );
+
+DWORD
 VmAfSrvJoinAD(
     PWSTR    pwszUserName,       /* IN              */
     PWSTR    pwszPassword,       /* IN              */
@@ -334,6 +342,11 @@ VmAfSrvChangePNID(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,
     PCWSTR pwszPNID
+    );
+
+DWORD
+VmAfSrvGetVmDirJoinWithPreCopiedDB(
+    PBOOLEAN    pbJoinWithPreCopiedDB           /* OUT */
     );
 
 /* dcfinder.c */
@@ -1316,6 +1329,15 @@ VmAfdIpcCreateComputerAccount(
     DWORD dwRequestSize,
     PBYTE * ppResponse,
     PDWORD pdwResponseSize
+    );
+
+DWORD
+VmAfdIpcCreateComputerOUContainer(
+    PVM_AFD_CONNECTION_CONTEXT      pConnectionContext,
+    PBYTE                           pRequest,
+    DWORD                           dwRequestSize,
+    PBYTE                           *ppResponse,
+    PDWORD                          pdwResponseSize
     );
 
 DWORD
@@ -2414,15 +2436,6 @@ VmAfdShutdownSrcIpThread(
 DWORD
 VmAfdInitSourceIpThread(
     PSOURCE_IP_CONTEXT* ppSourceIpContext
-    );
-
-DWORD
-VmAfdIpcCreateComputerAccount(
-    PVM_AFD_CONNECTION_CONTEXT pConnectionContext,
-    PBYTE pRequest,
-    DWORD dwRequestSize,
-    PBYTE * ppResponse,
-    PDWORD pdwResponseSize
     );
 
 //ha_upgrade.c

@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
-import org.opensaml.xml.util.Base64;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.springframework.stereotype.Controller;
@@ -49,6 +48,8 @@ import com.vmware.identity.samlservice.IdmAccessorFactory;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.session.SessionManager;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * Handles requests for the application SSO page.
@@ -94,6 +95,7 @@ public class SsoController extends BaseSsoController {
 
     String sso(Locale locale, String tenant, Model model, HttpServletRequest request, HttpServletResponse response,
             IdmAccessorFactory idmFactory) throws IOException {
+
         logger.info("Welcome to SP-initiated AuthnRequest handler! "
                 + "The client locale is " + locale.toString() + ", tenant is "
                 + tenant);
@@ -573,7 +575,6 @@ public class SsoController extends BaseSsoController {
        if (tenantName == null || tenantName.isEmpty()) {
            return null;
        }
-
        Validate.notNull(idmAccessor, "idmAccessor");
 
        RSAAgentConfig config = idmAccessor.getAuthnPolicy(tenantName).get_rsaAgentConfig();
@@ -618,7 +619,7 @@ public class SsoController extends BaseSsoController {
             logger.error("No Relying Party's entity ID found. Ignore the request!");
             return null;
         }
-        String rpEntityId = new String(Base64.decode(encodedEntityId));
+        String rpEntityId = new String(Base64Support.decode(encodedEntityId));
         RelyingParty rp = idmAccessor.getRelyingPartyByUrl(rpEntityId);
 
         if (rp != null) {

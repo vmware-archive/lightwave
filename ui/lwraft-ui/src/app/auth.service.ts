@@ -15,7 +15,6 @@
 import { Injectable, Inject } from '@angular/core';
 import { Response } from '@angular/http';
 import { HttpClient, HttpHeaders } from '@angular/common/http';
-import { ConfigService } from './config.service';
 import { Observable } from "rxjs/Rx";
 import './rxjs-operators';
 import { UtilsService } from './utils.service';
@@ -25,39 +24,42 @@ export class AuthService {
     private header: HttpHeaders;
     private rootDNQuery: string;
     private rootDN: string;
+    private port:number;
 
-    constructor(private utilsService:UtilsService, private httpClient:HttpClient, private configService: ConfigService) {}
+    constructor(private utilsService:UtilsService, private httpClient:HttpClient) {}
 
     getAuthHeader():any {
         if(this.header){
             return this.header;
         }else{
-            this.constructAuthHeader(this.configService.currentUser.server.host, this.configService.currentUser.token.access_token);
-            this.rootDN = this.configService.currentUser.tenant
+            this.constructAuthHeader(this.getPostServer(), this.getToken());
+            this.rootDN = this.getRootDN()
             this.rootDNQuery = this.utilsService.getRootDnQuery(this.rootDN);
             return this.header;
         }
     }
 
-    getSTSLoginUrl():Observable<string[]> {
-        let protocol:string = window.location.protocol;
-        let host:string = window.location.host;
-        let path:string = '/v1/post/idp';
-        let queryURL:string = protocol + '//' + host + ':' + this.configService.API_PORT + path;
-        let loginURL:string, tokenStr:string;
-        let resObj:any;
-        return this.httpClient.get(queryURL)
-               .share()
-               .map((res: Response) => res)
-               .catch(this.handleError)
-    }
-
-    getDomain() {
+    getPostServer() {
         if(this.domain){
             return this.domain;
         }else{
-            return this.configService.currentUser.server.host;
+            let curUserObj = JSON.parse(window.sessionStorage.currentUser);
+            return curUserObj.server.host
         }
+    }
+
+    getPostPort():number{
+        if(this.port){
+            return this.port;
+        }else{
+            let curUserObj = JSON.parse(window.sessionStorage.currentUser);
+            return curUserObj.server.port
+        }
+    }
+
+    getToken() {
+        let curUserObj = JSON.parse(window.sessionStorage.currentUser);
+        return curUserObj.token.access_token;
     }
 
     getRootDnQuery() {
@@ -65,7 +67,12 @@ export class AuthService {
     }
 
     getRootDN() {
-       return this.rootDN;
+        if(this.rootDN){
+            return this.rootDN
+        }else{
+            let curUserObj = JSON.parse(window.sessionStorage.currentUser)
+            return curUserObj.tenant;
+        }
     }
 
     logout(idpHost:string) {

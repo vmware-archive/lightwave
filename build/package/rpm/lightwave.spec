@@ -165,6 +165,12 @@ Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
 
+%package samples
+Summary: Lightwave Samples
+Requires: lightwave-client >= %{_version}
+%description samples
+Lightwave Samples
+
 %debug_package
 %build
 %install
@@ -1291,6 +1297,12 @@ Lightwave POST service
 
 %exclude %{_prefix}/site-packages/identity/*
 %exclude %{_webappsdir}/openidconnect-sample-rp.war
+
+%files samples
+
+%defattr(-,root,root)
+
+%{_webappsdir}/ssolib-sample.war
 
 # %doc ChangeLog README COPYING
 

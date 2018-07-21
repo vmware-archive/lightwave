@@ -265,13 +265,19 @@ VmDirSwapDB(
 
 int
 VmDirSwapDBs(
-    BOOLEAN bHasXLog
+    VOID
     );
 
 
 PVDIR_BACKEND_INTERFACE
 VmDirBackendForLogIndex(
     unsigned long long logIndex
+    );
+
+// dbcopy.c
+int
+VmDirCopyRemoteDB(
+    PCSTR   pszHostname
     );
 
 #ifdef __cplusplus

@@ -16,14 +16,11 @@
 
 package com.vmware.identity.samlservice.impl;
 
-import java.io.UnsupportedEncodingException;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.springframework.stereotype.Component;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -42,6 +39,8 @@ import com.vmware.identity.samlservice.SamlServiceException;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.WebSSOError;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * RSA SecureID authenticator
@@ -104,11 +103,11 @@ public class AuthnRequestStateRsaAmAuthenticationFilter implements
         String rsaSessionID = null;
 
         if (parts.length == 1) {
-            decodedAuthData = Base64.decode(authData);
+            decodedAuthData = Base64Support.decode(authData);
         }
         else if (parts.length == 2) {
-            decodedSessionID = Base64.decode(parts[0]);
-            decodedAuthData = Base64.decode(parts[1]);
+            decodedSessionID = Base64Support.decode(parts[0]);
+            decodedAuthData = Base64Support.decode(parts[1]);
         } else {
             throw new SamlServiceException(
                     "Wrong castle parameter. Extra parameter found in "+Shared.REQUEST_AUTH_PARAM);

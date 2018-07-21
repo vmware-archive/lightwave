@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -168,7 +168,7 @@ cleanup:
     if(pCert) {
         X509_free(pCert);
     }
- 
+
     VMCA_SAFE_FREE_STRINGA(pszCertName);
     VMCA_SAFE_FREE_STRINGA(pszCertSerial);
     VMCA_SAFE_FREE_STRINGA(pszNotBefore);
@@ -528,6 +528,7 @@ VMCAGetSignedCertificate(
     unsigned char *pszPEMEncodedCSRRequest,
     unsigned int  dwtmNotBefore,
     unsigned int  dwtmNotAfter,
+    PVMCA_REQ_CONTEXT pReqContext,
     PVMCA_CERTIFICATE_CONTAINER *ppCertContainer
 )
 {
@@ -539,6 +540,7 @@ VMCAGetSignedCertificate(
     PVMCA_X509_CA pCA = NULL;
     PVMCA_CERTIFICATE_CONTAINER pCertContainer = NULL;
     BOOLEAN bLocked = FALSE;
+    BOOLEAN bIsValid = FALSE;
 
     VMCA_LOCK_MUTEX_EXCLUSIVE(&gVMCAServerGlobals.svcMutex, bLocked);
 
@@ -550,11 +552,26 @@ VMCAGetSignedCertificate(
 
     dwError = VMCASignedRequestPrivate(
                   pCA,
+                  pReqContext,
                   (char *)pszPEMEncodedCSRRequest,
                   (char**)&pCert,
                   now,
-                  expire);
+                  expire,
+                  &bIsValid);
     BAIL_ON_VMCA_ERROR(dwError);
+
+    if (bIsValid == FALSE || dwError == VMCA_POLICY_VALIDATION_ERROR)
+    {
+        VMCA_LOG_INFO(
+                "[%s,%d] CSR failed policy verification! User (%s)",
+                __FUNCTION__,
+                __LINE__,
+                pReqContext->pszAuthPrincipal);
+        // TODO (shahneel): remove comments and error override after policy enforcement works e2e
+        dwError = 0;
+        //dwError = VMCA_POLICY_VALIDATION_ERROR;
+        //BAIL_ON_VMCA_ERROR(dwError);
+    }
 
     dwError = VMCAAllocateCertificateContainer(pCert, &pCertContainer);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -1443,7 +1460,7 @@ VMCACopyTempCRLtoCRL()
     {
         CHAR   szBuf[4096];
         size_t nRead = 0;
-        
+
         nRead = fread(&szBuf[0], sizeof(szBuf[0]), sizeof(szBuf), pIn);
 
         if (nRead > 0)
@@ -1521,4 +1538,62 @@ error :
 
     VMCA_SAFE_FREE_STRINGA(pszTmpFile);
     return dwError;
+}
+
+DWORD
+VMCAAllocateReqContext(
+    PCSTR                   pcszAuthPrincipal,
+    PVMCA_REQ_CONTEXT       *ppReqContext
+    )
+{
+    DWORD                   dwError = 0;
+    PVMCA_REQ_CONTEXT       pReqContext = NULL;
+
+    if (IsNullOrEmptyString(pcszAuthPrincipal) ||
+        !ppReqContext)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateMemory(
+                        sizeof(VMCA_REQ_CONTEXT),
+                        (PVOID *)&pReqContext
+                        );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAAllocateStringA(
+                    pcszAuthPrincipal,
+                    &pReqContext->pszAuthPrincipal
+                    );
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppReqContext = pReqContext;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMCAFreeReqContext(pReqContext);
+    if (ppReqContext)
+    {
+        *ppReqContext = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+VMCAFreeReqContext(
+    PVMCA_REQ_CONTEXT   pReqContext
+    )
+{
+    if (pReqContext)
+    {
+        VMCA_SAFE_FREE_STRINGA(pReqContext->pszAuthPrincipal);
+        VMCA_SAFE_FREE_MEMORY(pReqContext);
+    }
 }

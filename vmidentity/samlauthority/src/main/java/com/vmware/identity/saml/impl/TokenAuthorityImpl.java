@@ -49,62 +49,63 @@ import javax.xml.crypto.dsig.spec.TransformParameterSpec;
 
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.Attribute;
-import org.opensaml.saml2.core.AttributeStatement;
-import org.opensaml.saml2.core.AttributeValue;
-import org.opensaml.saml2.core.Audience;
-import org.opensaml.saml2.core.AudienceRestriction;
-import org.opensaml.saml2.core.AuthnContext;
-import org.opensaml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml2.core.AuthnStatement;
-import org.opensaml.saml2.core.Conditions;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.KeyInfoConfirmationDataType;
-import org.opensaml.saml2.core.NameID;
-import org.opensaml.saml2.core.NameIDType;
-import org.opensaml.saml2.core.ProxyRestriction;
-import org.opensaml.saml2.core.Subject;
-import org.opensaml.saml2.core.SubjectConfirmation;
-import org.opensaml.saml2.core.SubjectConfirmationData;
-import org.opensaml.saml2.core.impl.AdviceBuilder;
-import org.opensaml.saml2.core.impl.AssertionBuilder;
-import org.opensaml.saml2.core.impl.AssertionMarshaller;
-import org.opensaml.saml2.core.impl.AttributeStatementBuilder;
-import org.opensaml.saml2.core.impl.AudienceBuilder;
-import org.opensaml.saml2.core.impl.AudienceRestrictionBuilder;
-import org.opensaml.saml2.core.impl.AuthnContextBuilder;
-import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
-import org.opensaml.saml2.core.impl.AuthnStatementBuilder;
-import org.opensaml.saml2.core.impl.ConditionsBuilder;
-import org.opensaml.saml2.core.impl.IssuerBuilder;
-import org.opensaml.saml2.core.impl.KeyInfoConfirmationDataTypeBuilder;
-import org.opensaml.saml2.core.impl.NameIDBuilder;
-import org.opensaml.saml2.core.impl.ProxyRestrictionBuilder;
-import org.opensaml.saml2.core.impl.SubjectBuilder;
-import org.opensaml.saml2.core.impl.SubjectConfirmationBuilder;
-import org.opensaml.saml2.core.impl.SubjectConfirmationDataBuilder;
-import org.opensaml.samlext.saml2delrestrict.Delegate;
-import org.opensaml.samlext.saml2delrestrict.DelegationRestrictionType;
-import org.opensaml.samlext.saml2delrestrict.impl.DelegateBuilder;
-import org.opensaml.samlext.saml2delrestrict.impl.DelegationRestrictionTypeBuilder;
-import org.opensaml.xml.Configuration;
-import org.opensaml.xml.Namespace;
-import org.opensaml.xml.XMLObjectBuilder;
-import org.opensaml.xml.XMLObjectBuilderFactory;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.schema.XSString;
-import org.opensaml.xml.signature.SignatureConstants;
-import org.opensaml.xml.signature.impl.KeyInfoBuilder;
-import org.opensaml.xml.signature.impl.X509CertificateBuilder;
-import org.opensaml.xml.signature.impl.X509DataBuilder;
-import org.opensaml.xml.util.Base64;
-import org.opensaml.xml.util.XMLConstants;
-import org.opensaml.xml.util.XMLHelper;
+import org.opensaml.saml.common.SAMLVersion;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.Attribute;
+import org.opensaml.saml.saml2.core.AttributeStatement;
+import org.opensaml.saml.saml2.core.AttributeValue;
+import org.opensaml.saml.saml2.core.Audience;
+import org.opensaml.saml.saml2.core.AudienceRestriction;
+import org.opensaml.saml.saml2.core.AuthnContext;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml.saml2.core.AuthnStatement;
+import org.opensaml.saml.saml2.core.Conditions;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.KeyInfoConfirmationDataType;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.NameIDType;
+import org.opensaml.saml.saml2.core.ProxyRestriction;
+import org.opensaml.saml.saml2.core.Subject;
+import org.opensaml.saml.saml2.core.SubjectConfirmation;
+import org.opensaml.saml.saml2.core.SubjectConfirmationData;
+import org.opensaml.saml.saml2.core.impl.AdviceBuilder;
+import org.opensaml.saml.saml2.core.impl.AssertionBuilder;
+import org.opensaml.saml.saml2.core.impl.AssertionMarshaller;
+import org.opensaml.saml.saml2.core.impl.AttributeStatementBuilder;
+import org.opensaml.saml.saml2.core.impl.AudienceBuilder;
+import org.opensaml.saml.saml2.core.impl.AudienceRestrictionBuilder;
+import org.opensaml.saml.saml2.core.impl.AuthnContextBuilder;
+import org.opensaml.saml.saml2.core.impl.AuthnContextClassRefBuilder;
+import org.opensaml.saml.saml2.core.impl.AuthnStatementBuilder;
+import org.opensaml.saml.saml2.core.impl.ConditionsBuilder;
+import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml.saml2.core.impl.KeyInfoConfirmationDataTypeBuilder;
+import org.opensaml.saml.saml2.core.impl.NameIDBuilder;
+import org.opensaml.saml.saml2.core.impl.ProxyRestrictionBuilder;
+import org.opensaml.saml.saml2.core.impl.SubjectBuilder;
+import org.opensaml.saml.saml2.core.impl.SubjectConfirmationBuilder;
+import org.opensaml.saml.saml2.core.impl.SubjectConfirmationDataBuilder;
+import org.opensaml.saml.ext.saml2delrestrict.Delegate;
+import org.opensaml.saml.ext.saml2delrestrict.DelegationRestrictionType;
+import org.opensaml.saml.ext.saml2delrestrict.impl.DelegateBuilder;
+import org.opensaml.saml.ext.saml2delrestrict.impl.DelegationRestrictionTypeBuilder;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.Namespace;
+import org.opensaml.core.xml.XMLObjectBuilder;
+import org.opensaml.core.xml.XMLObjectBuilderFactory;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.core.xml.schema.XSString;
+import org.opensaml.xmlsec.signature.support.SignatureConstants;
+import org.opensaml.xmlsec.signature.impl.KeyInfoBuilder;
+import org.opensaml.xmlsec.signature.impl.X509CertificateBuilder;
+import org.opensaml.xmlsec.signature.impl.X509DataBuilder;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import net.shibboleth.utilities.java.support.xml.SerializeSupport;
+import net.shibboleth.utilities.java.support.xml.XMLConstants;
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -221,7 +222,7 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       final Document token = assertionElement.getOwnerDocument();
 
       log.debug("Created token(issuance time: {}):\n{}", issueInstantTime,
-         XMLHelper.nodeToString(token.getDocumentElement()));
+              SerializeSupport.nodeToString(token.getDocumentElement()));
 
       // we can use confirmation type from the spec because it is directly used
       // for the issued token without remediation.
@@ -429,7 +430,7 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       assert uri != null;
       assert prefix != null;
 
-      assertion.getNamespaceManager().registerNamespace(
+      assertion.getNamespaceManager().registerNamespaceDeclaration(
          new Namespace(uri, prefix));
    }
 
@@ -566,9 +567,9 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       return result;
    }
 
-   private org.opensaml.saml2.core.Advice createAdvice(List<Advice> advice) {
+   private org.opensaml.saml.saml2.core.Advice createAdvice(List<Advice> advice) {
       assert advice != null && !advice.isEmpty();
-      final org.opensaml.saml2.core.Advice result = new AdviceBuilder()
+      final org.opensaml.saml.saml2.core.Advice result = new AdviceBuilder()
          .buildObject();
       for (Advice adviceMember : advice) {
          final RSAAdvice rsaAdvice = toOpenSamlAdvice(adviceMember);
@@ -660,15 +661,15 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       KeyInfoConfirmationDataType data = new KeyInfoConfirmationDataTypeBuilder()
          .buildObject();
 
-      org.opensaml.xml.signature.X509Data x509Data = new X509DataBuilder()
+      org.opensaml.xmlsec.signature.X509Data x509Data = new X509DataBuilder()
          .buildObject();
-      org.opensaml.xml.signature.KeyInfo ki = new KeyInfoBuilder()
+      org.opensaml.xmlsec.signature.KeyInfo ki = new KeyInfoBuilder()
          .buildObject();
-      org.opensaml.xml.signature.X509Certificate cert = new X509CertificateBuilder()
+      org.opensaml.xmlsec.signature.X509Certificate cert = new X509CertificateBuilder()
          .buildObject();
       try {
-         cert.setValue(Base64.encodeBytes(confirmation.getCertificate()
-            .getEncoded()));
+         cert.setValue(Base64Support.encode(confirmation.getCertificate()
+            .getEncoded(), Base64Support.CHUNKED));
       } catch (CertificateEncodingException e) {
          // TODO check [848537] for details
          throw new IllegalStateException("Cannot encode X509Certificate", e);
@@ -872,10 +873,10 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       PrincipalAttribute principalAttribute) {
       assert principalAttribute != null;
 
-      XMLObjectBuilderFactory builderFactory = Configuration
+      XMLObjectBuilderFactory builderFactory = XMLObjectProviderRegistrySupport
          .getBuilderFactory();
       @SuppressWarnings("unchecked")
-      XMLObjectBuilder<Attribute> builder = builderFactory
+      XMLObjectBuilder<Attribute> builder = (XMLObjectBuilder<Attribute>) builderFactory
          .getBuilder(Attribute.DEFAULT_ELEMENT_NAME);
       Attribute attribute = builder.buildObject(Attribute.DEFAULT_ELEMENT_NAME);
 
@@ -890,7 +891,7 @@ public final class TokenAuthorityImpl implements TokenAuthority {
       String[] values = principalAttribute.getValues();
       if (values != null) {
          @SuppressWarnings("unchecked")
-         final XMLObjectBuilder<XSString> stringBuilder = builderFactory.getBuilder(XSString.TYPE_NAME);
+         final XMLObjectBuilder<XSString> stringBuilder = (XMLObjectBuilder<XSString>) builderFactory.getBuilder(XSString.TYPE_NAME);
          for (String value : values) {
             XSString attributeVal = stringBuilder.buildObject(
                AttributeValue.DEFAULT_ELEMENT_NAME, XSString.TYPE_NAME);

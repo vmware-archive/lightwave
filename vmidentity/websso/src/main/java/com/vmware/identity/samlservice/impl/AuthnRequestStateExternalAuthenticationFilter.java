@@ -14,13 +14,10 @@
 
 package com.vmware.identity.samlservice.impl;
 
-import java.security.NoSuchAlgorithmException;
 import java.util.Collection;
 
 import javax.servlet.http.HttpServletRequest;
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.core.AuthnRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -43,6 +40,8 @@ import com.vmware.identity.websso.client.SPConfiguration;
 import com.vmware.identity.websso.client.SsoRequestSettings;
 import com.vmware.identity.websso.client.endpoint.SsoRequestSender;
 
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
+
 public class AuthnRequestStateExternalAuthenticationFilter implements
         AuthenticationFilter<AuthnRequestState> {
     @Autowired
@@ -55,14 +54,10 @@ public class AuthnRequestStateExternalAuthenticationFilter implements
 
     private volatile Thread idpMetadataSynchronizer  = null;
 
-    private static SecureRandomIdentifierGenerator generator;
+    private static SecureRandomIdentifierGenerationStrategy generator;
 
     static {
-        try {
-            generator = new SecureRandomIdentifierGenerator();
-        } catch (NoSuchAlgorithmException e) {
-            throw new RuntimeException("Unexpected error in creating SecureRandomIdentifierGenerator", e);
-        }
+        generator = new SecureRandomIdentifierGenerationStrategy();
     }
 
     /**

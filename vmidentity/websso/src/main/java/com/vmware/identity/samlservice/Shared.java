@@ -38,17 +38,19 @@ import javax.xml.transform.stream.StreamResult;
 
 import org.apache.commons.lang.Validate;
 import org.apache.http.client.methods.HttpGet;
-import org.opensaml.Configuration;
-import org.opensaml.DefaultBootstrap;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.schema.XSString;
-import org.opensaml.xml.schema.impl.XSStringMarshaller;
-import org.opensaml.xml.schema.impl.XSStringUnmarshaller;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.core.config.InitializationException;
+import org.opensaml.core.config.InitializationService;
+import org.opensaml.core.xml.AbstractXMLObjectBuilder;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.schema.XSString;
+import org.opensaml.core.xml.schema.impl.XSStringMarshaller;
+import org.opensaml.core.xml.schema.impl.XSStringUnmarshaller;
+import org.opensaml.saml.common.SAMLVersion;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -149,8 +151,7 @@ public final class Shared {
      * @return
      */
     public static String encodeBytes(byte[] bytesToEncode) {
-        String retval = Base64.encodeBytes(bytesToEncode,
-                Base64.DONT_BREAK_LINES);
+        String retval = Base64Support.encode(bytesToEncode, Base64Support.UNCHUNKED);
         return retval;
     }
 
@@ -171,7 +172,7 @@ public final class Shared {
      * @return
      */
     public static String decodeString(String stringToDecode) throws UnsupportedEncodingException {
-        return new String(Base64.decode(stringToDecode), "UTF-8");
+        return new String(Base64Support.decode(stringToDecode), "UTF-8");
     }
 
     /**
@@ -283,18 +284,18 @@ public final class Shared {
      * Bootstrap OpenSAML
      * @throws ConfigurationException
      */
-    public static void bootstrap() throws ConfigurationException {
-        DefaultBootstrap.bootstrap();
-        org.opensaml.xml.Configuration.registerObjectProvider(XSString.TYPE_NAME,
+    public static void bootstrap() throws InitializationException {
+        InitializationService.initialize();
+        XMLObjectProviderRegistrySupport.registerObjectProvider(XSString.TYPE_NAME,
                 new XSNonTrimmingStringBuilder(),
                 new XSStringMarshaller(),
                 new XSStringUnmarshaller()
              );
-        Configuration.registerObjectProvider(RenewableType.TYPE_NAME,
+        XMLObjectProviderRegistrySupport.registerObjectProvider(RenewableType.TYPE_NAME,
            new RenewableTypeBuilder(),
            new RenewableTypeMarshaller(),
            new RenewableTypeUnmarshaller());
-        Configuration.registerObjectProvider(DelegableType.TYPE_NAME,
+        XMLObjectProviderRegistrySupport.registerObjectProvider(DelegableType.TYPE_NAME,
                 new DelegableTypeBuilder(),
                 new DelegableTypeMarshaller(),
                 new DelegableTypeUnmarshaller());

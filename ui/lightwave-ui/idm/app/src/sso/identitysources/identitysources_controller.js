@@ -50,7 +50,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                         type: 'IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING'
                 };
                 $scope.vm.selectedIdentitysource = null;
-                var template = 'sso/identitysources/identitysource/identitysource.add.html';
+                var template = 'idm/sso/identitysources/identitysource/identitysource.add.html';
                 var controller = 'IdentitySourceCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -60,7 +60,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 if(ids && ids.domainType == 'EXTERNAL_DOMAIN'){
                     $scope.vm.isNew = false;
                     $scope.vm.selectedIdentitysource = ids;
-                    var template = 'sso/identitysources/identitysource/identitysource.edit.html';
+                    var template = 'idm/sso/identitysources/identitysource/identitysource.edit.html';
                     var controller = 'IdentitySourceCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -69,7 +69,7 @@ module.controller('IdentitySourcesCntrl', ['$scope',  '$rootScope', 'popupUtil',
             function view(ids){
                 if(ids && ids.domainType == 'EXTERNAL_DOMAIN'){
                     $scope.vm.selectedIdentitysource = ids;
-                    var template = 'sso/identitysources/identitysource/identitysource.view.html';
+                    var template = 'idm/sso/identitysources/identitysource/identitysource.view.html';
                     var controller = 'IdentitySourceCntrl';
                     popupUtil.open($scope, template, controller);
                 }

@@ -13,9 +13,9 @@
  */
 package com.vmware.identity.websso.client.endpoint;
 
-import org.opensaml.Configuration;
-import org.opensaml.DefaultBootstrap;
-import org.opensaml.xml.ConfigurationException;
+import org.opensaml.core.config.InitializationException;
+import org.opensaml.core.config.InitializationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
 import org.springframework.stereotype.Component;
 
 import com.vmware.identity.saml.ext.DelegableType;
@@ -33,18 +33,16 @@ import com.vmware.identity.saml.ext.impl.RenewableTypeUnmarshaller;
  */
 @Component
 public class SharedComponent {
-    public SharedComponent() throws ConfigurationException {
+    public SharedComponent() throws InitializationException {
         bootstrap();
     }
 
-    public static void bootstrap() throws ConfigurationException {
+    public static void bootstrap() throws InitializationException {
         // opensaml initialization
-        DefaultBootstrap.bootstrap();
-        Configuration.registerObjectProvider(RenewableType.TYPE_NAME,
-                new RenewableTypeBuilder(), new RenewableTypeMarshaller(),
-                new RenewableTypeUnmarshaller());
-        Configuration.registerObjectProvider(DelegableType.TYPE_NAME,
-                new DelegableTypeBuilder(), new DelegableTypeMarshaller(),
-                new DelegableTypeUnmarshaller());
+        InitializationService.initialize();
+        XMLObjectProviderRegistrySupport.registerObjectProvider(RenewableType.TYPE_NAME, new RenewableTypeBuilder(),
+                new RenewableTypeMarshaller(), new RenewableTypeUnmarshaller());
+        XMLObjectProviderRegistrySupport.registerObjectProvider(DelegableType.TYPE_NAME, new DelegableTypeBuilder(),
+                new DelegableTypeMarshaller(), new DelegableTypeUnmarshaller());
     }
 }

@@ -329,6 +329,14 @@ VmAfdLocalCreateComputerAccount(
 );
 
 DWORD
+VmAfdLocalCreateComputerOUContainer(
+    PCWSTR pwszServerName,
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszOrgUnit
+);
+
+DWORD
 VmAfdLocalJoinAD(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword,

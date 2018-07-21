@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -1455,6 +1455,108 @@ VMCAIsIPV6AddrFormat(
     }
 
     return bIsIPV6;
+}
+
+DWORD
+VMCAConvertUPNToDN(
+    PVMCA_LDAP_CONTEXT              pConnection,
+    PCSTR                           pszUPN,
+    PSTR*                           ppszOutDN
+    )
+{
+    DWORD                           dwError = 0;
+    LDAPMessage*                    pEntry = NULL;
+    LDAPMessage*                    pResult = NULL;
+    PSTR                            pszFilter = NULL;
+    PSTR                            pszEntryDN = NULL;
+    PSTR                            pszOutDN = NULL;
+    int                             iCount = 0;
+    LDAP                            *pLd = NULL;
+
+    if (!pConnection ||
+        !pConnection->pConnection ||
+        IsNullOrEmptyString(pszUPN) ||
+        !ppszOutDN)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    pLd = pConnection->pConnection;
+
+    dwError = VMCAAllocateStringPrintfA(
+                    &pszFilter, "%s=%s",
+                    ATTR_KRB_UPN,
+                    pszUPN);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = ldap_search_ext_s(
+                    pLd,
+                    "",
+                    LDAP_SCOPE_SUBTREE,
+                    pszFilter,
+                    NULL,
+                    FALSE, /* get values      */
+                    NULL,  /* server controls */
+                    NULL,  /* client controls */
+                    NULL,  /* timeout         */
+                    0,     /* size limit      */
+                    &pResult);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    iCount = ldap_count_entries(pLd, pResult);
+
+    // should have either 0 or 1 result
+    if (iCount > 1)
+    {
+        dwError = VMCA_ERROR_INVALID_STATE;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+    else if (iCount == 0)
+    {
+        dwError = VMCA_ERROR_ENTRY_NOT_FOUND;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if ( (pEntry = ldap_first_entry(pLd, pResult)) != NULL )
+    {
+        pszEntryDN = ldap_get_dn(pLd, pEntry);
+
+        dwError = VMCAAllocateStringA( pszEntryDN, &pszOutDN );
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        *ppszOutDN = pszOutDN;
+    }
+    else
+    {
+        dwError = VMCA_ERROR_INVALID_ENTRY;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+cleanup:
+
+    if (pszEntryDN)
+    {
+        ldap_memfree( pszEntryDN );
+    }
+    if (pResult)
+    {
+        ldap_msgfree( pResult );
+    }
+    VMCA_SAFE_FREE_MEMORY(pszFilter);
+
+    return dwError;
+
+error:
+
+    VMCA_LOG_ERROR("[%s,%d] failed with error (%u)", __FUNCTION__, __LINE__, dwError);
+
+    VMCA_SAFE_FREE_MEMORY(pszOutDN);
+    if (ppszOutDN)
+    {
+        *ppszOutDN = NULL;
+    }
+    goto cleanup;
 }
 
 DWORD

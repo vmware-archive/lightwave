@@ -9,6 +9,7 @@ VmDirClientJoinAtomic
 VmDirClientLeave
 VmDirClientLeaveEx
 VmDirCreateComputerAccount
+VmDirCreateComputerOUContainer
 VmDirCreateComputerAccountAtomic
 VmDirSetupTenantInstance
 VmDirForceResetPassword

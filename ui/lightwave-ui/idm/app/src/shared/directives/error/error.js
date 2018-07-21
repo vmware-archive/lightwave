@@ -20,7 +20,7 @@ function errorPanelDirective() {
     return {
         restrict: 'A',
         scope : false,
-        templateUrl:"/shared/directives/error/error.html",
+        templateUrl:"idm/shared/directives/error/error.html",
         replace: true
     };
 }

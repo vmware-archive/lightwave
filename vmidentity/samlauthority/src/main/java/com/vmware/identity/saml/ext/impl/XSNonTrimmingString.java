@@ -13,8 +13,8 @@
  */
 package com.vmware.identity.saml.ext.impl;
 
-import org.opensaml.xml.schema.impl.XSStringImpl;
-import org.opensaml.xml.util.DatatypeHelper;
+import java.util.Objects;
+import org.opensaml.core.xml.schema.impl.XSStringImpl;
 
 public class XSNonTrimmingString extends XSStringImpl
 {
@@ -40,7 +40,7 @@ public class XSNonTrimmingString extends XSStringImpl
             newValue = null;
         }
 
-        if (!DatatypeHelper.safeEquals(oldValue, newValue))
+        if (!Objects.equals(oldValue, newValue))
         {
             releaseThisandParentDOM();
         }

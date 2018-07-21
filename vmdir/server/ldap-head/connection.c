@@ -17,7 +17,7 @@
 #include "includes.h"
 
 static
-void
+int
 SetupLdapPort(
    int port,
    ber_socket_t *pIP4_sockfd,
@@ -27,13 +27,8 @@ SetupLdapPort(
 static
 int
 BindListenOnPort(
-#ifndef _WIN32
-   sa_family_t   addr_type,
-   size_t        addr_size,
-#else
-   short         addr_type,
-   int           addr_size,
-#endif
+    sa_family_t   addr_type,
+    size_t        addr_size,
     void         *pServ_addr,
     ber_socket_t *pSockfd
     );
@@ -410,7 +405,7 @@ error:
 }
 
 static
-void
+int
 SetupLdapPort(
    int port,
    ber_socket_t *pIP4_sockfd,
@@ -419,14 +414,8 @@ SetupLdapPort(
 {
    struct sockaddr_in  serv_4addr = {0};
    struct sockaddr_in6 serv_6addr = {0};
-   PSTR                pszLocalErrMsg = NULL;
-#ifndef _WIN32
    sa_family_t         addr_type = AF_INET;
    size_t              addr_size = 0;
-#else
-   short               addr_type = AF_INET;
-   int                 addr_size = 0;
-#endif
    int                 retVal = LDAP_SUCCESS;
 
    *pIP4_sockfd = -1;
@@ -446,6 +435,7 @@ SetupLdapPort(
        if (retVal != 0)
        {
            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error listening on port %d for ipv4", __func__, port);
+           BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
        } else
        {
            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: start listening on port %d for ipv4", __func__, port);
@@ -465,78 +455,56 @@ SetupLdapPort(
        if (retVal != 0)
        {
            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error listening on port %d for ipv6", __func__, port);
+           BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
        } else
        {
            VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: start listening on port %d for ipv6", __func__, port);
        }
    }
 
-   VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
-   return;
+cleanup:
+   return retVal;
+
+error:
+    VmDirForceExit();   // could not listen on all LDAP ports, exiting service.
+    goto cleanup;
 }
 
 static
 int
 BindListenOnPort(
-#ifndef _WIN32
    sa_family_t   addr_type,
    size_t        addr_size,
-#else
-   short         addr_type,
-   int           addr_size,
-#endif
     void         *pServ_addr,
     ber_socket_t *pSockfd
 )
 {
 #define LDAP_PORT_LISTEN_BACKLOG 128
-   int  optname = 0;
    int  retVal = LDAP_SUCCESS;
    int  retValBind = 0;
    PSTR pszLocalErrMsg = NULL;
    int  on = 1;
-#ifdef _WIN32
-   DWORD sTimeout = 0;
-   int  reTries = 0;
-#else
+   int  iRetries = 0;
    struct timeval sTimeout = {0};
-#endif
 
    *pSockfd = -1;
    *pSockfd = socket(addr_type, SOCK_STREAM, 0);
    if (*pSockfd < 0)
    {
-#ifdef _WIN32
-      errno = WSAGetLastError();
-#endif
       retVal = LDAP_OPERATIONS_ERROR;
       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                       "%s: socket() call failed with errno: %d", __func__, errno );
    }
 
-#ifdef _WIN32
-    optname = SO_EXCLUSIVEADDRUSE;
-#else
-    optname = SO_REUSEADDR;
-#endif
-
-   if (setsockopt(*pSockfd, SOL_SOCKET, optname, (const char *)(&on), sizeof(on)) < 0)
+   if (setsockopt(*pSockfd, SOL_SOCKET, SO_REUSEADDR, (const char *)(&on), sizeof(on)) < 0)
    {
-#ifdef _WIN32
-      errno = WSAGetLastError();
-#endif
       retVal = LDAP_OPERATIONS_ERROR;
       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                      "%s: setsockopt() call failed with errno: %d", __func__, errno );
+                      "%s: setsockopt() SO_REUSEADDR call failed with errno: %d", __func__, errno );
    }
-
-   on = 1;  // turn on TCP_NODELAY below
 
    if (setsockopt(*pSockfd,  IPPROTO_TCP, TCP_NODELAY, (const char *)(&on), sizeof(on) ) < 0)
    {
-#ifdef _WIN32
-      errno = WSAGetLastError();
-#endif
       retVal = LDAP_OPERATIONS_ERROR;
       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                       "%s: setsockopt() TCP_NODELAY call failed with errno: %d", __func__, errno );
@@ -544,14 +512,8 @@ BindListenOnPort(
 
    if (addr_type == AF_INET6)
    {
-#ifdef _WIN32
-       if (setsockopt(*pSockfd, IPPROTO_IPV6, IPV6_V6ONLY, (const char *)(&on), sizeof(on) ) < 0)
-       {
-           errno = WSAGetLastError();
-#else
        if (setsockopt(*pSockfd, SOL_IPV6, IPV6_V6ONLY, (const char *)(&on), sizeof(on) ) < 0)
        {
-#endif
            retVal = LDAP_OPERATIONS_ERROR;
            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                       "%s: setsockopt() IPV6_V6ONLY call failed with errno: %d", __func__, errno );
@@ -560,42 +522,30 @@ BindListenOnPort(
 
    if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0)
    {
-#ifdef _WIN32
-       sTimeout = gVmdirGlobals.dwLdapRecvTimeoutSec*1000;
-#else
        sTimeout.tv_sec = gVmdirGlobals.dwLdapRecvTimeoutSec;
        sTimeout.tv_usec = 0;
-#endif
+
        if (setsockopt(*pSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*) &sTimeout, sizeof(sTimeout)) < 0)
        {
-#ifdef _WIN32
-           errno = WSAGetLastError();
-#endif
            retVal = LDAP_OPERATIONS_ERROR;
            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                       "%s: setsockopt() SO_RCVTIMEO failed, errno: %d", __func__, errno );
        }
    }
 
-   retValBind = bind(*pSockfd, (struct sockaddr *) pServ_addr, addr_size);
+   iRetries = 0;
+   do {
+       retValBind = bind(*pSockfd, (struct sockaddr *) pServ_addr, addr_size);
+       if (retValBind == 0 ||
+           (retValBind == -1 && errno != EADDRINUSE))
+       {
+           break;
+       }
 
-#ifdef _WIN32
-   // Add retry logic per PR 1347783
-   reTries = 0;
-   while (retValBind != 0 && reTries < MAX_NUM_OF_BIND_PORT_RETRIES)
-   {
-      errno = WSAGetLastError();
-      if (errno != WSAEADDRINUSE)
-      {
-         break;
-      }
-      reTries++;
-      VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: bind() call failed with errno: %d, re-trying (%d)",
-                                   __func__, errno, reTries);
-      VmDirSleep(1000);
-      retValBind = bind(*pSockfd, (struct sockaddr *) pServ_addr, addr_size);
-   }
-#endif
+       VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s bind call failed, error (%d)", __func__, errno);
+       iRetries++;
+       VmDirSleep(1000);
+   } while (iRetries < MAX_NUM_OF_BIND_PORT_RETRIES);
 
    if (retValBind != 0)
    {
@@ -607,9 +557,6 @@ BindListenOnPort(
 
    if (listen(*pSockfd, LDAP_PORT_LISTEN_BACKLOG) != 0)
    {
-#ifdef _WIN32
-      errno = WSAGetLastError();
-#endif
       retVal = LDAP_OPERATIONS_ERROR;
       BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
                       "%s: listen() call failed with errno: %d", __func__, errno );
@@ -627,7 +574,7 @@ error:
         tcp_close(*pSockfd);
         *pSockfd = -1;
     }
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, VDIR_SAFE_STRING(pszLocalErrMsg));
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, " error (%s)(%d), errno (%d)", VDIR_SAFE_STRING(pszLocalErrMsg), retVal, errno);
     goto cleanup;
 }
 
@@ -1023,12 +970,8 @@ vmdirConnAccept(
     iLocalLogMask = VmDirLogGetMask();
     ber_set_option(NULL, LBER_OPT_DEBUG_LEVEL, &iLocalLogMask);
 
-    SetupLdapPort(dwPort, &ip4_fd, &ip6_fd);
-    if (ip4_fd < 0 && ip6_fd < 0)
-    {
-        VmDirSleep(1000);
-        goto cleanup;
-    }
+    retVal = SetupLdapPort(dwPort, &ip4_fd, &ip6_fd);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     FD_ZERO(&event_fd_set);
     if (ip4_fd >= 0)

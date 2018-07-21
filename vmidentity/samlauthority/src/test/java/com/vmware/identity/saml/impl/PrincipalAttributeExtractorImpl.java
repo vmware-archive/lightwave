@@ -70,7 +70,7 @@ public class PrincipalAttributeExtractorImpl implements
    @Override
    public Collection<PrincipalAttributeDefinition> getAllAttributeDefinitions()
       throws SystemException {
-      String nameFormat = org.opensaml.saml2.core.Attribute.URI_REFERENCE;
+      String nameFormat = org.opensaml.saml.saml2.core.Attribute.URI_REFERENCE;
 
       Set<PrincipalAttributeDefinition> attributes = new HashSet<PrincipalAttributeDefinition>();
 
@@ -100,7 +100,7 @@ public class PrincipalAttributeExtractorImpl implements
       Collection<PrincipalAttributeDefinition> attributeDefinitions) {
       Set<PrincipalAttribute> attributes = new HashSet<PrincipalAttribute>();
 
-      String nameFormat = org.opensaml.saml2.core.Attribute.URI_REFERENCE;
+      String nameFormat = org.opensaml.saml.saml2.core.Attribute.URI_REFERENCE;
 
       String subjectTypeValue = "false";
       String firstNameValue = "Admin";

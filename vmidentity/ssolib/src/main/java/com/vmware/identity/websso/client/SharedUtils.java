@@ -35,11 +35,10 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.core.xml.io.MarshallingException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -47,6 +46,8 @@ import org.w3c.dom.Node;
 import org.xml.sax.EntityResolver;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * @author root
@@ -136,7 +137,7 @@ public class SharedUtils {
      * @return
      */
     public static String encodeBytes(byte[] bytesToEncode) {
-        String retval = Base64.encodeBytes(bytesToEncode, Base64.DONT_BREAK_LINES);
+        String retval = Base64Support.encode(bytesToEncode, Base64Support.UNCHUNKED);
         return retval;
     }
 

@@ -5,6 +5,8 @@ vmcommon_test_SOURCES = \
     gaugetest.c \
     histogramtest.c \
     mixedtest.c \
+    vmhttpclienttest.c \
+    vmjsonresulttest.c \
     main.c
 
 vmcommon_test_CPPFLAGS = \

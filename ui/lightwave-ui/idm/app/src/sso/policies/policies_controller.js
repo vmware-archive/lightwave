@@ -104,41 +104,41 @@ module.controller('PolicyCntrl', ['$scope',  '$rootScope', 'popupUtil', 'TenantS
         }
 
         function showEditLockoutPolicy() {
-            var template = 'sso/policies/lockout/lockout.edit.html';
+            var template = 'idm/sso/policies/lockout/lockout.edit.html';
             var controller = 'LockoutPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
 
         function showEditTokenPolicy() {
-            var template = 'sso/policies/token/token.edit.html';
+            var template = 'idm/sso/policies/token/token.edit.html';
             var controller = 'TokenPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
 
         function showEditPasswordPolicy() {
-            var template = 'sso/policies/password/password.edit.html';
+            var template = 'idm/sso/policies/password/password.edit.html';
             var controller = 'PasswordPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
         function showEditBrandPolicy() {
-            var template = 'sso/policies/banner/banner.edit.html';
+            var template = 'idm/sso/policies/banner/banner.edit.html';
             var controller = 'BannerPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
         function showEditAuthenticationPolicy() {
-            var template = 'sso/policies/authentication/authentication.edit.html';
+            var template = 'idm/sso/policies/authentication/authentication.edit.html';
             var controller = 'AuthenticationPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
         function showEditOperatorAccessPolicy() {
-            var template = 'sso/policies/operator/operator.edit.html';
+            var template = 'idm/sso/policies/operator/operator.edit.html';
             var controller = 'OperatorPolicyCntrl';
             popupUtil.open($scope, template, controller);
         }
         function viewcertificate(certificate){
 
             if(certificate) {
-                var template = 'shared/components/certificate/certificate.view.html';
+                var template = 'idm/shared/components/certificate/certificate.view.html';
                 var controller = 'CertificateViewerCntrl';
                 Util.viewCertificate($scope, certificate.encoded, template, controller);
             }

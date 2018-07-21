@@ -21,9 +21,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.StatusCode;
-import org.opensaml.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.StatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -393,10 +393,7 @@ public class SloListener {
                 tenant);
         Validate.notNull(sp, "service provider setting unavailable for "
                 + tenant);
-        if (sp == null) {
-            throw new IllegalArgumentException(
-                    "service provider setting unavailable for " + tenant);
-        }
+
         return sp.getEntityID();
     }
 
@@ -425,7 +422,7 @@ public class SloListener {
             Message message = this.createMessage(validator, true);
 
             // send the message via callback functions.
-            if (validator.getStatus().equals(StatusCode.SUCCESS_URI)) {
+            if (validator.getStatus().equals(StatusCode.SUCCESS)) {
                 this.getLogoutProcessor().logoutSuccess(message, request,
                         httpResponse);
             } else {

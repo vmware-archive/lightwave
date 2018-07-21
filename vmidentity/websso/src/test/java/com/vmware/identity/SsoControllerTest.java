@@ -25,9 +25,11 @@ import static com.vmware.identity.SharedUtils.getDefaultTenant;
 import static com.vmware.identity.SharedUtils.getDefaultTenantEndpoint;
 import static com.vmware.identity.SharedUtils.getIdmAccessor;
 import static com.vmware.identity.SharedUtils.getMockIdmAccessorFactory;
+import static com.vmware.identity.SharedUtils.getSTSCertificate;
 import static com.vmware.identity.SharedUtils.getSTSPrivateKey;
 import static com.vmware.identity.SharedUtils.getSamlRequestSignature;
 import static com.vmware.identity.SharedUtils.messageSource;
+
 import static org.easymock.EasyMock.createMock;
 import static org.easymock.EasyMock.expect;
 import static org.easymock.EasyMock.replay;
@@ -41,6 +43,7 @@ import java.io.StringWriter;
 import java.net.MalformedURLException;
 import java.security.NoSuchAlgorithmException;
 import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Calendar;
 import java.util.Date;
 import java.util.GregorianCalendar;
@@ -53,20 +56,21 @@ import org.joda.time.DateTime;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.opensaml.common.SAMLObjectBuilder;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.IDPEntry;
-import org.opensaml.saml2.core.IDPList;
-import org.opensaml.saml2.core.NameIDPolicy;
-import org.opensaml.saml2.core.Scoping;
-import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
-import org.opensaml.xml.Configuration;
-import org.opensaml.xml.XMLObjectBuilderFactory;
-import org.opensaml.xml.security.credential.BasicCredential;
-import org.opensaml.xml.security.credential.Credential;
-import org.opensaml.xml.signature.KeyInfo;
-import org.opensaml.xml.signature.SignatureConstants;
+import org.opensaml.core.xml.XMLObjectBuilderFactory;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.saml.common.SAMLObjectBuilder;
+import org.opensaml.saml.common.SAMLVersion;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.IDPEntry;
+import org.opensaml.saml.saml2.core.IDPList;
+import org.opensaml.saml.saml2.core.NameIDPolicy;
+import org.opensaml.saml.saml2.core.Scoping;
+import org.opensaml.saml.saml2.core.impl.NameIDPolicyBuilder;
+import org.opensaml.security.credential.BasicCredential;
+import org.opensaml.security.credential.Credential;
+import org.opensaml.xmlsec.signature.KeyInfo;
+import org.opensaml.xmlsec.signature.Signature;
+import org.opensaml.xmlsec.signature.support.SignatureConstants;
 import org.springframework.context.MessageSource;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.springframework.mock.web.MockHttpServletRequest;
@@ -94,6 +98,7 @@ public class SsoControllerTest {
 
     private static SsoController controller;
     private static PrivateKey privateKey;
+    private static PublicKey publicKey;
     private static IDiagnosticsLogger log;
     private static final int tenantId = 0;
     private static String tenant;
@@ -121,6 +126,7 @@ public class SsoControllerTest {
         controller.setSessionManager(sessionManager);
         tenant = ServerConfig.getTenant(tenantId);
         privateKey = getSTSPrivateKey();
+        publicKey = getSTSCertificate().getPublicKey();
 
         relayStateParameter = Shared.encodeString(TestConstants.RELAY_STATE);
         sigAlgParameter = TestConstants.SIGNATURE_ALGORITHM;
@@ -570,18 +576,12 @@ public class SsoControllerTest {
         StringBuffer sbRequestUrl = new StringBuffer();
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
-        org.opensaml.xml.signature.Signature signature = (org.opensaml.xml.signature.Signature) Configuration
-                .getBuilderFactory()
-                .getBuilder(
-                        org.opensaml.xml.signature.Signature.DEFAULT_ELEMENT_NAME)
-                .buildObject(
-                        org.opensaml.xml.signature.Signature.DEFAULT_ELEMENT_NAME);
+        Signature signature = (Signature) XMLObjectProviderRegistrySupport.getBuilderFactory()
+                .getBuilder(Signature.DEFAULT_ELEMENT_NAME).buildObject(Signature.DEFAULT_ELEMENT_NAME);
         Credential signingCredential = getSigningCredential();
         signature.setSigningCredential(signingCredential);
-        signature
-                .setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1);
-        signature
-                .setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
+        signature.setSignatureAlgorithm(SignatureConstants.ALGO_ID_SIGNATURE_RSA_SHA1);
+        signature.setCanonicalizationAlgorithm(SignatureConstants.ALGO_ID_C14N_EXCL_OMIT_COMMENTS);
         signature.setKeyInfo(getKeyInfo(signingCredential));
 
         authnRequest.setSignature(signature); // signature should NOT be present
@@ -589,19 +589,16 @@ public class SsoControllerTest {
         Model model = new BindingAwareModelMap();
 
         // print out complete GET url
-        SharedUtils.logUrl(log, sbRequestUrl, authnRequest,
-                relayStateParameter, null, null, null);
+        SharedUtils.logUrl(log, sbRequestUrl, authnRequest, relayStateParameter, null, null, null);
 
         // build mock request object
-        HttpServletRequest request = SharedUtils.buildMockRequestObject(
-                authnRequest, relayStateParameter, null, null, sbRequestUrl,
-                TestConstants.AUTHORIZATION, null, tenantId);
+        HttpServletRequest request = SharedUtils.buildMockRequestObject(authnRequest, relayStateParameter, null, null,
+                sbRequestUrl, TestConstants.AUTHORIZATION, null, tenantId);
 
         // build mock response object
         StringWriter sw = new StringWriter();
-        HttpServletResponse response = SharedUtils
-                .buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE,
-                        false, null);
+        HttpServletResponse response = SharedUtils.buildMockResponseSuccessObject(sw, Shared.HTML_CONTENT_TYPE, false,
+                null);
 
         assertSso(model, request, response);
 
@@ -618,8 +615,7 @@ public class SsoControllerTest {
 
     // get some credential
     private Credential getSigningCredential() {
-        BasicCredential credential = new BasicCredential();
-        credential.setPrivateKey(privateKey);
+        BasicCredential credential = new BasicCredential(publicKey, privateKey);
         return credential;
     }
 
@@ -629,8 +625,7 @@ public class SsoControllerTest {
         AuthnRequest authnRequest = SharedUtils.createSamlAuthnRequest("42", tenantId);
         sbRequestUrl.append(authnRequest.getDestination());
 
-        XMLObjectBuilderFactory builderFactory = Configuration
-                .getBuilderFactory();
+        XMLObjectBuilderFactory builderFactory = XMLObjectProviderRegistrySupport.getBuilderFactory();
         SAMLObjectBuilder<IDPEntry> idpEntryBuilder = (SAMLObjectBuilder<IDPEntry>) builderFactory
                 .getBuilder(IDPEntry.DEFAULT_ELEMENT_NAME);
         IDPEntry idpEntry = idpEntryBuilder.buildObject();

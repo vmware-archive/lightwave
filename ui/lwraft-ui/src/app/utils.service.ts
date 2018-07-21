@@ -20,7 +20,6 @@ import { ConfigService } from './config.service';
 @Injectable()
 export class UtilsService{
     currentUser;
-    API_PORT=7477;
     constructor(private configService:ConfigService){
     }
     decodeJWT(jwt:string):any {
@@ -146,11 +145,12 @@ export class UtilsService{
     }
 
     constructLogoutUrl(idpHost:string):string {
-       let tenant = this.configService.currentUser.tenant;
-       let postLogoutUrl = "https://" + document.location.host + "/ui";
+       let curUser = JSON.parse(window.sessionStorage.currentUser);
+       let tenant = curUser.tenant;
+       let postLogoutUrl = "https://" + document.location.host + "/lwraftui";
        let logoutUrl = "https://" + idpHost + "/openidconnect/logout/" + tenant;
-       let token = this.configService.currentUser.token.id_token; 
-       let state = this.configService.currentUser.token.state;
+       let token = curUser.token.id_token;
+       let state = curUser.token.state;
        let args = "?id_token_hint=" + token +
                   "&post_logout_redirect_uri=" + postLogoutUrl + "&state=" + state;
        return logoutUrl + args;
@@ -160,7 +160,7 @@ export class UtilsService{
         console.log(error);
         if((error) &&
         (error.status == 401 || (error.error && error.error.error == 'invalid_token'))){
-                var redirectUri = '/lightwaveui/Login?tenant=' + this.configService.currentUser.tenant;
+                var redirectUri = '/lwraftui';
                 sessionStorage.currentUser = 'logout';
                 window.location.href = redirectUri;
         }else{

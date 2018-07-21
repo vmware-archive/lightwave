@@ -17,8 +17,8 @@ import java.util.List;
 
 import javax.xml.namespace.QName;
 
-import org.opensaml.common.SAMLObject;
-import org.opensaml.saml2.core.Attribute;
+import org.opensaml.saml.common.SAMLObject;
+import org.opensaml.saml.saml2.core.Attribute;
 
 /**
  * Represents an OpenSAML abstraction of RSA extension to the standard SAML

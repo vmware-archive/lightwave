@@ -20,7 +20,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import org.apache.commons.lang.Validate;
 
-import org.opensaml.saml2.core.StatusCode;
+import org.opensaml.saml.saml2.core.StatusCode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -123,7 +123,7 @@ public class SsoResponseListener {
             Message message = this.createMessage(validator);
 
             // send the message via callback functions.
-            if (validator.getStatus().equals(StatusCode.SUCCESS_URI)) {
+            if (validator.getStatus().equals(StatusCode.SUCCESS)) {
                 authenticationSuccess(message, locale, tenant, request, httpResponse);
             } else {
                 authenticationError(message, locale,tenant, request, httpResponse);

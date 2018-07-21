@@ -38,7 +38,7 @@ module.controller('ProfileCntrl', [ '$scope', 'popupUtil', 'AuthenticationServic
         }
 
         function changePassword() {
-            var template = 'shared/components/password/password.change.html';
+            var template = 'idm/shared/components/password/password.change.html';
             var controller = 'PasswordCntrl';
             popupUtil.open($scope, template, controller);
         }

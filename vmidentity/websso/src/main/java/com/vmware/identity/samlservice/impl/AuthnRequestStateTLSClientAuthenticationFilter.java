@@ -23,11 +23,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.AuthnRequest;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import org.opensaml.xml.util.Base64;
 
 import com.vmware.identity.SecurityRequestWrapper;
 import com.vmware.identity.idm.PrincipalId;
@@ -43,6 +41,7 @@ import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.SamlValidator.ValidationResult;
 import com.vmware.identity.samlservice.WebSSOError;
 
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 public class AuthnRequestStateTLSClientAuthenticationFilter implements
 AuthenticationFilter<AuthnRequestState> {
@@ -116,7 +115,7 @@ AuthenticationFilter<AuthnRequestState> {
             CertificateFactory cf;
             try {
                 cf = CertificateFactory.getInstance("X.509");
-                bais = new ByteArrayInputStream(Base64.decode(certStr));
+                bais = new ByteArrayInputStream(Base64Support.decode(certStr));
                 X509Certificate cert = (X509Certificate) cf.generateCertificate(bais);
                 certChain = new X509Certificate[] { cert };
             } catch (CertificateException e1) {
@@ -147,7 +146,7 @@ AuthenticationFilter<AuthnRequestState> {
                 certAuthParam = certAuthParam.replace(Shared.TLSCLIENT_AUTH_PREFIX, "").trim();
 
                 Validate.notNull(certAuthParam);
-                byte[] decodedAuthData = Base64.decode(certAuthParam);
+                byte[] decodedAuthData = Base64Support.decode(certAuthParam);
 
                 String unp = new String(decodedAuthData, "UTF-8");
                 int idx = unp.indexOf(':');

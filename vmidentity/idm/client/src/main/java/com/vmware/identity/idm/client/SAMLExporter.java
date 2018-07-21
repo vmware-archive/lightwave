@@ -50,7 +50,6 @@ import java.util.TimeZone;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
-import org.opensaml.xml.util.Base64;
 import org.w3c.dom.DOMException;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -66,6 +65,8 @@ import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IdentityStoreType;
 import com.vmware.identity.idm.RelyingParty;
 import com.vmware.identity.idm.ServiceEndpoint;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 class SAMLExporter {
 
@@ -965,7 +966,7 @@ class SAMLExporter {
         Element x509CertificateEle = doc
                 .createElement(SAMLNames.DS_X509CERTIFICATE);
         X509Certificate x509Cert = (X509Certificate) cert;
-        String base64Str = Base64.encodeBytes(x509Cert.getEncoded());
+        String base64Str = Base64Support.encode(x509Cert.getEncoded(), Base64Support.CHUNKED);
         Node certText = doc.createTextNode(base64Str);
 
         x509CertificateEle.appendChild(certText);
@@ -1008,10 +1009,10 @@ class SAMLExporter {
             return null;
         }
 
-        String modulusStr = Base64.encodeBytes(rsaKey.getModulus()
-                .toByteArray());
-        String exponentStr = Base64.encodeBytes(rsaKey.getPrivateExponent()
-                .toByteArray());
+        String modulusStr = Base64Support.encode(rsaKey.getModulus()
+                .toByteArray(), Base64Support.CHUNKED);
+        String exponentStr = Base64Support.encode(rsaKey.getPrivateExponent()
+                .toByteArray(), Base64Support.CHUNKED);
 
         if (modulusStr == null || exponentStr == null) {
             return null;

@@ -1,0 +1,9 @@
+{
+    "LightwaveServer":"<server name>",
+    "PostServer":{
+	    "host":"<host",
+	    "port":1234
+    },
+    "OIDCClientID":"<ID>",
+    "Tenant": "<tenant_name>"
+}

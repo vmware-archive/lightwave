@@ -28,6 +28,7 @@
         <module>idm</module>
         <module>commons</module>
         <module>ssolib</module>
+        <module>ssolib-sample</module>
         <module>samlauthority</module>
         <module>tomcat-extensions</module>
         <module>install</module>
@@ -40,60 +41,7 @@
         <module>service</module>
       </modules>
     </profile>
-
-    <profile>
-      <id>rd-identity-server</id>
-      <activation>
-        <property>
-          <name>PRODUCT_NAME</name>
-          <value>rd-identity-server</value>
-        </property>
-      </activation>
-      <properties>
-        <PRODUCT_NAME>rd-identity-server</PRODUCT_NAME>
-      </properties>
-      <modules>
-        <module>tcserver</module>
-        <module>diagnostics</module>
-        <module>platform</module>
-        <module>idm</module>
-        <module>exportTool</module>
-        <module>migration</module>
-        <module>commons</module>
-        <module>wstclient</module>
-        <module>httpSsoAuth</module>
-        <module>ssolib</module>
-        <module>sso-config</module>
-        <module>sso-ha</module>
-        <module>samlauthority</module>
-        <module>admin-interfaces</module>
-        <module>wstauthz</module>
-        <module>admin-sdk</module>
-        <module>lookup</module>
-        <module>tomcat-extensions</module>
-        <module>install</module>
-        <module>rest</module>
-        <module>admin</module>
-        <module>openidconnect</module>
-        <module>ssolib-sample</module>
-        <module>infraclient-samples</module>
-        <module>ldapSchemaTool</module>
-        <module>service-providers</module>
-        <module>sts</module>
-        <module>websso</module>
-        <module>ims-stub</module>
-        <module>service</module>
-      </modules>
-    </profile>
   </profiles>
-
-  <distributionManagement>
-    <repository>
-      <id>lightwave</id>
-      <name>lightwave</name>
-      <url>http://artifactory.ec.eng.vmware.com:8081/artifactory/lightwave-testmaven</url>
-    </repository>
-  </distributionManagement>
 
   <build>
     <plugins>
@@ -326,17 +274,18 @@
     <!-- Dependency Versions -->
     <FastInfoset.version>1.2.8</FastInfoset.version>
     <activation.version>1.1.1</activation.version>
+    <aop.version>1.0</aop.version>
     <apache.log4j.version>2.8.2</apache.log4j.version>
     <args4j.version>2.33</args4j.version>
     <asm.version>5.0.3</asm.version>
     <aspect.version>1.6.9</aspect.version>
-    <bouncycastle.version>1.50</bouncycastle.version>
+    <bouncycastle.version>1.60</bouncycastle.version>
     <cglib.version>2.2</cglib.version>
-    <commons-ssl.version>0.3.9</commons-ssl.version>
     <commons.beanutils.version>1.9.3</commons.beanutils.version>
     <commons.cli.version>1.2</commons.cli.version>
     <commons.codec.version>1.9</commons.codec.version>
     <commons.collection.version>3.2.2</commons.collection.version>
+    <commons.configuration.version>1.9</commons.configuration.version>
     <commons.daemon.version>1.0.8</commons.daemon.version>
     <commons.fileupload.version>1.3.3</commons.fileupload.version>
     <commons.io.version>2.4</commons.io.version>
@@ -345,13 +294,13 @@
     <commons.logging.version>1.2</commons.logging.version>
     <commons.pool2.version>2.4.2</commons.pool2.version>
     <easymock.version>3.2</easymock.version>
+    <esapi.version>2.0.1</esapi.version>
     <gmbal-api-only.version>3.1.0-b001</gmbal-api-only.version>
     <ha-api.version>3.1.9</ha-api.version>
     <httpclient.version>4.5.1</httpclient.version>
     <httpcore.version>4.4.4</httpcore.version>
     <jackson.version>2.9.6</jackson.version>
     <json-smart.version>1.3.1</json-smart.version>
-    <javax.servlet-api.version>3.0.1</javax.servlet-api.version>
     <javax.servlet.version>3.1.0</javax.servlet.version>
     <javax.ws.version>2.0.1</javax.ws.version>
     <jaxb-api.version>2.0</jaxb-api.version>
@@ -376,8 +325,8 @@
     <net.dev.jna>4.2.1</net.dev.jna>
     <nimbusds.version>5.6</nimbusds.version>
     <objenesis.version>1.2</objenesis.version>
-    <opensaml.version>2.6.4</opensaml.version>
-    <openws.version>1.5.4</openws.version>
+    <opensaml.version>3.2.0</opensaml.version>
+    <shibboleth-utilities.version>7.1.0</shibboleth-utilities.version>
     <policy.version>2.3.1</policy.version>
     <powermock.version>1.6.2</powermock.version>
     <prometheus.version>0.1.0</prometheus.version>
@@ -386,18 +335,17 @@
     <saaj-impl.version>1.3</saaj-impl.version>
     <serializer.version>2.7.2</serializer.version>
     <slf4j.version>1.7.25</slf4j.version>
-    <spring.release.version>4.3.16.RELEASE</spring.release.version>
+    <spring.release.version>4.3.18.RELEASE</spring.release.version>
     <stax-ex.version>1.7.7</stax-ex.version>
     <streambuffer.version>1.5.3</streambuffer.version>
     <tomat.coyote.version>8.5.31</tomat.coyote.version>
     <tomcat.catalina.version>8.5.31</tomcat.catalina.version>
     <velocity.version>1.7</velocity.version>
     <xalan.version>2.7.2</xalan.version>
-    <xerces.impl.version>2.10.0</xerces.impl.version>
+    <xerces.impl.version>2.11.0</xerces.impl.version>
     <xml.api.version>1.4.01</xml.api.version>
     <xml.resolver.version>1.2</xml.resolver.version>
-    <xml.sec.version>1.5.7</xml.sec.version>
-    <xml.tooling.version>1.4.4</xml.tooling.version>
+    <xml.sec.version>2.0.5</xml.sec.version>
   </properties>
 
   <dependencies>

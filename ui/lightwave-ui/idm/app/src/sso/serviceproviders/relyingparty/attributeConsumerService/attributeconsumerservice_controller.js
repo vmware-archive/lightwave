@@ -64,7 +64,7 @@ module.controller('AttributeConsumerServiceCntrl', [ '$scope', '$rootScope', 'po
 
         function addAttribute() {
             $rootScope.globals.popup_errors = null;
-            var template = 'sso/serviceproviders/relyingparty/attributeConsumerService/attribute/attribute.add.html';
+            var template = 'idm/sso/serviceproviders/relyingparty/attributeConsumerService/attribute/attribute.add.html';
             var controller = 'AttributeCntrl';
             popupUtil.open($scope, template, controller);
         }

@@ -14,12 +14,12 @@
 package com.vmware.identity.saml;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.Configuration;
-import org.opensaml.DefaultBootstrap;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.schema.XSString;
-import org.opensaml.xml.schema.impl.XSStringMarshaller;
-import org.opensaml.xml.schema.impl.XSStringUnmarshaller;
+import org.opensaml.core.config.InitializationException;
+import org.opensaml.core.config.InitializationService;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.schema.XSString;
+import org.opensaml.core.xml.schema.impl.XSStringMarshaller;
+import org.opensaml.core.xml.schema.impl.XSStringUnmarshaller;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -54,24 +54,24 @@ public final class DefaultSamlAuthorityFactory implements SamlAuthorityFactory {
 
    static
    {
-      try {
-         DefaultBootstrap.bootstrap();
-         org.opensaml.xml.Configuration.registerObjectProvider(XSString.TYPE_NAME,
-            new XSNonTrimmingStringBuilder(),
-            new XSStringMarshaller(),
-            new XSStringUnmarshaller()
-         );
-         Configuration.registerObjectProvider(RenewRestrictionType.TYPE_NAME,
-            new RenewRestrictionTypeBuilder(),
-            new RenewRestrictionTypeMarshaller(),
-            new RenewRestrictionTypeUnmarshaller());
-         Configuration.registerObjectProvider(RSAAdvice.TYPE_NAME,
-            new RSAAdviceBuilder(), new RSAAdviceMarshaller(),
-            new RSAAdviceUnmarshaller());
-      } catch (ConfigurationException e) {
-         log.error(CANNOT_INITIALIZE_OPENSAML_LIB, e);
-         throw new IllegalStateException(CANNOT_INITIALIZE_OPENSAML_LIB, e);
-      }
+       try {
+           InitializationService.initialize();
+           XMLObjectProviderRegistrySupport.registerObjectProvider(XSString.TYPE_NAME,
+              new XSNonTrimmingStringBuilder(),
+              new XSStringMarshaller(),
+              new XSStringUnmarshaller()
+           );
+           XMLObjectProviderRegistrySupport.registerObjectProvider(RenewRestrictionType.TYPE_NAME,
+              new RenewRestrictionTypeBuilder(),
+              new RenewRestrictionTypeMarshaller(),
+              new RenewRestrictionTypeUnmarshaller());
+           XMLObjectProviderRegistrySupport.registerObjectProvider(RSAAdvice.TYPE_NAME,
+              new RSAAdviceBuilder(), new RSAAdviceMarshaller(),
+              new RSAAdviceUnmarshaller());
+        } catch (InitializationException e) {
+           log.error(CANNOT_INITIALIZE_OPENSAML_LIB, e);
+           throw new IllegalStateException(CANNOT_INITIALIZE_OPENSAML_LIB, e);
+        }
    }
 
    public DefaultSamlAuthorityFactory(

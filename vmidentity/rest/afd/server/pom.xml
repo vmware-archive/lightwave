@@ -115,12 +115,6 @@
       <groupId>com.vmware.identity.idm</groupId>
       <artifactId>vmware-identity-idm-client</artifactId>
       <version>${vmware.version}</version>
-      <exclusions>
-         <exclusion>
-            <groupId>org.opensaml</groupId>
-            <artifactId>xmltooling</artifactId>
-         </exclusion>
-      </exclusions>
     </dependency>
 
     <dependency>

@@ -27,7 +27,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.apache.commons.lang.ObjectUtils;
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
 
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.PrincipalId;
@@ -66,7 +66,7 @@ public final class Session implements Serializable {
         Validate.notNull(principalId);
         Validate.notNull(expireDate);
 
-        SecureRandomIdentifierGenerator generator = new SecureRandomIdentifierGenerator();
+        SecureRandomIdentifierGenerationStrategy generator = new SecureRandomIdentifierGenerationStrategy();
         this.id = generator.generateIdentifier();
         this.principalId = principalId;
         this.expireDate = expireDate;

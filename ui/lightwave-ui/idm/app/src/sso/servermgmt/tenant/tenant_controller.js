@@ -32,7 +32,7 @@ module.controller('TenantCntrl', ['$scope', '$rootScope', 'TenantService', 'Oidc
 
         function viewcertificate(certificate) {
             if (certificate) {
-                var template = 'shared/components/certificate/certificate.view.html';
+                var template = 'idm/shared/components/certificate/certificate.view.html';
                 var controller = 'CertificateViewerCntrl';
                 Util.viewCertificate($scope, certificate.encoded, template, controller);
 

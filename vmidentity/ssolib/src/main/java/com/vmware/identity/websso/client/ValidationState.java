@@ -22,6 +22,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 
+import net.shibboleth.utilities.java.support.net.URIException;
+
 /**
  * ValidationState holds idp message authentication state information in websso
  * client lib controllers in its message exchange with IDP end points.
@@ -63,8 +65,9 @@ public abstract class ValidationState {
      * @return void
      * @throws WebssoClientException
      *             validation failed.
+     * @throws URIException
      */
-    public void validateDestination() throws WebssoClientException {
+    public void validateDestination() throws WebssoClientException, URIException {
 
         if (this.getDestination() == null) {
             return;

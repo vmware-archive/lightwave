@@ -15,7 +15,6 @@ package com.vmware.identity.websso.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.StringWriter;
 import java.io.UnsupportedEncodingException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
@@ -40,48 +39,49 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.Conditions;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.NameID;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.saml2.core.SessionIndex;
-import org.opensaml.saml2.core.Status;
-import org.opensaml.saml2.core.StatusCode;
-import org.opensaml.saml2.core.StatusMessage;
-import org.opensaml.saml2.core.impl.IssuerBuilder;
-import org.opensaml.saml2.core.impl.LogoutRequestBuilder;
-import org.opensaml.saml2.core.impl.SessionIndexBuilder;
-import org.opensaml.security.SAMLSignatureProfileValidator;
-import org.opensaml.ws.transport.http.HTTPTransportUtils;
-import org.opensaml.xml.Configuration;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.XMLObject;
-import org.opensaml.xml.io.Marshaller;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.io.Unmarshaller;
-import org.opensaml.xml.io.UnmarshallerFactory;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.security.CriteriaSet;
-import org.opensaml.xml.security.SecurityException;
-import org.opensaml.xml.security.credential.Credential;
-import org.opensaml.xml.security.keyinfo.KeyInfoCredentialResolver;
-import org.opensaml.xml.security.keyinfo.KeyInfoCriteria;
-import org.opensaml.xml.security.x509.BasicX509Credential;
-import org.opensaml.xml.signature.KeyInfo;
-import org.opensaml.xml.signature.SignatureValidator;
-import org.opensaml.xml.util.Base64;
-import org.opensaml.xml.util.XMLHelper;
-import org.opensaml.xml.validation.ValidationException;
+import org.opensaml.core.xml.XMLObject;
+import org.opensaml.core.xml.config.XMLObjectProviderRegistrySupport;
+import org.opensaml.core.xml.io.Marshaller;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.Unmarshaller;
+import org.opensaml.core.xml.io.UnmarshallerFactory;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.saml.common.SAMLVersion;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.Conditions;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.NameID;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.SessionIndex;
+import org.opensaml.saml.saml2.core.Status;
+import org.opensaml.saml.saml2.core.StatusCode;
+import org.opensaml.saml.saml2.core.StatusMessage;
+import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml.saml2.core.impl.LogoutRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.SessionIndexBuilder;
+import org.opensaml.saml.security.impl.SAMLSignatureProfileValidator;
+import org.opensaml.security.credential.Credential;
+import org.opensaml.security.x509.BasicX509Credential;
+import org.opensaml.xmlsec.config.DefaultSecurityConfigurationBootstrap;
+import org.opensaml.xmlsec.keyinfo.KeyInfoCredentialResolver;
+import org.opensaml.xmlsec.keyinfo.KeyInfoCriterion;
+import org.opensaml.xmlsec.signature.KeyInfo;
+import org.opensaml.xmlsec.signature.support.SignatureException;
+import org.opensaml.xmlsec.signature.support.SignatureValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
+import net.shibboleth.utilities.java.support.net.URISupport;
+import net.shibboleth.utilities.java.support.resolver.CriteriaSet;
+import net.shibboleth.utilities.java.support.resolver.ResolverException;
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
+import net.shibboleth.utilities.java.support.xml.SerializeSupport;
 
 /**
  * SamlUtils class
@@ -112,14 +112,10 @@ public class SamlUtils {
         this.issuer = issuer;
     }
 
-    private static SecureRandomIdentifierGenerator generator;
+    private static SecureRandomIdentifierGenerationStrategy generator;
 
     static {
-        try {
-            generator = new SecureRandomIdentifierGenerator();
-        } catch (NoSuchAlgorithmException e) {
-            log.error("Unexpected error in creating SecureRandomIdentifierGenerator");
-        }
+        generator = new SecureRandomIdentifierGenerationStrategy();
     }
 
     /**
@@ -255,7 +251,7 @@ public class SamlUtils {
         try {
             decodedAlgorithmUri = URLDecoder.decode(algorithmUri, "UTF-8");
             log.debug("Signature algorithm uri {}", decodedAlgorithmUri);
-            decodedSignature = Base64.decode(URLDecoder.decode(signature, "UTF-8"));
+            decodedSignature = Base64Support.decode(URLDecoder.decode(signature, "UTF-8"));
         } catch (UnsupportedEncodingException e) {
             throw new WebssoClientException("Could not decode algorithm uri or signature", e);
         }
@@ -414,7 +410,7 @@ public class SamlUtils {
             Element root = token.getDocumentElement();
 
             // get appropriate unmarshaller
-            UnmarshallerFactory unmarshallerFactory = Configuration.getUnmarshallerFactory();
+            UnmarshallerFactory unmarshallerFactory = XMLObjectProviderRegistrySupport.getUnmarshallerFactory();
             Unmarshaller unmarshaller = unmarshallerFactory.getUnmarshaller(root);
 
             // unmarshall using root document element which needs to be
@@ -494,11 +490,9 @@ public class SamlUtils {
 
         // Now we must build our representation to put into the html form to be
         // submitted to the idp
-        Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(signableSAMLObject);
+        Marshaller marshaller = XMLObjectProviderRegistrySupport.getMarshallerFactory().getMarshaller(signableSAMLObject);
         org.w3c.dom.Element authDOM = marshaller.marshall(signableSAMLObject);
-        StringWriter rspWrt = new StringWriter();
-        XMLHelper.writeNode(authDOM, rspWrt);
-        String messageXML = rspWrt.toString();
+        String messageXML = SerializeSupport.nodeToString(authDOM);
 
         String samlRequestParameter = null;
 
@@ -530,7 +524,7 @@ public class SamlUtils {
         Inflater decompresser = new Inflater(true);
         ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
         InflaterOutputStream inflaterOutputStream = new InflaterOutputStream(byteArrayOutputStream, decompresser);
-        inflaterOutputStream.write(Base64.decode(samlRequestParameter));
+        inflaterOutputStream.write(Base64Support.decode(samlRequestParameter));
         inflaterOutputStream.close();
         String outputString = new String(byteArrayOutputStream.toByteArray(), "UTF-8");
 
@@ -575,9 +569,9 @@ public class SamlUtils {
     public boolean validateRequestSignature(HttpServletRequest request, Boolean mustSigned) throws Exception {
         Validate.notNull(request, "HttpServletRequest");
 
-        String signatureRawQueryString = HTTPTransportUtils.getRawQueryStringParameter(request.getQueryString(),
+        String signatureRawQueryString = URISupport.getRawQueryStringParameter(request.getQueryString(),
                 SamlUtils.SIGNATURE_PARAMETER);
-        String sigAlgRawQueryString = HTTPTransportUtils.getRawQueryStringParameter(request.getQueryString(),
+        String sigAlgRawQueryString = URISupport.getRawQueryStringParameter(request.getQueryString(),
                 SamlUtils.SIGNATURE_ALGORITHM_PARAMETER);
         ;
 
@@ -617,13 +611,13 @@ public class SamlUtils {
      * @param signature
      * @throws UnsupportedEncodingException
      */
-    public static XMLObject unmarshallSAMLObj(Document document) throws UnmarshallingException, ConfigurationException {
+    public static XMLObject unmarshallSAMLObj(Document document) throws UnmarshallingException {
 
         Validate.notNull(document);
         Element root = document.getDocumentElement();
 
         // get appropriate unmarshaller
-        UnmarshallerFactory unmarshallerFactory = Configuration.getUnmarshallerFactory();
+        UnmarshallerFactory unmarshallerFactory = XMLObjectProviderRegistrySupport.getUnmarshallerFactory();
         Unmarshaller unmarshaller = unmarshallerFactory.getUnmarshaller(root);
 
         // unmarshall using root document element can be /LogoutResponse or
@@ -642,7 +636,7 @@ public class SamlUtils {
     public static Document createDomFromSignable(SignableSAMLObject signableSAMLObject) {
 
         try {
-            Marshaller marshaller = org.opensaml.Configuration.getMarshallerFactory().getMarshaller(signableSAMLObject);
+            Marshaller marshaller = XMLObjectProviderRegistrySupport.getMarshallerFactory().getMarshaller(signableSAMLObject);
             org.w3c.dom.Element signableDomEle = marshaller.marshall(signableSAMLObject);
 
             DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
@@ -691,7 +685,6 @@ public class SamlUtils {
      * @return void:
      */
     public static void ValidateConditions(Conditions conditions, int clockTolerance) throws ValidationException {
-
         try {
             log.info("Validate assertion condition with clock tolerance = " + clockTolerance);
             Validate.isTrue(clockTolerance >= 0, "Negative clock tolerance setting");
@@ -725,24 +718,24 @@ public class SamlUtils {
      * @return void:
      */
     public static void ValidateSessionExpiry(DateTime sessionNotOnOrAfter, int clockTolerance)
-            throws ValidationException {
+        throws ValidationException {
 
-        try {
-            log.info("Validate sessionNotOnOrAfter with clock tolerance = " + clockTolerance);
-            Validate.isTrue(clockTolerance >= 0, "Negative clock tolerance setting");
-            Calendar currentDate = Calendar.getInstance();
-            TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT");
-            currentDate.setTimeZone(gmtTimeZone);
+     try {
+         log.info("Validate sessionNotOnOrAfter with clock tolerance = " + clockTolerance);
+         Validate.isTrue(clockTolerance >= 0, "Negative clock tolerance setting");
+         Calendar currentDate = Calendar.getInstance();
+         TimeZone gmtTimeZone = TimeZone.getTimeZone("GMT");
+         currentDate.setTimeZone(gmtTimeZone);
 
-            if (sessionNotOnOrAfter != null) {
-                DateTime notOnOrAfter = sessionNotOnOrAfter.plusSeconds(clockTolerance);
-                Validate.isTrue(currentDate.getTime().before(notOnOrAfter.toDate()),
-                        "Validating notAfter fails! Tolerance-adjusted notAfter date is:" + notOnOrAfter.toString());
-            }
-        } catch (IllegalArgumentException e) {
-            log.error(Error.IDP_SESSION_EXPIRED, e);
-            throw new ValidationException(e);
-        }
+         if (sessionNotOnOrAfter != null) {
+             DateTime notOnOrAfter = sessionNotOnOrAfter.plusSeconds(clockTolerance);
+             Validate.isTrue(currentDate.getTime().before(notOnOrAfter.toDate()),
+                     "Validating notAfter fails! Tolerance-adjusted notAfter date is:" + notOnOrAfter.toString());
+         }
+     } catch (IllegalArgumentException e) {
+         log.error(Error.IDP_SESSION_EXPIRED, e);
+         throw new ValidationException(e);
+     }
     }
 
     /**
@@ -758,15 +751,16 @@ public class SamlUtils {
      * @throws ValidationException
      * @return void:
      * @throws SecurityException
+     * @throws ResolverException
+     * @throws SignatureException
      */
-    public static void ValidateSignature(org.opensaml.xml.signature.Signature signature, X509Certificate cert)
-            throws ValidationException, SecurityException {
+    public static void ValidateSignature(org.opensaml.xmlsec.signature.Signature signature, X509Certificate cert)
+            throws SecurityException, ResolverException, SignatureException, ValidationException {
         if (signature == null) {
             log.warn("Null signature!");
             return;
         }
 
-        BasicX509Credential pubCredential = new BasicX509Credential();
         // check server identity per binding 3.1.2.1. via certificate's subject
         // DN field,
         // subjectAltName attribute, etc.
@@ -777,20 +771,20 @@ public class SamlUtils {
             if (cert == null) {
                 throw new ValidationException("No signing certificate found.");
             }
-            pubCredential.setEntityCertificate(cert);
-            cred = pubCredential;
+            cred = new BasicX509Credential(cert);
         } else {
-            KeyInfoCredentialResolver kiResolver = Configuration.getGlobalSecurityConfiguration()
-                    .getDefaultKeyInfoCredentialResolver();
-            CriteriaSet criteriaSet = new CriteriaSet(new KeyInfoCriteria(keyInfo));
+            KeyInfoCredentialResolver kiResolver =
+                    DefaultSecurityConfigurationBootstrap.buildBasicInlineKeyInfoCredentialResolver();
+            KeyInfoCriterion keyCriterion = new KeyInfoCriterion(keyInfo);
+            CriteriaSet criteriaSet = new CriteriaSet();
+            criteriaSet.add(keyCriterion);
             cred = kiResolver.resolveSingle(criteriaSet);
         }
 
         SAMLSignatureProfileValidator pv = new SAMLSignatureProfileValidator();
         pv.validate(signature);
 
-        SignatureValidator sigValidator = new SignatureValidator(cred);
-        sigValidator.validate(signature);
+        SignatureValidator.validate(signature, cred);
     }
 
     /**
@@ -802,18 +796,18 @@ public class SamlUtils {
      */
     public static String parseSignedMessage(HttpServletRequest request) throws IllegalArgumentException {
         String queryString = request.getQueryString();
-        String samlRequest = HTTPTransportUtils.getRawQueryStringParameter(queryString,
+        String samlRequest = URISupport.getRawQueryStringParameter(queryString,
                 SamlUtils.SAML_REQUEST_PARAMETER);
-        String samlResponse = HTTPTransportUtils.getRawQueryStringParameter(queryString,
+        String samlResponse = URISupport.getRawQueryStringParameter(queryString,
                 SamlUtils.SAML_RESPONSE_PARAMETER);
         Validate.isTrue(samlRequest != null || samlResponse != null);
 
         // HTTPTransportUtils.getRawQueryStringParameter returns null if the
         // component is not found
-        String signature = HTTPTransportUtils.getRawQueryStringParameter(queryString, SamlUtils.SIGNATURE_PARAMETER);
-        String sigAlgo = HTTPTransportUtils.getRawQueryStringParameter(queryString,
+        String signature = URISupport.getRawQueryStringParameter(queryString, SamlUtils.SIGNATURE_PARAMETER);
+        String sigAlgo = URISupport.getRawQueryStringParameter(queryString,
                 SamlUtils.SIGNATURE_ALGORITHM_PARAMETER);
-        String relayState = HTTPTransportUtils.getRawQueryStringParameter(queryString, SamlUtils.RELAY_STATE_PARAMETER);
+        String relayState = URISupport.getRawQueryStringParameter(queryString, SamlUtils.RELAY_STATE_PARAMETER);
 
         if (signature == null || sigAlgo == null) {
             return null;
@@ -942,7 +936,7 @@ public class SamlUtils {
     // cast to SAMLObjectBuilder<T> is caller's choice
     @SuppressWarnings({ "unchecked", "rawtypes" })
     private static <T> T create(Class<T> cls, QName qname) {
-        return (T) Configuration.getBuilderFactory().getBuilder(qname).buildObject(qname);
+        return (T) XMLObjectProviderRegistrySupport.getBuilderFactory().getBuilder(qname).buildObject(qname);
     }
 
     // Helper function to check whether IDP has SLO end point defined.

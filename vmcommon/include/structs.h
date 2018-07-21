@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2017-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -83,3 +83,24 @@ typedef struct _VM_METRICS_CONTEXT
     pthread_rwlock_t                rwLock;
 
 } VM_METRICS_CONTEXT, *PVM_METRICS_CONTEXT;
+
+/* httpclient */
+typedef struct _VM_HTTP_CLIENT
+{
+    CURL* pCurl;
+    struct curl_slist *pHeaders;
+    PLW_HASHMAP pQueryParamsMap;
+    PSTR  pszTlsCAPath;
+    PSTR  pszBody;
+    long nStatus;
+    PSTR pszResult;
+    size_t nResultLen;
+} VM_HTTP_CLIENT, *PVM_HTTP_CLIENT;
+
+/* json result */
+typedef struct _VM_JSON_RESULT
+{
+    json_t *pJsonRoot;
+    int nJsonErrorLine;
+    PSTR pszJsonErrorText;
+}VM_JSON_RESULT, *PVM_JSON_RESULT;

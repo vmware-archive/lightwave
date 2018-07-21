@@ -224,3 +224,37 @@ _VmDirGetBackupTimeTaken(
 error:
     return dwError;
 }
+
+DWORD
+VmDirLwGitHashMetricsInit(
+    VOID
+    )
+{
+    DWORD    dwError = 0;
+    VM_METRICS_LABEL    labels[1] =
+    {
+            {"gitCommitHash", GIT_COMMIT_HASH}
+    };
+
+    dwError = VmMetricsGaugeNew(
+            pmContext,
+            "lw_git_commit_hash",
+            labels, 1,
+            "Lightwave git commit hash",
+            &gpLwGitHashMetrics);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+VOID
+VmDirLwGitHashMetricsShutdown(
+    VOID
+    )
+{
+    gpLwGitHashMetrics = NULL;
+}

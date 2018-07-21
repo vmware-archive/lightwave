@@ -3541,6 +3541,100 @@ error:
 }
 
 DWORD
+VmAfdCreateComputerOUContainerA(
+    PCSTR            pszUserName,       /* IN              */
+    PCSTR            pszPassword,       /* IN              */
+    PCSTR            pszOrgUnit         /* IN              */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszOrgUnit = NULL;
+
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszOrgUnit))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdCreateComputerOUContainerW(
+                          pwszUserName,
+                          pwszPassword,
+                          pwszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "[%s,%d] failed. Error (%u)",
+             __FUNCTION__,
+             __LINE__,
+             dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdCreateComputerOUContainerW(
+    PCWSTR              pwszUserName,       /* IN              */
+    PCWSTR              pwszPassword,       /* IN              */
+    PCWSTR              pwszOrgUnit         /* IN              */
+    )
+{
+    DWORD dwError = 0;
+
+    if (IsNullOrEmptyString(pwszUserName) ||
+        IsNullOrEmptyString(pwszPassword) ||
+        IsNullOrEmptyString(pwszOrgUnit))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdLocalCreateComputerOUContainer(
+                            NULL,
+                            pwszUserName,
+                            pwszPassword,
+                            pwszOrgUnit);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ANY,
+             "[%s,%d] failed. Error (%u)",
+             __FUNCTION__,
+             __LINE__,
+             dwError);
+
+    goto cleanup;
+}
+
+DWORD
 VmAfdJoinADA(
     PCSTR pszServerName,      /* IN     OPTIONAL */
     PCSTR pszUserName,        /* IN              */

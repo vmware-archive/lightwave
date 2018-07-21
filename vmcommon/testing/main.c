@@ -14,6 +14,8 @@
 
 #include "includes.h"
 #include "vmmetricstest.h"
+#include "vmhttpclienttest.h"
+#include "vmjsonresulttest.h"
 
 int main(int argc, char *argv[])
 {
@@ -23,6 +25,8 @@ int main(int argc, char *argv[])
     dwError += VmMetricsGaugeTest();
     dwError += VmMetricsHistogramTest();
     dwError += VmMetricsMixedTest();
+    dwError += VmHttpClientTest();
+    dwError += VmJsonResultTest();
 
     if (dwError == 0)
     {

@@ -35,11 +35,9 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang.StringEscapeUtils;
 import org.apache.commons.lang.Validate;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.security.SecurityException;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.messaging.decoder.MessageDecodingException;
+import org.opensaml.saml.saml2.core.Response;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
 import org.w3c.dom.Document;
@@ -624,8 +622,9 @@ public class LogonProcessorImpl implements LogonProcessorEx {
      * @throws IOException
      * @throws SAXException
      * @throws ParserConfigurationException
+     * @throws UnmarshallingException
      */
-    private Response decodeResponse(HttpServletRequest request) throws UnmarshallingException, ConfigurationException, ParserConfigurationException, SAXException, IOException {
+    private Response decodeResponse(HttpServletRequest request) throws UnmarshallingException, ParserConfigurationException, SAXException, IOException, UnmarshallingException {
         Validate.notNull(request, "request");
 
         String samlResponseStr = request.getParameter(SamlUtils.SAML_RESPONSE_PARAMETER);

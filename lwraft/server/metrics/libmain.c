@@ -38,6 +38,9 @@ VmDirMetricsInitialize(
     dwError = VmDirSrvStatMetricsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirLwGitHashMetricsInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
     return dwError;
 
@@ -60,5 +63,6 @@ VmDirMetricsShutdown(
     VmDirRestMetricsShutdown();
     VmDirRpcMetricsShutdown();
     VmDirSrvStatMetricsShutdown();
+    VmDirLwGitHashMetricsShutdown();
     VmMetricsDestroy(pmContext);
 }

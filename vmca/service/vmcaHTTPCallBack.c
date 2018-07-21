@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the ~@~\License~@~]); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -377,12 +377,11 @@ DWORD
 VMCAParseQuery(
     PSTR pszQuery,
     PSTR **pppszParams,
-    int** ppnCount
+    int *pnCount
     )
 {
     DWORD dwError = 0;
     PSTR *ppszParams = NULL;
-    int *pnCount = NULL;
     int nCount = 0;
     int nSizeToAllocate = 0;
     int nNotDone = 1;
@@ -398,10 +397,8 @@ VMCAParseQuery(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCAStringCountSubstring(pszQuery, "=", &pnCount);
+    dwError = VMCAStringCountSubstring(pszQuery, "=", &nCount);
     BAIL_ON_VMCA_ERROR(dwError);
-
-    nCount = *pnCount;
 
     if (nCount == 0)
     {
@@ -466,12 +463,25 @@ VMCAParseQuery(
         }
     }
 
-    *ppnCount = pnCount;
+    *pnCount = nCount;
     *pppszParams = ppszParams;
+
 cleanup:
+
     return dwError;
+
 error:
+
     VMCA_SAFE_FREE_MEMORY(ppszParams);
+    if (pppszParams)
+    {
+        *pppszParams = NULL;
+    }
+    if (pnCount)
+    {
+        *pnCount = 0;
+    }
+
     goto cleanup;
 }
 
@@ -758,24 +768,25 @@ error:
 
 DWORD
 VMCARESTGetSignedCertificate(
-    VMCA_HTTP_REQ_OBJ request,
-    PSTR* ppszStatusCode,
-    PSTR* ppszResponsePayload
+    VMCA_HTTP_REQ_OBJ       request,
+    PSTR*                   ppszStatusCode,
+    PSTR*                   ppszResponsePayload
     )
 {
-    DWORD dwError = 0;
-    PSTR pszStatusCode = NULL;
-    PSTR pszResponsePayload = NULL;
-    PSTR pszSignedCert = NULL;
-    unsigned char *pszPEMEncodedCSRRequest = 0;
-    unsigned int dwNotBefore = 0;
-    unsigned int nDuration = 1000;
-    unsigned int dwNotAfter = 0;
-    VMCA_CERTIFICATE_CONTAINER* pTempCertContainer = NULL;
-    json_t *pRoot = NULL;
-    json_t *pJsonCSR = NULL;
-    json_t *pJsonNotBefore = NULL;
-    json_t *pJsonDuration = NULL;
+    DWORD                               dwError = 0;
+    PSTR                                pszStatusCode = NULL;
+    PSTR                                pszResponsePayload = NULL;
+    PSTR                                pszSignedCert = NULL;
+    unsigned char                       *pszPEMEncodedCSRRequest = 0;
+    unsigned int                        dwNotBefore = 0;
+    unsigned int                        nDuration = 1000;
+    unsigned int                        dwNotAfter = 0;
+    VMCA_CERTIFICATE_CONTAINER*         pTempCertContainer = NULL;
+    PVMCA_REQ_CONTEXT                   pReqContext = NULL;
+    json_t                              *pRoot = NULL;
+    json_t                              *pJsonCSR = NULL;
+    json_t                              *pJsonNotBefore = NULL;
+    json_t                              *pJsonDuration = NULL;
 
 
     dwError = VMCAConvertStringInputToJSON(request.pszPayload, &pRoot);
@@ -797,10 +808,17 @@ VMCARESTGetSignedCertificate(
 
     dwNotAfter = dwNotBefore + nDuration;
 
+    dwError = VMCAAllocateReqContext(
+                        request.pAccessToken->pszSubjectName,
+                        &pReqContext
+                        );
+    BAIL_ON_VMCA_ERROR(dwError);
+
     dwError = VMCAGetSignedCertificate(
                                 pszPEMEncodedCSRRequest,
                                 dwNotBefore,
                                 dwNotAfter,
+                                pReqContext,
                                 &pTempCertContainer
                                 );
     BAIL_ON_VMCA_ERROR(dwError);
@@ -819,11 +837,12 @@ VMCARESTGetSignedCertificate(
                             "200",
                             &pszStatusCode
                             );
-    BAIL_ON_VMCA_ERROR(dwError); 
+    BAIL_ON_VMCA_ERROR(dwError);
     *ppszResponsePayload = pszResponsePayload;
     *ppszStatusCode = pszStatusCode;
 cleanup:
     VMCAFreeCertificateContainer(pTempCertContainer);
+    VMCAFreeReqContext(pReqContext);
     VMCA_SAFE_FREE_MEMORY(pszSignedCert);
     return dwError;
 error:

@@ -23,25 +23,24 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
-import org.opensaml.saml2.core.AuthnContextClassRef;
-import org.opensaml.saml2.core.AuthnContextComparisonTypeEnumeration;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.Conditions;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.NameIDPolicy;
-import org.opensaml.saml2.core.RequestedAuthnContext;
-import org.opensaml.saml2.core.Scoping;
-import org.opensaml.saml2.core.impl.AuthnContextClassRefBuilder;
-import org.opensaml.saml2.core.impl.AuthnRequestBuilder;
-import org.opensaml.saml2.core.impl.ConditionsBuilder;
-import org.opensaml.saml2.core.impl.IssuerBuilder;
-import org.opensaml.saml2.core.impl.NameIDPolicyBuilder;
-import org.opensaml.saml2.core.impl.RequestedAuthnContextBuilder;
-import org.opensaml.saml2.core.impl.ScopingBuilder;
-import org.opensaml.xml.ConfigurationException;
-import org.opensaml.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.saml.common.SAMLVersion;
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
+import org.opensaml.saml.saml2.core.AuthnContextClassRef;
+import org.opensaml.saml.saml2.core.AuthnContextComparisonTypeEnumeration;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Conditions;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.NameIDPolicy;
+import org.opensaml.saml.saml2.core.RequestedAuthnContext;
+import org.opensaml.saml.saml2.core.Scoping;
+import org.opensaml.saml.saml2.core.impl.AuthnContextClassRefBuilder;
+import org.opensaml.saml.saml2.core.impl.AuthnRequestBuilder;
+import org.opensaml.saml.saml2.core.impl.ConditionsBuilder;
+import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
+import org.opensaml.saml.saml2.core.impl.NameIDPolicyBuilder;
+import org.opensaml.saml.saml2.core.impl.RequestedAuthnContextBuilder;
+import org.opensaml.saml.saml2.core.impl.ScopingBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -73,7 +72,7 @@ import com.vmware.identity.websso.client.WebssoClientException;
 public class SsoRequestSender {
 
     private static Logger logger = LoggerFactory.getLogger(SsoRequestSender.class);
-    private final SecureRandomIdentifierGenerator generator;
+    private final SecureRandomIdentifierGenerationStrategy generator;
 
     @Autowired
     private MetadataSettings metadataSettings;
@@ -109,7 +108,7 @@ public class SsoRequestSender {
     }
 
     public SsoRequestSender() throws NoSuchAlgorithmException {
-        this.generator = new SecureRandomIdentifierGenerator();
+        this.generator = new SecureRandomIdentifierGenerationStrategy();
         this.logonProcessor = null;
         this.messageStore = null;
         this.metadataSettings = null;
@@ -126,15 +125,8 @@ public class SsoRequestSender {
      *            HTTP response servlet used for redirecting the user browser
      *            signing on request..
      * @throws IOException
-     * @throws ConfigurationException
-     * @throws MarshallingException
-     * @throws NoSuchAlgorithmException
-     * @throws InvalidKeyException
-     * @throws WebssoClientException
      */
-    public void sendRequest(SsoRequestSettings requestSettings, HttpServletResponse response) throws IOException,
-            ConfigurationException, MarshallingException, InvalidKeyException, NoSuchAlgorithmException,
-            WebssoClientException {
+    public void sendRequest(SsoRequestSettings requestSettings, HttpServletResponse response) throws IOException {
 
         Validate.notNull(requestSettings, "requestSettings");
         Validate.notNull(response, "response");

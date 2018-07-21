@@ -17,16 +17,18 @@ import java.io.IOException;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.ws.message.decoder.MessageDecodingException;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.security.SecurityException;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.messaging.decoder.MessageDecodingException;
+import org.opensaml.security.SecurityException;
 import org.w3c.dom.Document;
+
+import net.shibboleth.utilities.java.support.component.ComponentInitializationException;
 
 public interface SamlService {
     /**
@@ -53,7 +55,7 @@ public interface SamlService {
      * @param request
      */
     SignableSAMLObject decodeSamlRequest(HttpServletRequest request)
-            throws MessageDecodingException, SecurityException;
+            throws SecurityException, ComponentInitializationException, MessageDecodingException;
 
     /**
      * Decode the message sent to us.
@@ -61,7 +63,7 @@ public interface SamlService {
      * @param request
      */
     AuthnRequest decodeSamlAuthnRequest(HttpServletRequest request)
-            throws MessageDecodingException, SecurityException;
+            throws SecurityException, ComponentInitializationException, MessageDecodingException;
 
     /**
      * Creates SAML response object populated as needed.

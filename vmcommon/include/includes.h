@@ -14,6 +14,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdarg.h>
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
@@ -21,8 +22,14 @@
 #include <lw/types.h>
 #include <lw/hash.h>
 
-#include "memory.h"
+#include <curl/curl.h>
+#include <jansson.h>
+
 #include "defines.h"
 #include "errorcode.h"
+#include "memory.h"
+#include "vmstring.h"
 #include "structs.h"
+#include "vmhttpclient.h"
+#include "vmjsonresult.h"
 #include "vmmetrics.h"

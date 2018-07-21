@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -279,7 +279,7 @@ VMCAAllocateStringW(
         PWSTR pwszNewString = NULL;
         size_t len = wcslen(pwszSrc);
         dwError = VMCAAllocateMemory(
-                        (DWORD) (len + 1)*sizeof(WCHAR), 
+                        (DWORD) (len + 1)*sizeof(WCHAR),
                         (PVOID *)&pwszNewString
                         );
         BAIL_ON_VMCA_ERROR(dwError);
@@ -419,6 +419,59 @@ VMCAGetStringLengthW(
     return dwError;
 }
 
+DWORD
+VMCACopyStringArrayA(
+    PSTR            **pppszDst,
+    DWORD           dwDstLen,
+    PSTR            *ppszSrc,
+    DWORD           dwSrcLen
+    )
+{
+    DWORD           dwError = 0;
+    DWORD           dwIdx = 0;
+    PSTR            *ppszDst = NULL;
+
+    if (!pppszDst ||
+        dwDstLen < 1 ||
+        !ppszSrc ||
+        dwSrcLen < 1 ||
+        dwDstLen > dwSrcLen)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateMemory(
+                    sizeof(PSTR) * dwDstLen,
+                    (PVOID *)&ppszDst);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    for (; dwIdx < dwDstLen && dwIdx < dwSrcLen; ++dwIdx)
+    {
+        dwError = VMCAAllocateStringA(
+                            ppszSrc[dwIdx],
+                            &ppszDst[dwIdx]);
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    *pppszDst = ppszDst;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMCAFreeStringArrayA(ppszDst, dwDstLen);
+    if (pppszDst)
+    {
+        *pppszDst = NULL;
+    }
+
+    goto cleanup;
+}
+
 VOID
 VMCAFreeStringArrayA(
     PSTR* ppszStrings,
@@ -440,7 +493,6 @@ VMCAFreeStringArrayA(
         VMCAFreeMemory(ppszStrings);
     }
 }
-
 
 void
 VMCASetBit(unsigned long *flag, int bit)

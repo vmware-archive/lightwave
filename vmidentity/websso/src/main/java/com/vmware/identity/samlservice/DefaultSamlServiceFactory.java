@@ -19,7 +19,7 @@ import java.security.PrivateKey;
 import java.security.cert.CertPath;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.xml.ConfigurationException;
+import org.opensaml.core.config.InitializationException;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
@@ -33,7 +33,7 @@ public class DefaultSamlServiceFactory implements SamlServiceFactory {
    static {
        try {
           Shared.bootstrap();
-       } catch (ConfigurationException e) {
+       } catch (InitializationException e) {
           log.error(CANNOT_INITIALIZE_OPENSAML_LIB, e);
           throw new IllegalStateException(CANNOT_INITIALIZE_OPENSAML_LIB, e);
        }

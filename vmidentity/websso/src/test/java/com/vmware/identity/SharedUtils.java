@@ -59,23 +59,22 @@ import javax.xml.parsers.ParserConfigurationException;
 
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
-import org.opensaml.common.SAMLVersion;
-import org.opensaml.common.SignableSAMLObject;
-import org.opensaml.saml2.core.Assertion;
-import org.opensaml.saml2.core.AuthnRequest;
-import org.opensaml.saml2.core.Conditions;
-import org.opensaml.saml2.core.Issuer;
-import org.opensaml.saml2.core.LogoutRequest;
-import org.opensaml.saml2.core.LogoutResponse;
-import org.opensaml.saml2.core.NameIDType;
-import org.opensaml.saml2.core.Response;
-import org.opensaml.saml2.core.impl.AssertionBuilder;
-import org.opensaml.saml2.core.impl.AssertionMarshaller;
-import org.opensaml.saml2.core.impl.ConditionsBuilder;
-import org.opensaml.saml2.core.impl.IssuerBuilder;
-import org.opensaml.xml.io.MarshallingException;
-import org.opensaml.xml.io.UnmarshallingException;
-import org.opensaml.xml.util.Base64;
+import org.opensaml.core.xml.io.MarshallingException;
+import org.opensaml.core.xml.io.UnmarshallingException;
+import org.opensaml.saml.common.SAMLVersion;
+import org.opensaml.saml.common.SignableSAMLObject;
+import org.opensaml.saml.saml2.core.Assertion;
+import org.opensaml.saml.saml2.core.AuthnRequest;
+import org.opensaml.saml.saml2.core.Conditions;
+import org.opensaml.saml.saml2.core.Issuer;
+import org.opensaml.saml.saml2.core.LogoutRequest;
+import org.opensaml.saml.saml2.core.LogoutResponse;
+import org.opensaml.saml.saml2.core.NameIDType;
+import org.opensaml.saml.saml2.core.Response;
+import org.opensaml.saml.saml2.core.impl.AssertionBuilder;
+import org.opensaml.saml.saml2.core.impl.AssertionMarshaller;
+import org.opensaml.saml.saml2.core.impl.ConditionsBuilder;
+import org.opensaml.saml.saml2.core.impl.IssuerBuilder;
 import org.springframework.context.support.ResourceBundleMessageSource;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
@@ -100,6 +99,7 @@ import com.vmware.identity.saml.ext.DelegableType;
 import com.vmware.identity.saml.ext.RenewableType;
 import com.vmware.identity.saml.ext.impl.DelegableTypeBuilder;
 import com.vmware.identity.saml.ext.impl.RenewableTypeBuilder;
+import com.vmware.identity.samlservice.DefaultIdmAccessorFactory;
 import com.vmware.identity.samlservice.DefaultSamlServiceFactory;
 import com.vmware.identity.samlservice.IdmAccessor;
 import com.vmware.identity.samlservice.IdmAccessorFactory;
@@ -108,6 +108,8 @@ import com.vmware.identity.samlservice.SamlService;
 import com.vmware.identity.samlservice.SamlServiceFactory;
 import com.vmware.identity.samlservice.Shared;
 import com.vmware.identity.samlservice.impl.CasIdmAccessor;
+
+import net.shibboleth.utilities.java.support.codec.Base64Support;
 
 /**
  * Shared test methods
@@ -598,7 +600,7 @@ public class SharedUtils {
         String encodedSamlResponse = responseAsString.substring(startIndex,
                 endIndex);
         String decodedSamlResponse = new String(
-                Base64.decode(encodedSamlResponse));
+                Base64Support.decode(encodedSamlResponse));
         return decodedSamlResponse;
     }
 
@@ -827,7 +829,7 @@ public class SharedUtils {
                 Element x509CertificateEle = doc
                         .createElement(SAMLNames.DS_X509CERTIFICATE);
                 X509Certificate x509Cert = (X509Certificate) cert;
-                String base64Str = Base64.encodeBytes(x509Cert.getEncoded());
+                String base64Str = Base64Support.encode(x509Cert.getEncoded(), Base64Support.CHUNKED);
                 Node certText = doc.createTextNode(base64Str);
 
                 x509CertificateEle.appendChild(certText);

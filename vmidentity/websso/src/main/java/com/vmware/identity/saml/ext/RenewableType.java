@@ -15,7 +15,7 @@ package com.vmware.identity.saml.ext;
 
 import javax.xml.namespace.QName;
 
-import org.opensaml.saml2.core.Condition;
+import org.opensaml.saml.saml2.core.Condition;
 
 /**
  * Renewable condition

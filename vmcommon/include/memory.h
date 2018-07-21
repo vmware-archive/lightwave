@@ -28,6 +28,27 @@ VmReallocateMemory(
     size_t  dwSize
     );
 
+DWORD
+VmCopyMemory(
+    PVOID   pDestination,
+    size_t  destinationSize,
+    const void* pSource,
+    size_t  maxCount
+    );
+
+DWORD
+VmAllocateStringOfLenA(
+    PCSTR   pszSource,
+    SIZE_T  sLength,
+    PSTR*   ppszDestination
+    );
+
+DWORD
+VmAllocateStringA(
+    PCSTR   pszString,
+    PSTR*   ppszString
+    );
+
 VOID
 VmFreeMemory(
     PVOID   pMemory

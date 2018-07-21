@@ -17,74 +17,72 @@ import java.io.Serializable;
 import java.security.NoSuchAlgorithmException;
 
 import org.apache.commons.lang.Validate;
-import org.opensaml.common.impl.SecureRandomIdentifierGenerator;
+import net.shibboleth.utilities.java.support.security.SecureRandomIdentifierGenerationStrategy;
 
 /**
- * Single Relying Party session info is stored here.
- * This is immutable data structure.
+ * Single Relying Party session info is stored here. This is immutable data
+ * structure.
  *
  */
 public final class SessionParticipant implements Serializable {
 
-	private static final long serialVersionUID = 1L;
+    private static final long serialVersionUID = 1L;
 
-	private String sessionId;
-	private String relyingPartyUrl;
+    private String sessionId;
+    private String relyingPartyUrl;
 
-	/**
-	 * Construct the instance
-	 * @param relyingPartyUrl
-	 * @throws NoSuchAlgorithmException
-	 */
-	public SessionParticipant (String relyingPartyUrl) throws NoSuchAlgorithmException {
-		Validate.notNull(relyingPartyUrl);
+    /**
+     * Construct the instance
+     *
+     * @param relyingPartyUrl
+     * @throws NoSuchAlgorithmException
+     */
+    public SessionParticipant(String relyingPartyUrl) throws NoSuchAlgorithmException {
+        Validate.notNull(relyingPartyUrl);
 
-		SecureRandomIdentifierGenerator generator =
-				new SecureRandomIdentifierGenerator();
-		this.sessionId = generator.generateIdentifier();
-		this.relyingPartyUrl = relyingPartyUrl;
-	}
+        SecureRandomIdentifierGenerationStrategy generator = new SecureRandomIdentifierGenerationStrategy();
+        this.sessionId = generator.generateIdentifier();
+        this.relyingPartyUrl = relyingPartyUrl;
+    }
 
-	/**
-	 * @return the sessionId
-	 */
-	public String getSessionId() {
-		return sessionId;
-	}
-	/**
-	 * @return the relyingPartyUrl
-	 */
-	public String getRelyingPartyUrl() {
-		return relyingPartyUrl;
-	}
+    /**
+     * @return the sessionId
+     */
+    public String getSessionId() {
+        return sessionId;
+    }
 
-	@Override
-	public String toString() {
-		return String.format(
-				"SessionParticipant [sessionId=%s, relyingPartyUrl=%s]",
-				sessionId, relyingPartyUrl);
-	}
+    /**
+     * @return the relyingPartyUrl
+     */
+    public String getRelyingPartyUrl() {
+        return relyingPartyUrl;
+    }
 
-	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + sessionId.hashCode();
-		result = prime * result + relyingPartyUrl.hashCode();
-		return result;
-	}
+    @Override
+    public String toString() {
+        return String.format("SessionParticipant [sessionId=%s, relyingPartyUrl=%s]", sessionId, relyingPartyUrl);
+    }
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj) {
-			return true;
-		}
-		if (obj == null || this.getClass() != obj.getClass()) {
-			return false;
-		}
+    @Override
+    public int hashCode() {
+        final int prime = 31;
+        int result = 1;
+        result = prime * result + sessionId.hashCode();
+        result = prime * result + relyingPartyUrl.hashCode();
+        return result;
+    }
 
-		SessionParticipant other = (SessionParticipant) obj;
-		return sessionId.equals(other.sessionId) &&
-				relyingPartyUrl.equals(other.relyingPartyUrl);
-	}
+    @Override
+    public boolean equals(Object obj) {
+        if (this == obj) {
+            return true;
+        }
+        if (obj == null || this.getClass() != obj.getClass()) {
+            return false;
+        }
+
+        SessionParticipant other = (SessionParticipant) obj;
+        return sessionId.equals(other.sessionId) && relyingPartyUrl.equals(other.relyingPartyUrl);
+    }
 }

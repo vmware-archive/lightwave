@@ -57,6 +57,13 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                         authenticateUser(tenant, server, localLogin)
                         return
                     }
+                    else{
+                        var curUserObj = JSON.parse($window.sessionStorage.currentUser);
+                        if(server && tenant && curUserObj.server.host != server && curUserObj.tenant != tenant){
+                            authenticateUser(tenant, server, localLogin)
+                            return
+                        }
+                    }
                 }
             }
             if('logout' in queryParams)
@@ -97,22 +104,23 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
             }
             readConfigFile("config/lightwaveui.json", function(data){
                     jsonData = JSON.parse(data);
-                if(jsonData.knownServers === undefined || jsonData.knownServers === ""){
-                     var errAlert = document.getElementById("errorAlert")
-                     errAlert.style.display = 'block'
-                     errAlert.innerHTML = "<b>Error!</b> Unable to open lightwaveui. Missing configuration"
-                }
+                var errAlert = document.getElementById("errorAlert")
                 if(jsonData.knownServers === undefined){
-                    alert("Cannot open lightwaveui for unknown server " + server + " and tenant " + tenant);
+                    alert("Cannot open lightwaveui for server " + server + " and tenant " + tenant);
                     window.location.href = "/";
                     return;
                 }
                 for (var i = 0; i < jsonData.knownServers.length; i ++){
-                    if (jsonData.knownServers[i].server === server && jsonData.knownServers[i].tenant === tenant){
-                        var OIDCClientID = jsonData.knownServers[i].oidcClientId;7
+                    if (jsonData.knownServers[i].server === server ||
+                       (jsonData.knownServers[i].tenant === undefined || (jsonData.knownServers[i].tenant && jsonData.knownServers[i].tenant === tenant))){
+			var OIDCClientID = jsonData.knownServers[i].oidcClientId;
                         redirectToAuthorizeUrl(server, OIDCClientID, tenant, localLogin);
+                        return;
                     }
                 }
+                // If we are unable to locate the server/tenant from the config file.
+                alert("Cannot open lightwaveui: Incorrect configuration");
+                window.location.href = "/";
             }
             );
         }

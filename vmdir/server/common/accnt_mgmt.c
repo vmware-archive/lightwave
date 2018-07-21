@@ -182,11 +182,15 @@ VmDirSrvCreateComputerOUContainer(
     PCSTR pszOUContainer
     )
 {
-    DWORD dwError = 0;
-    PSTR  pszDomainDN = NULL;
-    PSTR        pszOuDN = NULL;
-    PVDIR_SCHEMA_CTX pSchemaCtx = NULL;
-    PSTR        pszOUPrefix = ATTR_OU "=";
+    DWORD               dwError             = 0;
+    PSTR                pszDomainDN         = NULL;
+    PSTR                pszOuDN             = NULL;
+    PVDIR_SCHEMA_CTX    pSchemaCtx          = NULL;
+    PSTR                pszOUPrefix         = ATTR_OU "=";
+    PVMDIR_STRING_LIST  pOUContainerList    = NULL;
+    PVMDIR_STRING_LIST  pOUValuesList       = NULL;
+    PSTR                pszTmp              = NULL;
+    int                 idx                 = 0;
 
     if (!pszDomainName || !pszOUContainer)
     {
@@ -218,36 +222,78 @@ VmDirSrvCreateComputerOUContainer(
                     VMDIR_COMPUTERS_RDN_VAL,
                     pszDomainDN);
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirSrvCreateOUContainer(
+                                    pSchemaCtx,
+                                    pszOuDN,
+                                    pszOUContainer);
+        if (dwError == VMDIR_ERROR_ENTRY_ALREADY_EXIST ||
+            dwError == VMDIR_ERROR_BACKEND_ENTRY_EXISTS)
+        {
+            dwError = ERROR_SUCCESS;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
     {
-        dwError = VmDirAllocateStringPrintf(
-                    &pszOuDN,
-                    "%s,%s=%s,%s",
+        dwError = VmDirDNToRDNList(
                     pszOUContainer,
-                    ATTR_OU,
-                    VMDIR_COMPUTERS_RDN_VAL,
-                    pszDomainDN);
+                    FALSE,
+                    &pOUContainerList);
         BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
-    dwError = _VmDirSrvCreateOUContainer(
-                                    pSchemaCtx,
-                                    pszOuDN,
-                                    pszOUContainer
-                                    );
-    if (dwError == VMDIR_ERROR_ENTRY_ALREADY_EXIST ||
-        dwError == VMDIR_ERROR_BACKEND_ENTRY_EXISTS
-       )
-    {
-        dwError = ERROR_SUCCESS;
+        dwError = VmDirDNToRDNList(
+                    pszOUContainer,
+                    TRUE,
+                    &pOUValuesList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        for ( idx = pOUContainerList->dwCount - 1 ; idx >= 0 ; --idx )
+        {
+            if (idx == pOUContainerList->dwCount - 1)
+            {
+                dwError = VmDirAllocateStringPrintf(
+                            &pszOuDN,
+                            "%s,%s=%s,%s",
+                            pOUContainerList->pStringList[idx],
+                            ATTR_OU,
+                            VMDIR_COMPUTERS_RDN_VAL,
+                            pszDomainDN);
+                BAIL_ON_VMDIR_ERROR(dwError);
+            }
+            else
+            {
+                pszTmp = pszOuDN;
+
+                dwError = VmDirAllocateStringPrintf(
+                            &pszOuDN,
+                            "%s,%s",
+                            pOUContainerList->pStringList[idx],
+                            pszTmp);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                VMDIR_SAFE_FREE_STRINGA(pszTmp);
+            }
+
+            dwError = _VmDirSrvCreateOUContainer(
+                                        pSchemaCtx,
+                                        pszOuDN,
+                                        pOUValuesList->pStringList[idx]);
+            if (dwError == VMDIR_ERROR_ENTRY_ALREADY_EXIST ||
+                dwError == VMDIR_ERROR_BACKEND_ENTRY_EXISTS)
+            {
+                dwError = ERROR_SUCCESS;
+            }
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VmDirSchemaCtxRelease(pSchemaCtx);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     VMDIR_SAFE_FREE_MEMORY(pszOuDN);
+    VmDirStringListFree(pOUContainerList);
+    VmDirStringListFree(pOUValuesList);
 
     return dwError;
 
