@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2015 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -4225,15 +4225,15 @@ VmDirFreeDCVersionInfo(
 
     if (pDCVerInfo)
     {
-	for (dwCnt=0 ; dwCnt < pDCVerInfo->dwSize ; dwCnt++)
-	{
-	    VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszServer[dwCnt]);
-	    VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszVersion[dwCnt]);
-	}
+    for (dwCnt=0 ; dwCnt < pDCVerInfo->dwSize ; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszServer[dwCnt]);
+        VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszVersion[dwCnt]);
+    }
 
-	VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszServer);
-	VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszVersion);
-	VMDIR_SAFE_FREE_MEMORY(pDCVerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszServer);
+    VMDIR_SAFE_FREE_MEMORY(pDCVerInfo->ppszVersion);
+    VMDIR_SAFE_FREE_MEMORY(pDCVerInfo);
     }
 }
 
@@ -4560,6 +4560,7 @@ VmDirLdapCreateComputerOUContainer(
                      NULL);
         if (dwError == LDAP_ALREADY_EXISTS)
         {
+            dwError = 0;
             goto cleanup;
         }
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -4620,6 +4621,7 @@ VmDirLdapCreateComputerOUContainer(
                         NULL);
             if (dwError == LDAP_ALREADY_EXISTS)
             {
+                dwError = 0;
                 continue;
             }
             BAIL_ON_VMDIR_ERROR(dwError);
