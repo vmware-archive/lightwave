@@ -314,7 +314,6 @@ VMCASignedRequestPrivate(
                         pszPKCS10Request,
                         pReqContext,
                         &bIsValid);
-
     if (bIsValid == FALSE || dwError == VMCA_POLICY_VALIDATION_ERROR)
     {
         VMCA_LOG_INFO(
@@ -322,10 +321,7 @@ VMCASignedRequestPrivate(
                 __FUNCTION__,
                 __LINE__,
                 pReqContext->pszAuthPrincipal);
-        // TODO (shahneel): remove comments and error override after policy enforcement works e2e
-        dwError = 0;
-        //dwError = VMCA_POLICY_VALIDATION_ERROR;
-        //BAIL_ON_VMCA_ERROR(dwError);
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
     }
     BAIL_ON_VMCA_ERROR(dwError);
 
