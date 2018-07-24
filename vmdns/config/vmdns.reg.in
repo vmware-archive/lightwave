@@ -29,6 +29,15 @@
     default = dword:00000001
     doc = ""
 }
+"User" = {
+    default = "lightwave"
+    doc = ""
+}
+"Group" = {
+    default = "lightwave"
+    doc = ""
+}
+
 [HKEY_THIS_MACHINE\Services\vmdns\Parameters]
 "EnableDNSProtocol" = {
     default = dword:00000001

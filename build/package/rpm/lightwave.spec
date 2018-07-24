@@ -389,6 +389,7 @@ Lightwave Samples
     lw_uid="$(id -u lightwave)"
     lw_gid="$(id -g lightwave)"
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdns.reg
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmca.reg
 
     # vmdir
@@ -474,6 +475,7 @@ Lightwave Samples
     esac
 
     setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
+    setcap cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdnsd
     setcap cap_dac_read_search+ep %{_sbindir}/vmcad
 
     chown -R lightwave:lightwave %{_vmca_dbdir}
@@ -547,6 +549,7 @@ Lightwave Samples
     lw_user_sid="S-1-22-1-$lw_uid"
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmafd.reg
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir-client.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdns-client.reg
 
     /bin/install -d %{_rpcdir} -o lightwave -g lightwave -m 755
     /bin/install -d %{_ipcdir} -o lightwave -g lightwave -m 755

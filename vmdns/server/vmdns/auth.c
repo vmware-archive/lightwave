@@ -126,6 +126,11 @@ VmDnsCheckAccess(
                 NULL, /* unsigned32 *authn_svc, */
                 NULL, /* unsigned32 *authz_svc, */
                 &rpc_status);
+    if (rpc_status != RPC_S_OK)
+    {
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     /* Deny if connection is not encrypted */
     if (dwProtectLevel < rpc_c_protect_level_pkt_privacy)
@@ -135,7 +140,7 @@ VmDnsCheckAccess(
     }
 
     /* Deny if no auth identity is provided.  */
-    if (rpc_status == rpc_s_binding_has_no_auth || !authPrinc || !*authPrinc)
+    if (!authPrinc || !*authPrinc)
     {
         dwError = ERROR_ACCESS_DENIED;
         BAIL_ON_VMDNS_ERROR(dwError);

@@ -31,6 +31,7 @@
 #include <vmdnssys.h>
 #include <sys/time.h>
 #include <sys/resource.h>
+#include <sys/prctl.h>
 #include <lwrpcrt/lwrpcrt.h>
 #include <dce/rpc.h>
 #include <reg/lwreg.h>
