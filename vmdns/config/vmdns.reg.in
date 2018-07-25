@@ -1,6 +1,7 @@
 [HKEY_THIS_MACHINE\Services]
 
 [HKEY_THIS_MACHINE\Services\vmdns]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "Description" = {
     default = "VMware Domain Name Service"
     doc = ""
@@ -39,6 +40,7 @@
 }
 
 [HKEY_THIS_MACHINE\Services\vmdns\Parameters]
+@security = O:SYG:BAD:(A;;KA;;;BA)(A;;KA;;;S-1-22-1-@LIGHTWAVE_UID@)(A;;KR;;;WD)
 "EnableDNSProtocol" = {
     default = dword:00000001
     value   = dword:00000001

@@ -1663,7 +1663,6 @@ AC_CONFIG_FILES([Makefile
                  vmdns/include/public/Makefile
                  vmdns/config/Makefile
                  vmdns/config/vmdns.reg
-                 vmdns/config/vmdns-client.reg
                  vmdns/common/Makefile
                  vmdns/vmsock/Makefile
                  vmdns/vmsock/posix/Makefile

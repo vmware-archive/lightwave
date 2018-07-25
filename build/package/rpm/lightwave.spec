@@ -549,7 +549,6 @@ Lightwave Samples
     lw_user_sid="S-1-22-1-$lw_uid"
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmafd.reg
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir-client.reg
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdns-client.reg
 
     /bin/install -d %{_rpcdir} -o lightwave -g lightwave -m 755
     /bin/install -d %{_ipcdir} -o lightwave -g lightwave -m 755
@@ -577,7 +576,6 @@ Lightwave Samples
 
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
 
             %{_likewise_open_bindir}/lwsm -q refresh
             sleep 5
@@ -612,7 +610,6 @@ Lightwave Samples
 
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
             %{_likewise_open_bindir}/lwsm -q refresh
             sleep 5
             %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
@@ -1159,7 +1156,6 @@ Lightwave Samples
 %{_datadir}/config/certool.cfg
 %{_datadir}/config/vmafd.reg
 %{_datadir}/config/vmdir-client.reg
-%{_datadir}/config/vmdns-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/telegraf.conf
 %{_datadir}/config/vmafd-telegraf.conf
