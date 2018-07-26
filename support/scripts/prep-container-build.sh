@@ -72,6 +72,9 @@ case "$OSVER" in
             ui)
                 DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/ui/photon2
                 ;;
+            sample)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sample/photon2
+                ;;
         esac
         ;;
     *)
@@ -86,7 +89,11 @@ rm -rf $DOCKER_ROOT/*
 
 cp -r $PROJECT_ROOT/build/rpmbuild/RPMS/x86_64 $DOCKER_ROOT
 
-cp -r $PROJECT_ROOT/ui/stage/RPMS/x86_64/*.rpm $DOCKER_ROOT/x86_64/
+case "$FLAVOR" in
+    ui)
+        cp -r $PROJECT_ROOT/ui/stage/RPMS/x86_64/*.rpm $DOCKER_ROOT/x86_64/
+    ;;
+esac
 
 cp $DOCKER_SRC_ROOT/lightwave-init $DOCKER_ROOT
 LIGHTWAVE_REPO_FILE=$DOCKER_SRC_ROOT/lightwave.repo

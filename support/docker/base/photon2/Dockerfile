@@ -3,13 +3,13 @@ MAINTAINER "Sriram Nambakam" <snambakam@vmware.com>
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
 LABEL vendor="VMware, Inc."
-LABEL com.vmware.lightwave-base.version="2.0.0"
+LABEL com.vmware.lightwave-base.version="1.0.1"
 
 COPY lightwave.repo /etc/yum.repos.d
 RUN tdnf update -y tdnf && \
     tdnf erase -y toybox && \
     tdnf install -y \
-         apache-tomcat-8.5.20 \
+         apache-tomcat-8.5.31 \
          boost-1.63.0 \
          c-rest-engine-1.2 \
          commons-daemon-1.0.15 \

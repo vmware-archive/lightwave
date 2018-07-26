@@ -42,9 +42,13 @@ VMware Lightwave Server
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
 %define _stsdir %{_prefix}/vmware-sts
+%define _stssampledir %{_prefix}/vmware-sts-sample
 %define _webappsdir %{_stsdir}/webapps
+%define _webappssampledir %{_stssampledir}/webapps
 %define _stsconfdir %{_stsdir}/conf
 %define _stsbindir %{_stsdir}/bin
+%define _stssampleconfdir %{_stssampledir}/conf
+%define _stssamplebindir %{_stssampledir}/bin
 %define _stslogsdir %{_stsdir}/logs
 %define _lightwavelogsdir /var/log/vmware/sso
 %define _configdir %{_datadir}/config
@@ -696,6 +700,30 @@ Lightwave Samples
             ;;
     esac
 
+%post samples
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                /bin/systemctl enable vmware-sampled.service
+                /bin/systemctl daemon-reload
+            fi
+            ;;
+        2)
+            #
+            # Upgrade
+            #
+            ;;
+   esac
+
+   /bin/cp %{_sysconfdir}/vmware/java/vmware-override-java.security \
+           %{_stssampleconfdir}
+   chmod 600 %{_stssampleconfdir}/vmware-override-java.security
+
 %preun
 
     # First argument is 0 => Uninstall
@@ -831,6 +859,35 @@ Lightwave Samples
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\post'
                 /bin/systemctl restart lwsmd
                 sleep 5
+            fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%preun samples
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                 if [ -f /etc/systemd/system/vmware-stsd.service ]; then
+                     /bin/systemctl stop vmware-sampled.service
+                     /bin/systemctl disable vmware-sampled.service
+                     /bin/rm -f /etc/systemd/system/vmware-sampled.service
+                     /bin/systemctl daemon-reload
+                 fi
             fi
             ;;
 
@@ -1301,7 +1358,11 @@ Lightwave Samples
 
 %defattr(-,root,root)
 
-%{_webappsdir}/ssolib-sample.war
+%{_sbindir}/vmware-sampled.sh
+%{_webappssampledir}/ssolib-sample.war
+%{_servicedir}/vmware-sampled.service
+%{_stssampleconfdir}/*
+%{_stssamplebindir}/*
 
 # %doc ChangeLog README COPYING
 

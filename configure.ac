@@ -1210,7 +1210,7 @@ AM_CONDITIONAL(NOTIFY_VMDIR_PROVIDER, [$NOTIFY_VMDIR_PROVIDER])
 
 #--------------------------------------------------------------------
 # ESX Platform
- 
+
 DCERPC_DEPENDENCY="lsass dcerpc"
 AC_SUBST(DCERPC_DEPENDENCY)
 AC_ARG_ENABLE([esx],
@@ -1514,6 +1514,15 @@ AC_SUBST(vmstsconfdir)
 vmstsbindir="$prefix/vmware-sts/bin"
 AC_SUBST(vmstsbindir)
 
+vmstssamplewebappsdir="$prefix/vmware-sts-sample/webapps"
+AC_SUBST(vmstssamplewebappsdir)
+
+vmstssampleconfdir="$prefix/vmware-sts-sample/conf"
+AC_SUBST(vmstssampleconfdir)
+
+vmstssamplebindir="$prefix/vmware-sts-sample/bin"
+AC_SUBST(vmstssamplebindir)
+
 vmidmconfdir="$datadir/config/idm"
 AC_SUBST(vmidmconfdir)
 
@@ -1760,8 +1769,11 @@ AC_CONFIG_FILES([Makefile
                  vmca/tools/lw-certool/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
+                 vmidentity/config/sample/setenv.sh
                  vmidentity/config/vmware-stsd.sh
                  vmidentity/config/vmware-stsd.service
+                 vmidentity/config/vmware-sampled.sh
+                 vmidentity/config/vmware-sampled.service
                  vmidentity/config/configure-build.sh
                  vmidentity/interop/Makefile
                  vmidentity/interop/idm/Makefile

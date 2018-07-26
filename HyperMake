@@ -118,7 +118,7 @@ targets:
   docker-lightwave-base-photon2:
     description: build lightwave-base docker image
     build: ./support/docker/base/photon2
-    image: 'vmware/lightwave-base-photon2:1.0.0'
+    image: 'vmware/lightwave-base-photon2:1.0.1'
 
   docker-lightwave-pre-photon1:
     description: Prepare for container build
@@ -197,6 +197,22 @@ targets:
     after:
       - docker-lightwave-ui-pre-photon2
     image: 'vmware/lightwave-ui-photon2'
+    cmds:
+      - ./support/scripts/post-container-build.sh
+
+  docker-lightwave-sample-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2 sample
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.0'
+
+  docker-lightwave-sample-photon2:
+    description: build lightwave Sample docker image
+    build: ./build/docker
+    after:
+      - docker-lightwave-sample-pre-photon2
+    image: 'vmware/lightwave-sample-photon2:1.0.0'
     cmds:
       - ./support/scripts/post-container-build.sh
 
