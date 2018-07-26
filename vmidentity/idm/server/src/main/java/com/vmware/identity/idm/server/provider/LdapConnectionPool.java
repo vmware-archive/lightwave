@@ -89,7 +89,7 @@ public final class LdapConnectionPool implements IPooledConnectionProvider{
             if (currentPool != null) {
                 newPool.close();
             }
-            logger.info(currentPool != null ? "Pool created for tenant " + tenantName
+            logger.info(currentPool == null ? "Pool created for tenant " + tenantName
                     : "Pool already existed for tenant " + tenantName);
         }
     }
