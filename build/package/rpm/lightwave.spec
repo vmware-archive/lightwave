@@ -19,7 +19,7 @@ Requires: apache-tomcat >= 8.5.31, commons-daemon >= 1.0.15
 BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %if "%{_dist}" == ".lwph2"
 Requires:  shadow >= 4.2.1, likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
-BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152, cmocka >= 1.1
 %else
 Requires: shadow >= 4.2.1, likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
 BuildRequires: shadow >= 4.2.1, boost-devel = 1.60.0,  openjdk >= 1.8.0.131
