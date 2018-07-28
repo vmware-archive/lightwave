@@ -88,47 +88,65 @@ VmDirIpcListen(
     PVOID pData
     )
 {
-  DWORD dwError = 0;
-  BOOLEAN bInLock = FALSE;
-  int status = 0;
-  PVM_DIR_CONNECTION pConnection = NULL;
-  PVM_DIR_CONNECTION pClientConnection = NULL;
-  pthread_t unixInstanceThreadHandler;
-  pthread_attr_t unixInstanceThreadHandlerAttr;
+  DWORD                  dwError = 0;
+  BOOLEAN                bInLock = FALSE;
+  int                    status = 0;
+  PVM_DIR_CONNECTION     pConnection = NULL;
+  PVM_DIR_CONNECTION     pClientConnection = NULL;
+  pthread_t              unixInstanceThreadHandler;
+  pthread_attr_t         unixInstanceThreadHandlerAttr;
+
   VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.pMutexIPCConnection);
+
   pConnection = gVmdirGlobals.pConnection;
+
   VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.pMutexIPCConnection);
-  if (pConnection == NULL){
-    dwError = ERROR_INVALID_PARAMETER;
-    BAIL_ON_VMDIR_ERROR (dwError);
+
+  if (pConnection == NULL)
+  {
+      BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
   }
+
   while(!(dwError = VmDirAcceptConnection(pConnection, &pClientConnection)))
   {
+      if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+      {
+          goto cleanup;
+      }
+
       status = pthread_attr_init(&unixInstanceThreadHandlerAttr);
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMDIR_ERROR (dwError);
+
+      dwError = LwErrnoToWin32Error(status);
+      BAIL_ON_VMDIR_ERROR(dwError);
+
       status = pthread_attr_setdetachstate(
-                                &unixInstanceThreadHandlerAttr,
-                                PTHREAD_CREATE_DETACHED
-                                );
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMDIR_ERROR (dwError);
+              &unixInstanceThreadHandlerAttr, PTHREAD_CREATE_DETACHED);
+
+      dwError = LwErrnoToWin32Error(status);
+      BAIL_ON_VMDIR_ERROR(dwError);
+
       status = pthread_create(
       &unixInstanceThreadHandler,
       &unixInstanceThreadHandlerAttr,
       unixInstanceThread,
       pClientConnection
       );
-      dwError = LwErrnoToWin32Error (status);
-      BAIL_ON_VMDIR_ERROR (dwError);
+
+      dwError = LwErrnoToWin32Error(status);
+      BAIL_ON_VMDIR_ERROR(dwError);
+
       pClientConnection = NULL;
   }
-  BAIL_ON_VMDIR_ERROR (dwError);
+
+  BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
   VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.pMutexIPCConnection);
   VmDirFreeServerConnection (pClientConnection);
   return NULL;
+
 error:
+  VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
   goto cleanup;
 }
 

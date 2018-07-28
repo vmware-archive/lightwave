@@ -29,18 +29,22 @@
 
 DWORD
 VdirSchemaCtxAcquireInLock(
-    BOOLEAN    bHasLock,    // TRUE if owns gVdirSchemaGlobals.mutex already
-    PVDIR_SCHEMA_CTX* ppSchemaCtx
+    BOOLEAN              bHasLock,    // TRUE if owns gVdirSchemaGlobals.mutex already
+    PVDIR_SCHEMA_CTX*    ppSchemaCtx
     )
 {
-    DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
-    BOOLEAN bInLockNest = FALSE;
+    DWORD               dwError = 0;
+    BOOLEAN             bInLock = FALSE;
+    BOOLEAN             bInLockNest = FALSE;
     PVDIR_SCHEMA_CTX    pCtx = NULL;
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_SCHEMA_CTX),
-            (PVOID*)&pCtx);
+    if (gVdirSchemaGlobals.pLdapSchema == NULL ||
+        gVdirSchemaGlobals.pVdirSchema == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_NO_SCHEMA);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_SCHEMA_CTX), (PVOID*)&pCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (!bHasLock)
@@ -50,31 +54,31 @@ VdirSchemaCtxAcquireInLock(
 
     pCtx->pLdapSchema = gVdirSchemaGlobals.pLdapSchema;
     pCtx->pVdirSchema = gVdirSchemaGlobals.pVdirSchema;
-    assert(pCtx->pLdapSchema);
-    assert(pCtx->pVdirSchema);
 
     VMDIR_LOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
+
     if (pCtx->pVdirSchema->dwRefCount + 1 < pCtx->pVdirSchema->dwRefCount)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INTERNAL_SIZE_LIMIT);
     }
+
     pCtx->pVdirSchema->dwRefCount++;
-
-error:
-
-    VMDIR_UNLOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
-    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
-
-    if (dwError != ERROR_SUCCESS)
-    {
-        dwError = ERROR_NO_SCHEMA;
-        VMDIR_SAFE_FREE_MEMORY(pCtx);
-        pCtx = NULL;
-    }
 
     *ppSchemaCtx = pCtx;
 
+cleanup:
+    if (pCtx)
+    {
+        VMDIR_UNLOCK_MUTEX(bInLockNest, pCtx->pVdirSchema->mutex);
+    }
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
     return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    dwError = ERROR_NO_SCHEMA;
+    VMDIR_SAFE_FREE_MEMORY(pCtx);
+    goto cleanup;
 }
 
 /*
