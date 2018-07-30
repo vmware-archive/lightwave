@@ -221,7 +221,10 @@ VdirLoginBlocked(
     pUserActCtlAttr = VmDirFindAttrByName(pEntry, ATTR_USER_ACCOUNT_CONTROL);
     if (pUserActCtlAttr && pUserActCtlAttr->vals)
     {
-        iDisableFlag = iLockoutFlag = iPasswdExpireFlag = VmDirStringToLA(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, 10);
+        dwError = VmDirStringToINT64(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, &iDisableFlag);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        iLockoutFlag = iPasswdExpireFlag = iDisableFlag;
 
         iPasswdExpireFlag &= USER_ACCOUNT_CONTROL_PASSWORD_EXPIRE_FLAG;
         iLockoutFlag      &= USER_ACCOUNT_CONTROL_LOCKOUT_FLAG;
@@ -570,7 +573,8 @@ VdirUserActCtlFlagUnset(
     pUserActCtlAttr = VmDirFindAttrByName(pEntry, ATTR_USER_ACCOUNT_CONTROL);
     if (pUserActCtlAttr && pUserActCtlAttr->vals)
     {
-        iUserActCtl = VmDirStringToLA(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, 10);
+        dwError = VmDirStringToINT64(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, &iUserActCtl);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     iUserActCtl &= (~(iTargetFlag));
@@ -626,7 +630,8 @@ VdirUserActCtlFlagSet(
     pUserActCtlAttr = VmDirFindAttrByName(pEntry, ATTR_USER_ACCOUNT_CONTROL);
     if (pUserActCtlAttr && pUserActCtlAttr->vals)
     {
-        iUserActCtl = VmDirStringToLA(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, 10);
+        dwError = VmDirStringToINT64(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, &iUserActCtl);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     iUserActCtl |= iTargetFlag;
@@ -798,12 +803,13 @@ VmDirCheckForPasswordExpiration(
     PVDIR_ENTRY pEntry
     )
 {
-    int64_t iPwdLastSet =  0;
-    int64_t iExpirationInSeconds = 0;
-    time_t tNow = time(NULL);
-    BOOLEAN bPasswordExpired = FALSE;
-    PVDIR_ATTRIBUTE pPwdLastSetAttr = NULL;
-    PVDIR_ATTRIBUTE pPwdNeverExpiresAttr = NULL;
+    int64_t            iPwdLastSet =  0;
+    int64_t            iExpirationInSeconds = 0;
+    time_t             tNow = time(NULL);
+    DWORD              dwError = 0;
+    BOOLEAN            bPasswordExpired = FALSE;
+    PVDIR_ATTRIBUTE    pPwdLastSetAttr = NULL;
+    PVDIR_ATTRIBUTE    pPwdNeverExpiresAttr = NULL;
 
     if (pLockoutRec->iExpireInDay == 0)
     {
@@ -823,7 +829,13 @@ VmDirCheckForPasswordExpiration(
     pPwdLastSetAttr = VmDirFindAttrByName(pEntry, ATTR_PWD_LAST_SET);
     if (pPwdLastSetAttr && pPwdLastSetAttr->vals)
     {
-        iPwdLastSet = VmDirStringToLA(pPwdLastSetAttr->vals[0].lberbv.bv_val, NULL, 10);
+        if ((dwError = VmDirStringToINT64(
+                        pPwdLastSetAttr->vals[0].lberbv.bv_val, NULL, &iPwdLastSet)) != 0)
+        {
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: error: %d", __FUNCTION__, dwError);
+            goto cleanup;
+        }
+
         iExpirationInSeconds = (int64_t)pLockoutRec->iExpireInDay * 24 * 60 * 60;
 
         if ((tNow - iPwdLastSet) > iExpirationInSeconds)

@@ -295,7 +295,6 @@ _VmDirClusterAddNode_inWlock(
     )
 {
     DWORD   dwError = 0;
-    PSTR    pszEnd = NULL;
     PSTR    pszHMKey = NULL;
     PVMDIR_NODE_STATE pNode = NULL;
     PVDIR_ATTRIBUTE pAttCN = NULL;
@@ -334,7 +333,9 @@ _VmDirClusterAddNode_inWlock(
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
-    pNode->dwServerId = VmDirStringToLA(pAttServerId->vals[0].lberbv_val, &pszEnd, 10);
+
+    dwError = VmDirStringToUINT32(pAttServerId->vals[0].lberbv_val, NULL, &pNode->dwServerId);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirServerDNToSite(pNode->pszDN, (PSTR*)&pNode->pszSite);
     BAIL_ON_VMDIR_ERROR(dwError);

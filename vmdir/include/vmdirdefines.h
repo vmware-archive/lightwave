@@ -302,6 +302,14 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData)   \
+    do {                                                 \
+        if ((pValueMetaData)) {                          \
+            VmDirFreeValueMetaData(pValueMetaData);      \
+            (pValueMetaData) = NULL;                     \
+        }                                                \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_BER(pBerElement)    \
     do {                                    \
         if ((pBerElement)) {                \

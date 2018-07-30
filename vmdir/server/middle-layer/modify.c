@@ -83,12 +83,11 @@ _VmDirPatchBadMemberData(
     );
 
 static
-int
-_VmDirAttrValueMetaDataToAdd(
-    PVDIR_MODIFICATION  pMod,
-    int                 currentVersion,
-    PSTR                pTimeStamp,
-    char *              usnChanged
+DWORD
+_VmDirCreateValueMetaDataForModify(
+    USN                  usnChanged,
+    PSTR                 pTimeStamp,
+    PVDIR_MODIFICATION   pMod
     );
 
 int
@@ -783,7 +782,7 @@ VmDirGenerateModsNewMetaData(
     }
     assert(pUsnChangedMod);
 
-    retVal = VmDirStringToINT64(pUsnChangedMod->attr.vals[0].lberbv.bv_val, &usnChanged);
+    retVal = VmDirStringToINT64(pUsnChangedMod->attr.vals[0].lberbv.bv_val, NULL, &usnChanged);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirGenOriginatingTimeStr( origTimeStamp );
@@ -805,10 +804,6 @@ VmDirGenerateModsNewMetaData(
         {
             switch (dbRetVal)
             {
-                case VMDIR_ERROR_BACKEND_DEADLOCK:
-                     retVal = dbRetVal;
-                     BAIL_ON_VMDIR_ERROR( retVal );
-
                 case VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND:
                     currentVersion = 0;
                     break;
@@ -833,11 +828,7 @@ VmDirGenerateModsNewMetaData(
                 (pMod->operation == MOD_OP_DELETE && pMod->attr.numVals > 0)))
             {
                 //Create attr-value-meta-data instread of attr-meta-data PR 1531924
-                retVal = _VmDirAttrValueMetaDataToAdd(
-                        pMod,
-                        currentVersion,
-                        origTimeStamp,
-                        pUsnChangedMod->attr.vals[0].lberbv.bv_val);
+                retVal = _VmDirCreateValueMetaDataForModify(usnChanged, origTimeStamp, pMod);
                 BAIL_ON_VMDIR_ERROR(retVal);
                 continue;
             }
@@ -850,7 +841,7 @@ VmDirGenerateModsNewMetaData(
                 retVal = pOperation->pBEIF->pfnBEGetAttrValueMetaData(pOperation->pBECtx, entryId,
                                                                       pMod->attr.pATDesc->usAttrID,
                                                                       &pMod->attr.valueMetaDataToDelete);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
         }
 
@@ -859,6 +850,8 @@ VmDirGenerateModsNewMetaData(
         // but works, because both Delete and Add mods read current attribute meta data
         // from the DB, and not Add mod seeing attribute meta data from the previous
         // Delete and therefore increasing the version # one extra time.
+        VmDirFreeMetaData(pMod->attr.pMetaData);
+        pMod->attr.pMetaData = NULL;
         retVal = VmDirMetaDataCreate(
                 usnChanged,
                 currentVersion + 1,
@@ -1587,29 +1580,20 @@ error:
 }
 
 static
-int
-_VmDirAttrValueMetaDataToAdd(
-    PVDIR_MODIFICATION   pMod,
-    int                  currentVersion,
+DWORD
+_VmDirCreateValueMetaDataForModify(
+    USN                  usnChanged,
     PSTR                 pTimeStamp,
-    char *               usnChanged
+    PVDIR_MODIFICATION   pMod
     )
 {
-    int retVal = 0;
-    VDIR_BERVALUE *pAVmeta = NULL;
-    int i=0, value_len = 0, av_meta_len = 0;
+    DWORD                              dwError = 0;
+    DWORD                              dwCnt = 0;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
-    for (i=0; i<(int)pMod->attr.numVals; i++)
+    for (dwCnt = 0; dwCnt < pMod->attr.numVals; dwCnt++)
     {
-        char av_meta_pre[VMDIR_MAX_ATTR_VALUE_META_DATA_LEN] = {0};
-
-        value_len = (int)pMod->attr.vals[i].lberbv_len;
-
-        retVal = VmDirStringNPrintFA(
-                av_meta_pre,
-                sizeof(av_meta_pre),
-                sizeof(av_meta_pre) - 1,
-                "%s:%s:%"PRId64":%s:%s:%s:%s:%d:%d:",
+        dwError = VmDirValueMetaDataCreate(
                 pMod->attr.type.lberbv.bv_val,
                 usnChanged,
                 pMod->attr.pMetaData->version,
@@ -1618,34 +1602,21 @@ _VmDirAttrValueMetaDataToAdd(
                 pTimeStamp,
                 usnChanged,
                 pMod->operation,
-                value_len);
-        BAIL_ON_VMDIR_ERROR(retVal);
+                &pMod->attr.vals[dwCnt],
+                &pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        retVal = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
-        BAIL_ON_VMDIR_ERROR(retVal);
+        dwError = dequePush(&pMod->attr.valueMetaDataToAdd, pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        av_meta_len = (int)strlen(av_meta_pre) + value_len;
-        retVal = VmDirAllocateMemory(av_meta_len, (PVOID)&pAVmeta->lberbv.bv_val);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        pAVmeta->bOwnBvVal = TRUE;
-        pAVmeta->lberbv.bv_len = av_meta_len;
-        retVal = VmDirCopyMemory(pAVmeta->lberbv.bv_val, av_meta_len, av_meta_pre, (int)strlen(av_meta_pre));
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        retVal = VmDirCopyMemory((char *)pAVmeta->lberbv.bv_val+(int)strlen(av_meta_pre), value_len,
-                                  (char *)pMod->attr.vals[i].lberbv.bv_val, value_len);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        retVal = dequePush(&pMod->attr.valueMetaDataToAdd, pAVmeta);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        pAVmeta = NULL;
+        pValueMetaData = NULL;
     }
 
 cleanup:
-    return retVal;
+    return dwError;
 
 error:
-    VmDirFreeBerval(pAVmeta);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     goto cleanup;
 }

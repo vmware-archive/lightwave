@@ -17,10 +17,10 @@
 static
 int
 _VmDirDeleteOldValueMetaData(
-    PVDIR_BACKEND_CTX pBECtx,
-    ENTRYID entryId,
-    short attrId,
-    PVDIR_BERVALUE pAVmetaToAdd
+    PVDIR_BACKEND_CTX                  pBECtx,
+    ENTRYID                            entryId,
+    short                              attrId,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
     );
 
 /*
@@ -759,32 +759,36 @@ VmDirMdbUpdateAttrValueMetaData(
     ENTRYID             entryId,
     short               attrId,
     ULONG               ulOPMask,
-    PDEQUE              valueMetaData
+    PDEQUE              pValueMetaDataQueue
     )
 {
-    DWORD           dwError = 0;
-    PVDIR_DB_TXN    pTxn = NULL;
-    VDIR_DB_DBT     key = {0};
-    VDIR_DB_DBT     value = {0};
-    char            keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
-    VDIR_DB         mdbDBi = 0;
-    int             indTypes = 0;
-    VDIR_BERVALUE   attrValueMetaDataAttr = { {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA}, 0, 0, NULL };
-    unsigned char * pWriter = NULL;
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
-    VDIR_BERVALUE * pAVmeta = NULL;
+    DWORD                              dwError = 0;
+    VDIR_BERVALUE                      bervValueMetaData = VDIR_BERVALUE_INIT;
+    PVDIR_DB_TXN                       pTxn = NULL;
+    VDIR_DB_DBT                        key = {0};
+    VDIR_DB_DBT                        value = {0};
+    //key format is: <entry ID>:<attribute ID
+    char                               keyData[sizeof(ENTRYID) + 1 + 2] = {0};
+    VDIR_DB                            mdbDBi = 0;
+    int                                indTypes = 0;
+    VDIR_BERVALUE                      attrValueMetaDataAttr =
+                                       {{ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA},
+                                         0, 0, NULL};
+    unsigned char                     *pWriter = NULL;
+    PVDIR_INDEX_CFG                    pIndexCfg = NULL;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
     if (!VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED)
     {
         goto cleanup;
     }
 
-    if (dequeIsEmpty(valueMetaData))
+    if (dequeIsEmpty(pValueMetaDataQueue))
     {
         goto cleanup;
     }
 
-    assert( pBECtx && pBECtx->pBEPrivate );
+    assert(pBECtx && pBECtx->pBEPrivate);
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
     dwError = VmDirIndexCfgAcquire(
@@ -795,46 +799,66 @@ VmDirMdbUpdateAttrValueMetaData(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     indTypes = pIndexCfg->iTypes;
-    assert( indTypes == INDEX_TYPE_EQUALITY );
+    assert(indTypes == INDEX_TYPE_EQUALITY);
 
     key.mv_data = &keyData[0];
-    MDBEntryIdToDBT( entryId, &key );
+    MDBEntryIdToDBT(entryId, &key);
     *(unsigned char *)((unsigned char *)key.mv_data + key.mv_size) = ':';
     key.mv_size++;
     pWriter = ((unsigned char *)key.mv_data + key.mv_size);
-    VmDirEncodeShort( &pWriter, attrId );
+    VmDirEncodeShort(&pWriter, attrId);
     key.mv_size += 2;
 
-    while(!dequeIsEmpty(valueMetaData))
+    while(!dequeIsEmpty(pValueMetaDataQueue))
     {
-        dequePopLeft(valueMetaData, (PVOID*)&pAVmeta);
+        dequePopLeft(pValueMetaDataQueue, (PVOID*)&pValueMetaData);
+
         if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE)
         {
-            dwError = _VmDirDeleteOldValueMetaData(pBECtx, entryId, attrId, pAVmeta);
+            dwError = _VmDirDeleteOldValueMetaData(pBECtx, entryId, attrId, pValueMetaData);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        value.mv_data = pAVmeta->lberbv.bv_val;
-        value.mv_size = pAVmeta->lberbv.bv_len;
-        dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, FALSE, ulOPMask );
+
+        dwError = VmDirValueMetaDataSerialize(pValueMetaData, &bervValueMetaData);
         BAIL_ON_VMDIR_ERROR(dwError);
-        VmDirFreeBerval(pAVmeta);
-        pAVmeta = NULL;
+
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL_ATTR,
+                "%s: serialized value: %s len: %lu ulOPMask: %lu",
+                __FUNCTION__,
+                bervValueMetaData.lberbv_val,
+                bervValueMetaData.lberbv_len,
+                ulOPMask);
+
+        value.mv_data = bervValueMetaData.lberbv_val;
+        value.mv_size = bervValueMetaData.lberbv_len;
+
+        dwError = MdbUpdateKeyValue(mdbDBi, pTxn, &key, &value, FALSE, ulOPMask);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeBervalContent(&bervValueMetaData);
+        VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     }
 
 cleanup:
     VmDirIndexCfgRelease(pIndexCfg);
-    VmDirFreeBerval(pAVmeta);
-    VmDirFreeAttrValueMetaDataContent(valueMetaData);
+    VmDirFreeBervalContent(&bervValueMetaData);
+    VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
-             "UpdateAttributeMetaData failed: error=%d,eid=%ld", dwError, entryId);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed: error=%d, eid=%ld", dwError, entryId);
 
-    VMDIR_LOG_VERBOSE(LDAP_DEBUG_BACKEND,
-             "UpdateAttributeMetaData failed: key=(%p)(%.*s), value=(%p)(%.*s)\n",
-             key.mv_data,   VMDIR_MIN(key.mv_size,   VMDIR_MAX_LOG_OUTPUT_LEN), (char *) key.mv_data,
-             value.mv_data, VMDIR_MIN(value.mv_size, VMDIR_MAX_LOG_OUTPUT_LEN), (char *) value.mv_data);
+    VMDIR_LOG_VERBOSE(
+            LDAP_DEBUG_BACKEND,
+             "%s failed: key=(%p)(%.*s), value=(%p)(%.*s)\n",
+             __FUNCTION__,
+             key.mv_data,
+             VMDIR_MIN(key.mv_size, VMDIR_MAX_LOG_OUTPUT_LEN),
+             (char *) key.mv_data,
+             value.mv_data,
+             VMDIR_MIN(value.mv_size, VMDIR_MAX_LOG_OUTPUT_LEN),
+             (char *) value.mv_data);
 
     goto cleanup;
 }
@@ -852,29 +876,32 @@ VmDirMdbDeleteAllAttrValueMetaData(
     ENTRYID             entryId
 )
 {
-    DWORD           dwError = 0;
-    PVDIR_DB_TXN    pTxn = NULL;
-    VDIR_DB         mdbDBi = 0;
-    int             indTypes = 0;
-    VDIR_BERVALUE   attrValueMetaDataAttr = { {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA}, 0, 0, NULL };
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
-    PVDIR_BERVALUE  pAVmeta = NULL;
-    DEQUE           valueMetaData = {0};
+    DWORD                              dwError = 0;
+    VDIR_BERVALUE                      bervValueMetaData = VDIR_BERVALUE_INIT;
+    PVDIR_DB_TXN                       pTxn = NULL;
+    VDIR_DB                            mdbDBi = 0;
+    int                                indTypes = 0;
+    VDIR_BERVALUE                      attrValueMetaDataAttr =
+                                       {{ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA},
+                                         0, 0, NULL};
+    PVDIR_INDEX_CFG                    pIndexCfg = NULL;
+    DEQUE                              valueMetaDataQueue = {0};
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
     if (!VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED)
     {
         goto cleanup;
     }
 
-    dwError = VmDirMDBGetAllAttrValueMetaData(pBECtx, entryId, &valueMetaData);
+    dwError = VmDirMDBGetAllAttrValueMetaData(pBECtx, entryId, &valueMetaDataQueue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (dequeIsEmpty(&valueMetaData))
+    if (dequeIsEmpty(&valueMetaDataQueue))
     {
         goto cleanup;
     }
 
-    assert( pBECtx && pBECtx->pBEPrivate );
+    assert(pBECtx && pBECtx->pBEPrivate);
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
     dwError = VmDirIndexCfgAcquire(
@@ -885,107 +912,69 @@ VmDirMdbDeleteAllAttrValueMetaData(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     indTypes = pIndexCfg->iTypes;
-    assert( indTypes == INDEX_TYPE_EQUALITY );
+    assert(indTypes == INDEX_TYPE_EQUALITY);
 
-    while(!dequeIsEmpty(&valueMetaData))
+    while(!dequeIsEmpty(&valueMetaDataQueue))
     {
-        VDIR_DB_DBT key = {0};
-        VDIR_DB_DBT value = {0};
-        char keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
-        unsigned char * pWriter = NULL;
-        PVDIR_SCHEMA_AT_DESC pATDesc = NULL;
-        char *p = NULL;
+        VDIR_DB_DBT              key = {0};
+        VDIR_DB_DBT              value = {0};
+        //key format is: <entry ID>:<attribute ID (a short)
+        char                     keyData[sizeof(ENTRYID) + 1 + 2] = {0};
+        unsigned char           *pWriter = NULL;
+        PVDIR_SCHEMA_AT_DESC     pATDesc = NULL;
 
-        dequePopLeft(&valueMetaData, (PVOID*)&pAVmeta);
-        p = VmDirStringChrA(pAVmeta->lberbv.bv_val, ':');
-        if (!p)
-        {
-           VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND, "VmDirMdbDeleteAllAttrValueMetaData: invalid attr-value-meta-data %s",
-                            VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
-           dwError = ERROR_BACKEND_OPERATIONS;
-           BAIL_ON_VMDIR_ERROR( dwError );
-        }
-        *p = '\0';
-        pATDesc = VmDirSchemaAttrNameToDesc(pSchemaCtx, pAVmeta->lberbv.bv_val);
-        *p = ':';
+        dequePopLeft(&valueMetaDataQueue, (PVOID*)&pValueMetaData);
+
+        pATDesc = VmDirSchemaAttrNameToDesc(pSchemaCtx, pValueMetaData->pszAttrType);
+
         if (pATDesc == NULL)
         {
-            VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND, "VmDirMdbDeleteAllAttrValueMetaData: VmDirSchemaAttrNameToDesc failed for attr %s",
-                            VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
-            dwError = ERROR_BACKEND_OPERATIONS;
-            BAIL_ON_VMDIR_ERROR( dwError );
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "VmDirSchemaAttrNameToDesc failed for attr %s",
+                    VDIR_SAFE_STRING(pValueMetaData->pszAttrType));
+            BAIL_WITH_VMDIR_ERROR(dwError, ERROR_BACKEND_OPERATIONS);
         }
 
         key.mv_data = &keyData[0];
-        MDBEntryIdToDBT( entryId, &key );
+
+        MDBEntryIdToDBT(entryId, &key);
         *(unsigned char *)((unsigned char *)key.mv_data + key.mv_size) = ':';
         key.mv_size++;
         pWriter = ((unsigned char *)key.mv_data + key.mv_size);
-        VmDirEncodeShort( &pWriter, pATDesc->usAttrID );
+        VmDirEncodeShort(&pWriter, pATDesc->usAttrID);
         key.mv_size += 2;
-        value.mv_data = pAVmeta->lberbv.bv_val;
-        value.mv_size = pAVmeta->lberbv.bv_len;
-        dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, FALSE, BE_INDEX_OP_TYPE_DELETE );
+
+        dwError = VmDirValueMetaDataSerialize(pValueMetaData, &bervValueMetaData);
         BAIL_ON_VMDIR_ERROR(dwError);
-        VmDirFreeBerval(pAVmeta);
-        pAVmeta = NULL;
+
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL_ATTR,
+                "%s: serialized value: %s Len: %lu",
+                __FUNCTION__,
+                bervValueMetaData.lberbv_val,
+                bervValueMetaData.lberbv_len);
+
+        value.mv_data = bervValueMetaData.lberbv_val;
+        value.mv_size = bervValueMetaData.lberbv_len;
+
+        dwError = MdbUpdateKeyValue(mdbDBi, pTxn, &key, &value, FALSE, BE_INDEX_OP_TYPE_DELETE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirFreeBervalContent(&bervValueMetaData);
+        VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     }
 
 cleanup:
     VmDirIndexCfgRelease(pIndexCfg);
-    VmDirFreeBerval(pAVmeta);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaData);
+    VmDirFreeBervalContent(&bervValueMetaData);
+    VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
+    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
-             "VmDirMdbDeleteAllAttrValueMetaData failed: error=%d,eid=%ld", dwError, entryId);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed: error=%d,eid=%ld", dwError, entryId);
     goto cleanup;
-}
-
-/* Sanity check valueMetaData
- * format of an attr-value-meta-data item:
- *       <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
- *       :<value-change-originating time>:<value-change-originating-usn>:<opcode>:<value-size>:<value>
- *  return TRUE if the value_meta_data is a valid attr-value-meta-data item
- */
-BOOLEAN
-VmDirValidValueMetaEntry(
-    PVDIR_BERVALUE  pValueMetaData
-    )
-{
-    BOOLEAN isValid = FALSE;
-    int i = 0;
-    char *p = NULL, *pp = NULL;
-
-    if (pValueMetaData == NULL)
-    {
-        goto cleanup;
-    }
-
-    for(i=0,p=pValueMetaData->lberbv.bv_val; i<8 && p; pp=VmDirStringChrA(p, ':')+1,p=pp,i++);
-    if (!p)
-    {
-        goto cleanup;
-    }
-    pp = VmDirStringChrA(p, ':');
-    if(pp == NULL)
-    {
-        goto cleanup;
-    }
-    *pp = '\0';
-    i = VmDirStringToIA(p);
-    *pp = ':';
-
-    //check the attr-value length against the total length of value-meta-data
-    if (pValueMetaData->lberbv.bv_len != pp - pValueMetaData->lberbv.bv_val + i + 1)
-    {
-        goto cleanup;
-    }
-    isValid = TRUE;
-
-cleanup:
-    return isValid;
 }
 
 /*
@@ -1001,98 +990,62 @@ cleanup:
 static
 int
 _VmDirDeleteOldValueMetaData(
-    PVDIR_BACKEND_CTX   pBECtx,
-    ENTRYID             entryId,
-    short               attrId,
-    PVDIR_BERVALUE      pAVmetaToAdd
+    PVDIR_BACKEND_CTX                  pBECtx,
+    ENTRYID                            entryId,
+    short                              attrId,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
     )
 {
-    DWORD dwError = 0;
-    DEQUE cur_value_meta = {0};
-    DEQUE valueMetaDataToDelete = {0};
-    char *ps = NULL, *pps = NULL, *ps_ts = NULL;
-    char *pc = NULL, *ppc = NULL;
-    int rc = 0;
-    int psv_len = 0;
-    VDIR_BERVALUE *pAVmeta = NULL;
+    DWORD                              dwError = 0;
+    DEQUE                              currValueMetaDataQueue = {0};
+    DEQUE                              valueMetaDataToDeleteQueue = {0};
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pCurrValueMetaData = NULL;
 
-    dwError = VmDirMDBGetAttrValueMetaData(pBECtx, entryId, attrId, &cur_value_meta);
+    dwError = VmDirMDBGetAttrValueMetaData(pBECtx, entryId, attrId, &currValueMetaDataQueue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (dequeIsEmpty(&cur_value_meta))
+    if (dequeIsEmpty(&currValueMetaDataQueue))
     {
         goto cleanup;
     }
 
-    ps = pAVmetaToAdd->lberbv.bv_val;
-    VALUE_META_TO_NEXT_FIELD(ps, 8);
-    pps = VmDirStringChrA(ps, ':');
-    //ps points to <value-size>:<value>
-    *pps = '\0';
-    psv_len = VmDirStringToIA(ps);
-    *pps = ':';
-    VALUE_META_TO_NEXT_FIELD(ps, 1);
-    //ps now points to <value> of attr-value-meta-data
-    ps_ts = pAVmetaToAdd->lberbv.bv_val;
-    VALUE_META_TO_NEXT_FIELD(ps_ts, 5);
-    //ps_ts points to <value-change-originating time>
-    while(!dequeIsEmpty(&cur_value_meta))
+    while(!dequeIsEmpty(&currValueMetaDataQueue))
     {
-        int pcv_len = 0;
-        char *pc_ts = NULL;
+        dequePopLeft(&currValueMetaDataQueue, (PVOID*)&pCurrValueMetaData);
 
-        VmDirFreeBerval(pAVmeta);
-        pAVmeta = NULL;
+        if (pValueMetaData->dwValSize == pCurrValueMetaData->dwValSize &&
+            VmDirCompareMemory(
+                pCurrValueMetaData->pszValue,
+                pValueMetaData->pszValue,
+                pValueMetaData->dwValSize) == 0 &&
+            VmDirStringCompareA(
+                pCurrValueMetaData->pszValChgOrigTime,
+                pValueMetaData->pszValChgOrigTime,
+                TRUE) <= 0)
+        {
+            dwError = dequePush(&valueMetaDataToDeleteQueue, pCurrValueMetaData);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
-        dequePopLeft(&cur_value_meta, (PVOID*)&pAVmeta);
-        pc = pAVmeta->lberbv.bv_val;
-        VALUE_META_TO_NEXT_FIELD(pc, 8);
-        ppc = VmDirStringChrA(pc, ':');
-        *ppc = '\0';
-        pcv_len = VmDirStringToIA(pc);
-        *ppc = ':';
-        if (psv_len != pcv_len)
-        {
-            continue;
-        }
-        VALUE_META_TO_NEXT_FIELD(pc, 1);
-        if (memcmp(ps, pc, pcv_len))
-        {
-            continue;
+            pCurrValueMetaData = NULL;
         }
 
-        // now found attr-value-meta-data with the same attribute value.
-        // Compare their timestamps
-        pc_ts = pAVmeta->lberbv.bv_val;
-        VALUE_META_TO_NEXT_FIELD(pc_ts, 5);
-        rc = strncmp(pc_ts, ps_ts, VMDIR_ORIG_TIME_STR_LEN);
-        if (rc > 0)
-        {
-            // don't delete newer attr-value-meta-data
-            continue;
-        }
-        // Remember those obsolete attr-value-meta-data with that entryid/attr-id/attr-value to be deleted
-        dwError = dequePush(&valueMetaDataToDelete, pAVmeta);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        //valueMetaDataToDelete owns pAVmeta
-        pAVmeta = NULL;
+        VMDIR_SAFE_FREE_VALUE_METADATA(pCurrValueMetaData);
     }
 
-    if (!dequeIsEmpty(&valueMetaDataToDelete))
+    if (!dequeIsEmpty(&valueMetaDataToDeleteQueue))
     {
-        dwError = VmDirMdbUpdateAttrValueMetaData(pBECtx, entryId, attrId,
-                                                 BE_INDEX_OP_TYPE_DELETE, &valueMetaDataToDelete);
+        dwError = VmDirMdbUpdateAttrValueMetaData(
+                pBECtx, entryId, attrId, BE_INDEX_OP_TYPE_DELETE, &valueMetaDataToDeleteQueue);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
-    VmDirFreeBerval(pAVmeta);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDelete);
-    VmDirFreeAttrValueMetaDataContent(&cur_value_meta);
+    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDeleteQueue);
+    VmDirFreeAttrValueMetaDataContent(&currValueMetaDataQueue);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
-             "_VmDirDeleteOldValueMetaData failed: error=%d,eid=%ld,attrId=%d", dwError, entryId, attrId);
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL, "failed, error=%d,eid=%ld,attrId=%d", dwError, entryId, attrId);
     goto cleanup;
 }

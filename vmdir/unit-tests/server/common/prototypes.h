@@ -97,4 +97,36 @@ VmDirAttributeMetaDataToHashMap_InvalidInput(
     VOID    **state
     );
 
+//////////////////
+// valuemetadata.c
+//////////////////
+VOID
+VmDirValueMetaDataDeserialize_ValidInput(
+    VOID    **state
+    );
+
+VOID
+VmDirValueMetaDataDeserialize_InvalidInput(
+    VOID    **state
+    );
+
+int
+VmDirSetupValueMetaData(
+    VOID    **state
+    );
+
+int
+VmDirValueMetaDataFree(
+    VOID    **state
+    );
+
+VOID
+VmDirValueMetaDataSerialize_ValidInput(
+    VOID    **state
+    );
+
+VOID
+VmDirValueMetaDataSerialize_InvalidInput(
+    VOID    **state
+    );
 #endif

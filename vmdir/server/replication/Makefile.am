@@ -16,7 +16,8 @@ libreplication_la_SOURCES = \
     replentry.c \
     replqueue.c \
     thread.c \
-    utdvector.c
+    utdvector.c \
+    valuemetadata.c
 
 libreplication_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

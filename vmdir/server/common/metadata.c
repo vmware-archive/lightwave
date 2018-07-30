@@ -42,10 +42,10 @@ VmDirMetaDataDeserialize(
     dwError = VmDirAllocateMemory(sizeof(VMDIR_ATTRIBUTE_METADATA), (PVOID*) &pMetaData);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pStrList->pStringList[0], &pMetaData->localUsn);
+    dwError = VmDirStringToINT64(pStrList->pStringList[0], NULL, &pMetaData->localUsn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pStrList->pStringList[1], &pMetaData->version);
+    dwError = VmDirStringToUINT64(pStrList->pStringList[1], NULL, &pMetaData->version);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(pStrList->pStringList[2], &pMetaData->pszOrigInvoId);
@@ -54,7 +54,7 @@ VmDirMetaDataDeserialize(
     dwError = VmDirAllocateStringA(pStrList->pStringList[3], &pMetaData->pszOrigTime);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pStrList->pStringList[4], &pMetaData->origUsn);
+    dwError = VmDirStringToINT64(pStrList->pStringList[4], NULL, &pMetaData->origUsn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppMetaData = pMetaData;

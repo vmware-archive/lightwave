@@ -293,7 +293,10 @@ syntaxGetNextInteger(
 
     VmDirStringNCpyA(pBuf, BUFFER_SIZE, pBerv->lberbv.bv_val+iStart, iLen);
 
-    i64Val = VmDirStringToLA(pBuf, &pEnd, 10);
+    if (VmDirStringToINT64(pBuf, &pEnd, &i64Val) != 0)
+    {
+        return FALSE;
+    }
 
     if ( ( i64Val > INT_MAX ) || (i64Val < INT_MIN) )
     {

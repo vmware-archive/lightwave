@@ -100,6 +100,16 @@ VmDirFreeEntryContent(
 
       if (e->allocType == ENTRY_STORAGE_FORMAT_PACK)
       {
+         PVDIR_ATTRIBUTE    pCurrAttr = NULL;
+         PVDIR_ATTRIBUTE    pTempAttr = NULL;
+
+         pCurrAttr = e->attrs;
+         while(pCurrAttr != NULL)
+         {
+             pTempAttr = pCurrAttr->next;
+             VmDirFreeMetaData(pCurrAttr->pMetaData);
+             pCurrAttr = pTempAttr;
+         }
          VMDIR_SAFE_FREE_MEMORY( e->encodedEntry );
          VmDirFreeBervalArrayContent(e->bvs, e->usNumBVs);
          VMDIR_SAFE_FREE_MEMORY( e->bvs );
@@ -778,14 +788,14 @@ error:
  */
 VOID
 VmDirFreeAttrValueMetaDataContent(
-    PDEQUE  pValueMetaData
+    PDEQUE  pValueMetaDataQueue
     )
 {
-    PVDIR_BERVALUE pAVmeta = NULL;
-    while(!dequeIsEmpty(pValueMetaData))
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+    while(!dequeIsEmpty(pValueMetaDataQueue))
     {
-        dequePopLeft(pValueMetaData, (PVOID*)&pAVmeta);
-        VmDirFreeBerval(pAVmeta);
+        dequePopLeft(pValueMetaDataQueue, (PVOID*)&pValueMetaData);
+        VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     }
 }
 

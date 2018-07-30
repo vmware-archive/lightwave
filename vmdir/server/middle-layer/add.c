@@ -487,7 +487,7 @@ VmDirGenerateAttrMetaData(
         // if found such attribute, generate metadata for it, otherwise, do nothing
         if (attrFound)
         {
-            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, &Usn);
+            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, NULL, &Usn);
             BAIL_ON_VMDIR_ERROR(retVal);
 
             retVal = VmDirMetaDataCreate(
@@ -515,7 +515,7 @@ VmDirGenerateAttrMetaData(
     {
         for (attr = pEntry->attrs; attr; attr = attr->next)
         {
-            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, &Usn);
+            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, NULL, &Usn);
             BAIL_ON_VMDIR_ERROR(retVal);
 
             retVal = VmDirMetaDataCreate(

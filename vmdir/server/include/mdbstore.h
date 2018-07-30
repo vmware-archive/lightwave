@@ -146,7 +146,7 @@ VmDirMdbUpdateAttrValueMetaData(
     ENTRYID             entryId,
     short               attrId,
     ULONG               ulOPMask,
-    PDEQUE              metaValueData
+    PDEQUE              pValueMetaDataQueue
     );
 
 DWORD

@@ -351,7 +351,8 @@ VmDirParseSetSizeArgs(
         switch (opt)
         {
         case VDCMETRIC_OPTION_SET_SIZE:
-            dwSize = (DWORD)VmDirStringToLA(optarg, NULL, 10);
+            dwError = VmDirStringToUINT32(optarg, NULL, &dwSize);
+            BAIL_ON_VMDIR_ERROR(dwError);
             break;
 
         case '?':
@@ -372,7 +373,8 @@ VmDirParseSetSizeArgs(
                     || VmDirStringCompareA(VDCMETRIC_OPTION_SET_SIZE, argv[i], TRUE) == 0)
             {
                 VmDirGetCmdLineOption(argc, argv, &i, &pszSize);
-                dwSize = (DWORD)VmDirStringToLA(pszSize, NULL, 10);
+                dwError = VmDirStringToUINT32(pszSize, NULL, &dwSize);
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
         i++;

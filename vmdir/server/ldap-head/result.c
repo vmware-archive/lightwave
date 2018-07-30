@@ -20,35 +20,12 @@
 
 static
 int
-IsAttrInReplScope(
-    VDIR_OPERATION *             op,
-    char *                       attrType,
-    PVMDIR_ATTRIBUTE_METADATA    pAttrMetadata,
-    USN                          priorSentUSNCreated,
-    BOOLEAN *                    inScope,
-    PSTR*                        ppszErrorMsg
-    );
-
-static
-int
 WriteAttributes(
    VDIR_OPERATION *   op,
    PVDIR_ENTRY        pEntry,
    uint32_t           iSearchReqSpecialChars,
    BerElement *       ber,
    PSTR*              ppszErrorMsg
-   );
-
-static
-int
-WriteMetaDataAttribute(
-   VDIR_OPERATION *             pOp,
-   VDIR_ATTRIBUTE *             pAttr,
-   int                          numAttrMetaData,
-   PATTRIBUTE_META_DATA_NODE    pAttrMetaData,
-   BerElement *                 ber,
-   BOOLEAN *                    nonTrivialAttrsInReplScope,
-   PSTR*                        ppszErrorMsg
    );
 
 static
@@ -68,23 +45,6 @@ SetSpecialReturnChar(
     SearchReq*      pSearchReq,
     uint32_t*       pSearchReqSpecialChars
     );
-
-static
-int
-_WriteValueMetaDataAttribute(
-   PVDIR_OPERATION              pOp,
-   PDEQUE                       pAllValueMetaData,
-   BerElement *                 pBer,
-   PSTR*                        ppszErrorMsg
-   );
-
-static
-int
-PrepareValueMetaDataAttribute(
-   PVDIR_OPERATION              pOp,
-   PDEQUE                       pAllValueMetaData,
-   PDEQUE                       pValueMetaDataToSend
-   );
 
 /*
     4.2.2. Bind Response
@@ -370,12 +330,17 @@ VmDirSendSearchEntry(
 
             pAttr = VmDirEntryFindAttribute(ATTR_USN_CHANGED, pSrEntry);
             assert( pAttr != NULL );
-            usnChanged = VmDirStringToLA( pAttr->vals[0].lberbv.bv_val, NULL, 10);
+
+            retVal = VmDirStringToINT64(pAttr->vals[0].lberbv.bv_val, NULL, &usnChanged);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
             // Don't send (skip) modifications to my server object, and my RAs
             pAttrUsnCreated = VmDirEntryFindAttribute(ATTR_USN_CREATED, pSrEntry);
             assert( pAttrUsnCreated != NULL );
-            usnCreated = VmDirStringToLA( pAttrUsnCreated->vals[0].lberbv.bv_val, NULL, 10);
+
+            retVal = VmDirStringToINT64(pAttrUsnCreated->vals[0].lberbv.bv_val, NULL, &usnCreated);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
             // Only send back creation of certain objects, and not their modifications.
             // Check if consumer has already seen the creation. If yes, we are dealing with mods, which should be skipped
             // for my server object, and my RAs
@@ -510,7 +475,7 @@ VmDirSendSearchEntry(
 
         if (attrMetaDataReqd)
         {
-            retVal = WriteMetaDataAttribute(
+            retVal = VmDirWriteMetaDataAttribute(
                     pOperation,
                     pSrEntry->attrs,
                     numAttrMetaData,
@@ -520,25 +485,13 @@ VmDirSendSearchEntry(
                     &pszLocalErrorMsg);
             BAIL_ON_VMDIR_ERROR(retVal);
 
-            if (pOperation->syncReqCtrl == NULL)
-            {
-                if (!dequeIsEmpty(&allValueMetaData))
-                {
-                    retVal = _WriteValueMetaDataAttribute( pOperation, &allValueMetaData, ber, &pszLocalErrorMsg );
-                    BAIL_ON_VMDIR_ERROR( retVal );
-                }
-            }
-            else
-            {
-                retVal = PrepareValueMetaDataAttribute( pOperation, &allValueMetaData, &valueMetaDataToSend );
-                BAIL_ON_VMDIR_ERROR( retVal );
-                if (!dequeIsEmpty(&valueMetaDataToSend))
-                {
-                    retVal = _WriteValueMetaDataAttribute( pOperation, &valueMetaDataToSend, ber, &pszLocalErrorMsg );
-                    BAIL_ON_VMDIR_ERROR( retVal );
-                    nonTrivialAttrsInReplScope = TRUE;
-                }
-            }
+            retVal = VmDirWriteValueMetaDataAttribute(
+                    pOperation,
+                    &allValueMetaData,
+                    ber,
+                    &pszLocalErrorMsg,
+                    &nonTrivialAttrsInReplScope);
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
 
         if (ber_printf( ber, "N}N}" ) == -1)
@@ -625,219 +578,6 @@ error:
     goto cleanup;
 }
 
-/*
- * Test whether the origUsn is in scope so that attribute, attr-meta-data or
- * attr-value-meta-data be sent back to the replicaiton consumer based on whether
- * the origUsn for that invocationId has been processed already by the consumer
- */
-static
-int
-_VmDirIsUsnInScope(
-    VDIR_OPERATION *    op,
-    PCSTR               pAttrName,
-    char *              origInvocationId,
-    USN                 origUsn,
-    USN                 localUSN,
-    USN                 priorSentUSNCreated,
-    BOOLEAN *           isUsnInScope
-    )
-{
-    int                     retVal = LDAP_SUCCESS;
-    PLW_HASHTABLE_NODE      pNode = NULL;
-    PSTR                    pszLocalErrorMsg = NULL;
-    UptoDateVectorEntry *   utdVectorEntry = NULL;
-    int                     rc = 0;
-
-    *isUsnInScope = FALSE;
-    rc = LwRtlHashTableFindKey( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector, &pNode, origInvocationId );
-    rc = LwNtStatusToWin32Error(rc);
-    if (rc != 0 && rc != ERROR_NOT_FOUND)
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_VmDirIsUsnInScope: LwRtlHashTableFindKey failed for origInvocationId: %s",
-                  origInvocationId );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg), "LwRtlHashTableFindKey failed.");
-    }
-
-    if (pNode == NULL)
-    {
-        UptoDateVectorEntry * utdVectorEntry = NULL;
-        VDIR_BERVALUE         bvServerId = VDIR_BERVALUE_INIT;
-
-        if (VmDirAllocateMemory( sizeof( UptoDateVectorEntry ), (PVOID *)&utdVectorEntry) != 0)
-        {
-            retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                            "_VmDirIsUsnInScope: BervalContentDup failed.");
-        }
-        bvServerId.lberbv.bv_val = origInvocationId;
-        bvServerId.lberbv.bv_len = VmDirStringLenA( origInvocationId );
-        if (VmDirBervalContentDup( &bvServerId, &utdVectorEntry->invocationId ) != 0)
-        {
-            retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                            "_VmDirIsUsnInScope: BervalContentDup failed.");
-        }
-        utdVectorEntry->currMaxOrigUsnProcessed = origUsn;
-        LwRtlHashTableResizeAndInsert( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector,
-                                       &utdVectorEntry->Node, &pNode);
-        assert( pNode == NULL );    // assert the key of added node is unique
-        *isUsnInScope = TRUE;
-        goto cleanup;
-    }
-
-    utdVectorEntry = (UptoDateVectorEntry *)LW_STRUCT_FROM_FIELD(pNode, UptoDateVectorEntry, Node);
-    if (origUsn > utdVectorEntry->reqLastOrigUsnProcessed )
-    {
-        // attribute or the valueMetaData item in scope if origUsn valueMetaData is > the current highest
-        if (origUsn > utdVectorEntry->currMaxOrigUsnProcessed )
-        {
-            utdVectorEntry->currMaxOrigUsnProcessed = origUsn;
-        }
-
-        // Note, this handles ADD->MODIFY case but not multiple MODIFYs scenario.
-        // However, it is fine as consumer should be able to handle redundant feed from supplier.
-        // The key point here is to NOT send ATTR_USN_CREATED, so we can derive correct sync_state in WriteSyncStateControl.
-        if (localUSN > priorSentUSNCreated)
-        {
-            *isUsnInScope = TRUE;
-
-            if (priorSentUSNCreated > 0)
-            {
-                VMDIR_LOG_VERBOSE(LDAP_DEBUG_REPL, "%s new usn %llu after prior usncreated %llu attr %s",
-                                        __FUNCTION__, origUsn, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
-            }
-        }
-        else
-        {
-            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s (add->modify) race condition avoided. skip prior usncreated %llu attr %s",
-                                    __FUNCTION__, priorSentUSNCreated, VDIR_SAFE_STRING(pAttrName));
-        }
-
-        goto cleanup;
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    return( retVal );
-
-error:
-    goto cleanup;
-}
-
-static
-int
-IsAttrInReplScope(
-    VDIR_OPERATION *            op,
-    char *                      attrType,
-    PVMDIR_ATTRIBUTE_METADATA   pAttrMetaData,
-    USN                         priorSentUSNCreated,
-    BOOLEAN *                   inScope,
-    PSTR*                       ppszErrorMsg
-    )
-{
-    int                 retVal = LDAP_SUCCESS;
-    PSTR                pszLocalErrorMsg = NULL;
-    PSZ_METADATA_BUF    pszMetaData = {'\0'};
-
-    *inScope = FALSE;
-
-    //Ignore error - used only for logging
-    VmDirMetaDataSerialize(pAttrMetaData, pszMetaData);
-
-    // Skip the attribute:
-    //    - if the originating server for the current state is same as the requesting server or if it is one of those
-    //      attributes that have "local" scope only. E.g. sending ATTR_LAST_LOCAL_USN_PROCESSED and
-    //      ATTR_UP_TO_DATE_VECTOR, causes continuous back-forth replication of Replication Agreements and Server
-    //      entries between various servers.
-
-    assert(op->syncReqCtrl != NULL);
-
-    if ((attrType && (VmDirStringCompareA(attrType, ATTR_LAST_LOCAL_USN_PROCESSED, FALSE) == 0 ||
-                      VmDirStringCompareA(attrType, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0 ||
-                      VmDirStringCompareA(attrType, VDIR_ATTRIBUTE_SEQUENCE_RID, FALSE) == 0)))
-    {
-        // Reset metaData value so that we don't send local only attribute back.
-        *inScope = FALSE;
-        goto cleanup;
-    }
-    else if (attrType && (VmDirStringCompareA(attrType, ATTR_USN_CHANGED, FALSE) == 0))
-    {
-        ; // always send uSNChanged. (PR 1573117)
-    }
-    else if (attrType && gVmdirServerGlobals.dwDomainFunctionalLevel >= VDIR_DFL_MODDN &&
-            (VmDirStringCompareA(attrType, ATTR_OBJECT_GUID, FALSE) == 0))
-    {
-        ; // always send objectGUID to uniquely identify entries, regardless
-          // which node the entry was created. (PR 1730608)
-    }
-    else if (VmDirStringCompareA(
-                pAttrMetaData->pszOrigInvoId,
-                op->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val,
-                TRUE) == 0)
-    {
-        // Change is originated from the requesting server.
-        // Reset metaData value so that we don't send metaData as well as this attribute back.
-        *inScope = FALSE;
-        goto cleanup;
-    }
-    else
-    {
-        BOOLEAN usnInScope = FALSE;
-        retVal = _VmDirIsUsnInScope(
-                op,
-                attrType,
-                pAttrMetaData->pszOrigInvoId,
-                pAttrMetaData->origUsn,
-                pAttrMetaData->localUsn,
-                priorSentUSNCreated,
-                &usnInScope);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        if (!usnInScope)
-        {
-            VMDIR_LOG_VERBOSE(
-                    LDAP_DEBUG_REPL_ATTR,
-                    "%s: Attribute: %s, metaData: %s, replication scope = FALSE",
-                    __FUNCTION__,
-                    attrType,
-                    pszMetaData);
-            // Reset metaData value so that we don't send metaData for this attribute back.
-            *inScope = FALSE;
-            goto cleanup;
-        }
-    }
-
-    VMDIR_LOG_INFO(
-            LDAP_DEBUG_REPL_ATTR,
-            "%s: Attribute: %s, metaData: %s, replication scope = TRUE",
-            __FUNCTION__,
-            attrType,
-            pszMetaData);
-
-    *inScope = TRUE;
-
-cleanup:
-    if (*inScope == FALSE)
-    {
-        VMDIR_FREE_ATTRIBUTE_NOT_IN_SCOPE(pAttrMetaData);
-    }
-
-    if (ppszErrorMsg)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-    }
-    else
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    }
-
-    return retVal;
-
-error:
-
-    goto cleanup;
-}
-
 static
 int
 WriteAttributes(
@@ -870,7 +610,8 @@ WriteAttributes(
                 op->conn->ReplConnState.phmSyncStateOneMap, (PVOID*)&pszPriorSentUSNCreated, pszIDBuf);
         if (retVal == 0)
         {   // we have already sent this entry back with sync_state ADD in the same replication cycle
-            priorSentUSNCreated = VmDirStringToLA( pszPriorSentUSNCreated, NULL, 10 );
+            retVal = VmDirStringToINT64(pszPriorSentUSNCreated, NULL, &priorSentUSNCreated);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
             VMDIR_LOG_VERBOSE(
                     LDAP_DEBUG_REPL,
@@ -891,13 +632,12 @@ WriteAttributes(
             if (op->syncReqCtrl != NULL) // Replication,
             {
                 // Filter attributes based on the input utdVector, and attribute's meta-data
-                retVal = IsAttrInReplScope(
+                retVal = VmDirIsAttrInScope(
                         op,
                         pAttr->type.lberbv.bv_val,
                         pAttr->pMetaData,
                         priorSentUSNCreated,
-                        &bSendAttribute,
-                        &pszLocalErrorMsg);
+                        &bSendAttribute);
                 BAIL_ON_VMDIR_ERROR(retVal);
             }
             else
@@ -1100,336 +840,6 @@ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteAttributes failed (%u)(%s)",
                      retVal, VDIR_SAFE_STRING(pszLocalErrorMsg) );
 
-    goto cleanup;
-}
-
-static
-int
-WriteMetaDataAttribute(
-   VDIR_OPERATION *             pOp,
-   VDIR_ATTRIBUTE *             pAttr,
-   int                          numAttrMetaData,
-   PATTRIBUTE_META_DATA_NODE    pAttrMetaData,
-   BerElement *                 ber,
-   BOOLEAN *                    nonTrivialAttrsInReplScope,
-   PSTR*                        ppszErrorMsg
-   )
-{
-    int                  retVal = LDAP_SUCCESS;
-    VDIR_BERVALUE        attrMetaData = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
-    int                  i = 0;
-    VDIR_BERVALUE        berVal = VDIR_BERVALUE_INIT;
-    char                 attrMetaDataVal[256 + VMDIR_MAX_ATTR_META_DATA_LEN];
-    PSTR                 pszLocalErrorMsg = NULL;
-    PSZ_METADATA_BUF     pszMetaData = {'\0'};
-
-    *nonTrivialAttrsInReplScope = FALSE;
-
-    if (ber_printf(ber, "{O[", &(attrMetaData)) == -1)
-    {
-        VMDIR_LOG_VERBOSE(
-                VMDIR_LOG_MASK_ALL,
-                "%s: ber_printf (to print attribute name ...) failed", __FUNCTION__);
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                     "Encoding attribute type failed.");
-    }
-
-    for ( ; pAttr != NULL; pAttr = pAttr->next)
-    {
-        // By this time, we have already filtered out attributes that should be send back to replication consumer
-        // in prior WriteAttributes -> IsAttrInReplScope call.  They contain proper pAttr value.
-        if (!IS_VMDIR_ATTRIBUTE_NOT_IN_SCOPE(pAttr->pMetaData))
-        {
-            memset(&pszMetaData[0], '\0', VMDIR_MAX_ATTR_META_DATA_LEN);
-            retVal = VmDirMetaDataSerialize(pAttr->pMetaData, pszMetaData);
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            VmDirStringPrintFA(
-                    attrMetaDataVal,
-                    sizeof(attrMetaDataVal),
-                    "%.256s:%s",
-                    pAttr->type.lberbv.bv_val,
-                    pszMetaData);
-
-            berVal.lberbv.bv_val = attrMetaDataVal;
-            berVal.lberbv.bv_len = VmDirStringLenA(attrMetaDataVal);
-            if (VmDirStringCompareA(pAttr->type.lberbv_val, ATTR_MODIFYTIMESTAMP, FALSE) != 0 &&
-                VmDirStringCompareA(pAttr->type.lberbv_val, ATTR_MODIFIERS_NAME, FALSE) != 0  &&
-                VmDirStringCompareA(pAttr->type.lberbv_val, ATTR_USN_CHANGED, FALSE) != 0     &&
-                VmDirStringCompareA(pAttr->type.lberbv_val, ATTR_OBJECT_GUID, FALSE) != 0)
-            {
-                // To prevent endless replication ping pong, supplier should send result only if there are changes
-                // to attribute other than ATTR_USN_CHANGED, ATTR_MODIFYTIMESTAMP,ATTR_MODIFIERS_NAME and ATTR_OBJECT_GUID.
-                *nonTrivialAttrsInReplScope = TRUE;
-            }
-            if (ber_printf( ber, "O", &berVal ) == -1 )
-            {
-                VMDIR_LOG_VERBOSE(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: ber_printf (to print an attribute value ...) failed.",
-                        __FUNCTION__);
-                retVal = LDAP_OTHER;
-                BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                             "Encoding an attribute value failed.");
-            }
-        }
-    }
-
-    // include attrMetaData for the deleted attributes
-    for (i = 0; i<numAttrMetaData; i++)
-    {
-        if (pAttrMetaData[i].pMetaData)
-        {
-            BOOLEAN                 bSendAttrMetaData = TRUE;
-            PVDIR_SCHEMA_AT_DESC    pATDesc = NULL;
-
-            if (pOp->syncReqCtrl != NULL) // Replication
-            {
-                retVal = IsAttrInReplScope(
-                        pOp,
-                        NULL,
-                        pAttrMetaData[i].pMetaData,
-                        0,
-                        &bSendAttrMetaData,
-                        &pszLocalErrorMsg);
-                BAIL_ON_VMDIR_ERROR(retVal);
-            }
-            else
-            {
-                bSendAttrMetaData = TRUE;
-            }
-
-            if (bSendAttrMetaData)
-            {
-                if ((pATDesc = VmDirSchemaAttrIdToDesc(pOp->pSchemaCtx, pAttrMetaData[i].attrID)) == NULL)
-                {
-                    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,
-                              "WriteMetaDataAttribute: VmDirSchemaAttrIdToDesc failed for attribute id: %d.",
-                              pAttrMetaData[i].attrID  );
-                    retVal = LDAP_OTHER;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                                    "WriteMetaDataAttribute: VmDirSchemaAttrIdToDesc failed.");
-                }
-
-                memset(&pszMetaData[0], '\0', VMDIR_MAX_ATTR_META_DATA_LEN);
-                retVal = VmDirMetaDataSerialize(pAttrMetaData[i].pMetaData, pszMetaData);
-                BAIL_ON_VMDIR_ERROR(retVal);
-
-                VmDirStringPrintFA(
-                        attrMetaDataVal,
-                        sizeof(attrMetaDataVal),
-                        "%.256s:%s",
-                        pATDesc->pszName,
-                        pszMetaData);
-
-                berVal.lberbv.bv_val = attrMetaDataVal;
-                berVal.lberbv.bv_len = VmDirStringLenA( attrMetaDataVal );
-                *nonTrivialAttrsInReplScope = TRUE;
-                if (ber_printf( ber, "O", &berVal ) == -1 )
-                {
-                    VMDIR_LOG_VERBOSE(
-                            VMDIR_LOG_MASK_ALL,
-                            "%s: ber_printf (to print an attribute value ...) failed.",
-                            __FUNCTION__);
-                    retVal = LDAP_OTHER;
-                    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                                 "Encoding an attribute value failed.");
-                }
-            }
-        }
-    }
-
-    if ( ber_printf( ber, "]N}" ) == -1 )
-    {
-        VMDIR_LOG_VERBOSE(
-                VMDIR_LOG_MASK_ALL,
-                "%s: ber_printf (to terminate an attribute's values ...) failed",
-                __FUNCTION__);
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg),
-                                     "Encoding terminating an attribute type failed.");
-    }
-
-cleanup:
-
-    if (ppszErrorMsg)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-    }
-    else
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    }
-
-    return( retVal );
-
-error:
-
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteMetaDataAttribute failed (%u)(%s)",
-                     retVal, VDIR_SAFE_STRING(pszLocalErrorMsg) );
-    goto cleanup;
-}
-
-/*
- * Write Attribute Value Meta Data.
- */
-static
-int
-_WriteValueMetaDataAttribute(
-   PVDIR_OPERATION  pOp,
-   PDEQUE           pValueMetaData,
-   BerElement *     pBer,
-   PSTR*            ppszErrorMsg
-   )
-{
-    int retVal = LDAP_SUCCESS;
-    VDIR_BERVALUE   attrValueMetaData = { {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA}, 0, 0, NULL };
-    VDIR_BERVALUE *pAVmeta = NULL;
-    PSTR pszLocalErrorMsg = NULL;
-
-    if (ber_printf( pBer, "{O[", &(attrValueMetaData) ) == -1 )
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_WriteValueMetaDataAttribute: ber_printf (to print attribute name ...) failed" );
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Encoding attribute type failed.");
-    }
-
-    while (!dequeIsEmpty(pValueMetaData))
-    {
-        VmDirFreeBerval(pAVmeta);
-        pAVmeta = NULL;
-
-        dequePopLeft(pValueMetaData, (PVOID*)&pAVmeta);
-        if (ber_printf( pBer, "O", pAVmeta ) == -1 )
-        {
-            VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_WriteValueMetaDataAttribute: ber_printf (to print an attribute value ...) failed." );
-            retVal = LDAP_OTHER;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, (pszLocalErrorMsg), "Encoding an attribute value failed.");
-        }
-    }
-
-    if ( ber_printf( pBer, "]N}" ) == -1 )
-    {
-        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "_WriteValueMetaDataAttribute: ber_printf (to terminate an attribute's values ...) failed" );
-        retVal = LDAP_OTHER;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
-                                        "Encoding terminating an attribute type failed.");
-    }
-
-cleanup:
-    if (ppszErrorMsg)
-    {
-        *ppszErrorMsg = pszLocalErrorMsg;
-    }
-    else
-    {
-        VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    }
-    VmDirFreeBerval(pAVmeta);
-    return retVal;
-
-error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "_WriteValueMetaDataAttribute failed (%u)(%s)",
-                     retVal, VDIR_SAFE_STRING(pszLocalErrorMsg) );
-    goto cleanup;
-}
-
-static
-int
-PrepareValueMetaDataAttribute(
-   PVDIR_OPERATION  pOp,
-   PDEQUE           pAllValueMetaData,
-   PDEQUE           pValueMetaDataToSend
-   )
-{
-    int retVal = LDAP_SUCCESS;
-    VDIR_BERVALUE *pAVmeta = NULL;
-    char origInvocationId[VMDIR_GUID_STR_LEN] = {0};
-    USN  origUsn = 0;
-    char *p1 = NULL, *p2 = NULL;
-    PSTR pszDupAttrValueMetaData = NULL;
-    PSTR pszLocalUSN = NULL;
-    USN localUSN = 0;
-
-    if (dequeIsEmpty(pAllValueMetaData))
-    {
-        goto cleanup;
-    }
-
-    while (!dequeIsEmpty(pAllValueMetaData))
-    {
-        if (pAVmeta)
-        {
-            VmDirFreeBerval(pAVmeta);
-            pAVmeta = NULL;
-        }
-        dequePopLeft(pAllValueMetaData, (PVOID*)&pAVmeta);
-        if (pOp->syncReqCtrl)
-        {
-            BOOLEAN usnInScope = FALSE;
-
-            VMDIR_SAFE_FREE_MEMORY(pszDupAttrValueMetaData);
-            retVal = VmDirAllocateAndCopyMemory(
-                    pAVmeta->lberbv.bv_val,
-                    pAVmeta->lberbv.bv_len,
-                    (PVOID*)&pszDupAttrValueMetaData);
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            //<attr-name>:<local-usn>
-            pszLocalUSN = VmDirStringChrA(VmDirStringChrA(pszDupAttrValueMetaData, ':') + 1, ':');
-            *pszLocalUSN = '\0';
-
-            //<local-usn>
-            pszLocalUSN = VmDirStringChrA(pszDupAttrValueMetaData, ':')+1;
-
-            localUSN = VmDirStringToLA(pszLocalUSN, NULL, 10);
-
-            VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s: metadata: %s localUSN: %llu", __FUNCTION__, pszDupAttrValueMetaData, localUSN);
-
-            // Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
-            //            :<value-change-originating time>:<value-change-originating-usn>:<opcode>:<value-size>:<value>
-            p1 = VmDirStringChrA(VmDirStringChrA(VmDirStringChrA(VmDirStringChrA(pAVmeta->lberbv.bv_val, ':' ) + 1, ':') + 1, ':') + 1, ':') + 1;
-            //p1 points to <value-change-originating-server-id>
-
-            retVal = VmDirStringNCpyA(origInvocationId, VMDIR_GUID_STR_LEN, p1, VMDIR_GUID_STR_LEN - 1);
-            BAIL_ON_VMDIR_ERROR(retVal);
-
-            origInvocationId[VMDIR_GUID_STR_LEN - 1] = '\0';
-
-            p2 = VmDirStringChrA(VmDirStringChrA(p1, ':' ) + 1, ':') + 1;
-            p1 = VmDirStringChrA(p2, ':');
-            *p1 = '\0';
-            // p2 now points to <value-change-originating-usn>
-            origUsn = VmDirStringToLA(p2, NULL, 10 );
-            *p1 = ':';
-
-            if (VmDirStringCompareA(origInvocationId, pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val,TRUE ) == 0)
-            {
-                continue;
-                //Change is originated from the requesting server. Don't send it.
-            }
-            retVal = _VmDirIsUsnInScope(pOp, NULL, origInvocationId, origUsn, localUSN, 0, &usnInScope);
-            BAIL_ON_VMDIR_ERROR(retVal);
-            if (!usnInScope)
-            {
-                continue;
-            }
-            VMDIR_LOG_INFO( LDAP_DEBUG_REPL, "PrepareValueMetaDataAttribute: valueMata %s, usnInScope true",
-                  VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
-        }
-        retVal = dequePush(pValueMetaDataToSend, pAVmeta);
-        BAIL_ON_VMDIR_ERROR( retVal );
-        pAVmeta = NULL;
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDupAttrValueMetaData);
-    VmDirFreeBerval(pAVmeta);
-    return retVal;
-
-error:
     goto cleanup;
 }
 

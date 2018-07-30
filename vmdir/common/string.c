@@ -406,16 +406,6 @@ error:
     return dwError;
 }
 
-int64_t
-VmDirStringToLA(
-   PCSTR nptr,
-   PSTR* endptr,
-   int base
-)
-{
-    return strtol( nptr, endptr, base );
-}
-
 int VmDirStringToIA(
    PCSTR pStr
 )
@@ -885,21 +875,22 @@ error:
 }
 
 DWORD
-VmDirStringToINT64(
-    PCSTR     pszString,
-    INT64*    pOutVal
+VmDirStringToINT32(
+    PCSTR      pszString,
+    PSTR*      ppEndPtr,
+    INT32*     pOutVal
     )
 {
     DWORD    dwError = 0;
-    INT64    value = 0;
+    INT32    value = 0;
 
-    if (IsNullOrEmptyString(pszString) || !pOutVal)
+    if (!pszString || !pOutVal)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     errno = 0;
-    value = strtoll(pszString, NULL, 10);
+    value = strtol(pszString, ppEndPtr, 10);
     if (errno)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
@@ -915,4 +906,99 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirStringToUINT32(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    UINT32*   pOutVal
+    )
+{
+    DWORD    dwError = 0;
+    UINT32   value = 0;
+
+    if (!pszString || !pOutVal)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    errno = 0;
+    value = strtoul(pszString, ppEndPtr, 10);
+    if (errno)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pOutVal = value;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d) errno: (%d)", dwError, errno);
+    goto cleanup;
+}
+
+DWORD
+VmDirStringToINT64(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    INT64*    pOutVal
+    )
+{
+    DWORD    dwError = 0;
+    INT64    value = 0;
+
+    if (!pszString || !pOutVal)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    errno = 0;
+    value = strtoll(pszString, ppEndPtr, 10);
+    if (errno)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pOutVal = value;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d) errno: (%d)", dwError, errno);
+    goto cleanup;
+}
+
+DWORD
+VmDirStringToUINT64(
+    PCSTR      pszString,
+    PSTR*      ppEndPtr,
+    UINT64*    pOutVal
+    )
+{
+    DWORD     dwError = 0;
+    UINT64    value = 0;
+
+    if (!pszString || !pOutVal)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    errno = 0;
+    value = strtoull(pszString, ppEndPtr, 10);
+    if (errno)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pOutVal = value;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d) errno: (%d)", dwError, errno);
+    goto cleanup;
+}
 #endif //#ifndef _WIN32

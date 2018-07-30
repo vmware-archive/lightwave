@@ -266,7 +266,8 @@ VmDirGetLastLocalUsnProcessedForHostFromRADN(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *pUsn = VmDirStringToLA(ppValues[0]->bv_val, NULL, 10);
+    dwError = VmDirStringToINT64(ppValues[0]->bv_val, NULL, pUsn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     if (ppValues)
@@ -612,7 +613,9 @@ _VmDirQueryUsn(
                                             - bvLastLocalUsnProcessed.bv_val;
     bvLastLocalUsnProcessed.bv_val[bvLastLocalUsnProcessed.bv_len] = '\0';
 
-    *pMaxUsn = VmDirStringToLA(bvLastLocalUsnProcessed.bv_val, NULL, 10);
+    dwError = VmDirStringToINT64(bvLastLocalUsnProcessed.bv_val, NULL, pMaxUsn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *pdwCount = dwCount;
 
 cleanup:

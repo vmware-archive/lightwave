@@ -354,10 +354,11 @@ _VmDirDDVectorUpdateDefaultsInLock(
     DWORD dwValue
     )
 {
-    DWORD     dwError = 0;
-    PSTR      pszKey = NULL;
-    PDWORD    pdwValue = NULL;
+    DWORD              dwError = 0;
+    PSTR               pszKey = NULL;
+    PDWORD             pdwValue = NULL;
     LW_HASHMAP_PAIR    pair = {NULL, NULL};
+    LW_HASHMAP_PAIR    prevPair = {NULL, NULL};
 
     dwError = VmDirAllocateStringA(
             gVmdirServerGlobals.bvServerObjName.lberbv_val,
@@ -378,8 +379,10 @@ _VmDirDDVectorUpdateDefaultsInLock(
             gVmdirServerGlobals.pReplDeadlockDetectionVector->pEmptyPageSentMap,
             pair.pKey,
             pair.pValue,
-            NULL);
+            &prevPair);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirSimpleHashMapPairFree(&prevPair, NULL);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszKey);

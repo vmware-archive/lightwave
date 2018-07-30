@@ -989,9 +989,14 @@ ParseSyncRequestControlVal(
                 syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val,
                 syncReqCtrlVal->bvUtdVector.lberbv.bv_val);
 
-        syncReqCtrlVal->intLastLocalUsnProcessed =
-                op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed =
-                        VmDirStringToLA(syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+        retVal = VmDirStringToINT64(
+                syncReqCtrlVal->bvLastLocalUsnProcessed.lberbv.bv_val,
+                NULL,
+                &syncReqCtrlVal->intLastLocalUsnProcessed);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        op->syncDoneCtrl->value.syncDoneCtrlVal.intLastLocalUsnProcessed =
+            syncReqCtrlVal->intLastLocalUsnProcessed;
 
         {
             char* nextServerIdStr = NULL;
@@ -1485,7 +1490,7 @@ _ParseStatePingControlVal(
         }
         else if (VmDirStringCompareA(pszKey, pszMaxOrigUsnKey, FALSE) == 0)
         {
-            retVal = VmDirStringToINT64(pszVal, &pPingCtrlVal->maxOrigUsn);
+            retVal = VmDirStringToINT64(pszVal, NULL, &pPingCtrlVal->maxOrigUsn);
             BAIL_ON_VMDIR_ERROR(retVal);
         }
     }

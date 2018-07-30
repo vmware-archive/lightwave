@@ -332,14 +332,15 @@ VmDirUpdateUtdVectorLocalCache(
     struct berval*   pPageSyncDoneCtrl
     )
 {
-    DWORD   dwError = 0;
-    DWORD   dwCount = 0;
-    USN     currUsn = 0;
-    USN     cachedUsn = 0;
-    PSTR    pszDupKey = NULL;
-    PSTR    pszKey = NULL;
-    PSTR    pszVal = NULL;
-    PVMDIR_STRING_LIST   pStrList = NULL;
+    DWORD                 dwError = 0;
+    DWORD                 dwCount = 0;
+    USN                   currUsn = 0;
+    USN                   cachedUsn = 0;
+    PSTR                  pszDupKey = NULL;
+    PSTR                  pszKey = NULL;
+    PSTR                  pszVal = NULL;
+    LW_HASHMAP_PAIR       pair = {0};
+    PVMDIR_STRING_LIST    pStrList = NULL;
 
     if (!pUtdVectorMap || !pPageSyncDoneCtrl)
     {
@@ -362,7 +363,7 @@ VmDirUpdateUtdVectorLocalCache(
         {
             pszKey = VmDirStringTokA((PSTR)pStrList->pStringList[dwCount], ":", &pszVal);
 
-            dwError = VmDirStringToINT64(pszVal, &currUsn);
+            dwError = VmDirStringToINT64(pszVal, NULL, &currUsn);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             VMDIR_SAFE_FREE_MEMORY(pszDupKey);
@@ -378,8 +379,10 @@ VmDirUpdateUtdVectorLocalCache(
                         pUtdVectorMap,
                         pszDupKey,
                         (PVOID)currUsn,
-                        NULL);
+                        &pair);
                 BAIL_ON_VMDIR_ERROR(dwError);
+
+                VmDirSimpleHashMapPairFreeKeyOnly(&pair, NULL);
 
                 pszDupKey = NULL;
                 dwError = 0;
@@ -439,7 +442,7 @@ _VmDirUTDVectorStrToPair(
     dwError = VmDirAllocateStringA(pszKey, &pszDupKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pszValue, &Usn);
+    dwError = VmDirStringToINT64(pszValue, NULL, &Usn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pPair->pKey = (PVOID) pszDupKey;

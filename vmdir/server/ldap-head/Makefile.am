@@ -23,10 +23,12 @@ libldap_head_la_SOURCES = \
     operation.c     \
     opstatistic.c   \
     rename.c        \
+    replscope.c     \
     result.c        \
     search.c        \
     vecs.c          \
-    unbind.c
+    unbind.c        \
+    writeattributes.c
 
 libldap_head_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

@@ -74,7 +74,16 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 #define VMDIR_SSL_CIPHER_SUITE_LEN      256
 #define VMDIR_MAX_DN_LEN                1024 // including \0
 #define VMDIR_MAX_PASSWORD_LEN          128 /* As specified in schema for userPassword and replBindPassword attributes */
-#define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */) /* Max value for i64_t is 9,223,372,036,854,775,807 */
+
+/* Max value for ui64_t is 18,446,744,073,709,551,615*/
+#define VMDIR_MAX_UI64_ASCII_STR_LEN    (20 + 1 /* null byte terminator */)
+/* Max value for i64_t is 9,223,372,036,854,775,807 */
+#define VMDIR_MAX_I64_ASCII_STR_LEN     (19 + 1 /* null byte terminator */)
+
+/* Max value for ui32_t is 4,294,967,295 */
+#define VMDIR_MAX_UI32_ASCII_STR_LEN    (10 + 1 /* null byte terminator */)
+/* Range –2,147,483,648 to 2,147,483,647 */
+#define VMDIR_MAX_I32_ASCII_STR_LEN     (11 + 1 /* null byte terminator */)
 
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
 
@@ -307,6 +316,13 @@ VmDirClientRpcFreeMachineInfoW(
 VOID
 VmDirClientRpcFreeKrbInfo(
     PVMDIR_KRB_INFO pKrbInfo
+    );
+
+int
+VmDirCompareMemory(
+    PVOID   pMemory1,
+    PVOID   pMemory2,
+    size_t  size
     );
 
 DWORD
@@ -577,13 +593,6 @@ VmDirStringNCatA(
    size_t number
 );
 
-int64_t
-VmDirStringToLA(
-   PCSTR nptr,
-   PSTR* endptr,
-   int base
-);
-
 int VmDirStringToIA(
    PCSTR pStr
 );
@@ -637,9 +646,31 @@ VmdDirNormalizeString(
     );
 
 DWORD
+VmDirStringToUINT64(
+    PCSTR      pszString,
+    PSTR*      ppEndPtr,
+    UINT64*    pOutVal
+    );
+
+DWORD
 VmDirStringToINT64(
     PCSTR     pszString,
+    PSTR*     ppEndPtr,
     INT64*    pOutVal
+    );
+
+DWORD
+VmDirStringToUINT32(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    UINT32*   pOutVal
+    );
+
+DWORD
+VmDirStringToINT32(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    INT32*    pOutVal
     );
 
 #ifdef _WIN32
