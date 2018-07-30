@@ -14,6 +14,38 @@
 
 #include "includes.h"
 
+#ifdef VMDIR_ENABLE_PAC
+static
+DWORD
+VmDirGetInfoFromUpn(
+    PCSTR pszUpnName,
+    PSTR *pszAccountName,
+    PSTR *pszDomainName,
+    PSID *ppDomainSid
+    );
+
+static
+DWORD
+VmDirKrbCreateAuthzInfo(
+    PCSTR pszAccountName,
+    PSID pUserSid,
+    PCSTR pszDomainName,
+    PSID pDomainSid,
+    VMDIR_GROUP_MEMBERSHIP *pGroupIds,
+    DWORD dwGroupIds,
+    KERB_SID_AND_ATTRIBUTES *pOtherSids,
+    DWORD dwOtherSids,
+    VMDIR_AUTHZ_INFO** ppInfo
+    );
+
+static
+VOID
+VmDirKrbFreeGroupIds(
+    PVMDIR_GROUP_MEMBERSHIP pGroupIds,
+    DWORD dwGroupCount
+    );
+#endif
+
 DWORD
 VmDirKrbRealmNameNormalize(
     PCSTR       pszName,
@@ -261,20 +293,22 @@ error:
 #ifdef VMDIR_ENABLE_PAC
 static
 DWORD
-VmDirGetDomainSidFromUpn(
+VmDirGetInfoFromUpn(
     PCSTR pszUpnName,
+    PSTR *ppszAccountName,
+    PSTR *ppszDomainName,
     PSID *ppDomainSid)
 {
     DWORD dwError = 0;
     PSID pDomainSid = NULL;
-    PSTR pszName = NULL;
+    PSTR pszAccountName = NULL;
     PSTR pszDomainName = NULL;
     PSTR pszDomainDN = NULL;
     PVDIR_ENTRY pEntry = NULL;
 
     dwError = VmDirUPNToNameAndDomain(
                       pszUpnName,
-                      &pszName,
+                      &pszAccountName,
                       &pszDomainName);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -294,11 +328,11 @@ VmDirGetDomainSidFromUpn(
                       &pDomainSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    *ppszAccountName = pszAccountName;
+    *ppszDomainName = pszDomainName;
     *ppDomainSid = pDomainSid;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszName);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     VMDIR_SAFE_FREE_MEMORY(pszDomainDN);
     if (pEntry)
     {
@@ -307,15 +341,19 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_SAFE_FREE_MEMORY(pszAccountName);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
+    VMDIR_SAFE_FREE_MEMORY(pDomainSid);
     goto cleanup;
 }
 
 static
 DWORD
 VmDirKrbCreateAuthzInfo(
-    PCSTR pszUpnName,
-    PSID pDomainSid,
+    PCSTR pszAccountName,
     PSID pUserSid,
+    PCSTR pszDomainName,
+    PSID pDomainSid,
     VMDIR_GROUP_MEMBERSHIP *pGroupIds,
     DWORD dwGroupIds,
     KERB_SID_AND_ATTRIBUTES *pOtherSids,
@@ -325,8 +363,6 @@ VmDirKrbCreateAuthzInfo(
 {
     DWORD dwError = 0;
     VMDIR_AUTHZ_INFO* pInfo = NULL;
-    SIZE_T iUpnNameLength = 0;
-    PWSTR pwszUpnName = NULL;
     NTSTATUS ntStatus = 0;
 
     dwError = VmDirAllocateMemory(
@@ -334,22 +370,27 @@ VmDirKrbCreateAuthzInfo(
                       (PVOID*)&pInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringWFromA(
-                      pszUpnName,
-                      &pwszUpnName);
+    /* AccountName */
+
+    ntStatus = LwRtlUnicodeStringAllocateFromCString(
+                   (LW_UNICODE_STRING *) &pInfo->AccountName,
+                   pszAccountName);
+    dwError = LwNtStatusToWin32Error(ntStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    iUpnNameLength = VmDirStringLenA(pszUpnName);
-
-    pInfo->AccountName.Length = iUpnNameLength;
-    pInfo->AccountName.MaximumLength = iUpnNameLength;
-    pInfo->AccountName.Buffer = pwszUpnName;
 
     /* UserSid */
 
     ntStatus = RtlDuplicateSid(
                        (PSID *)&pInfo->UserSid,
                        pUserSid);
+    dwError = LwNtStatusToWin32Error(ntStatus);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    /* DomainName */
+
+    ntStatus = LwRtlUnicodeStringAllocateFromCString(
+                   (LW_UNICODE_STRING *) &pInfo->DomainName,
+                   pszDomainName);
     dwError = LwNtStatusToWin32Error(ntStatus);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -383,7 +424,6 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_SAFE_FREE_MEMORY(pwszUpnName);
     if (pInfo)
     {
         if (pInfo->DomainSid)
@@ -416,6 +456,9 @@ VmDirKrbGetAuthzInfo(
     DWORD                 dwGroupIds = 0;
     KERB_SID_AND_ATTRIBUTES *pOtherSids = NULL;
     DWORD                 dwOtherSids = 0;
+    PSTR                  pszGroupName = NULL;
+    PSTR                  pszAccountName = NULL;
+    PSTR                  pszDomainName = NULL;
 
     if (IsNullOrEmptyString(pszUpnName) ||
         ppInfo == NULL)
@@ -444,8 +487,10 @@ VmDirKrbGetAuthzInfo(
     }
     pEntry = &entryArray.pEntry[0];
 
-    dwError = VmDirGetDomainSidFromUpn(
+    dwError = VmDirGetInfoFromUpn(
                       pszUpnName,
+                      &pszAccountName,
+                      &pszDomainName,
                       &pDomainSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -485,24 +530,37 @@ VmDirKrbGetAuthzInfo(
                 dwSubAuthorityCount = pGroupSid->SubAuthorityCount
                                     - pDomainSid->SubAuthorityCount;
 
-                dwGroupIds++;
-
                 dwError = VmDirReallocateMemory(
                                   pGroupIds,
                                   (PVOID*)&pGroupIds,
-                                  dwGroupIds * sizeof(VMDIR_GROUP_MEMBERSHIP));
+                                  (dwGroupIds+1) * sizeof(VMDIR_GROUP_MEMBERSHIP));
                 BAIL_ON_VMDIR_ERROR(dwError);
 
                 if (dwSubAuthorityCount == 1)
                 {
-                    pGroupIds[dwGroupIds-1].Identifier[0] = 0;
+                    pGroupIds[dwGroupIds].Identifier[0] = 0;
                 }
                 else
                 {
-                    pGroupIds[dwGroupIds-1].Identifier[0] = pGroupSid->SubAuthority[pGroupSid->SubAuthorityCount-2];
+                    pGroupIds[dwGroupIds].Identifier[0] = pGroupSid->SubAuthority[pGroupSid->SubAuthorityCount-2];
                 }
-                pGroupIds[dwGroupIds-1].Identifier[1] = pGroupSid->SubAuthority[pGroupSid->SubAuthorityCount-1];
-                pGroupIds[dwGroupIds-1].Attributes = SE_GROUP_ENABLED;
+                pGroupIds[dwGroupIds].Identifier[1] = pGroupSid->SubAuthority[pGroupSid->SubAuthorityCount-1];
+                pGroupIds[dwGroupIds].Attributes = SE_GROUP_ENABLED;
+
+                dwError = VmDirCopySingleAttributeString(
+                                  pGroupEntry,
+                                  ATTR_SAM_ACCOUNT_NAME,
+                                  FALSE,
+                                  &pszGroupName);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                ntStatus = LwRtlUnicodeStringAllocateFromCString(
+                               (LW_UNICODE_STRING *)&pGroupIds[dwGroupIds].Name,
+                               pszGroupName);
+                dwError = LwNtStatusToWin32Error(ntStatus);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwGroupIds++;
             }
             else
             {
@@ -542,15 +600,19 @@ VmDirKrbGetAuthzInfo(
     /* Create the authorization info structure */
 
     dwError = VmDirKrbCreateAuthzInfo(
-                  pszUpnName,
-                  pDomainSid,
+                  pszAccountName,
                   pUserSid,
+                  pszDomainName,
+                  pDomainSid,
                   pGroupIds,
                   dwGroupIds,
                   pOtherSids,
                   dwOtherSids,
                   &pInfo);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pGroupIds = NULL;
+    pOtherSids = NULL;
 
     *ppInfo = pInfo;
 
@@ -567,6 +629,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pUserSid);
     VMDIR_SAFE_FREE_MEMORY(pGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pDomainSid);
+    VMDIR_SAFE_FREE_STRINGA(pszAccountName);
+    VMDIR_SAFE_FREE_STRINGA(pszDomainName);
 
     return dwError;
 
@@ -580,7 +644,7 @@ error:
     }
     if (pGroupIds)
     {
-        VmDirFreeMemory(pGroupIds);
+        VmDirKrbFreeGroupIds(pGroupIds, dwGroupIds);
     }
     if (pOtherSids)
     {
@@ -598,11 +662,15 @@ VmDirKrbFreeAuthzInfo(
     {
         if (pInfo->AccountName.Buffer)
         {
-            VmDirFreeMemory(pInfo->AccountName.Buffer);
+            LwFreeUnicodeString(&pInfo->AccountName);
+        }
+        if (pInfo->DomainName.Buffer)
+        {
+            LwFreeUnicodeString(&pInfo->DomainName);
         }
         if (pInfo->GroupIds)
         {
-            VmDirFreeMemory(pInfo->GroupIds);
+            VmDirKrbFreeGroupIds(pInfo->GroupIds, pInfo->GroupIdCount);
         }
         if (pInfo->OtherSids)
         {
@@ -613,6 +681,28 @@ VmDirKrbFreeAuthzInfo(
             RtlMemoryFree(pInfo->DomainSid);
         }
         VmDirFreeMemory(pInfo);
+    }
+}
+
+static
+VOID
+VmDirKrbFreeGroupIds(
+    PVMDIR_GROUP_MEMBERSHIP pGroupIds,
+    DWORD dwGroupCount
+    )
+{
+    DWORD i = 0;
+
+    if (pGroupIds)
+    {
+        for (i = 0; i < dwGroupCount; i++)
+        {
+            if (pGroupIds[i].Name.Buffer)
+            {
+                LwFreeUnicodeString(&pGroupIds[i].Name);
+            }
+        }
+        VmDirFreeMemory(pGroupIds);
     }
 }
 #endif // VMDIR_ENABLE_PAC

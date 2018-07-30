@@ -118,6 +118,7 @@
 #include <lw/types.h>
 #include <lw/hash.h>
 #include <lw/security-types.h>
+#include <lw/lwstr.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>
