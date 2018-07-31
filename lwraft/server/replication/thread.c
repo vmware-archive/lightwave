@@ -217,6 +217,8 @@ _VmDirRaftVoteSchdThread()
             if (waitTimeRemain >= gVmdirGlobals.dwRaftElectionTimeoutMS)
             {
                 //Hasn't recieved ping for an duration of gVmdirGlobals.dwRaftElectionTimeoutMS - switch to candidate
+                VMDIR_LOG_INFO(
+                        VMDIR_LOG_MASK_ALL, "(ELECTION)Follower starting vote. Did not recieve ping in %d ms", waitTimeRemain);
                 gRaftState.role = VDIR_RAFT_ROLE_CANDIDATE;
                 goto startVote;
             } else
@@ -278,6 +280,7 @@ startVote:
             gRaftState.votedFor.lberbv_len > 0)
         {
             //I have voted for someone else in this term via RequestVoteGetReply,
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)Voted for another node become follower in term: %d", term);
             gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
             gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
             waitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
@@ -296,7 +299,7 @@ startVote:
         //Now invoke paralle RPC calls to all (available) peers
         VmDirConditionBroadcast(gRaftRequestPendingCond);
 
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRaftVoteSchdThread: wait vote result; role %d term %d",
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRaftVoteSchdThread: wait vote result; role %d term %d",
                        gRaftState.role, gRaftState.currentTerm);
 
         //Wait for (majority of) peer threads to complete their RRC calls or timeout.
@@ -523,7 +526,7 @@ _VmDirEvaluateVoteResult(UINT64 *waitTime)
 
     //Now evalute vote outcome
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-      "_VmDirEvaluateVoteResult: evaluting vote outcome: term %d role %d consensusTerm %d consensusCnt %d",
+      "(ELECTION)_VmDirEvaluateVoteResult: evaluting vote outcome: term %d role %d consensusTerm %d consensusCnt %d",
       gRaftState.currentTerm, gRaftState.role, gRaftState.voteConsensusTerm, gRaftState.voteConsensusCnt);
 
     uWaitTime = gVmdirGlobals.dwRaftElectionTimeoutMS;
@@ -1149,7 +1152,7 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
         } else
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-               "_VmDirRequestVoteRpc: RPC call VmDirRaftRequestVote failed to peer %s error %d role %d term %d",
+               "(ELECTION)_VmDirRequestVoteRpc: RPC call VmDirRaftRequestVote failed to peer %s error %d role %d term %d",
                pPeerHostName, dwError, gRaftState.role, gRaftState.currentTerm);
         }
         goto done;
@@ -1180,7 +1183,7 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
 
         VmDirPersistTerm(reqVoteArgs.currentTerm);
 
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRequestVoteRpc: peer (%s) term %d > current term %d, change role to follower",
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRequestVoteRpc: peer (%s) term %d > current term %d, change role to follower",
                        pPeerHostName, reqVoteArgs.currentTerm, oldTerm);
         goto done;
     }
@@ -1188,7 +1191,7 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
     if (gRaftState.role != VDIR_RAFT_ROLE_CANDIDATE)
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmDirRequestVoteRpc: server role was changed to %d - forfeit this RPC result; term %d; peer: (%s)(term %d)",
+          "(ELECTION)_VmDirRequestVoteRpc: server role was changed to %d - forfeit this RPC result; term %d; peer: (%s)(term %d)",
           gRaftState.role, gRaftState.currentTerm, pPeerHostName, reqVoteArgs.currentTerm);
         goto done;
     }
@@ -1196,7 +1199,7 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
     if (reqVoteArgs.voteGranted != 0)
     {
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-           "_VmDirRequestVoteRpc: vote denied from peer %s role %d term %d granted-code %d",
+           "(ELECTION)_VmDirRequestVoteRpc: vote denied from peer %s role %d term %d granted-code %d",
           pPeerHostName, gRaftState.role, gRaftState.currentTerm, reqVoteArgs.voteGranted);
         gRaftState.voteDeniedCnt++;
         if (reqVoteArgs.voteGranted == 2)
@@ -1221,13 +1224,13 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
             VmDirConditionSignal(gGotVoteResultCond);
 
             VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-              "_VmDirRequestVoteRpc: vote granted from %s and reached majority consensusCount %d for term %d; become leader in term %d",
+              "(ELECTION)_VmDirRequestVoteRpc: vote granted from %s and reached majority consensusCount %d for term %d; become leader in term %d",
               pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm, gRaftState.currentTerm);
             goto done;
         }
     }
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "_VmDirRequestVoteRpc: vote granted from peer %s voteConsensusCnt %d (term %d)",
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "(ELECTION)_VmDirRequestVoteRpc: vote granted from peer %s voteConsensusCnt %d (term %d)",
                    pPeerHostName, gRaftState.voteConsensusCnt, gRaftState.voteConsensusTerm);
 
 done:
@@ -1380,7 +1383,7 @@ ReplicateLog:
     {
         //Other RPC calls or events changed the server's role, forfeit the current RPC call result.
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-          "_VmDirAppendEntriesRpc: server role changed after RPC call; role %d term %d cmd %d; peer: (%s) term %d",
+          "(ELECTION)_VmDirAppendEntriesRpc: server role changed after RPC call; role %d term %d cmd %d; peer: (%s) term %d",
           gRaftState.role, gRaftState.currentTerm, gRaftState.cmd, pPeerHostName, args.currentTerm);
         goto cleanup;
     }
