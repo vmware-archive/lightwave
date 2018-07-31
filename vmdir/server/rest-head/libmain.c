@@ -101,6 +101,7 @@ VmDirRESTServerInit(
     {
         {"certs", VmDirRESTApiGetCertsModule},
         {"password", VmDirRESTApiGetPasswordModule},
+        {"join", VmDirRESTApiGetJoinModule},
         {NULL, NULL}
     };
 

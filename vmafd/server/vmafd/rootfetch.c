@@ -249,16 +249,30 @@ VmAfdRootFetchTask(
 
     VMAFD_LOCK_MUTEX(bIsLocked, &gVmafdGlobals.pCertUpdateMutex);
 
-    dwError = VmAfdLDAPConnect(
-                pArgs->pszDCName,
-                pArgs->nPort,
-                pArgs->pszUpn,
-                pArgs->pszPassword,
-                &pLotus);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (gVmafdGlobals.bUseVmDirREST)
+    {
+        dwError = VmAfdRestGetCACerts(
+                    pArgs->pszDCName,
+                    pArgs->pszDomain,
+                    pArgs->pszUserName,
+                    pArgs->pszPassword,
+                    TRUE,
+                    &pCACerts);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdLDAPConnect(
+                    pArgs->pszDCName,
+                    pArgs->nPort,
+                    pArgs->pszUpn,
+                    pArgs->pszPassword,
+                    &pLotus);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmAfdQueryCACerts(pLotus, NULL, TRUE, &pCACerts);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdQueryCACerts(pLotus, NULL, TRUE, &pCACerts);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwError = VmAfdProcessCACerts(pCertStore,
                 CERT_ENTRY_TYPE_TRUSTED_CERT, pCACerts, bLogOnDuplicate);

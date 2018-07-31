@@ -31,11 +31,6 @@ _VmDirCopyFromRpcMachineInfo(
     PVMDIR_MACHINE_INFO_A* ppMachineInfoOut
     );
 
-static
-DWORD
-_VmDirWriteToKeyTabFile(
-    PVMDIR_KRB_INFO pKrbInfo
-    );
 
 /*
  * APIs for HA Topology Management ends here
@@ -171,7 +166,7 @@ VmDirClientJoinAtomic(
                           );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirWriteToKeyTabFile(pKrbInfo);
+        dwError = VmDirWriteToKeyTabFile(pKrbInfo);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -497,58 +492,5 @@ error:
     {
         VmDirFreeKrbInfo(pKrbInfo);
     }
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirWriteToKeyTabFile(
-    PVMDIR_KRB_INFO pKrbInfo
-    )
-{
-    DWORD                   dwError = 0;
-    PVMDIR_KEYTAB_HANDLE    pKeyTabHandle = NULL;
-    CHAR                    pszKeyTabFileName[VMDIR_MAX_FILE_NAME_LEN] = {0};
-    DWORD                   dwIndex = 0;
-    DWORD                   dwWriteLen = 0;
-
-    if (!pKrbInfo)
-    {
-        dwError = VmDirGetRegKeyTabFile(pszKeyTabFileName);
-        if (dwError)
-        {
-            dwError = ERROR_SUCCESS;
-            goto cleanup;
-        }
-
-        dwError = VmDirKeyTabOpen(pszKeyTabFileName, "a", &pKeyTabHandle);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        for (; dwIndex < pKrbInfo->dwCount; ++dwIndex)
-        {
-            DWORD dwByteSize = pKrbInfo->pKrbBlobs[dwIndex].dwCount;
-            dwWriteLen = (DWORD)fwrite(
-                                    pKrbInfo->pKrbBlobs[dwIndex].krbBlob,
-                                    1,
-                                    dwByteSize,
-                                    pKeyTabHandle->ktfp
-                                    );
-            if (dwWriteLen != dwByteSize)
-            {
-                dwError = ERROR_IO;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-    }
-
-cleanup:
-
-    if (pKeyTabHandle)
-    {
-        VmDirKeyTabClose(pKeyTabHandle);
-    }
-    return dwError;
-error:
-
     goto cleanup;
 }

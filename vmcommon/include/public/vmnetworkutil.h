@@ -1,5 +1,5 @@
 /*
- * Copyright © 2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the ?~@~\License?~@~]); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,26 +12,22 @@
  * under the License.
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <stdarg.h>
-#include <string.h>
-#include <pthread.h>
-#include <errno.h>
-#include <arpa/inet.h>
+#ifndef VM_NETWORK_UTILS_H_
+#define VM_NETWORK_UTILS_H_
 
-#include <lw/types.h>
-#include <lw/hash.h>
+DWORD
+VmFormatUrl(
+    PCSTR    pszScheme,
+    PCSTR    pszHost,
+    DWORD    dwPort,
+    PCSTR    pszPath,
+    PCSTR    pszQuery,
+    PSTR*    ppszUrl
+    );
 
-#include <curl/curl.h>
-#include <jansson.h>
+BOOLEAN
+VmIsIPV6AddrFormat(
+    PCSTR   pszAddr
+    );
 
-#include "defines.h"
-#include "errorcode.h"
-#include "memory.h"
-#include "vmstring.h"
-#include "structs.h"
-#include "vmhttpclient.h"
-#include "vmjsonresult.h"
-#include "vmmetrics.h"
-#include "vmnetworkutil.h"
+#endif /* VM_NETWORK_UTILS_H_ */

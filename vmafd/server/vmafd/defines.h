@@ -372,3 +372,4 @@ if (bLocked) \
 #define VMDIR_REST_API_HTTPS_PORT           7479
 #define VMDIR_REST_API_BASE                 "/v1/vmdir/api"
 #define VMDIR_REST_API_PASSWORD_REFRESH_CMD "password/refresh"
+#define VMDIR_REST_API_GET_CERTS_CMD        "certs/rootcerts"

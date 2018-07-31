@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libvmdirserverapi.la
 
 libvmdirserverapi_la_SOURCES = \
     certs.c \
+    joinatomic.c \
     password.c
 
 libvmdirserverapi_la_CPPFLAGS = \

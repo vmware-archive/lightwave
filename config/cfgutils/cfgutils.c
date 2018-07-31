@@ -87,6 +87,12 @@ VmwDeployVecsSetPermission(
     DWORD dwAccessMask
     );
 
+static
+DWORD
+VmwReadUseVmDirRestFlag(
+    BOOLEAN *pbUseVmDirRest
+    );
+
 DWORD
 VmwDeploySetupInstance(
     PVMW_IC_SETUP_PARAMS pParams
@@ -938,6 +944,7 @@ VmwDeploySetupClientWithDC(
     BOOLEAN bJoined = FALSE;
     BOOLEAN bAcquiredCertificate = FALSE;
     DWORD dwRetryCount = 0;
+    BOOLEAN bUseVmDirRest = FALSE;
 
     VMW_DEPLOY_LOG_INFO(
             "Joining system to domain [%s] using controller at [%s]",
@@ -965,12 +972,26 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployValidateServerCredentials(
-                    pParams->pszServer,
-                    pParams->pszUsername,
-                    pParams->pszPassword,
-                    pParams->pszDomainName);
+    /*
+     * check if current configuration is to use rest calls
+     * to communicate with directory
+    */
+    dwError = VmwReadUseVmDirRestFlag(&bUseVmDirRest);
     BAIL_ON_DEPLOY_ERROR(dwError);
+
+    /*
+     * the following validation uses ldap. skip if using rest.
+     * rest path acquires token before join process.
+    */
+    if (!bUseVmDirRest)
+    {
+        dwError = VmwDeployValidateServerCredentials(
+                        pParams->pszServer,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszDomainName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     if (pParams->bDisableAfdListener)
     {
@@ -1539,6 +1560,69 @@ cleanup:
 error:
 
     *ppszPath = NULL;
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwReadUseVmDirRestFlag(
+    BOOLEAN *pbUseVmDirRest
+    )
+{
+    DWORD dwError = 0;
+    HANDLE hConnection = NULL;
+    HKEY   hRootKey = NULL;
+    DWORD  dwValue = 0;
+    DWORD  dwValueSize = sizeof(dwValue);
+    BOOLEAN bUseVmDirRest = FALSE;
+
+    dwError = RegOpenServer(&hConnection);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegOpenKeyExA(
+                    hConnection,
+                    NULL,
+                    "HKEY_THIS_MACHINE",
+                    0,
+                    KEY_READ,
+                    &hRootKey);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = RegGetValueA(
+                    hConnection,
+                    hRootKey,
+                    "Services\\vmafd\\Parameters",
+                    "UseVmDirREST",
+                    RRF_RT_REG_DWORD,
+                    NULL,
+                    (PVOID)&dwValue,
+                    &dwValueSize);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    bUseVmDirRest = dwValue > 0 ? TRUE : FALSE;
+
+    *pbUseVmDirRest = bUseVmDirRest;
+
+cleanup:
+
+    if (hConnection)
+    {
+        if (hRootKey)
+        {
+            RegCloseKey(hConnection, hRootKey);
+        }
+
+        RegCloseServer(hConnection);
+    }
+
+    return dwError;
+
+error:
 
     goto cleanup;
 }

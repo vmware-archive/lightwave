@@ -1646,6 +1646,10 @@ VmDirKeyTabMakeRecord(
     PBYTE *ppKtRecord,
     PDWORD pdwRecordLen);
 
+DWORD
+VmDirWriteToKeyTabFile(
+    PVMDIR_KRB_INFO pKrbInfo
+    );
 
 DWORD
 VmDirDestroyDefaultKRB5CC(

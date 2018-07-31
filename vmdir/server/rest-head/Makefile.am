@@ -22,6 +22,7 @@ librest_head_la_SOURCES += \
     param.c \
     resource.c \
     certsapi.c \
+    joinapi.c \
     passwordapi.c \
     result.c \
     utils.c

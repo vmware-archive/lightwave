@@ -991,6 +991,63 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmAfSrvRestClientPrejoinAtomic(
+    PCSTR pszDCHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    PVMDIR_MACHINE_INFO_A *ppMachineInfo
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszCAPath = NULL;
+    PSTR  pszCAPath = NULL;
+    PSTR  pszToken = NULL;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+
+    dwError = VmAfSrvGetCAPath(&pwszCAPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    /* acquire token */
+    dwError = VmAfdAcquireTokenForVmDirREST(
+                  pszDCHostName,
+                  pszDomainName,
+                  pszUserName,
+                  pszPassword,
+                  pszCAPath,
+                  &pszToken);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirRestClientPreJoinAtomic(
+                  pszDCHostName,
+                  pszToken,
+                  pszCAPath,
+                  pszMachineName,
+                  pszPassword,
+                  pszOrgUnit,
+                  &pMachineInfo);
+   BAIL_ON_VMAFD_ERROR(dwError);
+
+   *ppMachineInfo = pMachineInfo;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszCAPath);
+    VMAFD_SAFE_FREE_MEMORY(pszCAPath);
+    VMAFD_SAFE_FREE_MEMORY(pszToken);
+    return dwError;
+
+error:
+    VmDirClientFreeMachineInfo(pMachineInfo);
+    goto cleanup;
+}
+
 DWORD
 VmAfSrvJoinVmDir2(
     PWSTR            pwszServerName,     /* IN            */
@@ -1143,16 +1200,32 @@ VmAfSrvJoinVmDir2(
 
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
     {
-        dwError = VmDirClientJoinAtomic(
-                      pszDCHostname,
-                      pszUserName,
-                      pszPassword,
-                      pszDomainName,
-                      pszMachineName,
-                      pszOrgUnit,
-                      dwDirJoinFlags,
-                      &pMachineInfo);
-       BAIL_ON_VMAFD_ERROR(dwError);
+        if (gVmafdGlobals.bUseVmDirREST &&
+            dwDirJoinFlags == VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
+        {
+            dwError = _VmAfSrvRestClientPrejoinAtomic(
+                          pszDCHostname,
+                          pszUserName,
+                          pszPassword,
+                          pszDomainName,
+                          pszMachineName,
+                          pszOrgUnit,
+                          &pMachineInfo);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirClientJoinAtomic(
+                          pszDCHostname,
+                          pszUserName,
+                          pszPassword,
+                          pszDomainName,
+                          pszMachineName,
+                          pszOrgUnit,
+                          dwDirJoinFlags,
+                          &pMachineInfo);
+           BAIL_ON_VMAFD_ERROR(dwError);
+        }
     }
     else
     {

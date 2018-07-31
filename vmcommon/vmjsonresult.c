@@ -147,8 +147,10 @@ _VmJsonPopulateResultValue(
 
     switch(pResultVal->nType)
     {
-        case JSON_RESULT_OBJECT:
         case JSON_RESULT_ARRAY:
+            pResultVal->value.pArray = pPosition;
+            break;
+        case JSON_RESULT_OBJECT:
         case JSON_RESULT_NULL:
             pResultVal->value.pObject = pPosition;
             break;
@@ -212,6 +214,42 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmJsonResultIterateArrayAt(
+    PVM_JSON_POSITION pPosition,
+    PVOID pUserData,
+    PFN_JSON_RESULT_ARRAY_CB pfnCB
+    )
+{
+    DWORD dwError = 0;
+    size_t nIndex = 0;
+    size_t nSize = 0;
+    json_t *pValue = NULL;
+
+    if (!pPosition ||
+        !pfnCB ||
+        json_typeof((json_t *)pPosition) != JSON_RESULT_ARRAY)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    nSize = json_array_size(pPosition);
+
+    json_array_foreach(pPosition, nIndex, pValue)
+    {
+        dwError = pfnCB(pUserData, nSize, nIndex, pValue);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 
 VOID
 VmJsonResultFreeHandle(

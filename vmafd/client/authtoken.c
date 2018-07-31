@@ -14,11 +14,13 @@
 
 #include "includes.h"
 
+static
 DWORD
-VmAfdOidcClientBuild(
-    PCSTR           pcszServer,     /* IN OPTIONAL (Required if Domain is specified) */
-    PCSTR           pcszDomain,     /* IN OPTIONAL (Required if Server is specified)*/
-    POIDC_CLIENT*   ppClient        /* OUT */
+_VmAfdOidcClientBuild(
+    PCSTR           pcszServer,
+    PCSTR           pcszDomain,
+    PCSTR           pcszLocalCertsPath,
+    POIDC_CLIENT*   ppClient
     )
 {
     DWORD           dwError         = 0;
@@ -70,7 +72,7 @@ VmAfdOidcClientBuild(
                 VMAFD_OIDC_PORT,
                 pszDomain,
                 NULL,
-                LIGHTWAVE_TLS_CA_PATH
+                pcszLocalCertsPath
                 );
     if (dwSSOError)
     {
@@ -93,6 +95,20 @@ error:
     }
 
     goto cleanup;
+}
+
+DWORD
+VmAfdOidcClientBuild(
+    PCSTR           pcszServer,     /* IN OPTIONAL (Required if Domain is specified) */
+    PCSTR           pcszDomain,     /* IN OPTIONAL (Required if Server is specified)*/
+    POIDC_CLIENT*   ppClient        /* OUT */
+    )
+{
+    return _VmAfdOidcClientBuild(
+               pcszServer,
+               pcszDomain,
+               LIGHTWAVE_TLS_CA_PATH,
+               ppClient);
 }
 
 DWORD
@@ -120,9 +136,9 @@ VmAfdOidcClientAcquireToken(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    if (IsNullOrEmptyString(pcszUsername) || IsNullOrEmptyString(pcszPassword) || IsNullOrEmptyString(pcszDomain))
+    if (!IsNullOrEmptyString(pcszUsername) || !IsNullOrEmptyString(pcszPassword) || !IsNullOrEmptyString(pcszDomain))
     {
-        if (IsNullOrEmptyString(pcszUsername) && IsNullOrEmptyString(pcszPassword) && IsNullOrEmptyString(pcszDomain))
+        if (!IsNullOrEmptyString(pcszUsername) && !IsNullOrEmptyString(pcszPassword) && !IsNullOrEmptyString(pcszDomain))
         {
             dwError = VmAfdAllocateStringA(pcszDomain, &pszDomain);
             BAIL_ON_VMAFD_ERROR(dwError);
@@ -245,6 +261,7 @@ VmAfdAcquireTokenForVmDirREST(
     PCSTR pszDomain,
     PCSTR pszUser,
     PCSTR pszPass,
+    PCSTR pszLocalCertsPath,
     PSTR *ppszToken
     )
 {
@@ -262,7 +279,11 @@ VmAfdAcquireTokenForVmDirREST(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdOidcClientBuild(pszServer, pszDomain, &pClient);
+    dwError = _VmAfdOidcClientBuild(
+                  pszServer,
+                  pszDomain,
+                  pszLocalCertsPath,
+                  &pClient);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfdOidcClientAcquireToken(

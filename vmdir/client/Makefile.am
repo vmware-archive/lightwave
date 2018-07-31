@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libvmdirclient.la
 idl_srcdir=$(top_srcdir)/vmdir/idl
 
 libvmdirclient_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
@@ -23,6 +24,7 @@ libvmdirclient_la_SOURCES = \
     redundancy.c\
     repadmin.c \
     replication.c \
+    restprejoin.c \
     rpc.c \
     setupldu.c \
     shell.c \
@@ -38,6 +40,7 @@ libvmdirclient_la_SOURCES = \
     vmdirsuperlog_cstub.c
 
 libvmdirclient_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @top_builddir@/vmdir/common/libcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

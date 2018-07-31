@@ -430,3 +430,15 @@ DWORD
 VmDirRESTApiGetPasswordModule(
     PREST_MODULE*   ppRestModule
     );
+
+//joinapi.c
+DWORD
+VmDirRESTApiGetJoinModule(
+    PREST_MODULE*   ppRestModule
+    );
+
+DWORD
+VmDirRESTJoinAtomic(
+    void*   pIn,
+    void**  ppOut
+    );

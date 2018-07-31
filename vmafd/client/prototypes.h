@@ -509,6 +509,7 @@ VmAfdAcquireTokenForVmDirREST(
     PCSTR pszDomain,
     PCSTR pszUser,
     PCSTR pszPass,
+    PCSTR pszLocalCertsPath,
     PSTR *ppszToken
     );
 // oidctoafderror.c

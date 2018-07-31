@@ -74,6 +74,10 @@ typedef void *VMCISLIB_BIND_T;
 #include <vmdirclient.h>
 #include <type_spec.h>
 
+#include <vmhttpclient.h>
+#include <vmjsonresult.h>
+#include <vmnetworkutil.h>
+
 #include "defines.h"
 #include "structs.h"
 #include "vmdir_h.h"

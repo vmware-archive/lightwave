@@ -16,69 +16,6 @@
 
 static
 DWORD
-_FormatUrl(
-    PCSTR    pszScheme,      /* IN     */
-    PCSTR    pszHost,        /* IN     */
-    DWORD    dwPort,         /* IN     */
-    PCSTR    pszPath,        /* IN     */
-    PCSTR    pszQuery,       /* IN     */
-    PSTR*    ppszUrl         /*    OUT */
-    )
-{
-    DWORD dwError = 0;
-    PSTR pszUrl = NULL;
-    PSTR pszPort = NULL;
-    PSTR pszHostPrefix = "";
-    PSTR pszHostSuffix = "";
-
-    if (IsNullOrEmptyString(pszScheme) ||
-        IsNullOrEmptyString(pszHost) ||
-        IsNullOrEmptyString(pszPath))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    if (VmAfdIsIPV6AddrFormat(pszHost))
-    {
-        pszHostPrefix = "[";
-        pszHostSuffix = "]";
-    }
-
-    if (dwPort)
-    {
-        dwError = VmAfdAllocateStringPrintf(
-                        &pszPort,
-                        ":%d",
-                        dwPort);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdAllocateStringPrintf(
-                        &pszUrl,
-                        "%s://%s%s%s%s%s%s",
-                        pszScheme,
-                        pszHostPrefix,
-                        pszHost,
-                        pszHostSuffix,
-                        (pszPort ? pszPort : ""),
-                        pszPath,
-                        (pszQuery ? pszQuery : ""));
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppszUrl = pszUrl;
-
-cleanup:
-    VMAFD_SAFE_FREE_STRINGA(pszPort);
-    return dwError;
-
-error:
-    VMAFD_SAFE_FREE_STRINGA(pszUrl);
-    goto cleanup;
-}
-
-static
-DWORD
 _VmAfdJsonResultPasswordCB(
     PVOID pUserData,
     PCSTR pszKey,
@@ -198,6 +135,7 @@ VmAfdRestPasswordRefresh(
                   pszDomain,
                   pszUser,
                   pszPass,
+                  pszCAPath,
                   &pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -208,12 +146,13 @@ VmAfdRestPasswordRefresh(
     BAIL_ON_VMAFD_ERROR(dwError);
 
     /* make rest url */
-    dwError = _FormatUrl("https",
-                         pszServer,
-                         VMDIR_REST_API_HTTPS_PORT,
-                         VMDIR_REST_API_BASE"/"VMDIR_REST_API_PASSWORD_REFRESH_CMD,
-                         pszParamString,
-                         &pszUrl);
+    dwError = VmFormatUrl(
+                  "https",
+                  pszServer,
+                  VMDIR_REST_API_HTTPS_PORT,
+                  VMDIR_REST_API_BASE"/"VMDIR_REST_API_PASSWORD_REFRESH_CMD,
+                  pszParamString,
+                  &pszUrl);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmHttpClientInit(&pHttpClient, pszCAPath);
