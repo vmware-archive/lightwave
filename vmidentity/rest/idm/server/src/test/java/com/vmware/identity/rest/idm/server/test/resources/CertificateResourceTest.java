@@ -144,7 +144,7 @@ public class CertificateResourceTest {
     @Test
     public void testGetTenantPrivateKeyWithAdminRole() throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024);
+        keyGen.initialize(2048);
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
         expect(mockCasIDMClient.getTenantPrivateKey(TEST_TENANT)).andReturn(privateKey);
@@ -187,7 +187,7 @@ public class CertificateResourceTest {
     @Test
     public void testGetTenantPrivateKeyWithNonAdminRole() throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024);
+        keyGen.initialize(2048);
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
         expect(mockSecurityContext.isUserInRole(Role.ADMINISTRATOR.name())).andReturn(false);
@@ -324,7 +324,7 @@ public class CertificateResourceTest {
 
     private PrivateKeyDTO getPrivateKeyDTO() throws IOException, GeneralSecurityException {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024);
+        keyGen.initialize(2048);
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
         return new PrivateKeyDTO(privateKey);

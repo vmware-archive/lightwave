@@ -155,7 +155,7 @@ public class TestDataGenerator {
     public static PrivateKeyDTO getTestPrivateKeyDTO() throws GeneralSecurityException {
         String algorithm = "RSA";
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
-        keyGen.initialize(1024);
+        keyGen.initialize(2048);
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
         return new PrivateKeyDTO(privateKey);

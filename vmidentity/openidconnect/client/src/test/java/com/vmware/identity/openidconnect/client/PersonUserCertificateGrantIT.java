@@ -51,7 +51,7 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
         OIDCClientITBase.setUp("config.properties");
 
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair keyPair = keyGen.generateKeyPair();
         personUserPrivateKey = (RSAPrivateKey) keyPair.getPrivate();
         personUserCertificate = TestUtils.generateCertificate(keyPair, "PersonUser", systemTenantAdminUsername);
@@ -108,7 +108,7 @@ public class PersonUserCertificateGrantIT extends OIDCClientITBase {
     @Test
     public void testFailWithInvalidSignature() throws Exception {
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair keyPair = keyGen.generateKeyPair();
         RSAPrivateKey wrongPrivateKey = (RSAPrivateKey) keyPair.getPrivate();
 

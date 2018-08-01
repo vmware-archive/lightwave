@@ -130,7 +130,7 @@ public class TestContext {
 
         Security.addProvider(new BouncyCastleProvider());
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA", "BC");
-        keyGenerator.initialize(1024, new SecureRandom());
+        keyGenerator.initialize(2048, new SecureRandom());
 
         KeyPair kp = keyGenerator.genKeyPair();
         TENANT_PRIVATE_KEY = (RSAPrivateKey) kp.getPrivate();

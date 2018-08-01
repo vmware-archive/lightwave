@@ -1332,7 +1332,7 @@ public class TokenControllerTest {
         Map<String, String> params = tokenRequestParametersClient(flow);
 
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA");
-        keyGenerator.initialize(1024);
+        keyGenerator.initialize(2048);
         KeyPair kp = keyGenerator.genKeyPair();
         RSAPrivateKey privateKey = (RSAPrivateKey) kp.getPrivate();
 
