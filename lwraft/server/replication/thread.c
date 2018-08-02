@@ -667,9 +667,14 @@ error:
     goto cleanup;
 }
 
+/*
+ * should re-factor into two functions - for leader and follower
+ */
 static
 DWORD
-VmDirRaftPeerThread(void *ctx)
+_VmDirRaftPeerThread(
+    void *ctx
+    )
 {
     BOOLEAN bLock = FALSE;
     UINT64 pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
@@ -699,13 +704,16 @@ VmDirRaftPeerThread(void *ctx)
                         pPeerHostName, gRaftState.role, gRaftState.currentTerm);
 
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
         pProxySelf->proxy_state = RPC_IDLE;
         if (_VmDirPeersIdleInLock() >= (gRaftState.clusterSize/2))
         {
             VmDirConditionSignal(gPeersReadyCond);
         }
+
         VmDirConditionTimedWait(gRaftRequestPendingCond, gRaftStateMutex, pingTimeout);
         pProxySelf->proxy_state = RPC_BUSY;
+
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
 appendEntriesRepeat:
@@ -716,43 +724,49 @@ appendEntriesRepeat:
 
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: exit RequestPendingCond (peer %s); role %d term %d",
                         pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
         cmd = gRaftState.cmd;
+
+        now = VmDirGetTimeInMilliSec();
+
         if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
         {
-            now = VmDirGetTimeInMilliSec();
             if (cmd == ExecNone)
             {
                 VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: current gRaftState.cmd %d (peer %s); role %d term %d",
                                 gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+
                 if ((now - prevPingTime) >= gVmdirGlobals.dwRaftPingIntervalMS)
                 {
-                    prevPingTime = now;
-                    pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
                     cmd = ExecPing;
                     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: will ExecPing to peer %s; role %d term %d",
                                     pPeerHostName, gRaftState.role, gRaftState.currentTerm);
-                } else
+                }
+                else
                 {
                     pingTimeout = now - prevPingTime;
                     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
                     continue;
                 }
-            } else
-            {
-                // AppendEntriesRpc - reset ping time timeout
-                pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
-                prevPingTime = now;
             }
-        } else
+
+            prevPingTime = now;
+        }
+        else
         {
             //Reset prevPingTime so that ping will be sent immediately switching to leader.
             prevPingTime = 0;
         }
+
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
         VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "VmDirRaftPeerThread: to exe gRaftState.cmd %d (peer %s); role %d term %d",
                         gRaftState.cmd, pPeerHostName, gRaftState.role, gRaftState.currentTerm);
+
+        pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS;
+
         switch(cmd)
         {
             case ExecReqestVote:
@@ -772,6 +786,7 @@ appendEntriesRepeat:
         }
 
         VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
+
         if (gRaftState.role == VDIR_RAFT_ROLE_LEADER &&
             gRaftState.cmd == ExecAppendEntries &&
             gEntries && gEntries->index > pProxySelf->matchIndex)
@@ -783,10 +798,27 @@ appendEntriesRepeat:
             goto appendEntriesRepeat;
         }
 
-        if (gRaftState.cmd == ExecReqestVote)
+        // if we reach here, next cmd should be ExecNone.
+        gRaftState.cmd = ExecNone;
+
+        if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
         {
-            //Don't send more than one votes to the same peer in this round (term) of votes.
+            UINT64 tAfterCmdExeTime = VmDirGetTimeInMilliSec();
+            UINT64 tLatency         = tAfterCmdExeTime - prevPingTime;
+
             gRaftState.cmd = ExecNone;
+
+            if (tLatency >= gVmdirGlobals.dwRaftPingIntervalMS)
+            {
+                VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+                goto appendEntriesRepeat;   // immediately do ExecNone (should translate into ExecPing)
+            }
+            else
+            {
+                pingTimeout = gVmdirGlobals.dwRaftPingIntervalMS  - tLatency;
+                VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
+                continue;
+            }
         }
 
         VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
@@ -873,7 +905,7 @@ _VmDirNewPeerProxyInLock(PCSTR pHostname, VDIR_RAFT_PROXY_STATE state)
     //If the proxy is in promo process, then it Will be set to RpcIdle when receving a vote request from the peer.
     pPp->proxy_state = state;
 
-    dwError = VmDirCreateThread(&pPp->tid, TRUE, VmDirRaftPeerThread, (PVOID)pPp);
+    dwError = VmDirCreateThread(&pPp->tid, TRUE, _VmDirRaftPeerThread, (PVOID)pPp);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "VmDirNewPeerProxy: added new peer proxy for host %s", pHostname);
