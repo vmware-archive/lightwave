@@ -96,7 +96,8 @@ public class AuthorizationRequestFilter implements ContainerRequestFilter {
             } else {
 
                 // TODO Move error handling here so that we don't have to explicitly do it everywhere else
-                request.verify();
+                // Note: token is verified as part of building the request object
+                // request.verify();
                 request.validateContents();
 
                 if (requiredRole != null) {
