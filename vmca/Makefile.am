@@ -17,4 +17,5 @@ SUBDIRS = \
     jdepends \
     java \
     tools \
-    $(PYTHON_DIR)
+    $(PYTHON_DIR) \
+    unit-tests

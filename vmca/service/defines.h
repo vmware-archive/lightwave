@@ -89,22 +89,6 @@
 
 #endif
 
-
-#ifndef _WIN32
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"
-#define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
-#else
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
-#define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
-#endif
-
-#if 0 /* TBD: Adam */
-#define VMDIR_REG_KEY_DC_ACCOUNT_DN "dcAccountDN"
-#endif
-#define VMDIR_REG_KEY_DC_PASSWORD   "dcAccountPassword"
-#define VMDIR_REG_KEY_DC_ACCOUNT    "dcAccount"
-#define VMAFD_REG_KEY_DOMAIN_NAME   "DomainName"
-
 // States
 
 typedef DWORD VMCA_FUNC_LEVEL;
@@ -191,12 +175,6 @@ typedef DWORD VMCA_FUNC_LEVEL;
         }
 
 #define BAIL_ON_VMREST_ERROR(dwError)           \
-    if (dwError)                                \
-    {                                           \
-        goto error;                             \
-    }
-
-#define BAIL_ON_JSON_PARSE_ERROR(dwError)       \
     if (dwError)                                \
     {                                           \
         goto error;                             \
@@ -310,13 +288,3 @@ if (bLocked) \
   pthread_rwlock_unlock (pmutex); \
   (bLocked) = FALSE; \
 }
-
-// VMCA Policy
-#define VMCA_POLICY_FILE_PATH               VMCA_CONFIG_DIR "/vmca-policy.json"
-#define VMCA_POLICY_REQ_UPN_DN              "req.upn.dn"
-#define VMCA_POLICY_COND_BEGINS             "begins"
-#define VMCA_POLICY_REQ_UPN_RDN             "req.upn.dn.rdn"
-#define VMCA_POLICY_REQ_CSR_SUBJ_ORGS       "req.csr.subj.o"
-
-#define VMCA_POLICY_NUM                     1
-#define VMCA_POLICY_SN_NAME                 "SNValidate"

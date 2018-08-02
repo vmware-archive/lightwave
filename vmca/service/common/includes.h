@@ -1,10 +1,10 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
- * 
+ *
  * Unless required by applicable law or agreed to in writing, software
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
@@ -12,8 +12,8 @@
  * under the License.
  */
 
-#ifndef _VMCA_SERVICE_INCLUDES_H__
-#define _VMCA_SERVICE_INCLUDES_H__
+#ifndef _VMCA_SERVICE_COMMON_INCLUDES_H__
+#define _VMCA_SERVICE_COMMON_INCLUDES_H__
 
 #ifdef __cplusplus
 extern "C" {
@@ -25,8 +25,6 @@ extern "C" {
 
 #include <config.h>
 #include <vmcasys.h>
-#include <vmafdclient.h>
-#include <vmafdtypes.h>
 
 #include <lw/types.h>
 #include <lw/base.h>
@@ -53,26 +51,16 @@ extern "C" {
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
-#include <vmca_h.h>
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
 
-#ifdef REST_ENABLED
-
-#include <vmrest.h>
 #include <jansson.h>
-#include <ssotypes.h>
-#include <oidc_types.h>
-#include <oidc.h>
-
-#endif
 
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
 #include "externs.h"
 #include "vmca_error.h"
-#include "errormap.h"
 
 #else
 
@@ -98,9 +86,6 @@ extern "C" {
 #include <assert.h>
 #include <winsock2.h>
 #include "banned.h"
-#include <vmafdclient.h>
-#include <vmafdtypes.h>
-
 
 //#include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -125,14 +110,6 @@ extern "C" {
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
 
-#pragma warning (disable : 4142)
-#if defined(_DEBUG)
-#include "../x64/Debug/vmca_h.h"
-#else
-#include "../x64/Release/vmca_h.h"
-#endif
-#pragma warning(default:4142)
-
 #include <vmcadb.h>
 
 #include "defines.h"
@@ -140,11 +117,10 @@ extern "C" {
 #include "prototypes.h"
 #include "externs.h"
 #include "vmca_error.h"
-#include "errormap.h"
 #endif // _WIN32
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _VMCA_SERVICE_INCLUDES_H__
+#endif // _VMCA_SERVICE_COMMON_INCLUDES_H__

@@ -213,52 +213,6 @@ VMCAServiceShutdown(
     VOID
     );
 
-/* policy.c */
-
-DWORD
-VMCAPolicyInit(
-    PVMCA_POLICY        **pppPolicies
-    );
-
-DWORD
-VMCAPolicyValidate(
-    PVMCA_POLICY            *ppPolicies,
-    PSTR                    pszPKCS10Request,
-    PVMCA_REQ_CONTEXT       pReqContext,
-    PBOOLEAN                pbIsValid
-    );
-
-VOID
-VMCAPolicyFree(
-    PVMCA_POLICY        pPolicy
-    );
-
-VOID
-VMCAPolicyArrayFree(
-    PVMCA_POLICY        *ppPolicies
-    );
-
-/* snpolicy.c */
-
-DWORD
-VMCAPolicySNLoad(
-    json_t              *pJsonPolicy,
-    PVMCA_POLICY        pPolicy
-    );
-
-DWORD
-VMCAPolicySNValidate(
-    PVMCA_POLICY                    pPolicy,
-    PSTR                            pszPKCS10Request,
-    PVMCA_REQ_CONTEXT               pReqContext,
-    PBOOLEAN                        pbIsValid
-    );
-
-VOID
-VMCAPolicySNFree(
-    PVMCA_POLICY_RULES  pPolicyRules
-    );
-
 /* signal.c */
 
 VOID
@@ -643,21 +597,9 @@ VMCAFreeReqContext(
     );
 
 DWORD
-VMCASrvGetMachineAccountInfoA(
-    PSTR* ppszAccount,
-    PSTR* ppszDomainName,
-    PSTR* ppszPassword
-    );
-
-DWORD
 VMCALdapAccessCheck(
     PCSTR szAuthPrinc,
     VMCA_USER_TYPE userType
-    );
-
-DWORD
-VMCAOpenLocalLdapServer(
-    PVMCA_LDAP_CONTEXT* pLd
     );
 
 //utils.c

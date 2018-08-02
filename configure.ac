@@ -1763,10 +1763,15 @@ AC_CONFIG_FILES([Makefile
                  vmca/config/vmca.reg
                  vmca/common/Makefile
                  vmca/service/Makefile
+                 vmca/service/common/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile
                  vmca/test/Makefile
+                 vmca/unit-tests/Makefile
+                 vmca/unit-tests/service/Makefile
+                 vmca/unit-tests/service/common/Makefile
+                 vmca/unit-tests/service/common/test-policy-configs/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
@@ -1831,6 +1836,10 @@ AC_CONFIG_FILES([Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
                  config/scripts/configure-sts
+                ])
+
+AC_CONFIG_LINKS([
+                vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
                 ])
 
 AC_OUTPUT
