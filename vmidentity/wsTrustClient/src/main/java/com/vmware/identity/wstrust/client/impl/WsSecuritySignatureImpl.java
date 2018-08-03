@@ -38,10 +38,10 @@ import javax.xml.crypto.dsig.keyinfo.KeyInfo;
 import javax.xml.crypto.dsig.keyinfo.KeyInfoFactory;
 import javax.xml.crypto.dsig.spec.C14NMethodParameterSpec;
 import javax.xml.namespace.QName;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.SOAPException;
 
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Attr;
@@ -73,6 +73,7 @@ abstract class WsSecuritySignatureImpl implements WsSecuritySignature {
     private static final String PARSING_XML_ERROR_MSG = "Error while parsing the SOAP request (signature creation)";
     private static final String CREATING_SIGNATURE_ERR_MSG = "Error while creating SOAP request signature";
     private static final String MARSHALL_EXCEPTION_ERR_MSG = "Error marshalling JAXB document";
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory.createSecureXmlParserFactory();
 
     private static final Logger log = LoggerFactory.getLogger(WsSecuritySignatureImpl.class);
 
@@ -174,12 +175,10 @@ abstract class WsSecuritySignatureImpl implements WsSecuritySignature {
      * @return Document
      */
     protected final Document marshallJaxbElement(Object jaxbElement) throws ParserException {
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setNamespaceAware(true);
         Document result = null;
         try {
             Marshaller marshaller = jaxBContext.createMarshaller();
-            result = dbf.newDocumentBuilder().newDocument();
+            result = xmlParserFactory.newDocumentBuilder().newDocument();
             marshaller.marshal(jaxbElement, result);
         } catch (JAXBException jaxbException) {
             log.debug(MARSHALL_EXCEPTION_ERR_MSG, jaxbException);

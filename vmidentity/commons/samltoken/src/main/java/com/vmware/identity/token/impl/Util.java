@@ -39,6 +39,7 @@ import javax.xml.transform.stream.StreamSource;
 import javax.xml.validation.Schema;
 import javax.xml.validation.SchemaFactory;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Node;
@@ -70,7 +71,7 @@ public final class Util {
     * @throws TransformerException
     */
    public static String serializeToString(Node content) throws ParserException {
-      TransformerFactory tf = TransformerFactory.newInstance();
+      TransformerFactory tf = SecureTransformerFactory.newTransformerFactory();
       StringWriter writer = new StringWriter();
       try {
          Transformer trans = tf.newTransformer();

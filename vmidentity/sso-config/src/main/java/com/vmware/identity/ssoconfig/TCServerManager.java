@@ -9,7 +9,6 @@ import java.io.File;
 import java.io.IOException;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -19,6 +18,8 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.w3c.dom.Attr;
 import org.w3c.dom.Document;
 import org.w3c.dom.NamedNodeMap;
@@ -46,6 +47,9 @@ public final class TCServerManager {
     public static String trustStoreFileAttrName = "truststoreFile";
     public static String trustStorePasswordAttrName = "truststorePass";
     public static String trustStoreTypeAttrName = "truststoreType";
+
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory
+            .createSecureXmlParserFactory();
 
     private String _serverConfigFile;
     private Document _serverConfigDoc;
@@ -105,8 +109,9 @@ public final class TCServerManager {
      */
     public void saveToXmlFile() throws TransformerFactoryConfigurationError,
             TransformerException {
-        Transformer transformer = TransformerFactory.newInstance()
-                .newTransformer();
+        TransformerFactory transformerFactory = SecureTransformerFactory.newTransformerFactory();
+        Transformer transformer = transformerFactory.newTransformer();
+
         DOMSource source = new DOMSource(this._serverConfigDoc);
         StreamResult targetStreamResult = new StreamResult(
                 this._serverConfigFile);
@@ -116,10 +121,7 @@ public final class TCServerManager {
 
     private void readFromXmlFile() throws ParserConfigurationException,
             SAXException, IOException {
-        DocumentBuilderFactory factory = DocumentBuilderFactory.newInstance();
-        factory.setNamespaceAware(true);
-        DocumentBuilder docBuilder;
-        docBuilder = factory.newDocumentBuilder();
+        DocumentBuilder docBuilder = xmlParserFactory .newDocumentBuilder();
         this._serverConfigDoc = docBuilder.parse(new File(
                 this._serverConfigFile));
         this._connector = findConnectorNode();

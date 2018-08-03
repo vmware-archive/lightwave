@@ -33,9 +33,9 @@ import java.util.zip.InflaterOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.xml.namespace.QName;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.TransformerFactoryConfigurationError;
 
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.apache.commons.lang.StringUtils;
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
@@ -94,6 +94,7 @@ public class SamlUtils {
     public static final String RELAY_STATE_PARAMETER = "RelayState";
     public static final String SIGNATURE_ALGORITHM_PARAMETER = "SigAlg";
     public static final String SIGNATURE_PARAMETER = "Signature";
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory.createSecureXmlParserFactory();
 
     private static final Logger log = LoggerFactory.getLogger(SamlUtils.class);
 
@@ -639,7 +640,7 @@ public class SamlUtils {
             Marshaller marshaller = XMLObjectProviderRegistrySupport.getMarshallerFactory().getMarshaller(signableSAMLObject);
             org.w3c.dom.Element signableDomEle = marshaller.marshall(signableSAMLObject);
 
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilder builder = xmlParserFactory.newDocumentBuilder();
             Document doc = builder.newDocument();
             doc.appendChild(doc.importNode(signableDomEle, true));
             return doc;

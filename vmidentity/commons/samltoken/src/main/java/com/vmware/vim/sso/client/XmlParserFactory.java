@@ -39,14 +39,15 @@ public interface XmlParserFactory {
     */
    public static class Factory {
       /**
-       * Creates a XML parser factory that:
+       * XML Parser factory that:
        * <ul>
-       *  <li>disables validation
-       *  <li>doesn't load external DTDs
-       *  <li>resolves all external XML entities to empty string
-       *  <li>supports standard XML entities and local "string-substition" XML entities
-       *  <li>is namespace aware
-       *  <li>is thread-safe
+       * <li>disables validation
+       * <li>ignores comments and whitespace
+       * <li>Supports namespaces
+       * <li>disables xInclude syntax parsing
+       * <li>doesn't load external DTDs
+       * <li>resolves all external XML entities to empty string
+       * <li>supports standard XML entities and local "string-substition" XML entities
        * </ul>
        * @return a secure XML parser factory.
        */

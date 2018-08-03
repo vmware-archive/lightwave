@@ -57,6 +57,8 @@ import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.vmware.identity.token.impl.SecureXmlParserFactory;
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.apache.commons.lang.Validate;
 import org.joda.time.DateTime;
 import org.opensaml.core.xml.io.MarshallingException;
@@ -118,6 +120,9 @@ import net.shibboleth.utilities.java.support.codec.Base64Support;
 public class SharedUtils {
     private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory
             .getLogger(SharedUtils.class);
+
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory
+            .createSecureXmlParserFactory();
 
     private static final String CONFIG_FILE = "testconfig.properties";
 
@@ -237,20 +242,9 @@ public class SharedUtils {
     public static Document readXml(InputStream is) throws SAXException,
             IOException, ParserConfigurationException {
 
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-        dbf.setValidating(false);
-        dbf.setIgnoringComments(false);
-        dbf.setIgnoringElementContentWhitespace(true);
-        dbf.setNamespaceAware(true);
-        // dbf.setCoalescing(true);
-        // dbf.setExpandEntityReferences(true);
-
         DocumentBuilder db = null;
-        db = dbf.newDocumentBuilder();
+        db = xmlParserFactory.newDocumentBuilder();
         db.setEntityResolver(new NullResolver());
-
-        // db.setErrorHandler( new MyErrorHandler());
 
         return db.parse(is);
     }

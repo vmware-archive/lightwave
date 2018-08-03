@@ -18,7 +18,6 @@ import javax.net.ssl.SSLContext;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
 import javax.xml.transform.TransformerException;
@@ -27,6 +26,8 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 
@@ -35,6 +36,9 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     private static final String ID = "lightwave-ui";
     private static final String Name = "Lightwave UI";
     private static final String Description = "Lightwave UI OIDC Client regstiration";
+
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory
+            .createSecureXmlParserFactory();
 
     private VmIdentityParams params;
 
@@ -177,8 +181,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     private Boolean createNewXml(String xmlFile){
 
         try {
-                DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+                DocumentBuilder documentBuilder = xmlParserFactory.newDocumentBuilder();
                 Document document = documentBuilder.newDocument();
                 Element root = document.createElement("tenants");
                 document.appendChild(root);
@@ -193,8 +196,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     private Boolean addNewXmlNode(String xmlFile, String clientId){
 
         try {
-                DocumentBuilderFactory documentBuilderFactory = DocumentBuilderFactory.newInstance();
-                DocumentBuilder documentBuilder = documentBuilderFactory.newDocumentBuilder();
+                DocumentBuilder documentBuilder = xmlParserFactory.newDocumentBuilder();
                 Document document = documentBuilder.parse(xmlFile);
                 Element root = document.getDocumentElement();
                 Element tenantNode = document.createElement("tenant");
@@ -213,7 +215,7 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
     private void writeXmlToDisk(String xmlFile, Document document)
             throws TransformerFactoryConfigurationError, TransformerConfigurationException, TransformerException {
         DOMSource source = new DOMSource(document);
-        TransformerFactory transformerFactory = TransformerFactory.newInstance();
+        TransformerFactory transformerFactory = SecureTransformerFactory.newTransformerFactory();
         Transformer transformer = transformerFactory.newTransformer();
         StreamResult result = new StreamResult(xmlFile);
         transformer.transform(source, result);
