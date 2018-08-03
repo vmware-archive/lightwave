@@ -39,6 +39,7 @@ import java.util.Date;
 import java.util.Iterator;
 import java.security.cert.CertificateException;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.OptionGroup;
@@ -54,6 +55,7 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
+import javax.xml.XMLConstants;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.transform.Result;
@@ -2234,7 +2236,8 @@ public final class SsoConfig {
         Result result = new StreamResult(file);
 
         // Write the DOM document to the file
-        Transformer xformer = TransformerFactory.newInstance().newTransformer();
+        TransformerFactory transformerFactory = SecureTransformerFactory.newTransformerFactory();
+        Transformer xformer = transformerFactory.newTransformer();
         xformer.transform(source, result);
     }
 

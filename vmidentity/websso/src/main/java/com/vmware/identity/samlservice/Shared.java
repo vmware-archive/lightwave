@@ -27,6 +27,7 @@ import java.util.Collection;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.xml.XMLConstants;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerConfigurationException;
@@ -36,6 +37,7 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
 import org.apache.commons.lang.Validate;
 import org.apache.http.client.methods.HttpGet;
 import org.opensaml.core.config.InitializationException;
@@ -313,7 +315,7 @@ public final class Shared {
      */
     private static final void prettyPrint(Node xml, OutputStream out)
             throws Exception {
-        TransformerFactory tFactory = TransformerFactory.newInstance();
+        TransformerFactory tFactory = SecureTransformerFactory.newTransformerFactory();
         // tFactory.setAttribute("indent-number", 4);
         Transformer tf = tFactory.newTransformer();
         tf.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");

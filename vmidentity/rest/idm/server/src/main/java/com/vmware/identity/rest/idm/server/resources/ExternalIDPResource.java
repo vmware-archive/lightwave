@@ -32,9 +32,9 @@ import javax.ws.rs.core.Context;
 import javax.ws.rs.core.MediaType;
 import javax.ws.rs.core.SecurityContext;
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.w3c.dom.Document;
 import org.xml.sax.SAXException;
 
@@ -72,6 +72,8 @@ public class ExternalIDPResource extends BaseSubResource {
 
     private static final String METRICS_COMPONENT = "idm";
     private static final String METRICS_RESOURCE = "ExternalIDPResource";
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory
+            .createSecureXmlParserFactory();
 
     public ExternalIDPResource(String tenant, @Context ContainerRequestContext request, @Context SecurityContext securityContext) {
         super(tenant, request, Config.LOCALIZATION_PACKAGE_NAME, securityContext);
@@ -225,14 +227,9 @@ public class ExternalIDPResource extends BaseSubResource {
        throws IOException, SAXException {
 
        assert samlConfigDoc != null;
-
-       DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-       dbf.setNamespaceAware(true);
-       dbf.setValidating(false);
-
        DocumentBuilder builder;
        try {
-          builder = dbf.newDocumentBuilder();
+          builder = xmlParserFactory.newDocumentBuilder();
 
        } catch (ParserConfigurationException e) {
           throw new IllegalStateException(e);

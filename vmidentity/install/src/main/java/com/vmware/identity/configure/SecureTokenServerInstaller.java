@@ -13,13 +13,14 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 
 import javax.xml.parsers.DocumentBuilder;
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
 import javax.xml.transform.TransformerFactory;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,6 +56,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private String keyAlias ="";
     private String keyStoreType ="";
 
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory.createSecureXmlParserFactory();
 
     public SecureTokenServerInstaller(VmIdentityParams installParams) {
         params = installParams;
@@ -278,7 +280,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
         File serverXmlFile = new File(InstallerUtils.joinPath(params.getBackupDir() , "server.xml"));
         try {
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilder builder = xmlParserFactory.newDocumentBuilder();
             Document doc = builder.parse(serverXmlFile);
             NodeList connectorList = doc.getElementsByTagName(CONNECTOR);
             NodeList sslHostConfigList = doc.getElementsByTagName(SSL_HOST_CONFIG);
@@ -321,7 +323,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 	try {
         String filePath = InstallerUtils.joinPath( InstallerUtils.getInstallerHelper().getTCBase(),
                             "conf","server.xml");
-            DocumentBuilder builder = DocumentBuilderFactory.newInstance().newDocumentBuilder();
+            DocumentBuilder builder = xmlParserFactory.newDocumentBuilder();
             Document doc = builder.parse(new File(filePath));
             NodeList connectorList = doc.getElementsByTagName(CONNECTOR);
             NodeList sslHostConfigList = doc.getElementsByTagName(SSL_HOST_CONFIG);
@@ -347,7 +349,8 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
                 }
             }
 
-            Transformer transformer = TransformerFactory.newInstance().newTransformer();
+            TransformerFactory transformerFactory = SecureTransformerFactory.newTransformerFactory();
+            Transformer transformer = transformerFactory.newTransformer();
             transformer.setOutputProperty(OutputKeys.INDENT, "yes");
             transformer.setOutputProperty(OutputKeys.METHOD, "xml");
             transformer.setOutputProperty(

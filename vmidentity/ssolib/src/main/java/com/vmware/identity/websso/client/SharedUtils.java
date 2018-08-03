@@ -35,6 +35,8 @@ import javax.xml.transform.TransformerFactoryConfigurationError;
 import javax.xml.transform.dom.DOMSource;
 import javax.xml.transform.stream.StreamResult;
 
+import com.vmware.vim.sso.client.SecureTransformerFactory;
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.opensaml.saml.common.SignableSAMLObject;
 import org.opensaml.saml.saml2.core.LogoutResponse;
 import org.opensaml.saml.saml2.core.Response;
@@ -56,10 +58,8 @@ import net.shibboleth.utilities.java.support.codec.Base64Support;
 public class SharedUtils {
     private static Logger logger = LoggerFactory.getLogger(SharedUtils.class);
 
-    private static final String DISALLOW_DOCTYPE_DECL = "http://apache.org/xml/features/disallow-doctype-decl";
-    private static final String EXTERNAL_GENERAL_ENTITIES = "http://xml.org/sax/features/external-general-entities";
-    private static final String EXTERNAL_PARAMETER_ENTITIES = "http://xml.org/sax/features/external-parameter-entities";
-    private static final String LOAD_EXTERNAL_DTD = "http://apache.org/xml/features/nonvalidating/load-external-dtd";
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory
+            .createSecureXmlParserFactory();
 
     public static final String CACHE_CONTROL_HEADER = "Cache-Control";
     public static final String PRAGMA = "Pragma";
@@ -67,21 +67,7 @@ public class SharedUtils {
      * Create Dom from string.
      */
     public static Document createDOM(String strXML) throws ParserConfigurationException, SAXException, IOException {
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setValidating(false);
-        dbf.setIgnoringComments(false);
-        dbf.setIgnoringElementContentWhitespace(true);
-        dbf.setNamespaceAware(true);
-
-        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
-        dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
-        dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
-        dbf.setFeature(LOAD_EXTERNAL_DTD, false);
-
-        DocumentBuilder db = null;
-        db = dbf.newDocumentBuilder();
+        DocumentBuilder db = xmlParserFactory.newDocumentBuilder();
         db.setEntityResolver(new NullResolver());
         db.setErrorHandler(new SamlParserErrorHandler());
 
@@ -94,22 +80,7 @@ public class SharedUtils {
      * Create Dom from iostream.
      */
     public static Document createDOM(InputStream is) throws ParserConfigurationException, SAXException, IOException {
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-
-        dbf.setValidating(false);
-        dbf.setIgnoringComments(false);
-        dbf.setIgnoringElementContentWhitespace(true);
-        dbf.setNamespaceAware(true);
-
-        dbf.setFeature(XMLConstants.FEATURE_SECURE_PROCESSING, true);
-        dbf.setFeature(DISALLOW_DOCTYPE_DECL, true);
-        dbf.setFeature(EXTERNAL_GENERAL_ENTITIES, false);
-        dbf.setFeature(EXTERNAL_PARAMETER_ENTITIES, false);
-        dbf.setFeature(LOAD_EXTERNAL_DTD, false);
-
-        DocumentBuilder db = null;
-        db = dbf.newDocumentBuilder();
+        DocumentBuilder db = xmlParserFactory.newDocumentBuilder();
         db.setEntityResolver(new NullResolver());
         db.setErrorHandler(new SamlParserErrorHandler());
 
@@ -118,7 +89,7 @@ public class SharedUtils {
 
     public static void formattedPrint(Node xml, OutputStream out) throws TransformerConfigurationException,
             TransformerFactoryConfigurationError, TransformerException, UnsupportedEncodingException {
-        TransformerFactory tFactory = TransformerFactory.newInstance();
+        TransformerFactory tFactory = SecureTransformerFactory.newTransformerFactory();
         // tFactory.setAttribute("indent-number", 4);
         Transformer tf = tFactory.newTransformer();
         tf.setOutputProperty(OutputKeys.OMIT_XML_DECLARATION, "yes");
