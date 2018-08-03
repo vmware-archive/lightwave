@@ -72,6 +72,12 @@ VmAfSrvUnsetDNSRecords(
 
 static
 DWORD
+_VmAfSrvEnsureUseVmDirRestFlag(
+    VOID
+    );
+
+static
+DWORD
 _CreateKrbConfig(
     PCSTR pszDefaultRealm,
     PCSTR pszConfigFileName,
@@ -1200,9 +1206,16 @@ VmAfSrvJoinVmDir2(
 
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
     {
-        if (gVmafdGlobals.bUseVmDirREST &&
-            dwDirJoinFlags == VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
+        if (dwDirJoinFlags == VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
         {
+            /*
+             * rest is default for prejoin path
+             * ensure that rest flag is turned on in registry
+             * and that the flag is set for this server instance
+            */
+            dwError = _VmAfSrvEnsureUseVmDirRestFlag();
+            BAIL_ON_VMAFD_ERROR(dwError);
+
             dwError = _VmAfSrvRestClientPrejoinAtomic(
                           pszDCHostname,
                           pszUserName,
@@ -2928,3 +2941,41 @@ error:
 
 }
 
+/*
+ * Check if the global bUseVmDirREST flag is set.
+ * The "Ensure" path is as follows:
+ * if set, return success
+ * if not set, it means flag was not set in registry
+ * when server started and we are allowing a backward
+ * compatible prejoin rest path. Set the flag in registry
+ * and set the global flag and return succcess.
+*/
+static
+DWORD
+_VmAfSrvEnsureUseVmDirRestFlag(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bUseVmDirREST = FALSE;
+
+    if (!gVmafdGlobals.bUseVmDirREST)
+    {
+        dwError = VmAfdSrvSetUseVmDirREST(TRUE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdSrvGetUseVmDirREST(&bUseVmDirREST);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (!bUseVmDirREST)
+        {
+            dwError = ERROR_CANNOT_PREJOIN_USING_REST;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        gVmafdGlobals.bUseVmDirREST = TRUE;
+    }
+
+error:
+    return dwError;
+}

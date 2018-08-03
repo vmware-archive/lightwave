@@ -368,6 +368,16 @@ VmAfdGetDomainControllerList(
     PDWORD pdCount
     );
 
+DWORD
+VmAfdSrvSetUseVmDirREST(
+    BOOLEAN bValue
+    );
+
+DWORD
+VmAfdSrvGetUseVmDirREST(
+    BOOLEAN *pbValue
+    );
+
 /* dns.c */
 
 DWORD
