@@ -16,6 +16,8 @@ package com.vmware.identity.websso.client.sample;
 import javax.annotation.PostConstruct;
 import javax.servlet.http.HttpServletResponse;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
@@ -33,222 +35,239 @@ import com.vmware.identity.websso.client.SPConfiguration;
  */
 @Controller
 public class MetadataController {
-	public static final String METADATA_CONTENT_TYPE = "application/samlmetadata+xml";
+    private final Logger logger = LoggerFactory.getLogger(MetadataController.class);
+    public static final String METADATA_CONTENT_TYPE = "application/samlmetadata+xml";
+    private static final String PROPERTY_IDP_FQDN = "lightwave.dc.fqdn";
 
-	@Autowired
-	private MetadataSettings metadataSettings;
+    @Autowired
+    private MetadataSettings metadataSettings;
 
-	@Autowired
-	private String identityProviderFQDN;
+    @Autowired
+    private String identityProviderFQDN;
 
-	@Autowired
-	private String tenantAdminUsername;
+    @Autowired
+    private String tenantAdminUsername;
 
-	@Autowired
-	private String tenantAdminPassword;
+    @Autowired
+    private String tenantAdminPassword;
 
-	@Autowired
-	private String spPort;
+    @Autowired
+    private String spPort;
 
-	@Autowired
-	private String tenantName;
+    @Autowired
+    private String tenantName;
 
-	/**
-	 * @return the metadataSettings
-	 */
-	public MetadataSettings getMetadataSettings() {
-		return metadataSettings;
-	}
+    /**
+     * @return the metadataSettings
+     */
+    public MetadataSettings getMetadataSettings() {
+        return metadataSettings;
+    }
 
-	/**
-	 * @param metadataSettings
-	 *            the metadataSettings to set
-	 * @throws Exception
-	 */
-	public void setMetadataSettings(MetadataSettings metadataSettings) {
-		this.metadataSettings = metadataSettings;
-	}
+    /**
+     * @param metadataSettings
+     *            the metadataSettings to set
+     * @throws Exception
+     */
+    public void setMetadataSettings(MetadataSettings metadataSettings) {
+        this.metadataSettings = metadataSettings;
+    }
 
-	/**
-	 * Export metadata
-	 *
-	 * @throws Exception
-	 */
-	@RequestMapping(value = "/SsoClient/Metadata/{tenant:.*}", method = RequestMethod.GET)
-	public void export(@PathVariable(value = "tenant") String tenant,
-			HttpServletResponse response) throws Exception {
-		SPConfiguration spConfiguration = this.metadataSettings
-				.getSPConfiguration(tenant);
-		String metadata = ComponentUtils
-				.getMetadataFromSPConfiguration(spConfiguration);
+    /**
+     * Export metadata
+     *
+     * @throws Exception
+     */
+    @RequestMapping(value = "/SsoClient/Metadata/{tenant:.*}", method = RequestMethod.GET)
+    public void export(@PathVariable(value = "tenant") String tenant,
+            HttpServletResponse response) throws Exception {
+        SPConfiguration spConfiguration = this.metadataSettings
+                .getSPConfiguration(tenant);
+        String metadata = ComponentUtils
+                .getMetadataFromSPConfiguration(spConfiguration);
 
-		ComponentUtils.sendResponse(response, METADATA_CONTENT_TYPE, metadata);
-	}
+        ComponentUtils.sendResponse(response, METADATA_CONTENT_TYPE, metadata);
+    }
 
-	/**
-	 * Export metadata to IDP
-	 *
-	 * @throws Exception
-	 */
-	@RequestMapping(value = "/SsoClient/Metadata/export/{tenant:.*}", method = RequestMethod.GET)
-	public String exportToIDPGet(@PathVariable(value = "tenant") String tenant,
-			Model model) throws Exception {
-		SPConfiguration spConfiguration = this.metadataSettings
-				.getSPConfiguration(tenant);
-		String metadata = ComponentUtils
-				.getMetadataFromSPConfiguration(spConfiguration);
+    /**
+     * Export metadata to IDP
+     *
+     * @throws Exception
+     */
+    @RequestMapping(value = "/SsoClient/Metadata/export/{tenant:.*}", method = RequestMethod.GET)
+    public String exportToIDPGet(@PathVariable(value = "tenant") String tenant,
+            Model model) throws Exception {
+        SPConfiguration spConfiguration = this.metadataSettings
+                .getSPConfiguration(tenant);
+        String metadata = ComponentUtils
+                .getMetadataFromSPConfiguration(spConfiguration);
 
-		ExportForm exportForm = new ExportForm();
-		exportForm.setMetadata(metadata);
-		exportForm.setIdentityProviderFQDN(getIdentityProviderFQDN());
-		model.addAttribute("tenant", tenant);
-		model.addAttribute("exportForm", exportForm);
-		return "export";
-	}
+        ExportForm exportForm = new ExportForm();
+        exportForm.setMetadata(metadata);
+        exportForm.setIdentityProviderFQDN(getIdentityProviderFQDN());
+        model.addAttribute("tenant", tenant);
+        model.addAttribute("exportForm", exportForm);
+        return "export";
+    }
 
-	/**
-	 * Handles POST of metadata export to IDP
-	 *
-	 * @throws Exception
-	 */
-	@RequestMapping(value = "/SsoClient/Metadata/export/{tenant:.*}", method = RequestMethod.POST)
-	public String exportToIDPPost(
-			@PathVariable(value = "tenant") String tenant, Model model,
-			ExportForm exportForm) throws Exception {
-		// take metadata and import it to IDP
+    /**
+     * Handles POST of metadata export to IDP
+     *
+     * @throws Exception
+     */
+    @RequestMapping(value = "/SsoClient/Metadata/export/{tenant:.*}", method = RequestMethod.POST)
+    public String exportToIDPPost(
+            @PathVariable(value = "tenant") String tenant, Model model,
+            ExportForm exportForm) throws Exception {
+        // take metadata and import it to IDP
 
-		model.addAttribute("tenant", tenant);
-		model.addAttribute("exportForm", exportForm);
+        model.addAttribute("tenant", tenant);
+        model.addAttribute("exportForm", exportForm);
 
-		try {
-			ServiceLocator serviceLocator = new ServiceLocator(
-					exportForm.getIdentityProviderFQDN(), getTenantNameInIDP());
-			ComponentUtils.exportSPConfigToIDP(serviceLocator,
-					getTenantAdminUsername(), getTenantAdminPassword(),
-					tenant, exportForm.getMetadata());
-		} catch (Exception e) {
-			model.addAttribute("Data",
-					e.getMessage() + "\n\n" + ComponentUtils.getStackTrace(e));
-			return "error";
-		}
+        try {
+            ServiceLocator serviceLocator = new ServiceLocator(
+                    exportForm.getIdentityProviderFQDN(), getTenantNameInIDP());
+            ComponentUtils.exportSPConfigToIDP(serviceLocator,
+                    getTenantAdminUsername(), getTenantAdminPassword(),
+                    tenant, exportForm.getMetadata());
+        } catch (Exception e) {
+            model.addAttribute("Data",
+                    e.getMessage() + "\n\n" + ComponentUtils.getStackTrace(e));
+            return "error";
+        }
 
-		exportForm.setMessage("Export successful to "
-				+ exportForm.getIdentityProviderFQDN());
+        exportForm.setMessage("Export successful to "
+                + exportForm.getIdentityProviderFQDN());
 
-		return "export";
-	}
+        return "export";
+    }
 
-	/**
-	 * Shows form for metadata import
-	 */
-	@RequestMapping(value = "/SsoClient/Metadata/import/{tenant:.*}", method = RequestMethod.GET)
-	public String importGet(@PathVariable(value = "tenant") String tenant,
-			Model model) {
-		model.addAttribute("tenant", tenant);
-		model.addAttribute("importForm", new ImportForm());
-		return "import";
-	}
+    /**
+     * Shows form for metadata import
+     */
+    @RequestMapping(value = "/SsoClient/Metadata/import/{tenant:.*}", method = RequestMethod.GET)
+    public String importGet(@PathVariable(value = "tenant") String tenant,
+            Model model) {
+        model.addAttribute("tenant", tenant);
+        model.addAttribute("importForm", new ImportForm());
+        return "import";
+    }
 
-	/**
-	 * Handles POST of metadata import
-	 *
-	 * @throws Exception
-	 */
-	@RequestMapping(value = "/SsoClient/Metadata/import/{tenant:.*}", method = RequestMethod.POST)
-	public String importPost(@PathVariable(value = "tenant") String tenant,
-			Model model, ImportForm importForm) throws Exception {
-		// take metadata and import it
-		IDPConfiguration idpConfiguration = ComponentUtils
-				.getIDPConfigurationFromMetadata(tenant,
-						importForm.getMetadata());
-		this.getMetadataSettings().addIDPConfiguration(idpConfiguration);
-		importForm.setMessage("Import successful");
-		model.addAttribute("tenant", tenant);
-		model.addAttribute("importForm", importForm);
-		return "import";
-	}
+    /**
+     * Handles POST of metadata import
+     *
+     * @throws Exception
+     */
+    @RequestMapping(value = "/SsoClient/Metadata/import/{tenant:.*}", method = RequestMethod.POST)
+    public String importPost(@PathVariable(value = "tenant") String tenant,
+            Model model, ImportForm importForm) throws Exception {
+        // take metadata and import it
+        IDPConfiguration idpConfiguration = ComponentUtils
+                .getIDPConfigurationFromMetadata(tenant,
+                        importForm.getMetadata());
+        this.getMetadataSettings().addIDPConfiguration(idpConfiguration);
+        importForm.setMessage("Import successful");
+        model.addAttribute("tenant", tenant);
+        model.addAttribute("importForm", importForm);
+        return "import";
+    }
 
-	/**
-	 * @return the identityProviderFQDN
-	 */
-	public String getIdentityProviderFQDN() {
-		return identityProviderFQDN;
-	}
+    /**
+     * @return the identityProviderFQDN
+     */
+    public String getIdentityProviderFQDN() {
+      String idpFQDN = System.getProperty(PROPERTY_IDP_FQDN);
+        return idpFQDN != null && !idpFQDN.isEmpty() ? idpFQDN : identityProviderFQDN;
+    }
 
-	/**
-	 * @param identityProviderFQDN
-	 *            the identity provider FQDN to set
-	 * @throws Exception
-	 */
-	public void setIdentityProviderFQDN(String identityProviderFQDN) {
-		this.identityProviderFQDN = identityProviderFQDN;
-	}
+    /**
+     * @param identityProviderFQDN
+     *            the identity provider FQDN to set
+     * @throws Exception
+     */
+    public void setIdentityProviderFQDN(String identityProviderFQDN) {
+        this.identityProviderFQDN = identityProviderFQDN;
+    }
 
-	/**
-	 * @param TenantAdminUsername
-	 *            the tenant username used by websso and sts
-	 * @throws Exception
-	 */
-	public void setTenantAdminUsername(String tenantAdminUsername) {
-		this.tenantAdminUsername = tenantAdminUsername;
-	}
+    /**
+     * @param tenantAdminUsername
+     *            the tenant username used by websso and sts
+     * @throws Exception
+     */
+    public void setTenantAdminUsername(String tenantAdminUsername) {
+        this.tenantAdminUsername = tenantAdminUsername;
+    }
 
-	/**
-	 * @return the tenantAdminUsername
-	 */
-	public String getTenantAdminUsername() {
-		return tenantAdminUsername;
-	}
+    /**
+     * @return the tenantAdminUsername
+     */
+    public String getTenantAdminUsername() {
+        return tenantAdminUsername;
+    }
 
-	/**
-	 * @param TenantAdminPassword
-	 *            the tenant password used by websso and sts
-	 * @throws Exception
-	 */
-	public void setTenantAdminPassword(String tenantAdminPassword) {
-		this.tenantAdminPassword = tenantAdminPassword;
-	}
+    /**
+     * @param tenantAdminPassword
+     *            the tenant password used by websso and sts
+     * @throws Exception
+     */
+    public void setTenantAdminPassword(String tenantAdminPassword) {
+        this.tenantAdminPassword = tenantAdminPassword;
+    }
 
-	/**
-	 * @return the tenantAdminPassword
-	 */
-	public String getTenantAdminPassword() {
-		return tenantAdminPassword;
-	}
+    /**
+     * @return the tenantAdminPassword
+     */
+    public String getTenantAdminPassword() {
+        return tenantAdminPassword;
+    }
 
-	/**
-	 * @param spPort
-	 *            the port used by the SP
-	 */
-	public void setSPPortPassword(String spPort) {
-		this.spPort = spPort;
-	}
+    /**
+     * @param spPort
+     *            the port used by the SP
+     */
+    public void setSPPortPassword(String spPort) {
+        this.spPort = spPort;
+    }
 
-	/**
-	 * @return the SP port
-	 */
-	public String getSPPort() {
-		return spPort;
-	}
+    /**
+     * @return the SP port
+     */
+    public String getSPPort() {
+        return spPort;
+    }
 
-	/**
-	 * @return the tenant name
-	 */
-	public String getTenantNameInIDP() {
-		return tenantName;
-	}
+    /**
+     * @return the tenant name
+     */
+    public String getTenantNameInIDP() {
+        return tenantName;
+    }
 
-	/**
-	 * Try and populate Org settings if all parameters are auto-wired
-	 *
-	 * @throws Exception
-	 */
-	@PostConstruct
-	public void tryPopulateSettings() throws Exception {
-		if (getMetadataSettings() != null && getIdentityProviderFQDN() != null) {
-			ComponentUtils.populateSettings(getMetadataSettings(),
-					getIdentityProviderFQDN(), getTenantAdminUsername(),
-					getTenantAdminPassword(), getTenantNameInIDP(), getSPPort());
-		}
-	}
+    /**
+     * Try and populate Org settings if all parameters are auto-wired
+     *
+     * @throws Exception
+     */
+    @PostConstruct
+    public void tryPopulateSettings() throws Exception {
+        logger.info("Trying to populate settings");
+        MetadataSettings metadataSettings = getMetadataSettings();
+        String idpFQDN = getIdentityProviderFQDN();
+        if (metadataSettings != null && identityProviderFQDN != null) {
+            logger.info(String.format("Populating Metadata Settings at IDP [%s]", idpFQDN));
+            try {
+                ComponentUtils.populateSettings(
+                        metadataSettings,
+                        idpFQDN,
+                        getTenantAdminUsername(),
+                        getTenantAdminPassword(),
+                        getTenantNameInIDP(),
+                        getSPPort()
+                );
+            } catch (Exception e) {
+                logger.error(e.toString());
+                throw e;
+            }
+        }
+    }
 }

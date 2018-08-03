@@ -5,7 +5,7 @@ VOLUME ["/sys/fs/cgroup"]
 LABEL vendor="VMware, Inc."
 LABEL com.vmware.lightwave.sample.version="1.0.0"
 
-EXPOSE 443
+EXPOSE 443 5005
 ENTRYPOINT ["/lightwave-init"]
 
 # Build hook

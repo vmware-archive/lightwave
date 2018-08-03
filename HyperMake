@@ -212,7 +212,7 @@ targets:
     build: ./build/docker
     after:
       - docker-lightwave-sample-pre-photon2
-    image: 'vmware/lightwave-sample-photon2:1.0.1'
+    image: 'vmware/lightwave-sample-photon2'
     cmds:
       - ./support/scripts/post-container-build.sh
 
