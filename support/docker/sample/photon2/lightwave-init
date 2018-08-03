@@ -8,7 +8,7 @@ function clean_up {
     echo "shutdown signal handled"
 
     # stop java processes
-    /opt/vmware/sbin/vmware-sampled.sh stop
+    /opt/vmware/sbin/vmware-sampled.sh -a stop
 
     # stop lwsm
     if [ `pidof lwsmd` ];  then
@@ -97,7 +97,10 @@ rm -f $CERT_PATH/cert.tmp
 
 sleep 1
 
-/opt/vmware/sbin/vmware-sampled.sh start
+lightwave_dc_fqdn=$(/opt/vmware/bin/vmafd-cli get-dc-name --server-name localhost)
+
+/opt/vmware/sbin/vmware-sampled.sh -a start \
+                                   -s $lightwave_dc_fqdn
 
 if [ $? -ne 0 ]; then
     echo "failed to start secure token service"

@@ -64,16 +64,16 @@
         <beans:constructor-arg value="localhost"/>
     </beans:bean>
      <beans:bean id="tenantAdminUsername" class="java.lang.String">
-        <beans:constructor-arg value="administrator@lightwave.local"/>
+        <beans:constructor-arg value="administrator@lw-testdom.com"/>
     </beans:bean>
     <beans:bean id="tenantAdminPassword" class="java.lang.String">
-        <beans:constructor-arg value="Admin!23"/>
+        <beans:constructor-arg value="Ca$hc0w1"/>
     </beans:bean>
     <beans:bean id="spPort" class="java.lang.String">
         <beans:constructor-arg value="443"/>
     </beans:bean>
     <beans:bean id="tenantName" class="java.lang.String">
-        <beans:constructor-arg value="lightwave.local"/>
+        <beans:constructor-arg value="lw-testdom.com"/>
     </beans:bean>
     <!-- Scan directive to instantiate all Spring @Controllers -->
     <context:component-scan base-package="com.vmware.identity.websso.client.sample" />

@@ -1923,3 +1923,52 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdSrvSetUseVmDirREST(
+    BOOLEAN bValue
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetInteger(VMAFD_REG_KEY_USE_VMDIR_REST,
+                                bValue ? 1 : 0);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdSrvGetUseVmDirREST(
+    BOOLEAN *pbValue
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwValue = 0;
+    BOOLEAN bValue = FALSE;
+
+    dwError = _ConfigGetInteger(VMAFD_REG_KEY_USE_VMDIR_REST,
+                                &dwValue);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    bValue = dwValue == 1 ? TRUE : FALSE;
+
+    *pbValue = bValue;
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}

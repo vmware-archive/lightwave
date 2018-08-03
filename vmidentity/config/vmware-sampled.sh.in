@@ -28,20 +28,27 @@ DEBUG_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,addres
 
 CATALINA_HOME=${CATALINA_HOME:-@TOMCAT_HOME@}
 CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
+CATALINA_TEMP=$CATALINA_BASE/temp
 
 JAVA_SEC_PROP="$CATALINA_BASE/conf/vmware-override-java.security"
 
+LIGHTWAVE_DC_FQDN=
+
 ShowUsage()
 {
-    echo "Usage: vmware-sampled.sh { start | stop }"
+    echo "Usage: vmware-sampled.sh -a { start | stop }"
+    echo "                        [-h]"
+    echo "                        [-s <Lightwave Domain Controller FQDN>"
+    echo "                        [-d]"
 }
 
 perform_pre_startup_actions()
 {
    echo "[start] Performing pre-startup actions."
-   /usr/lib/vmware-sso/bin/sso_servicecfg pre-startup &>/dev/null
 
-     . "$CATALINA_BASE/bin/setenv.sh"
+   mkdir -p $CATALINA_TEMP
+
+   . "$CATALINA_BASE/bin/setenv.sh"
 
    echo "[start] Pre-startup complete."
 }
@@ -64,6 +71,7 @@ StartService()
              -Djava.security.properties=$JAVA_SEC_PROP \
              -Djava.util.logging.config.file=$CATALINA_BASE/conf/logging.properties \
              -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager \
+             -Dlightwave.dc.fqdn=$LIGHTWAVE_DC_FQDN \
              $JAVA_OPTS \
              $CATALINA_OPTS \
              -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
@@ -110,13 +118,36 @@ if [ $# -lt 1 ]; then
     exit 1
 fi
 
-if [ $# -gt 1 -a "$2" == "--debug" ]; then
-    ENABLE_DEBUG=1
+while getopts a:s:hd o
+do
+    case "$o" in
+        h)
+            ShowUsage
+            exit 0
+            ;;
+        s)
+            LIGHTWAVE_DC_FQDN="$OPTARG"
+            ;;
+        d)
+            ENABLE_DEBUG=1
+            ;;
+        a)
+            ACTION="$OPTARG"
+            ;;
+        [?])
+            ShowUsage
+            exit 1
+    esac
+done
+
+if [ -z "$ACTION" ]; then
+    ShowUsage
+    exit 1
 fi
 
 rc=0
 
-case "$1" in
+case "$ACTION" in
     start)
         StartService
         rc=$?

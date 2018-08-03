@@ -1089,9 +1089,11 @@ Lightwave Samples
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service
+%{_stsconfdir}/sts.policy
 
 %config %attr(700, root, root) %{_stsbindir}/setenv.sh
 %config %attr(600, root, root) %{_stsbindir}/vmware-identity-tomcat-extensions.jar
+%config %attr(600, root, root) %{_stsbindir}/pro-grade-1.1.1.jar
 %config %attr(600, root, root) %{_stsconfdir}/catalina.policy
 %config %attr(600, root, root) %{_stsconfdir}/catalina.properties
 %config %attr(600, root, root) %{_stsconfdir}/context.xml
