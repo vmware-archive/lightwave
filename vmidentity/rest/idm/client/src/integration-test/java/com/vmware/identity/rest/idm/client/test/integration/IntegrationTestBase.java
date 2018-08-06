@@ -17,11 +17,17 @@ import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.a
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
+import java.security.KeyManagementException;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+
+import javax.xml.soap.SOAPException;
 
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 
 import com.vmware.directory.rest.client.VmdirClient;
+import com.vmware.identity.rest.core.client.AccessToken;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.test.integration.IntegrationTestProperties;
@@ -41,20 +47,13 @@ public class IntegrationTestBase {
     protected static VmdirClient testVmdirClient;
     protected static String systemTenantName;
 
-    public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException {
+    protected static final AccessToken.Type defaultTokenType = AccessToken.Type.JWT;
+
+    public static void init(boolean withTestTenant) throws IOException, GeneralSecurityException, ClientException, HttpException, SOAPException {
         properties = new IntegrationTestProperties();
         systemTenantName = properties.getSystemTenant();
 
-        systemAdminClient = TestClientFactory.createClient(properties.getHost(),
-                systemTenantName,
-                properties.getSystemAdminUsername(),
-                properties.getSystemDomain(),
-                properties.getSystemAdminPassword());
-
-        systemAdminVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
-                properties.getSystemTenant(),
-                UPNUtil.buildUPN(properties.getSystemAdminUsername(), properties.getSystemDomain()),
-                properties.getSystemAdminPassword());
+        initSystemTenantClients(defaultTokenType);
 
         if (withTestTenant) {
             testTenant = TestGenerator.generateTenant();
@@ -63,16 +62,44 @@ public class IntegrationTestBase {
             TenantDTO created = systemAdminClient.tenant().create(testTenant);
             assertTenantEquals(testTenant, created);
 
-            testAdminClient = TestClientFactory.createClient(properties.getHost(),
-                    testTenant.getName(),
-                    testTenant.getUsername(),
-                    testTenant.getPassword());
-
-            testVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
-                    testTenant.getName(),
-                    testTenant.getUsername(),
-                    testTenant.getPassword());
+            initTestTenantClients(defaultTokenType);
         }
+    }
+
+    public IntegrationTestBase(boolean withTestTenant, AccessToken.Type tokenType) throws IOException, GeneralSecurityException, ClientException, HttpException, SOAPException {
+        initSystemTenantClients(tokenType);
+        if (withTestTenant) {
+            initTestTenantClients(tokenType);
+        }
+    }
+
+    private static void initSystemTenantClients(AccessToken.Type tokenType) throws IOException, GeneralSecurityException, ClientException, HttpException, SOAPException {
+        systemAdminClient = TestClientFactory.createClient(properties.getHost(),
+                systemTenantName,
+                properties.getSystemAdminUsername(),
+                properties.getSystemDomain(),
+                properties.getSystemAdminPassword(),
+                tokenType);
+
+        systemAdminVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
+                properties.getSystemTenant(),
+                UPNUtil.buildUPN(properties.getSystemAdminUsername(), properties.getSystemDomain()),
+                properties.getSystemAdminPassword(),
+                tokenType);
+    }
+
+    private static void initTestTenantClients(AccessToken.Type tokenType) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
+        testAdminClient = TestClientFactory.createClient(properties.getHost(),
+                testTenant.getName(),
+                testTenant.getUsername(),
+                testTenant.getPassword(),
+                tokenType);
+
+        testVmdirClient = TestClientFactory.createVmdirClient(properties.getHost(),
+                testTenant.getName(),
+                testTenant.getUsername(),
+                testTenant.getPassword(),
+                tokenType);
     }
 
     public static void cleanup(boolean withTestTenant) throws ClientProtocolException, HttpException, ClientException, IOException {

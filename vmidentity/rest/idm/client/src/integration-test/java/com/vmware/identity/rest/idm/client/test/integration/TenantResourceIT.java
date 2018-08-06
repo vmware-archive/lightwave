@@ -14,17 +14,18 @@
 package com.vmware.identity.rest.idm.client.test.integration;
 
 import static com.vmware.identity.rest.idm.client.test.integration.util.Assert.assertTenantEquals;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
-
 
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Random;
+
+import javax.xml.soap.SOAPException;
 
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
@@ -32,11 +33,15 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.vmware.directory.rest.common.data.GroupDTO;
 import com.vmware.directory.rest.common.data.MemberType;
 import com.vmware.directory.rest.common.data.SolutionUserDTO;
 import com.vmware.directory.rest.common.data.UserDTO;
+import com.vmware.identity.rest.core.client.AccessToken;
 import com.vmware.identity.rest.core.client.UPNUtil;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.client.ForbiddenException;
@@ -45,13 +50,14 @@ import com.vmware.identity.rest.idm.client.test.integration.util.TestClientFacto
 import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.client.test.integration.util.UserGenerator;
 import com.vmware.identity.rest.idm.data.LockoutPolicyDTO;
-import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.OperatorsAccessPolicyDTO;
+import com.vmware.identity.rest.idm.data.PasswordPolicyDTO;
 import com.vmware.identity.rest.idm.data.PrincipalIdentifiersDTO;
 import com.vmware.identity.rest.idm.data.SecurityDomainDTO;
 import com.vmware.identity.rest.idm.data.TenantConfigurationDTO;
 import com.vmware.identity.rest.idm.data.TenantDTO;
 
+@RunWith(value = Parameterized.class)
 public class TenantResourceIT extends IntegrationTestBase {
 
     private static UserDTO testUserWithPriviledge;
@@ -64,8 +70,20 @@ public class TenantResourceIT extends IntegrationTestBase {
     private static String testTenantName1 = TenantResourceIT.class.getSimpleName() + ".tenant1";
     private static String testTenantName2 = TenantResourceIT.class.getSimpleName() + ".tenant2";
 
+    private AccessToken.Type tokenType;
+
+    @Parameters
+    public static Object[] data() {
+           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
+    }
+
+    public TenantResourceIT(AccessToken.Type tokenType) throws Exception {
+        super(true, tokenType);
+        this.tokenType = tokenType;
+    }
+
     @BeforeClass
-    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
+    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException, SOAPException {
         IntegrationTestBase.init(true);
         systemTenant = properties.getSystemTenant();
         testUserWithPriviledge = systemAdminVmdirClient.user().create(systemTenant, TestGenerator.generateVmdirUser("testUser1", systemTenant, "Test user with tenant operator privilege."));
@@ -115,6 +133,8 @@ public class TenantResourceIT extends IntegrationTestBase {
 
     @Test
     public void testUpdateConfig() throws ClientProtocolException, HttpException, ClientException, IOException {
+        // generate random int between 10 and 210
+        int passwordLifetimeInDays = new Random().nextInt(200) + 10;
         LockoutPolicyDTO lockout = new LockoutPolicyDTO.Builder()
             .withDescription("Updated description")
             .withAutoUnlockIntervalSec(30L)
@@ -131,7 +151,7 @@ public class TenantResourceIT extends IntegrationTestBase {
             .withMinNumericCount(1)
             .withMinSpecialCharCount(1)
             .withMinUppercaseCount(1)
-            .withPasswordLifetimeDays(10)
+            .withPasswordLifetimeDays(passwordLifetimeInDays)
             .withProhibitedPreviousPasswordCount(3)
             .build();
 
@@ -144,8 +164,6 @@ public class TenantResourceIT extends IntegrationTestBase {
             .withOperatorsAccessPolicy(operatorsDto)
             .build();
 
-        // verify default password expirationd days before update
-        assertEquals(new Integer(700), testAdminClient.tenant().getConfig(testTenant.getName()).getPasswordPolicy().getPasswordLifetimeDays());
         TenantConfigurationDTO actual = testAdminClient.tenant().updateConfig(testTenant.getName(), config);
 
         assertEquals(lockout.getDescription(), actual.getLockoutPolicy().getDescription());
@@ -172,14 +190,14 @@ public class TenantResourceIT extends IntegrationTestBase {
         IdmClient idmClientWithPrviledge = TestClientFactory.createClient(properties.getHost(),
                 systemTenant,
                 UPNUtil.buildUPN(testUserWithPriviledge.getName() ,testUserWithPriviledge.getDomain()),
-                UserGenerator.PASSWORD);
+                UserGenerator.PASSWORD, tokenType);
         idmClientWithPrviledge.tenant().create(TestGenerator.generateTenant(testTenantName1));
         Thread.sleep(15 * 1000);
 
         IdmClient idmClientWithoutPrviledge = TestClientFactory.createClient(properties.getHost(),
                 systemTenant,
                 UPNUtil.buildUPN(testUserWithoutPriviledge.getName(), testUserWithoutPriviledge.getDomain()),
-                UserGenerator.PASSWORD);
+                UserGenerator.PASSWORD, tokenType);
         Exception ex = null;
         try {
             idmClientWithoutPrviledge.tenant().create(TestGenerator.generateTenant(testTenantName2));

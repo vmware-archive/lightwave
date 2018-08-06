@@ -25,6 +25,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.After;
@@ -32,17 +34,36 @@ import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+import com.vmware.identity.rest.core.client.AccessToken;
+import com.vmware.identity.rest.core.client.AccessToken.Type;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.client.test.integration.util.TokenFactory;
 import com.vmware.identity.rest.idm.data.EventLogDTO;
 import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
 
+@RunWith(value = Parameterized.class)
 public class DiagnosticsResourceIT extends IntegrationTestBase {
 
+    private Type tokenType;
+
+    public DiagnosticsResourceIT(Type tokenType) throws Exception {
+        super(true, tokenType);
+        this.tokenType = tokenType;
+        testAdminClient.diagnostics().clearEventLog(testTenant.getName());
+    }
+
+    @Parameters
+    public static Object[] data() {
+           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
+    }
+
     @BeforeClass
-    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
+    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException, SOAPException {
         IntegrationTestBase.init(true);
     }
 
@@ -62,7 +83,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLog() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public void testGetEventLog() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, SOAPException {
         getAccessToken();
 
         List<EventLogDTO> events = testAdminClient.diagnostics().getEventLog(testTenant.getName());
@@ -71,7 +92,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLogStatus() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public void testGetEventLogStatus() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, SOAPException {
         getAccessToken();
 
         EventLogStatusDTO status = testAdminClient.diagnostics().getEventLogStatus(testTenant.getName());
@@ -81,7 +102,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLogStatus_stopped() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public void testGetEventLogStatus_stopped() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, SOAPException {
         testAdminClient.diagnostics().stopEventLog(testTenant.getName());
         getAccessToken();
 
@@ -92,7 +113,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLog_sized() throws GeneralSecurityException, IOException, HttpException, ClientException {
+    public void testGetEventLog_sized() throws GeneralSecurityException, IOException, HttpException, ClientException, SOAPException {
         int size = 5;
         testAdminClient.diagnostics().startEventLog(testTenant.getName(), size);
 
@@ -106,7 +127,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLog_stopped() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public void testGetEventLog_stopped() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, SOAPException {
         testAdminClient.diagnostics().stopEventLog(testTenant.getName());
         getAccessToken();
 
@@ -116,7 +137,7 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testGetEventLog_cleared() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException {
+    public void testGetEventLog_cleared() throws ClientProtocolException, WebApplicationException, ClientException, HttpException, IOException, KeyManagementException, NoSuchAlgorithmException, KeyStoreException, SOAPException {
         getAccessToken();
         testAdminClient.diagnostics().clearEventLog(testTenant.getName());
 
@@ -125,11 +146,12 @@ public class DiagnosticsResourceIT extends IntegrationTestBase {
         assertTrue(events.isEmpty());
     }
 
-    private static void getAccessToken() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+    private void getAccessToken() throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
         TokenFactory.getAccessToken(properties.getHost(),
                 testTenant.getName(),
                 testTenant.getUsername(),
-                testTenant.getPassword());
+                testTenant.getPassword(),
+                tokenType);
     }
 
 }

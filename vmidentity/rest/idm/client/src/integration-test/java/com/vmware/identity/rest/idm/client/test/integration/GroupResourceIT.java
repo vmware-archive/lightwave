@@ -18,22 +18,39 @@ import static org.junit.Assert.assertNotNull;
 import java.io.IOException;
 import java.security.GeneralSecurityException;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
 import com.vmware.directory.rest.common.data.GroupDetailsDTO;
+import com.vmware.identity.rest.core.client.AccessToken;
+import com.vmware.identity.rest.core.client.AccessToken.Type;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 
+@RunWith(value = Parameterized.class)
 public class GroupResourceIT extends IntegrationTestBase {
+
+    @Parameters
+    public static Object[] data() {
+           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
+    }
+
+    public GroupResourceIT(Type tokenType) throws Exception {
+        super(true, tokenType);
+    }
 
     private static final String TEST_GROUP_NAME = "test.group";
 
     @BeforeClass
-    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
+    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException, SOAPException {
         IntegrationTestBase.init(true);
     }
 

@@ -20,6 +20,8 @@ import java.security.NoSuchAlgorithmException;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.http.client.ClientProtocolException;
 import org.apache.http.conn.ssl.NoopHostnameVerifier;
 import org.apache.http.conn.ssl.TrustStrategy;
@@ -36,6 +38,7 @@ import com.vmware.identity.rest.idm.client.IdmClient;
 
 public class TestClientFactory {
 
+    private static final AccessToken.Type defaultTokenType = AccessToken.Type.JWT;
 
     /**
      * Create an IdmClient with the given parameters.
@@ -51,8 +54,9 @@ public class TestClientFactory {
      * @throws KeyStoreException
      * @throws NoSuchAlgorithmException
      * @throws KeyManagementException
+     * @throws SOAPException
      */
-    public static IdmClient createClient(String host, String tenant, String username, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+    public static IdmClient createClient(String host, String tenant, String username, String password, AccessToken.Type tokenType) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
         HostRetriever hostRetriever = new SimpleHostRetriever(host, true);
         IdmClient client = new IdmClient(hostRetriever,
                 NoopHostnameVerifier.INSTANCE,
@@ -65,17 +69,25 @@ public class TestClientFactory {
                     }
                 }).build());
 
-        String token = TokenFactory.getAccessToken(host, tenant, username, password);
+        String token = TokenFactory.getAccessToken(host, tenant, username, password, tokenType);
 
-        client.setToken(new AccessToken(token, AccessToken.Type.JWT));
+        client.setToken(new AccessToken(token, tokenType));
         return client;
     }
 
-    public static IdmClient createClient(String host, String tenant, String username, String domain, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
-        return createClient(host, tenant, UPNUtil.buildUPN(username, domain), password);
+    public static IdmClient createClient(String host, String tenant, String username, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
+        return createClient(host, tenant, username, password, defaultTokenType);
     }
 
-    public static VmdirClient createVmdirClient(String host, String tenant, String username, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException {
+    public static IdmClient createClient(String host, String tenant, String username, String domain, String password, AccessToken.Type tokenType) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
+        return createClient(host, tenant, UPNUtil.buildUPN(username, domain), password, tokenType);
+    }
+
+    public static IdmClient createClient(String host, String tenant, String username, String domain, String password) throws Exception {
+        return createClient(host, tenant, UPNUtil.buildUPN(username, domain), password, defaultTokenType);
+    }
+
+    public static VmdirClient createVmdirClient(String host, String tenant, String username, String password, AccessToken.Type tokenType) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
         HostRetriever hostRetriever = new SimpleHostRetriever(host, true);
         VmdirClient client = new VmdirClient(hostRetriever,
                 NoopHostnameVerifier.INSTANCE,
@@ -88,11 +100,13 @@ public class TestClientFactory {
                     }
                 }).build());
 
-        String token = TokenFactory.getAccessToken(host, tenant, username, password);
+        String token = TokenFactory.getAccessToken(host, tenant, username, password, tokenType);
 
-        client.setToken(new AccessToken(token, AccessToken.Type.JWT));
+        client.setToken(new AccessToken(token, tokenType));
         return client;
     }
 
-
+    public static VmdirClient createVmdirClient(String host, String tenant, String username, String password) throws KeyManagementException, NoSuchAlgorithmException, KeyStoreException, ClientProtocolException, ClientException, IOException, SOAPException {
+        return createVmdirClient(host, tenant, username, password, defaultTokenType);
+    }
 }
