@@ -36,6 +36,7 @@ import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.EventLogDTO;
 import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
+import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
@@ -150,6 +151,22 @@ public class PostResource extends BaseResource {
     @RequiresRole(role = Role.ADMINISTRATOR)
     public ExternalIDPDTO getExternalIDP(@PathParam("tenantName") String tenantName, @PathParam("entityID") String entityID) {
         return new ExternalIDPResource(tenantName, getRequest(), getSecurityContext()).get(entityID);
+    }
+
+    // Federated IDP Resource
+
+    @POST @Path("/tenant/{tenantName}/federation")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public Collection<FederatedIdpDTO> getAllFederationIDPs(@PathParam("tenantName") String tenantName) {
+        return new FederatedIdpResource(tenantName, getRequest(), getSecurityContext()).getAll();
+    }
+
+    @POST @Path("/tenant/{tenantName}/federation/{entityID}")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role = Role.ADMINISTRATOR)
+    public FederatedIdpDTO getFederationIDP(@PathParam("tenantName") String tenantName, @PathParam("entityID") String entityID) {
+        return new FederatedIdpResource(tenantName, getRequest(), getSecurityContext()).get(entityID);
     }
 
     // Certificate Resource
