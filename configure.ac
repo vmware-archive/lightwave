@@ -1650,6 +1650,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/api/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
+                 vmdir/server/replication2/Makefile
                  vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
