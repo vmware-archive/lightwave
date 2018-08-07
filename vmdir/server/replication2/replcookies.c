@@ -33,26 +33,29 @@ _VmDirUpdateServerObject(
 int
 VmDirReplCookieUpdate(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
-    struct berval *                 syncDoneCtrlVal,
+    USN                             lastUsnProcessed,
+    PVMDIR_UTDVECTOR_CACHE          pUtdVector,
     VMDIR_REPLICATION_AGREEMENT *   replAgr)
 {
     int             retVal = LDAP_SUCCESS;
     VDIR_BERVALUE   bvLastLocalUsnProcessed = VDIR_BERVALUE_INIT;
     VDIR_BERVALUE   utdVector = VDIR_BERVALUE_INIT;
+    PSTR            pszUsn = NULL;
+    PSTR            pszUtdVector = NULL;
 
     // Update (both in memory and on disk) lastLocalUsnProcessed in the replication agreement, and the
     // utd vector in the server object.
+    retVal = VmDirAllocateStringPrintf(&pszUsn, "%" PRId64, lastUsnProcessed);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    bvLastLocalUsnProcessed.lberbv.bv_val = syncDoneCtrlVal->bv_val;
-    bvLastLocalUsnProcessed.lberbv.bv_len =
-            VmDirStringChrA(bvLastLocalUsnProcessed.lberbv.bv_val, ',') -
-            bvLastLocalUsnProcessed.lberbv.bv_val;
+    bvLastLocalUsnProcessed.lberbv.bv_val = pszUsn;
+    bvLastLocalUsnProcessed.lberbv.bv_len = VmDirStringLenA(pszUsn);
 
-    // Note: We are effectively over-writing in ctrls[0]->ldctl_value.bv_val here, which should be ok.
-    bvLastLocalUsnProcessed.lberbv.bv_val[bvLastLocalUsnProcessed.lberbv.bv_len] = '\0';
+    retVal = VmDirUTDVectorCacheToString(pUtdVector, &pszUtdVector);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    utdVector.lberbv.bv_val = syncDoneCtrlVal->bv_val + bvLastLocalUsnProcessed.lberbv.bv_len + 1;
-    utdVector.lberbv.bv_len = syncDoneCtrlVal->bv_len - bvLastLocalUsnProcessed.lberbv.bv_len - 1;
+    utdVector.lberbv.bv_val = pszUtdVector;
+    utdVector.lberbv.bv_len = VmDirStringLenA(pszUtdVector);
 
     // if lastLocalUsnProcessed is different
     if (VmDirStringCompareA(bvLastLocalUsnProcessed.lberbv.bv_val, replAgr->lastLocalUsnProcessed.lberbv.bv_val, TRUE) != 0)
@@ -66,7 +69,7 @@ VmDirReplCookieUpdate(
         BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of utdVector
-        retVal = VmDirUTDVectorCacheUpdate(utdVector.lberbv.bv_val);
+        retVal = VmDirUTDVectorGlobalCacheReplace(utdVector.lberbv.bv_val);
         BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update disk copy of lastLocalUsnProcessed
@@ -94,6 +97,8 @@ VmDirReplCookieUpdate(
     retVal = LDAP_SUCCESS;
 
 cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUsn);
+    VMDIR_SAFE_FREE_STRINGA(pszUtdVector);
     return retVal;
 
 error:

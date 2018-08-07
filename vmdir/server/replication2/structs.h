@@ -25,46 +25,11 @@
  *
  */
 
-typedef struct _VMDIR_REPLICATION_PAGE_ENTRY
-{
-    LDAPMessage*    entry;// not valid during retry
-    int             entryState;
-    PSTR            pszPartner;
-    USN             ulPartnerUSN;
-    PSTR            pszDn;
-    DWORD           dwDnLength;
-    int             errVal;
-    PVDIR_BERVALUE  pBervEncodedEntry; // valid only during retry
-    VDIR_BERVALUE   reqDn;
-} VMDIR_REPLICATION_PAGE_ENTRY, *PVMDIR_REPLICATION_PAGE_ENTRY;
-
-typedef struct _VMDIR_REPLICATION_PAGE
-{
-    PSTR pszFilter;
-    LDAPControl syncReqCtrl;
-    LDAPMessage *searchRes;
-    LDAPControl **searchResCtrls;
-    VMDIR_REPLICATION_PAGE_ENTRY *pEntries;
-    int iEntriesRequested;
-    int iEntriesReceived;
-    USN lastSupplierUsnProcessed;
-    int iEntriesProcessed;
-    int iEntriesOutOfSequence;
-} VMDIR_REPLICATION_PAGE, *PVMDIR_REPLICATION_PAGE;
-
 typedef struct _VMDIR_REPLICATON_CONNECTION
 {
     LDAP*   pLd;
     PSTR    pszPartnerHostName;
 } VMDIR_REPLICATION_CONNECTION, *PVMDIR_REPLICATION_CONNECTION;
-
-typedef struct _VMDIR_REPLICATION_CONTEXT
-{
-    PVDIR_SCHEMA_CTX    pSchemaCtx;
-    time_t              stLastTimeTriedToFillHoleInDirectory;
-    PSTR                pszKrb5ErrorMsg;
-    PDEQUE              pFailedEntriesQueue;
-} VMDIR_REPLICATION_CONTEXT, *PVMDIR_REPLICATION_CONTEXT;
 
 typedef struct _VMDIR_REPLICATION_METRICS_CACHE
 {
@@ -81,12 +46,11 @@ typedef struct _VMDIR_DR_DC_INFO
 
 typedef struct _VMDIR_SWAP_DB_INFO
 {
-    PSTR    pszOrgDBServerName;     // remote db was taken from this server object name
-    PSTR    pszOrgDBUTDVector;
-    PSTR    pszOrgDBMaxUSN;
-    PSTR    pszPartnerServerName;   // optional partner server object name
-    PSTR    pszMyUTDVcetor;
-    PSTR    pszMyHighWaterMark;
+    PSTR                    pszOrgDBServerName;     // remote db was taken from this server object name
+    PSTR                    pszOrgDBMaxUSN;
+    PSTR                    pszPartnerServerName;   // optional partner server object name
+    PVMDIR_UTDVECTOR_CACHE  pMyUTDVector;
+    PSTR                    pszMyHighWaterMark;
 } VMDIR_SWAP_DB_INFO, *PVMDIR_SWAP_DB_INFO;
 
 typedef struct _VMDIR_JOIN_FLOW_INFO
@@ -94,3 +58,18 @@ typedef struct _VMDIR_JOIN_FLOW_INFO
     BOOLEAN bJoinWithPreCopiedDB;
     DWORD   dwPreSetMaxServerId;
 } VMDIR_JOIN_FLOW_INFO, *PVMDIR_JOIN_FLOW_INFO;
+
+typedef struct _VMDIR_REPLICATION_UPDATE
+{
+    int         syncState;
+    USN         partnerUsn;
+    PSTR        pszPartner;
+    PVDIR_ENTRY pEntry;
+} VMDIR_REPLICATION_UPDATE, *PVMDIR_REPLICATION_UPDATE;
+
+typedef struct _VMDIR_REPLICATION_UPDATE_LIST
+{
+    PVDIR_LINKED_LIST       pLinkedList;
+    PVMDIR_UTDVECTOR_CACHE  pNewUtdVector;
+    USN                     newHighWaterMark;
+} VMDIR_REPLICATION_UPDATE_LIST, *PVMDIR_REPLICATION_UPDATE_LIST;

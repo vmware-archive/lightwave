@@ -31,30 +31,13 @@ _VmDirUTDVectorStrToPair(
     );
 
 DWORD
-VmDirUTDVectorCacheInit(
+VmDirUTDVectorGlobalCacheInit(
     VOID
     )
 {
     DWORD   dwError = 0;
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VMDIR_UTDVECTOR_CACHE),
-            (PVOID*)&gVmdirServerGlobals.pUtdVectorCache);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = LwRtlCreateHashMap(
-            &gVmdirServerGlobals.pUtdVectorCache->pUtdVectorMap,
-            LwRtlHashDigestPstrCaseless,
-            LwRtlHashEqualPstrCaseless,
-            NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringA(
-            "", &gVmdirServerGlobals.pUtdVectorCache->pszUtdVector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateRWLock(
-            &gVmdirServerGlobals.pUtdVectorCache->pUtdVectorLock);
+    dwError = VmDirUTDVectorCacheInit(&gVmdirServerGlobals.pUtdVectorCache);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -66,34 +49,148 @@ error:
 }
 
 DWORD
-VmDirUTDVectorCacheUpdate(
+VmDirUTDVectorGlobalCacheReplace(
     PCSTR   pszNewUTDVector
     )
 {
     DWORD   dwError = 0;
+
+    dwError = VmDirUTDVectorCacheReplace(gVmdirServerGlobals.pUtdVectorCache, pszNewUTDVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirUTDVectorGlobalCacheToString(
+    PSTR*   ppszUTDVector
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirUTDVectorCacheToString(gVmdirServerGlobals.pUtdVectorCache, ppszUTDVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirUTDVectorGlobalCacheLookup(
+    PCSTR   pszInvocationId,
+    USN*    pUsn
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmDirUTDVectorCacheLookup(gVmdirServerGlobals.pUtdVectorCache, pszInvocationId, pUsn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+VOID
+VmDirFreeUTDVectorGlobalCache(
+    VOID
+    )
+{
+    VmDirFreeUTDVectorCache(gVmdirServerGlobals.pUtdVectorCache);
+
+    return;
+
+}
+
+DWORD
+VmDirUTDVectorCacheInit(
+    PVMDIR_UTDVECTOR_CACHE*    ppUTDVector
+    )
+{
+    DWORD                   dwError = 0;
+    PVMDIR_UTDVECTOR_CACHE  pCache = NULL;
+
+    if (!ppUTDVector)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VMDIR_UTDVECTOR_CACHE),
+            (PVOID*)&pCache);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(
+            &pCache->pUtdVectorMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(
+            "", &pCache->pszUtdVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateRWLock(
+            &pCache->pUtdVectorLock);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppUTDVector = pCache;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirUTDVectorCacheReplace(
+    PVMDIR_UTDVECTOR_CACHE pUTDVector,
+    PCSTR                  pszNewUTDVector
+    )
+{
+    DWORD   dwError = 0;
     BOOLEAN bInLock = FALSE;
-    PVMDIR_UTDVECTOR_CACHE  pCache = gVmdirServerGlobals.pUtdVectorCache;
+
+    if (!pUTDVector)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
     if (IsNullOrEmptyString(pszNewUTDVector))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    VMDIR_RWLOCK_WRITELOCK(bInLock, pCache->pUtdVectorLock, 0);
+    VMDIR_RWLOCK_WRITELOCK(bInLock, pUTDVector->pUtdVectorLock, 0);
 
     // update hash map first
-    LwRtlHashMapClear(pCache->pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
+    LwRtlHashMapClear(pUTDVector->pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
 
-    dwError = VmDirStrtoVector(pszNewUTDVector, _VmDirUTDVectorStrToPair, pCache->pUtdVectorMap);
+    dwError = VmDirStrtoVector(pszNewUTDVector, _VmDirUTDVectorStrToPair, pUTDVector->pUtdVectorMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // update string
-    VMDIR_SAFE_FREE_MEMORY(pCache->pszUtdVector);
-    dwError = VmDirAllocateStringA(pszNewUTDVector, &pCache->pszUtdVector);
+    VMDIR_SAFE_FREE_MEMORY(pUTDVector->pszUtdVector);
+    dwError = VmDirAllocateStringA(pszNewUTDVector, &pUTDVector->pszUtdVector);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, pCache->pUtdVectorLock);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUTDVector->pUtdVectorLock);
     return dwError;
 
 error:
@@ -103,25 +200,28 @@ error:
 
 DWORD
 VmDirUTDVectorCacheToString(
-    PSTR*   ppszUTDVector
+    PVMDIR_UTDVECTOR_CACHE pUTDVector,
+    PSTR*                  ppszUTDVector
     )
 {
     DWORD   dwError = 0;
     BOOLEAN bInLock = FALSE;
-    PVMDIR_UTDVECTOR_CACHE  pCache = gVmdirServerGlobals.pUtdVectorCache;
+    PSTR    pszUTDVector = NULL;
 
-    if (!ppszUTDVector)
+    if (!pUTDVector || !ppszUTDVector)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    VMDIR_RWLOCK_READLOCK(bInLock, pCache->pUtdVectorLock, 0);
+    VMDIR_RWLOCK_READLOCK(bInLock, pUTDVector->pUtdVectorLock, 0);
 
-    dwError = VmDirAllocateStringA(pCache->pszUtdVector, ppszUTDVector);
+    dwError = VmDirAllocateStringA(pUTDVector->pszUtdVector, &pszUTDVector);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    *ppszUTDVector = pszUTDVector;
+
 cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, pCache->pUtdVectorLock);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUTDVector->pUtdVectorLock);
     return dwError;
 
 error:
@@ -131,16 +231,17 @@ error:
 
 DWORD
 VmDirUTDVectorCacheLookup(
-    PCSTR   pszInvocationId,
-    USN*    pUsn
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PCSTR                   pszInvocationId,
+    USN*                    pUsn
     )
 {
-    DWORD   dwError = 0;
-    BOOLEAN bInLock = FALSE;
+    DWORD       dwError = 0;
+    BOOLEAN     bInLock = FALSE;
     uintptr_t   usn = 0;
-    PVMDIR_UTDVECTOR_CACHE  pCache = gVmdirServerGlobals.pUtdVectorCache;
+    PVMDIR_UTDVECTOR_CACHE  pCache = pUTDVector;
 
-    if (IsNullOrEmptyString(pszInvocationId) || !pUsn)
+    if (IsNullOrEmptyString(pszInvocationId) || !pUsn || !pUTDVector)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -162,26 +263,43 @@ error:
 }
 
 DWORD
-VmDirUTDVectorLookup(
-    PLW_HASHMAP pUtdVectorMap,
-    PCSTR   pszInvocationId,
-    USN*    pUsn
+VmDirUTDVectorCacheAdd(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PCSTR                   pszInvocationId,
+    PCSTR                   pszUsn
     )
 {
-    DWORD   dwError = 0;
-    uintptr_t   usn = 0;
+    DWORD       dwError = 0;
+    BOOLEAN     bInLock = FALSE;
+    PSTR        pszDupKey = NULL;
+    USN         Usn = 0;
 
-    if (!pUtdVectorMap || IsNullOrEmptyString(pszInvocationId) || !pUsn)
+    if (IsNullOrEmptyString(pszInvocationId) || !pUTDVector)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = LwRtlHashMapFindKey(pUtdVectorMap, (PVOID*)&usn, pszInvocationId);
+    dwError = VmDirAllocateStringA(pszInvocationId, &pszDupKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    *pUsn = (USN)usn;
+    dwError = VmDirStringToINT64(pszUsn, &Usn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RWLOCK_READLOCK(bInLock, pUTDVector->pUtdVectorLock, 0);
+
+    dwError = LwRtlHashMapInsert(pUTDVector->pUtdVectorMap, pszDupKey, (PVOID) Usn, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszDupKey = NULL;
+
+    VMDIR_SAFE_FREE_STRINGA(pUTDVector->pszUtdVector);
+
+    dwError = VmDirVectorToStr(pUTDVector->pUtdVectorMap, _VmDirUTDVectorPairToStr, &pUTDVector->pszUtdVector);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUTDVector->pUtdVectorLock);
+    VMDIR_SAFE_FREE_MEMORY(pszDupKey);
     return dwError;
 
 error:
@@ -190,212 +308,30 @@ error:
 }
 
 VOID
-VmDirUTDVectorCacheShutdown(
-    VOID
+VmDirFreeUTDVectorCache(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector
     )
 {
     BOOLEAN bInLock = FALSE;
-    PVMDIR_UTDVECTOR_CACHE  pCache = gVmdirServerGlobals.pUtdVectorCache;
 
-    VMDIR_RWLOCK_WRITELOCK(bInLock, pCache->pUtdVectorLock, 0);
-
-    if (pCache->pUtdVectorMap)
+    if (!pUTDVector)
     {
-        LwRtlHashMapClear(pCache->pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
-        LwRtlFreeHashMap(&pCache->pUtdVectorMap);
-    }
-    VMDIR_SAFE_FREE_MEMORY(pCache->pszUtdVector);
-
-    VMDIR_RWLOCK_UNLOCK(bInLock, pCache->pUtdVectorLock);
-    VMDIR_SAFE_FREE_RWLOCK(pCache->pUtdVectorLock);
-
-    VMDIR_SAFE_FREE_MEMORY(gVmdirServerGlobals.pUtdVectorCache);
-}
-
-DWORD
-VmDirStringToUTDVector(
-    PCSTR          pszUTDVector,
-    PLW_HASHMAP*   ppMap
-    )
-{
-    DWORD         dwError = 0;
-    PLW_HASHMAP   pMap = NULL;
-
-    if (!pszUTDVector || !ppMap)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+        return;
     }
 
-    dwError = LwRtlCreateHashMap(
-            &pMap,
-            LwRtlHashDigestPstrCaseless,
-            LwRtlHashEqualPstrCaseless,
-            NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_RWLOCK_WRITELOCK(bInLock, pUTDVector->pUtdVectorLock, 0);
 
-    if (IsNullOrEmptyString(pszUTDVector) == FALSE)
+    if (pUTDVector->pUtdVectorMap)
     {
-        dwError = VmDirStrtoVector(pszUTDVector, _VmDirUTDVectorStrToPair, pMap);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        LwRtlHashMapClear(pUTDVector->pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
+        LwRtlFreeHashMap(&pUTDVector->pUtdVectorMap);
     }
+    VMDIR_SAFE_FREE_MEMORY(pUTDVector->pszUtdVector);
 
-    VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "%s: Starting UTDVector: %s", __FUNCTION__, pszUTDVector);
+    VMDIR_RWLOCK_UNLOCK(bInLock, pUTDVector->pUtdVectorLock);
+    VMDIR_SAFE_FREE_RWLOCK(pUTDVector->pUtdVectorLock);
 
-    *ppMap = pMap;
-
-cleanup:
-    return dwError;
-
-error:
-    LwRtlHashMapClear(pMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
-    LwRtlFreeHashMap(&pMap);
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirUTDVectorToString(
-    PLW_HASHMAP   pMap,
-    PSTR*         ppszUTDVector
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszUTDvector = NULL;
-
-    if (!pMap || !ppszUTDVector)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirVectorToStr(pMap, _VmDirUTDVectorPairToStr, &pszUTDvector);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppszUTDVector = pszUTDvector;
-    pszUTDvector = NULL;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszUTDvector);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-
-
-DWORD
-VmDirSyncDoneCtrlFromLocalCache(
-    USN              lastSupplierUsnProcessed,
-    PLW_HASHMAP      pUtdVectorMap,
-    struct berval*   pPageSyncDoneCtrl
-    )
-{
-    PSTR   pszUtdVectorStr = NULL;
-    PSTR   pszHighWatermark = NULL;
-    PSTR   pszSyncDoneCtrlVal = NULL;
-    DWORD  dwError = 0;
-
-    if (!pUtdVectorMap || !pPageSyncDoneCtrl)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirAllocateStringPrintf(&pszHighWatermark, "%" PRId64 ",", lastSupplierUsnProcessed);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirUTDVectorToString(pUtdVectorMap, &pszUtdVectorStr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringPrintf(&pszSyncDoneCtrlVal, "%s%s", pszHighWatermark, pszUtdVectorStr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: update cookie: %s", __FUNCTION__, pszSyncDoneCtrlVal);
-
-    pPageSyncDoneCtrl->bv_val = pszSyncDoneCtrlVal;
-    pPageSyncDoneCtrl->bv_len = VmDirStringLenA(pszSyncDoneCtrlVal);
-    pszSyncDoneCtrlVal = NULL;
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszHighWatermark);
-    VMDIR_SAFE_FREE_MEMORY(pszUtdVectorStr);
-    VMDIR_SAFE_FREE_MEMORY(pszSyncDoneCtrlVal);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-
-DWORD
-VmDirUpdateUtdVectorLocalCache(
-    PLW_HASHMAP      pUtdVectorMap,
-    struct berval*   pPageSyncDoneCtrl
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwCount = 0;
-    USN     currUsn = 0;
-    USN     cachedUsn = 0;
-    PSTR    pszDupKey = NULL;
-    PSTR    pszKey = NULL;
-    PSTR    pszVal = NULL;
-    PVMDIR_STRING_LIST   pStrList = NULL;
-
-    if (!pUtdVectorMap || !pPageSyncDoneCtrl)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringToTokenList(pPageSyncDoneCtrl->bv_val, ",", &pStrList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    //skip high watermark
-    for (dwCount = 1; dwCount < pStrList->dwCount; dwCount++)
-    {
-        if (VmDirStringStrA(pStrList->pStringList[dwCount], VMDIR_REPL_DD_VEC_INDICATOR) != NULL ||
-            VmDirStringStrA(pStrList->pStringList[dwCount], VMDIR_REPL_CONT_INDICATOR_STR) != NULL)
-        {
-            break;
-        }
-
-        if (pStrList->pStringList[dwCount][0] != '\0')
-        {
-            pszKey = VmDirStringTokA((PSTR)pStrList->pStringList[dwCount], ":", &pszVal);
-
-            dwError = VmDirStringToINT64(pszVal, &currUsn);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            VMDIR_SAFE_FREE_MEMORY(pszDupKey);
-
-            dwError = VmDirAllocateStringA(pszKey, &pszDupKey);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = LwRtlHashMapFindKey(pUtdVectorMap, (PVOID*)&cachedUsn, pszKey);
-            if ((dwError == 0 && (currUsn > cachedUsn)) ||
-                 dwError == LW_STATUS_NOT_FOUND)
-            {
-                dwError = LwRtlHashMapInsert(
-                        pUtdVectorMap,
-                        pszDupKey,
-                        (PVOID)currUsn,
-                        NULL);
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                pszDupKey = NULL;
-                dwError = 0;
-            }
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-    }
-
-cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszDupKey);
-    VmDirStringListFree(pStrList);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
+    VMDIR_SAFE_FREE_MEMORY(pUTDVector);
 }
 
 static
@@ -427,9 +363,9 @@ error:
 static
 DWORD
 _VmDirUTDVectorStrToPair(
-    PSTR   pszKey,
-    PSTR   pszValue,
-    LW_HASHMAP_PAIR*  pPair
+    PSTR                pszKey,
+    PSTR                pszValue,
+    LW_HASHMAP_PAIR*    pPair
     )
 {
     PSTR    pszDupKey = NULL;

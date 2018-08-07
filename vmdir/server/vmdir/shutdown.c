@@ -210,7 +210,11 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServicesRootDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.serverObjDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
+#ifdef REPLICATION_V2
+    VmDirFreeUTDVectorGlobalCache();
+#else
     VmDirUTDVectorCacheShutdown();
+#endif
     VmDirDDVectorShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown

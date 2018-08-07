@@ -18,6 +18,15 @@
 #define LH_H_
 
 // add.c
+#ifdef REPLICATION_V2
+int
+VmDirParseBerToEntry(
+    BerElement*     ber,
+    PVDIR_ENTRY*    ppEntry,
+    ber_int_t*      pErrCode,
+    PSTR*           ppszErrMsg
+    );
+#else
 int
 VmDirParseBerToEntry(
     BerElement *ber,
@@ -25,6 +34,7 @@ VmDirParseBerToEntry(
     ber_int_t *pErrCode,
     PSTR *ppszErrMsg
     );
+#endif
 
 int
 VmDirParseEntry(

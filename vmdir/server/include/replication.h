@@ -126,6 +126,36 @@ VmDirReplMetricsLoadCountConflictPermanent(
 /*
  * UTD vector cache
  */
+#ifdef REPLICATION_V2
+
+DWORD
+VmDirUTDVectorGlobalCacheInit(
+    VOID
+    );
+
+DWORD
+VmDirUTDVectorGlobalCacheReplace(
+    PCSTR                   pszNewUTDVector
+    );
+
+DWORD
+VmDirUTDVectorGlobalCacheToString(
+    PSTR*                   ppszUTDVector
+    );
+
+DWORD
+VmDirUTDVectorGlobalCacheLookup(
+    PCSTR                   pszInvocationId,
+    USN*                    pUsn
+    );
+
+VOID
+VmDirFreeUTDVectorGlobalCache(
+    VOID
+    );
+
+#else
+
 DWORD
 VmDirUTDVectorCacheInit(
     VOID
@@ -153,6 +183,20 @@ VmDirUTDVectorCacheShutdown(
     );
 
 DWORD
+VmDirSyncDoneCtrlFromLocalCache(
+    USN              lastSupplierUsnProcessed,
+    PLW_HASHMAP      pUtdVectorMap,
+    struct berval*   pPageSyncDoneCtrl
+    );
+
+DWORD
+VmDirUTDVectorLookup(
+    PLW_HASHMAP pUtdVectorMap,
+    PCSTR   pszInvocationId,
+    USN*    pUsn
+    );
+
+DWORD
 VmDirStringToUTDVector(
     PCSTR          pszUTDVector,
     PLW_HASHMAP*   ppMap
@@ -169,13 +213,7 @@ VmDirUpdateUtdVectorLocalCache(
     PLW_HASHMAP      pUtdVectorMap,
     struct berval*   pPageSyncDoneCtrl
     );
-
-DWORD
-VmDirSyncDoneCtrlFromLocalCache(
-    USN              lastSupplierUsnProcessed,
-    PLW_HASHMAP      pUtdVectorMap,
-    struct berval*   pPageSyncDoneCtrl
-    );
+#endif
 
 /*
  * deadlockdetectionvector.c
@@ -216,14 +254,6 @@ DWORD
 VmDirDDVectorToString(
     PCSTR   pszInvocationId,
     PSTR*   ppDeadlockDetectionVectorStr
-    );
-
-
-DWORD
-VmDirUTDVectorLookup(
-    PLW_HASHMAP pUtdVectorMap,
-    PCSTR   pszInvocationId,
-    USN*    pUsn
     );
 
 #ifdef __cplusplus

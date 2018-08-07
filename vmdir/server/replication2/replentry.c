@@ -91,22 +91,19 @@ _VmDirAttrValueMetaResolve(
 static
 VOID
 _VmDirLogReplAddEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE     pUpdate
     );
 
 static
 VOID
 _VmDirLogReplModifyEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE     pUpdate
     );
 
 static
 VOID
 _VmDirLogReplDeleteEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE     pUpdate
     );
 
 static
@@ -122,12 +119,9 @@ _VmDirLogReplModifyModContent(
     );
 
 // Replicate Add Entry operation
-
 int
 ReplAddEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    PVMDIR_REPLICATION_UPDATE       pUpdate
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -138,48 +132,24 @@ ReplAddEntry(
     PSTR                pszAttrType = NULL;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
     PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
-    PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
-    LDAPMessage *       ldapMsg = pPageEntry->entry;
     PLW_HASHMAP         pMetaDataMap = NULL;
     LW_HASHMAP_ITER     iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR     pair = {NULL, NULL};
     PVMDIR_ATTRIBUTE_METADATA   pSupplierMetaData = NULL;
 
-    retVal = VmDirInitStackOperation( &op,
-                                      VDIR_OPERATION_TYPE_REPL,
-                                      LDAP_REQ_ADD,
-                                      pSchemaCtx );
+    _VmDirLogReplAddEntryContent(pUpdate);
+
+    retVal = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_ADD, NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    pEntry = op.request.addReq.pEntry;  // init pEntry after VmDirInitStackOperation
+    pEntry = op.request.addReq.pEntry = pUpdate->pEntry;
+    pUpdate->pEntry = NULL;
 
-    // non-retry case
-    if (pPageEntry->pBervEncodedEntry == NULL)
-    {
-        op.ber = ldapMsg->lm_ber;
+    pEntry->pSchemaCtx = VmDirSchemaCtxClone(op.pSchemaCtx);
 
-        retVal = VmDirParseEntry( &op );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-        pEntry->pSchemaCtx = VmDirSchemaCtxClone(op.pSchemaCtx);
-
-        // Make sure Attribute has its ATDesc set
-        retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        VmDirReplicationEncodeEntryForRetry(pEntry, pPageEntry);
-    }
-    else // retry case
-    {
-        // Schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
-        retVal = VmDirReplicationDecodeEntryForRetry(op.pSchemaCtx, pPageEntry, pEntry);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        retVal = VmDirBervalContentDup(&pPageEntry->reqDn, &op.reqDn);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    _VmDirLogReplAddEntryContent(pPageEntry, op.request.addReq.pEntry);
+    // Make sure Attribute has its ATDesc set
+    retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     op.pBEIF = VmDirBackendSelect(pEntry->dn.lberbv.bv_val);
     assert(op.pBEIF);
@@ -210,8 +180,8 @@ ReplAddEntry(
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // need these before DetectAndResolveAttrsConflicts
-    op.pszPartner = pPageEntry->pszPartner;
-    op.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+    op.pszPartner = pUpdate->pszPartner;
+    op.ulPartnerUSN = pUpdate->partnerUsn;
 
     retVal = VmDirReplSetAttrNewMetaData(&op, pEntry, &pMetaDataMap);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -267,7 +237,7 @@ ReplAddEntry(
                           "NOT resolving this possible replication CONFLICT or initial objects creation scenario. "
                           "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pszMetaData,
-                          pPageEntry->ulPartnerUSN);
+                          pUpdate->partnerUsn);
 
                 break;
 
@@ -278,28 +248,16 @@ ReplAddEntry(
                           "NOT resolving this possible replication CONFLICT or out-of-parent-child-order replication scenario. "
                           "For this subtree, system may not converge. Partner USN %" PRId64,
                           retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs->type.lberbv.bv_val, pszMetaData,
-                          pPageEntry->ulPartnerUSN);
+                          pUpdate->partnerUsn);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                           "ReplAddEntry/VmDirInternalAddEntry:  %d (%s). Partner USN %" PRId64,
-                          retVal, VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
+                          retVal, VDIR_SAFE_STRING( op.ldapResult.pszErrMsg ), pUpdate->partnerUsn);
                 break;
         }
         BAIL_ON_VMDIR_ERROR( retVal );
-    }
-
-    if (VmDirStringEndsWith(
-            BERVAL_NORM_VAL(pEntry->dn), SCHEMA_NAMING_CONTEXT_DN, FALSE))
-    {
-        // schema entry updated, refresh replication schema ctx.
-        assert( ppOutSchemaCtx );
-        retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        *ppOutSchemaCtx = pUpdateSchemaCtx;
-
-        VmDirSchemaCtxRelease(pSchemaCtx);
     }
 
 cleanup:
@@ -319,8 +277,6 @@ cleanup:
     return retVal;
 
 error:
-    VmDirSchemaCtxRelease(pUpdateSchemaCtx);
-
     goto cleanup;
 } // Replicate Add Entry operation
 
@@ -331,73 +287,40 @@ error:
  */
 int
 ReplDeleteEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    PVMDIR_REPLICATION_UPDATE       pUpdate
     )
 {
     int                 retVal = LDAP_SUCCESS;
-    VDIR_OPERATION      tmpAddOp = {0};
     VDIR_OPERATION      delOp = {0};
     ModifyReq *         mr = &(delOp.request.modifyReq);
-    LDAPMessage *       ldapMsg = pPageEntry->entry;
 
-    retVal = VmDirInitStackOperation( &delOp,
-                                      VDIR_OPERATION_TYPE_REPL,
-                                      LDAP_REQ_DELETE,
-                                      pSchemaCtx );
+    _VmDirLogReplDeleteEntryContent(pUpdate);
+
+    retVal = VmDirInitStackOperation(&delOp, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_DELETE, NULL);
+    BAIL_ON_VMDIR_ERROR(retVal);
+   /*
+    * Encode entry requires schema description
+    * hence perform encode entry after VmDirSchemaCheckSetAttrDesc
+    */
+    retVal = VmDirSchemaCheckSetAttrDesc(delOp.pSchemaCtx, pUpdate->pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirInitStackOperation( &tmpAddOp,
-                                      VDIR_OPERATION_TYPE_REPL,
-                                      LDAP_REQ_ADD,
-                                      pSchemaCtx );
+    retVal = ReplFixUpEntryDn(pUpdate->pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-     // non-retry case
-    if (pPageEntry->pBervEncodedEntry == NULL)
-    {
-        tmpAddOp.ber = ldapMsg->lm_ber;
-
-        retVal = VmDirParseEntry( &tmpAddOp );
-        BAIL_ON_VMDIR_ERROR( retVal );
-
-       /*
-        * Encode entry requires schema description
-        * hence perform encode entry after VmDirSchemaCheckSetAttrDesc
-        */
-        retVal = VmDirSchemaCheckSetAttrDesc(pSchemaCtx, tmpAddOp.request.addReq.pEntry);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        VmDirReplicationEncodeEntryForRetry(tmpAddOp.request.addReq.pEntry, pPageEntry);
-    }
-    else // retry case
-    {
-        // schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
-        retVal = VmDirReplicationDecodeEntryForRetry(pSchemaCtx, pPageEntry, tmpAddOp.request.addReq.pEntry);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        retVal = VmDirBervalContentDup(&pPageEntry->reqDn, &tmpAddOp.reqDn);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    retVal = ReplFixUpEntryDn(tmpAddOp.request.addReq.pEntry);
-    BAIL_ON_VMDIR_ERROR( retVal );
-
-    _VmDirLogReplDeleteEntryContent(pPageEntry, tmpAddOp.request.addReq.pEntry);
-
-    if (VmDirBervalContentDup( &tmpAddOp.reqDn, &mr->dn ) != 0)
+    if (VmDirBervalContentDup( &pUpdate->pEntry->dn, &mr->dn ) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplDeleteEntry: BervalContentDup failed." );
         retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
     delOp.pBEIF = VmDirBackendSelect(mr->dn.lberbv.bv_val);
     assert(delOp.pBEIF);
 
     // need these before DetectAndResolveAttrsConflicts
-    delOp.pszPartner = pPageEntry->pszPartner;
-    delOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+    delOp.pszPartner = pUpdate->pszPartner;
+    delOp.ulPartnerUSN = pUpdate->partnerUsn;
 
     if((retVal = VmDirWriteQueuePush(
                     delOp.pBECtx,
@@ -415,7 +338,7 @@ ReplDeleteEntry(
     }
 
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
-    retVal = SetupReplModifyRequest(&delOp, tmpAddOp.request.addReq.pEntry);
+    retVal = SetupReplModifyRequest(&delOp, pUpdate->pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
@@ -438,7 +361,7 @@ ReplDeleteEntry(
                           "NOT resolving this possible replication CONFLICT. "
                           "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, pszMetaData,
-                          pPageEntry->ulPartnerUSN);
+                          pUpdate->partnerUsn);
                 break;
 
             case LDAP_NOT_ALLOWED_ON_NONLEAF:
@@ -448,7 +371,7 @@ ReplDeleteEntry(
                           "NOT resolving this possible replication CONFLICT. "
                           "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, pszMetaData,
-                          pPageEntry->ulPartnerUSN);
+                          pUpdate->partnerUsn);
                 break;
 
             case LDAP_NO_SUCH_ATTRIBUTE:
@@ -458,13 +381,13 @@ ReplDeleteEntry(
                           "NOT resolving this possible replication CONFLICT. "
                           "For this object, system may not converge. Partner USN %" PRId64,
                           retVal, mr->dn.lberbv.bv_val, mr->mods->attr.type.lberbv.bv_val, pszMetaData,
-                          pPageEntry->ulPartnerUSN);
+                          pUpdate->partnerUsn);
                 break;
 
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                           "ReplDeleteEntry/InternalDeleteEntry: %d (%s). Partner USN %" PRId64,
-                          retVal, VDIR_SAFE_STRING( delOp.ldapResult.pszErrMsg ),pPageEntry->ulPartnerUSN);
+                          retVal, VDIR_SAFE_STRING( delOp.ldapResult.pszErrMsg ),pUpdate->partnerUsn);
                 break;
         }
         BAIL_ON_VMDIR_ERROR( retVal );
@@ -473,7 +396,6 @@ ReplDeleteEntry(
 cleanup:
     VmDirFreeModifyRequest( mr, FALSE );
     VmDirFreeOperationContent(&delOp);
-    VmDirFreeOperationContent(&tmpAddOp);
 
     return retVal;
 
@@ -484,9 +406,7 @@ error:
 // Replicate Modify Entry operation
 int
 ReplModifyEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    PVMDIR_REPLICATION_UPDATE   pUpdate
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -495,66 +415,45 @@ ReplModifyEntry(
     ModifyReq *         mr = &(modOp.request.modifyReq);
     BOOLEAN             bHasTxn = FALSE;
     int                 deadLockRetries = 0;
-    PVDIR_SCHEMA_CTX    pUpdateSchemaCtx = NULL;
-    VDIR_ENTRY          e = {0};
+    PVDIR_ENTRY         pEntry = NULL;
     PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
     VDIR_BERVALUE       bvParentDn = VDIR_BERVALUE_INIT;
     ENTRYID             entryId = 0;
-    LDAPMessage *       ldapMsg = pPageEntry->entry;
+
+    _VmDirLogReplModifyEntryContent(pUpdate);
 
     retVal = VmDirInitStackOperation( &modOp,
                                       VDIR_OPERATION_TYPE_REPL,
                                       LDAP_REQ_MODIFY,
-                                      pSchemaCtx );
+                                      NULL );
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // non-retry case
-    if (pPageEntry->pBervEncodedEntry == NULL)
+    pEntry = pUpdate->pEntry;
+    pUpdate->pEntry = NULL;
+
+    retVal = VmDirGetParentDN(&pEntry->dn, &bvParentDn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    // Do not allow modify to tombstone entries
+    if (VmDirIsDeletedContainer(bvParentDn.lberbv.bv_val))
     {
-        retVal = VmDirParseBerToEntry(ldapMsg->lm_ber, &e, NULL, NULL);
-        BAIL_ON_VMDIR_ERROR( retVal );
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: Modify Tombstone entries, dn: %s",
+            __FUNCTION__,
+            pEntry->dn.lberbv.bv_val);
 
-        retVal = VmDirGetParentDN(&e.dn, &bvParentDn);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        // Do not allow modify to tombstone entries
-        if (VmDirIsDeletedContainer(bvParentDn.lberbv.bv_val))
+        if (pEntry->attrs != NULL)
         {
-            VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Modify Tombstone entries, dn: %s",
-                __FUNCTION__,
-                e.dn.lberbv.bv_val);
-
-            if (e.attrs != NULL)
-            {
-                _VmDirLogReplEntryContent(&e);
-            }
-            BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+            _VmDirLogReplEntryContent(pEntry);
         }
-
-       /*
-        * Encode entry requires schema description
-        * hence perform encode entry after VmDirSchemaCheckSetAttrDesc
-        */
-        retVal = VmDirSchemaCheckSetAttrDesc(pSchemaCtx, &e);
-        BAIL_ON_VMDIR_ERROR(retVal);
-
-        VmDirReplicationEncodeEntryForRetry(&e, pPageEntry);
-    }
-    else  // retry case
-    {
-        // schema context will be cloned as part of the decode entry (VmDirDecodeEntry)
-        retVal = VmDirReplicationDecodeEntryForRetry(pSchemaCtx, pPageEntry, &e);
-        BAIL_ON_VMDIR_ERROR(retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
     }
 
-    retVal = ReplFixUpEntryDn(&e);
+    retVal = ReplFixUpEntryDn(pEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    _VmDirLogReplModifyEntryContent(pPageEntry, &e);
-
-    if (VmDirBervalContentDup( &e.dn, &mr->dn ) != 0)
+    if (VmDirBervalContentDup( &pEntry->dn, &mr->dn ) != 0)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: BervalContentDup failed." );
         retVal = LDAP_OPERATIONS_ERROR;
@@ -618,7 +517,7 @@ txnretry:
 
     if (mr->dn.bvnorm_val == NULL)
     {
-        if ((retVal = VmDirNormalizeDN(&mr->dn, pSchemaCtx)) != 0)
+        if ((retVal = VmDirNormalizeDN(&mr->dn, modOp.pSchemaCtx)) != 0)
         {
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirNormalizeDN failed on dn %s ",
                     VDIR_SAFE_STRING(mr->dn.lberbv.bv_val));
@@ -647,20 +546,20 @@ txnretry:
     }
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    retVal = _VmDirDetatchValueMetaData(&modOp, &e, &pAttrAttrValueMetaData);
+    retVal = _VmDirDetatchValueMetaData(&modOp, pEntry, &pAttrAttrValueMetaData);
     BAIL_ON_VMDIR_ERROR( retVal );
 
     // need these before DetectAndResolveAttrsConflicts
-    modOp.pszPartner = pPageEntry->pszPartner;
-    modOp.ulPartnerUSN = pPageEntry->ulPartnerUSN;
+    modOp.pszPartner = pUpdate->pszPartner;
+    modOp.ulPartnerUSN = pUpdate->partnerUsn;
 
-    e.eId = entryId;
-    if ((retVal = SetupReplModifyRequest(&modOp, &e)) != LDAP_SUCCESS)
+    pEntry->eId = entryId;
+    if ((retVal = SetupReplModifyRequest(&modOp, pEntry)) != LDAP_SUCCESS)
     {
         PSZ_METADATA_BUF    pszMetaData = {'\0'};
 
         //Ignore error - used only for logging
-        VmDirMetaDataSerialize(e.attrs[0].pMetaData, pszMetaData);
+        VmDirMetaDataSerialize(pEntry->attrs[0].pMetaData, pszMetaData);
 
         switch (retVal)
         {
@@ -670,8 +569,8 @@ txnretry:
                           "DN: %s, first attribute: %s, it's meta data: '%s'. "
                           "Possible replication CONFLICT. Object will get deleted from the system. "
                           "Partner USN %" PRId64,
-                          retVal, e.dn.lberbv.bv_val, e.attrs[0].type.lberbv.bv_val,
-                          pszMetaData, pPageEntry->ulPartnerUSN);
+                          retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs[0].type.lberbv.bv_val,
+                          pszMetaData, pUpdate->partnerUsn);
                 break;
 
             case LDAP_LOCK_DEADLOCK:
@@ -683,7 +582,7 @@ txnretry:
             default:
                 VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                           "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %" PRId64,
-                          retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ), pPageEntry->ulPartnerUSN);
+                          retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ), pUpdate->partnerUsn);
                 break;
        }
         BAIL_ON_VMDIR_ERROR( retVal );
@@ -722,7 +621,7 @@ txnretry:
     VMDIR_LOG_INFO(LDAP_DEBUG_REPL, "ReplModifyEntry: found AttrValueMetaData %s", pAttrAttrValueMetaData?"yes":"no");
     if (pAttrAttrValueMetaData)
     {
-        retVal = _VmSetupValueMetaData(pSchemaCtx, &modOp, pAttrAttrValueMetaData, modOp.pWriteQueueEle->usn, entryId);
+        retVal = _VmSetupValueMetaData(modOp.pSchemaCtx, &modOp, pAttrAttrValueMetaData, modOp.pWriteQueueEle->usn, entryId);
         BAIL_ON_VMDIR_ERROR( retVal );
         mr = &(modOp.request.modifyReq);
         if (mr->mods != NULL)
@@ -759,20 +658,6 @@ txnretry:
     // ************************************************************************************
     }
 
-    if (VmDirStringEndsWith(
-            BERVAL_NORM_VAL(modOp.request.modifyReq.dn),
-            SCHEMA_NAMING_CONTEXT_DN,
-            FALSE))
-    {
-        // schema entry updated, refresh replication schema ctx.
-        assert( ppOutSchemaCtx );
-        retVal = VmDirSchemaCtxAcquire(&pUpdateSchemaCtx);
-        BAIL_ON_VMDIR_ERROR(retVal);
-        *ppOutSchemaCtx = pUpdateSchemaCtx;
-
-        VmDirSchemaCtxRelease(pSchemaCtx);
-    }
-
 cleanup:
     VmDirWriteQueuePop(gVmDirServerOpsGlobals.pWriteQueue, modOp.pWriteQueueEle);
 
@@ -780,7 +665,7 @@ cleanup:
     VmDirFreeBervalContent(&bvParentDn);
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
-    VmDirFreeEntryContent(&e);
+    VmDirFreeEntry(pEntry);
     VmDirFreeAttribute(pAttrAttrValueMetaData);
     return retVal;
 
@@ -789,11 +674,9 @@ error:
     {
         modOp.pBEIF->pfnBETxnAbort( modOp.pBECtx );
     }
-    VmDirSchemaCtxRelease(pUpdateSchemaCtx);
 
     goto cleanup;
 } // Replicate Modify Entry operation
-
 
 /*
  * pEntry is off the wire from the supplier and the object it
@@ -1591,7 +1474,7 @@ error:
     goto cleanup;
 }
 
-
+/*TODO: Move this function to entry.c*/
 static
 VOID
 _VmDirLogReplEntryContent(
@@ -1632,51 +1515,47 @@ _VmDirLogReplEntryContent(
 static
 VOID
 _VmDirLogReplAddEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE pUpdate
     )
 {
     VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
               "%s, DN:%s, SYNC_STATE:ADD, partner USN:%" PRId64,
               __FUNCTION__,
-              pPageEntry->pszDn,
-              pPageEntry->ulPartnerUSN);
+              pUpdate->pEntry->dn.lberbv.bv_val,
+              pUpdate->partnerUsn);
 
     if (VmDirLogLevelAndMaskTest(VMDIR_LOG_VERBOSE, LDAP_DEBUG_REPL_ATTR))
     {
-        _VmDirLogReplEntryContent(pEntry);
+        _VmDirLogReplEntryContent(pUpdate->pEntry);
     }
 }
 
 static
 VOID
 _VmDirLogReplDeleteEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE pUpdate
     )
 {
     VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
-              "%s, DN:%s SYNC_STATE:Delete, partner USN:%" PRId64 " local DN: %s",
+              "%s, DN:%s SYNC_STATE:Delete, partner USN:%" PRId64,
               __FUNCTION__,
-              pPageEntry->pszDn,
-              pPageEntry->ulPartnerUSN,
-              pEntry->dn.lberbv_val);
+              pUpdate->pEntry->dn.lberbv.bv_val,
+              pUpdate->partnerUsn);
 }
 
 static
 VOID
 _VmDirLogReplModifyEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY pPageEntry,
-    PVDIR_ENTRY                   pEntry
+    PVMDIR_REPLICATION_UPDATE pUpdate
     )
 {
     VMDIR_LOG_INFO( LDAP_DEBUG_REPL_ATTR,
               "%s, DN:%s, SYNC_STATE:Modify, partner USN:%" PRId64,
               __FUNCTION__,
-              pPageEntry->pszDn,
-              pPageEntry->ulPartnerUSN);
+              pUpdate->pEntry->dn.lberbv.bv_val,
+              pUpdate->partnerUsn);
 
-    _VmDirLogReplEntryContent(pEntry);
+    _VmDirLogReplEntryContent(pUpdate->pEntry);
 }
 
 static

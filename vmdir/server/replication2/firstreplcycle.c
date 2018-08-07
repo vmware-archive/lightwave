@@ -253,12 +253,13 @@ static
 int
 _VmDirWrapUpFirstReplicationCycle(
     PCSTR                           pszHostname,
-    VMDIR_REPLICATION_AGREEMENT *   pReplAgr)
+    VMDIR_REPLICATION_AGREEMENT *   pReplAgr
+    )
 {
-    int                 retVal = LDAP_SUCCESS;
-    struct berval       syncDoneCtrlVal = {0};
-    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    PVMDIR_SWAP_DB_INFO pSwapDBInfo = NULL;
+    int                    retVal = LDAP_SUCCESS;
+    PVDIR_SCHEMA_CTX       pSchemaCtx = NULL;
+    PVMDIR_SWAP_DB_INFO    pSwapDBInfo = NULL;
+    USN                    highWaterMark = 0;
 
     retVal = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -266,19 +267,13 @@ _VmDirWrapUpFirstReplicationCycle(
     retVal = VmDirPrepareSwapDBInfo(pszHostname, &pSwapDBInfo);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // SyncDoneCtrolVal := <partnerLocalUSN>,<UTDVector>
-    retVal = VmDirAllocateStringPrintf(&(syncDoneCtrlVal.bv_val),
-        "%s,%s",
-        pSwapDBInfo->pszMyHighWaterMark,
-        pSwapDBInfo->pszMyUTDVcetor);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
-    syncDoneCtrlVal.bv_len = VmDirStringLenA(syncDoneCtrlVal.bv_val);
-
     retVal = _VmDirFirstCycleCreateSrvObjTree(pSchemaCtx, pszHostname, pSwapDBInfo->pszMyHighWaterMark);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if ((retVal = VmDirReplCookieUpdate( pSchemaCtx, &(syncDoneCtrlVal), pReplAgr )) != LDAP_SUCCESS)
+    retVal = VmDirStringToINT64(pSwapDBInfo->pszMyHighWaterMark, &highWaterMark);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    if ((retVal = VmDirReplCookieUpdate( pSchemaCtx, highWaterMark, pSwapDBInfo->pMyUTDVector, pReplAgr )) != LDAP_SUCCESS)
     {
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: UpdateCookies failed. Error: %d", __FUNCTION__, retVal);
         BAIL_ON_VMDIR_ERROR(retVal);
@@ -291,7 +286,6 @@ _VmDirWrapUpFirstReplicationCycle(
     }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(syncDoneCtrlVal.bv_val);
     VmDirFreeSwapDBInfo(pSwapDBInfo);
     VmDirSchemaCtxRelease(pSchemaCtx);
 

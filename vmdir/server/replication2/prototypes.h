@@ -41,13 +41,14 @@ InitializeReplicationThread(
 int
 VmDirFirstReplicationCycle(
     PCSTR                           pszHostname,
-    VMDIR_REPLICATION_AGREEMENT *   pReplAgr);
+    VMDIR_REPLICATION_AGREEMENT*    pReplAgr
+    );
 
 DWORD
 VmDirCacheKrb5Creds(
-    PCSTR pszUPN,
-    PCSTR pszPwd,
-    PSTR  *ppszErrorMsg
+    PCSTR   pszUPN,
+    PCSTR   pszPwd,
+    PSTR*   ppszErrorMsg
     );
 
 VOID
@@ -58,22 +59,17 @@ VmDirPopulateInvocationIdInReplAgr(
 // replentry.c
 int
 ReplAddEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    PVMDIR_REPLICATION_UPDATE   pUpdate
     );
 
 int
 ReplDeleteEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
+    PVMDIR_REPLICATION_UPDATE   pUpdate
     );
 
 int
 ReplModifyEntry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_SCHEMA_CTX*               ppOutSchemaCtx
+    PVMDIR_REPLICATION_UPDATE   pUpdate
     );
 
 // metrics.c
@@ -89,52 +85,7 @@ VmDirFreeReplMetrics(
     PVMDIR_REPLICATION_METRICS  pReplMetrics
     );
 
-// replqueue.c
-DWORD
-VmDirReplicationDecodeEntryForRetry(
-    PVDIR_SCHEMA_CTX                pSchemaCtx,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVDIR_ENTRY                     pEntry
-    );
-
-VOID
-VmDirReplicationEncodeEntryForRetry(
-    PVDIR_ENTRY                     pEntry,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
-    );
-
-DWORD
-VmDirReplicationPushFailedEntriesToQueue(
-    PVMDIR_REPLICATION_CONTEXT      pContext,
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
-    );
-
-DWORD
-VmDirReplicationDupPageEntry(
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry,
-    PVMDIR_REPLICATION_PAGE_ENTRY*  ppPageEntryDup
-    );
-
-VOID
-VmDirReapplyFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT      pContext
-    );
-
-VOID
-VmDirReplicationClearFailedEntriesFromQueue(
-    PVMDIR_REPLICATION_CONTEXT      pContext
-    );
-
-VOID
-VmDirReplicationFreePageEntry(
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
-    );
-
-VOID
-VmDirReplicationFreePageEntryContent(
-    PVMDIR_REPLICATION_PAGE_ENTRY   pPageEntry
-    );
-
+// firstreplcycle.c
 VOID
 VmDirShutdownDB(
     VOID
@@ -149,7 +100,8 @@ VmDirPatchDSERoot(
 int
 VmDirReplCookieUpdate(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
-    struct berval *                 syncDoneCtrlVal,
+    USN                             lastUsnProcessed,
+    PVMDIR_UTDVECTOR_CACHE          pUtdVector,
     VMDIR_REPLICATION_AGREEMENT *   replAgr
     );
 
@@ -191,6 +143,90 @@ VmDirReplResolveConflicts(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pSupplierEntry,
     PLW_HASHMAP         pMetaDataMap
+    );
+
+//updatelist.c
+DWORD
+VmDirReplUpdateListAlloc(
+    PVMDIR_REPLICATION_UPDATE_LIST* ppReplUpdateList
+    );
+
+int
+VmDirReplUpdateListFetch(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_REPLICATION_UPDATE_LIST* ppReplUpdateList
+    );
+
+VOID
+VmDirReplUpdateListProcess(
+    PVMDIR_REPLICATION_UPDATE_LIST  pReplUpdateList
+    );
+
+VOID
+VmDirFreeReplUpdateList(
+    PVMDIR_REPLICATION_UPDATE_LIST  pUpdateList
+    );
+
+int
+VmDirReplUpdateListParseSyncDoneCtl(
+    PVMDIR_REPLICATION_UPDATE_LIST  pReplUpdateList,
+    LDAPControl**                   ppSearchResCtrls
+    );
+
+//update.c
+int
+VmDirReplUpdateCreate(
+    LDAP*                           pLd,
+    LDAPMessage*                    pEntry,
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr,
+    PVMDIR_REPLICATION_UPDATE*      ppUpdate
+    );
+
+VOID
+VmDirReplUpdateApply(
+    PVMDIR_REPLICATION_UPDATE   pReplUpdate
+    );
+
+VOID
+VmDirFreeReplUpdate(
+    PVMDIR_REPLICATION_UPDATE   pUpdate
+    );
+
+//utdvector.c
+DWORD
+VmDirUTDVectorCacheInit(
+    PVMDIR_UTDVECTOR_CACHE* ppUTDVector
+    );
+
+DWORD
+VmDirUTDVectorCacheReplace(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PCSTR                   pszNewUTDVector
+    );
+
+DWORD
+VmDirUTDVectorCacheToString(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PSTR*                   ppszUTDVector
+    );
+
+DWORD
+VmDirUTDVectorCacheLookup(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PCSTR                   pszInvocationId,
+    USN*                    pUsn
+    );
+
+DWORD
+VmDirUTDVectorCacheAdd(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector,
+    PCSTR                   pszInvocationId,
+    PCSTR                   pszUsn
+    );
+
+VOID
+VmDirFreeUTDVectorCache(
+    PVMDIR_UTDVECTOR_CACHE  pUTDVector
     );
 
 #ifdef __cplusplus

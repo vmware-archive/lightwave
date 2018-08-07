@@ -157,10 +157,9 @@ VmDirFreeSwapDBInfo(
     if (pSwapDBInfo)
     {
         VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszMyHighWaterMark);
-        VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszMyUTDVcetor);
+        VmDirFreeUTDVectorCache(pSwapDBInfo->pMyUTDVector);
         VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszOrgDBMaxUSN);
         VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszOrgDBServerName);
-        VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszOrgDBUTDVector);
         VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo->pszPartnerServerName);
         VMDIR_SAFE_FREE_MEMORY(pSwapDBInfo);
     }
@@ -177,7 +176,6 @@ _VmDirComposeHighWaterMark(
     PVDIR_ATTRIBUTE     pAttrInvocationId = NULL;
     VDIR_OPERATION      searchOp = {0};
     USN                 hwmUSN = 0;
-    PLW_HASHMAP         pUtdVectorMap = NULL;
 
     dwError = VmDirInitStackOperation(&searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -188,19 +186,16 @@ _VmDirComposeHighWaterMark(
     pServerEntry = searchOp.internalSearchEntryArray.pEntry;
     pAttrInvocationId = VmDirEntryFindAttribute(ATTR_INVOCATION_ID, pServerEntry);
 
-    dwError = VmDirStringToUTDVector(pSwapDBInfo->pszOrgDBUTDVector, &pUtdVectorMap);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // use this node max originating usn as high water mark
-    dwError = VmDirUTDVectorLookup(
-        pUtdVectorMap, pAttrInvocationId->vals[0].lberbv_val, &hwmUSN);
+    dwError = VmDirUTDVectorCacheLookup(
+            pSwapDBInfo->pMyUTDVector, pAttrInvocationId->vals[0].lberbv_val, &hwmUSN);
     if (dwError == LW_STATUS_NOT_FOUND)
     {
         VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
             "Partner (%s,%s) not found in ORG DB UTDVector (%s).  Join scenario NOT supported.",
             pSwapDBInfo->pszPartnerServerName,
             pAttrInvocationId->vals[0].lberbv_val,
-            pSwapDBInfo->pszOrgDBUTDVector);
+            pSwapDBInfo->pMyUTDVector->pszUtdVector);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -209,8 +204,6 @@ _VmDirComposeHighWaterMark(
 
 cleanup:
     VmDirFreeOperationContent(&searchOp);
-    LwRtlHashMapClear(pUtdVectorMap, VmDirSimpleHashMapPairFreeKeyOnly, NULL);
-    LwRtlFreeHashMap(&pUtdVectorMap);
 
     return dwError;
 
@@ -234,7 +227,6 @@ _VmDirComposeUtdVector(
     PVDIR_ATTRIBUTE     pAttrUTDVector = NULL;
     PVDIR_ATTRIBUTE     pAttrInvocationId = NULL;
     VDIR_OPERATION      searchOp = {0};
-    PSTR                pszSeparator = "";
 
     dwError = VmDirInitStackOperation(&searchOp, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_SEARCH, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -251,34 +243,24 @@ _VmDirComposeUtdVector(
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DB maxCommittedUSN %s", pSwapDBInfo->pszOrgDBMaxUSN);
 
-    if (pAttrUTDVector)
-    {
-        if (VmDirStringEndsWith( pAttrUTDVector->vals[0].lberbv.bv_val, ",", FALSE))
-        {
-            pszSeparator = "";
-        }
-        else
-        {
-            pszSeparator = ",";
-        }
-
-        dwError = VmDirAllocateStringA(pAttrUTDVector->vals[0].lberbv.bv_val, &pSwapDBInfo->pszOrgDBUTDVector);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DB UTDVector %s", pSwapDBInfo->pszOrgDBUTDVector);
-    }
-
-    //<DB up-to-date vector>,<DB server GUID>:<DB MAX LocalUSN>,
-    dwError = VmDirAllocateStringPrintf(
-        &pSwapDBInfo->pszMyUTDVcetor,
-        "%s%s%s:%s,",
-        pSwapDBInfo->pszOrgDBUTDVector ? pSwapDBInfo->pszOrgDBUTDVector : "",
-        pszSeparator,
-        pAttrInvocationId->vals[0].lberbv.bv_val,
-        pSwapDBInfo->pszOrgDBMaxUSN);
+    dwError = VmDirUTDVectorCacheInit(&pSwapDBInfo->pMyUTDVector);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "My UTDVector %s", pSwapDBInfo->pszMyUTDVcetor);
+    if (pAttrUTDVector)
+    {
+        dwError = VmDirUTDVectorCacheReplace(pSwapDBInfo->pMyUTDVector, pAttrUTDVector->vals[0].lberbv.bv_val);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "DB UTDVector %s", pSwapDBInfo->pMyUTDVector->pszUtdVector);
+    }
+
+    dwError = VmDirUTDVectorCacheAdd(
+                pSwapDBInfo->pMyUTDVector,
+                pAttrInvocationId->vals[0].lberbv.bv_val,
+                pSwapDBInfo->pszOrgDBMaxUSN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "My UTDVector %s", pSwapDBInfo->pMyUTDVector->pszUtdVector);
 
 cleanup:
     VmDirFreeOperationContent(&searchOp);

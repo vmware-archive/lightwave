@@ -173,8 +173,8 @@ VmDirSrvServerReset(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s Create Directory Server object", __FUNCTION__);
 
     // set utdvector of server object
-    bvUtdVector.lberbv_val = pSwapDBInfo->pszMyUTDVcetor;
-    bvUtdVector.lberbv_len = VmDirStringLenA(pSwapDBInfo->pszMyUTDVcetor);
+    bvUtdVector.lberbv_val = pSwapDBInfo->pMyUTDVector->pszUtdVector;
+    bvUtdVector.lberbv_len = VmDirStringLenA(pSwapDBInfo->pMyUTDVector->pszUtdVector);
     dwError = VmDirInternalEntryAttributeReplace(
         pSchemaCtx,
         gVmdirServerGlobals.serverObjDN.lberbv.bv_val,

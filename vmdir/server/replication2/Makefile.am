@@ -14,9 +14,10 @@ libreplication_la_SOURCES = \
     metrics.c \
     replcookies.c \
     replentry.c \
-    replqueue.c \
     thread.c \
-    utdvector.c
+    utdvector.c \
+    update.c \
+    updatelist.c
 
 libreplication_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

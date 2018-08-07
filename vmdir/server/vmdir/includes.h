@@ -67,9 +67,9 @@
 #include <backend.h>
 #include <mdbstore.h>
 #include <middlelayer.h>
+#include <vmdirserver.h>
 #include <replication.h>
 #include <vmkdcserver.h>
-#include <vmdirserver.h>
 #include <ldaphead.h>
 #include <resthead.h>
 #include <vmevent.h>
