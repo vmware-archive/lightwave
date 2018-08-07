@@ -22,7 +22,7 @@ _VmHttpClientInitTest()
     DWORD dwError = 0;
     PVM_HTTP_CLIENT pClient = NULL;
 
-    dwError = VmHttpClientInit(&pClient);
+    dwError = VmHttpClientInit(&pClient, NULL);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     fprintf(stdout, "PASS: httpclient init test\n");
@@ -52,7 +52,7 @@ _VmHttpClientSetParamTest()
     int nLength = 0;
     PSTR pszQuery = NULL;
 
-    dwError = VmHttpClientInit(&pClient);
+    dwError = VmHttpClientInit(&pClient, NULL);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     for (i = 0; i < sizeof(ppszKeys) / sizeof(ppszKeys[0]); ++i)
@@ -109,7 +109,7 @@ _VmHttpClientChangeValueTest()
     int i = 0;
     PSTR pszQuery = NULL;
 
-    dwError = VmHttpClientInit(&pClient);
+    dwError = VmHttpClientInit(&pClient, NULL);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     for (i = 0; i < sizeof(ppszKeys) / sizeof(ppszKeys[0]); ++i)

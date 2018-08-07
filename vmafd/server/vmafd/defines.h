@@ -97,6 +97,7 @@
 #define VMAFD_REG_KEY_MAX_OLD_LOGS "MaximumOldLogs"
 #define VMAFD_REG_KEY_MAX_LOG_SIZE "MaximumLogSize"
 
+
 #define ATTR_AUTOREFRESH           "AutoRefresh"
 
 #define VECS_DB_CURRENT_VERSION     650
@@ -111,6 +112,9 @@
 #define DEFAULT_VECS_CERT_SEC       60 // default value at which certs are pulled down by VECS, in Seconds
 #define VECS_STOREHASH_MAP_SIZE     128
 #define VMAFD_FILE_COPY_BUFSZ       1024
+
+/* default value to determine if directory communications should use REST */
+#define DEFAULT_VMAFD_USE_VMDIR_REST 0
 
 /*
  * Table to define and initialize VMAFD configuration data.
@@ -198,6 +202,15 @@
         UINT32_MAX,                           \
         {1, NULL},                            \
         {1, NULL},                            \
+    },                                        \
+    {                                         \
+        VMAFD_REG_KEY_USE_VMDIR_REST,         \
+        VMAFD_CONFIG_VALUE_TYPE_DWORD,        \
+        REG_DWORD,                            \
+        0,                                    \
+        UINT32_MAX,                           \
+        {DEFAULT_VMAFD_USE_VMDIR_REST, NULL}, \
+        {0, NULL},                            \
     }                                         \
 }
 
@@ -292,6 +305,9 @@ if (bLocked) \
 #define VMCA_HEARTBEAT_ENTRY_W \
 {'V','M','w','a','r','e',' ','C','e','r','t','i','f','i','c','a','t','e','-','S','e','r','v','i','c','e',0}
 #define VMCA_HEARTBEAT_ENTRY_PORT 2014
+#define VMDNS_HEARTBEAT_ENTRY_W \
+{'V','M','w','a','r','e',' ','D','N','S','-','S','e','r','v','i','c','e',0}
+#define VMDNS_HEARTBEAT_ENTRY_PORT 2015
 #define WEBSSO_ENTRY_W \
 {'W','e','b','s','s','o',0}
 #define WEBSSO_ENTRY_PORT 443
@@ -309,6 +325,7 @@ if (bLocked) \
 {\
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMCA_HEARTBEAT_ENTRY_W,\
+      VMDNS_HEARTBEAT_ENTRY_W,\
       WEBSSO_ENTRY_W, \
       STS_HEARTBEAT_ENTRY_W \
 }
@@ -317,6 +334,7 @@ if (bLocked) \
 {\
       VMDIR_HEARTBEAT_ENTRY_PORT,\
       VMCA_HEARTBEAT_ENTRY_PORT, \
+      VMDNS_HEARTBEAT_ENTRY_PORT,\
       WEBSSO_ENTRY_PORT, \
       STS_HEARTBEAT_ENTRY_PORT \
 }
@@ -327,6 +345,11 @@ if (bLocked) \
   {\
       VMDIR_HEARTBEAT_ENTRY_W,\
       VMDIR_HEARTBEAT_ENTRY_PORT,\
+      0\
+  },\
+  {\
+      VMDNS_HEARTBEAT_ENTRY_W,\
+      VMDNS_HEARTBEAT_ENTRY_PORT,\
       0\
   },\
   {\
@@ -345,3 +368,8 @@ if (bLocked) \
       0\
   }\
 }
+
+#define VMDIR_REST_API_HTTPS_PORT           7479
+#define VMDIR_REST_API_BASE                 "/v1/vmdir/api"
+#define VMDIR_REST_API_PASSWORD_REFRESH_CMD "password/refresh"
+#define VMDIR_REST_API_GET_CERTS_CMD        "certs/rootcerts"

@@ -5,7 +5,7 @@ VOLUME ["/sys/fs/cgroup"]
 LABEL vendor="VMware, Inc."
 LABEL com.vmware.lightwave.version="1.3.1"
 
-EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2015 2020 7478
+EXPOSE 22 53/udp 53 88/udp 88 389 443 636 2012 2014 2015 2020 7478 5005
 ENTRYPOINT ["/lightwave-init"]
 
 # Build hook

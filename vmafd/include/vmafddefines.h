@@ -470,6 +470,7 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_VALUE_PING_TIME     "PingTime"
 #define VMAFD_REG_KEY_ENABLE_DDNS      "EnableDnsUpdates"
 #define VMAFD_REG_KEY_HEARTBEAT       "HeartbeatInterval"
+#define VMAFD_REG_KEY_USE_VMDIR_REST  "UseVmDirREST"
 
 #define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB   "JoinWithPreCopiedDB"
 

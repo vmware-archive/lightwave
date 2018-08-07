@@ -453,12 +453,14 @@ VmDirGenerateAttrMetaData(
     PSTR           pszAttributeName
     )
 {
-    int              retVal = LDAP_SUCCESS;
-    PVDIR_ATTRIBUTE  usnCreated = NULL;
-    PVDIR_ATTRIBUTE  attrFound = NULL;
-    PVDIR_ATTRIBUTE  attr = NULL;
-    char             origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    PSTR             pszLocalErrMsg = NULL;
+    int                  retVal = LDAP_SUCCESS;
+    USN                  Usn = 0;
+    PVDIR_ATTRIBUTE      usnCreated = NULL;
+    PVDIR_ATTRIBUTE      attrFound = NULL;
+    PVDIR_ATTRIBUTE      attr = NULL;
+    char                 origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
+    PSTR                 pszLocalErrMsg = NULL;
+    PSZ_METADATA_BUF     pszMetaData = {'\0'};
 
     assert( pEntry );
 
@@ -475,8 +477,8 @@ VmDirGenerateAttrMetaData(
     if (gVmdirServerGlobals.invocationId.lberbv.bv_val == NULL)
     {
         retVal = VMDIR_ERROR_BAD_ATTRIBUTE_DATA;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
-                        "GenerateAttributesMetaData: gVmdirServerGlobals.invocationId.lberbv.bv_val not set." );
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg,
+                        "%s: gVmdirServerGlobals.invocationId not set.", __FUNCTION__);
     }
 
     if (pszAttributeName)
@@ -485,26 +487,57 @@ VmDirGenerateAttrMetaData(
         // if found such attribute, generate metadata for it, otherwise, do nothing
         if (attrFound)
         {
-            // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-            VmDirStringNPrintFA( attrFound->metaData, sizeof( attrFound->metaData ), sizeof( attrFound->metaData ) - 1,
-                      "%s:%s:%s:%s:%s", usnCreated->vals[0].lberbv.bv_val, "1",
-                      gVmdirServerGlobals.invocationId.lberbv.bv_val, origTimeStamp, usnCreated->vals[0].lberbv.bv_val );
+            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, &Usn);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
-            VmDirLog( LDAP_DEBUG_TRACE, "GenerateAttributesMetaData: DN: %s, attribute name = %s, meta data = %s",
-                      pEntry->dn.lberbv.bv_val, pszAttributeName, attrFound->metaData );
+            retVal = VmDirMetaDataCreate(
+                    Usn,
+                    (UINT64)1,
+                    gVmdirServerGlobals.invocationId.lberbv.bv_val,
+                    origTimeStamp,
+                    Usn,
+                    &attrFound->pMetaData);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            //Ignore error - used only for logging
+            VmDirMetaDataSerialize(attrFound->pMetaData, &pszMetaData[0]);
+
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_TRACE,
+                    "%s: DN: %s, attribute name = %s, meta data = %s",
+                    __FUNCTION__,
+                    pEntry->dn.lberbv.bv_val,
+                    pszAttributeName,
+                    pszMetaData);
         }
     }
     else
     {
         for (attr = pEntry->attrs; attr; attr = attr->next)
         {
-            // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-            VmDirStringNPrintFA( attr->metaData, sizeof( attr->metaData ), sizeof( attr->metaData ) - 1, "%s:%s:%s:%s:%s",
-                      usnCreated->vals[0].lberbv.bv_val, "1",
-                      gVmdirServerGlobals.invocationId.lberbv.bv_val, origTimeStamp, usnCreated->vals[0].lberbv.bv_val );
+            retVal = VmDirStringToINT64(usnCreated->vals[0].lberbv.bv_val, &Usn);
+            BAIL_ON_VMDIR_ERROR(retVal);
 
-            VmDirLog( LDAP_DEBUG_TRACE, "GenerateAttributesMetaData: DN: %s, attribute name = %s, meta data = %s",
-                      pEntry->dn.lberbv.bv_val, attr->type.lberbv.bv_val, attr->metaData );
+            retVal = VmDirMetaDataCreate(
+                    Usn,
+                    (UINT64)1,
+                    gVmdirServerGlobals.invocationId.lberbv.bv_val,
+                    origTimeStamp,
+                    Usn,
+                    &attr->pMetaData);
+            BAIL_ON_VMDIR_ERROR(retVal);
+
+            //Ignore error - used only for logging
+            memset(pszMetaData, '\0', VMDIR_MAX_ATTR_META_DATA_LEN);
+            VmDirMetaDataSerialize(attr->pMetaData, &pszMetaData[0]);
+
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_TRACE,
+                    "%s: DN: %s, attribute name = %s, meta data = %s",
+                    __FUNCTION__,
+                    pEntry->dn.lberbv.bv_val,
+                    attr->type.lberbv.bv_val,
+                    pszMetaData);
         }
     }
 

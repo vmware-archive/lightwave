@@ -118,7 +118,7 @@ class RelyingPartyInstaller {
         // create a private/public key pair, generate a certificate and assign it to a solution user name.
         Security.addProvider(new BouncyCastleProvider());
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA", "BC");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair keypair = keyGen.generateKeyPair();
         String solutionUserName = this.relyingPartyConfig.getClientPrefix() + UUID.randomUUID().toString();
         X509Certificate clientCertificate = generateCertificate(keypair, solutionUserName);

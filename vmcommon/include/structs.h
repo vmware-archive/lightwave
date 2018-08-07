@@ -90,7 +90,7 @@ typedef struct _VM_HTTP_CLIENT
     CURL* pCurl;
     struct curl_slist *pHeaders;
     PLW_HASHMAP pQueryParamsMap;
-    PSTR  pszTlsCAPath;
+    PSTR  pszCAPath;
     PSTR  pszBody;
     long nStatus;
     PSTR pszResult;

@@ -83,7 +83,6 @@ case "$1" in
             if [ $try_starting_lwregd_svc = true ]; then
                 $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmafd.reg
                 $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdir-client.reg
-                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdns-client.reg
             else
                 started_lwregd=false
                 if [ -z "`pidof lwregd`" ]; then
@@ -94,7 +93,6 @@ case "$1" in
                 fi
                 $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmafd.reg
                 $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdir-client.reg
-                $LIKEWISE_BIN_DIR/lwregshell import $DATA_DIR/config/vmdns-client.reg
                 if [ $started_lwregd = true ]; then
                     kill `pidof lwregd`
                     wait

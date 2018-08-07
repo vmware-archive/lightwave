@@ -8,7 +8,9 @@ services:
      - ./server:/scripts
      - ../../../build/rpmbuild/RPMS:/buildrpms
     networks:
-     - lightwave
+     lightwave:
+       aliases:
+         - server.${LIGHTWAVE_DOMAIN}
     privileged: true
     environment:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
@@ -22,7 +24,9 @@ services:
      - ./client:/scripts
      - ../../../build/rpmbuild/RPMS:/buildrpms
     networks:
-     - lightwave
+     lightwave:
+       aliases:
+         - client.${LIGHTWAVE_DOMAIN}
     depends_on:
      - "lightwave-server"
     environment:

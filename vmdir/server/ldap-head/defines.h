@@ -43,6 +43,9 @@
 #define LDAP_SEARCH_REQUEST_CHAR_OP     0x00000002
 #define LDAP_SEARCH_REQUEST_CHAR_PASSWD   0x00000004
 
+#define IS_VMDIR_ATTRIBUTE_NOT_IN_SCOPE(pMetaData)     VmDirMetaDataIsEmpty(pMetaData)
+#define VMDIR_FREE_ATTRIBUTE_NOT_IN_SCOPE(pMetaData)    VmDirFreeMetaDataContent(pMetaData)
+
 typedef int (*NEW_CONNECTION_FUNC)(
                 ber_socket_t      sfd,
                 VDIR_CONNECTION   **conn,

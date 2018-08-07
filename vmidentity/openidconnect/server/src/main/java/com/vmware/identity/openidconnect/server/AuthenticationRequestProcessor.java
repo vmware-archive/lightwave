@@ -313,11 +313,7 @@ public class AuthenticationRequestProcessor {
     }
 
     private Cookie loggedInSessionCookie(SessionID sessionId) {
-        Cookie cookie = new Cookie(SessionManager.getSessionCookieName(this.tenant), sessionId.getValue());
-        cookie.setPath(Endpoints.BASE);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
-        return cookie;
+        return SharedUtils.createCookie(SessionManager.getSessionCookieName(this.tenant), sessionId.getValue(), Endpoints.BASE);
     }
 
     private String localize(String key) {

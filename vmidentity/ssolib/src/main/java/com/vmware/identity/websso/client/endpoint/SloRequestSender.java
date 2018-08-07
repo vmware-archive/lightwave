@@ -135,7 +135,6 @@ public class SloRequestSender {
     public String getRequestUrl(SloRequestSettings requestSettings, String reqID) {
 
         Validate.notNull(requestSettings);
-        Validate.notEmpty(reqID, "regID");
 
         String redirectUrl = null;
 

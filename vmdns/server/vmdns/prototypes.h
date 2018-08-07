@@ -208,6 +208,15 @@ DWORD
 VmDnsStopDirectorySync(
     );
 
+/* heartbeat.c */
+DWORD
+VmDnsCreateHeartbeatThread(
+    );
+
+VOID
+VmDnsKillHeartbeatThread(
+    );
+
 #ifdef __cplusplus
 }
 #endif

@@ -19,7 +19,7 @@ Requires: apache-tomcat >= 8.5.31, commons-daemon >= 1.0.15
 BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
 %if "%{_dist}" == ".lwph2"
 Requires:  shadow >= 4.2.1, likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
-BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152
+BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152, cmocka >= 1.1
 %else
 Requires: shadow >= 4.2.1, likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
 BuildRequires: shadow >= 4.2.1, boost-devel = 1.60.0,  openjdk >= 1.8.0.131
@@ -42,9 +42,13 @@ VMware Lightwave Server
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
 %define _stsdir %{_prefix}/vmware-sts
+%define _stssampledir %{_prefix}/vmware-sts-sample
 %define _webappsdir %{_stsdir}/webapps
+%define _webappssampledir %{_stssampledir}/webapps
 %define _stsconfdir %{_stsdir}/conf
 %define _stsbindir %{_stsdir}/bin
+%define _stssampleconfdir %{_stssampledir}/conf
+%define _stssamplebindir %{_stssampledir}/bin
 %define _stslogsdir %{_stsdir}/logs
 %define _lightwavelogsdir /var/log/vmware/sso
 %define _configdir %{_datadir}/config
@@ -389,6 +393,7 @@ Lightwave Samples
     lw_uid="$(id -u lightwave)"
     lw_gid="$(id -g lightwave)"
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir.reg
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdns.reg
     sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmca.reg
 
     # vmdir
@@ -474,6 +479,7 @@ Lightwave Samples
     esac
 
     setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
+    setcap cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdnsd
     setcap cap_dac_read_search+ep %{_sbindir}/vmcad
 
     chown -R lightwave:lightwave %{_vmca_dbdir}
@@ -574,7 +580,6 @@ Lightwave Samples
 
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns-client.reg
 
             %{_likewise_open_bindir}/lwsm -q refresh
             sleep 5
@@ -609,7 +614,6 @@ Lightwave Samples
 
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns-client.reg
             %{_likewise_open_bindir}/lwsm -q refresh
             sleep 5
             %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
@@ -695,6 +699,30 @@ Lightwave Samples
 
             ;;
     esac
+
+%post samples
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                /bin/systemctl enable vmware-sampled.service
+                /bin/systemctl daemon-reload
+            fi
+            ;;
+        2)
+            #
+            # Upgrade
+            #
+            ;;
+   esac
+
+   /bin/cp %{_sysconfdir}/vmware/java/vmware-override-java.security \
+           %{_stssampleconfdir}
+   chmod 600 %{_stssampleconfdir}/vmware-override-java.security
 
 %preun
 
@@ -831,6 +859,35 @@ Lightwave Samples
                 %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\post'
                 /bin/systemctl restart lwsmd
                 sleep 5
+            fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%preun samples
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                 if [ -f /etc/systemd/system/vmware-stsd.service ]; then
+                     /bin/systemctl stop vmware-sampled.service
+                     /bin/systemctl disable vmware-sampled.service
+                     /bin/rm -f /etc/systemd/system/vmware-sampled.service
+                     /bin/systemctl daemon-reload
+                 fi
             fi
             ;;
 
@@ -1032,9 +1089,11 @@ Lightwave Samples
 %{_webappsdir}/ROOT.war
 
 %{_servicedir}/vmware-stsd.service
+%{_stsconfdir}/sts.policy
 
 %config %attr(700, root, root) %{_stsbindir}/setenv.sh
 %config %attr(600, root, root) %{_stsbindir}/vmware-identity-tomcat-extensions.jar
+%config %attr(600, root, root) %{_stsbindir}/pro-grade-1.1.1.jar
 %config %attr(600, root, root) %{_stsconfdir}/catalina.policy
 %config %attr(600, root, root) %{_stsconfdir}/catalina.properties
 %config %attr(600, root, root) %{_stsconfdir}/context.xml
@@ -1156,7 +1215,6 @@ Lightwave Samples
 %{_datadir}/config/certool.cfg
 %{_datadir}/config/vmafd.reg
 %{_datadir}/config/vmdir-client.reg
-%{_datadir}/config/vmdns-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/telegraf.conf
 %{_datadir}/config/vmafd-telegraf.conf
@@ -1302,7 +1360,11 @@ Lightwave Samples
 
 %defattr(-,root,root)
 
-%{_webappsdir}/ssolib-sample.war
+%{_sbindir}/vmware-sampled.sh
+%{_webappssampledir}/ssolib-sample.war
+%{_servicedir}/vmware-sampled.service
+%{_stssampleconfdir}/*
+%{_stssamplebindir}/*
 
 # %doc ChangeLog README COPYING
 

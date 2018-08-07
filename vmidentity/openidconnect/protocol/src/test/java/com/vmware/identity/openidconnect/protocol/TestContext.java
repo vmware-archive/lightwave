@@ -96,7 +96,7 @@ public class TestContext {
     public static void initialize() throws Exception  {
         Security.addProvider(new BouncyCastleProvider());
         KeyPairGenerator keyGenerator = KeyPairGenerator.getInstance("RSA", "BC");
-        keyGenerator.initialize(1024, new SecureRandom());
+        keyGenerator.initialize(2048, new SecureRandom());
         KeyPair keyPair = keyGenerator.genKeyPair();
         RSAPrivateKey privateKey = (RSAPrivateKey) keyPair.getPrivate();
         RSAPublicKey publicKey = (RSAPublicKey) keyPair.getPublic();

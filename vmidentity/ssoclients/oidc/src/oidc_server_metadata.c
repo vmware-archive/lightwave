@@ -14,8 +14,8 @@
 
 #include "includes.h"
 
-#define LOCALHOST_TOKEN_URL "https://localhost/openidconnect/token/%s"
-#define LOCALHOST_JWKS_URL "https://localhost/openidconnect/jwks/%s"
+#define LOCALHOST_TOKEN_URL "https://%s/openidconnect/token/%s"
+#define LOCALHOST_JWKS_URL "https://%s/openidconnect/jwks/%s"
 
 // https://<server>/openidconnect/<tenant>/.well-known/openid-configuration
 static
@@ -234,9 +234,9 @@ OidcServerMetadataAcquire(
         SSOStringFreeAndClear(pszJwksEndpoint);
         SSOStringFreeAndClear(p->pszTokenEndpointUrl);
 
-        e = SSOStringAllocateSprintf(&pszJwksEndpoint, LOCALHOST_JWKS_URL, pszTenant);
+        e = SSOStringAllocateSprintf(&pszJwksEndpoint, LOCALHOST_JWKS_URL, pszServer, pszTenant);
         BAIL_ON_ERROR(e);
-        e = SSOStringAllocateSprintf(&p->pszTokenEndpointUrl, LOCALHOST_TOKEN_URL, pszTenant);
+        e = SSOStringAllocateSprintf(&p->pszTokenEndpointUrl, LOCALHOST_TOKEN_URL, pszServer, pszTenant);
         BAIL_ON_ERROR(e);
     }
 

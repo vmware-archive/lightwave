@@ -51,6 +51,7 @@ typedef struct _VM_JSON_RESULT_VALUE
 typedef DWORD (*PFN_JSON_RESULT_ARRAY_CB)(
                   PVOID pUserData,
                   size_t,
+                  size_t,
                   PVM_JSON_POSITION);
 
 /* callback for objects */
@@ -85,6 +86,14 @@ VmJsonResultIterateObjectAt(
     PVOID pUserData,
     PFN_JSON_RESULT_OBJECT_CB pfnCB
     );
+
+DWORD
+VmJsonResultIterateArrayAt(
+    PVM_JSON_POSITION pPosition,
+    PVOID pUserData,
+    PFN_JSON_RESULT_ARRAY_CB pfnCB
+    );
+
 /*
  * Free handle
  */

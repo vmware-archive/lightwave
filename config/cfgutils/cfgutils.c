@@ -965,12 +965,21 @@ VmwDeploySetupClientWithDC(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwDeployValidateServerCredentials(
-                    pParams->pszServer,
-                    pParams->pszUsername,
-                    pParams->pszPassword,
-                    pParams->pszDomainName);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+    /*
+     * prejoin flag is assuming no ldap connection
+     * from client to server. prejoin uses rest interface
+     * before prejoin process starts, afd will acquire
+     * a token with supplied credentials.
+    */
+    if (!pParams->bMachinePreJoined)
+    {
+        dwError = VmwDeployValidateServerCredentials(
+                        pParams->pszServer,
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszDomainName);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     if (pParams->bDisableAfdListener)
     {

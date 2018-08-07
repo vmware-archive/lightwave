@@ -54,7 +54,7 @@ public class IDTokenTest {
 
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair providerKeyPair = keyGen.generateKeyPair();
         providerPrivateKey = (RSAPrivateKey) providerKeyPair.getPrivate();
         providerPublicKey = (RSAPublicKey) providerKeyPair.getPublic();
@@ -103,7 +103,7 @@ public class IDTokenTest {
     public void testBuildIdTokenInvalidSignature() throws Exception {
 
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair providerKeyPair = keyGen.generateKeyPair();
         RSAPublicKey anotherProviderPublicKey = (RSAPublicKey) providerKeyPair.getPublic();
 

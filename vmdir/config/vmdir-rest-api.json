@@ -21,6 +21,10 @@
         {
             "name": "password",
             "description": "password operations"
+        },
+        {
+            "name": "join",
+            "description": "client join operations"
         }
     ],
     "paths": {
@@ -88,6 +92,46 @@
                     "password"
                 ]
             }
+        },
+        "/vmdir/api/join/joinatomic": {
+            "post": {
+                "summary": "join atomic",
+                "description": "ensure join happens without server switch",
+                "produces": [
+                    "text/plain"
+                ],
+                "parameters": [
+                    {
+                        "name": "machine_account_name",
+                        "in": "query",
+                        "required": true,
+                        "type": "string"
+                    },
+                    {
+                        "name": "org_unit",
+                        "in": "query",
+                        "required": false,
+                        "type": "string"
+                    },
+                    {
+                        "name": "prejoined",
+                        "in": "query",
+                        "required": false,
+                        "type": "boolean"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Join response",
+                        "schema": {
+                            "$ref": "#/definitions/JoinResponse"
+                        }
+                    }
+                },
+                "tags": [
+                    "join"
+                ]
+            }
         }
     },
     "definitions": {
@@ -114,6 +158,42 @@
                     "type": "array",
                     "items": {
                         "$ref": "#/definitions/CertData"
+                    }
+                }
+            }
+        },
+        "MachineAccount": {
+            "type": "object",
+            "properties": {
+                "computer_dn": {"type": "string"},
+                "sitename":    {"type": "string"},
+                "machine_guid":{"type": "string"}
+            }
+        },
+        "KrbInfo": {
+            "type": "object",
+            "properties": {
+                "blobs": {
+                    "type": "array",
+                    "items": {"type": "string"}
+                }
+            }
+        },
+        "JoinResponse": {
+            "type": "object",
+            "properties": {
+                "join": {
+                    "machine_account": {
+                        "type": "object",
+                        "items": {
+                            "$ref": "#/definitions/MachineAccount"
+                        }
+                    },
+                    "krb_info": {
+                        "type": "object",
+                        "items": {
+                            "$ref": "#/definitions/KrbInfo"
+                        }
                     }
                 }
             }

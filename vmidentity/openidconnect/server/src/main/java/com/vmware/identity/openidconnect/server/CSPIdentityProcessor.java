@@ -456,21 +456,11 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   private Cookie loggedInSessionCookie(String tenantName, SessionID sessionId) {
-    boolean isSecure=false;
-    Cookie cookie = new Cookie(SessionManager.getSessionCookieName(tenantName), sessionId.getValue());
-    cookie.setPath(Endpoints.BASE);
-    cookie.setSecure(isSecure);
-    cookie.setHttpOnly(true);
-    return cookie;
+    return SharedUtils.createCookie(SessionManager.getSessionCookieName(tenantName), sessionId.getValue(), Endpoints.BASE);
   }
 
   private Cookie CSPIssuerCookie(String tenantName, String issuer) {
-      boolean isSecure=false;
-      Cookie cookie = new Cookie(SessionManager.getExternalIdpIssuerCookieName(tenantName), issuer);
-      cookie.setPath(Endpoints.BASE);
-      cookie.setSecure(isSecure);
-      cookie.setHttpOnly(true);
-      return cookie;
+      return SharedUtils.createCookie(SessionManager.getExternalIdpIssuerCookieName(tenantName), issuer, Endpoints.BASE);
   }
 
   private TenantInfo getTenantInfo(String tenantName) {

@@ -18,6 +18,7 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <arpa/inet.h>
 
 #include <lw/types.h>
 #include <lw/hash.h>
@@ -33,3 +34,4 @@
 #include "vmhttpclient.h"
 #include "vmjsonresult.h"
 #include "vmmetrics.h"
+#include "vmnetworkutil.h"

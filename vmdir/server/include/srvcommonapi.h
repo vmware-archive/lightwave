@@ -51,3 +51,14 @@ VmDirRefreshPassword(
     BOOL  bRefreshPassword,
     PSTR  *ppszNewPassword
     );
+
+//joinatomic.c
+DWORD
+VmDirJoinAtomic(
+    PVDIR_CONNECTION pConn,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    BOOLEAN bPreJoined,
+    PVMDIR_MACHINE_INFO_A *ppMachineInfo,
+    PVMDIR_KRB_INFO *ppKrbInfo
+    );

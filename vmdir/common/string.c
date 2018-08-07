@@ -883,4 +883,36 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszStr);
     goto cleanup;
 }
+
+DWORD
+VmDirStringToINT64(
+    PCSTR     pszString,
+    INT64*    pOutVal
+    )
+{
+    DWORD    dwError = 0;
+    INT64    value = 0;
+
+    if (IsNullOrEmptyString(pszString) || !pOutVal)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    errno = 0;
+    value = strtoll(pszString, NULL, 10);
+    if (errno)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pOutVal = value;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d) errno: (%d)", dwError, errno);
+    goto cleanup;
+}
+
 #endif //#ifndef _WIN32

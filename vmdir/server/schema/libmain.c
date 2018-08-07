@@ -581,6 +581,8 @@ VmDirSchemaLibShutdown(
     // release live context and live schema
     VmDirSchemaCtxRelease(gVdirSchemaGlobals.pCtx);
     gVdirSchemaGlobals.pCtx = NULL;
+    gVdirSchemaGlobals.pLdapSchema = NULL;
+    gVdirSchemaGlobals.pVdirSchema = NULL;
 
     VMDIR_UNLOCK_MUTEX(bInLock, gVdirSchemaGlobals.ctxMutex);
 

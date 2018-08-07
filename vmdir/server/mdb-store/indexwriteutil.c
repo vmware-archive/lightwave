@@ -170,6 +170,7 @@ MdbUpdateAttrMetaData(
     VDIR_DB_DBT           key = {0};
     VDIR_DB_DBT           value = {0};
     char                  keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
+    PSZ_METADATA_BUF      pszMetaData = {'\0'};
     VDIR_DB               mdbDBi = 0;
     int                   indTypes = 0;
     BOOLEAN               bIsUniqueVal = FALSE;
@@ -179,7 +180,8 @@ MdbUpdateAttrMetaData(
 
     // E.g. while deleting a user, and therefore updating the member attribute of the groups to which the user belongs,
     // member attrMetaData of the group object is left unchanged (at least in the current design, SJ-TBD).
-    if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE && VmDirStringLenA( attr->metaData ) == 0)
+    if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE &&
+        (!attr->pMetaData || !attr->pMetaData->pszOrigInvoId))
     {
         goto cleanup;
     }
@@ -204,8 +206,11 @@ MdbUpdateAttrMetaData(
     VmDirEncodeShort( &pWriter, attr->pATDesc->usAttrID );
     key.mv_size += 2;
 
-    value.mv_data = attr->metaData;
-    value.mv_size = VmDirStringLenA(attr->metaData);
+    dwError = VmDirMetaDataSerialize(attr->pMetaData, &pszMetaData[0]);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    value.mv_data = &pszMetaData[0];
+    value.mv_size = VmDirStringLenA(pszMetaData);
 
     dwError = MdbUpdateKeyValue( mdbDBi, pTxn, &key, &value, bIsUniqueVal, ulOPMask );
     BAIL_ON_VMDIR_ERROR(dwError);

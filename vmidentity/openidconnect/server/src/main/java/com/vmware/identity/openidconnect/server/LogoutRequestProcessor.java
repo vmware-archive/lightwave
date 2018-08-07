@@ -245,28 +245,19 @@ public class LogoutRequestProcessor {
     }
 
     private Cookie loggedOutSessionCookie() {
-        Cookie cookie = new Cookie(SessionManager.getSessionCookieName(this.tenant), "");
-        cookie.setPath(Endpoints.BASE);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
+        Cookie cookie = SharedUtils.createCookie(SessionManager.getSessionCookieName(this.tenant), "", Endpoints.BASE);
         cookie.setMaxAge(0);
         return cookie;
     }
 
     private Cookie externalIdpLoggedoutSessionCookie() {
-        Cookie cookie = new Cookie(SessionManager.getExternalIdpIssuerCookieName(this.tenant), "");
-        cookie.setPath(Endpoints.BASE);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
+        Cookie cookie = SharedUtils.createCookie(SessionManager.getExternalIdpIssuerCookieName(this.tenant), "", Endpoints.BASE);
         cookie.setMaxAge(0);
         return cookie;
     }
 
     private Cookie personUserCertificateLoggedOutCookie() {
-        Cookie cookie = new Cookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant), "");
-        cookie.setPath(Endpoints.BASE);
-        cookie.setSecure(true);
-        cookie.setHttpOnly(true);
+        Cookie cookie = SharedUtils.createCookie(SessionManager.getPersonUserCertificateLoggedOutCookieName(this.tenant), "", Endpoints.BASE);
         return cookie;
     }
 

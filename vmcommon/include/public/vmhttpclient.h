@@ -32,7 +32,8 @@ typedef enum _VM_HTTP_METHOD
  */
 DWORD
 VmHttpClientInit(
-    PVM_HTTP_CLIENT *pClient
+    PVM_HTTP_CLIENT *pClient,
+    PCSTR pszCAPath
     );
 
 DWORD

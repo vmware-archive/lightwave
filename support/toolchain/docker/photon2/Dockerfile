@@ -17,6 +17,7 @@ RUN tdnf update -qy  tdnf  && \
         binutils-2.29.1 \
         boost-devel-1.63.0 \
         c-rest-engine-devel-1.2 \
+        cmocka-1.1.1 \
         copenapi-devel-0.0.2 \
         curl-devel-7.58.0 \
         diffutils \

@@ -56,7 +56,7 @@ public class TenantDataGenerator {
         String algorithm = "RSA";
         // Generate a 1024-bit Digital Signature Algorithm (DSA) key pair
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance(algorithm);
-        keyGen.initialize(1024);
+        keyGen.initialize(2048);
         KeyPair keypair = keyGen.genKeyPair();
         PrivateKey privateKey = keypair.getPrivate();
 

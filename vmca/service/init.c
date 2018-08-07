@@ -160,17 +160,21 @@ VMCASrvInitCA(
     BOOL bIsHoldingMutex = FALSE;
 
     dwError = VMCAPolicyInit(&ppPolicies);
-    // TODO (shahneel): once policy parsing/enforcement is verified to work,
-    //                  this must be updated to actually bail on errors.
     if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
     {
-        VMCA_LOG_INFO("Failed to load policy config file, will not enforce policies...");
+        VMCA_LOG_INFO(
+                "[%s,%d] Failed to load policy config file, will not enforce policies...",
+                __FUNCTION__,
+                __LINE__);
         dwError = 0;
     }
     else if (dwError != 0)
     {
-        VMCA_LOG_INFO("Failed to load policy config file. Error: %d", dwError);
-        dwError = 0;
+        VMCA_LOG_INFO(
+                "[%s,%d] Failed to initialize policy context. Error: %d",
+                __FUNCTION__,
+                __LINE__,
+                dwError);
     }
     BAIL_ON_VMCA_ERROR(dwError);
 

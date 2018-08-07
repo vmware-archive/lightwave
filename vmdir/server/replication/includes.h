@@ -62,6 +62,7 @@
 #include <structs.h>
 #include <prototypes.h>
 #include "externs.h"
+#include "defines.h"
 
 #else
 

@@ -116,10 +116,6 @@ public class SsoValidationState extends ValidationState {
         }
     }
 
-    /**
-     * @param parameter
-     * @throws Exception
-     */
     private void DecodeResponse() throws Exception {
 
         // 1. extract and decode saml response.
@@ -255,7 +251,6 @@ public class SsoValidationState extends ValidationState {
                                                         // provide subject.
 
         // Create Token DOM object return it in a new authnData obj
-        Document token = SamlUtils.createDomFromSignable(assertion);
         TokenType tokenType = TokenType.BEARER;
         List<SubjectConfirmation> confirmations = subject.getSubjectConfirmations();
         if (confirmations != null && !confirmations.isEmpty()) {
@@ -365,6 +360,7 @@ public class SsoValidationState extends ValidationState {
         DateTime exp = assertion.getConditions().getNotOnOrAfter();
         Date expDate = (exp == null) ? null : exp.toDate();
 
+        Document token = SamlUtils.createDomFromSignable(assertion);
         AuthnData authnData = new AuthnData(subjectData, expDate, sessionIndex, context, attributes, tokenType, token,
                 sessionNotOnOrAfter);
         return authnData;

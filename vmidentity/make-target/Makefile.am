@@ -51,12 +51,15 @@ vmstsjars_DATA= \
 
 vmstswebapps_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/openidconnect-sample-rp.war \
-    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war \
+    @top_builddir@/vmidentity/vmware-sts/packages/ROOT.war
+
+vmstssamplewebapps_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/ssolib-sample.war
 
 sbin_SCRIPTS = \
     @top_srcdir@/vmidentity/websso/src/main/resources/sso-config.sh \
     @top_builddir@/vmidentity/config/vmware-stsd.sh \
+    @top_builddir@/vmidentity/config/vmware-sampled.sh \
     @top_builddir@/vmidentity/config/configure-build.sh \
     @top_builddir@/vmidentity/config/configure-pwd-policy.sh
 
@@ -68,7 +71,8 @@ vmstsconf_DATA = \
     @top_builddir@/vmidentity/config/catalina.policy \
     @top_builddir@/vmidentity/config/context.xml \
     @top_builddir@/vmidentity/config/tomcat-users.xml \
-    @top_builddir@/vmidentity/config/vmsts-telegraf.conf
+    @top_builddir@/vmidentity/config/vmsts-telegraf.conf \
+    @top_builddir@/vmidentity/config/sts.policy
 
 vmidmconf_DATA= \
     @top_srcdir@/vmidentity/sso-config/src/main/resources/ssoconfig.log4j2.xml \
@@ -78,8 +82,23 @@ vmidmconf_DATA= \
 
 vmstsbin_DATA = \
     @top_builddir@/vmidentity/config/setenv.sh \
+    @top_builddir@/vmidentity/vmware-sts/packages/vmware-identity-tomcat-extensions.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/pro-grade-1.1.1.jar
+
+vmstssampleconf_DATA = \
+    @top_builddir@/vmidentity/config/server.xml \
+    @top_builddir@/vmidentity/config/catalina.properties \
+    @top_builddir@/vmidentity/config/web.xml \
+    @top_builddir@/vmidentity/config/logging.properties \
+    @top_builddir@/vmidentity/config/catalina.policy \
+    @top_builddir@/vmidentity/config/context.xml \
+    @top_builddir@/vmidentity/config/tomcat-users.xml
+
+vmstssamplebin_DATA = \
+    @top_builddir@/vmidentity/config/sample/setenv.sh \
     @top_builddir@/vmidentity/vmware-sts/packages/vmware-identity-tomcat-extensions.jar
 
 systemd_DATA = \
-    @top_builddir@/vmidentity/config/vmware-stsd.service
+    @top_builddir@/vmidentity/config/vmware-stsd.service \
+    @top_builddir@/vmidentity/config/vmware-sampled.service
 

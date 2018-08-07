@@ -636,6 +636,12 @@ VmdDirNormalizeString(
     PSTR    pszStr
     );
 
+DWORD
+VmDirStringToINT64(
+    PCSTR     pszString,
+    INT64*    pOutVal
+    );
+
 #ifdef _WIN32
 
 DWORD
@@ -766,12 +772,6 @@ VmDirConnectLDAPServerWithMachineAccount(
 BOOLEAN
 VmDirIsSensitiveAttr(
     PCSTR   pszAttrName
-    );
-
-DWORD
-VmDirStringToUSN(
-    PCSTR   pszUSNStr,
-    USN*    poutUSN
     );
 
 DWORD
@@ -1646,6 +1646,10 @@ VmDirKeyTabMakeRecord(
     PBYTE *ppKtRecord,
     PDWORD pdwRecordLen);
 
+DWORD
+VmDirWriteToKeyTabFile(
+    PVMDIR_KRB_INFO pKrbInfo
+    );
 
 DWORD
 VmDirDestroyDefaultKRB5CC(

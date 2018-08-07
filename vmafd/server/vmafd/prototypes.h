@@ -368,6 +368,16 @@ VmAfdGetDomainControllerList(
     PDWORD pdCount
     );
 
+DWORD
+VmAfdSrvSetUseVmDirREST(
+    BOOLEAN bValue
+    );
+
+DWORD
+VmAfdSrvGetUseVmDirREST(
+    BOOLEAN *pbValue
+    );
+
 /* dns.c */
 
 DWORD
@@ -2452,6 +2462,39 @@ VmAfSrvEndUpgrade(
 DWORD
 VmAfSrvGetUpgradeState(
     PBOOL pbIsUpgradeInProgress
+    );
+
+//restutil.c
+DWORD
+FormatUrl(
+    PCSTR    pszScheme,
+    PCSTR    pszHost,
+    DWORD    dwPort,
+    PCSTR    pszPath,
+    PCSTR    pszQuery,
+    PSTR*    ppszUrl
+    );
+
+//rest.c
+DWORD
+VmAfdRestPasswordRefresh(
+    PCSTR pszServer,
+    PCSTR pszDomain,
+    PCSTR pszUser,
+    PCSTR pszPass,
+    BOOLEAN bForce,
+    PSTR *ppszNewPass
+    );
+
+//restcerts.c
+DWORD
+VmAfdRestGetCACerts(
+    PCSTR   pszServer,
+    PCSTR   pszDomain,
+    PCSTR   pszUser,
+    PCSTR   pszPass,
+    BOOLEAN bDetail,
+    PVMAFD_CA_CERT_ARRAY *ppCACerts
     );
 
 #ifdef __cplusplus

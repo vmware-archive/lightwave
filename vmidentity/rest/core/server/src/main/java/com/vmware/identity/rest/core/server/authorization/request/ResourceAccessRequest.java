@@ -253,6 +253,13 @@ public class ResourceAccessRequest {
         // set log4j context for the incoming request
         DiagnosticsContextFactory.addContext(Config.TenantNameMdcKey, tenant);
 
+        long skew = getSkew(tenant, client);
+        Certificate cert = getSigningCert(tenant, client, requiredRole == null ? false : requiredRole.isSystemTenantDomain());
+
+        AccessTokenVerifier verifier = getAccessTokenVerifier(context, info, skew, cert);
+
+        verifier.verify(token);
+
         String subjectMd5Hash;
         try {
             MessageDigest md = MessageDigest.getInstance("MD5");
@@ -262,15 +269,11 @@ public class ResourceAccessRequest {
         } catch (NoSuchAlgorithmException e) {
             subjectMd5Hash = token.getSubject();
         }
+
         DiagnosticsContextFactory.addContext(Config.UserIdMdcKey, subjectMd5Hash);
         // use token issue epoch time as session_id
         String issueInstant = String.valueOf(token.getIssueTime().getTime() / 1000);
         DiagnosticsContextFactory.addContext(Config.SessionIdMdcKey, issueInstant);
-
-        long skew = getSkew(tenant, client);
-        Certificate cert = getSigningCert(tenant, client, requiredRole == null ? false : requiredRole.isSystemTenantDomain());
-
-        AccessTokenVerifier verifier = getAccessTokenVerifier(context, info, skew, cert);
 
         String systemDoaminOfTenant = getSystemDomainOfTenant(tenant, client);
         String systemDomainOfSystemTenant = getSystemDomainOfSystemTenant(client);

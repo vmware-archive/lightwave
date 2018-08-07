@@ -1,0 +1,167 @@
+#!/bin/bash
+
+VMWARE_HOME=@VMSTS_PREFIX_DIR@
+INSTANCE_NAME=vmware-sts-sample
+VMWARE_INSTANCE=$VMWARE_HOME/$INSTANCE_NAME
+VMWARE_STS_CONFIG=$VMWARE_HOME/config
+
+JAVA_HOME=/etc/alternatives/jre
+JSVC_HOME=${JSVC_HOME:-@COMMONS_DAEMON_HOME@}
+JSVC_BIN=@JSVC@
+DEFAULT_MAX_RAM=256m
+
+PREFIX=/opt/vmware
+JARDIR=$PREFIX/jars
+DAEMON_CLASS=org.apache.catalina.startup.Bootstrap
+
+# STS Sample Instance
+SERVICE_NAME=vmware-sampled
+
+SAMPLED_LOG_DIR="/var/log/vmware/sts-sample"
+SAMPLED_SERVICE_PID="$SAMPLED_LOG_DIR/tcserver.pid"
+SAMPLED_INITD_ERR_LOG="$SAMPLED_LOG_DIR/utils/$SERVICE_NAME.err"
+
+ENABLE_DEBUG=0
+DEBUG_OPTS="-Xdebug -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=5005"
+
+# Tomcat Catalina settings
+
+CATALINA_HOME=${CATALINA_HOME:-@TOMCAT_HOME@}
+CATALINA_BASE="$VMWARE_HOME/$INSTANCE_NAME"
+CATALINA_TEMP=$CATALINA_BASE/temp
+
+JAVA_SEC_PROP="$CATALINA_BASE/conf/vmware-override-java.security"
+
+LIGHTWAVE_DC_FQDN=
+
+ShowUsage()
+{
+    echo "Usage: vmware-sampled.sh -a { start | stop }"
+    echo "                        [-h]"
+    echo "                        [-s <Lightwave Domain Controller FQDN>"
+    echo "                        [-d]"
+}
+
+perform_pre_startup_actions()
+{
+   echo "[start] Performing pre-startup actions."
+
+   mkdir -p $CATALINA_TEMP
+
+   . "$CATALINA_BASE/bin/setenv.sh"
+
+   echo "[start] Pre-startup complete."
+}
+
+StartService()
+{
+   # Set up catalina based env variables
+   perform_pre_startup_actions
+
+   if [ "$ENABLE_DEBUG" == "1" ]; then
+        JAVA_OPTS="$DEBUG_OPTS $JAVA_OPTS"
+   fi
+
+   # Start tomcat server
+   $JSVC_BIN -procname $SERVICE_NAME \
+             -home $JAVA_HOME \
+             -server \
+             -pidfile $SAMPLED_SERVICE_PID \
+             -errfile $SAMPLED_INITD_ERR_LOG \
+             -Djava.security.properties=$JAVA_SEC_PROP \
+             -Djava.util.logging.config.file=$CATALINA_BASE/conf/logging.properties \
+             -Djava.util.logging.manager=org.apache.juli.ClassLoaderLogManager \
+             -Dlightwave.dc.fqdn=$LIGHTWAVE_DC_FQDN \
+             $JAVA_OPTS \
+             $CATALINA_OPTS \
+             -Djava.endorsed.dirs="$CATALINA_HOME/endorsed" \
+             -classpath "$JSVC_HOME/*:$CATALINA_HOME/lib/*:$CATALINA_HOME/bin/bootstrap.jar:$CATALINA_HOME/bin/tomcat-juli.jar:$CATALINA_BASE/bin/vmware-identity-tomcat-extensions.jar" \
+             -Dcatalina.base=$CATALINA_BASE \
+             -Dcatalina.home=$CATALINA_HOME \
+             -Dvmware.log.dir=$SAMPLED_LOG_DIR \
+             -Dorg.apache.catalina.connector.CoyoteAdapter.ALLOW_BACKSLASH=true \
+             -Djava.io.tmpdir="$CATALINA_BASE/temp" \
+             -Djavax.xml.transform.TransformerFactory=com.sun.org.apache.xalan.internal.xsltc.trax.TransformerFactoryImpl \
+             $DAEMON_CLASS start
+
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "Failed to start STS Sample service. Error code : $rc"
+    else
+	echo "STS(Secure Token service) Sample Service started successfully!"
+    fi
+
+    return $rc
+}
+
+
+StopService()
+{
+    $JSVC_BIN -procname $SERVICE_NAME \
+              -stop \
+              -home $JAVA_HOME \
+              -pidfile $SAMPLED_SERVICE_PID \
+              $DAEMON_CLASS
+    rc=$?
+    if [ $rc -ne 0 ]; then
+        echo "Failed to stop STS Sample service. Error code : $rc"
+    fi
+
+    return $rc
+}
+
+
+## main
+
+if [ $# -lt 1 ]; then
+    ShowUsage
+    exit 1
+fi
+
+while getopts a:s:hd o
+do
+    case "$o" in
+        h)
+            ShowUsage
+            exit 0
+            ;;
+        s)
+            LIGHTWAVE_DC_FQDN="$OPTARG"
+            ;;
+        d)
+            ENABLE_DEBUG=1
+            ;;
+        a)
+            ACTION="$OPTARG"
+            ;;
+        [?])
+            ShowUsage
+            exit 1
+    esac
+done
+
+if [ -z "$ACTION" ]; then
+    ShowUsage
+    exit 1
+fi
+
+rc=0
+
+case "$ACTION" in
+    start)
+        StartService
+        rc=$?
+        ;;
+    stop)
+ StopService
+        rc=$?
+        ;;
+    *)
+        echo "Error: Unsupported action : $1"
+        ShowUsage
+        rc=1
+        ;;
+esac
+
+exit $rc
+

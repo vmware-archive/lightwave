@@ -29,6 +29,7 @@ libsrvcommon_la_SOURCES = \
     sockinterface.c       \
     store.c               \
     util.c                \
+    vmafdlib.c            \
     zone.c                \
     zonelist.c
 

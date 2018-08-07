@@ -36,6 +36,13 @@ extern "C" {
 #define VMDIR_MAX_UPN_LEN                   512
 #define VMDIR_CLIENT_JOIN_FLAGS_PREJOINED   0x00000001
 
+/* rest api details */
+#define VMDIR_REST_API_HTTPS_PORT           7479
+#define VMDIR_REST_API_BASE                 "/v1/vmdir/api"
+#define VMDIR_REST_API_PASSWORD_REFRESH_CMD "password/refresh"
+#define VMDIR_REST_API_GET_CERTS_CMD        "certs/rootcerts"
+#define VMDIR_REST_API_JOINATOMIC_CMD       "join/joinatomic"
+
 /*
  * API exposed for HA Topology Management
  */
@@ -1008,6 +1015,18 @@ VmDirFreeServerInfoArray(
     PVMDIR_SERVER_INFO pServerInfoArray,
     DWORD              dwCount
 );
+
+/* apis that communicate to server via rest interface */
+DWORD
+VmDirRestClientPreJoinAtomic(
+    PCSTR                   pszServerName,
+    PCSTR                   pszToken,
+    PCSTR                   pszCAPath,
+    PCSTR                   pszMachineName,
+    PCSTR                   pszPassword,
+    PCSTR                   pszOrgUnit,
+    PVMDIR_MACHINE_INFO_A   *ppMachineInfo
+    );
 
 #ifdef __cplusplus
 }

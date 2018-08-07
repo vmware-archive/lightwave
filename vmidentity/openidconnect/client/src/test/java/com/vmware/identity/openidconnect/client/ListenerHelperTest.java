@@ -53,7 +53,7 @@ public class ListenerHelperTest {
 
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair providerKeyPair = keyGen.generateKeyPair();
         providerPrivateKey = (RSAPrivateKey) providerKeyPair.getPrivate();
         providerPublicKey = (RSAPublicKey) providerKeyPair.getPublic();

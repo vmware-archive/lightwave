@@ -127,6 +127,8 @@
 #endif
 
 #include <ldap.h>
+#include <vmhttpclient.h>
+#include <vmjsonresult.h>
 
 #include "defines.h"
 #include "structs.h"

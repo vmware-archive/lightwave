@@ -122,6 +122,13 @@ VmAfdSrvUpdateConfig(
         {
             pGlobals->bEnableDDNS = pEntry->cfgValue.dwValue?TRUE:FALSE;
         }
+        else if (!VmAfdStringCompareA(
+                pEntry->pszName,
+                VMAFD_REG_KEY_USE_VMDIR_REST,
+                TRUE))
+        {
+            pGlobals->bUseVmDirREST = pEntry->cfgValue.dwValue?TRUE:FALSE;
+        }
 
     }
 

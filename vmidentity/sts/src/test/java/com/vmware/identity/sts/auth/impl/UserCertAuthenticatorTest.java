@@ -75,7 +75,7 @@ public class UserCertAuthenticatorTest {
     public static void setUp() throws Exception {
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair userKeyPair = keyGen.generateKeyPair();
         userPrivateKey = (RSAPrivateKey) userKeyPair.getPrivate();
         x509Certificate = generateCertificate(userKeyPair, "User");

@@ -468,6 +468,7 @@ typedef struct _VMDIR_GROUP_MEMBERSHIP
 {
     ULONG Identifier[2];
     ULONG Attributes;
+    RPC_UNICODE_STRING Name;
 } VMDIR_GROUP_MEMBERSHIP, *PVMDIR_GROUP_MEMBERSHIP;
 
 typedef struct _VMDIR_AUTHZ_INFO

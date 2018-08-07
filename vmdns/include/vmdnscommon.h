@@ -1011,6 +1011,47 @@ VmDnsCheckIfIPV6AddressA(
 #define POSIX_TO_WIN32_ERROR(errno) LwErrnoToWin32Error(errno)
 #endif
 
+#define VMAFD_NAME                          "vmafd"
+
+#ifdef _WIN32
+#define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
+#endif
+
+#ifndef _WIN32
+#define VMAFD_CONFIG_KEY_ROOT               "Services\\Vmafd"
+#define VMAFD_REG_KEY_PATH                  "Path"
+#else
+#define VMAFD_CONFIG_SOFTWARE_KEY_PATH      "SOFTWARE\\VMware, Inc.\\VMware Afd Services"
+#endif
+
+#ifdef _WIN32
+typedef HINSTANCE   VMDNS_LIB_HANDLE;
+#else
+#include <dlfcn.h>
+typedef VOID*       VMDNS_LIB_HANDLE;
+#endif
+
+#ifdef _WIN32
+FARPROC WINAPI
+#else
+VOID*
+#endif
+VmDnsGetLibSym(
+    VMDNS_LIB_HANDLE    pLibHandle,
+    PCSTR               pszFunctionName
+    );
+
+VOID
+VmDnsCloseLibrary(
+    VMDNS_LIB_HANDLE pLibHandle
+    );
+
+DWORD
+VmDirLoadLibrary(
+    PCSTR               pszLibPath,
+    VMDNS_LIB_HANDLE*   ppLibHandle
+    );
+
 #ifdef __cplusplus
 }
 #endif

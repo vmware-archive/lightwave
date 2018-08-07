@@ -112,7 +112,7 @@ public class LogoutState {
         this.setMessageSource(messageSource);
         this.sessionManager = sessionManager;
         this.factory = factory == null ? new DefaultIdmAccessorFactory(UUID.randomUUID().toString()) : factory;
-        this.idmAccessor = factory.getIdmAccessor();
+        this.idmAccessor = this.factory.getIdmAccessor();
         this.validator = new LogoutStateValidator();
         RequestCacheFactory requestFactory = new DefaultRequestCacheFactory();
         this.requestCache = requestFactory.getRequestCache();

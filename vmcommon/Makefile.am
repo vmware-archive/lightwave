@@ -18,7 +18,8 @@ libvmcommon_la_SOURCES = \
     vmstring.c \
     vmhttpclient.c \
     vmjsonresult.c \
-    vmmetrics.c
+    vmmetrics.c \
+    vmnetworkutil.c
 
 libvmcommon_la_LIBADD = \
     @CURL_LIBS@ \

@@ -72,6 +72,12 @@ VmAfSrvUnsetDNSRecords(
 
 static
 DWORD
+_VmAfSrvEnsureUseVmDirRestFlag(
+    VOID
+    );
+
+static
+DWORD
 _CreateKrbConfig(
     PCSTR pszDefaultRealm,
     PCSTR pszConfigFileName,
@@ -991,6 +997,63 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmAfSrvRestClientPrejoinAtomic(
+    PCSTR pszDCHostName,
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszDomainName,
+    PCSTR pszMachineName,
+    PCSTR pszOrgUnit,
+    PVMDIR_MACHINE_INFO_A *ppMachineInfo
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszCAPath = NULL;
+    PSTR  pszCAPath = NULL;
+    PSTR  pszToken = NULL;
+    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
+
+    dwError = VmAfSrvGetCAPath(&pwszCAPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    /* acquire token */
+    dwError = VmAfdAcquireTokenForVmDirREST(
+                  pszDCHostName,
+                  pszDomainName,
+                  pszUserName,
+                  pszPassword,
+                  pszCAPath,
+                  &pszToken);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmDirRestClientPreJoinAtomic(
+                  pszDCHostName,
+                  pszToken,
+                  pszCAPath,
+                  pszMachineName,
+                  pszPassword,
+                  pszOrgUnit,
+                  &pMachineInfo);
+   BAIL_ON_VMAFD_ERROR(dwError);
+
+   *ppMachineInfo = pMachineInfo;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pwszCAPath);
+    VMAFD_SAFE_FREE_MEMORY(pszCAPath);
+    VMAFD_SAFE_FREE_MEMORY(pszToken);
+    return dwError;
+
+error:
+    VmDirClientFreeMachineInfo(pMachineInfo);
+    goto cleanup;
+}
+
 DWORD
 VmAfSrvJoinVmDir2(
     PWSTR            pwszServerName,     /* IN            */
@@ -1143,16 +1206,39 @@ VmAfSrvJoinVmDir2(
 
     if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_ATOMIC_JOIN))
     {
-        dwError = VmDirClientJoinAtomic(
-                      pszDCHostname,
-                      pszUserName,
-                      pszPassword,
-                      pszDomainName,
-                      pszMachineName,
-                      pszOrgUnit,
-                      dwDirJoinFlags,
-                      &pMachineInfo);
-       BAIL_ON_VMAFD_ERROR(dwError);
+        if (dwDirJoinFlags == VMDIR_CLIENT_JOIN_FLAGS_PREJOINED)
+        {
+            /*
+             * rest is default for prejoin path
+             * ensure that rest flag is turned on in registry
+             * and that the flag is set for this server instance
+            */
+            dwError = _VmAfSrvEnsureUseVmDirRestFlag();
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            dwError = _VmAfSrvRestClientPrejoinAtomic(
+                          pszDCHostname,
+                          pszUserName,
+                          pszPassword,
+                          pszDomainName,
+                          pszMachineName,
+                          pszOrgUnit,
+                          &pMachineInfo);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirClientJoinAtomic(
+                          pszDCHostname,
+                          pszUserName,
+                          pszPassword,
+                          pszDomainName,
+                          pszMachineName,
+                          pszOrgUnit,
+                          dwDirJoinFlags,
+                          &pMachineInfo);
+           BAIL_ON_VMAFD_ERROR(dwError);
+        }
     }
     else
     {
@@ -2855,3 +2941,41 @@ error:
 
 }
 
+/*
+ * Check if the global bUseVmDirREST flag is set.
+ * The "Ensure" path is as follows:
+ * if set, return success
+ * if not set, it means flag was not set in registry
+ * when server started and we are allowing a backward
+ * compatible prejoin rest path. Set the flag in registry
+ * and set the global flag and return succcess.
+*/
+static
+DWORD
+_VmAfSrvEnsureUseVmDirRestFlag(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bUseVmDirREST = FALSE;
+
+    if (!gVmafdGlobals.bUseVmDirREST)
+    {
+        dwError = VmAfdSrvSetUseVmDirREST(TRUE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdSrvGetUseVmDirREST(&bUseVmDirREST);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (!bUseVmDirREST)
+        {
+            dwError = ERROR_CANNOT_PREJOIN_USING_REST;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        gVmafdGlobals.bUseVmDirREST = TRUE;
+    }
+
+error:
+    return dwError;
+}

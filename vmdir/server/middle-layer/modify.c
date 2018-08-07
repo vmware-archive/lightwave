@@ -767,8 +767,9 @@ VmDirGenerateModsNewMetaData(
     int                  dbRetVal = 0;
     PVDIR_MODIFICATION   pMod = NULL;
     PVDIR_MODIFICATION   pUsnChangedMod = NULL;
+    USN                  usnChanged = 0;
     char                 origTimeStamp[VMDIR_ORIG_TIME_STR_LEN];
-    int                  currentVersion = 0;
+    INT64                currentVersion = 0;
     PSTR                 pszLocalErrMsg = NULL;
 
     // Look for Replace USN_MODIFIED mod
@@ -781,6 +782,9 @@ VmDirGenerateModsNewMetaData(
         }
     }
     assert(pUsnChangedMod);
+
+    retVal = VmDirStringToINT64(pUsnChangedMod->attr.vals[0].lberbv.bv_val, &usnChanged);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirGenOriginatingTimeStr( origTimeStamp );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
@@ -795,7 +799,9 @@ VmDirGenerateModsNewMetaData(
 
     for (pMod = pmods; pMod; pMod = pMod->next)
     {
-        if ((dbRetVal = pOperation->pBEIF->pfnBEGetAttrMetaData( pOperation->pBECtx, &(pMod->attr), entryId )) != 0)
+        dbRetVal = pOperation->pBEIF->pfnBEGetAttrMetaData(
+                pOperation->pBECtx, &(pMod->attr), entryId);
+        if (dbRetVal)
         {
             switch (dbRetVal)
             {
@@ -816,17 +822,23 @@ VmDirGenerateModsNewMetaData(
         }
         else
         {
-            currentVersion = VmDirStringToIA(strchr(pMod->attr.metaData, ':') + 1);
+            currentVersion = pMod->attr.pMetaData->version;
         }
 
         if(currentVersion > 0 && !pMod->attr.pATDesc->bSingleValue)
         {
-            if (VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED && //When concurrent attribute update feature enabled.
-                (pMod->operation == MOD_OP_ADD || (pMod->operation == MOD_OP_DELETE && pMod->attr.numVals > 0)))
+            //When concurrent attribute update feature enabled.
+            if (VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED &&
+                (pMod->operation == MOD_OP_ADD ||
+                (pMod->operation == MOD_OP_DELETE && pMod->attr.numVals > 0)))
             {
                 //Create attr-value-meta-data instread of attr-meta-data PR 1531924
-                retVal = _VmDirAttrValueMetaDataToAdd(pMod, currentVersion, origTimeStamp, pUsnChangedMod->attr.vals[0].lberbv.bv_val);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                retVal = _VmDirAttrValueMetaDataToAdd(
+                        pMod,
+                        currentVersion,
+                        origTimeStamp,
+                        pUsnChangedMod->attr.vals[0].lberbv.bv_val);
+                BAIL_ON_VMDIR_ERROR(retVal);
                 continue;
             }
             else
@@ -842,24 +854,19 @@ VmDirGenerateModsNewMetaData(
             }
         }
 
-        // Get here if modify is NOT to add/delete a value on a multivalue value attribute
-        // or there is NO any value yet for the attribute.
-
-        // Force version gap if specified by pMod composer.
-        // User case: force sync schema metadata version in 6.5 schema patch.
-        currentVersion += pMod->usForceVersionGap;
-
-        // SJ-TBD: Since, currently, Replace mod is replaced by Delete and Add mods, the logic to set new attribute
-        // meta data in each of these 2 mods is bit strange, but works, because both Delete and Add mods read
-        // current attribute meta data from the DB, and not Add mod seeing attribute meta data from the previous
+        // SJ-TBD: Since, currently, Replace mod is replaced by Delete and Add mods,
+        // the logic to set new attribute meta data in each of these 2 mods is bit strange,
+        // but works, because both Delete and Add mods read current attribute meta data
+        // from the DB, and not Add mod seeing attribute meta data from the previous
         // Delete and therefore increasing the version # one extra time.
-
-        // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-        VmDirStringNPrintFA( pMod->attr.metaData, sizeof( pMod->attr.metaData ), sizeof( pMod->attr.metaData ) - 1,
-                             "%s:%d:%s:%s:%s", pUsnChangedMod->attr.vals[0].lberbv.bv_val, currentVersion + 1,
-                             gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                             origTimeStamp, pUsnChangedMod->attr.vals[0].lberbv.bv_val );
-
+        retVal = VmDirMetaDataCreate(
+                usnChanged,
+                currentVersion + 1,
+                gVmdirServerGlobals.invocationId.lberbv.bv_val,
+                origTimeStamp,
+                usnChanged,
+                &pMod->attr.pMetaData);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
 cleanup:
@@ -1590,8 +1597,6 @@ _VmDirAttrValueMetaDataToAdd(
 {
     int retVal = 0;
     VDIR_BERVALUE *pAVmeta = NULL;
-    char *p1 = NULL;
-    char *p2 = NULL;
     int i=0, value_len = 0, av_meta_len = 0;
 
     for (i=0; i<(int)pMod->attr.numVals; i++)
@@ -1599,16 +1604,23 @@ _VmDirAttrValueMetaDataToAdd(
         char av_meta_pre[VMDIR_MAX_ATTR_VALUE_META_DATA_LEN] = {0};
 
         value_len = (int)pMod->attr.vals[i].lberbv_len;
-        p1 = strchr(pMod->attr.metaData, ':') + 1;
-        p2 = strchr((strchr(p1, ':') + 1), ':');
-        *p2 = '\0';
 
-        retVal = VmDirStringNPrintFA(av_meta_pre, sizeof(av_meta_pre), sizeof(av_meta_pre) - 1, "%s:%s:%s:%s:%s:%s:%d:%d:",
-                     pMod->attr.type.lberbv.bv_val, usnChanged, p1, gVmdirServerGlobals.invocationId.lberbv.bv_val,
-                     pTimeStamp, usnChanged, pMod->operation, value_len);
+        retVal = VmDirStringNPrintFA(
+                av_meta_pre,
+                sizeof(av_meta_pre),
+                sizeof(av_meta_pre) - 1,
+                "%s:%s:%"PRId64":%s:%s:%s:%s:%d:%d:",
+                pMod->attr.type.lberbv.bv_val,
+                usnChanged,
+                pMod->attr.pMetaData->version,
+                pMod->attr.pMetaData->pszOrigInvoId,
+                gVmdirServerGlobals.invocationId.lberbv.bv_val,
+                pTimeStamp,
+                usnChanged,
+                pMod->operation,
+                value_len);
         BAIL_ON_VMDIR_ERROR(retVal);
 
-        *p2 = ':';
         retVal = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
         BAIL_ON_VMDIR_ERROR(retVal);
 

@@ -395,7 +395,6 @@ public class IdentityManager implements IIdentityManager {
             // Auxiliary IDM bootstrap actions
             IdmDomainState.getInstance();
             String systemTenant = registerServiceProviderAsTenant(); // Set up system tenant
-            initializeTenantCache(); // prepare tenant cache
             ensureValidTenant(systemTenant);
             ensureWellKnownGroupExists(systemTenant, WELLKNOWN_CONFIGURATIONUSERS_GROUP_NAME,
                     WELLKNOWN_CONFIGURATIONUSERS_GROUP_DESCRIPTION);
@@ -7188,7 +7187,6 @@ public class IdentityManager implements IIdentityManager {
 
         if (tenant != null)
         {
-
             TenantAttributes attrs = _configStore.getTokenPolicyExt(tenantName);
             TokenPolicy tokenPolicyInfo = attrs.getTokenPolicy();
             int delegationCount = tokenPolicyInfo.getMaxTokenDelegationCount();
@@ -7506,18 +7504,6 @@ public class IdentityManager implements IIdentityManager {
             computerName = client.getComputerName();
         }
         return computerName;
-    }
-
-
-    private void initializeTenantCache() throws Exception
-    {
-        Collection<String> allTenantNames = this.getAllTenants();
-        ValidateUtil.validateNotEmpty(allTenantNames, "tenant names");
-
-        for (String tenantName : allTenantNames)
-        {
-            loadTenant(tenantName);
-        }
     }
 
     private void refreshTenantCache() throws Exception

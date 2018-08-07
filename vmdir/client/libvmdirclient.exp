@@ -136,3 +136,4 @@ VmDirDeleteTenantEx
 VmDirGetServersDetailed
 VmDirFreeServerInfo
 VmDirFreeServerInfoArray
+VmDirRestClientPreJoinAtomic

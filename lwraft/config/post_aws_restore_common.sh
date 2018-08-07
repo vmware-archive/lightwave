@@ -1,11 +1,9 @@
 #!/bin/bash
+source /var/vmware/lightwave/scripts/common.sh
 
 get_params() {
     ADMIN_USER="administrator"
-    get_tag_value PASSWORD_PATH ADMIN_USER_PASS_BUCKET
-    set +x
-    ADMIN_PASS=$(aws s3 cp ${ADMIN_USER_PASS_BUCKET} -)
-    set -x
+    get_post_password ADMIN_PASS
 }
 
 download_db() {

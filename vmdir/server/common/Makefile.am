@@ -16,6 +16,7 @@ libsrvcommon_la_SOURCES = \
     entryencodedecode.c   \
     externaloputil.c      \
     krbsrvutil.c          \
+    metadata.c            \
     nodeidentity.c        \
     oidctovmdirerror.c    \
     oprequestutil.c       \

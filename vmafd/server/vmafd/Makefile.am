@@ -30,6 +30,8 @@ vmafdd_SOURCES = \
     parseargs.c   \
     passrefresh.c \
     regconfig.c   \
+    rest.c        \
+    restcerts.c   \
     rootfetch.c   \
     rpc.c         \
     rpcserv.c     \
@@ -54,6 +56,7 @@ vmafdd_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/server/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -67,6 +70,7 @@ vmafdd_LDADD = \
     $(top_builddir)/vmafd/vmnetevent/libvmnetevent.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdns/client/libvmdnsclient.la \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @DCERPC_LIBS@ \
     @SCHANNEL_LIBS@ \
     @DOMAINJOIN_LIBS@ \

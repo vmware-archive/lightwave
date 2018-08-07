@@ -177,7 +177,7 @@ public class OIDCClientITBase {
 
         // create key pair and client private key, certificate
         KeyPairGenerator keyGen = KeyPairGenerator.getInstance("RSA");
-        keyGen.initialize(1024, new SecureRandom());
+        keyGen.initialize(2048, new SecureRandom());
         KeyPair clientKeyPair = keyGen.generateKeyPair();
 
         // create a regular solution user

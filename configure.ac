@@ -913,6 +913,12 @@ AC_CHECK_LIB([curl],
     [],
     [$CURL_LDFLAGS])
 
+AC_CHECK_LIB([cmocka],
+    [_cmocka_run_group_tests],
+    [CMOCKA_LIBS="-lcmocka"],
+    [],
+    [$CMOCKA_LDFLAGS])
+
 AC_CHECK_LIB([copenapi],
     [coapi_load_from_file],
     [COPENAPI_LIBS="-lcopenapi"]
@@ -1033,6 +1039,7 @@ AC_SUBST(DOMAINJOIN_LIBS)
 AC_SUBST(LWSM_LIBS)
 AC_SUBST(CARES_LIBS)
 AC_SUBST(CURL_LIBS)
+AC_SUBST(CMOCKA_LIBS)
 
 #--------------------------------------------------------------------
 
@@ -1077,6 +1084,11 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
+
+vmdnslibdir=$prefix/lib64
+AC_SUBST(vmdnslibdir)
+AS_AC_EXPAND(VMDNS_LIB_DIR, $vmdnslibdir)
+AC_DEFINE_UNQUOTED(VMDNS_LIB_DIR, "$VMDNS_LIB_DIR", [Lib directory])
 
 vmcalibdir=$prefix/lib64
 AC_SUBST(vmcalibdir)
@@ -1203,7 +1215,7 @@ AM_CONDITIONAL(NOTIFY_VMDIR_PROVIDER, [$NOTIFY_VMDIR_PROVIDER])
 
 #--------------------------------------------------------------------
 # ESX Platform
- 
+
 DCERPC_DEPENDENCY="lsass dcerpc"
 AC_SUBST(DCERPC_DEPENDENCY)
 AC_ARG_ENABLE([esx],
@@ -1410,6 +1422,26 @@ AC_SUBST(CURL_INCLUDES)
 AC_SUBST(CURL_LDFLAGS)
 
 #--------------------------------------------------------------------
+# CMOCKA components
+
+AC_ARG_WITH([cmocka],
+    [AC_HELP_STRING([--with-cmocka=<dir>], [use CMOCKA binaries rooted at prefix <dir> ])],
+    [
+        CMOCKA_BASE_PATH="$withval"
+    ],
+    [
+        CMOCKA_BASE_PATH="/usr"
+    ])
+
+CMOCKA_INCLUDES="-I$CMOCKA_BASE_PATH/include"
+CMOCKA_LDFLAGS="-L$CMOCKA_BASE_PATH/lib"
+
+
+AC_SUBST(CMOCKA_BASE_PATH)
+AC_SUBST(CMOCKA_INCLUDES)
+AC_SUBST(CMOCKA_LDFLAGS)
+
+#--------------------------------------------------------------------
 # Commons Daemon component
 
 AC_ARG_WITH([commons-daemon],
@@ -1486,6 +1518,15 @@ AC_SUBST(vmstsconfdir)
 
 vmstsbindir="$prefix/vmware-sts/bin"
 AC_SUBST(vmstsbindir)
+
+vmstssamplewebappsdir="$prefix/vmware-sts-sample/webapps"
+AC_SUBST(vmstssamplewebappsdir)
+
+vmstssampleconfdir="$prefix/vmware-sts-sample/conf"
+AC_SUBST(vmstssampleconfdir)
+
+vmstssamplebindir="$prefix/vmware-sts-sample/bin"
+AC_SUBST(vmstssamplebindir)
 
 vmidmconfdir="$datadir/config/idm"
 AC_SUBST(vmidmconfdir)
@@ -1658,12 +1699,14 @@ AC_CONFIG_FILES([Makefile
                  vmdir/gssapi-plugins/ntlm/Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile
+                 vmdir/unit-tests/Makefile
+                 vmdir/unit-tests/server/Makefile
+                 vmdir/unit-tests/server/common/Makefile
                  vmdns/Makefile
                  vmdns/include/Makefile
                  vmdns/include/public/Makefile
                  vmdns/config/Makefile
                  vmdns/config/vmdns.reg
-                 vmdns/config/vmdns-client.reg
                  vmdns/common/Makefile
                  vmdns/vmsock/Makefile
                  vmdns/vmsock/posix/Makefile
@@ -1731,8 +1774,11 @@ AC_CONFIG_FILES([Makefile
                  vmca/tools/lw-certool/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
+                 vmidentity/config/sample/setenv.sh
                  vmidentity/config/vmware-stsd.sh
                  vmidentity/config/vmware-stsd.service
+                 vmidentity/config/vmware-sampled.sh
+                 vmidentity/config/vmware-sampled.service
                  vmidentity/config/configure-build.sh
                  vmidentity/interop/Makefile
                  vmidentity/interop/idm/Makefile

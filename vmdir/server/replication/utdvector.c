@@ -362,7 +362,7 @@ VmDirUpdateUtdVectorLocalCache(
         {
             pszKey = VmDirStringTokA((PSTR)pStrList->pStringList[dwCount], ":", &pszVal);
 
-            dwError = VmDirStringToUSN(pszVal, &currUsn);
+            dwError = VmDirStringToINT64(pszVal, &currUsn);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             VMDIR_SAFE_FREE_MEMORY(pszDupKey);
@@ -439,7 +439,7 @@ _VmDirUTDVectorStrToPair(
     dwError = VmDirAllocateStringA(pszKey, &pszDupKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToUSN(pszValue, &Usn);
+    dwError = VmDirStringToINT64(pszValue, &Usn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pPair->pKey = (PVOID) pszDupKey;

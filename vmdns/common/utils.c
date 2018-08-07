@@ -781,3 +781,77 @@ error:
     VMDNS_SAFE_FREE_STRINGA(pStr);
     goto cleanup;
 }
+
+#ifdef _WIN32
+FARPROC WINAPI
+#else
+VOID*
+#endif
+VmDnsGetLibSym(
+    VMDNS_LIB_HANDLE pLibHandle,
+    PCSTR            pszFunctionName
+    )
+{
+#ifdef _WIN32
+    return GetProcAddress(pLibHandle, pszFunctionName);
+#else
+    return dlsym(pLibHandle, pszFunctionName);
+#endif
+}
+
+VOID
+VmDnsCloseLibrary(
+    VMDNS_LIB_HANDLE pLibHandle
+    )
+{
+    if (pLibHandle)
+    {
+#ifdef _WIN32
+        FreeLibrary(pLibHandle);
+#else
+        dlclose(pLibHandle);
+#endif
+    }
+}
+
+DWORD
+VmDnsLoadLibrary(
+    PCSTR               pszLibPath,
+    VMDNS_LIB_HANDLE*   ppLibHandle
+    )
+{
+    DWORD               dwError     = 0;
+    VMDNS_LIB_HANDLE    pLibHandle  = NULL;
+
+#ifdef _WIN32
+    pLibHandle = LoadLibrary(pszLibPath);
+    if (pLibHandle == NULL)
+    {
+        VMDNS_LOG_VERBOSE(
+            "LoadLibrary %s failed, error code %d",
+            pszLibPath,
+            WSAGetLastError());
+        dwError = ERROR_CANNOT_LOAD_LIBRARY;
+    }
+#else
+    pLibHandle = dlopen(pszLibPath, RTLD_LAZY);
+    if (pLibHandle == NULL)
+    {
+        VMDNS_LOG_VERBOSE(
+             "dlopen %s library failed, error msg (%s)",
+             pszLibPath,
+             VMDNS_SAFE_STRING(dlerror()));
+         dlerror();    /* Clear any existing error */
+         dwError = ERROR_CANNOT_LOAD_LIBRARY;
+    }
+#endif
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppLibHandle = pLibHandle;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
