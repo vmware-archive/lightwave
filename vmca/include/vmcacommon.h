@@ -549,7 +549,7 @@ VMCAStringTokA(
 
 DWORD
 VMCAStringCountSubstring(
-    PSTR pszHaystack,
+    PCSTR pszHaystack,
     PCSTR pszNeedle,
     int *pnCount
     );
@@ -1354,6 +1354,14 @@ VMCALdapGetMemberships(
     PCSTR pszUPNName,
     PSTR  **pppszMemberships,
     PDWORD pdwMemberships
+    );
+
+DWORD
+VMCADNToRDNArray(
+    PCSTR       pcszDN,
+    BOOLEAN     bNoTypes,
+    PDWORD      pdwCount,
+    PSTR        **pppRDNArray
     );
 
 // vecs.c

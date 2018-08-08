@@ -1682,3 +1682,77 @@ error:
     }
     goto cleanup;
 }
+
+DWORD
+VMCADNToRDNArray(
+    PCSTR       pcszDN,
+    BOOLEAN     bNoTypes,
+    PDWORD      pdwCount,
+    PSTR        **pppszRDNArray
+    )
+{
+    DWORD       dwError = 0;
+    DWORD       dwCount = 0;
+    PSTR        *ppszTemp = NULL;
+    PSTR        *ppszRDNArrayLocal = NULL;
+    PSTR        *ppszRDNArray = NULL;
+
+    if (IsNullOrEmptyString(pcszDN) ||
+        !pdwCount ||
+        !pppszRDNArray)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if (bNoTypes)
+    {
+        ppszRDNArrayLocal = ldap_explode_dn(pcszDN, 1);
+    }
+    else
+    {
+        ppszRDNArrayLocal = ldap_explode_dn(pcszDN, 0);
+    }
+
+    if (!ppszRDNArrayLocal)
+    {
+        dwError = VMCA_ERROR_INVALID_ENTRY;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    for (ppszTemp = ppszRDNArrayLocal; *ppszTemp; ++ppszTemp)
+    {
+        ++dwCount;
+    }
+
+    dwError = VMCACopyStringArrayA(
+                        &ppszRDNArray,
+                        dwCount,
+                        ppszRDNArrayLocal,
+                        dwCount);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+
+    *pdwCount = dwCount;
+    *pppszRDNArray = ppszRDNArray;
+
+cleanup:
+
+    ldap_value_free(ppszRDNArrayLocal);
+
+    return dwError;
+
+error:
+
+    if (pdwCount)
+    {
+        *pdwCount = 0;
+    }
+    VMCAFreeStringArrayA(ppszRDNArray, dwCount);
+    if (pppszRDNArray)
+    {
+        *pppszRDNArray = NULL;
+    }
+
+    goto cleanup;
+}

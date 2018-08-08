@@ -79,9 +79,17 @@ VMCAPolicySNGetOrgNamesFromCSR(
 static
 DWORD
 VMCAPolicySNMatchAuthOUWithCSR(
-    PSTR                            pszAuthDN,
+    PCSTR                           pcszAuthDN,
+    PCSTR                           pcszAuthBaseDN,
     DWORD                           dwOrgNamesLen,
-    PSTR                            *ppszOrgNames
+    PSTR* const                     ppcszOrgNames
+    );
+
+static
+int
+VMCAPolicySNStrCmpWrapper(
+    const void *a,
+    const void *b
     );
 
 
@@ -246,6 +254,7 @@ VMCAPolicySNValidate(
             {
                 dwError = VMCAPolicySNMatchAuthOUWithCSR(
                                         pszAuthDN,
+                                        pPolicy->Rules.SN.pMatch->pszWith,
                                         dwOrgNamesLen,
                                         ppszOrgNames);
                 BAIL_ON_VMCA_ERROR(dwError);
@@ -809,87 +818,186 @@ error:
     goto cleanup;
 }
 
+/*
+ * VMCAPolicySNMatchAuthOUWithCSR is the heart of SN policy validation.
+ *
+ * It verifies if the CSR organizationName entries in the subjectName field comprise the DN of the requestor.
+ *
+ * Examples:
+ *      * Pass:
+ *          * Parameters:
+ *              * Machine account DN: cn=user@example.com,ou=ex2,ou=ex1,ou=computers,dc=example,dc=com
+ *              * organizationName entries: {ex1, ex2}
+ *              * Config file match rule baseDN: ou=ex1,ou=computers,dc=example,dc=com
+ *          * Result:
+ *              * This will pass because the machine account lives under ou=ex2,ou=ex1 which is
+ *              under the baseDN from the config file, and the CSR organizationName entries contain
+ *              the OUs that the machine account lives under.
+ *      * Pass:
+ *          * Parameters:
+ *              * Machine account DN: cn=user@example.com,ou=ex2,ou=ex1,ou=computers,dc=example,dc=com
+ *              * organizationName entries: {ex2, ex1}
+ *              * Config file match rule baseDN: ou=ex1,ou=computers,dc=example,dc=com
+ *          * Result:
+ *              * This will pass because the machine account lives under ou=ex2,ou=ex1 which is
+ *              under the baseDN from the config file, and the CSR organizationName entries contain
+ *              the OUs that the machine account lives under (order does not matter).
+ *      * Fail:
+ *          * Parameters:
+ *              * Machine account DN: cn=user@example.com,ou=ex2,ou=ex1,ou=computers,dc=example,dc=com
+ *              * organizationName entries: {ex2}
+ *              * Config file match rule baseDN: ou=ex1,ou=computers,dc=example,dc=com
+ *          * Result:
+ *              * This will fail because the machine account lives under ou=ex2,ou=ex1 which is
+ *              under the baseDN from the config file, but the CSR organizationName entries do not
+ *              contain all of the OUs that the machine account lives under.
+ *      * Fail:
+ *          * Parameters:
+ *              * Machine account DN: cn=user@example.com,ou=ex2,ou=ex1,ou=computers,dc=example,dc=com
+ *              * organizationName entries: {ex2, ex2}
+ *              * Config file match rule baseDN: ou=ex1,ou=computers,dc=example,dc=com
+ *          * Result:
+ *              * This will fail because the machine account lives under ou=ex2,ou=ex1 which is
+ *              under the baseDN from the config file, but the CSR organizationName entries do not
+ *              contain all of the OUs that the machine account lives under, even though the amount
+ *              is the same.
+ *      * Fail:
+ *          * Parameters:
+ *              * Machine account DN: cn=user@example.com,ou=ex2,ou=ex1,ou=computers,dc=example,dc=com
+ *              * organizationName entries: {ex3, ex4}
+ *              * Config file match rule baseDN: ou=ex1,ou=computers,dc=example,dc=com
+ *          * Result:
+ *              * This will fail because the machine account lives under ou=ex2,ou=ex1 which is
+ *              under the baseDN from the config file, but the CSR organizationName entries do not
+ *              contain any of the OUs that the machine account lives under.
+ *
+ * @param pcszAuthDN:               The DN of the CSR requestor
+ * @param pcszAuthBaseDN:           The baes DN under which the requestor must live
+ * @param dwOrgNamesLen:            The number of organizationName entries in the CSR subjectName field
+ * @param ppcszOrgNames:            An array of the organizationName entries
+ *
+ * @return                          A status code indicating valid (0) or invalid (not 0) request
+ */
 static
 DWORD
 VMCAPolicySNMatchAuthOUWithCSR(
-    PSTR                            pszAuthDN,
+    PCSTR                           pcszAuthDN,
+    PCSTR                           pcszAuthBaseDN,
     DWORD                           dwOrgNamesLen,
-    PSTR                            *ppszOrgNames
+    PSTR* const                     ppcszOrgNames
     )
 {
     DWORD                           dwError = 0;
     DWORD                           dwIdx = 0;
-    DWORD                           dwOUMatchCount = 0;
-    int                             nCount = 0;
-    PSTR                            pszAuthTok = NULL;
+    DWORD                           dwNumRDNsInAuthDN = 0;
+    DWORD                           dwNumAuthRDNsToValidate = 0;
+    DWORD                           dwNumRDNsInBaseDn = 0;
+    PSTR                            pszFormattedOrgName = NULL;
+    PSTR                            *ppszAuthRDNs = NULL;
+    PSTR                            *ppszAuthBaseRDNs = NULL;
+    PSTR                            *ppszAuthRDNsNoUserObj = NULL;
+    PSTR                            *ppszOrgNamesLocal = NULL;
 
-    if (IsNullOrEmptyString(pszAuthDN))
+    if (IsNullOrEmptyString(pcszAuthDN) ||
+        IsNullOrEmptyString(pcszAuthBaseDN))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    if (dwOrgNamesLen < 1 || !ppszOrgNames)
+    if (dwOrgNamesLen < 1 || !ppcszOrgNames)
     {
         VMCA_LOG_INFO(
                 "[%s,%d] SNPolicy violation: CSR subjectName did not contain organizationName entries. User (%s)",
                 __FUNCTION__,
                 __LINE__,
-                pszAuthDN);
+                pcszAuthDN);
         dwError = VMCA_POLICY_VALIDATION_ERROR;
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    for (; dwIdx < dwOrgNamesLen; ++dwIdx)
+    dwError = VMCADNToRDNArray(
+                        pcszAuthBaseDN,
+                        FALSE,
+                        &dwNumRDNsInBaseDn,
+                        &ppszAuthBaseRDNs);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCADNToRDNArray(
+                    pcszAuthDN,
+                    FALSE,
+                    &dwNumRDNsInAuthDN,
+                    &ppszAuthRDNs);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwNumAuthRDNsToValidate = dwNumRDNsInAuthDN - dwNumRDNsInBaseDn;
+
+    if (dwOrgNamesLen != dwNumAuthRDNsToValidate)
+    {
+        VMCA_LOG_INFO(
+                "[%s,%d] SNPolicy violation: CSR subjectName does not have same number of organizationName entries as auth principal RDNs. User (%s)",
+                __FUNCTION__,
+                __LINE__,
+                pcszAuthDN);
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCACopyStringArrayA(
+                        &ppszOrgNamesLocal,
+                        dwOrgNamesLen,
+                        ppcszOrgNames,
+                        dwOrgNamesLen);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    // Increment AuthRDN ptr array by 1 as first RDN will be machine account obj
+    ppszAuthRDNsNoUserObj = ppszAuthRDNs + 1;
+    qsort(ppszAuthRDNsNoUserObj, dwNumAuthRDNsToValidate, sizeof(PSTR), &VMCAPolicySNStrCmpWrapper);
+    qsort(ppszOrgNamesLocal, dwOrgNamesLen, sizeof(PSTR), &VMCAPolicySNStrCmpWrapper);
+
+    for (; dwIdx < dwNumAuthRDNsToValidate; ++dwIdx)
     {
         dwError = VMCAAllocateStringPrintfA(
-                            &pszAuthTok,
-                            "ou=%s,",
-                            ppszOrgNames[dwIdx]);
+                            &pszFormattedOrgName,
+                            "ou=%s",
+                            ppszOrgNamesLocal[dwIdx]);
         BAIL_ON_VMCA_ERROR(dwError);
 
-        dwError = VMCAStringCountSubstring(
-                            pszAuthDN,
-                            pszAuthTok,
-                            &nCount);
-        BAIL_ON_VMCA_ERROR(dwError);
-
-        if (nCount == 0)
+        if (VMCAStringCompareA(ppszAuthRDNsNoUserObj[dwIdx], pszFormattedOrgName, TRUE))
         {
             VMCA_LOG_INFO(
-                    "[%s,%d] SNPolicy violation: CSR subjectName organizationName entry is not in auth principal DN. User (%s)",
-                    __FUNCTION__,
-                    __LINE__,
-                    pszAuthDN);
+                "[%s,%d] SNPolicy violation: CSR subjectName organizationName does not match auth principal DN. User (%s)",
+                __FUNCTION__,
+                __LINE__,
+                pcszAuthDN);
             dwError = VMCA_POLICY_VALIDATION_ERROR;
             BAIL_ON_VMCA_ERROR(dwError);
         }
 
-        ++dwOUMatchCount;
-
-        nCount = 0;
-        VMCA_SAFE_FREE_STRINGA(pszAuthTok);
-    }
-
-    if (dwOUMatchCount != dwOrgNamesLen)
-    {
-        VMCA_LOG_INFO(
-                "[%s,%d] SNPolicy violation: All CSR subjectName organizationName entries are not present in auth principal DN. User (%s)",
-                __FUNCTION__,
-                __LINE__,
-                pszAuthDN);
-        dwError = VMCA_POLICY_VALIDATION_ERROR;
-        BAIL_ON_VMCA_ERROR(dwError);
+        VMCA_SAFE_FREE_STRINGA(pszFormattedOrgName);
     }
 
 
 cleanup:
 
-    VMCA_SAFE_FREE_STRINGA(pszAuthTok);
+    VMCA_SAFE_FREE_STRINGA(pszFormattedOrgName);
+    VMCAFreeStringArrayA(ppszAuthBaseRDNs, dwNumRDNsInBaseDn);
+    VMCAFreeStringArrayA(ppszAuthRDNs, dwNumRDNsInAuthDN);
+    VMCAFreeStringArrayA(ppszOrgNamesLocal, dwOrgNamesLen);
 
     return dwError;
 
 error:
 
     goto cleanup;
+}
+
+static
+int
+VMCAPolicySNStrCmpWrapper(
+    const void *a,
+    const void *b
+    )
+{
+    return VMCAStringCompareA(*(PSTR *)a, *(PSTR *)b, TRUE);
 }
