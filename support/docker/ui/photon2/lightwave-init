@@ -58,7 +58,7 @@ if [ -f $CONFIG_FILE ]; then
     fi
 
     exec 3<<<$PASSWORD
-    /opt/vmware/tools/oidc-client-utils register \
+    /opt/vmware/tools/oidc-client-utils-lightwaveui register \
                                 -s lw-0.$DOMAIN \
                                 -d $DOMAIN \
                                 -c `hostname -f` \

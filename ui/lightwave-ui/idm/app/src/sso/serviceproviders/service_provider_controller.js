@@ -69,7 +69,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
             function addNewRelyingParty(){
                 $scope.vm.isNewRelyingParty = true;
-                var template = 'sso/serviceproviders/relyingparty/relyingparty.add.html';
+                var template = 'idm/sso/serviceproviders/relyingparty/relyingparty.add.html';
                 var controller = 'RelyingPartyCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -78,7 +78,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 if(relyingParty) {
                     $scope.vm.isNewRelyingParty = false;
                     $scope.vm.selectedRelyingParty = relyingParty;
-                    var template = 'sso/serviceproviders/relyingparty/relyingparty.edit.html';
+                    var template = 'idm/sso/serviceproviders/relyingparty/relyingparty.edit.html';
                     var controller = 'RelyingPartyCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -108,7 +108,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
             function addNewIdentityProvider(){
                 $scope.vm.isNewIdentityProvider = true;
-                var template = 'sso/serviceproviders/identityprovider/identityprovider.add.html';
+                var template = 'idm/sso/serviceproviders/identityprovider/identityprovider.add.html';
                 var controller = 'IdentityProviderCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -117,7 +117,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 if(idp) {
                     $scope.vm.isNewIdentityProvider = false;
                     $scope.vm.selectedIdentityProvider = idp;
-                    var template = 'sso/serviceproviders/identityprovider/identityprovider.edit.html';
+                    var template = 'idm/sso/serviceproviders/identityprovider/identityprovider.edit.html';
                     var controller = 'IdentityProviderCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -146,7 +146,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
             }
 
             function addNewOidcClient(){
-                var template = 'sso/serviceproviders/oidcclient/oidcclient.add.html';
+                var template = 'idm/sso/serviceproviders/oidcclient/oidcclient.add.html';
                 var controller = 'OidcClientCntrl';
                 popupUtil.open($scope, template, controller);
             }
@@ -154,7 +154,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
             function editOidcClient(oidcClient){
                 if(oidcClient) {
                     $scope.vm.selectedOIDCClient = oidcClient;
-                    var template = 'sso/serviceproviders/oidcclient/oidcclient.edit.html';
+                    var template = 'idm/sso/serviceproviders/oidcclient/oidcclient.edit.html';
                     var controller = 'OidcClientCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -227,7 +227,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
 
                 $rootScope.globals.errors = null;
                 if($scope.vm.selectedRelyingParty) {
-                    var template = 'sso/serviceproviders/relyingparty/relyingparty.view.html';
+                    var template = 'idm/sso/serviceproviders/relyingparty/relyingparty.view.html';
                     var controller = 'RelyingPartyCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -272,7 +272,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $rootScope.globals.errors = null;
 
                 if($scope.vm.selectedIdentityProvider) {
-                    var template = 'sso/serviceproviders/identityprovider/identityprovider.view.html';
+                    var template = 'idm/sso/serviceproviders/identityprovider/identityprovider.view.html';
                     var controller = 'IdentityProviderCntrl';
                     popupUtil.open($scope, template, controller);
                 }
@@ -315,7 +315,7 @@ module.controller('ServiceProviderCntrl', ['$scope',  '$rootScope', 'popupUtil',
                 $rootScope.globals.errors = null;
 
                 if($scope.vm.selectedOIDCClient) {
-                    var template = 'sso/serviceproviders/oidcclient/oidcclient.view.html';
+                    var template = 'idm/sso/serviceproviders/oidcclient/oidcclient.view.html';
                     var controller = 'OidcClientCntrl';
                     popupUtil.open($scope, template, controller);
                 }
