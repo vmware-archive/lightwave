@@ -124,23 +124,6 @@ public class VMIdentityController {
     }
     private void upgradeInstance (VmIdentityParams params) throws DomainControllerNativeException
     {
-        // check services vmafd, vmca and vmdir if they are confgiured.
-        try {
-            // check authentication services
-            checkVMAFDService();
-
-            // check directory services
-            checkVMDIRService();
-
-            // check certificate services
-            checkVMCAService(params.getHostname());
-
-        } catch (Exception ex) {
-            System.err.println("Error: Cannot proceed. Failed to check services.\n");
-            ex.printStackTrace(System.err);
-            System.exit(1);
-        }
-
         List<IPlatformComponentInstaller> components = getComponents(params);
         List<PlatformInstallComponent> componentsInfo = new ArrayList<>();
 
