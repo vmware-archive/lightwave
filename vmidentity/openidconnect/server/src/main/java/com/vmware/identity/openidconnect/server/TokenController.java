@@ -94,7 +94,16 @@ public class TokenController {
                 LoggerUtils.logFailedRequest(logger, errorObject);
                 httpResponse = HttpResponse.createJsonResponse(errorObject);
             } else {
-                HttpRequest httpRequest = HttpRequest.from(request);
+                HttpRequest httpRequest;
+                try {
+                    httpRequest = HttpRequest.from(request);
+                } catch (IllegalArgumentException e) {
+                    ErrorObject errorObject = ErrorObject.invalidRequest(e.getMessage());
+                    LoggerUtils.logFailedRequest(logger, errorObject, e);
+                    httpResponse = HttpResponse.createJsonResponse(errorObject);
+                    httpResponse.applyTo(response);
+                    return;
+                }
                 context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
                 GrantType grantType = GrantType.parse(ParameterMapUtils.getString(httpRequest.getParameters(), "grant_type"));
                 metricsOperation += "_" + grantType.toString(); // group sub metrics based on grant type
@@ -107,7 +116,10 @@ public class TokenController {
                         tenant);
                 httpResponse = p.process();
             }
-        }  catch (ParseException e) {
+        } catch (ParseException e) {
+            LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+            httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
+        } catch (ServerException e) {
             LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
             httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
         } catch (Exception e) {
