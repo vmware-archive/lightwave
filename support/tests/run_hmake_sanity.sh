@@ -3,8 +3,14 @@
 #source env variables
 source $LIGHTWAVE_ENV_FILE
 
+#check environment vars
+if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
+  echo "Please set LIGHTWAVE_DOMAIN and LIGHTWAVE_PASS in .env file"
+  exit 1
+fi
+
 #prepare by installing rpms built in this build
-rpm -Uvh --nodeps ./build/rpmbuild/RPMS/x86_64/lightwave-client*.rpm
+rpm -Uvh --nodeps /src/build/rpmbuild/RPMS/x86_64/lightwave-client*.rpm
 
 primary=server.$LIGHTWAVE_DOMAIN
 partner=client.$LIGHTWAVE_DOMAIN

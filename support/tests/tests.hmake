@@ -1,0 +1,50 @@
+---
+format: hypermake.v0
+
+name: lightwave_tests
+description: Lightwave tests
+
+targets:
+  # deploy a server and client node,
+  # promote the server, join the client
+  deploy_test_env:
+    description: start test environment
+    after:
+      - pack
+    compose: support/tests/lightwave
+
+  # run tests. use the test env from deploy_test_env
+  # note that network name and
+  # image name are prefixed after the
+  # docker compose directory
+  test:
+    description: run tests
+    after:
+      - deploy_test_env
+    always: true
+    image: lightwave_lightwave-client
+    net: lightwave_lightwave
+    env:
+      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
+    cmds:
+      - bash run_hmake_sanity.sh
+      - bash run_hmake_afd_rest.sh
+
+  deploy_ca_test_env:
+    description: deploy infra for ca test
+    after:
+      - pack
+    compose: support/tests/lightwave/docker-compose-ca.yml
+
+  test-ca:
+    description: run ca tests
+    after:
+      - deploy_ca_test_env
+    always: true
+    image: lightwave_lightwave-client
+    net: lightwave_lightwave
+    env:
+      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
+    cmds:
+      - bash run_hmake_ca_tests.sh
+

@@ -1,0 +1,22 @@
+version: '3'
+services:
+  lightwave-server:
+    env_file:
+      - .env
+    environment:
+     - LIGHTWAVE_HOSTNAME=caserver.${LIGHTWAVE_DOMAIN}
+    build: ../lightwave/server
+    hostname: caserver.${LIGHTWAVE_DOMAIN}
+    command: scripts/promote.sh
+    volumes:
+     - ../lightwave/server:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     lightwave:
+       aliases:
+         - caserver.${LIGHTWAVE_DOMAIN}
+    privileged: true
+    tty: true
+networks:
+  lightwave:
+    driver: bridge

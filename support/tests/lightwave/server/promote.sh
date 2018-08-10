@@ -1,5 +1,16 @@
 #!/bin/sh
 
+#check environment vars
+if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
+  echo "Please set LIGHTWAVE_DOMAIN and LIGHTWAVE_PASS in .env file"
+  exit 1
+fi
+
+#if a hostname variable is not already set, set one
+if [ -z "$LIGHTWAVE_HOSTNAME" ]; then
+  LIGHTWAVE_HOSTNAME=server.$LIGHTWAVE_DOMAIN
+fi
+
 #prepare by installing rpms built in this build
 rpm -Uvh --nodeps buildrpms/x86_64/lightwave-client*.rpm
 rpm -Uvh --nodeps buildrpms/x86_64/lightwave-server*.rpm
@@ -20,7 +31,9 @@ sleep 1
 /opt/vmware/bin/configure-lightwave-server \
   --domain $LIGHTWAVE_DOMAIN \
   --password $LIGHTWAVE_PASS \
-  --ssl-subject-alt-name "server.${LIGHTWAVE_DOMAIN},localhost"
+  --ssl-subject-alt-name "${LIGHTWAVE_HOSTNAME},localhost"
+
+/opt/likewise/bin/lwsm restart vmca
 
 /opt/vmware/sbin/vmware-stsd.sh start
 

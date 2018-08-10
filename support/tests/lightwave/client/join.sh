@@ -1,12 +1,19 @@
 #!/bin/sh
 
+#check environment vars
+if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
+  echo "Please set LIGHTWAVE_DOMAIN and LIGHTWAVE_PASS in .env file"
+  exit 1
+fi
+
 #prepare by installing rpms built in this build
 rpm -Uvh --nodeps buildrpms/x86_64/lightwave-client*.rpm
 
 /opt/likewise/sbin/lwsmd --start-as-daemon
-/opt/likewise/bin/lwsm start vmafd
+/opt/likewise/bin/lwsm autostart
 
 primary=lightwave_lightwave-server_1
+
 #wait for server to promote
 response='000'
 while [ $response -ne '404' ]; do
