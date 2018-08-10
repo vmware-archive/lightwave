@@ -219,7 +219,6 @@ VmDirCleanupGlobals(
 
     VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.replCycleDoneMutex);
     VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.replAgrsMutex);
-    VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.pMutexIPCConnection);
     VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.pFlowCtrlMutex);
     VMDIR_SAFE_FREE_MUTEX(gVmdirGlobals.mutex);
 

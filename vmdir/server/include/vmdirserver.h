@@ -223,11 +223,11 @@ typedef struct _VMDIR_GLOBALS
     // Waiting for all LDAP ports are ready for accepting services
     PVMDIR_SYNCHRONIZE_COUNTER      pPortListenSyncCounter;
 
-
-    pthread_t                       pIPCServerThread;
-
-    PVM_DIR_CONNECTION              pConnection;
-    PVMDIR_MUTEX                    pMutexIPCConnection;
+    // IPC server variables
+    PVDIR_THREAD_INFO               pIPCSrvThrInfo;
+    PVM_DIR_CONNECTION              pIPCConn;
+    // IPC needs to keep running in special cases, it needs its own shutdown flag
+    BOOLEAN                         bIPCShutdown;
 
     PVMDIR_MUTEX                    pFlowCtrlMutex;
     DWORD                           dwMaxFlowCtrlThr;

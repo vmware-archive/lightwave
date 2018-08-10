@@ -79,11 +79,9 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.limitLocalUsnToBeSupplied, 0),
         VMDIR_SF_INIT(.pOperationThrSyncCounter, NULL),
         VMDIR_SF_INIT(.pPortListenSyncCounter, NULL),
-#ifdef _WIN32
-        VMDIR_SF_INIT(.pIPCServerThread, {0}),
-#endif
-        VMDIR_SF_INIT(.pConnection, NULL),
-        VMDIR_SF_INIT(.pMutexIPCConnection, NULL),
+        VMDIR_SF_INIT(.pIPCSrvThrInfo, NULL),
+        VMDIR_SF_INIT(.pIPCConn, NULL),
+        VMDIR_SF_INIT(.bIPCShutdown, FALSE),
         VMDIR_SF_INIT(.pFlowCtrlMutex, NULL),
         VMDIR_SF_INIT(.dwMaxFlowCtrlThr, 1024),
         VMDIR_SF_INIT(.pLogger, NULL),

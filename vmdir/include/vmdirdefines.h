@@ -681,6 +681,8 @@ extern "C" {
 
 #define VMDIR_IS_OP_CTRL_PASSBLOB(op) (op->passblobCtrl != NULL)
 
+#define tcp_socket_close(s) (shutdown(s, SHUT_RDWR), close(s))
+
 //////////////////////////////////////////////////////////////////////////
 // Used in attribute index cache and bdb-store
 #define INDEX_TYPE_EQUALITY              0x01
