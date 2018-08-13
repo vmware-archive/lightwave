@@ -2074,7 +2074,8 @@ error:
 DWORD
 VmAfdLocalConfigureDNSW(
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName /* OPTIONAL */
     )
 {
     DWORD dwError = 0;
@@ -2092,6 +2093,7 @@ VmAfdLocalConfigureDNSW(
 
     input_spec[0].data.pWString = (PWSTR) pwszUserName;
     input_spec[1].data.pWString = (PWSTR) pwszPassword;
+    input_spec[2].data.pWString = (PWSTR) pwszSiteName;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

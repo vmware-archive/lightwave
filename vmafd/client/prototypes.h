@@ -419,7 +419,8 @@ VmAfdLocalGetHeartbeatStatus(
 DWORD
 VmAfdLocalConfigureDNSW(
     PCWSTR pwszUserName,
-    PCWSTR pwszPassword
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     );
 
 DWORD

@@ -18,3 +18,9 @@ LightwaveDnsDelete(
     int argc,
     char* argv[]
     );
+
+int
+LightwaveInitDNS(
+    int argc,
+    char* argv[]
+    );

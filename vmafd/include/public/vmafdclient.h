@@ -776,9 +776,23 @@ VmAfdConfigureDNSA(
     );
 
 DWORD
+VmAfdConfigureDNSWithSiteA(
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszSiteName
+    );
+
+DWORD
 VmAfdConfigureDNSW(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword
+    );
+
+DWORD
+VmAfdConfigureDNSWithSiteW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName
     );
 
 DWORD

@@ -95,7 +95,7 @@ ShowUsage(
         "\n"
         "Commands:\n"
         "    domain   promote, demote, join, or leave a Lightwave domain\n"
-        "    dns      delete\n"
+        "    dns      init-dc, delete-dc\n"
         "    ca       get-cert"
         "\n"
         "Run 'lightwave COMMAND --help' for more information on a particular command'\n";

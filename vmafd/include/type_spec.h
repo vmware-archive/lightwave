@@ -1293,16 +1293,21 @@ typedef struct _VMW_TYPE_SPEC_
 
 #define DNS_CONFIG_INPUT_PARAMS \
 {\
-  {\
-    "User Name",\
-    VMW_IPC_TYPE_WSTRING,\
-    {NULL}\
-  },\
-  {\
-    "Password",\
-    VMW_IPC_TYPE_WSTRING,\
-    {NULL}\
-  }\
+    {\
+        "User Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Password",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "Site Name",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    }\
 }
 
 #define GET_CDC_STATUS_INFO_INPUT_PARAMS \
