@@ -166,11 +166,14 @@ VmDirRESTAuthViaToken(
     PSID                    pBuiltInAdminsGroupSid = NULL;
     PLW_MAP_SECURITY_CONTEXT    pMapSecurityContext = NULL;
     VDIR_BERVALUE   berval = VDIR_BERVALUE_INIT;
+    PVDIR_REST_PERF_METRIC  pPerfMetric = NULL;
 
     if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    pPerfMetric = &pRestOp->perfMetric;
 
     // unset previously set error
     dwError = VmDirRESTResultUnsetError(pRestOp->pResult);
@@ -184,19 +187,25 @@ VmDirRESTAuthViaToken(
 
     pRestOp->authMthd = VDIR_REST_AUTH_METHOD_TOKEN;
 
+    VMDIR_COLLECT_TIME(pPerfMetric->iAuthTokenValidateStartTime);
     dwError = VmDirRESTAuthTokenValidate(pAuthToken);
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_COLLECT_TIME(pPerfMetric->iAuthTokenValidateEndTime);
 
+    VMDIR_COLLECT_TIME(pPerfMetric->iAuthTokenValidatePOPStartTime);
     dwError = VmDirRESTAuthTokenValidatePOP(pAuthToken, pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_COLLECT_TIME(pPerfMetric->iAuthTokenValidatePOPEndTime);
 
     // retrieve security information of the UPN
     dwError = LwMapSecurityCreateContext(&pMapSecurityContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VMDIR_COLLECT_TIME(pPerfMetric->iAccessTokenAcquireStartTime);
     dwError = LwMapSecurityCreateAccessTokenFromCStringUsername(
             pMapSecurityContext, &pAccessToken, pAuthToken->pszBindUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
+    VMDIR_COLLECT_TIME(pPerfMetric->iAccessTokenAcquireEndTime);
 
     // get user sid
     dwError = VmDirQueryAccessTokenInformation(

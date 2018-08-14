@@ -109,6 +109,43 @@ VmDirRestMetricsInit(
                     buckets, 8,
                     &gpRestLdapMetrics[i][j][METRICS_LAYER_POST_PLUGINS]);
             BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_authtoken_validate",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the authtoken validation",
+                    buckets, 8,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_REST_AUTHTOKEN_VALIDATE]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_authtoken_validate_POP",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the authtoken POP validation",
+                    buckets, 8,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_REST_AUTHTOKEN_VALIDATE_POP]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_accesstoken_acquire",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the accesstoken acquire",
+                    buckets, 8,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_REST_ACCESSTOKEN_ACQUIRE]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmMetricsHistogramNew(
+                    pmContext,
+                    "post_rest_ldap_api_handler",
+                    labels, 2,
+                    "Histogram for REST LDAP request durations in the LDAP internal call",
+                    buckets, 8,
+                    &gpRestLdapMetrics[i][j][METRICS_LAYER_REST_HANDLER]);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
         }
     }
 
@@ -153,7 +190,7 @@ VmDirRestMetricsUpdateFromHandler(
 {
     METRICS_LDAP_OPS    operation = METRICS_LDAP_OP_IGNORE;
     METRICS_LDAP_ERRORS error = METRICS_LDAP_OTHER;
-    METRICS_LAYERS      layer = METRICS_LAYER_PROTOCOL;
+    PVDIR_REST_PERF_METRIC  pPerfMetric = NULL;
 
     if (pRestOp)
     {
@@ -184,12 +221,29 @@ VmDirRestMetricsUpdateFromHandler(
 
         if (operation != METRICS_LDAP_OP_IGNORE)
         {
-            VmDirRestMetricsUpdate(operation, error, layer, iStartTime, iEndTime);
+            VmDirRestMetricsUpdate(operation, error, METRICS_LAYER_PROTOCOL, iStartTime, iEndTime);
         }
 
         if (pRestOp->pConn &&
             pRestOp->pConn->AccessInfo.pAccessToken)    // process request locally
         {
+            pPerfMetric = &pRestOp->perfMetric;
+
+            if (operation != METRICS_LDAP_OP_IGNORE)
+            {
+                VmDirRestMetricsUpdate(operation, error, METRICS_LAYER_REST_AUTHTOKEN_VALIDATE,
+                    pPerfMetric->iAuthTokenValidateStartTime, pPerfMetric->iAuthTokenValidateEndTime);
+
+                VmDirRestMetricsUpdate(operation, error, METRICS_LAYER_REST_AUTHTOKEN_VALIDATE_POP,
+                    pPerfMetric->iAuthTokenValidatePOPStartTime, pPerfMetric->iAuthTokenValidatePOPEndTime);
+
+                VmDirRestMetricsUpdate(operation, error, METRICS_LAYER_REST_ACCESSTOKEN_ACQUIRE,
+                    pPerfMetric->iAccessTokenAcquireStartTime, pPerfMetric->iAccessTokenAcquireEndTime);
+
+                VmDirRestMetricsUpdate(operation, error, METRICS_LAYER_REST_HANDLER,
+                    pPerfMetric->iHandlerStartTime, pPerfMetric->iHandlerEndTime);
+            }
+
             _VmDirRESTLogExpensiveOperation(pRestOp, operation, iEndTime-iStartTime);
         }
     }
@@ -223,14 +277,19 @@ _VmDirRESTLogExpensiveOperation(
     )
 {
     PVDIR_SUPERLOG_RECORD pSupLog = &pRestOp->pConn->SuperLogRec;
+    PVDIR_REST_PERF_METRIC  pPerfMetric = &pRestOp->perfMetric;
 
     if (operation == METRICS_LDAP_OP_SEARCH &&
         iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
     {
         VMDIR_LOG_WARNING(
             VMDIR_LOG_MASK_ALL,
-            "Inefficient search %d MS - base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
+            "Inefficient search %d/%d/%d/%d/%d MS - base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
             iRespTime,
+            VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidateStartTime, pPerfMetric->iAuthTokenValidateEndTime),
+            VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidatePOPStartTime, pPerfMetric->iAuthTokenValidatePOPEndTime),
+            VMDIR_RESPONSE_TIME(pPerfMetric->iAccessTokenAcquireStartTime, pPerfMetric->iAccessTokenAcquireEndTime),
+            VMDIR_RESPONSE_TIME(pPerfMetric->iHandlerStartTime, pPerfMetric->iHandlerEndTime),
             VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszBaseDN),
             VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszScope),
             VDIR_SAFE_STRING(pSupLog->pszOperationParameters),

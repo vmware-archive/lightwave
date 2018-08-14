@@ -98,6 +98,18 @@ typedef struct _VDIR_REST_RESOURCE
 
 } VDIR_REST_RESOURCE, *PVDIR_REST_RESOURCE;
 
+typedef struct _VDIR_REST_PERF_METRIC
+{
+    uint64_t    iAuthTokenValidateStartTime;
+    uint64_t    iAuthTokenValidateEndTime;
+    uint64_t    iAuthTokenValidatePOPStartTime;
+    uint64_t    iAuthTokenValidatePOPEndTime;
+    uint64_t    iAccessTokenAcquireStartTime;
+    uint64_t    iAccessTokenAcquireEndTime;
+    uint64_t    iHandlerStartTime;
+    uint64_t    iHandlerEndTime;
+} VDIR_REST_PERF_METRIC, *PVDIR_REST_PERF_METRIC;
+
 // operation.c
 typedef struct _VDIR_REST_OPERATION
 {
@@ -131,6 +143,7 @@ typedef struct _VDIR_REST_OPERATION
     // otherwise, get it from proxy.c
     PFN_GET_HTTP_ERROR      pfnGetHttpError;
 
+    VDIR_REST_PERF_METRIC   perfMetric;
 } VDIR_REST_OPERATION, *PVDIR_REST_OPERATION;
 
 // authtoken.c

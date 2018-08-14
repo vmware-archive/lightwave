@@ -268,11 +268,14 @@ VmDirRESTOperationProcessRequest(
     )
 {
     DWORD   dwError = 0;
+    PVDIR_REST_PERF_METRIC  pPerfMetric = NULL;
 
     if (!pRestOp)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    pPerfMetric = &pRestOp->perfMetric;
 
     dwError = VmDirRESTAuth(pRestOp);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -286,8 +289,10 @@ VmDirRESTOperationProcessRequest(
                 &pRestOp->pMethod);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        VMDIR_COLLECT_TIME(pPerfMetric->iHandlerStartTime);
         dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
+        VMDIR_COLLECT_TIME(pPerfMetric->iHandlerEndTime);
     }
 
     VMDIR_LOG_INFO(
