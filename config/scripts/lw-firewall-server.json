@@ -240,6 +240,13 @@
                 "porttype": "dst",
                 "port": "2012",
                 "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7479",
+                "portoffset": 0
             }
         ],
         "ip6_rules": [
@@ -276,6 +283,13 @@
                 "protocol": "tcp",
                 "porttype": "dst",
                 "port": "2012",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7479",
                 "portoffset": 0
             }
         ]
