@@ -23,9 +23,11 @@ public final class Constants {
 
     public static final String WS_1_3_TRUST_JAXB_PACKAGE = "org.oasis_open.docs.ws_sx.ws_trust._200512";
     public static final String WS_1_4_TRUST_JAXB_PACKAGE = "org.oasis_open.docs.ws_sx.ws_trust._200802";
+    public static final String WSFED_JAXB_PACKAGE = "org.oasis_open.docs.wsfed.authorization._200706";
     public static final String WSSE_NAMESPACE = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd";
     public static final String WS_TRUST_NAMESPACE = "http://docs.oasis-open.org/ws-sx/ws-trust/200512";
     public static final String WS_TRUST14_NAMESPACE = "http://docs.oasis-open.org/ws-sx/ws-trust/200802";
+    public static final String WSFED_NAMESPACE = "http://docs.oasis-open.org/wsfed/authorization/200706";
     public static final String ENCODING_TYPE_BASE64 = "http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-soap-message-security-1.0#Base64Binary";
     public static final String BINARY_EXCHANGE_TYPE_SPNEGO = "http://schemas.xmlsoap.org/ws/2005/02/trust/spnego";
     /** Separator between group name and domain name */

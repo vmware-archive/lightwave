@@ -1364,11 +1364,11 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                    mappedAttr = attr.getName();
 
                }
-               if (this._specialAttributes.contains(mappedAttr))
+               if ((this._specialAttributes.contains(mappedAttr)) ||
+                   (BaseLdapProvider.IsConstantValueAttribute(mappedAttr)))
                {
                    specialAttrs.put(mappedAttr, attr);
-               } else
-               {
+               } else {
                    regularAttrs.add(attr);
                    attrNames.add(mappedAttr);
                }
@@ -1454,6 +1454,11 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                avPair.setAttrDefinition(attrs.specialAttrs.get(key));
                avPair.getValues().add("false");
                result.add(avPair);
+          } else if (BaseLdapProvider.IsConstantValueAttribute(key)) {
+            AttributeValuePair avPair = new AttributeValuePair();
+            avPair.setAttrDefinition(attrs.specialAttrs.get(key));
+            avPair.getValues().add(BaseLdapProvider.getConstantAttributeValue(key));
+            result.add(avPair);
           }
       }
 
@@ -1573,7 +1578,12 @@ public class ActiveDirectoryProvider extends BaseLdapProvider implements IIdenti
                avPair.setAttrDefinition(attrs.specialAttrs.get(key));
                avPair.getValues().add("false");
                result.add(avPair);
-           }
+           } else if (BaseLdapProvider.IsConstantValueAttribute(key)) {
+            AttributeValuePair avPair = new AttributeValuePair();
+            avPair.setAttrDefinition(attrs.specialAttrs.get(key));
+            avPair.getValues().add(BaseLdapProvider.getConstantAttributeValue(key));
+            result.add(avPair);
+          }
        }
 
        return result;

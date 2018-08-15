@@ -55,11 +55,13 @@ import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AuthenticationType;
 import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IDMException;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMReferralException;
+import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.NoSuchIdpException;
@@ -953,6 +955,21 @@ public class ServerUtils
         return;
     }
 
+    public static void validateNotNullIds(
+        IIdentityStoreData ids,
+        String tenantName,
+        String idsName) throws NoSuchIdpException
+    {
+        if (ids == null)
+        {
+            throw new NoSuchIdpException(
+                        String.format(
+                                "Provider [%s] in tenant [%s] not found", idsName, tenantName));
+        }
+
+        return;
+    }
+
     public static void validateNotNullSystemIdp(
         ISystemDomainIdentityProvider provider,
         String tenantName) throws NoSuchIdpException
@@ -1193,7 +1210,7 @@ public class ServerUtils
     /**
      * Split name and domain at '@'. "name" is user identity attribute defined
      * in RSA AM or user hint attribute designated in case of PIV.
-     * 
+     *
      * @param userName
      *            in the form of name@domain or domain\name format.
      * @return an array of two strings: [name,domain]. null if there is no
@@ -1270,5 +1287,18 @@ public class ServerUtils
         }
 
         return principal;
+    }
+
+    public static boolean containsAttributeDefinition(Collection<Attribute> attributes, String atributeName){
+        boolean contains = false;
+        if (attributes != null){
+            for (Attribute a: attributes) {
+                if (a.getName().equals(atributeName)) {
+                    contains = true;
+                    break;
+                }
+            }
+        }
+        return contains;
     }
 }

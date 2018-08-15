@@ -102,6 +102,7 @@ import com.vmware.identity.idm.IIdentityManager;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IIdentityStoreDataEx;
 import com.vmware.identity.idm.IIdmServiceContext;
+import com.vmware.identity.idm.IdentityStoreAttributeMapping;
 import com.vmware.identity.idm.IdentityStoreData;
 import com.vmware.identity.idm.IdentityStoreType;
 import com.vmware.identity.idm.IdmADDomainException;
@@ -111,6 +112,7 @@ import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
 import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.InvalidProviderException;
+import com.vmware.identity.idm.KnownSamlAttributes;
 import com.vmware.identity.idm.LocalISRegistrationException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.MemberAlreadyExistException;
@@ -2730,6 +2732,90 @@ public class IdentityManager implements IIdentityManager {
         }
     }
 
+
+    private
+    void
+    setProviderAttributesMap(
+            String tenantName,
+            String providerName,
+            Map<String, String> attributesMap
+        ) throws Exception {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotEmpty(providerName, "providerName");
+            ValidateUtil.validateNotEmpty(attributesMap, "attributesMap");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            IIdentityProvider provider =
+                tenantInfo.findProviderByName(providerName);
+            ServerUtils.validateNotNullIdp(provider, tenantName, providerName);
+
+            // validate attributesMap
+            // -- UPN should be present
+            // -- value should be of expected format (const:<any> || ldap attribute)
+            if (attributesMap.containsKey(KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME) == false) {
+                throw new InvalidArgumentException(
+                    String.format("Attribute mapping for [%s] is required", KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME )
+                );
+            }
+            for(String key : attributesMap.keySet()) {
+                if (BaseLdapProvider.IsConstantValueAttribute(attributesMap.get(key)) == false){
+                    IdentityStoreAttributeMapping.validateName(attributesMap.get(key), "ldapAttributeName");
+                }
+            }
+
+            _configStore.setProviderAttributesMap(tenantName, providerName, attributesMap);
+
+            _tenantCache.deleteTenant(tenantName);
+
+            logger.info(String.format(
+                "Provider attributes map successfully set for tenant [%s] provider [%s]",
+                tenantName, providerName));
+        }
+        catch (Exception ex) {
+            logger.error(String.format(
+                "Failed to set provider attributes map tenant=[%s], provider=[%s]", tenantName, providerName));
+
+            throw ex;
+        }
+    }
+
+    private
+    Map<String, String>
+    getProviderAttributesMap(
+            String tenantName,
+            String providerName
+        ) throws Exception {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotEmpty(providerName, "providerName");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            IIdentityStoreData ids =
+                tenantInfo.findIdsByName(providerName);
+            ServerUtils.validateNotNullIds(ids, tenantName, providerName);
+
+            Map<String, String> map = ids.getExtendedIdentityStoreData().getAttributeMap();
+
+            logger.info(String.format(
+                "Provider attributes map successfully retrieved for tenant [%s] provider [%s]",
+                tenantName, providerName));
+            return map;
+        }
+        catch (Exception ex) {
+            logger.error(String.format(
+                "Failed to set provider attributes map tenant=[%s], provider=[%s]", tenantName, providerName));
+
+            throw ex;
+        }
+    }
+
     private void checkDn(IIdentityStoreData idsData, URI serverUri) throws Exception
     {
         ILdapConnectionEx connection = null;
@@ -3857,6 +3943,41 @@ public class IdentityManager implements IIdentityManager {
             throw ex;
         }
     }
+
+    private
+    void
+    setAttributeDefinitions(
+            String tenantName, Collection<Attribute> attributes
+            ) throws Exception
+    {
+        try
+        {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotEmpty(attributes, "attributes");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            if(ServerUtils.containsAttributeDefinition(
+                attributes, KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME) == false) {
+                    throw new InvalidArgumentException(
+                        String.format("Attribute [%s] is required.", KnownSamlAttributes.ATTRIBUTE_USER_PRINCIPAL_NAME));
+            }
+
+            this._configStore.setTenantAttributes(tenantName, attributes);
+            this._tenantCache.deleteTenant(tenantName);
+        }
+        catch(Exception ex)
+        {
+            logger.error(
+                    String.format(
+                            "Failed to set attribute definitions in tenant [%s].",
+                            tenantName));
+
+            throw ex;
+        }
+    }
+
 
     private
     Collection<AttributeValuePair>
@@ -9993,6 +10114,46 @@ public class IdentityManager implements IIdentityManager {
      * {@inheritDoc}
      */
     @Override
+    public void setProviderAttributesMap(
+        String tenantName, String providerName,
+        Map<String,String> attributesMap, IIdmServiceContext serviceContext ) throws  IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setProviderAttributesMap"))
+        {
+            try
+            {
+                this.setProviderAttributesMap(tenantName, providerName, attributesMap);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public Map<String,String> getProviderAttributesMap(String tenantName, String providerName, IIdmServiceContext serviceContext ) throws IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getProviderAttributesMap"))
+        {
+            try
+            {
+                return this.getProviderAttributesMap(tenantName, providerName);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
     public void setNativeADProvider(String tenantName, IIdentityStoreData idpData,
             IIdmServiceContext serviceContext) throws  IDMException
     {
@@ -10332,6 +10493,27 @@ public class IdentityManager implements IIdentityManager {
             }
         }
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public void setAttributeDefinitions(String tenantName, Collection<Attribute> attributes,
+            IIdmServiceContext serviceContext) throws  IDMException
+    {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "setAttributeDefinitions"))
+        {
+            try
+            {
+                this.setAttributeDefinitions(tenantName, attributes);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
 
     /**
      * {@inheritDoc}

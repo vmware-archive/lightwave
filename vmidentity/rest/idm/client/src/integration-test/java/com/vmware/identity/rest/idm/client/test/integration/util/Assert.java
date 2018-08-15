@@ -17,9 +17,11 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.fail;
 
+import java.util.Collection;
 import java.util.List;
 
 import com.vmware.identity.rest.core.data.CertificateDTO;
+import com.vmware.identity.rest.idm.data.AttributeDTO;
 import com.vmware.identity.rest.idm.data.ExternalIDPDTO;
 import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
 import com.vmware.identity.rest.idm.data.FederatedOidcConfigDTO;
@@ -110,6 +112,17 @@ public class Assert {
         fail("Unable to find expected User");
     }
 
+    public static void assertContainsAttribute(AttributeDTO expected, Collection<AttributeDTO> actual) {
+        for (AttributeDTO a : actual) {
+            if (expected.getName().equals(a.getName())) {
+                assertAttributesEqual(expected, a);
+                return;
+            }
+        }
+
+        fail("Unable to find expected Attribute");
+    }
+
     public static void assertExternalIDPsEqual(ExternalIDPDTO expected, ExternalIDPDTO actual) {
         assertEquals(expected.getEntityID(), actual.getEntityID());
         assertEquals(expected.getNameIDFormats(), actual.getNameIDFormats());
@@ -127,6 +140,13 @@ public class Assert {
         assertEquals(expected.isMultiTenant(), actual.isMultiTenant());
         assertEquals(expected.getProtocol(), actual.getProtocol());
         assertOidcConfigsEqual(expected.getOidcConfig(), actual.getOidcConfig());
+    }
+
+    public static void assertAttributesEqual(AttributeDTO expected, AttributeDTO actual) {
+        assertNotNull(actual);
+        assertEquals(expected.getName(), actual.getName());
+        assertEquals(expected.getFriendlyName(), actual.getFriendlyName());
+        assertEquals(expected.getNameFormat(), actual.getNameFormat());
     }
 
     public static void assertTokenClaimGroupsEqual(List<TokenClaimGroupDTO> expected, List<TokenClaimGroupDTO> actual) {

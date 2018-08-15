@@ -264,7 +264,8 @@ public class LdapProvider extends BaseLdapProvider
                             "No attribute mapping found for [%s]",
                             attr.getName()));
                 }
-                if (_specialAttributes.contains(mappedAttr.toLowerCase()))
+                if ( (_specialAttributes.contains(mappedAttr.toLowerCase())) ||
+                     (BaseLdapProvider.IsConstantValueAttribute(mappedAttr)) )
                 {
                     specialAttrs.put(mappedAttr, attr);
                 } else
@@ -408,6 +409,11 @@ public class LdapProvider extends BaseLdapProvider
                                 avPair.getValues().add(group.getNetbios());
                                 pairGroupSids.getValues().add(group.getObjectId());
                             }
+                            result.add(avPair);
+                        } else if (BaseLdapProvider.IsConstantValueAttribute(key)) {
+                            AttributeValuePair avPair = new AttributeValuePair();
+                            avPair.setAttrDefinition(specialAttrs.get(key));
+                            avPair.getValues().add(BaseLdapProvider.getConstantAttributeValue(key));
                             result.add(avPair);
                         }
                     }// while

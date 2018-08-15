@@ -2227,11 +2227,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                             "No attribute mapping found for [%s]",
                             attr.getName()));
                 }
-                if (_specialAttributes.contains(mappedAttr))
+                if ((_specialAttributes.contains(mappedAttr)) ||
+                    (BaseLdapProvider.IsConstantValueAttribute(mappedAttr)))
                 {
                     specialAttrs.put(mappedAttr, attr);
-                } else
-                {
+                } else {
                     regularAttrs.add(attr);
                     attrNames.add(mappedAttr);
                 }
@@ -2381,6 +2381,11 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
                 {
                     avPair.getValues().add("false");
                 }
+                result.add(avPair);
+            } else if ( BaseLdapProvider.IsConstantValueAttribute(key)) {
+                AttributeValuePair avPair = new AttributeValuePair();
+                avPair.setAttrDefinition(specialAttrs.get(key));
+                avPair.getValues().add(BaseLdapProvider.getConstantAttributeValue(key));
                 result.add(avPair);
             }
         }

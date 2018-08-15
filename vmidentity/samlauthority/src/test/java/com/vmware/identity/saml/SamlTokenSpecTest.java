@@ -302,7 +302,7 @@ public class SamlTokenSpecTest {
 
    @Test()
    public void testCreateSamlBearerConfirmationWithAttr() {
-      checkConfirmation(new SamlTokenSpec.Confirmation(null, null),
+      checkConfirmation(new SamlTokenSpec.Confirmation((String)null, null),
          SamlTokenSpec.ConfirmationType.BEARER, null, null, null);
       final String inResponseTo = "abc:d:rwe";
       final String recipient = "foo eng/";
@@ -310,7 +310,7 @@ public class SamlTokenSpecTest {
          new SamlTokenSpec.Confirmation(inResponseTo, recipient),
          SamlTokenSpec.ConfirmationType.BEARER, inResponseTo, recipient, null);
 
-      assertEquals(BEARER_CONF, new SamlTokenSpec.Confirmation(null, null));
+      assertEquals(BEARER_CONF, new SamlTokenSpec.Confirmation((String)null, null));
    }
 
    @Test()

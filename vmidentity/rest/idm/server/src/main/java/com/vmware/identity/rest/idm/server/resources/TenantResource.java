@@ -41,6 +41,7 @@ import org.apache.commons.lang.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.AuthnPolicy;
 import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.Group;
@@ -68,6 +69,7 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
 import com.vmware.identity.rest.core.server.util.PrincipalUtil;
+import com.vmware.identity.rest.idm.data.AttributeDTO;
 import com.vmware.identity.rest.idm.data.AuthenticationPolicyDTO;
 import com.vmware.identity.rest.idm.data.BrandPolicyDTO;
 import com.vmware.identity.rest.idm.data.GroupDTO;
@@ -88,6 +90,7 @@ import com.vmware.identity.rest.idm.data.attributes.MemberType;
 import com.vmware.identity.rest.idm.data.attributes.SearchType;
 import com.vmware.identity.rest.idm.data.attributes.TenantConfigType;
 import com.vmware.identity.rest.idm.server.PathParameters;
+import com.vmware.identity.rest.idm.server.mapper.AttributeMapper;
 import com.vmware.identity.rest.idm.server.mapper.AuthenticationPolicyMapper;
 import com.vmware.identity.rest.idm.server.mapper.CertificateMapper;
 import com.vmware.identity.rest.idm.server.mapper.GroupMapper;
@@ -671,6 +674,12 @@ public class TenantResource extends BaseResource {
     public IdentityProviderResource getIdentityProviderSubResource(
             @PathParam(PathParameters.TENANT_NAME) String tenantName) {
         return new IdentityProviderResource(tenantName, getRequest(), getSecurityContext());
+    }
+
+    @Path(PathParameters.TENANT_NAME_VAR + "/attributes")
+    public AttributesResource getAttributesSubResource(
+            @PathParam(PathParameters.TENANT_NAME) String tenantName) {
+        return new AttributesResource(tenantName, getRequest(), getSecurityContext());
     }
 
     @Path(PathParameters.TENANT_NAME_VAR + "/externalidp")

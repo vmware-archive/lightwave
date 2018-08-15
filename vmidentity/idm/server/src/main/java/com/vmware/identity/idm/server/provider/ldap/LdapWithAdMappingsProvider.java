@@ -512,25 +512,27 @@ public class LdapWithAdMappingsProvider extends BaseLdapProvider
                 }
 
                 String mappedAttr = attrMap.get(attr.getName());
-                if (mappedAttr == null)
-                {
 
-                    /*
-                     * Apparently this getAttributes is assuming used in the
-                     * context of retrieving token attribute. To make it more
-                     * general in order to query attribute that beyond those to
-                     * be included in the token. Such altSecurityIdentities used
-                     * in cert_based authentication.
-                     *
-                     * In this case, we include the attribute without mapping.
-                     *
-                     * Mary to review this.
-                     */
+                if (BaseLdapProvider.IsConstantValueAttribute(mappedAttr) == false) {
+                    if (mappedAttr == null)
+                    {
+                        /*
+                            * Apparently this getAttributes is assuming used in the
+                            * context of retrieving token attribute. To make it more
+                            * general in order to query attribute that beyond those to
+                            * be included in the token. Such altSecurityIdentities used
+                            * in cert_based authentication.
+                            *
+                            * In this case, we include the attribute without mapping.
+                            *
+                            * Mary to review this.
+                            */
 
-                    mappedAttr = attr.getName();
+                        mappedAttr = attr.getName();
 
+                    }
+                    attrNames.add(mappedAttr);
                 }
-                attrNames.add(mappedAttr);
             }
         }
 
@@ -631,19 +633,23 @@ public class LdapWithAdMappingsProvider extends BaseLdapProvider
                     // ldap attributes list
                     //TODO schai - verify with reviewer. assumption not true anymore.
                     String attrName = attrMap.get(attr.getName());
-                    if (attrName == null) {
-                        attrName = attr.getName();
-                    }
-                    LdapValue[] values = userLdapEntry.getAttributeValues(attrName);
+                    if ( BaseLdapProvider.IsConstantValueAttribute(attrName) ) {
+                        pair.getValues().add(BaseLdapProvider.getConstantAttributeValue(attrName));
+                    } else {
+                        if (attrName == null) {
+                           attrName = attr.getName();
+                        }
+                        LdapValue[] values = userLdapEntry.getAttributeValues(attrName);
 
-                    if (values != null && values.length > 0)
-                    {
-                        for (LdapValue value : values)
+                        if (values != null && values.length > 0)
                         {
-                            if (!value.isEmpty())
+                            for (LdapValue value : values)
                             {
-                                String val = value.toString();
-                                pair.getValues().add(val);
+                                if (!value.isEmpty())
+                                {
+                                    String val = value.toString();
+                                    pair.getValues().add(val);
+                                }
                             }
                         }
                     }

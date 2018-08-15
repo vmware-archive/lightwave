@@ -23,9 +23,12 @@ import java.util.Set;
 import oasis.names.tc.saml._2_0.assertion.AssertionType;
 
 import org.oasis_open.docs.ws_sx.ws_trust._200512.LifetimeType;
+import org.oasis_open.docs.ws_sx.ws_trust._200512.ParticipantType;
+import org.oasis_open.docs.ws_sx.ws_trust._200512.ParticipantsType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RenewTargetType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenType;
 import org.oasis_open.docs.ws_sx.ws_trust._200802.ActAsType;
+import org.oasis_open.docs.wsfed.authorization._200706.ClaimType;
 
 import com.rsa.names._2009._12.std_ext.ws_trust1_4.advice.AdviceSetType;
 import com.rsa.names._2009._12.std_ext.ws_trust1_4.advice.AdviceType;
@@ -151,8 +154,10 @@ final class SamlTokenSpecBuilder {
       final List<Advice> presentAdvice = templateToken == null ? null
          : templateToken.getAdvice();
 
+      final List<String> requestedClaims = getRequestedClaims(req.getRst());
+
       return buildTokenSpec(req, authResult, confirmation, delSpec, renewSpec,
-         audience, requestedAdvice, presentAdvice);
+         audience, requestedAdvice, presentAdvice, requestedClaims);
    }
 
    /**
@@ -184,8 +189,9 @@ final class SamlTokenSpecBuilder {
       assert renewToken.getConfirmationCertificate() != null
          && renewToken.getConfirmationCertificate().equals(
             req.getSignature().getCertificate());
+
       final Confirmation confirmation = new Confirmation(req.getSignature()
-         .getCertificate());
+         .getCertificate(), getRecipient(renewAssertion));
 
       final DelegationSpec delSpec = buildDelegationSpec(renewToken,
          renewAssertion, null, renewToken.isDelegable());
@@ -198,13 +204,15 @@ final class SamlTokenSpecBuilder {
       final List<Advice> presentAdvice = renewToken
          .getAdvice();
 
+      final List<String> requestedClaims = getRequestedClaims(req.getRst());
+
       // advice list should be kept intact on renewal, so interpret it as
       // requested advice too. Otherwise, if no requested advice, token owners
       // will get no advice in the renewed token
       final List<Advice> requestedAdvice = presentAdvice;
 
       return buildTokenSpec(req, authResult, confirmation, delSpec, renewSpec,
-         audience, requestedAdvice, presentAdvice);
+         audience, requestedAdvice, presentAdvice, requestedClaims);
    }
 
    private void validateSignedActAsRequest(Request req) {
@@ -258,7 +266,7 @@ final class SamlTokenSpecBuilder {
    private SamlTokenSpec buildTokenSpec(Request req, Result authResult,
       Confirmation confirmation, DelegationSpec delSpec, RenewSpec renewSpec,
       Iterable<String> audience, List<Advice> requestedAdvice,
-      List<Advice> presentAdvice) throws InvalidRequestException,
+      List<Advice> presentAdvice, List<String> requestedClaims) throws InvalidRequestException,
       InvalidTimeRangeException {
 
       assert req != null && authResult != null && confirmation != null
@@ -270,7 +278,7 @@ final class SamlTokenSpecBuilder {
       assert authN != null;
 
       final Builder builder = new SamlTokenSpec.Builder(reqLifetime,
-         confirmation, authN, attributeNames).setDelegationSpec(delSpec)
+         confirmation, authN, requestedClaims!=null ? requestedClaims : attributeNames).setDelegationSpec(delSpec)
          .setRenewSpec(renewSpec);
       setSignatureAlgorithm(req, builder);
       for (String audienceParty : audience) {
@@ -318,10 +326,47 @@ final class SamlTokenSpecBuilder {
       X509Certificate hokCertificate = hokAnalyzer.getSigningCertificate(req,
          delegateCertificate, authSamlToken);
 
-      final Confirmation result = (hokCertificate == null) ? new Confirmation()
-         : new Confirmation(hokCertificate);
+      final String recipient = figureOutRecipient(req.getRst().getParticipants());
+      final Confirmation result = (hokCertificate == null) ? new Confirmation((String)null, recipient)
+         : new Confirmation(hokCertificate, recipient);
       logger.debug("Confirmation will be {}", result);
       return result;
+   }
+
+   private String getRecipient(AssertionType renewAssertion) {
+       String recipient = null;
+       if ( ( renewAssertion.getSubject() != null ) &&
+            ( renewAssertion.getSubject().getSubjectConfirmation() != null ) &&
+            ( renewAssertion.getSubject().getSubjectConfirmation().getSubjectConfirmationData() != null ) ) {
+           recipient = renewAssertion.getSubject().getSubjectConfirmation()
+               .getSubjectConfirmationData().getRecipient();
+       }
+       return recipient;
+   }
+
+   private String figureOutRecipient(ParticipantsType participants){
+     // if participants list is un-ambiguous
+     // set the recipient.
+     String recipient = null;
+     ParticipantType participant = null;
+
+     if ( participants != null ) {
+        if ( (participants.getPrimary() != null) &&
+             ((participants.getParticipant() == null || participants.getParticipant().size() == 0)) )
+        {
+          participant = participants.getPrimary();
+        } else if ( (participants.getPrimary() == null) &&
+                    (participants.getParticipant() != null && participants.getParticipant().size() ==1) ) {
+          participant = participants.getParticipant().get(0);
+        }
+     }
+
+     if ( (participant != null) &&
+          ( participant.getEndpointReference() != null ) &&
+          ( participant.getEndpointReference().getAddress() != null )) {
+         recipient = participant.getEndpointReference().getAddress().getValue();
+     }
+     return recipient;
    }
 
    private DelegationSpec buildDelegationSpec(RequestSecurityTokenType rst,
@@ -343,6 +388,22 @@ final class SamlTokenSpecBuilder {
       return (token == null) ? new DelegationSpec(delegateId, delegable)
          : new DelegationSpec(delegateId, delegable,
             delegationParser.extractDelegationHistory(token, assertion));
+   }
+
+   private List<String> getRequestedClaims(RequestSecurityTokenType rst) {
+       ArrayList<String> claims = null;
+       if ( rst.getClaims() != null ) {
+           claims = new ArrayList<String>();
+           if ( rst.getClaims().getClaimType() != null ) {
+               for(ClaimType ct:rst.getClaims().getClaimType()){
+                   String uri = ct.getUri();
+                   if ( (uri != null) && (uri.isEmpty() == false) ){
+                        claims.add(uri);
+                   }
+               }
+           }
+       }
+       return claims;
    }
 
    private AuthenticationData convertAuthnResultToAuthnData(Result authnResult) {

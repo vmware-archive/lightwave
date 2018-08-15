@@ -94,8 +94,10 @@ public final class TokenValidatorImpl implements TokenValidator {
       // TODO [866694][849937] make this check on all attributes which are
       // parameterized
       // TODO check [866704] for details
-      checkGroupList(token.getGroupList(), token.getSubject().subjectUpn());
-      logger.debug("Group list is verified.");
+      if (token.getGroupList() != null && !token.getGroupList().isEmpty()) {
+          checkGroupList(token.getGroupList(), token.getSubject().subjectUpn());
+          logger.debug("Group list is verified.");
+      }
 
       // TODO [866694] check for other attributes (first, last name,
       // isSolution)?
