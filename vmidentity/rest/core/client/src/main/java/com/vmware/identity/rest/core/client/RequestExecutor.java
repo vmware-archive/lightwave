@@ -17,6 +17,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.List;
+import java.util.Map;
 
 import org.apache.http.HttpException;
 import org.apache.http.HttpResponse;
@@ -50,6 +51,10 @@ public class RequestExecutor {
 
     public static <T> List<T> executeAndReturnList(CloseableHttpClient client, HttpUriRequest request, Class<T> valueType) throws ClientProtocolException, WebApplicationException, HttpException, IOException {
         return executeInternal(client, request, ObjectMapperSingleton.getInstance().getTypeFactory().constructCollectionType(List.class, valueType));
+    }
+
+    public static <K, V> Map<K, V> executeAndReturnMap(CloseableHttpClient client, HttpUriRequest request, Class<K> keyType, Class<V> valueType) throws ClientProtocolException, WebApplicationException, HttpException, IOException {
+        return executeInternal(client, request, ObjectMapperSingleton.getInstance().getTypeFactory().constructMapType(Map.class, keyType, valueType));
     }
 
     private static <T> T executeInternal(CloseableHttpClient client, HttpUriRequest request, JavaType type) throws ClientProtocolException, WebApplicationException, HttpException, IOException {

@@ -56,6 +56,7 @@ public class IdmClient extends BaseClient {
     private SolutionUserResource solutionUser;
     private UserResource user;
     private DiagnosticsResource diagnostics;
+    private AttributesResource attributes;
 
     /**
      * @see BaseClient#BaseClient(String)
@@ -199,6 +200,16 @@ public class IdmClient extends BaseClient {
 
     /**
      * Get the subresource containing all of the commands related to a tenant's
+     * attribute definitions.
+     *
+     * @return the subresource containing all of the attribute definitions commands.
+     */
+    public AttributesResource attributes() {
+        return attributes;
+    }
+
+    /**
+     * Get the subresource containing all of the commands related to a tenant's
      * OpenID Connect (OIDC) clients.
      *
      * @return the subresource containing all of the OIDC commands.
@@ -270,6 +281,7 @@ public class IdmClient extends BaseClient {
         solutionUser = new SolutionUserResource(this);
         user = new UserResource(this);
         diagnostics = new DiagnosticsResource(this);
+        attributes = new AttributesResource(this);
     }
 
 }

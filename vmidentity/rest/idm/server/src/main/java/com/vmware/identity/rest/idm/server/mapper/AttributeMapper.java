@@ -15,9 +15,11 @@ package com.vmware.identity.rest.idm.server.mapper;
 
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.List;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.rest.idm.data.AttributeDTO;
+import com.vmware.identity.rest.idm.data.AttributeDefinitionsDTO;
 
 /**
  * Mapper utility to map objects from {@link Attribute} to {@link AttributeDTO} and vice-versa.
@@ -55,4 +57,21 @@ public class AttributeMapper {
         return attributes;
     }
 
+    public static AttributeDefinitionsDTO getAttributeDefinitionsDTO(Collection<Attribute> attributes) {
+        List<AttributeDTO> attributeDTOs = new ArrayList<AttributeDTO>();
+        for (Attribute attribute : attributes) {
+            attributeDTOs.add(getAttributeDTO(attribute));
+        }
+        return new AttributeDefinitionsDTO.Builder()
+                                      .withAttributes(attributeDTOs)
+                                      .build();
+    }
+
+    public static Collection<Attribute> getAttributes(AttributeDefinitionsDTO attributeDTOs) {
+        Collection<Attribute> attributes = new ArrayList<Attribute>();
+        for (AttributeDTO attributeDTO : attributeDTOs.getAttributes()) {
+            attributes.add(getAttribute(attributeDTO));
+        }
+        return attributes;
+    }
 }

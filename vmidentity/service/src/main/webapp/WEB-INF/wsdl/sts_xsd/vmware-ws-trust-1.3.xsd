@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- 
+<!--
 OASIS takes no position regarding the validity or scope of any intellectual property or other rights that might be claimed to pertain to the implementation or use of the technology described in this document or the extent to which any license under such rights might or might not be available; neither does it represent that it has made any effort to identify any such rights. Information on OASIS's procedures with respect to rights in OASIS specifications can be found at the OASIS website. Copies of claims of rights made available for publication and any assurances of licenses to be made available, or the result of an attempt made to obtain a general license or permission for the use of such proprietary rights by implementors or users of this specification, can be obtained from the OASIS Executive Director.
 OASIS invites any interested party to bring to its attention any copyrights, patents or patent applications, or other proprietary rights which may cover technology that may be required to implement this specification. Please address the information to the OASIS Executive Director.
 Copyright Â© OASIS Open 2002-2006. All Rights Reserved.
@@ -15,6 +15,7 @@ xmlns:wst='http://docs.oasis-open.org/ws-sx/ws-trust/200512'
 xmlns:wst14='http://docs.oasis-open.org/ws-sx/ws-trust/200802'
 xmlns:saml2="urn:oasis:names:tc:SAML:2.0:assertion"
 xmlns:rsa='http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice'
+xmlns:auth='http://docs.oasis-open.org/wsfed/authorization/200706'
 targetNamespace='http://docs.oasis-open.org/ws-sx/ws-trust/200512'
 elementFormDefault='qualified' >
 
@@ -30,6 +31,8 @@ elementFormDefault='qualified' >
 			 schemaLocation='rsa-advice.xsd' />
   <xs:import namespace='http://docs.oasis-open.org/ws-sx/ws-trust/200802'
 			 schemaLocation='vmware-ws-trust-1.4.xsd' />
+  <xs:import namespace='http://docs.oasis-open.org/wsfed/authorization/200706'
+			 schemaLocation='profiled-authorization.xsd' />
 
   <!-- WS-Trust Section 3.1 -->
   <xs:element name='RequestSecurityToken' type='wst:RequestSecurityTokenType' />
@@ -80,6 +83,7 @@ elementFormDefault='qualified' >
       <xs:element ref='wst:SignatureAlgorithm' minOccurs='0' />
       <xs:element ref='wst:BinaryExchange' minOccurs='0' />
       <xs:element ref='wst:Participants' minOccurs='0' />
+      <xs:element ref='wst:Claims' minOccurs='0' />
       <xs:element ref='rsa:AdviceSet' minOccurs='0' />
     </xs:all>
     <xs:attribute name='Context' type='xs:anyURI' use='optional' />
@@ -187,13 +191,21 @@ elementFormDefault='qualified' >
     </xs:sequence>
   </xs:complexType>
 
+  <xs:element name="Claims" type="wst:ClaimsType"/>
+  <xs:complexType name="ClaimsType">
+    <xs:sequence>
+      <xs:element ref="auth:ClaimType" minOccurs="1" maxOccurs="unbounded"/>
+    </xs:sequence>
+    <xs:attribute name="Dialect" type="xs:anyURI" use="optional"/>
+  </xs:complexType>
+
   <!-- WS-Trust Section 4.2 -->
 
   <xs:element name='RequestSecurityTokenResponseCollection' type='wst:RequestSecurityTokenResponseCollectionType' />
   <xs:complexType name='RequestSecurityTokenResponseCollectionType' >
     <xs:annotation>
       <xs:documentation>
-        The &lt;wst:RequestSecurityTokenResponseCollection> element (RSTRC) MUST be used to return a security token or 
+        The &lt;wst:RequestSecurityTokenResponseCollection> element (RSTRC) MUST be used to return a security token or
         response to a security token request on the final response.
       </xs:documentation>
     </xs:annotation>

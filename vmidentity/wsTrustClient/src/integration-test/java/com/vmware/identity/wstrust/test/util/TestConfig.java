@@ -14,17 +14,18 @@
 
 package com.vmware.identity.wstrust.test.util;
 
-import com.vmware.vim.sso.client.Advice;
-
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
+
+import com.vmware.vim.sso.client.Advice;
 
 public class TestConfig {
 
@@ -88,6 +89,29 @@ public class TestConfig {
 
   private static final String HOST_PROPERTY = "host";
   private static final String CONFIG_PROPERTY = "config";
+
+  public static final String CUSTOM_CLAIM_NAME_FORMAT = "urn:oasis:names:tc:SAML:2.0:attrname-format:uri";
+  public static final String CONST_PREFIX = "const:";
+
+  public static final String[] CUSTOM_CLAIM_NAMES = new String[] {
+          "https://aws.amazon.com/SAML/Attributes/Role",
+          "https://aws.amazon.com/SAML/Attributes/RoleSessionName",
+  };
+
+  public static final String[] CUSTOM_CLAIM_FRIENDLY_NAMES = new String[] {
+          "AWSRole",
+          "AWSRoleSessionName"
+  };
+
+  public static final String[] CUSTOME_CLAIM_VALUES = new String[] {
+          "role",
+          "session"
+  };
+
+  public static final String[] DEFAULT_CLAIM_NAMES = new String[] {
+          "http://rsa.com/schemas/attr-names/2009/01/GroupIdentity",
+          "http://vmware.com/schemas/attr-names/2011/07/isSolution"
+  };
 
   private Properties properties;
   private String host;
@@ -215,6 +239,13 @@ public class TestConfig {
       return Arrays.asList(BAD_ADVICE_VALUE);
     }
     return null;
+  }
+
+  public List<String> getClaimNameList() {
+      List<String> claimList = new ArrayList<>();
+      claimList.addAll(Arrays.asList(DEFAULT_CLAIM_NAMES));
+      claimList.addAll(Arrays.asList(CUSTOM_CLAIM_NAMES));
+      return claimList;
   }
 
   public URL getStsUrl(String stsHostname, int portNum, String domainName) {

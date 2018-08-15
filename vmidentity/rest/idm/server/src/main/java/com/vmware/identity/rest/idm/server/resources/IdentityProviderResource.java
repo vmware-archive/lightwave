@@ -16,6 +16,8 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.net.MalformedURLException;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DELETE;
@@ -41,6 +43,7 @@ import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.IdentityStoreType;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidProviderException;
+import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
@@ -50,6 +53,7 @@ import com.vmware.identity.rest.core.server.exception.client.NotFoundException;
 import com.vmware.identity.rest.core.server.exception.server.InternalServerErrorException;
 import com.vmware.identity.rest.core.server.util.Validate;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
+import com.vmware.identity.rest.idm.data.UpdateAttributesMapDTO;
 import com.vmware.identity.rest.idm.data.attributes.IdentityProviderType;
 import com.vmware.identity.rest.idm.server.mapper.IdentityProviderMapper;
 import com.vmware.identity.rest.idm.server.util.Config;
@@ -241,6 +245,129 @@ public class IdentityProviderResource extends BaseSubResource {
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
             totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+   /**
+     * Get attributes map of requested identity provider.
+     * @param providerName Name of identity source/provider for which info is requested.
+     * @return Information of identity provider @see {@link IdentityProviderDTO}
+     */
+    @GET @Path("/{providerName}/attributesMap")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.REGULAR_USER)
+    public Map<String,String> getAttributesMap(
+            @PathParam("providerName") String providerName) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAttributesMap").startTimer();
+        String responseStatus = HTTP_OK;
+        try {
+            return getIDMClient().getProviderAttributesMap(tenant, providerName);
+        } catch (NoSuchTenantException | InvalidProviderException | NoSuchIdpException e) {
+            log.warn("Failed to retrieve attributes map for provider '{}' from tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (InvalidArgumentException e) {
+            log.warn("Failed to retrieve attributes map for provider '{}' from tenant '{}' due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.provider.getAttributesMap.failed", providerName, tenant), e);
+        } catch (Exception e) {
+            log.error("Failed to retrieve identity provider '{}' from tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    /**
+     * Update identity provider attributesMap.
+     *
+     * @param providerName Name of registered identity provider
+     * @param updateAttrsDto Details of identity provider to be updated with. @see {@link UpdateAttributesMapDTO}
+     * @return Details of updated identity provider
+     */
+    @PUT @Path("/{providerName}/attributesMap")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.ADMINISTRATOR)
+    public Map<String, String> updateAttributesMap(
+        @PathParam("providerName") String providerName,
+        UpdateAttributesMapDTO updateAttrsDto) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "updateAttributesMap").startTimer();
+        String responseStatus = HTTP_OK;
+        try {
+            if (updateAttrsDto != null) {
+                Map<String,String> current = getIDMClient().getProviderAttributesMap(tenant, providerName);
+                Map<String,String> newMap = new HashMap<String,String>();
+                newMap.putAll(current);
+                if(updateAttrsDto.getRemove() != null) {
+                    for(String key : updateAttrsDto.getRemove()){
+                        newMap.remove(key);
+                    }
+                }
+                if (updateAttrsDto.getAdd() != null) {
+                    newMap.putAll(updateAttrsDto.getAdd());
+                }
+                getIDMClient().setProviderAttributesMap(tenant, providerName, newMap);
+            }
+            return getIDMClient().getProviderAttributesMap(tenant, providerName);
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to update identity provider '{}' for tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (InvalidArgumentException | InvalidProviderException | NoSuchIdpException e) {
+            log.warn("Failed to update identity provider '{}' for tenant {} due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.provider.updateAttributesMap.failed", providerName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to update identity provider '{}' for tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "updateAttributesMap").inc();
+            requestTimer.observeDuration();
+        }
+    }
+
+    /**
+     * Set identity provider attributesMap.
+     *
+     * @param providerName Name of registered identity provider
+     * @param identityProvider Details of identity provider to be updated with. @see {@link IdentityProviderDTO}
+     * @return Details of updated identity provider
+     */
+    @POST @Path("/{providerName}/attributesMap")
+    @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.ADMINISTRATOR)
+    public Map<String, String> setAttributesMap(
+        @PathParam("providerName") String providerName,
+        Map<String, String> attributesMap) {
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "setAttributesMap").startTimer();
+        String responseStatus = HTTP_OK;
+        try {
+            getIDMClient().setProviderAttributesMap(tenant, providerName, attributesMap);
+            return getIDMClient().getProviderAttributesMap(tenant, providerName);
+        } catch (NoSuchTenantException e) {
+            log.warn("Failed to set attributes map for identity provider '{}' for tenant '{}'", providerName, tenant, e);
+            responseStatus = HTTP_NOT_FOUND;
+            throw new NotFoundException(sm.getString("ec.404"), e);
+        } catch (InvalidArgumentException | InvalidProviderException | NoSuchIdpException e) {
+            log.warn("Failed to set attributes map for identity provider '{}' for tenant {} due to a client side error", providerName, tenant, e);
+            responseStatus = HTTP_BAD_REQUEST;
+            throw new BadRequestException(sm.getString("res.provider.setAttributesMap.failed", providerName, tenant), e);
+        } catch (BadRequestException e) {
+            responseStatus = HTTP_BAD_REQUEST;
+            throw e;
+        } catch (Exception e) {
+            log.error("Failed to set attributes map for identity provider '{}' for tenant '{}' due to a server side error", providerName, tenant, e);
+            responseStatus = HTTP_SERVER_ERROR;
+            throw new InternalServerErrorException(sm.getString("ec.500"), e);
+        } finally {
+            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "setAttributesMap").inc();
             requestTimer.observeDuration();
         }
     }

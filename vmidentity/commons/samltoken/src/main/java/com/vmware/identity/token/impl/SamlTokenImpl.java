@@ -91,6 +91,7 @@ import com.vmware.identity.token.impl.exception.ParserException;
 import com.vmware.vim.sso.PrincipalId;
 import com.vmware.vim.sso.client.Advice;
 import com.vmware.vim.sso.client.Advice.AdviceAttribute;
+import com.vmware.vim.sso.client.Claim;
 import com.vmware.vim.sso.client.ConfirmationType;
 import com.vmware.vim.sso.client.IssuerNameId;
 import com.vmware.vim.sso.client.SamlToken;
@@ -188,6 +189,9 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
     * The groups the subject belongs to
     */
    private List<PrincipalId> _groups = Collections.emptyList();
+
+   private List<Claim> _claims = Collections.emptyList();
+
    /**
     * @see SamlToken#isSolution()
     */
@@ -217,6 +221,7 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
    private static final String ERR_LOADNIG_SAML_SCHEMA = "An error occured while loading SAML schema.";
    private static final String PARSE_GROUPS_ERR_MSG = "Cannot parse group information";
    private static final String PARSE_ISSOLUTION_ERR_MSG = "Value for attribute isSolution is not valid.";
+   private static final String PARSE_CLAIM_ERR_MSG = "Cannot parse claims.";
 
    private static final String UPN_FORMAT_URI = "http://schemas.xmlsoap.org/claims/UPN";
 
@@ -528,6 +533,12 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
    public List<PrincipalId> getGroupList() {
       checkIsSignatureValidated();
       return _groups;
+   }
+
+   @Override
+   public List<Claim> getClaimList() {
+       checkIsSignatureValidated();
+       return _claims;
    }
 
    @Override
@@ -1155,6 +1166,7 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
                   AttributeStatementType attrStatement = (AttributeStatementType)stmt;
                   List<AttributeType> attributeList = attrStatement.getAttribute();
                   List<PrincipalId> groupList = new ArrayList<PrincipalId>();
+                  List<Claim> claimList = new ArrayList<>();
 
                   for (AttributeType attribute : attributeList)
                   {
@@ -1183,9 +1195,21 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
                         } else {
                            throw new MalformedTokenException(PARSE_ISSOLUTION_ERR_MSG);
                         }
+                     } else {
+                         // parse custom claims
+                         try {
+                             String nameFormat = attribute.getNameFormat();
+                             List<String> values = new ArrayList<>();
+                             values.addAll(attribute.getAttributeValue());
+                             String friendlyName = attribute.getFriendlyName();
+                             claimList.add(new Claim(attributeName, nameFormat, friendlyName, values));
+                         } catch (IllegalArgumentException e) {
+                             throw new MalformedTokenException(PARSE_CLAIM_ERR_MSG, e);
+                         }
                      }
                   }
                   _groups = Collections.unmodifiableList(groupList);
+                  _claims = Collections.unmodifiableList(claimList);
                   _log.debug("Attribute statements successfully parsed");
               }
           }

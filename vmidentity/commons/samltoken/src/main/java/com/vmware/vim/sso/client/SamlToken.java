@@ -132,6 +132,13 @@ public interface SamlToken extends XmlPresentable {
    public List<PrincipalId> getGroupList();
 
    /**
+    * Returns the custom claims in the token.
+    *
+    * @return the list of custome claims.
+    */
+   public List<Claim> getClaimList();
+
+   /**
     * @return <code>true</code> if this token represents a solution user. In
     *         other words - if principal of the subject to which the token is
     *         issued is a solution type of principal then this method will
