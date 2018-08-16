@@ -36,12 +36,12 @@ public class WebssoApplicationListener implements ApplicationListener<Applicatio
 
         if (contextEvent instanceof ContextRefreshedEvent) {
             heartbeat.startBeating();
-            log.info("Heartbeat started");
+            log.info("Heartbeat started for {} port {}", serviceName, port);
         }
         else if (contextEvent instanceof ContextClosedEvent)
         {
             heartbeat.stopBeating();
-            log.info("Heartbeat stopped");
+            log.info("Heartbeat stopped for {} port {}", serviceName, port);
         }
     }
 }

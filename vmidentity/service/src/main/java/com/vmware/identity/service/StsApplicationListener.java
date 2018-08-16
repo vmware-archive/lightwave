@@ -11,7 +11,7 @@
  *  License for the specific language governing permissions and limitations
  *  under the License.
  */
-package com.vmware.identity.sts.ws;
+package com.vmware.identity.service;
 
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
@@ -29,17 +29,22 @@ public class StsApplicationListener implements ServletContextListener {
     private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(StsApplicationListener.class);
 
     private VmAfdHeartbeat heartbeat = new VmAfdHeartbeat(serviceName, port);
+    private STSHealthChecker healthChecker = STSHealthChecker.getInstance();
 
     @Override
     public void contextInitialized(ServletContextEvent arg0) {
         try {
             heartbeat.startBeating();
-            log.info("Heartbeat started");
+            log.info("Heartbeat started for {} port {}", serviceName, port);
+
             VMCAAdapter2.VMCAInitOpenSSL();
+            log.info("Starting health check thread");
+
+            (new Thread(healthChecker)).start();
         } catch (VMCAException e) {
             log.error("Failed to init VMCA SSL library", e);
         } catch (Exception e) {
-            log.error("Failed to start heartbeat", e);
+            log.error("Error when initializing context", e);
             throw new IllegalStateException(e);
         }
     }
@@ -48,15 +53,20 @@ public class StsApplicationListener implements ServletContextListener {
     public void contextDestroyed(ServletContextEvent arg0) {
         try {
             heartbeat.stopBeating();
-            log.info("Heartbeat stopped");
+            log.info("Heartbeat stopped for {} port {}", serviceName, port);
+
             IdentityManager.getIdmInstance().notifyAppStopping();
             log.info("Idm notified of app stop");
+
             VMCAAdapter2.VMCACleanupOpenSSL();
             log.info("VMCA cleaned up");
+
+            healthChecker.stop();
+            log.info("Stopped health check thread");
         } catch (VMCAException e) {
             log.error("Failed to cleanup VMCA SSL library", e);
         } catch (Exception e) {
-            log.error("Failed to stop heartbeat", e);
+            log.error("Error when destroying context", e);
         }
     }
 }
