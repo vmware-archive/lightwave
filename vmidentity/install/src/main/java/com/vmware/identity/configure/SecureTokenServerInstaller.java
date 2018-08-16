@@ -8,10 +8,19 @@ import java.io.File;
 import java.io.IOException;
 import java.io.InputStream;
 import java.lang.ProcessBuilder.Redirect;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.security.KeyStore;
+import java.security.KeyStoreException;
+import java.security.NoSuchAlgorithmException;
+import java.security.cert.CertificateException;
 
+import javax.net.ssl.HttpsURLConnection;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManagerFactory;
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.transform.OutputKeys;
 import javax.xml.transform.Transformer;
@@ -21,6 +30,7 @@ import javax.xml.transform.stream.StreamResult;
 
 import com.vmware.vim.sso.client.SecureTransformerFactory;
 import com.vmware.vim.sso.client.XmlParserFactory;
+import com.vmware.af.VmAfClient;
 import org.apache.commons.lang.SystemUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,6 +38,8 @@ import org.w3c.dom.Document;
 import org.w3c.dom.Element;
 import org.w3c.dom.Node;
 import org.w3c.dom.NodeList;
+
+import com.vmware.provider.VecsLoadStoreParameter;
 
 public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
 
@@ -44,6 +56,11 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
     private static final String CONNECTOR = "Connector";
     private static final String SSL_HOST_CONFIG = "SSLHostConfig";
     private static final String CERTIFICATE_ATTR = "Certificate";
+    private static final String STS_HEALTH_ENDPOINT = "/isAvailable";
+    private static final String VKS_KEYSTORE_INSTANCE = "VKS";
+    private static final String VKS_KEYSTORE_NAME = "TRUSTED_ROOTS";
+    private static final long MAX_TIME_TO_WAIT_MILLIS = 120000 ; // 2 minutes
+    private static final long WAIT_TIME_PER_ITERATION = 5000; // 5 seconds
 
     private static final Logger log = LoggerFactory
             .getLogger(SecureTokenServerInstaller.class);
@@ -73,12 +90,7 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
         installInstAsWinService();
 
         startSTSService();
-        String portNumber = HostnameReader.readPortNumber();
-        if (portNumber == null) {
-            throw new SecureTokenServerInstallerException("Invalid port number" , null);
-        }
-
-        new STSHealthChecker(hostnameURL, HostnameReader.readPortNumber()).checkHealth();
+        checkSTSHealth();
     }
 
     private void initialize() {
@@ -112,7 +124,87 @@ public class SecureTokenServerInstaller implements IPlatformComponentInstaller {
                     "Failed to start STS service [error code: %d]", exitCode),
                     null);
         }
+    }
 
+    public void checkSTSHealth() throws Exception {
+        String stsEndpoint = null;
+        // Load the VKS keystore
+        KeyStore vksKeyStore = getVksKeyStore();
+
+        // Initialize TrustManager and SSLFactory
+        TrustManagerFactory trustMgrFactory = TrustManagerFactory.getInstance("PKIX");
+        trustMgrFactory.init(vksKeyStore);
+        SSLContext sslCnxt = SSLContext.getInstance("SSL");
+        sslCnxt.init(null, trustMgrFactory.getTrustManagers(), null);
+        SSLSocketFactory sslFactory = sslCnxt.getSocketFactory();
+        // validate if all the web applications are deployed successfully.
+        long iterations = MAX_TIME_TO_WAIT_MILLIS / WAIT_TIME_PER_ITERATION;
+        for (int x = 0; x < iterations; x++) {
+            int httpResponseCode = 0;
+            if (stsEndpoint == null) {
+                stsEndpoint = tryGetStsEndpoint();
+            }
+
+            if (stsEndpoint != null) {
+                httpResponseCode = tryPollStsHealth(sslFactory, stsEndpoint);
+            }
+
+            if (httpResponseCode == 200) {
+                System.out.println(String.format("STS is deployed successfully"));
+                return;
+            }
+
+            Thread.sleep(WAIT_TIME_PER_ITERATION);
+        }
+
+        String message = String.format("Error: STS did not come up after %d ms", MAX_TIME_TO_WAIT_MILLIS);
+        throw new STSWebappNotDeployedException(message);
+    }
+
+    private String tryGetStsEndpoint() {
+        String stsHostname = null;
+        try {
+            // get fqdn of current instance
+            VmAfClient afdClient = new VmAfClient("localhost");
+            stsHostname = afdClient.getDomainController();
+        } catch (Exception e) {
+            System.out.println("Failed to get domain controller name from vmafd: " + e.getMessage());
+            return null;
+        }
+
+        return "https://" + stsHostname + STS_HEALTH_ENDPOINT;
+    }
+
+    private int tryPollStsHealth(SSLSocketFactory sslFactory, String stsEndpoint) {
+        HttpsURLConnection connection = null;
+        int httpResponseCode = -1;
+
+        try {
+            URL stsEndpointUrl = new URL(stsEndpoint);
+            connection = (HttpsURLConnection) stsEndpointUrl.openConnection();
+            connection.setSSLSocketFactory(sslFactory);
+            connection.setRequestMethod("GET");
+            connection.connect();
+            httpResponseCode = connection.getResponseCode();
+        } catch (Exception e) {
+            String message = String.format("Unable to poll STS health (%s): %s", stsEndpoint, e.getMessage());
+            System.out.println(message);
+        } finally {
+            if (connection != null) {
+                connection.disconnect();
+            }
+        }
+
+        return httpResponseCode;
+    }
+
+    /**
+     * Get VKS keystore by calling VECS
+     */
+    public KeyStore getVksKeyStore() throws KeyStoreException, NoSuchAlgorithmException, CertificateException, IOException {
+        KeyStore ks = KeyStore.getInstance(VKS_KEYSTORE_INSTANCE);
+        ks.load(new VecsLoadStoreParameter(VKS_KEYSTORE_NAME));
+        return ks;
     }
 
     private void installInstAsWinService()

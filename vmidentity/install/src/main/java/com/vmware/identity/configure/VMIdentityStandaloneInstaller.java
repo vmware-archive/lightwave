@@ -13,20 +13,7 @@ public class VMIdentityStandaloneInstaller {
 
         VmIdentityParams params = build(args);
 
-        if (params.isCheckSTSHealth()) {
-            try {
-
-                String hostName   = HostnameReader.readHostName();
-                String portNumber = HostnameReader.readPortNumber();
-                if (hostName == null || portNumber == null){
-                    throw new NullPointerException("Hostname or Portnumber are not configured");
-                }
-                new STSHealthChecker(hostName,portNumber ).checkHealth();
-            } catch (Exception e) {
-                e.printStackTrace();
-                System.exit(1);
-            }
-        }  else if (params.isHostnameMode() ){
+        if (params.isHostnameMode() ){
             try {
                 new HostinfoWriter(params.getHostname(), params.getHostnameType()).write();
             } catch (Exception ex) {

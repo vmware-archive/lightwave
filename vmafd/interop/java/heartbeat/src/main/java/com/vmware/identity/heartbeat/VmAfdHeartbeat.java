@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -14,59 +14,130 @@
 
 package com.vmware.identity.heartbeat;
 
-public class VmAfdHeartbeat implements AutoCloseable{
-	   private PointerRef handle;
-	   private final String serviceName;
-	   private final int port;
+import java.util.ArrayList;
+import java.util.List;
 
-	   public VmAfdHeartbeat(String serviceName, int port) {
-	      if (serviceName == null) {
-          throw new IllegalArgumentException(String.format(
-	                  "Service Name cannot be NULL"));
-	      }
+public class VmAfdHeartbeat implements AutoCloseable {
+    private PointerRef hbHandle;
+    private PointerRef serverHandle;
+    private int port;
+    private String serviceName;
+    private String serverName;
+    private String username;
 
-	      this.serviceName = serviceName;
-	      this.port = port;
-	   }
+    private static final String LOCALHOST = "__localhost__";
+    private static final String LOCALUSER = "__localuser__";
 
-	   public void startBeating() throws VmAfdGenericException{
-		   if (handle == null)
-		   {
-			   int error = 0;
-			   PointerRef pHandle = new PointerRef();
+    /**
+     * Gets VmAfdHeartbeat hbHandle to start a heartbeat for a service
+     * @param serviceName
+     * @param port
+     */
+    public VmAfdHeartbeat(String serviceName, int port) {
+        if (serviceName == null) {
+            throw new IllegalArgumentException(String.format(
+                    "Service Name cannot be NULL"));
+        }
 
-			   error = VmAfdHeartbeatAdapter.VmAfdStartHeartBeatW(serviceName, port, pHandle);
+        this.port = port;
+        this.serviceName = serviceName;
+        this.serverHandle = null;
+    }
 
-			   if (error != 0) {
-				   throw new VmAfdGenericException(
-		                           String.format("Error starting heartbeat for Service '%s' for port '%d'",
-		                           serviceName,
-		                           port),
-		                           error
-		                           );
-			   }
-			   handle = pHandle;
-		   }
-	   }
+    /**
+     * Gets VmAfdHeartbeat hbHandle to query HeartbeatStatus of a server
+     * @param server, null for localhost
+     * @param username, null for localuser
+     * @param password, can be null
+     */
+    public VmAfdHeartbeat(String server, String username, String password) {
+        PointerRef pServer = new PointerRef();
+        int error = 0;
+        this.serverName = (server == null) ? LOCALHOST : server;
+        this.username = (username == null) ? LOCALUSER : username;
 
-	   public void stopBeating(){
-		   if (handle != null)
-		   {
-			    VmAfdHeartbeatAdapter.VmAfdStopHeartbeat(handle);
-		   }
-		   handle = null;
-	   }
+        error = VmAfdHeartbeatAdapter.VmAfdOpenServerW(server, username, password, pServer);
+        BAIL_ON_ERROR(error,"Error opening server '%s' for user '%s'", server, username);
 
-	   protected void finalize() throws Throwable {
-		      try {
+        serverHandle = pServer;
+        this.serviceName = null;
+    }
+
+    public HeartbeatStatus getHeartbeatStatus() {
+        if (serverHandle == null) {
+            BAIL_ON_ERROR(
+                    VmAfdHeartbeatAdapter.ERROR_INVALID_PARAMETER,
+                    "Failed to get Heartbeat Status- no server handle opened");
+        }
+
+        int error = 0;
+        HeartbeatStatusNative hbStatusNative = new HeartbeatStatusNative();
+        error = VmAfdHeartbeatAdapter.VmAfdGetHeartbeatStatusW(serverHandle, hbStatusNative);
+        BAIL_ON_ERROR(
+                error,
+                "Getting Heartbeat Status failed. [Server: %s, User: %s]",
+                this.serverName,
+                this.username);
+
+        return convertHbStatusNativeToHeartbeatStatus(hbStatusNative);
+    }
+
+    private HeartbeatStatus convertHbStatusNativeToHeartbeatStatus(HeartbeatStatusNative hbStatusNative) {
+        if (hbStatusNative == null) {
+            BAIL_ON_ERROR(VmAfdHeartbeatAdapter.ERROR_INVALID_PARAMETER, "Failed to convert Native Heartbeat status");
+        }
+
+        List<HeartbeatInfo> heartbeatInfo = new ArrayList<>();
+        for (HeartbeatInfoNative info : hbStatusNative.hbInfoArr) {
+            HeartbeatInfo hbInfo = new HeartbeatInfo(
+                    info.serviceName,
+                    info.port,
+                    info.lastHeartbeat,
+                    (info.isAlive != 0));
+            heartbeatInfo.add(hbInfo);
+        }
+
+        return new HeartbeatStatus(heartbeatInfo, (hbStatusNative.isAlive != 0));
+    }
+
+    public void startBeating() throws VmAfdGenericException {
+        if (hbHandle == null) {
+            int error = 0;
+            PointerRef pHandle = new PointerRef();
+
+            error = VmAfdHeartbeatAdapter.VmAfdStartHeartBeatW(serviceName, port, pHandle);
+            BAIL_ON_ERROR(error,"Error starting heartbeat for Service '%s' for port '%d'", serviceName, port);
+
+            hbHandle = pHandle;
+        }
+    }
+
+    public void stopBeating() {
+        if (hbHandle != null) {
+            VmAfdHeartbeatAdapter.VmAfdStopHeartbeat(hbHandle);
+        }
+        hbHandle = null;
+    }
+
+    protected void finalize() throws Throwable {
+        try {
             stopBeating();
-		      } finally {
-		         super.finalize();
-		      }
-		   }
+        } finally {
+            super.finalize();
+        }
+    }
 
-	   @Override
-	   public void close() throws Exception {
-		   this.stopBeating();
-	   }
+    @Override
+    public void close() throws Exception {
+        this.stopBeating();
+    }
+
+    private static void BAIL_ON_ERROR(final int error, final String format, Object...vargs) {
+        switch (error) {
+            case 0:
+                break;
+            default:
+                throw new VmAfdGenericException(String.format(format, vargs), error);
+        }
+    }
 }

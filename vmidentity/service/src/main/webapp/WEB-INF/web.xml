@@ -34,7 +34,7 @@
     </listener>
 
     <listener>
-        <listener-class>com.vmware.identity.sts.ws.StsApplicationListener</listener-class>
+        <listener-class>com.vmware.identity.service.StsApplicationListener</listener-class>
     </listener>
 
     <servlet>
@@ -190,6 +190,17 @@
     <servlet-mapping>
         <servlet-name>restvmdir</servlet-name>
         <url-pattern>/vmdir/*</url-pattern>
+    </servlet-mapping>
+
+    <!-- STS Health Endpoint -->
+    <servlet>
+        <servlet-name>HealthStatus</servlet-name>
+        <servlet-class>com.vmware.identity.service.HealthStatusController</servlet-class>
+        <load-on-startup>1</load-on-startup>
+    </servlet>
+    <servlet-mapping>
+        <servlet-name>HealthStatus</servlet-name>
+        <url-pattern>/isAvailable</url-pattern>
     </servlet-mapping>
 
     <!-- Prometheus Exporter Servlet -->

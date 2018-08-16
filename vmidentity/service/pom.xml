@@ -102,7 +102,7 @@
       <artifactId>vmware-directory-rest-server</artifactId>
       <version>${vmware.version}</version>
     </dependency>
-   <!-- Jackson Dependencies -->
+    <!-- Jackson Dependencies -->
     <dependency>
       <groupId>com.fasterxml.jackson.core</groupId>
       <artifactId>jackson-databind</artifactId>
@@ -136,6 +136,32 @@
       <groupId>io.prometheus</groupId>
       <artifactId>simpleclient_servlet</artifactId>
       <version>${prometheus.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.apache.httpcomponents</groupId>
+      <artifactId>httpcore</artifactId>
+      <version>${httpcore.version}</version>
+    </dependency>
+    <!-- VMware Dependencies -->
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>vmware-endpoint-certificate-store</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>afd-heartbeat-service</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.vmafd</groupId>
+      <artifactId>authentication-framework</artifactId>
+      <version>${vmware.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>com.vmware.identity.rest.afd</groupId>
+      <artifactId>vmware-identity-rest-afd-client</artifactId>
+      <version>${vmware.version}</version>
     </dependency>
   </dependencies>
 
