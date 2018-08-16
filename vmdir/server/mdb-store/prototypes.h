@@ -78,6 +78,19 @@ MDBDeleteParentIdIndex(
     ENTRYID             entryId);
 
 DWORD
+MdbDeleteAllReccord(
+    VDIR_DB             mdbDBi,
+    PVDIR_DB_TXN        pTxn,
+    PVDIR_DB_DBT        pKey
+    );
+
+DWORD
+MdbDeleteAllAttrMetaData(
+    PVDIR_DB_TXN     pTxn,
+    ENTRYID          entryId
+    );
+
+DWORD
 MdbUpdateAttrMetaData(
     PVDIR_DB_TXN     pTxn,
     VDIR_ATTRIBUTE * attr,

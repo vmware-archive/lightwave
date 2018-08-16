@@ -153,6 +153,148 @@ error:
 }
 
 /*
+ * delete all records that match string compare "key*"
+ */
+DWORD
+MdbDeleteAllReccord(
+    VDIR_DB             mdbDBi,
+    PVDIR_DB_TXN        pTxn,
+    PVDIR_DB_DBT        pKey
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_DB_DBC    pCursor = NULL;
+    unsigned int    cursorFlags =0;
+    VDIR_DB_DBT     currKey = {0};
+    VDIR_DB_DBT     currValue = {0};
+    BOOLEAN         bHasMore = TRUE;
+
+    assert(pTxn);
+    assert(pKey);
+
+    while (bHasMore)
+    {
+        dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        memset(&currKey, 0, sizeof(currKey));
+        currKey.mv_size = pKey->mv_size;
+        currKey.mv_data = pKey->mv_data;
+
+        cursorFlags = MDB_SET_RANGE;
+
+        bHasMore = FALSE;
+        if ((dwError = mdb_cursor_get(pCursor, &currKey, &currValue, cursorFlags )) != 0)
+        {
+            if (dwError == MDB_NOTFOUND)
+            {
+                dwError = 0;
+                break;
+            }
+
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        /*
+         * there was at least one instance where key.size > currKey.size
+         * adding size check before memcmp
+        */
+        if (pKey->mv_size > currKey.mv_size ||
+            memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
+        {
+            break;
+        }
+
+        {
+            unsigned char* p = (char*)currKey.mv_data;
+            VMDIR_LOG_VERBOSE(
+                LDAP_DEBUG_BACKEND,
+                "delete key size %d key %02X %02X %02X %02X %02X %02X %02X",
+                currKey.mv_size, p[0],p[1],p[2],p[3],p[4],p[5],p[6]);
+        }
+
+        dwError = mdb_cursor_del(pCursor, 0);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // after mdb_cursor_del call, it is not safe to use the same cursor and go to MDB_NEXT.
+        // with small DB, it seems fine but has strange behavior with big size DB.
+        // close current cursor and open a new one instead.
+        bHasMore = TRUE;
+        mdb_cursor_close(pCursor);
+        pCursor = NULL;
+    }
+
+cleanup:
+    if (pCursor)
+    {
+        mdb_cursor_close(pCursor);
+    }
+    return dwError;
+
+error:
+    VMDIR_LOG_VERBOSE(LDAP_DEBUG_BACKEND,
+             "%s error:(%d) key=(%p)(%.*s)",
+             __FUNCTION__, dwError,
+             pKey->mv_data, VMDIR_MIN(pKey->mv_size,VMDIR_MAX_LOG_OUTPUT_LEN), (char *)pKey->mv_data);
+
+    goto cleanup;
+}
+
+/*
+ * MdbDeleteAllAttrMetaData(): delete all attribute metadata for an entry
+ * Called during tombstone entry aging
+ *
+ * Return values:
+ *     On Success: 0
+ *     On Error: MDB error
+ */
+DWORD
+MdbDeleteAllAttrMetaData(
+    PVDIR_DB_TXN     pTxn,
+    ENTRYID          entryId
+    )
+{
+    DWORD                 dwError = 0;
+    VDIR_DB_DBT           key = {0};
+    char                  keyData[ sizeof( ENTRYID ) + 1] = {0}; /* key format is: <entry ID>: */
+    VDIR_DB               mdbDBi = 0;
+    VDIR_BERVALUE         attrMetaDataAttr = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
+    PVDIR_INDEX_CFG       pIndexCfg = NULL;
+
+    assert(pTxn);
+
+    dwError = VmDirIndexCfgAcquire(
+            attrMetaDataAttr.lberbv.bv_val, VDIR_INDEX_WRITE, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    key.mv_data = &keyData[0];
+    MDBEntryIdToDBT( entryId, &key );
+    *(unsigned char *)((unsigned char *)key.mv_data + key.mv_size) = ':';
+    key.mv_size++;
+
+    dwError = MdbDeleteAllReccord(mdbDBi, pTxn, &key);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND,
+             "%s failed: error=%d,eid=%ld", __FUNCTION__, dwError, entryId);
+
+    VMDIR_LOG_VERBOSE(LDAP_DEBUG_BACKEND,
+             "%s failed: key=(%p)(%.*s)",
+             __FUNCTION__,
+             key.mv_data, VMDIR_MIN(key.mv_size,VMDIR_MAX_LOG_OUTPUT_LEN), (char *) key.mv_data);
+
+    goto cleanup;
+}
+
+/*
  * UpdateAttributeMetaData(): Update attribute's meta data.
  *
  * Return values:
