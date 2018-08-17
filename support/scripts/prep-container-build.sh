@@ -75,6 +75,12 @@ case "$OSVER" in
             sample)
                 DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sample/photon2
                 ;;
+            post)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/post/photon2
+                ;;
+            post-ui)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/post-ui/photon2
+                ;;
         esac
         ;;
     *)
@@ -90,7 +96,7 @@ rm -rf $DOCKER_ROOT/*
 cp -r $PROJECT_ROOT/build/rpmbuild/RPMS/x86_64 $DOCKER_ROOT
 
 case "$FLAVOR" in
-    ui)
+    ui|post-ui)
         cp -r $PROJECT_ROOT/ui/stage/RPMS/x86_64/*.rpm $DOCKER_ROOT/x86_64/
     ;;
 esac
