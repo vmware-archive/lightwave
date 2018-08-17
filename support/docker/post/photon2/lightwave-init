@@ -40,32 +40,34 @@ if [ -f $CONFIG_FILE ]; then
     ADMIN=$(grep "^admin=" $CONFIG_FILE | awk -F"=" '{print$2;}')
     PASSWORD=$(grep "^password=" $CONFIG_FILE | awk -F"=" '{print$2;}')
     SITE=$(grep "^site-name=" $CONFIG_FILE | awk -F"=" '{print$2;}')
-
-    exec 3> /dev/tty
-    echo $PASSWORD >3
+    POST_PARTNER=$(grep "^post-partner-hostname=" $CONFIG_FILE | awk -F"=" '{print$2;}')
 
     if [ -z "$SITE" ]; then
+        exec 3<<<$PASSWORD
         /opt/vmware/bin/ic-join --domain $DOMAIN \
                                 --username $ADMIN \
-                                < 3
+                                <&3
     else
+        exec 3<<<$PASSWORD
         /opt/vmware/bin/ic-join --domain $DOMAIN \
                                 --username $ADMIN \
                                 --site $SITE \
-                                < 3
+                                <&3
     fi
 
-    exec 3>&-
-
-    exec 4> /dev/tty
-    echo $PASSWORD >4
-
-    /opt/vmware/bin/post-cli node promote \
+    if [ -z "$POST_PARTNER" ]; then
+        exec 3<<<$PASSWORD
+        /opt/vmware/bin/post-cli node promote \
             --host-name `hostname -f` \
             --domain-name $DOMAIN \
-            < 4
-
-    exec 4>&-
+            <&3
+    else
+        exec 3<<<$PASSWORD
+        /opt/vmware/bin/post-cli node promote \
+            --host-name `hostname -f` \
+            --partner-name $POST_PARTNER \
+            <&3
+    fi
 fi
 
 while :
