@@ -72,10 +72,7 @@ VmDirRESTIsValidOrigin(
 {
     DWORD dwError = 0;
     BOOLEAN  bIsValidOrigin = FALSE;
-    PSTR  pszHostnameCanon = NULL;
-    char  pszExpectedOrigin[MAX_ORIGIN_VALUE_LENGTH] = {0};
-    char  pszLocalHostName[VMDIR_MAX_HOSTNAME_LEN] = {0};
-    PSTR  pszOriginValue = NULL;
+    PSTR pszDomainName = NULL;
 
     if (IsNullOrEmptyString(pszOrigin) || !pbIsValidOrigin)
     {
@@ -86,7 +83,7 @@ VmDirRESTIsValidOrigin(
     if (VmDirStringStartsWith (pszOrigin, HTTP_PROTOCOL_PREFIX, FALSE))
     {
         // get the part of origin after "https://"
-        pszOriginValue = pszOrigin + strlen(HTTP_PROTOCOL_PREFIX);
+        PSTR  pszOriginValue = pszOrigin + strlen(HTTP_PROTOCOL_PREFIX);
 
         if (VmDirIsIPAddrFormat(pszOriginValue))
         {
@@ -95,16 +92,14 @@ VmDirRESTIsValidOrigin(
         }
         else
         {
-            dwError = VmDirGetHostName(pszLocalHostName, sizeof(pszLocalHostName)-1);
+            dwError = VmDirRESTGetDomainName(&pszDomainName);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            // Compare with FQDN
-            dwError = VmDirGetCanonicalHostName(pszLocalHostName, &pszHostnameCanon);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            sprintf(pszExpectedOrigin, "%s%s", HTTP_PROTOCOL_PREFIX, pszHostnameCanon);
-
-            if (!strncasecmp(pszOrigin, pszExpectedOrigin, strlen(pszExpectedOrigin)))
+            if (VmDirStringEndsWith(
+                    pszOriginValue,
+                    pszDomainName,
+                    FALSE /* case insensitive */
+                    ))
             {
                 bIsValidOrigin = TRUE;
             }
@@ -113,7 +108,7 @@ VmDirRESTIsValidOrigin(
     *pbIsValidOrigin = bIsValidOrigin;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszHostnameCanon);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     return dwError;
 
 error:
