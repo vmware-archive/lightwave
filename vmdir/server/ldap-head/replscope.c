@@ -26,8 +26,11 @@ VmDirIsAttrInScope(
     DWORD               dwError = 0;
     PSZ_METADATA_BUF    pszMetaData = {'\0'};
 
+    /*
+     * Skip input validation for pszAttrType
+     * For deleted attributes: pszAttrType can be NULL
+     */
     if (!pOperation ||
-        !pszAttrType ||
         !pAttrMetaData ||
         !pbInScope)
     {
