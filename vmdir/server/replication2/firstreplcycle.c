@@ -270,7 +270,7 @@ _VmDirWrapUpFirstReplicationCycle(
     retVal = _VmDirFirstCycleCreateSrvObjTree(pSchemaCtx, pszHostname, pSwapDBInfo->pszMyHighWaterMark);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirStringToINT64(pSwapDBInfo->pszMyHighWaterMark, &highWaterMark);
+    retVal = VmDirStringToINT64(pSwapDBInfo->pszMyHighWaterMark, NULL, &highWaterMark);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     if ((retVal = VmDirReplCookieUpdate( pSchemaCtx, highWaterMark, pSwapDBInfo->pMyUTDVector, pReplAgr )) != LDAP_SUCCESS)

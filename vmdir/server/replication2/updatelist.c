@@ -57,7 +57,9 @@ VmDirReplUpdateListFetch(
     retVal = VmDirReplUpdateListAlloc(&pReplUpdateList);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    lastSupplierUsnProcessed = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+    retVal = VmDirStringToINT64(
+            pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, &lastSupplierUsnProcessed);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     if (VmDirAllocateStringPrintf(
             &pszFilter,
@@ -331,6 +333,7 @@ VmDirReplUpdateListParseSyncDoneCtl(
 
     retVal = VmDirStringToINT64(
                         ppSearchResCtrls[0]->ldctl_value.bv_val,
+                        NULL,
                         &(pReplUpdateList->newHighWaterMark));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 

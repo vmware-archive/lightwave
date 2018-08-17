@@ -269,10 +269,11 @@ VmDirUTDVectorCacheAdd(
     PCSTR                   pszUsn
     )
 {
-    DWORD       dwError = 0;
-    BOOLEAN     bInLock = FALSE;
-    PSTR        pszDupKey = NULL;
-    USN         Usn = 0;
+    DWORD              dwError = 0;
+    BOOLEAN            bInLock = FALSE;
+    PSTR               pszDupKey = NULL;
+    USN                Usn = 0;
+    LW_HASHMAP_PAIR    pair = {0};
 
     if (IsNullOrEmptyString(pszInvocationId) || !pUTDVector)
     {
@@ -282,14 +283,15 @@ VmDirUTDVectorCacheAdd(
     dwError = VmDirAllocateStringA(pszInvocationId, &pszDupKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pszUsn, &Usn);
+    dwError = VmDirStringToINT64(pszUsn, NULL, &Usn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_RWLOCK_READLOCK(bInLock, pUTDVector->pUtdVectorLock, 0);
 
-    dwError = LwRtlHashMapInsert(pUTDVector->pUtdVectorMap, pszDupKey, (PVOID) Usn, NULL);
+    dwError = LwRtlHashMapInsert(pUTDVector->pUtdVectorMap, pszDupKey, (PVOID)Usn, &pair);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    VmDirSimpleHashMapPairFreeKeyOnly(&pair, NULL);
     pszDupKey = NULL;
 
     VMDIR_SAFE_FREE_STRINGA(pUTDVector->pszUtdVector);
@@ -375,7 +377,7 @@ _VmDirUTDVectorStrToPair(
     dwError = VmDirAllocateStringA(pszKey, &pszDupKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringToINT64(pszValue, &Usn);
+    dwError = VmDirStringToINT64(pszValue, NULL, &Usn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pPair->pKey = (PVOID) pszDupKey;

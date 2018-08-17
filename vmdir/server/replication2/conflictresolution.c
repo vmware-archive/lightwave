@@ -201,6 +201,113 @@ error:
     goto cleanup;
 }
 
+/*
+ * Determine whether the supplier's attr-value-meta-data wins by checking it against local
+ * attr-meta-data and local attr-value-meta-data.
+ * It first compares the <version><invocation-id> of that in local attr-meta-data which was
+ * applied either in the previous transaction or the previous modification in the current
+ * transactions. Then if the <version><invocation-id> matches, it looks up the local server
+ * to see if the same attr-value-meta-data exist: if supplier's attr-value-meta-data has a
+ * newer timestamp then it wins and inScope set to TRUE.
+ */
+DWORD
+VmDirReplResolveValueMetaDataConflicts(
+    PVDIR_OPERATION                    pModOp,
+    PVDIR_ATTRIBUTE                    pAttr,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pSupplierValueMetaData,
+    ENTRYID                            entryId,
+    PBOOLEAN                           pInScope
+    )
+{
+    DWORD                              dwError = 0;
+    VDIR_BERVALUE                      bervSupplierValueMetaData = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE                      bervConsumerValueMetaData = VDIR_BERVALUE_INIT;
+    DEQUE                              valueMetaDataQueue = {0};
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pConsumerValueMetaData = NULL;
+
+    if (!pModOp || !pAttr || !pSupplierValueMetaData || !pInScope)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pInScope = TRUE;
+    dwError = pModOp->pBEIF->pfnBEGetAttrMetaData(pModOp->pBECtx, pAttr, entryId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    //Consumer <version><originating-server-id> in metaValueData
+    //not match supplier's <version<<originating-server-id> in metaData
+    //this value-meta-data out of scope
+    if (pSupplierValueMetaData->version != pAttr->pMetaData->version ||
+        VmDirStringCompareA(
+            pSupplierValueMetaData->pszOrigInvoId, pAttr->pMetaData->pszOrigInvoId, TRUE) != 0)
+    {
+        *pInScope = FALSE;
+        goto cleanup;
+    }
+
+    if (VmDirLogGetMask() & LDAP_DEBUG_REPL)
+    {
+        //Ignore error, used only for logging
+        VmDirValueMetaDataSerialize(pSupplierValueMetaData, &bervSupplierValueMetaData);
+        VmDirValueMetaDataSerialize(pConsumerValueMetaData, &bervConsumerValueMetaData);
+    }
+
+    dwError = pModOp->pBEIF->pfnBEGetAttrValueMetaData(
+            pModOp->pBECtx, entryId, pAttr->pATDesc->usAttrID, &valueMetaDataQueue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while(!dequeIsEmpty(&valueMetaDataQueue))
+    {
+        VMDIR_SAFE_FREE_VALUE_METADATA(pConsumerValueMetaData);
+
+        dequePopLeft(&valueMetaDataQueue, (PVOID*)&pConsumerValueMetaData);
+
+        if (pConsumerValueMetaData->dwValSize != pSupplierValueMetaData->dwValSize ||
+            VmDirCompareMemory(
+                    pConsumerValueMetaData->pszValue,
+                    pSupplierValueMetaData->pszValue,
+                    pConsumerValueMetaData->dwValSize) != 0)
+        {
+            continue;
+        }
+
+        if (VmDirStringCompareA(
+                    pConsumerValueMetaData->pszValChgOrigTime,
+                    pSupplierValueMetaData->pszValChgOrigTime,
+                    TRUE) > 0)
+        {
+            *pInScope = FALSE;
+
+            VMDIR_LOG_DEBUG(
+                    LDAP_DEBUG_REPL,
+                    "%s: supplier attr-value-meta lose: %s consumer: %s",
+                    __FUNCTION__,
+                    VDIR_SAFE_STRING(bervSupplierValueMetaData.lberbv_val),
+                    VDIR_SAFE_STRING(bervConsumerValueMetaData.lberbv_val));
+        }
+    }
+
+    if (*pInScope)
+    {
+        VMDIR_LOG_DEBUG(
+                LDAP_DEBUG_REPL,
+                "%s: supplier attr-value-meta won: %s",
+                __FUNCTION__,
+                VDIR_SAFE_STRING(bervSupplierValueMetaData.lberbv_val));
+    }
+
+cleanup:
+    VmDirFreeBervalContent(&bervSupplierValueMetaData);
+    VmDirFreeBervalContent(&bervConsumerValueMetaData);
+    VMDIR_SAFE_FREE_VALUE_METADATA(pConsumerValueMetaData);
+    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
 static
 BOOLEAN
 _VmDirReplAttrConflictCheck(

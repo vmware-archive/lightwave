@@ -448,7 +448,8 @@ _VmDirConsumePartner(
 
     uiStartTime = VmDirGetTimeInMilliSec();
 
-    retVal = VmDirStringToINT64(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, &lastLocalUsnProcessed);
+    retVal = VmDirStringToINT64(
+            pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, &lastLocalUsnProcessed);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
     retVal = VmDirReplUpdateListFetch(pReplAgr, &pReplUpdateList);
@@ -491,8 +492,8 @@ collectmetrics:
         }
     }
 
-cleanup:
     VmDirFreeReplUpdateList(pReplUpdateList);
+
     return;
 
 ldaperror:
