@@ -1451,6 +1451,15 @@ VmwConfigReadStringValue(
     );
 
 DWORD
+VmwConfigReadStringArrayValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PDWORD              pdwNumValues,
+    PSTR                **pppszValues
+    );
+
+DWORD
 VmwConfigReadDWORDValue(
     PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,

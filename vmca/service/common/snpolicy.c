@@ -70,14 +70,6 @@ VMCAPolicySNOperationArrayFree(
 
 static
 DWORD
-VMCAPolicySNGetOrgNamesFromCSR(
-    PSTR                            pszPKCS10Request,
-    PDWORD                          pdwOrgNamesLen,
-    PSTR                            **pppszOrgNames
-    );
-
-static
-DWORD
 VMCAPolicySNMatchAuthOUWithCSR(
     PCSTR                           pcszAuthDN,
     PCSTR                           pcszAuthBaseDN,
@@ -241,8 +233,9 @@ VMCAPolicySNValidate(
                     VMCA_POLICY_REQ_CSR_SUBJ_ORGS,
                     TRUE))
         {
-            dwError = VMCAPolicySNGetOrgNamesFromCSR(
+            dwError = VMCAOpenSSLGetValuesFromSubjectName(
                                     pszPKCS10Request,
+                                    VMCA_OPENSSL_NID_O,
                                     &dwOrgNamesLen,
                                     &ppszOrgNames);
             BAIL_ON_VMCA_ERROR(dwError);
@@ -672,150 +665,6 @@ VMCAPolicySNOperationArrayFree(
 
         VMCA_SAFE_FREE_MEMORY(ppOperations);
     }
-}
-
-static
-DWORD
-VMCAPolicySNGetOrgNamesFromCSR(
-    PSTR                            pszPKCS10Request,
-    PDWORD                          pdwOrgNamesLen,
-    PSTR                            **pppszOrgNames
-    )
-{
-    DWORD                           dwError = 0;
-    DWORD                           dwIdx = 0;
-    DWORD                           dwNumOEntries = 0;
-    PSTR                            *ppszOrgNames = NULL;
-    PSTR                            *ppszOrgNamesTemp = NULL;
-    PSTR                            pszOString = NULL;
-    X509_REQ                        *pCSR = NULL;
-    X509_NAME                       *pszSubjName = NULL;
-    X509_NAME_ENTRY                 *pOEntry = NULL;
-    ASN1_STRING                     *pOAsn1 = NULL;
-    int                             iOPos = 0;
-    size_t                          szNumDNs = 0;
-    size_t                          szEntryLength = 0;
-
-    if (IsNullOrEmptyString(pszPKCS10Request) ||
-        !pdwOrgNamesLen ||
-        !pppszOrgNames)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-    dwError = VMCAPEMToCSR(
-                    pszPKCS10Request,
-                    &pCSR);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    pszSubjName = X509_REQ_get_subject_name(pCSR);
-    if(pszSubjName == NULL)
-    {
-        dwError = VMCA_INVALID_CSR_FIELD;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-    szNumDNs = X509_NAME_entry_count(pszSubjName);
-    if (szNumDNs == 0)
-    {
-        dwError = VMCA_INVALID_CSR_FIELD;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-    dwError = VMCAAllocateMemory(
-                        sizeof(PSTR) * (DWORD)szNumDNs,
-                        (PVOID *)&ppszOrgNamesTemp);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    for (;;)
-    {
-        iOPos = X509_NAME_get_index_by_NID(
-                        pszSubjName,
-                        NID_organizationName,
-                        iOPos);
-        if (iOPos == -1)
-        {
-            break;
-        }
-
-        pOEntry = X509_NAME_get_entry(
-                        pszSubjName,
-                        iOPos);
-        if (pOEntry == NULL)
-        {
-            dwError = VMCA_CERT_DECODE_FAILURE;
-            BAIL_ON_VMCA_ERROR(dwError);
-        }
-
-        pOAsn1 = X509_NAME_ENTRY_get_data(pOEntry);
-        if (pOAsn1 == NULL)
-        {
-            dwError = VMCA_CERT_DECODE_FAILURE;
-            BAIL_ON_VMCA_ERROR(dwError);
-        }
-
-        szEntryLength = ASN1_STRING_to_UTF8(
-                            (unsigned char **)&pszOString,
-                            pOAsn1);
-        if (!pszOString || szEntryLength != strlen(pszOString))
-        {
-            dwError = VMCA_CERT_DECODE_FAILURE;
-            BAIL_ON_VMCA_ERROR(dwError);
-        }
-
-        dwError = VMCAAllocateStringA(
-                            pszOString,
-                            &ppszOrgNamesTemp[dwIdx]);
-        BAIL_ON_VMCA_ERROR(dwError);
-        ++dwIdx;
-        ++dwNumOEntries;
-
-        if (pszOString)
-        {
-            OPENSSL_free(pszOString);
-            pszOString = NULL;
-        }
-    }
-
-    dwError = VMCACopyStringArrayA(
-                        &ppszOrgNames,
-                        dwNumOEntries,
-                        ppszOrgNamesTemp,
-                        (DWORD)szNumDNs);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    *pppszOrgNames = ppszOrgNames;
-    *pdwOrgNamesLen = dwNumOEntries;
-
-
-cleanup:
-
-    if (pCSR)
-    {
-        X509_REQ_free(pCSR);
-    }
-    if (pszOString)
-    {
-        OPENSSL_free(pszOString);
-    }
-    VMCAFreeStringArrayA(ppszOrgNamesTemp, szNumDNs);
-
-    return dwError;
-
-error:
-
-    VMCAFreeStringArrayA(ppszOrgNames, dwNumOEntries);
-    if (pppszOrgNames)
-    {
-        *pppszOrgNames = NULL;
-    }
-    if (pdwOrgNamesLen)
-    {
-        *pdwOrgNamesLen = 0;
-    }
-
-    goto cleanup;
 }
 
 /*

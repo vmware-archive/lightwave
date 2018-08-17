@@ -37,6 +37,24 @@ VMCAPolicySNFree(
     PVMCA_POLICY_RULES  pPolicyRules
     );
 
+/* cnpolicy.c */
+
+DWORD
+VMCAPolicyCNValidate(
+    PCSTR                           pszPKCS10Request,
+    PVMCA_REQ_CONTEXT               pReqContext,
+    PBOOLEAN                        pbIsValid
+    );
+
+/* sanpolicy.c */
+
+DWORD
+VMCAPolicySANValidate(
+    PCSTR                           pszPKCS10Request,
+    PVMCA_REQ_CONTEXT               pReqContext,
+    PBOOLEAN                        pbIsValid
+    );
+
 #ifdef __cplusplus
 }
 #endif

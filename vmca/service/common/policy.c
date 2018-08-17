@@ -178,11 +178,30 @@ VMCAPolicyValidate(
                                                          pReqContext,
                                                          &bIsValid);
         BAIL_ON_VMCA_ERROR(dwError);
-
         if (bIsValid == FALSE)
         {
-            break;
+            BAIL_ON_VMCA_ERROR(dwError);
         }
+    }
+
+    dwError = VMCAPolicyCNValidate(
+                        pszPKCS10Request,
+                        pReqContext,
+                        &bIsValid);
+    BAIL_ON_VMCA_ERROR(dwError);
+    if (bIsValid == FALSE)
+    {
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAPolicySANValidate(
+                        pszPKCS10Request,
+                        pReqContext,
+                        &bIsValid);
+    BAIL_ON_VMCA_ERROR(dwError);
+    if (bIsValid == FALSE)
+    {
+        BAIL_ON_VMCA_ERROR(dwError);
     }
 
 

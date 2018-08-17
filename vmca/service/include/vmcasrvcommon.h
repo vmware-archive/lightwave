@@ -22,6 +22,7 @@ extern "C" {
 #ifndef _WIN32
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "Services\\vmdir"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "Services\\vmafd\\Parameters"
+#define VMCA_CONFIG_PARAMETER_KEY_PATH  "Services\\vmca\\Parameters"
 #else
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
 #define VMAFD_CONFIG_PARAMETER_KEY_PATH "SYSTEM\\CurrentControlSet\\services\\VMWareAfdService\\Parameters"
@@ -53,6 +54,56 @@ VMCASrvGetMachineAccountInfoA(
 DWORD
 VMCAOpenLocalLdapServer(
     PVMCA_LDAP_CONTEXT* pLd
+    );
+
+/* ../common/opensslutil.c */
+
+DWORD
+VMCAOpenSSLGetValuesFromSubjectName(
+    PCSTR                           pszPKCS10Request,
+    DWORD                           dwNIDType,
+    PDWORD                          pdwNumValues,
+    PSTR                            **pppszValues
+    );
+
+DWORD
+VMCAOpenSSLGetSANEntries(
+    PCSTR                           pszPKCS10Request,
+    PDWORD                          pdwNumSANDNSEntries,
+    PSTR                            **pppszSANDNSEntires,
+    PDWORD                          pdwNumSANIPEntries,
+    PSTR                            **pppszSANIPEntires
+    );
+
+/* ../common/util.c */
+
+BOOLEAN
+VMCAUtilIsValueIPAddr(
+    PCSTR           pszValue
+    );
+
+BOOLEAN
+VMCAUtilIsValuePrivateOrLocalIPAddr(
+    PSTR            pszValue
+    );
+
+DWORD
+VMCAUtilIsValueFQDN(
+    PCSTR           pszValue,
+    PBOOLEAN        pbIsValid
+    );
+
+BOOLEAN
+VMCAUtilDoesValueHaveWildcards(
+    PCSTR            pszValue
+    );
+
+DWORD
+VMCAUtilIsValueInWhitelist(
+    PCSTR                           pszValue,
+    PCSTR                           pszAuthUPN,
+    PCSTR                           pcszRegValue,
+    PBOOLEAN                        pbInWhitelist
     );
 
 #ifdef __cplusplus

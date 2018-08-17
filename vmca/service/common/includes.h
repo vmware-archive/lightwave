@@ -85,6 +85,7 @@ extern "C" {
 #include <process.h>
 #include <assert.h>
 #include <winsock2.h>
+#include <ctype.h>
 #include "banned.h"
 
 //#include <openssl/ssl.h>

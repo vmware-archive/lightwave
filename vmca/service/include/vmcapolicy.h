@@ -16,6 +16,8 @@
 #define _VMCA_POLICY_H_
 
 #define VMCA_POLICY_FILE_PATH       VMCA_CONFIG_DIR "/vmca-policy.json"
+#define VMCA_REG_KEY_CN_WHITELIST   "CNPolicyWhitelist"
+#define VMCA_REG_KEY_SAN_WHITELIST  "SANPolicyWhitelist"
 
 /* VMCA Policy */
 

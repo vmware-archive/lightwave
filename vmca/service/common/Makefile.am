@@ -2,9 +2,13 @@ noinst_LTLIBRARIES = libvmcasrvcommon.la
 
 libvmcasrvcommon_la_SOURCES = \
     config.c \
+    cnpolicy.c \
     ldap.c \
+    opensslutil.c \
     policy.c \
-    snpolicy.c
+    sanpolicy.c \
+    snpolicy.c \
+    util.c
 
 libvmcasrvcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmca/include \
