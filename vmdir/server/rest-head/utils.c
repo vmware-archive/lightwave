@@ -72,9 +72,6 @@ VmRESTIsValidOrigin(
 {
     DWORD dwError = 0;
     BOOLEAN  bIsValidOrigin = FALSE;
-    PSTR  pszHostnameCanon = NULL;
-    char  pszExpectedOrigin[MAX_ORIGIN_VALUE_LENGTH] = {0};
-    PSTR  pszOriginValue = NULL;
 
     if (IsNullOrEmptyString(pszOrigin) || !pbIsValidOrigin)
     {
@@ -85,33 +82,27 @@ VmRESTIsValidOrigin(
     // get the part of origin after "https://"
     if (VmDirStringStartsWith (pszOrigin, HTTP_PROTOCOL_PREFIX, FALSE))
     {
-        pszOriginValue = pszOrigin + strlen(HTTP_PROTOCOL_PREFIX);
+        PSTR  pszOriginValue = pszOrigin + strlen(HTTP_PROTOCOL_PREFIX);
 
         if (VmDirIsIPAddrFormat(pszOriginValue))
         {
             dwError = VmRESTTestIfHostIPMatch(pszOrigin, &bIsValidOrigin);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        else
-        {   // Compare with FQDN
-            dwError = VmDirGetCanonicalHostName(
-                        BERVAL_NORM_VAL(gVmdirServerGlobals.bvServerObjName),
-                        &pszHostnameCanon);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            sprintf(pszExpectedOrigin, "%s%s", HTTP_PROTOCOL_PREFIX, pszHostnameCanon);
-
-            if (!strncasecmp(pszOrigin, pszExpectedOrigin, strlen(pszExpectedOrigin)))
-            {
-                bIsValidOrigin = TRUE;
-            }
+        else if (VmDirStringEndsWith(
+                    pszOriginValue,
+                    gVmdirKrbGlobals.pszRealm,
+                    FALSE /* case insensitive */
+                    ))
+        {
+            bIsValidOrigin = TRUE; // Origin is from same domain
         }
     }
 
     *pbIsValidOrigin = bIsValidOrigin;
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszHostnameCanon);
+
     return dwError;
 
 error:
