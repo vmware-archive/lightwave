@@ -502,6 +502,106 @@ VmMetricsHistogramUpdate(
 }
 
 /*
+ * Clone histogram into public structure
+ */
+DWORD
+VmMetricsHistogramClone(
+    PVM_METRICS_HISTOGRAM         pHistogram,
+    PVM_METRICS_PUBLIC_HISTOGRAM* ppOutHistogram
+    )
+{
+    DWORD dwError = 0;
+    PVM_METRICS_PUBLIC_HISTOGRAM pPublicHistogram = NULL;
+
+    if (!pHistogram || !ppOutHistogram)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmAllocateMemory(
+            sizeof(VM_METRICS_PUBLIC_HISTOGRAM),
+            (PVOID*)&pPublicHistogram);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pPublicHistogram->pszName = strdup(pHistogram->pszName);
+    if (!pPublicHistogram->pszName)
+    {
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    pPublicHistogram->bucketSize = pHistogram->bucketSize;
+
+    dwError = VmAllocateMemory(
+            pPublicHistogram->bucketSize * sizeof(int64_t),
+            (PVOID*)&pPublicHistogram->pBucketKeys);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmAllocateMemory(
+            pPublicHistogram->bucketSize * sizeof(int64_t),
+            (PVOID*)&pPublicHistogram->pBucketValues);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    VmMetricsHistogramCloneContent(pHistogram, pPublicHistogram);
+
+    *ppOutHistogram = pPublicHistogram;
+
+cleanup:
+    return dwError;
+
+error:
+    VmMetricsPublicHistogramFree(pPublicHistogram);
+    goto cleanup;
+
+}
+
+/*
+ * Clone histogram content into public structure
+ */
+VOID
+VmMetricsHistogramCloneContent(
+    PVM_METRICS_HISTOGRAM        pHistogram,
+    PVM_METRICS_PUBLIC_HISTOGRAM pOutHistogram
+    )
+{
+    DWORD i = 0;
+
+    if (pHistogram && pOutHistogram)
+    {
+        for (i=0; i<pHistogram->bucketSize; i++)
+        {
+            if (i < pOutHistogram->bucketSize)
+            {
+                pOutHistogram->pBucketKeys[i]   = pHistogram->pBucketKeys[i];
+                pOutHistogram->pBucketValues[i] = pHistogram->pBucketValues[i];
+            }
+        }
+
+        // TODO, should use LwInterlockedRead64 instead. Track in PR 2183204.
+        pOutHistogram->count = pHistogram->count;
+        pOutHistogram->sum   = pHistogram->sum;
+    }
+}
+
+/*
+ * Free histogram
+ */
+VOID
+VmMetricsPublicHistogramFree(
+    PVM_METRICS_PUBLIC_HISTOGRAM pPublicHistogram
+    )
+{
+    if (pPublicHistogram)
+    {
+        VM_COMMON_SAFE_FREE_MEMORY(pPublicHistogram->pszName);
+        VM_COMMON_SAFE_FREE_MEMORY(pPublicHistogram->pBucketKeys);
+        VM_COMMON_SAFE_FREE_MEMORY(pPublicHistogram->pBucketValues);
+        VM_COMMON_SAFE_FREE_MEMORY(pPublicHistogram);
+    }
+}
+
+/*
  * Return the list of all metrics data in Prometheus format (string/text)
  */
 DWORD

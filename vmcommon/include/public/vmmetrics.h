@@ -36,6 +36,17 @@ typedef struct _VM_METRICS_LABEL
     PSTR pszValue;
 } VM_METRICS_LABEL, *PVM_METRICS_LABEL;
 
+typedef struct _VM_METRICS_PUBLIC_HISTOGRAM
+{
+    PSTR                            pszName;
+    DWORD                           bucketSize;
+    int64_t*                        pBucketKeys;
+    int64_t*                        pBucketValues;
+    int64_t                         count;
+    int64_t                         sum;
+
+} VM_METRICS_PUBLIC_HISTOGRAM, *PVM_METRICS_PUBLIC_HISTOGRAM;
+
 /*
  * Initialize the metrics context
  */
@@ -160,6 +171,32 @@ VOID
 VmMetricsHistogramUpdate(
     PVM_METRICS_HISTOGRAM pHistogram,
     uint64_t value
+    );
+
+/*
+ * Clone histogram into public structure
+ */
+DWORD
+VmMetricsHistogramClone(
+    PVM_METRICS_HISTOGRAM         pHistogram,
+    PVM_METRICS_PUBLIC_HISTOGRAM* ppOutHistogram
+    );
+
+/*
+ * Clone histogram content into public structure
+ */
+VOID
+VmMetricsHistogramCloneContent(
+    PVM_METRICS_HISTOGRAM        pHistogram,
+    PVM_METRICS_PUBLIC_HISTOGRAM pOutHistogram
+    );
+
+/*
+ * Free public histogram
+ */
+VOID
+VmMetricsPublicHistogramFree(
+    PVM_METRICS_PUBLIC_HISTOGRAM pPublicHistogram
     );
 
 /*
