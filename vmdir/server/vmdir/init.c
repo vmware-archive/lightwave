@@ -1832,6 +1832,7 @@ InitializeGlobalVars(
 #endif
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    //TODO_REMOVE_REPLV2
     dwError = VmDirDDVectorInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 

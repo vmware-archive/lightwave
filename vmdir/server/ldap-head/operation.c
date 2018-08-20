@@ -205,6 +205,7 @@ VmDirFreeOperationContent(
             LwRtlFreeHashTable(&syncDoneCtrlVal->htUtdVector);
             assert(syncDoneCtrlVal->htUtdVector == NULL);
 
+            //TODO_REMOVE_REPLV2
             VMDIR_SAFE_FREE_MEMORY(syncDoneCtrlVal->pszDeadlockDetectionVector);
 
             VMDIR_SAFE_FREE_MEMORY(op->syncDoneCtrl);

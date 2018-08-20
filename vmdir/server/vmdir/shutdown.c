@@ -214,6 +214,7 @@ VmDirCleanupGlobals(
 #else
     VmDirUTDVectorCacheShutdown();
 #endif
+    //TODO_REMOVE_REPLV2
     VmDirDDVectorShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
