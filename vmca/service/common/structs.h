@@ -33,6 +33,7 @@ typedef DWORD (*VMCA_POLICY_VALIDATE_FUNC) (
     PVMCA_POLICY            pPolicy;
     PSTR                    pszPKCS10Request;
     PVMCA_REQ_CONTEXT       pReqContext;
+    PBOOLEAN                pbBypass;
     PBOOLEAN                pbIsValid;
     );
 

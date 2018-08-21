@@ -164,6 +164,7 @@ VMCAPolicySNValidate(
     PVMCA_POLICY                    pPolicy,
     PSTR                            pszPKCS10Request,
     PVMCA_REQ_CONTEXT               pReqContext,
+    PBOOLEAN                        pbBypass,
     PBOOLEAN                        pbIsValid
     )
 {
@@ -175,6 +176,7 @@ VMCAPolicySNValidate(
     PSTR                            pszAuthBaseDN = NULL;
     PSTR                            pszAuthDN = NULL;
     PVMCA_LDAP_CONTEXT              pLd = NULL;
+    BOOLEAN                         bBypass = FALSE;
     BOOLEAN                         bIsValid = FALSE;
 
     if (!pPolicy ||
@@ -213,6 +215,7 @@ VMCAPolicySNValidate(
                     pszAuthDN);
 
             bIsValid = TRUE;
+            bBypass = TRUE;
             goto ret;
         }
     }
@@ -282,6 +285,7 @@ VMCAPolicySNValidate(
 
 ret:
 
+    *pbBypass = bBypass;
     *pbIsValid = bIsValid;
 
 cleanup:
@@ -299,6 +303,10 @@ cleanup:
 
 error:
 
+    if (pbBypass)
+    {
+        *pbBypass = FALSE;
+    }
     if (pbIsValid)
     {
         *pbIsValid = FALSE;

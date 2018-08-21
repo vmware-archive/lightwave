@@ -155,6 +155,7 @@ VMCAPolicyValidate(
 {
     DWORD                   dwError = 0;
     DWORD                   dwIdx = 0;
+    BOOLEAN                 bBypass = FALSE;
     BOOLEAN                 bIsValid = FALSE;
 
     if (!ppPolicies)
@@ -176,11 +177,17 @@ VMCAPolicyValidate(
         dwError = VMCAPolicyMethodMap[dwIdx].pfnValidate(ppPolicies[dwIdx],
                                                          pszPKCS10Request,
                                                          pReqContext,
+                                                         &bBypass,
                                                          &bIsValid);
-        BAIL_ON_VMCA_ERROR(dwError);
-        if (bIsValid == FALSE)
+        if (!dwError && bIsValid == FALSE)
         {
-            BAIL_ON_VMCA_ERROR(dwError);
+            dwError = VMCA_POLICY_VALIDATION_ERROR;
+        }
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        if (bBypass == TRUE)
+        {
+            goto ret;
         }
     }
 
@@ -188,21 +195,21 @@ VMCAPolicyValidate(
                         pszPKCS10Request,
                         pReqContext,
                         &bIsValid);
-    BAIL_ON_VMCA_ERROR(dwError);
-    if (bIsValid == FALSE)
+    if (!dwError && bIsValid == FALSE)
     {
-        BAIL_ON_VMCA_ERROR(dwError);
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
     }
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAPolicySANValidate(
                         pszPKCS10Request,
                         pReqContext,
                         &bIsValid);
-    BAIL_ON_VMCA_ERROR(dwError);
-    if (bIsValid == FALSE)
+    if (!dwError && bIsValid == FALSE)
     {
-        BAIL_ON_VMCA_ERROR(dwError);
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
     }
+    BAIL_ON_VMCA_ERROR(dwError);
 
 
 ret:

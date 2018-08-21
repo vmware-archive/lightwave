@@ -458,6 +458,7 @@ cleanup:
     VMCAFreeStringArrayA(ppszWhitelist, dwNumWhitelistEntries);
     VMCA_SAFE_FREE_STRINGA(pszHostnameTemplate);
     VMCA_SAFE_FREE_STRINGA(pszHostnameValue);
+    VMCA_SAFE_FREE_STRINGA(pszDomain);
     VMCA_SAFE_FREE_STRINGA(pszTempValue);
     VMCA_SAFE_FREE_STRINGA(pszTempValue2);
 
