@@ -685,6 +685,14 @@ txnretry:
     {
         _VmDirReplModifyClearAllMods(&modOp.request.modifyReq);
 
+        if (modOp.request.modifyReq.newdn.lberbv_val)
+        {   // modrdn case, fix modifyReq.dn for multi-value attrs mod op.
+            if (VmDirBervalContentDup(&mr->newdn, &mr->dn ) != 0)
+            {
+                BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+            }
+        }
+
         retVal = VmDirReplSetAttrNewValueMetaData(
                 &valueMetaDataQueue, pSchemaCtx, entryId, modOp.pWriteQueueEle->usn, &modOp);
         BAIL_ON_VMDIR_ERROR(retVal);
@@ -1000,6 +1008,14 @@ SetupReplModifyRequest(
         if (VmDirStringCompareA(mod->attr.type.lberbv.bv_val, ATTR_LAST_KNOWN_DN, FALSE) == 0)
         {
             lastKnownDNMod = mod;
+        }
+
+        if (VmDirStringCompareA(mod->attr.type.lberbv.bv_val, ATTR_DN, FALSE) == 0)
+        {   // modrdn case, piggyback newdn for subsequent multi-value mod op.
+            if (VmDirBervalContentDup(&currAttr->vals[0], &mr->newdn) != 0)
+            {
+                BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
+            }
         }
 
         mod->next = mr->mods;
