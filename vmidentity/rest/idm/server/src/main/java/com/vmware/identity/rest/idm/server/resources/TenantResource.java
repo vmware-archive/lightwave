@@ -16,7 +16,6 @@ package com.vmware.identity.rest.idm.server.resources;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -48,12 +47,11 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.IIdentityStoreData;
 import com.vmware.identity.idm.InvalidArgumentException;
 import com.vmware.identity.idm.InvalidPasswordPolicyException;
-import com.vmware.identity.idm.InvalidPrincipalException;
 import com.vmware.identity.idm.LockoutPolicy;
 import com.vmware.identity.idm.NoSuchIdpException;
 import com.vmware.identity.idm.NoSuchTenantException;
-import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.OperatorAccessPolicy;
+import com.vmware.identity.idm.PasswordPolicy;
 import com.vmware.identity.idm.PersonUser;
 import com.vmware.identity.idm.PrincipalId;
 import com.vmware.identity.idm.SearchCriteria;
@@ -301,50 +299,20 @@ public class TenantResource extends BaseResource {
             Validate.notEmpty(principalIds.getIds(), "principal id list is empty");
             for (String idString : principalIds.getIds()) {
                 PrincipalId id = PrincipalUtil.fromName(idString);
-                String result = null;
-
-                try {
-                    PersonUser user = getIDMClient().findPersonUser(tenantName, id);
-                    if (user != null) {
-                        result = user.getDetail().getUserPrincipalName(); // user upn is in the format of userName@domainName
-                    }
-                } catch (InvalidPrincipalException e) {
-                    // continue searching
-                }
-
-                if (result == null) {
-                    try {
-                        Group group = getIDMClient().findGroup(tenantName, id);
-                        if (group != null) {
-                            result = group.getNetbios(); // use netbios which is in the format of domainName/groupName
-                        }
-                    } catch (InvalidPrincipalException e) {
-                        // continue searching
-                    }
-                }
-
-                if (result == null) {
-                    try {
-                        SolutionUser solutionUser = getIDMClient().findSolutionUser(tenantName, id.getName());
-                        if (solutionUser != null) {
-                            result = solutionUser.getId().getUPN(); // solution user is in the format of userName@domainName
-                        }
-                    } catch (InvalidPrincipalException e) {
-                        // continue searching
-                    }
-                }
+                String result  = getIDMClient().findNomalizedPrincipalId(tenantName, id);
 
                 if (result == null) {
                     throw new NotFoundException("Principal id " + idString + " is not found.");
                 }
+
                 ids.add(result);
             }
             return new PrincipalIdentifiersDTO.Builder().withIds(ids).build();
-        } catch (NotFoundException | NoSuchTenantException e) {
+        } catch (NotFoundException | NoSuchTenantException | NoSuchIdpException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_NOT_FOUND;
             throw new NotFoundException(sm.getString("ec.404"), e);
-        } catch (BadRequestException | IllegalArgumentException e) {
+        } catch (BadRequestException | IllegalArgumentException | UnsupportedOperationException e) {
             log.warn("Failed to look up members on tenant '{}'", tenantName, e);
             responseStatus = HTTP_BAD_REQUEST;
             throw new BadRequestException(sm.getString("res.ten.search.failed", tenantName), e);
