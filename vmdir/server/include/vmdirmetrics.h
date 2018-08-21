@@ -12,6 +12,18 @@
  * under the License.
  */
 
+#define IS_METRICS_LDAP_WRITE_OP(writeOp) \
+            (writeOp == METRICS_LDAP_OP_ADD    || \
+             writeOp == METRICS_LDAP_OP_MODIFY || \
+             writeOp == METRICS_LDAP_OP_DELETE)
+
+#define IS_METRICS_LDAP_EXT_WRITE_IMPACTING_OP(extOp) \
+            (extOp == METRICS_LDAP_OP_TYPE_EXTERNAL || \
+             extOp == METRICS_LDAP_OP_TYPE_REPL)
+
+#define IS_METRICS_LDAP_SUCCESS_OP(successOp) \
+            (successOp == METRICS_LDAP_SUCCESS)
+
 typedef enum
 {
     METRICS_LDAP_OP_IGNORE = -1,

@@ -1110,6 +1110,11 @@ VmDirEntryReplaceAttribute(
     );
 
 DWORD
+VmDirDeleteEntryViaDN(
+    PCSTR   pszDN
+    );
+
+DWORD
 VmDirDeleteEntry(
     PVDIR_ENTRY pEntry
     );
