@@ -1950,6 +1950,19 @@ public class CasIdmClient
     }
 
     /**
+     * Searches and retrieves a String representation of principal id from ldap.
+     *
+     * @param tenantName Name of requested tenant
+     * @param principalId case insensitive principal id to search from ldap
+     * @return case preserved principal id stored in ldap
+     * @throws Exception
+     */
+    public String findNomalizedPrincipalId(String tenantName, PrincipalId principalId)
+            throws Exception {
+        return getService().findNomalizedPrincipalId(tenantName, principalId, this.getServiceContext());
+    }
+
+    /**
      * Adds a service principal to the tenant's system domain under current ldu
      *
      * @param tenantName Name of tenant

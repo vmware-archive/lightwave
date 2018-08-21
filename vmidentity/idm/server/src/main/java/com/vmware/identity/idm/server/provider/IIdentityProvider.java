@@ -60,6 +60,8 @@ public interface IIdentityProvider
         Collection<Attribute> attributes
         ) throws Exception;
 
+    String findNomalizedPrincipalId(PrincipalId id) throws Exception;
+
     PersonUser findUser(PrincipalId id) throws Exception;
 
     PersonUser findUserByObjectId(String userObjectId) throws Exception;

@@ -439,6 +439,17 @@ public interface IIdentityManager
 
     public SearchResult findByName(String tenantName, SearchCriteria criteria, int limit, IIdmServiceContext serviceContext) throws  IDMException;
 
+    /**
+     * Find the case preserved String representation of the principal id from ldap.
+     *
+     * @param tenantName tenant name where the user id is searched
+     * @param principalId case insensitive principal id
+     * @param serviceContext idm service context of the request
+     * @return case preserved principal id from ldap
+     * @throws IDMException
+     */
+    public String findNomalizedPrincipalId(String tenantName, PrincipalId principalId, IIdmServiceContext serviceContext) throws  IDMException;
+
     public PrincipalId addUser(String tenantName, String userName, PersonDetail detail, char[] password, IIdmServiceContext serviceContext) throws Exception;
 
     PrincipalId addUser(String tenantName, String userName, PersonDetail detail, byte[] hashedPassword, String hashingAlgorithm, IIdmServiceContext serviceContext) throws Exception;

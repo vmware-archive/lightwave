@@ -570,6 +570,62 @@ public class VMwareDirectoryProvider extends BaseLdapProvider implements
     }
 
     @Override
+    public String findNomalizedPrincipalId(PrincipalId id) throws Exception {
+        ValidateUtil.validateNotNull(id, "id");
+        String domainName = getDomain();
+
+        if (!belongsToThisIdentityProvider(id.getDomain())) {
+            return null;
+        }
+
+        if ((id.getName().equalsIgnoreCase(this._everyoneGroup.getName()))
+                && (isSameDomainUpn(id))) {
+           return String.format("%s\\%s", domainName, this._everyoneGroup.getName());
+        }
+
+        String foundPrincipalId = null;
+
+        try (PooledLdapConnection pooledConnection = borrowConnection()) {
+            ILdapConnectionEx connection = pooledConnection.getConnection();
+            String[] attrNames = { ATTR_NAME_OBJECTCLASS, ATTR_NAME_CN, ATTR_NAME_ACCOUNT,
+                    ATTR_USER_PRINCIPAL_NAME, ATTR_TENANTIZED_USER_PRINCIPAL_NAME };
+            String filter = buildQueryByUserORSrvORGroupFilter(id);
+
+            String searchBaseDn = getTenantSearchBaseRootDN();
+            try (ILdapMessage message = connection.search(searchBaseDn,
+                    LdapScope.SCOPE_SUBTREE, filter, attrNames, false)) {
+                ILdapEntry[] entries = message.getEntries();
+
+                if (entries == null || entries.length == 0) {
+                    return null; // return null if not found
+                } else if (entries.length != 1) {
+                    throw new IllegalStateException("More than one object was found");
+                }
+
+                Collection<String> objectClasses = getStringValues(entries[0]
+                        .getAttributeValues(ATTR_NAME_OBJECTCLASS));
+
+                if (objectClasses.contains(ATTR_NAME_SERVICE)) {
+                    // service accounts
+                    String username = getStringValue(entries[0]
+                            .getAttributeValues(ATTR_NAME_ACCOUNT));
+                    foundPrincipalId = new PrincipalId(username, domainName).getUPN();
+                } else if (objectClasses.contains(ATTR_NAME_GROUP)) {
+                    // groups
+                    String groupName = getStringValue(entries[0]
+                            .getAttributeValues(ATTR_NAME_CN));
+                    foundPrincipalId = String.format("%s\\%s", domainName, groupName);
+                } else {
+                    // regular users
+                    foundPrincipalId = GetUpnAttributeValue(entries[0]);
+                }
+            }
+        }
+
+        return foundPrincipalId;
+    }
+
+    @Override
     public PersonUser findUser(PrincipalId id) throws Exception
     {
         ValidateUtil.validateNotNull(id, "id");
