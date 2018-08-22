@@ -43,6 +43,11 @@ extern "C" {
 #define VMDIR_REST_API_GET_CERTS_CMD        "certs/rootcerts"
 #define VMDIR_REST_API_JOINATOMIC_CMD       "join/joinatomic"
 
+/* rest api join atomic param names */
+#define VMDIR_REST_JOINATOMIC_ORG_UNIT             "org_unit"
+#define VMDIR_REST_JOINATOMIC_MACHINE_ACCOUNT_NAME "machine_account_name"
+#define VMDIR_REST_JOINATOMIC_PREJOINED            "prejoined"
+
 /*
  * API exposed for HA Topology Management
  */

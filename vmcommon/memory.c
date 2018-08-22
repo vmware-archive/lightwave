@@ -91,6 +91,50 @@ error:
 }
 
 DWORD
+VmReallocateMemoryWithInit(
+    PVOID        pMemory,
+    size_t       dwCurrentSize,
+    PVOID*       ppNewMemory,
+    size_t       dwNewSize
+    )
+{
+    DWORD dwError = 0;
+    void*    pNewMemory = NULL;
+
+    if (!ppNewMemory || dwNewSize <= dwCurrentSize)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    if (pMemory)
+    {
+        pNewMemory = realloc(pMemory, dwNewSize);
+
+        if (!pNewMemory)
+        {
+            dwError = VM_COMMON_ERROR_NO_MEMORY;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+        /* realloc does not call calloc so clear extra allocated */
+        memset(pNewMemory + dwCurrentSize, 0, dwNewSize - dwCurrentSize);
+    }
+    else
+    {
+        dwError = VmAllocateMemory(dwNewSize, &pNewMemory);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    *ppNewMemory = pNewMemory;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmCopyMemory(
     PVOID   pDestination,
     size_t  destinationSize,

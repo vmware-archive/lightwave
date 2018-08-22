@@ -222,20 +222,28 @@ _VmDirRestClientPrejoinAtomic(
     PCSTR pszResult = NULL;
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
+    dwError = VmHttpClientInit(&pHttpClient, pszCAPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (!IsNullOrEmptyString(pszOrgUnit))
     {
-        dwError = VmDirAllocateStringPrintf(
-                      &pszOrgUnitParam,
-                      "&org_unit=%s",
+        dwError = VmHttpClientSetQueryParam(
+                      pHttpClient,
+                      VMDIR_REST_JOINATOMIC_ORG_UNIT,
                       pszOrgUnit);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringPrintf(
-                  &pszParamString,
-                  "?machine_account_name=%s&prejoined=true%s",
-                  pszMachineName,
-                  pszOrgUnitParam ? pszOrgUnitParam : "");
+    dwError = VmHttpClientSetQueryParam(
+                  pHttpClient,
+                  VMDIR_REST_JOINATOMIC_MACHINE_ACCOUNT_NAME,
+                  pszMachineName);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmHttpClientSetQueryParam(
+                  pHttpClient,
+                  VMDIR_REST_JOINATOMIC_PREJOINED,
+                  "true");
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmFormatUrl(
@@ -243,11 +251,8 @@ _VmDirRestClientPrejoinAtomic(
                   pszServerName,
                   VMDIR_REST_API_HTTPS_PORT,
                   VMDIR_REST_API_BASE"/"VMDIR_REST_API_JOINATOMIC_CMD,
-                  pszParamString,
+                  NULL, /* query params will be set in VmHttpClientPerform */
                   &pszUrl);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmHttpClientInit(&pHttpClient, pszCAPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmHttpClientSetToken(pHttpClient, pszToken);
