@@ -69,9 +69,10 @@ _VmWriteMemoryCallback(
 
     pClient = (PVM_HTTP_CLIENT)pUserData;
 
-    dwError = VmReallocateMemory(
+    dwError = VmReallocateMemoryWithInit(
             (PVOID)pClient->pszResult,
-            (PVOID*)&pClient->pszResult,
+            pClient->nResultLen,
+            (PVOID *)&pClient->pszResult,
             pClient->nResultLen + nNewLen + 1);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
@@ -154,20 +155,52 @@ error:
     goto cleanup;
 }
 
+static
 DWORD
-VmHttpClientSetQueryParam(
+_VmHttpUrlEncodeString(
     PVM_HTTP_CLIENT pClient,
-    PCSTR pszKeyIn,
-    PCSTR pszValueIn
+    PCSTR pszString,
+    PSTR *ppszEncodedString
     )
 {
     DWORD dwError = 0;
-    PSTR pszKey = NULL;
-    PSTR pszValue = NULL;
+    PSTR pszEncodedString = NULL;
+
+    pszEncodedString = curl_easy_escape(
+                           pClient->pCurl,
+                           pszString,
+                           VmStringLenA(pszString));
+    if (!pszEncodedString)
+    {
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    *ppszEncodedString = pszEncodedString;
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_CURL_MEMORY(pszEncodedString);
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientSetQueryParam(
+    PVM_HTTP_CLIENT pClient,
+    PCSTR pszKey,
+    PCSTR pszValue
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszEncodedKey = NULL;
+    PSTR pszEncodedValue = NULL;
 
     if (!pClient ||
-        IsNullOrEmptyString(pszKeyIn) ||
-        IsNullOrEmptyString(pszValueIn))
+        !pClient->pCurl ||
+        IsNullOrEmptyString(pszKey) ||
+        IsNullOrEmptyString(pszValue))
     {
         dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
         BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -183,16 +216,16 @@ VmHttpClientSetQueryParam(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = VmAllocateStringA(pszKeyIn, &pszKey);
+    dwError = _VmHttpUrlEncodeString(pClient, pszKey, &pszEncodedKey);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = VmAllocateStringA(pszValueIn, &pszValue);
+    dwError = _VmHttpUrlEncodeString(pClient, pszValue, &pszEncodedValue);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = LwRtlHashMapInsert(
                   pClient->pQueryParamsMap,
-                  (PVOID)pszKey,
-                  (PVOID)pszValue,
+                  (PVOID)pszEncodedKey,
+                  (PVOID)pszEncodedValue,
                   NULL);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
@@ -200,8 +233,8 @@ cleanup:
     return dwError;
 
 error:
-    VM_COMMON_SAFE_FREE_MEMORY(pszKey);
-    VM_COMMON_SAFE_FREE_MEMORY(pszValue);
+    VM_COMMON_SAFE_FREE_CURL_MEMORY(pszEncodedKey);
+    VM_COMMON_SAFE_FREE_CURL_MEMORY(pszEncodedValue);
     goto cleanup;
 }
 
@@ -507,8 +540,8 @@ _VmCommonFreeStringMapPair(
     LW_PVOID         pUnused
     )
 {
-    VM_COMMON_SAFE_FREE_MEMORY(pPair->pKey);
-    VM_COMMON_SAFE_FREE_MEMORY(pPair->pValue);
+    VM_COMMON_SAFE_FREE_CURL_MEMORY(pPair->pKey);
+    VM_COMMON_SAFE_FREE_CURL_MEMORY(pPair->pValue);
 }
 
 VOID

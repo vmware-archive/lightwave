@@ -833,7 +833,7 @@ VecsSrvGetEntryByAlias(
             dwError = ERROR_INVALID_PARAMETER;
             break;
     }
-    BAIL_ON_VMAFD_ERROR (dwError);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
 
     *ppCertContainer = pCertContainer;
 
