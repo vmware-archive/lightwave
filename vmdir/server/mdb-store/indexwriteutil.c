@@ -1111,7 +1111,7 @@ cleanup:
     VmDirIndexCfgRelease(pIndexCfg);
     VmDirFreeBervalContent(&bervValueMetaData);
     VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     return dwError;
 
 error:
@@ -1182,8 +1182,8 @@ _VmDirDeleteOldValueMetaData(
     }
 
 cleanup:
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDeleteQueue);
-    VmDirFreeAttrValueMetaDataContent(&currValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataToDeleteQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&currValueMetaDataQueue);
     return dwError;
 
 error:

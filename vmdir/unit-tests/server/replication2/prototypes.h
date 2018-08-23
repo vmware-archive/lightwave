@@ -34,4 +34,67 @@ VmDirReplUpdateListParseSyncDoneCtl_ValidInput(
     VOID    **state
     );
 
+//////////////////
+// update.c
+//////////////////
+VOID
+VmDirReplUpdateToUSNList_NoDupMetaDataOnly(
+    VOID**    state
+    );
+VOID
+VmDirReplUpdateToUSNList_DupMetaDataOnly(
+    VOID**    state
+    );
+VOID
+VmDirReplUpdateToUSNList_MetaDataOnly(
+    VOID**    state
+    );
+VOID
+VmDirReplUpdateToUSNList_ValueMetaDataOnly(
+    VOID**    state
+    );
+
+VOID
+VmDirReplUpdateToUSNList_MetaDataAndValueMetaData(
+    VOID**    state
+    );
+
+VOID
+VmDirReplUpdateToUSNList_MetaDataAndValueMetaDataSame(
+    VOID**    state
+    );
+
+VOID
+VmDirReplUpdateLocalUsn_ValidInput(
+    VOID**    state
+    );
+
+//////////////////
+// extractevents.c
+//////////////////
+int
+VmDirSetupExtractEventAttributeChanges(
+    VOID    **state
+    );
+
+int
+VmDirTeardownExtractEvent(
+    VOID    **state
+    );
+
+VOID
+VmDirExtractEventAttributeChanges_ValidInput(
+    VOID    **state
+    );
+
+int
+VmDirSetupExtractEventAttributeValueChanges(
+    VOID    **state
+    );
+
+VOID
+VmDirExtractEventAttributeValueChanges_ValidInput(
+    VOID    **state
+    );
+
 #endif

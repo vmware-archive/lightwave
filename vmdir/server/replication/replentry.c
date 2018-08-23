@@ -275,7 +275,7 @@ cleanup:
     }
     // pAttrAttrMetaData is local, needs to be freed within the call
     VmDirFreeAttribute( pAttrAttrMetaData );
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     VmDirFreeOperationContent(&op);
 
     return retVal;
@@ -754,7 +754,7 @@ cleanup:
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
     VmDirFreeEntryContent(&e);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     return retVal;
 
 error:

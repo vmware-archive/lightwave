@@ -1,14 +1,15 @@
-bin_PROGRAMS = srvcommon
+bin_PROGRAMS = common
 
-check_PROGRAMS = srvcommon
-TESTS = srvcommon
+check_PROGRAMS = common
+TESTS = common
 
-srvcommon_SOURCES = \
-    main.c \
-    metadata.c \
-    valuemetadata.c
+common_SOURCES = \
+    linkedlist.c \
+    sortedlinkedlist.c \
+    mergesort.c \
+    main.c
 
-srvcommon_CPPFLAGS = \
+common_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
@@ -24,13 +25,13 @@ srvcommon_CPPFLAGS = \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
-srvcommon_LDADD = \
+common_LDADD = \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/server/common/libsrvcommon.la \
     $(top_builddir)/vmdir/common/libcommon.la \
     @PTHREAD_LIBS@ \
     @CMOCKA_LIBS@
 
-srvcommon_LDFLAGS = \
+common_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

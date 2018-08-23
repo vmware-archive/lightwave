@@ -300,7 +300,7 @@ cleanup:
     VmDirFreeBervalContent(&bervSupplierValueMetaData);
     VmDirFreeBervalContent(&bervConsumerValueMetaData);
     VMDIR_SAFE_FREE_VALUE_METADATA(pConsumerValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     return dwError;
 
 error:

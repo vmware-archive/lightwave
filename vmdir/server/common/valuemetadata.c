@@ -240,6 +240,93 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirAttributeValueMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrValueMetaData,
+    PVDIR_LINKED_LIST*    ppValueMetaDataList
+    )
+{
+    DWORD                              dwError = 0;
+    DWORD                              dwCnt = 0;
+    PVDIR_LINKED_LIST                  pValueMetaDataList = NULL;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+
+    if (!pAttrAttrValueMetaData || !ppValueMetaDataList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLinkedListCreate(&pValueMetaDataList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0;
+         pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val != NULL;
+         dwCnt++)
+    {
+        dwError = VmDirValueMetaDataDeserialize(
+                pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val, &pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(pValueMetaDataList, pValueMetaData, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pValueMetaData = NULL;
+    }
+
+    *ppValueMetaDataList = pValueMetaDataList;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    VmDirFreeValueMetaDataList(pValueMetaDataList);
+    VmDirFreeValueMetaData(pValueMetaData);
+    goto cleanup;
+}
+
+DWORD
+VmDirAttributeValueMetaDataListConvertToDequeue(
+    PVDIR_LINKED_LIST    pValueMetaDataList,
+    PDEQUE               pValueMetaDataQueue
+    )
+{
+    DWORD                              dwError = 0;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+    PVDIR_LINKED_LIST_NODE             pCurrNode = NULL;
+    PVDIR_LINKED_LIST_NODE             pNextNode = NULL;
+
+    if (!pValueMetaDataList || !pValueMetaDataQueue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLinkedListGetHead(pValueMetaDataList, &pCurrNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (pCurrNode)
+    {
+        pValueMetaData = (PVMDIR_VALUE_ATTRIBUTE_METADATA) pCurrNode->pElement;
+
+        pNextNode = pCurrNode->pNext;
+
+        dwError = dequePush(pValueMetaDataQueue, pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListRemove(pValueMetaDataList, pCurrNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pCurrNode = pNextNode;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
+    goto cleanup;
+}
+
 BOOLEAN
 VmDirValueMetaDataIsValid(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
@@ -292,5 +379,42 @@ VmDirFreeValueMetaData(
         VMDIR_SAFE_FREE_MEMORY(pValueMetaData->pszValChgOrigTime);
         VMDIR_SAFE_FREE_MEMORY(pValueMetaData->pszValue);
         VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
+    }
+}
+
+VOID
+VmDirFreeValueMetaDataList(
+    PVDIR_LINKED_LIST    pValueMetaDataList
+    )
+{
+    PVDIR_LINKED_LIST_NODE             pNode = NULL;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+
+    if (pValueMetaDataList)
+    {
+        VmDirLinkedListGetHead(pValueMetaDataList, &pNode);
+        while (pNode)
+        {
+            if (pNode->pElement)
+            {
+                pValueMetaData = (PVMDIR_VALUE_ATTRIBUTE_METADATA) pNode->pElement;
+                VmDirFreeValueMetaData(pValueMetaData);
+            }
+            pNode = pNode->pNext;
+        }
+        VmDirFreeLinkedList(pValueMetaDataList);
+    }
+}
+
+VOID
+VmDirFreeAttrValueMetaDataDequeueContent(
+    PDEQUE  pValueMetaDataQueue
+    )
+{
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+    while(!dequeIsEmpty(pValueMetaDataQueue))
+    {
+        dequePopLeft(pValueMetaDataQueue, (PVOID*)&pValueMetaData);
+        VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
     }
 }

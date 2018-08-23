@@ -38,12 +38,6 @@ _VmDirWaitForReplicationAgreement(
     );
 
 static
-VOID
-_VmDirConsumePartner(
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
-    );
-
-static
 DWORD
 vdirReplicationThrFun(
     PVOID   pArg
@@ -190,7 +184,7 @@ vdirReplicationThrFun(
                 continue;
             }
 
-            _VmDirConsumePartner(pReplAgr);
+            VmDirConsumePartner(pReplAgr);
             /*
              * To avoid race condition after resetting the vector
              * if this node plays consumer role before supplying the new vector value
@@ -359,77 +353,4 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-static
-VOID
-_VmDirConsumePartner(
-    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
-    )
-{
-    int                            retVal = LDAP_SUCCESS;
-    USN                            lastLocalUsnProcessed = 0;
-    uint64_t                       uiStartTime = 0;
-    uint64_t                       uiEndTime = 0;
-    PVMDIR_REPLICATION_UPDATE_LIST pReplUpdateList = NULL;
-    PVMDIR_REPLICATION_METRICS     pReplMetrics = NULL;
-
-    uiStartTime = VmDirGetTimeInMilliSec();
-
-    retVal = VmDirStringToINT64(
-            pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, &lastLocalUsnProcessed);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-    retVal = VmDirReplUpdateListFetch(pReplAgr, &pReplUpdateList);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-    VmDirReplUpdateListProcess(pReplUpdateList);
-
-    retVal = VmDirReplCookieUpdate(
-            NULL,
-            pReplUpdateList->newHighWaterMark,
-            pReplUpdateList->pNewUtdVector,
-            pReplAgr);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-    VMDIR_LOG_INFO(
-            VMDIR_LOG_MASK_ALL,
-            "Replication supplier %s USN range (%llu,%s) processed",
-            pReplAgr->ldapURI,
-            lastLocalUsnProcessed,
-            pReplAgr->lastLocalUsnProcessed.lberbv_val);
-
-collectmetrics:
-    uiEndTime = VmDirGetTimeInMilliSec();
-    if (VmDirReplMetricsCacheFind(pReplAgr->pszHostname, &pReplMetrics) == 0)
-    {
-        if (retVal == LDAP_SUCCESS)
-        {
-            VmMetricsHistogramUpdate(
-                    pReplMetrics->pTimeCycleSucceeded,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
-        }
-        // avoid collecting benign error counts
-        else if (retVal != LDAP_UNAVAILABLE &&  // server in mid-shutdown
-                 retVal != LDAP_SERVER_DOWN &&  // connection lost
-                 retVal != LDAP_TIMEOUT)        // connection lost
-        {
-            VmMetricsHistogramUpdate(
-                    pReplMetrics->pTimeCycleFailed,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
-        }
-    }
-
-    VmDirFreeReplUpdateList(pReplUpdateList);
-
-    return;
-
-ldaperror:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error code (%d)",
-            __FUNCTION__,
-            retVal);
-
-    goto collectmetrics;
 }

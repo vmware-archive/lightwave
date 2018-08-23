@@ -14,62 +14,51 @@
 
 #include "includes.h"
 
-/*
- * Detach attribute value meta data from the entry's attributes,
- * and set ppAttrAttrValueMetaData to the attribute value meta attribute
- * so that it will be handled seperated.
- */
 DWORD
-VmDirValueMetaDataDetachFromEntry(
-    PVDIR_ENTRY    pEntry,
-    PDEQUE         pValueMetaDataQueue
+VmDirReplGetAttrValueMetaDataList(
+    PVDIR_ENTRY           pEntry,
+    PVDIR_LINKED_LIST*    ppValueMetaDataList
     )
 {
-    DWORD                              dwError = 0;
-    DWORD                              dwCnt = 0;
-    PVDIR_ATTRIBUTE                    currAttr = NULL;
-    PVDIR_ATTRIBUTE                    prevAttr = NULL;
-    PVDIR_ATTRIBUTE                    pAttrAttrValueMetaData = NULL;
-    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+    DWORD    dwError = 0;
+    PVDIR_ATTRIBUTE     pCurrAttr = NULL;
+    PVDIR_ATTRIBUTE     pPrevAttr = NULL;
+    PVDIR_ATTRIBUTE     pAttrAttrValueMetaData = NULL;
+    PVDIR_LINKED_LIST   pValueMetaDataList = NULL;
 
-    if (!pEntry || !pValueMetaDataQueue)
+    if (!pEntry || !ppValueMetaDataList)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    for (prevAttr = NULL, currAttr = pEntry->attrs;
-         currAttr;
-         prevAttr = currAttr, currAttr = currAttr->next)
+    for (pPrevAttr = NULL, pCurrAttr = pEntry->attrs;
+         pCurrAttr;
+         pPrevAttr = pCurrAttr, pCurrAttr = pCurrAttr->next)
     {
         if (VmDirStringCompareA(
-                    currAttr->type.lberbv.bv_val, ATTR_ATTR_VALUE_META_DATA, FALSE) == 0)
+                    pCurrAttr->type.lberbv.bv_val, ATTR_ATTR_VALUE_META_DATA, FALSE) == 0)
         {
-            if (prevAttr == NULL)
+            if (pPrevAttr == NULL)
             {
-                pEntry->attrs = currAttr->next;
+                pEntry->attrs = pCurrAttr->next;
             }
             else
             {
-                prevAttr->next = currAttr->next;
+                pPrevAttr->next = pCurrAttr->next;
             }
 
-            pAttrAttrValueMetaData = currAttr;
+            pAttrAttrValueMetaData = pCurrAttr;
             break;
         }
     }
 
-    for (dwCnt = 0;
-         pAttrAttrValueMetaData && pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val != NULL;
-         dwCnt++)
+    //pAttrAttrValueMetaData metadata may be not be present in some cases
+    if (pAttrAttrValueMetaData)
     {
-        dwError = VmDirValueMetaDataDeserialize(
-                pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val, &pValueMetaData);
+        dwError = VmDirAttributeValueMetaDataToList(pAttrAttrValueMetaData, &pValueMetaDataList);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = dequePush(pValueMetaDataQueue, pValueMetaData);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pValueMetaData = NULL;
+        *ppValueMetaDataList = pValueMetaDataList;
     }
 
 cleanup:
@@ -78,8 +67,6 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    VmDirFreeValueMetaData(pValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
     goto cleanup;
 }
 
@@ -190,7 +177,7 @@ VmDirValueMetaDataDeleteOldForReplace(
     }
 
 cleanup:
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDelete);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataToDelete);
     return dwError;
 
 error:

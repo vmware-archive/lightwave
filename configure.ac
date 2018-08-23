@@ -1744,6 +1744,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile
                  vmdir/unit-tests/Makefile
+                 vmdir/unit-tests/common/Makefile
                  vmdir/unit-tests/server/Makefile
                  vmdir/unit-tests/server/common/Makefile
                  vmdir/unit-tests/server/replication2/Makefile

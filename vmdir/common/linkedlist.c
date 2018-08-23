@@ -221,6 +221,48 @@ error:
     return dwError;
 }
 
+DWORD
+VmDirLinkedListAppendListToTail(
+    PVDIR_LINKED_LIST    pDestList,
+    PVDIR_LINKED_LIST    pSrcList
+    )
+{
+    DWORD                     dwError = 0;
+    PVDIR_LINKED_LIST_NODE    pTail = NULL;
+
+    if (!pDestList || !pSrcList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    //Ignore Error
+    VmDirLinkedListGetTail(pDestList, &pTail);
+
+    if (pTail == NULL)
+    {
+        pDestList->pHead = pSrcList->pHead;
+        pDestList->pTail = pSrcList->pTail;
+        pDestList->iSize = pSrcList->iSize;
+    }
+    else if (!VmDirLinkedListIsEmpty(pSrcList))
+    {
+        pTail->pNext = pSrcList->pHead;
+        pSrcList->pHead->pPrev = pTail;
+        pDestList->pTail = pSrcList->pTail;
+        pDestList->iSize += pSrcList->iSize;
+    }
+
+    pSrcList->pHead = pSrcList->pTail = NULL;
+    pSrcList->iSize = 0;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
 size_t
 VmDirLinkedListGetSize(
     PVDIR_LINKED_LIST   pLinkedList

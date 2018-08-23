@@ -20,6 +20,7 @@ libsrvcommon_la_SOURCES = \
     nodeidentity.c        \
     oidctovmdirerror.c    \
     oprequestutil.c       \
+    replmetadata.c        \
     security-sd.c         \
     srp.c                 \
     util.c                \

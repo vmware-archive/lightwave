@@ -443,7 +443,7 @@ error:
     VMDIR_LOG_ERROR( LDAP_DEBUG_REPL_ATTR, "VmDirMDBGetAttrValueMetaData: error (%d),(%s)",
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "VmDirMDBGetAttrValueMetaData");
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
     VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
     goto cleanup;
 }
@@ -556,7 +556,7 @@ error:
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "GetAttrValueMetaData");
     VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
     goto cleanup;
 }
 

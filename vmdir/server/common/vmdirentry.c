@@ -18,21 +18,12 @@
 
 static
 DWORD
-AttributeAppendBervArray(
-    PVDIR_ATTRIBUTE  pAttr,
-    PVDIR_BERVALUE     pBervs,
-    USHORT      usBervSize
-    );
-
-static
-DWORD
 AttrListToEntry(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
     PSTR                pszDN,
     PSTR*               ppszAttrList,
     PVDIR_ENTRY         pEntry
     );
-
 
 DWORD
 VmDirInitializeEntry(
@@ -323,9 +314,10 @@ VmDirEntryAddAttribute(
 
     if (pOrgAttr)
     {
-        dwError = AttributeAppendBervArray(pOrgAttr, pAttr->vals, pAttr->numVals);
+        dwError = VmDirEntryAttributeAppendBervArray(pOrgAttr, pAttr->vals, pAttr->numVals);
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        VMDIR_SAFE_FREE_MEMORY(pAttr->vals);
         VMDIR_SAFE_FREE_MEMORY(pAttr);
     }
     else
@@ -611,19 +603,20 @@ VmDirEntryFindAttribute(
  */
 DWORD
 VmDirAttributeDup(
-    PVDIR_ATTRIBUTE  pAttr,
-    PVDIR_ATTRIBUTE* ppDupAttr
+    PVDIR_ATTRIBUTE     pAttr,
+    PVDIR_ATTRIBUTE*    ppDupAttr
     )
 {
-    DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
+    DWORD              dwError = 0;
+    DWORD              dwCnt = 0;
     PVDIR_ATTRIBUTE    pAttribute = NULL;
 
-    assert(pAttr && ppDupAttr);
+    if (!pAttr || !ppDupAttr)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_ATTRIBUTE),
-            (PVOID*)&pAttribute);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttribute);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // add one more BerValue as Encode/Decode entry in data store layer needs it.
@@ -634,9 +627,7 @@ VmDirAttributeDup(
 
     for (dwCnt = 0 ; dwCnt < pAttr->numVals; dwCnt++)
     {
-        dwError = VmDirBervalContentDup(
-                &pAttr->vals[dwCnt],
-                &pAttribute->vals[dwCnt]);
+        dwError = VmDirBervalContentDup(&pAttr->vals[dwCnt], &pAttribute->vals[dwCnt]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pAttribute->numVals = dwCnt + 1;
@@ -644,23 +635,18 @@ VmDirAttributeDup(
 
     // use the same pATDesc and type from pAttr
     pAttribute->pATDesc = pAttr->pATDesc;
-    // type.lberbv.bv_val always store in-place
-    pAttribute->type.lberbv.bv_val = pAttr->pATDesc->pszName;
-    pAttribute->type.lberbv.bv_len = VmDirStringLenA(pAttr->type.lberbv.bv_val);
+
+    dwError = VmDirBervalContentDup(&pAttr->type, &pAttribute->type);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppDupAttr = pAttribute;
 
 cleanup:
-
     return dwError;
 
 error:
-
-    if (pAttribute)
-    {
-        VmDirFreeAttribute(pAttribute);
-    }
-
+    VmDirFreeAttribute(pAttribute);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -724,12 +710,13 @@ error:
  */
 DWORD
 VmDirAttributeAllocate(
-    PCSTR   pszName,
-    USHORT  usBerSize,
-    PVDIR_SCHEMA_CTX pCtx,
-    PVDIR_ATTRIBUTE* ppOutAttr)
+    PCSTR               pszName,
+    USHORT              usBerSize,
+    PVDIR_SCHEMA_CTX    pCtx,
+    PVDIR_ATTRIBUTE*    ppOutAttr
+    )
 {
-    DWORD    dwError = 0;
+    DWORD              dwError = 0;
     PVDIR_ATTRIBUTE    pAttr = NULL;
 
     if (!ppOutAttr)
@@ -737,26 +724,20 @@ VmDirAttributeAllocate(
         return 0;
     }
 
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_ATTRIBUTE),
-            (PVOID*)&pAttr);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // add one more BerValue as Encode/Decode entry in data store layer needs it.
-    dwError = VmDirAllocateMemory(
-            sizeof(VDIR_BERVALUE) * (usBerSize + 1),
-            (PVOID*)&pAttr->vals);
+    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (usBerSize + 1), (PVOID*)&pAttr->vals);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pAttr->numVals = usBerSize;
 
-    pAttr->pATDesc = VmDirSchemaAttrNameToDesc(
-                    pCtx,
-                    pszName);
+    pAttr->pATDesc = VmDirSchemaAttrNameToDesc(pCtx, pszName);
+
     if (!pAttr->pATDesc)
     {
-        dwError = VMDIR_ERROR_NO_SUCH_ATTRIBUTE;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_ATTRIBUTE);
     }
 
     // pAttr->type.lberbv.bv_val always store in-place
@@ -766,37 +747,12 @@ VmDirAttributeAllocate(
     *ppOutAttr = pAttr;
 
 cleanup:
-
     return dwError;
 
 error:
-
-    if (pAttr)
-    {
-        VmDirFreeAttribute(pAttr);
-    }
-
-    VmDirLog( LDAP_DEBUG_ANY, "AllocateAttribute failed (%d)(%s)",
-              dwError, VDIR_SAFE_STRING(pszName));
-
+    VmDirFreeAttribute(pAttr);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
-}
-
-/*
- * Free attr-value-meta-data in an DEQUE
- * which is a linked list of PVDIR_BERVALUE
- */
-VOID
-VmDirFreeAttrValueMetaDataContent(
-    PDEQUE  pValueMetaDataQueue
-    )
-{
-    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
-    while(!dequeIsEmpty(pValueMetaDataQueue))
-    {
-        dequePopLeft(pValueMetaDataQueue, (PVOID*)&pValueMetaData);
-        VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData);
-    }
 }
 
 /*
@@ -818,11 +774,11 @@ VmDirFreeAttribute(
     // pAttr->type is always store in place and has NO bvnorm_val.  no need to free here.
     if (!dequeIsEmpty(&pAttr->valueMetaDataToAdd))
     {
-        VmDirFreeAttrValueMetaDataContent(&pAttr->valueMetaDataToAdd);
+        VmDirFreeAttrValueMetaDataDequeueContent(&pAttr->valueMetaDataToAdd);
     }
     if (!dequeIsEmpty(&pAttr->valueMetaDataToDelete))
     {
-        VmDirFreeAttrValueMetaDataContent(&pAttr->valueMetaDataToDelete);
+        VmDirFreeAttrValueMetaDataDequeueContent(&pAttr->valueMetaDataToDelete);
     }
 
     VmDirFreeMetaData(pAttr->pMetaData);
@@ -1299,16 +1255,15 @@ error:
  * *************************************************************
  * Assume pBervs itself is from ONE memory allocate.
  */
-static
 DWORD
-AttributeAppendBervArray(
-    PVDIR_ATTRIBUTE  pAttr,
+VmDirEntryAttributeAppendBervArray(
+    PVDIR_ATTRIBUTE    pAttr,
     PVDIR_BERVALUE     pBervs,
-    USHORT      usBervSize
+    USHORT             usBervSize
     )
 {
-    DWORD   dwError = 0;
-    PVDIR_BERVALUE pNewBerv = NULL;
+    DWORD             dwError = 0;
+    PVDIR_BERVALUE    pNewBerv = NULL;
 
     if (!pAttr || !pBervs)
     {
@@ -1333,20 +1288,15 @@ AttributeAppendBervArray(
     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // free array of BerValue itself
-    VMDIR_SAFE_FREE_MEMORY(pBervs);
-
     pAttr->numVals += usBervSize;
     pAttr->vals = pNewBerv;
 
 cleanup:
-
     return dwError;
 
 error:
-
     VMDIR_SAFE_FREE_MEMORY(pNewBerv);
-
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 
@@ -1533,5 +1483,52 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+VmDirEntryAttributeRemoveValue(
+    PVDIR_ATTRIBUTE    pAttr,
+    PCSTR              pszValue
+    )
+{
+    DWORD             dwError = 0;
+    DWORD             dwCnt = 0;
+    DWORD             dwBervSize = 0;
+    PVDIR_BERVALUE    pNewBerv = NULL;
+
+    if (!pAttr || !pszValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    //Actual size of pAttr->vals size is pAttr->numVals+1
+    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (pAttr->numVals), (PVOID*)&pNewBerv);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0; dwCnt < pAttr->numVals; dwCnt++)
+    {
+        if (VmDirStringCompareA(pszValue, pAttr->vals[dwCnt].lberbv_val, FALSE) != 0)
+        {
+            pNewBerv[dwBervSize] = pAttr->vals[dwCnt];
+            memset(pAttr->vals + dwCnt, 0, sizeof(VDIR_BERVALUE));
+            dwBervSize++;
+        }
+    }
+
+    VmDirFreeBervalArrayContent(pAttr->vals, pAttr->numVals);
+    VMDIR_SAFE_FREE_MEMORY(pAttr->vals);
+
+    pAttr->vals = pNewBerv;
+    pAttr->numVals = dwBervSize;
+    pNewBerv = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeBervalArrayContent(pNewBerv, dwBervSize);
+    VMDIR_SAFE_FREE_MEMORY(pNewBerv);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
