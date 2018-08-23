@@ -238,8 +238,6 @@ VmDirMDBGetNextUSN(
 
     pBECtx->wTxnUSN = localUSN;
 
-    dwError = VmDirBackendAddOutstandingUSN( pBECtx );
-    BAIL_ON_VMDIR_ERROR(dwError);
     bRevertUSN = TRUE;
 
     if (pLocalTxn != pTxn)
@@ -257,7 +255,6 @@ cleanup:
 error:
     if (bRevertUSN)
     {
-        VmDirBackendRemoveOutstandingUSN( pBECtx );
         pBECtx->wTxnUSN = 0;
     }
 

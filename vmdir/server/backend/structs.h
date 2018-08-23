@@ -24,14 +24,3 @@
  * Private Structures among all backends
  *
  */
-
-typedef struct _VDIR_BACKEND_USN_LIST
-{
-    PVMDIR_RWLOCK       pLock;
-    size_t              iSize;
-    USN*                pUSNAry;
-    USN                 maxOutstandingUSN;  // max Outstanding USN
-    USN                 maxUsedMainUSN;     // max USN used (BECtx.wTxnUSN in pUSNAry list)
-    USN                 maxOriginatingUSN;  // max Originating USN
-
-} VDIR_BACKEND_USN_LIST;

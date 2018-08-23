@@ -108,8 +108,6 @@ typedef struct _VDIR_BACKEND_ENTRYBLOB_ITERATOR
 
 } VDIR_BACKEND_ENTRYBLOB_ITERATOR, *PVDIR_BACKEND_ENTRYBLOB_ITERATOR;
 
-typedef struct _VDIR_BACKEND_USN_LIST*          PVDIR_BACKEND_USN_LIST;
-
 /*
  * Next backend generated entry id
  * return error -
@@ -765,23 +763,6 @@ typedef struct _VDIR_BACKEND_INTERFACE
     PFN_BACKEND_APPLY_INDICES_NEW_MR        pfnBEApplyIndicesNewMR;
 
     //////////////////////////////////////////////////////////////////////
-    // function to get the least outstanding USN in BACKEND_USN_LIST
-    // replication can trust and search USN change below this number
-    //////////////////////////////////////////////////////////////////////
-    /*
-     * Get least outstanding USN
-     */
-    PFN_BACKEND_GET_LEAST_OUTSTANDING_USN   pfnBEGetLeastOutstandingUSN;
-
-    //////////////////////////////////////////////////////////////////////
-    // function to get the highest committed USN
-    //////////////////////////////////////////////////////////////////////
-    /*
-     * Get highest committed USN
-     */
-    PFN_BACKEND_GET_HIGHEST_COMMITTED_USN   pfnBEGetHighestCommittedUSN;
-
-    //////////////////////////////////////////////////////////////////////
     // function to get the maximum originating USN
     //////////////////////////////////////////////////////////////////////
     /*
@@ -797,11 +778,6 @@ typedef struct _VDIR_BACKEND_INTERFACE
      */
     PFN_BACKEND_SET_MAX_ORIGINATING_USN   pfnBESetMaxOriginatingUSN;
 
-    //////////////////////////////////////////////////////////////////////
-    // Structure to hold all outstanding USNs
-    //////////////////////////////////////////////////////////////////////
-    PVDIR_BACKEND_USN_LIST                  pBEUSNList;
-
 } VDIR_BACKEND_INTERFACE;
 
 typedef struct _VDIR_BACKEND_GLOBALS
@@ -809,6 +785,7 @@ typedef struct _VDIR_BACKEND_GLOBALS
     // NOTE: order of fields MUST stay in sync with struct initializer...
     PCSTR                           pszBERootDN;
     PVDIR_BACKEND_INTERFACE         pBE;
+    USN                             usnMaxOriginating; // per instance
 } VDIR_BACKEND_GLOBALS, *PVDIR_BACKEND_GLOBALS;
 
 // backend.c
@@ -820,10 +797,6 @@ PVDIR_BACKEND_INTERFACE
 VmDirBackendSelect(
     PCSTR   pszDN);
 
-VOID
-VmDirBackendContentFree(
-    PVDIR_BACKEND_INTERFACE     pBE
-    );
 
 VOID
 VmDirBackendCtxFree(
@@ -833,22 +806,6 @@ VmDirBackendCtxFree(
 VOID
 VmDirBackendCtxContentFree(
     PVDIR_BACKEND_CTX   pBECtx
-    );
-
-VOID
-VmDirBackendSetMaxOutstandingUSN(
-    PVDIR_BACKEND_CTX   pBECtx,
-    USN                 nextAvailableUSN
-    );
-
-DWORD
-VmDirBackendAddOutstandingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
-    );
-
-VOID
-VmDirBackendRemoveOutstandingUSN(
-    PVDIR_BACKEND_CTX      pBECtx
     );
 
 DWORD
