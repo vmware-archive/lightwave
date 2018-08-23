@@ -598,6 +598,11 @@ VmDirCreateDomainController(
     PCSTR   pszDCName
     );
 
+size_t
+VmDirWriteQueueSize(
+    PVMDIR_WRITE_QUEUE          pWriteQueue
+    );
+
 #ifdef __cplusplus
 }
 #endif

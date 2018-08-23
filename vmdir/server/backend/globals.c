@@ -32,4 +32,5 @@ VDIR_BACKEND_GLOBALS gVdirBEGlobals =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pszBERootDN, NULL),
         VMDIR_SF_INIT(.pBE, NULL),
+        VMDIR_SF_INIT(.usnMaxOriginating, 0),
     };

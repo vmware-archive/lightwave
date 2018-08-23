@@ -158,7 +158,6 @@ VmDirdStateSet(
     VDIR_SERVER_STATE   state)
 {
     BOOLEAN             bInLock = FALSE;
-    VDIR_BACKEND_CTX    beCtx = {0};
     VDIR_SERVER_STATE   currentState = VMDIRD_STATE_UNDEFINED;
     DWORD ulError = 0;
 
@@ -192,10 +191,7 @@ VmDirdStateSet(
 
     if (state == VMDIRD_STATE_READ_ONLY) // Wait for the pending write transactions to be over before returning
     {
-        beCtx.pBE = VmDirBackendSelect(NULL);
-        assert(beCtx.pBE);
-
-        while (beCtx.pBE->pfnBEGetLeastOutstandingUSN(&beCtx, TRUE) != 0)
+        while ( VmDirWriteQueueSize(gVmDirServerOpsGlobals.pWriteQueue) > 0)
         {
             VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "VmDirdStateSet: Waiting for the pending write transactions to be over" );
             VmDirSleep(2*1000); // sleep for 2 seconds
@@ -206,7 +202,6 @@ VmDirdStateSet(
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bInLock, gVmdirdStateGlobals.pMutex);
-    VmDirBackendCtxContentFree(&beCtx);
 
     return;
 
@@ -562,7 +557,7 @@ VmDirReplicationStatusEntry(
 
     backendCtx.pBE = VmDirBackendSelect("");
 
-    maxPartnerVisibleUSN = backendCtx.pBE->pfnBEGetLeastOutstandingUSN( &backendCtx, FALSE ) - 1;
+    maxPartnerVisibleUSN = VmDirGetMaxCommittedUSN();
 
     maxOriginatingUSN = backendCtx.pBE->pfnBEGetMaxOriginatingUSN( &backendCtx );
 

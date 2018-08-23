@@ -237,6 +237,25 @@ error:
     goto cleanup;
 }
 
+size_t
+VmDirWriteQueueSize(
+    PVMDIR_WRITE_QUEUE          pWriteQueue
+    )
+{
+    size_t   iSize = 0;
+    BOOLEAN bInLock = FALSE;
+
+    if (pWriteQueue)
+    {
+        VMDIR_LOCK_MUTEX(bInLock, gVmDirServerOpsGlobals.pMutex);
+        iSize = pWriteQueue->pList->iSize;
+    }
+
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmDirServerOpsGlobals.pMutex);
+
+    return iSize;
+}
+
 DWORD
 VmDirWriteQueueElementAllocate(
     PVMDIR_WRITE_QUEUE_ELEMENT*    ppWriteQueueEle
