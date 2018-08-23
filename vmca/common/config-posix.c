@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -205,6 +205,101 @@ error:
     if (pszValue)
     {
         VMCAFreeStringA(pszValue);
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmwPosixCfgReadStringArrayValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PDWORD              pdwNumValues,
+    PSTR                **pppszValues
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwIndex = 0;
+    DWORD               dwCursorLength = 0;
+    CHAR                szValue[VMW_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
+    DWORD               dwValueSize = sizeof(szValue);
+    DWORD               dwNumValues = 0;
+    PSTR                pszCursor = NULL;
+    PSTR                *ppszValues = NULL;
+
+    if (!pKey ||
+        IsNullOrEmptyString(pszName) ||
+        !pdwNumValues ||
+        !pppszValues)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = RegGetValueA(
+                    pKey->pConnection->hConnection,
+                    pKey->hKey,
+                    pszSubkey,
+                    pszName,
+                    REG_MULTI_SZ,
+                    NULL,
+                    szValue,
+                    &dwValueSize);
+    if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+    {
+        dwError = ERROR_FILE_NOT_FOUND;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    pszCursor = szValue;
+    while (pszCursor && VMCAStringLenA(pszCursor))
+    {
+        dwCursorLength = VMCAStringLenA(pszCursor);
+        ++dwNumValues;
+        pszCursor += dwCursorLength + 1;
+    }
+    dwCursorLength = 0;
+
+    if (dwNumValues)
+    {
+        dwError = VMCAAllocateMemory(
+                        sizeof(PSTR) * dwNumValues,
+                        (PVOID *)&ppszValues);
+        BAIL_ON_VMCA_ERROR(dwError);
+
+        pszCursor = szValue;
+
+        for (; dwIndex < dwNumValues; ++dwIndex)
+        {
+            dwCursorLength = VMCAStringLenA(pszCursor);
+
+            dwError = VMCAAllocateStringA(
+                              pszCursor,
+                              &ppszValues[dwIndex]);
+            BAIL_ON_VMCA_ERROR(dwError);
+
+            pszCursor += (dwCursorLength + 1);
+        }
+    }
+
+    *pdwNumValues   = dwNumValues;
+    *pppszValues    = ppszValues;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VMCAFreeStringArrayA(ppszValues, dwNumValues);
+    if (pppszValues)
+    {
+        *pppszValues = NULL;
+    }
+    if (pdwNumValues)
+    {
+        *pdwNumValues = 0;
     }
 
     goto cleanup;

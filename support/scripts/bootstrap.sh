@@ -9,4 +9,5 @@ cd $PROJECT_ROOT/build && \
     --prefix=/opt/vmware \
     --libdir=/opt/vmware/lib64 \
     --localstatedir=/var/lib/vmware \
-    --with-config=./config
+    --with-config=./config \
+    --enable-debug=yes

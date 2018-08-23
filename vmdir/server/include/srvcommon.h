@@ -34,8 +34,8 @@ extern "C" {
                                           2 /* sec */ + 1 /* . */ + 3 /* milli sec */ + 1 /* null byte terminator */ )
 
 #define VMDIR_MAX_USN_STR_LEN           VMDIR_MAX_I64_ASCII_STR_LEN
-#define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN /* Version number used in attribute meta-data */
-
+#define VMDIR_MAX_VERSION_NO_STR_LEN    VMDIR_MAX_I64_ASCII_STR_LEN
+#define VMDIR_MAX_OP_CODE_LEN           VMDIR_MAX_UI32_ASCII_STR_LEN
 //
 // If the new paged search is turned on then the cookie is a guid; otherwise,
 // it's an ENTRYID.
@@ -43,16 +43,24 @@ extern "C" {
 #define VMDIR_PS_COOKIE_LEN             (VMDIR_MAX(VMDIR_MAX_I64_ASCII_STR_LEN, VMDIR_GUID_STR_LEN))
 
 // Format is: <local USN>:<version no>:<originating server ID>:<originating time>:<originating USN>
-#define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
-                                         VMDIR_GUID_STR_LEN + 1 + VMDIR_ORIG_TIME_STR_LEN + 1 +    \
+#define VMDIR_MAX_ATTR_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + \
+                                         VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
+                                         VMDIR_GUID_STR_LEN + 1 + \
+                                         VMDIR_ORIG_TIME_STR_LEN + 1 + \
                                          VMDIR_MAX_USN_STR_LEN + 1)
 
-// Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:<value-change-originating-server-id>
-//       :<value-change-originating time>:<value-change-originating-usn>:
-//       Remaining portion of attr-value-meta-data to be stored in backend: <opcode>:<value-size>:<value>
-#define VMDIR_MAX_ATTR_VALUE_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
-                                               VMDIR_GUID_STR_LEN + 1 + VMDIR_GUID_STR_LEN + 1 + \
-                                               VMDIR_ORIG_TIME_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1 + 1)
+// Format is: <attr-name>:<local-usn>:<version-no>:<originating-server-id>:
+// <value-change-originating-server-id>:<value-change-originating time>:
+// <value-change-originating-usn>:
+// add string len of attr-name and value to obtain complete length
+#define VMDIR_PARTIAL_ATTR_VALUE_META_DATA_LEN    (VMDIR_MAX_USN_STR_LEN + 1 + \
+                                                   VMDIR_MAX_VERSION_NO_STR_LEN + 1 + \
+                                                   VMDIR_GUID_STR_LEN + 1 + \
+                                                   VMDIR_GUID_STR_LEN + 1 + \
+                                                   VMDIR_ORIG_TIME_STR_LEN + 1 + \
+                                                   VMDIR_MAX_USN_STR_LEN + 1 + \
+                                                   VMDIR_MAX_OP_CODE_LEN + 1 + \
+                                                   VMDIR_MAX_UI32_ASCII_STR_LEN + 1) //Value size
 
 #define VMDIR_IS_DELETED_TRUE_STR      "TRUE"
 #define VMDIR_IS_DELETED_TRUE_STR_LEN  4
@@ -292,6 +300,20 @@ typedef struct _VMDIR_ATTRIBUTE_METADATA
     PSTR    pszOrigTime;
     USN     origUsn;
 } VMDIR_ATTRIBUTE_METADATA, *PVMDIR_ATTRIBUTE_METADATA;
+
+typedef struct _VMDIR_ATTRIBUTE_VALUE_METADATA
+{
+    PSTR            pszAttrType;
+    USN             localUsn;
+    UINT64          version;
+    PSTR            pszOrigInvoId;
+    PSTR            pszValChgOrigInvoId;
+    PSTR            pszValChgOrigTime;
+    USN             valChgOrigUsn;
+    DWORD           dwOpCode;
+    DWORD           dwValSize;
+    PSTR            pszValue;
+} VMDIR_VALUE_ATTRIBUTE_METADATA, *PVMDIR_VALUE_ATTRIBUTE_METADATA;
 
 typedef struct _VDIR_ATTRIBUTE
 {
@@ -1291,11 +1313,6 @@ VmDirInitSrvDFLGlobal(
     VOID
     );
 
-BOOLEAN
-VmDirValidValueMetaEntry(
-    PVDIR_BERVALUE  pValueMetaData
-    );
-
 PCSTR
 VmDirLdapModOpTypeToName(
     VDIR_LDAP_MOD_OP modOp
@@ -1959,6 +1976,54 @@ VOID
 VmDirFreeMetaDataMapPair(
     PLW_HASHMAP_PAIR    pPair,
     PVOID               pUnused
+    );
+
+//valuemetadata.c
+DWORD
+VmDirValueMetaDataDeserialize(
+    PCSTR                               pszValueMetaData,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA*    ppValueMetaData
+    );
+
+DWORD
+VmDirValueMetaDataSerialize(
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
+    PVDIR_BERVALUE                     pBervValueMetaData
+    );
+
+DWORD
+VmDirValueMetaDataMaxLen(
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
+    PDWORD                             pdwLength
+    );
+
+BOOLEAN
+VmDirValueMetaDataIsValid(
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
+    );
+
+BOOLEAN
+VmDirValueMetaDataIsEmpty(
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
+    );
+
+VOID
+VmDirFreeValueMetaData(
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
+    );
+
+DWORD
+VmDirValueMetaDataCreate(
+    PCSTR                               pszAttrType,
+    USN                                 localUsn,
+    UINT64                              version,
+    PCSTR                               pszOrigInvoId,
+    PCSTR                               pszValChgOrigInvoId,
+    PCSTR                               pszValChgOrigTime,
+    USN                                 valChgOrigUsn,
+    DWORD                               dwOpCode,
+    PVDIR_BERVALUE                      pBervValue,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA*    ppValueMetaData
     );
 
 #ifdef __cplusplus

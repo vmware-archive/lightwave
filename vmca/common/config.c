@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2012-2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -127,6 +127,29 @@ VmwConfigReadStringValue(
                     pszSubkey,
                     pszName,
                     ppszValue);
+#endif
+
+    return dwError;
+}
+
+DWORD
+VmwConfigReadStringArrayValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PDWORD              pdwNumValues,
+    PSTR                **pppszValues
+    )
+{
+    DWORD               dwError = 0;
+
+#ifndef _WIN32
+    dwError = VmwPosixCfgReadStringArrayValue(
+                        pKey,
+                        pszSubkey,
+                        pszName,
+                        pdwNumValues,
+                        pppszValues);
 #endif
 
     return dwError;

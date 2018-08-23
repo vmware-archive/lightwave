@@ -263,7 +263,12 @@ VmDirMDBGetAllAttrsMetaData(
             break;
         }
 
-        if (memcmp(key.mv_data, currKey.mv_data, key.mv_size) != 0)
+        /*
+         * there was at least one instance where key.size > currKey.size
+         * adding size check before memcmp
+        */
+        if (key.mv_size > currKey.mv_size ||
+            memcmp(key.mv_data, currKey.mv_data, key.mv_size) != 0)
         {
             break;
         }
@@ -333,31 +338,35 @@ VmDirMDBGetAttrValueMetaData(
     PVDIR_BACKEND_CTX   pBECtx,
     ENTRYID             entryId,
     short               attrId,
-    PDEQUE              valueMetaData
+    PDEQUE              pValueMetaDataQueue
     )
 {
-    DWORD           dwError = 0;
-    VDIR_DB_DBT     key = {0};
-    VDIR_DB_DBT     value = {0};
-    VDIR_DB_DBT     currKey = {0};
-    char            keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
-    unsigned char * pWriter = NULL;
-    VDIR_DB         mdbDBi = 0;
-    int             indTypes = 0;
-    VDIR_BERVALUE   attrValueMetaDataAttr = { {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA}, 0, 0, NULL };
-    PVDIR_DB_DBC    pCursor = NULL;
-    unsigned int    cursorFlags = 0;
-    VDIR_BERVALUE * pAVmeta = NULL;
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
-    PVDIR_DB_TXN    pTxn = NULL;
+    DWORD                              dwError = 0;
+    VDIR_DB_DBT                        key = {0};
+    VDIR_DB_DBT                        value = {0};
+    VDIR_DB_DBT                        currKey = {0};
+    //key format is: <entry ID>:<attribute ID (a short)
+    char                               keyData[sizeof(ENTRYID) + 1 + 2] = {0};
+    unsigned char                     *pWriter = NULL;
+    VDIR_DB                            mdbDBi = 0;
+    int                                indTypes = 0;
+    VDIR_BERVALUE                      attrValueMetaDataAttr =
+                                       {{ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA},
+                                         0, 0, NULL};
+    PVDIR_DB_DBC                       pCursor = NULL;
+    unsigned int                       cursorFlags = 0;
+    PVDIR_INDEX_CFG                    pIndexCfg = NULL;
+    PVDIR_DB_TXN                       pTxn = NULL;
+    PSTR                               pszValueMetaData = NULL;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
     if (!VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED)
     {
         goto cleanup;
     }
 
-    assert( pBECtx && pBECtx->pBEPrivate );
-    assert(dequeIsEmpty(valueMetaData));
+    assert(pBECtx && pBECtx->pBEPrivate);
+    assert(dequeIsEmpty(pValueMetaDataQueue));
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 
@@ -369,10 +378,10 @@ VmDirMDBGetAttrValueMetaData(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     indTypes = pIndexCfg->iTypes;
-    assert( indTypes == INDEX_TYPE_EQUALITY );
+    assert(indTypes == INDEX_TYPE_EQUALITY);
 
     key.mv_data = &keyData[0];
-    MDBEntryIdToDBT( entryId, &key );
+    MDBEntryIdToDBT(entryId, &key);
     *(unsigned char *)((unsigned char *)key.mv_data + key.mv_size) = ':';
     key.mv_size++;
     pWriter = ((unsigned char *)key.mv_data + key.mv_size);
@@ -390,10 +399,10 @@ VmDirMDBGetAttrValueMetaData(
     cursorFlags = MDB_SET_KEY;
     do
     {
-        if ((dwError = mdb_cursor_get(pCursor, &currKey, &value, cursorFlags )) != 0)
+        if ((dwError = mdb_cursor_get(pCursor, &currKey, &value, cursorFlags)) != 0)
         {
             dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
-            BAIL_ON_VMDIR_ERROR( dwError );
+            BAIL_ON_VMDIR_ERROR(dwError);
             break;
         }
 
@@ -402,32 +411,27 @@ VmDirMDBGetAttrValueMetaData(
             break;
         }
 
-        dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
-        BAIL_ON_VMDIR_ERROR( dwError );
+        VMDIR_SAFE_FREE_MEMORY(pszValueMetaData);
+        dwError = VmDirAllocateAndCopyMemory(
+                value.mv_data, value.mv_size, (PVOID*)&pszValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateMemory(value.mv_size, (PVOID)&pAVmeta->lberbv.bv_val);
-        BAIL_ON_VMDIR_ERROR( dwError );
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL_ATTR, "%s: serialized value: %s ", __FUNCTION__, pszValueMetaData);
 
-        pAVmeta->bOwnBvVal = TRUE;
-        memcpy(pAVmeta->lberbv.bv_val, value.mv_data, value.mv_size);
-        pAVmeta->lberbv.bv_len = value.mv_size;
+        dwError = VmDirValueMetaDataDeserialize(pszValueMetaData, &pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (!VmDirValidValueMetaEntry(pAVmeta))
-        {
-            VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND, "VmDirMDBGetAttrValueMetaData: invalid attr-value-meta: %s",
-                            VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
-            dwError = ERROR_BACKEND_OPERATIONS;
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
+        dwError = dequePush(pValueMetaDataQueue, pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = dequePush(valueMetaData, pAVmeta);
-        BAIL_ON_VMDIR_ERROR( dwError );
+        pValueMetaData = NULL;
 
-        pAVmeta = NULL;
         cursorFlags = MDB_NEXT;
     } while (TRUE);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszValueMetaData);
     VmDirIndexCfgRelease(pIndexCfg);
     if (pCursor != NULL)
     {
@@ -439,8 +443,8 @@ error:
     VMDIR_LOG_ERROR( LDAP_DEBUG_REPL_ATTR, "VmDirMDBGetAttrValueMetaData: error (%d),(%s)",
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "VmDirMDBGetAttrValueMetaData");
-    VmDirFreeBerval(pAVmeta);
-    VmDirFreeAttrValueMetaDataContent(valueMetaData);
+    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
     goto cleanup;
 }
 
@@ -452,30 +456,34 @@ DWORD
 VmDirMDBGetAllAttrValueMetaData(
     PVDIR_BACKEND_CTX   pBECtx,
     ENTRYID             entryId,
-    PDEQUE              valueMetaData
+    PDEQUE              pValueMetaDataQueue
     )
 {
-    DWORD           dwError = 0;
-    VDIR_DB_DBT     key = {0};
-    VDIR_DB_DBT     value = {0};
-    VDIR_DB_DBT     currKey = {0};
-    char            keyData[ sizeof( ENTRYID ) + 1 + 2 ] = {0}; /* key format is: <entry ID>:<attribute ID (a short)> */
-    VDIR_DB         mdbDBi = 0;
-    int             indTypes = 0;
-    VDIR_BERVALUE   attrValueMetaDataAttr = { {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA}, 0, 0, NULL };
-    PVDIR_DB_DBC    pCursor = NULL;
-    unsigned int    cursorFlags = 0;
-    VDIR_BERVALUE * pAVmeta = NULL;
-    PVDIR_INDEX_CFG pIndexCfg = NULL;
-    PVDIR_DB_TXN    pTxn = NULL;
+    DWORD                              dwError = 0;
+    VDIR_DB_DBT                        key = {0};
+    VDIR_DB_DBT                        value = {0};
+    VDIR_DB_DBT                        currKey = {0};
+    //Key format is: <entry ID>:<attribute ID (a short)>
+    char                               keyData[sizeof(ENTRYID) + 1 + 2] = {0};
+    VDIR_DB                            mdbDBi = 0;
+    int                                indTypes = 0;
+    VDIR_BERVALUE                      attrValueMetaDataAttr = {
+                                       {ATTR_ATTR_VALUE_META_DATA_LEN, ATTR_ATTR_VALUE_META_DATA},
+                                       0, 0, NULL };
+    PVDIR_DB_DBC                       pCursor = NULL;
+    unsigned int                       cursorFlags = 0;
+    PVDIR_INDEX_CFG                    pIndexCfg = NULL;
+    PVDIR_DB_TXN                       pTxn = NULL;
+    PSTR                               pszValueMetaData = NULL;
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
     if (!VDIR_CONCURRENT_ATTR_VALUE_UPDATE_ENABLED)
     {
         goto cleanup;
     }
 
-    assert( pBECtx && pBECtx->pBEPrivate );
-    assert(dequeIsEmpty(valueMetaData));
+    assert(pBECtx && pBECtx->pBEPrivate);
+    assert(dequeIsEmpty(pValueMetaDataQueue));
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
     dwError = VmDirIndexCfgAcquire(
@@ -515,29 +523,27 @@ VmDirMDBGetAllAttrValueMetaData(
             break;
         }
 
-        dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE), (PVOID)&pAVmeta);
+        VMDIR_SAFE_FREE_MEMORY(pszValueMetaData);
+        dwError = VmDirAllocateAndCopyMemory(
+                value.mv_data, value.mv_size, (PVOID*)&pszValueMetaData);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = VmDirAllocateMemory(value.mv_size, (PVOID)&pAVmeta->lberbv.bv_val);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pAVmeta->bOwnBvVal = TRUE;
+        VMDIR_LOG_INFO(
+                LDAP_DEBUG_REPL_ATTR, "%s: serialized value: %s ", __FUNCTION__, pszValueMetaData);
 
-        memcpy(pAVmeta->lberbv.bv_val, value.mv_data, value.mv_size);
-        pAVmeta->lberbv.bv_len = value.mv_size;
-        if (!VmDirValidValueMetaEntry(pAVmeta))
-        {
-            VMDIR_LOG_ERROR(LDAP_DEBUG_BACKEND, "VmDirMDBGetAllAttrValueMetaData: invalid attr-value-meta: %s",
-                            VDIR_SAFE_STRING(pAVmeta->lberbv.bv_val));
-            dwError = ERROR_BACKEND_OPERATIONS;
-            BAIL_ON_VMDIR_ERROR( dwError );
-        }
-        dwError = dequePush(valueMetaData, pAVmeta);
-        BAIL_ON_VMDIR_ERROR( dwError );
-        pAVmeta = NULL;
+        dwError = VmDirValueMetaDataDeserialize(pszValueMetaData, &pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = dequePush(pValueMetaDataQueue, pValueMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pValueMetaData = NULL;
+
         cursorFlags = MDB_NEXT;
     } while (TRUE);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszValueMetaData);
     VmDirIndexCfgRelease(pIndexCfg);
     if (pCursor != NULL)
     {
@@ -549,8 +555,8 @@ error:
     VMDIR_LOG_ERROR( LDAP_DEBUG_REPL_ATTR, "VmDirMDBGetAllAttrValueMetaData: error (%d),(%s)",
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "GetAttrValueMetaData");
-    VmDirFreeBerval(pAVmeta);
-    VmDirFreeAttrValueMetaDataContent(valueMetaData);
+    VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
+    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
     goto cleanup;
 }
 
@@ -1069,9 +1075,13 @@ MdbScanIndex(
             }
 
             // In case of partial match, check if we are passed the partial key match that we are looking for.
-            if (bIsPartialMatch && memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
+            if (bIsPartialMatch)
             {
-                break;
+                if (pKey->mv_size > currKey.mv_size ||
+                    memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
+                {
+                    break;
+                }
             }
 
             MDBDBTToEntryId( &value, &eId);

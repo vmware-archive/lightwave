@@ -202,6 +202,43 @@ error:
 }
 
 DWORD
+VmwDeployInitDCDNSRecords(
+    PVMW_IC_SETUP_PARAMS pParams
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pParams)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (IsNullOrEmptyString(pParams->pszSite))
+    {
+        dwError = VmAfdConfigureDNSA(
+                        pParams->pszUsername,
+                        pParams->pszPassword);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmAfdConfigureDNSWithSiteA(
+                        pParams->pszUsername,
+                        pParams->pszPassword,
+                        pParams->pszSite);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMW_DEPLOY_LOG_ERROR("%s Error : %d", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
 VmwDeployDeleteDCDNSRecords(
     PVMW_IC_SETUP_PARAMS pParams
     )
@@ -341,7 +378,14 @@ VmwDeployReadPassword(
 
     memset(szPassword, 0, sizeof(szPassword));
 
-    fprintf(stdout, "Password (%s@%s): ", pszUser, pszDomain);
+    if (IsNullOrEmptyString(pszDomain))
+    {
+        fprintf(stdout, "Password (%s): ", pszUser);
+    }
+    else
+    {
+        fprintf(stdout, "Password (%s@%s): ", pszUser, pszDomain);
+    }
     fflush(stdout);
 
     tcgetattr(0, &orig); // get current settings

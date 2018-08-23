@@ -18,6 +18,7 @@ int main(VOID)
 {
     const struct CMUnitTest tests[] =
     {
+        //metadata.c
         cmocka_unit_test_setup_teardown(
                 VmDirMetaDataDeserialize_ValidInput,
                 NULL,
@@ -58,6 +59,23 @@ int main(VOID)
                 VmDirAttributeMetaDataToHashMap_InvalidInput,
                 VmDirSetupMetaDataAttribute,
                 VmDirFreeMetaDataAttribute),
+        //valuemetadata.c
+        cmocka_unit_test_setup_teardown(
+                VmDirValueMetaDataDeserialize_ValidInput,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirValueMetaDataDeserialize_InvalidInput,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirValueMetaDataSerialize_ValidInput,
+                VmDirSetupValueMetaData,
+                VmDirValueMetaDataFree),
+        cmocka_unit_test_setup_teardown(
+                VmDirValueMetaDataSerialize_InvalidInput,
+                VmDirSetupValueMetaData,
+                VmDirValueMetaDataFree),
     };
 
     return cmocka_run_group_tests(tests, NULL, NULL);

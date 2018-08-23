@@ -277,8 +277,11 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
         dwError = 0;                                                        \
     }                                                                       \
 
-
-
+#define BAIL_ON_JSON_PARSE_ERROR(dwError)       \
+    if (dwError)                                \
+    {                                           \
+        goto error;                             \
+    }
 
 #define BAIL_ON_VMCA_ERROR_NO_LOG(dwError) \
     if (dwError) { goto error; }
@@ -546,7 +549,7 @@ VMCAStringTokA(
 
 DWORD
 VMCAStringCountSubstring(
-    PSTR pszHaystack,
+    PCSTR pszHaystack,
     PCSTR pszNeedle,
     int *pnCount
     );
@@ -1353,6 +1356,14 @@ VMCALdapGetMemberships(
     PDWORD pdwMemberships
     );
 
+DWORD
+VMCADNToRDNArray(
+    PCSTR       pcszDN,
+    BOOLEAN     bNoTypes,
+    PDWORD      pdwCount,
+    PSTR        **pppRDNArray
+    );
+
 // vecs.c
 DWORD
 VMCAGetVecsMachineCert(
@@ -1437,6 +1448,15 @@ VmwConfigReadStringValue(
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
+    );
+
+DWORD
+VmwConfigReadStringArrayValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PDWORD              pdwNumValues,
+    PSTR                **pppszValues
     );
 
 DWORD

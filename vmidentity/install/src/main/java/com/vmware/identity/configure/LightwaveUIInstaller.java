@@ -54,7 +54,6 @@ public class LightwaveUIInstaller implements IPlatformComponentInstaller {
 
     @Override
     public void install() throws Exception {
-
         String servername = params.getHostname();
         String subjectAltName = params.getSubjectAltName();
         String domain = params.getDomainName();

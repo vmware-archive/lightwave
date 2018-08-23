@@ -1,7 +1,8 @@
 noinst_LTLIBRARIES = libdns.la
 
 libdns_la_SOURCES = \
-    delete.c
+    delete.c \
+	init-dc.c
 
 libdns_la_CPPFLAGS = \
     -I$(top_srcdir)/config/include \

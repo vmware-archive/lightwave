@@ -2043,7 +2043,9 @@ _VmDirPluginLockoutCachePostModifyCommit(
     //   make sure attibute does have value by numVals check before accessing it.
     if (pUserActCtlAttr && (pUserActCtlAttr->numVals > 0) )
     {
-        userAccountCtrlFlags = VmDirStringToLA(pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, 10);
+        dwError = VmDirStringToINT64(
+                pUserActCtlAttr->vals[0].lberbv.bv_val, NULL, &userAccountCtrlFlags);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         if ((userAccountCtrlFlags & USER_ACCOUNT_CONTROL_LOCKOUT_FLAG) == 0) // Account is NOT locked out
         {
@@ -2056,7 +2058,12 @@ _VmDirPluginLockoutCachePostModifyCommit(
         VdirLockoutCacheRemoveRec(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn));
     }
 
+cleanup:
     return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
 }
 
 /*

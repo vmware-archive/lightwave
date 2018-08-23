@@ -159,7 +159,8 @@ VMCASrvInitCA(
     DWORD dwCRLNumberCurrent = 0;
     BOOL bIsHoldingMutex = FALSE;
 
-    dwError = VMCAPolicyInit(&ppPolicies);
+
+    dwError = VMCAPolicyInit(VMCA_POLICY_FILE_PATH, &ppPolicies);
     if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
     {
         VMCA_LOG_INFO(

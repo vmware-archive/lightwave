@@ -51,6 +51,8 @@ extern "C" {
 
 #include <vmcatypes.h>
 #include <vmcacommon.h>
+#include <vmcasrvcommon.h>
+#include <vmcapolicy.h>
 #include <vmca_h.h>
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
@@ -120,6 +122,8 @@ extern "C" {
 #include <vmcasys.h>
 #include <vmcatypes.h>
 #include <vmcacommon.h>
+#include <vmcasrvcommon.h>
+#include <vmcapolicy.h>
 
 #pragma warning (disable : 4142)
 #if defined(_DEBUG)

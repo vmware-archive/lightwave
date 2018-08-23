@@ -1,13 +1,14 @@
-bin_PROGRAMS = metadata
+bin_PROGRAMS = common
 
-check_PROGRAMS = metadata
-TESTS = metadata
+check_PROGRAMS = common
+TESTS = common
 
-metadata_SOURCES = \
+common_SOURCES = \
     main.c \
-    metadata.c
+    metadata.c \
+    valuemetadata.c
 
-metadata_CPPFLAGS = \
+common_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
@@ -23,13 +24,13 @@ metadata_CPPFLAGS = \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@
 
-metadata_LDADD = \
+common_LDADD = \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/server/common/libsrvcommon.la \
     $(top_builddir)/vmdir/common/libcommon.la \
     @PTHREAD_LIBS@ \
     @CMOCKA_LIBS@
 
-metadata_LDFLAGS = \
+common_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

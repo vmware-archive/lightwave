@@ -4991,6 +4991,49 @@ error:
 }
 
 DWORD
+VmAfdConfigureDNSWithSiteA(
+    PCSTR pszUserName,
+    PCSTR pszPassword,
+    PCSTR pszSiteName
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszSiteName = NULL;
+
+    BAIL_ON_VMAFD_EMPTY_STRING(pszUserName, dwError);
+    BAIL_ON_VMAFD_EMPTY_STRING(pszPassword, dwError);
+    BAIL_ON_VMAFD_EMPTY_STRING(pszSiteName, dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                pszUserName,
+                &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                pszPassword,
+                &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(
+                    pszSiteName,
+                    &pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdConfigureDNSWithSiteW(pwszUserName, pwszPassword, pwszSiteName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+
+    return dwError;
+}
+
+DWORD
 VmAfdConfigureDNSW(
     PCWSTR pwszUserName,
     PCWSTR pwszPassword
@@ -5001,7 +5044,26 @@ VmAfdConfigureDNSW(
     BAIL_ON_VMAFD_EMPTY_STRING(pwszUserName, dwError);
     BAIL_ON_VMAFD_EMPTY_STRING(pwszPassword, dwError);
 
-    dwError = VmAfdLocalConfigureDNSW(pwszUserName, pwszPassword);
+    dwError = VmAfdLocalConfigureDNSW(pwszUserName, pwszPassword, NULL);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+DWORD
+VmAfdConfigureDNSWithSiteW(
+    PCWSTR pwszUserName,
+    PCWSTR pwszPassword,
+    PCWSTR pwszSiteName /* OPTIONAL */
+    )
+{
+    DWORD dwError = 0;
+
+    BAIL_ON_VMAFD_EMPTY_STRING(pwszUserName, dwError);
+    BAIL_ON_VMAFD_EMPTY_STRING(pwszPassword, dwError);
+
+    dwError = VmAfdLocalConfigureDNSW(pwszUserName, pwszPassword, pwszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:

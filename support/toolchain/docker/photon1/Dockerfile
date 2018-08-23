@@ -16,6 +16,7 @@ RUN tdnf update -y --refresh rpm-4.13.0.1 tdnf && \
         binutils-2.29.1 \
         boost-devel-1.60.0 \
         c-rest-engine-devel-1.2 \
+        cmocka-1.1.1 \
         copenapi-devel-0.0.1 \
         e2fsprogs-devel-1.42.13 \
         elfutils-0.169 \

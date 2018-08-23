@@ -632,7 +632,9 @@ _VmDirConsumePartner(
     retVal = VmDirStringToUTDVector(pszUtdVector, &pUtdVectorMap);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    initUsn = VmDirStringToLA(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, 10);
+    retVal = VmDirStringToINT64(pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, NULL, &initUsn);
+    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
     lastSupplierUsnProcessed = initUsn;
 
     do // do-while (bMoreUpdatesExpected == TRUE); paged results loop
@@ -903,6 +905,7 @@ _VmDirFetchReplicationPage(
     // Get last local USN processed from the cookie
     retVal = VmDirStringToINT64(
             pPage->searchResCtrls[0]->ldctl_value.bv_val,
+            NULL,
             &(pPage->lastSupplierUsnProcessed));
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 

@@ -71,8 +71,7 @@ vmstsconf_DATA = \
     @top_builddir@/vmidentity/config/catalina.policy \
     @top_builddir@/vmidentity/config/context.xml \
     @top_builddir@/vmidentity/config/tomcat-users.xml \
-    @top_builddir@/vmidentity/config/vmsts-telegraf.conf \
-    @top_builddir@/vmidentity/config/sts.policy
+    @top_builddir@/vmidentity/config/vmsts-telegraf.conf
 
 vmidmconf_DATA= \
     @top_srcdir@/vmidentity/sso-config/src/main/resources/ssoconfig.log4j2.xml \
@@ -82,8 +81,7 @@ vmidmconf_DATA= \
 
 vmstsbin_DATA = \
     @top_builddir@/vmidentity/config/setenv.sh \
-    @top_builddir@/vmidentity/vmware-sts/packages/vmware-identity-tomcat-extensions.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/pro-grade-1.1.1.jar
+    @top_builddir@/vmidentity/vmware-sts/packages/vmware-identity-tomcat-extensions.jar
 
 vmstssampleconf_DATA = \
     @top_builddir@/vmidentity/config/server.xml \

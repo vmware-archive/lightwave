@@ -68,7 +68,7 @@ error:
 		*ppConnection = NULL;
 	}
 	if (socket_fd >=0 ){
-		close (socket_fd);
+	    tcp_socket_close(socket_fd);
 	}
 	VMDIR_SAFE_FREE_MEMORY (pConnection);
 	goto cleanup;
@@ -79,9 +79,10 @@ VmDirCloseServerConnectionImpl(
 	PVM_DIR_CONNECTION pConnection
 	)
 {
-	if (pConnection->fd >= 0 ){
-	  close (pConnection->fd);
-          pConnection->fd = -1;
+	if (pConnection->fd >= 0)
+	{
+	    tcp_socket_close(pConnection->fd);
+	    pConnection->fd = -1;
 	}
 }
 
@@ -90,8 +91,7 @@ VmDirShutdownServerConnectionImpl(
 	PVM_DIR_CONNECTION pConnection
 	)
 {
-        VmDirCloseServerConnectionImpl(pConnection);
-
+    VmDirCloseServerConnectionImpl(pConnection);
 }
 
 
@@ -155,7 +155,7 @@ error:
 		*ppConnection = NULL;
 	}
 	if (socket_fd >= 0){
-		close (socket_fd);
+	    tcp_socket_close(socket_fd);
 	}
 	VMDIR_SAFE_FREE_MEMORY(pConnection);
 	goto cleanup;
@@ -167,7 +167,7 @@ VmDirCloseClientConnectionImpl(
 	)
 {
 	if (pConnection->fd > -1){
-	    close(pConnection->fd);
+	    tcp_socket_close(pConnection->fd);
 	    pConnection->fd = -1;
 	}
 }
@@ -205,7 +205,7 @@ error:
 		*ppConnection = NULL;
 	}
 	if (connection_fd >= 0){
-		close (connection_fd);
+	    tcp_socket_close(connection_fd);
 	}
 	goto cleanup;
 }
@@ -351,11 +351,12 @@ error:
 
 VOID
 VmDirFreeConnectionImpl(
-        PVM_DIR_CONNECTION pConnection
-        )
+    PVM_DIR_CONNECTION pConnection
+    )
 {
-        if (pConnection->fd >= 0){
-                close(pConnection->fd);
-        }
-        VMDIR_SAFE_FREE_MEMORY (pConnection);
+    if (pConnection->fd >= 0)
+    {
+        tcp_socket_close(pConnection->fd);
+    }
+    VMDIR_SAFE_FREE_MEMORY (pConnection);
 }

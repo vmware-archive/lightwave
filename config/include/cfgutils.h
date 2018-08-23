@@ -138,6 +138,11 @@ VmwDeployDeleteDCDNSRecords(
     PVMW_IC_SETUP_PARAMS pParams
     );
 
+DWORD
+VmwDeployInitDCDNSRecords(
+    PVMW_IC_SETUP_PARAMS pParams
+    );
+
 VOID
 VmwDeployFreeSetupParams(
     PVMW_IC_SETUP_PARAMS pParams

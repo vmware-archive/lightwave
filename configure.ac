@@ -196,6 +196,27 @@ fi
 AM_CONDITIONAL(LIGHTWAVE_BUILD, [$LIGHTWAVE_BUILD])
 
 #--------------------------------------------------------------------
+# replication v2 flag
+
+REPLICATION_V2=false
+AC_ARG_ENABLE([replicationv2],
+    [AC_HELP_STRING([--enable-replication-v2],
+                    [enable replication v2 (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            REPLICATION_V2=true
+        fi
+    ])
+
+if $REPLICATION_V2
+then
+AC_DEFINE_UNQUOTED(REPLICATION_V2, 1, [ enable replication v2 ])
+fi
+
+AM_CONDITIONAL(REPLICATION_V2, [$REPLICATION_V2])
+
+#--------------------------------------------------------------------
 # client only build
 
 ENABLE_SERVER=true
@@ -1650,6 +1671,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/api/Makefile
                  vmdir/server/rest-head/Makefile
                  vmdir/server/replication/Makefile
+                 vmdir/server/replication2/Makefile
                  vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
@@ -1763,10 +1785,15 @@ AC_CONFIG_FILES([Makefile
                  vmca/config/vmca.reg
                  vmca/common/Makefile
                  vmca/service/Makefile
+                 vmca/service/common/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile
                  vmca/test/Makefile
+                 vmca/unit-tests/Makefile
+                 vmca/unit-tests/service/Makefile
+                 vmca/unit-tests/service/common/Makefile
+                 vmca/unit-tests/service/common/test-policy-configs/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
@@ -1831,6 +1858,10 @@ AC_CONFIG_FILES([Makefile
                  config/scripts/Makefile
                  config/scripts/configure-lightwave-server
                  config/scripts/configure-sts
+                ])
+
+AC_CONFIG_LINKS([
+                vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
                 ])
 
 AC_OUTPUT

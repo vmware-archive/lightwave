@@ -6576,8 +6576,14 @@ VmDirResetActPassword(
             BAIL_ON_VMDIR_ERROR(dwError);
 
             time_t  tNow = time(NULL);
-            time_t  tPwdLastSet = VmDirStringToLA(pszLastChange, NULL, 10);
+            INT64   iPwdLastSet = 0;
+            time_t  tPwdLastSet = 0;
             time_t  tDiff = (iExpInDays * 24 * 60 * 60) / 2; // Attempt reset when halfway to expiration.
+
+            dwError = VmDirStringToINT64(pszLastChange, NULL, &iPwdLastSet);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            tPwdLastSet = (time_t)iPwdLastSet;
 
             if ((tNow - tPwdLastSet) >= tDiff)
             {

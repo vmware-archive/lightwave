@@ -31,6 +31,7 @@ static const DWORD VMCAPolicyMethodMapSize =
 
 DWORD
 VMCAPolicyInit(
+    PSTR                pszConfigFilePath,
     PVMCA_POLICY        **pppPolicies
     )
 {
@@ -44,13 +45,19 @@ VMCAPolicyInit(
     size_t              szJsonFlags = JSON_DECODE_ANY;
     PVMCA_POLICY        *ppPolicies = NULL;
 
-    if (!(pJsonPolicy = json_load_file(VMCA_POLICY_FILE_PATH, szJsonFlags, &jsonError)))
+    if (IsNullOrEmptyString(pszConfigFilePath) || !pppPolicies)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    if (!(pJsonPolicy = json_load_file(pszConfigFilePath, szJsonFlags, &jsonError)))
     {
         VMCA_LOG_ERROR(
                 "[%s,%d] Failed to open policy config file (%s). Error: %s:%d",
                 __FUNCTION__,
                 __LINE__,
-                VMCA_POLICY_FILE_PATH,
+                pszConfigFilePath,
                 jsonError.text,
                 jsonError.line);
         dwError = VMCA_JSON_FILE_LOAD_ERROR;
@@ -83,7 +90,7 @@ VMCAPolicyInit(
                         __FUNCTION__,
                         __LINE__,
                         pcszKey,
-                        VMCA_POLICY_FILE_PATH);
+                        pszConfigFilePath);
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMCA_ERROR(dwError);
             }
@@ -108,7 +115,7 @@ VMCAPolicyInit(
                     "[%s,%d] Too many policies defined in config file (%s). Current limit is %d",
                     __FUNCTION__,
                     __LINE__,
-                    VMCA_POLICY_FILE_PATH,
+                    pszConfigFilePath,
                     VMCA_POLICY_NUM);
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMCA_ERROR(dwError);
@@ -148,6 +155,7 @@ VMCAPolicyValidate(
 {
     DWORD                   dwError = 0;
     DWORD                   dwIdx = 0;
+    BOOLEAN                 bBypass = FALSE;
     BOOLEAN                 bIsValid = FALSE;
 
     if (!ppPolicies)
@@ -169,14 +177,39 @@ VMCAPolicyValidate(
         dwError = VMCAPolicyMethodMap[dwIdx].pfnValidate(ppPolicies[dwIdx],
                                                          pszPKCS10Request,
                                                          pReqContext,
+                                                         &bBypass,
                                                          &bIsValid);
+        if (!dwError && bIsValid == FALSE)
+        {
+            dwError = VMCA_POLICY_VALIDATION_ERROR;
+        }
         BAIL_ON_VMCA_ERROR(dwError);
 
-        if (bIsValid == FALSE)
+        if (bBypass == TRUE)
         {
-            break;
+            goto ret;
         }
     }
+
+    dwError = VMCAPolicyCNValidate(
+                        pszPKCS10Request,
+                        pReqContext,
+                        &bIsValid);
+    if (!dwError && bIsValid == FALSE)
+    {
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCAPolicySANValidate(
+                        pszPKCS10Request,
+                        pReqContext,
+                        &bIsValid);
+    if (!dwError && bIsValid == FALSE)
+    {
+        dwError = VMCA_POLICY_VALIDATION_ERROR;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
 
 
 ret:

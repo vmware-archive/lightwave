@@ -18,24 +18,12 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStreamReader;
-import java.nio.file.FileSystems;
-import java.nio.file.Files;
-import java.nio.file.LinkOption;
-import java.nio.file.Paths;
-import java.nio.file.Path;
-import java.nio.file.attribute.GroupPrincipal;
-import java.nio.file.attribute.PosixFileAttributeView;
-import java.nio.file.attribute.UserPrincipal;
-import java.nio.file.attribute.UserPrincipalLookupService;
 
-import com.sun.jna.Native;
 import org.apache.commons.lang.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.vmware.identity.installer.ReleaseUtil;
-
-import static java.nio.file.StandardCopyOption.REPLACE_EXISTING;
 
 public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private static final String ID = "vmware-identity-manager";
@@ -43,11 +31,6 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
     private static final String Description = "VMware Identity Manager";
     private static final Logger log = LoggerFactory
             .getLogger(IdentityManagerInstaller.class);
-    private static final String jniDispatchLib = "/com/sun/jna/linux-x86-64/libjnidispatch.so";
-    private static final String jniDispatchExportPath = "/vmware-sts/conf/libjnidispatch.so";
-
-    private static final String lightwaveGroup = "lightwave";
-    private static final String lightwaveUser = "lightwave";
 
     private String hostnameURL = null;
     private boolean isLightwave = false;
@@ -75,13 +58,11 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
 
         InstallerUtils.getInstallerHelper().configRegistry();
 
-        log.info("Writing host info to Registry");
+        log.info("Writing host info to Regisry");
 
         writeHostinfo();
 
         log.info("Configuring registry setting for IDM Complete");
-
-        extractJniLib();
     }
 
     @Override
@@ -92,16 +73,13 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
         } catch (Exception e) {
             log.warn("Failed to read hostname registry.", e);
         }
-
-        extractJniLib();
-
         // set hostname registry with hostname file only if it is not set
         // for backward compatibility
         if (StringUtils.isEmpty(hostname) && isHostnameFilePresent()) {
             try {
                 this.hostnameURL = readHostnameFromFile();
             } catch (Exception ex) {
-                log.warn("Failed to read hostname file.", ex);
+                log.warn("Falied to read hostname file.", ex);
             }
             try {
                 if (this.hostnameURL == null) {
@@ -118,7 +96,7 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
             log.info("Configuring registry setting for IDM");
             InstallerUtils.getInstallerHelper().configRegistry();
         } catch (Exception ex) {
-            log.error("Unable to configure registry for IDM upgrade.", ex);
+            log.error("Unable to configure registry for IDM updgrade.", ex);
         }
     }
 
@@ -143,7 +121,7 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
             try {
                 this.isLightwave = ReleaseUtil.isLightwave();
             } catch (IOException e) {
-                throw new IllegalStateException(String.format("Failed to check whether the installation is Lightwave: %s", e.getMessage()));
+                throw new IllegalStateException(String.format("Failed to check whehter the installation is Lightwave: %s", e.getMessage()));
             }
 
             initialized = true;
@@ -220,24 +198,6 @@ public class IdentityManagerInstaller implements IPlatformComponentInstaller {
             hostnameFile.delete();
         } catch (Exception ex){
 
-        }
-    }
-
-    private void extractJniLib() {
-        try {
-            File jna = Native.extractFromResourcePath(jniDispatchLib);
-            UserPrincipalLookupService lookupService = FileSystems.getDefault().getUserPrincipalLookupService();
-            GroupPrincipal group = lookupService.lookupPrincipalByGroupName(lightwaveGroup);
-            UserPrincipal user = lookupService.lookupPrincipalByName(lightwaveUser);
-
-            String ssoHome = InstallerUtils.getInstallerHelper().getSSOHomePath();
-            Path exportPath = Paths.get(ssoHome, jniDispatchExportPath);
-
-            Files.copy(jna.toPath(), exportPath, REPLACE_EXISTING);
-            Files.getFileAttributeView(exportPath, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS).setGroup(group);
-            Files.getFileAttributeView(exportPath, PosixFileAttributeView.class, LinkOption.NOFOLLOW_LINKS).setOwner(user);
-        } catch (Exception e) {
-            log.error("Failed to extract jnidispatch lib", e);
         }
     }
 

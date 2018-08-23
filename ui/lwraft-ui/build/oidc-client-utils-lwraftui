@@ -46,7 +46,7 @@ if [ -z "$OPERATION" ]; then
 fi
 
 #skip the first argument $OPERATION
-OPTIND=3
+OPTIND=2
 
 while getopts t:s:f:d:c:u:P:e o
 do
@@ -217,7 +217,7 @@ registerOIDCClient()
     echo "Success! OIDC client ID:"
     echo $OIDC_CLIENT_ID
 
-    cat > /opt/vmware/lightwaveui/config/lightwaveui.json <<-EOF
+    cat > /opt/vmware/lwraftui/config/lwraftui.json <<-EOF
 	{
 	   "knownServers": [
 	        {

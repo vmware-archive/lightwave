@@ -240,13 +240,13 @@ VMCAStringTokA(
 
 DWORD
 VMCAStringCountSubstring(
-    PSTR pszHaystack,
+    PCSTR pszHaystack,
     PCSTR pszNeedle,
     int *pnCount
     )
 {
     DWORD dwError = 0;
-    PSTR tmp = NULL;
+    PCSTR tmp = NULL;
     int  nCount = 0;
 
     if (!pszHaystack || !pszNeedle || !pnCount)

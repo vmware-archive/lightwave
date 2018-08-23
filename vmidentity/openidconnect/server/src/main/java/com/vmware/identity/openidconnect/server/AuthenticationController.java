@@ -99,7 +99,16 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
         IDiagnosticsContextScope context = null;
 
         try {
-            HttpRequest httpRequest = HttpRequest.from(request);
+            HttpRequest httpRequest;
+            try {
+                httpRequest = HttpRequest.from(request);
+            } catch (IllegalArgumentException e) {
+                ErrorObject errorObject = ErrorObject.invalidRequest(e.getMessage());
+                LoggerUtils.logFailedRequest(logger, errorObject, e);
+                httpResponse = HttpResponse.createJsonResponse(errorObject);
+                httpResponse.applyTo(response);
+                return null;
+            }
             context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
 
             AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(

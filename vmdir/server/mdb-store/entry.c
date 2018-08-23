@@ -517,12 +517,19 @@ VmDirMDBAgeOffEntry(
             dwError = 0;
         }
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
-        if ((dwError = MdbUpdateAttrMetaData( pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_DELETE )) == MDB_NOTFOUND)
-        {   // should never happen, but should not block deleting tombstone entry
-            dwError = 0;
-        }
-        BAIL_ON_VMDIR_ERROR( dwError );
+    dwError = MdbDeleteAllAttrMetaData(pTxn, entryId);
+    if (dwError)
+    {   // should never happen, but should not block deleting tombstone entry
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL, "%s DN (%s),  (%u)(%s)",
+            __FUNCTION__,
+            VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val),
+            dwError,
+            VDIR_SAFE_STRING(pBECtx->pszBEErrorMsg));
+
+        dwError = 0;
     }
 
     // cleanup EID/blob index

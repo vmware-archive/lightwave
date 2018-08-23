@@ -259,7 +259,12 @@ VmDirMDBGetAllAttrsMetaData(
             break;
         }
 
-        if (memcmp(key.mv_data, currKey.mv_data, key.mv_size) != 0)
+        /*
+         * there was at least one instance where key.size > currKey.size
+         * adding size check before memcmp
+        */
+        if (key.mv_size > currKey.mv_size ||
+            memcmp(key.mv_data, currKey.mv_data, key.mv_size) != 0)
         {
             break;
         }
@@ -835,9 +840,13 @@ MdbScanIndex(
             }
 
             // In case of partial match, check if we are passed the partial key match that we are looking for.
-            if (bIsPartialMatch && memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
+            if (bIsPartialMatch)
             {
-                break;
+                if (pKey->mv_size > currKey.mv_size ||
+                    memcmp(pKey->mv_data, currKey.mv_data, pKey->mv_size) != 0)
+                {
+                    break;
+                }
             }
 
             MDBDBTToEntryId( &value, &eId);

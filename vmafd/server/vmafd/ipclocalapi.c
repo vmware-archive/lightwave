@@ -5906,6 +5906,7 @@ VmAfdIpcConfigureDNS(
     PWSTR pwszUserName = NULL;
     PWSTR pwszPassword = NULL;
     PWSTR pwszPNID = NULL;
+    PWSTR pwszSiteName = NULL;
     VMW_TYPE_SPEC input_spec[] = DNS_CONFIG_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
 
@@ -5943,6 +5944,7 @@ VmAfdIpcConfigureDNS(
 
     pwszUserName        = input_spec[0].data.pWString;
     pwszPassword        = input_spec[1].data.pWString;
+    pwszSiteName        = input_spec[2].data.pWString;
 
     if (IsNullOrEmptyString(pwszUserName) ||
         IsNullOrEmptyString(pwszPassword))
@@ -5972,7 +5974,7 @@ VmAfdIpcConfigureDNS(
                    pwszDomainName,
                    pwszUserName,
                    pwszPassword,
-                   NULL);
+                   pwszSiteName);
     LOG_URESULT_ERROR(uResult);
 
     // Allocate a buffer, marshall the response

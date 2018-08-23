@@ -193,6 +193,46 @@ VmDirReplResolveConflicts(
     PLW_HASHMAP         pMetaDataMap
     );
 
+//valuemetadata.c
+DWORD
+VmDirValueMetaDataDetachFromEntry(
+    PVDIR_ENTRY         pEntry,
+    PDEQUE              pValueMetaDataQueue
+    );
+
+DWORD
+VmDirValueMetaDataUpdateLocalUsn(
+    PVDIR_ENTRY    pEntry,
+    USN            localUsn,
+    PDEQUE         pValueMetaDataQueue
+    );
+
+DWORD
+VmDirValueMetaDataDeleteOldForReplace(
+    PVDIR_OPERATION       pModOp,
+    PVDIR_MODIFICATION    pMods,
+    ENTRYID               entryId
+    );
+
+DWORD
+VmDirReplSetAttrNewValueMetaData(
+    PDEQUE              pValueMetaDataQueue,
+    PVDIR_SCHEMA_CTX    pSchemaCtx,
+    ENTRYID             entryId,
+    USN                 localUsn,
+    PVDIR_OPERATION     pModOp
+    );
+
+//conflictresolution.c
+DWORD
+VmDirReplResolveValueMetaDataConflicts(
+    PVDIR_OPERATION                    pModOp,
+    PVDIR_ATTRIBUTE                    pAttr,
+    PVMDIR_VALUE_ATTRIBUTE_METADATA    pSupplierValueMetaData,
+    ENTRYID                            entryId,
+    PBOOLEAN                           pInScope
+    );
+
 #ifdef __cplusplus
 }
 #endif

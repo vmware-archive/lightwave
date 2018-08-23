@@ -9,6 +9,12 @@
 
 STOREDIRS = mdb-store
 
+if REPLICATION_V2
+    REPLDIR = replication2
+else
+    REPLDIR = replication
+endif
+
 SUBDIRS = \
     kdcsrvcommon \
     kdckrb5 \
@@ -22,7 +28,7 @@ SUBDIRS = \
     api \
     rest-head \
     middle-layer \
-    replication \
+    $(REPLDIR) \
     clusterstate \
     saslvmdirdb \
     schema \

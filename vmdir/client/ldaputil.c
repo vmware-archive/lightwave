@@ -4279,7 +4279,9 @@ VmDirJoinPreSetMaxServerIdRegKey(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
-    dwMaxServerID = (DWORD)VmDirStringToLA(ppszMaxServerID[0], NULL, 10);
+    dwError = VmDirStringToUINT32(ppszMaxServerID[0], NULL, &dwMaxServerID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if (dwMaxServerID < 1)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);

@@ -476,9 +476,14 @@ _VmDirGetPingResult(
    dwError = pPingReply->dwError = _VmDirGetLdapResult(pNode, lrr);
    BAIL_ON_VMDIR_ERROR(dwError);
 
-   pPingReply->raftStatus=VmDirStringToLA(attrRatfStatusValue.lberbv_val, NULL, 10);
-   pPingReply->currentTerm=VmDirStringToIA(attrCurrentTermValue.lberbv_val);
-   pPingReply->localUSN=VmDirStringToLA(attrHighestCommitUsnValue.lberbv_val, NULL, 10);
+   dwError = VmDirStringToUINT64(attrRatfStatusValue.lberbv_val, NULL, &pPingReply->raftStatus);
+   BAIL_ON_VMDIR_ERROR(dwError);
+
+   dwError = VmDirStringToUINT32(attrCurrentTermValue.lberbv_val, NULL, &pPingReply->currentTerm);
+   BAIL_ON_VMDIR_ERROR(dwError);
+
+   dwError = VmDirStringToINT64(attrHighestCommitUsnValue.lberbv_val, NULL, &pPingReply->localUSN);
+   BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
    VmDirFreeBervalContent(&attrRatfStatusValue);

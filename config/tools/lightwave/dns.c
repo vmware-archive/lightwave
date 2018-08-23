@@ -37,6 +37,10 @@ LightwaveDns(
     {
         iRetCode = LightwaveDCDnsDelete(argc-1, &argv[1]);
     }
+    else if (!strcmp(argv[0], "init-dc"))
+    {
+        iRetCode = LightwaveInitDNS(argc-1, &argv[1]);
+    }
     else
     {
         ShowUsage();
@@ -56,6 +60,7 @@ ShowUsage(
         "\n"
         "Commands:\n"
         "    delete-dc   delete DNS records of a DC\n"
+        "    init-dc    Initialize DNS records on local DC\n"
         "\n"
         "Run 'lightwave dns COMMAND --help' for more information on a particular command'\n";
 

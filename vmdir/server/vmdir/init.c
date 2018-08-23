@@ -784,7 +784,11 @@ _VmDirRestoreInstance(
             VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg));
 
     // <existing up-to-date vector>,<old invocation ID>:<local USN>,
+#ifdef REPLICATION_V2
+    dwError = VmDirUTDVectorGlobalCacheToString(&pszUtdVector);
+#else
     dwError = VmDirUTDVectorCacheToString(&pszUtdVector);
+#endif
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
@@ -800,7 +804,11 @@ _VmDirRestoreInstance(
             dwError,
             VDIR_SAFE_STRING(op.pBECtx->pszBEErrorMsg));
 
+#ifdef REPLICATION_V2
+    dwError = VmDirUTDVectorGlobalCacheReplace(pszNewUtdVector);
+#else
     dwError = VmDirUTDVectorCacheUpdate(pszNewUtdVector);
+#endif
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAppendAMod(
@@ -1535,7 +1543,11 @@ LoadServerGlobals(
         }
         if (VmDirStringCompareA(attr->pATDesc->pszName, ATTR_UP_TO_DATE_VECTOR, FALSE) == 0)
         {
+#ifdef REPLICATION_V2
+            dwError = VmDirUTDVectorGlobalCacheReplace(attr->vals[0].lberbv.bv_val);
+#else
             dwError = VmDirUTDVectorCacheUpdate(attr->vals[0].lberbv.bv_val);
+#endif
             BAIL_ON_VMDIR_ERROR_WITH_MSG(
                     dwError,
                     pszLocalErrMsg,
@@ -1795,12 +1807,8 @@ InitializeGlobalVars(
                                         gVmdirGlobals.dwOperationsThreadTimeoutInMilliSec);  // default wait time 10 seconds
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMutex(&gVmdirGlobals.pMutexIPCConnection);
-    BAIL_ON_VMDIR_ERROR(dwError)
-
     dwError = VmDirAllocateMutex(&gVmdirGlobals.pFlowCtrlMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
-
 
     if (gVmdirGlobals.bTrackLastLoginTime)
     {
@@ -1817,7 +1825,11 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+#ifdef REPLICATION_V2
+    dwError = VmDirUTDVectorGlobalCacheInit();
+#else
     dwError = VmDirUTDVectorCacheInit();
+#endif
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirDDVectorInit();

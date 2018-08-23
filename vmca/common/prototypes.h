@@ -51,6 +51,15 @@ VmwPosixCfgReadStringValue(
     );
 
 DWORD
+VmwPosixCfgReadStringArrayValue(
+    PVMW_CFG_KEY        pKey,
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PDWORD              pdwNumValues,
+    PSTR                **pppszValues
+    );
+
+DWORD
 VmwPosixCfgReadDWORDValue(
     PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,

@@ -1,0 +1,15 @@
+{
+    "SNValidate": {
+        "match": {
+                "data": "req.upn.dn",
+                "condition": "begins",
+                "with": "ou=system:nodes,ou=Computers,dc=a,dc=b"
+        },
+        "validate": [
+            {
+                "data": "req.csr.subj.o",
+                "with": "req.upn.dn.rdn"
+            }
+        ]
+    }
+}

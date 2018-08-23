@@ -302,6 +302,14 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_FREE_VALUE_METADATA(pValueMetaData)   \
+    do {                                                 \
+        if ((pValueMetaData)) {                          \
+            VmDirFreeValueMetaData(pValueMetaData);      \
+            (pValueMetaData) = NULL;                     \
+        }                                                \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_BER(pBerElement)    \
     do {                                    \
         if ((pBerElement)) {                \
@@ -680,6 +688,8 @@ extern "C" {
 #endif
 
 #define VMDIR_IS_OP_CTRL_PASSBLOB(op) (op->passblobCtrl != NULL)
+
+#define tcp_socket_close(s) (shutdown(s, SHUT_RDWR), close(s))
 
 //////////////////////////////////////////////////////////////////////////
 // Used in attribute index cache and bdb-store

@@ -77,7 +77,16 @@ public class LogoutController {
         IDiagnosticsContextScope context = null;
 
         try {
-            HttpRequest httpRequest = HttpRequest.from(request);
+            HttpRequest httpRequest;
+            try {
+                httpRequest = HttpRequest.from(request);
+            } catch (IllegalArgumentException e) {
+                ErrorObject errorObject = ErrorObject.invalidRequest(e.getMessage());
+                LoggerUtils.logFailedRequest(logger, errorObject, e);
+                httpResponse = HttpResponse.createJsonResponse(errorObject);
+                httpResponse.applyTo(response);
+                return;
+            }
             context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
 
             LogoutRequestProcessor p = new LogoutRequestProcessor(
@@ -86,6 +95,9 @@ public class LogoutController {
                     httpRequest,
                     tenant);
             httpResponse = p.process();
+        } catch (ServerException e) {
+            LoggerUtils.logFailedRequest(logger, e.getErrorObject(), e);
+            httpResponse = HttpResponse.createJsonResponse(e.getErrorObject());
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);

@@ -39,6 +39,55 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
+//replscope.c
+DWORD
+VmDirIsAttrInScope(
+    PVDIR_OPERATION              pOperation,
+    PCSTR                        pszAttrType,
+    PVMDIR_ATTRIBUTE_METADATA    pAttrMetadata,
+    USN                          priorSentUSNCreated,
+    PBOOLEAN                     pbInScope
+    );
+
+DWORD
+VmDirIsAttrValueInScope(
+    PVDIR_OPERATION    pOperation,
+    PDEQUE             pAllValueMetaDataQueue,
+    PDEQUE             pValueMetaDataToSendQueue
+    );
+
+DWORD
+VmDirIsUsnInScope(
+    PVDIR_OPERATION     pOperation,
+    PCSTR               pszAttrName,
+    PCSTR               pszOrigInvocationId,
+    USN                 origUsn,
+    USN                 localUSN,
+    USN                 priorSentUSNCreated,
+    PBOOLEAN            pbIsUsnInScope
+    );
+
+//writeattributes.c
+DWORD
+VmDirWriteMetaDataAttribute(
+   PVDIR_OPERATION              pOperation,
+   PVDIR_ATTRIBUTE              pAttr,
+   int                          numAttrMetaData,
+   PATTRIBUTE_META_DATA_NODE    pAttrMetaData,
+   BerElement *                 ber,
+   PBOOLEAN                     pbNonTrivialAttrsInReplScope,
+   PSTR*                        ppszErrorMsg
+   );
+
+DWORD
+VmDirWriteValueMetaDataAttribute(
+   PVDIR_OPERATION              pOperation,
+   PDEQUE                       pAllValueMetaDataQueue,
+   BerElement *                 pBer,
+   PSTR*                        ppszErrorMsg,
+   PBOOLEAN                     pNonTrivialAttrs
+   );
+
 #ifdef __cplusplus
 }
 #endif

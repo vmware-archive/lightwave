@@ -48,6 +48,11 @@ vmdird_SOURCES = \
 VMDIRD_BACKEND_INCLUDES=
 VMDIRD_BACKEND_LD_FLAGS=
 VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
+if REPLICATION_V2
+    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
+else
+    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
+endif
 
 vmdird_CPPFLAGS = \
     -g \
@@ -76,7 +81,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/server/acl/libvmacl.la \
     $(top_builddir)/vmdir/server/backend/libbackend.la \
     $(VMDIRD_BACKEND_STORE) \
-    $(top_builddir)/vmdir/server/replication/libreplication.la \
+    $(VMDIRD_REPLICATION_LIB) \
     $(top_builddir)/vmdir/server/clusterstate/libclusterstate.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/server/common/libsrvcommon.la \

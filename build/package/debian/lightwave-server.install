@@ -69,7 +69,6 @@ opt/vmware/share/config/vmdns.reg
 opt/vmware/share/config/vmdnsd-syslog-ng.conf
 opt/vmware/vmware-sts/bin/setenv.sh
 opt/vmware/vmware-sts/bin/vmware-identity-tomcat-extensions.jar
-opt/vmware/vmware-sts/bin/pro-grade-1.1.1.jar
 opt/vmware/vmware-sts/conf/catalina.policy
 opt/vmware/vmware-sts/conf/catalina.properties
 opt/vmware/vmware-sts/conf/context.xml
@@ -77,6 +76,5 @@ opt/vmware/vmware-sts/conf/logging.properties
 opt/vmware/vmware-sts/conf/server.xml
 opt/vmware/vmware-sts/conf/tomcat-users.xml
 opt/vmware/vmware-sts/conf/web.xml
-opt/vmware/vmware-sts/conf/sts.policy
 opt/vmware/vmware-sts/webapps/ROOT.war
 opt/vmware/vmware-sts/webapps/lightwaveui.war

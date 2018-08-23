@@ -126,6 +126,26 @@ error:
     return dwError;
 }
 
+int
+VmDirCompareMemory(
+    PVOID   pMemory1,
+    PVOID   pMemory2,
+    size_t  size
+    )
+{
+    int   retVal = 0;
+
+    if (!pMemory1 || !pMemory2)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, ERROR_INVALID_PARAMETER);
+    }
+
+    retVal = memcmp(pMemory1, pMemory2, size);
+
+error:
+    return retVal;
+}
+
 DWORD
 VmDirAllocateAndCopyMemory(
     PVOID   pBlob,

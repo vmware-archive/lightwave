@@ -33,6 +33,166 @@
  *                            vals SET OF value AttributeValue }
  */
 
+#ifdef REPLICATION_V2
+int
+VmDirParseBerToEntry(
+    BerElement*     ber,
+    PVDIR_ENTRY*    ppEntry,
+    ber_int_t*      pErrCode,
+    PSTR*           ppszErrMsg
+    )
+{
+    int              retVal = LDAP_SUCCESS;
+    ber_int_t        errCode = 0;
+    PVDIR_ENTRY      pEntry = NULL;
+    char *           endOfAttrsMarker = NULL;
+    ber_len_t        len = 0;
+    ber_tag_t        tag = LBER_ERROR;
+    PVDIR_ATTRIBUTE  pAttr = NULL;
+    ber_len_t        size = 0;
+    BerValue*        pbvVals = NULL;
+    PSTR             pszLocalErrorMsg = NULL;
+    VDIR_BERVALUE    bvDn = {0};
+    VDIR_BERVALUE    bvType = {0};
+    VDIR_BERVALUE    bvVal = {0};
+
+    if (!ber || !ppEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, ERROR_INVALID_PARAMETER);
+    }
+
+    retVal = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    // Get entry DN. 'm' => bvDn points to DN within (in-place) ber. Should not be freed.
+    if ( ber_scanf( ber, "{m", &bvDn ) == LBER_ERROR )
+    {
+        VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: ber_scanf failed" );
+        errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Decoding error while parsing the target DN");
+    }
+
+    retVal = VmDirBervalContentDup(&bvDn, &(pEntry->dn));
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    // Get entry attributes. ber_first_element => skip the sequence header, set the cursor at the 1st attribute in the
+    // SEQ of SEQ
+    for ( tag = ber_first_element( ber, &len, &endOfAttrsMarker ); tag != LBER_DEFAULT;
+          tag = ber_next_element( ber, &len, endOfAttrsMarker ) )
+    {
+        if (VmDirAllocateMemory( sizeof(VDIR_ATTRIBUTE), (PVOID *)&pAttr ) != 0)
+        {
+            errCode = retVal = LDAP_OPERATIONS_ERROR;
+            BAIL_ON_VMDIR_ERROR( retVal );
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pbvVals);
+        // 'm' => bvType points to attribute type within (in-place) ber
+        // 'M' => Build array of BerValues by allocating memory for BerValue structures, attribute value strings are
+        //        in-place. Last BerValue.bv_val points to NULL.
+        size = sizeof( BerValue ); // Size of the structure is passed-in, and number of attribute values are returned
+                                   // back in the same parameter.
+        if ( ber_scanf( ber, "{m[M]}", &bvType, &pbvVals, &size, (ber_len_t) 0 ) == LBER_ERROR )
+        {
+            VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: decoding error" );
+            errCode = LDAP_PROTOCOL_ERROR;
+            retVal = LDAP_NOTICE_OF_DISCONNECT;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                            "Decoding error while parsing an attribute");
+        }
+
+        retVal = VmDirBervalContentDup(&bvType, &(pAttr->type));
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        if ( pbvVals == NULL || size == 0 )
+        {
+            VMDIR_LOG_ERROR(LDAP_DEBUG_ARGS,
+                    "ParseEntry: no values for type %s",
+                    VDIR_SAFE_STRING(pAttr->type.lberbv.bv_val));
+            errCode = retVal = LDAP_PROTOCOL_ERROR;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                            "Attribute type has no values");
+        }
+        else if ( size > UINT16_MAX )
+        {   // currently, we only support 65535 attribute values due to encode/decode format constraint.
+            errCode = retVal = LDAP_PROTOCOL_ERROR;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                            "Too many %s attribute values, max %u allowed.",
+                                            VDIR_SAFE_STRING(pAttr->type.lberbv_val), UINT16_MAX);
+        }
+        else
+        {    // copy pBervArray content into pAttr->vals
+            int iCnt = 0;
+
+            if (VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (size+1), (PVOID*)&pAttr->vals) != 0)
+            {
+                errCode = retVal = LDAP_OPERATIONS_ERROR;
+                BAIL_ON_VMDIR_ERROR( retVal );
+            }
+
+            for (iCnt = 0; iCnt < size; iCnt++)
+            {
+                bvVal.lberbv = pbvVals[iCnt];
+
+                retVal = VmDirBervalContentDup(&bvVal, &pAttr->vals[iCnt]);
+                BAIL_ON_VMDIR_ERROR(retVal);
+            }
+        }
+
+        // we should be safe to cast...
+        pAttr->numVals = (unsigned int)size;
+        pAttr->next = pEntry->attrs;
+        pEntry->attrs = pAttr;
+        pAttr = NULL;
+    }
+
+    if ( ber_scanf( ber, "}") == LBER_ERROR )
+    {
+        VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: ber_scanf failed" );
+        errCode = LDAP_PROTOCOL_ERROR;
+        retVal = LDAP_NOTICE_OF_DISCONNECT;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(   retVal, (pszLocalErrorMsg),
+                                        "Decoding error while parsing the end of message.");
+    }
+
+    *ppEntry = pEntry;
+
+cleanup:
+
+    VmDirFreeAttribute(pAttr);
+
+    if (ppszErrMsg)
+    {
+        *ppszErrMsg = pszLocalErrorMsg;
+        pszLocalErrorMsg = NULL;
+    }
+
+    if (pErrCode)
+    {
+        *pErrCode = errCode;
+    }
+
+    VMDIR_SAFE_FREE_STRINGA(pszLocalErrorMsg);
+    VMDIR_SAFE_FREE_MEMORY(pbvVals);
+
+    return retVal;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error code (%d)",
+            __FUNCTION__,
+            retVal);
+
+    VmDirFreeEntry(pEntry);
+    goto cleanup;
+}
+#else
+
 int
 VmDirParseBerToEntry(
     BerElement *ber,
@@ -173,6 +333,7 @@ error:
 
     goto cleanup;
 }
+#endif
 
 int
 VmDirParseEntry(
