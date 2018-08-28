@@ -1,6 +1,7 @@
-noinst_LTLIBRARIES = libvmdird.la
+sbin_PROGRAMS = vmdird
 
-idl_srcdir=$(top_srcdir)/vmdir/idl
+vmdird_SOURCES = \
+    main.c
 
 VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
 
@@ -10,49 +11,7 @@ else
     VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
 endif
 
-libvmdird_la_SOURCES = \
-    accountmgmt.c \
-    auth.c \
-    background.c \
-    dbbackup.c \
-    globals.c \
-    heartbeat.c \
-    index.c \
-    init.c \
-    instance.c \
-    integritychk.c \
-    integrityrpt.c \
-    ipcserver.c \
-    ipclocalapi.c \
-    ipcapihandler.c \
-    krb.c \
-    metrics.c \
-    parseargs.c \
-    promote/dcactmgmt.c \
-    regconfig.c \
-    rpcserv.c \
-    rpcsrpserv.c \
-    rpcstring.c \
-    rpc.c \
-    schema.c \
-    service.c \
-    shutdown.c \
-    signal.c \
-    srp_verifier_sstub.c \
-    srvthr.c \
-    superlogging.c \
-    tenantmgmt.c \
-    tombstone.c \
-    tracklastlogin.c \
-    trusts.c \
-    utils.c \
-    vmdir_sstub.c \
-    vmdirftp_sstub.c \
-    vmdirdbcp_sstub.c \
-    vmdirsuperlog_sstub.c \
-    vmevent.c
-
-libvmdird_la_CPPFLAGS = \
+vmdird_CPPFLAGS = \
     -g \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
@@ -67,7 +26,7 @@ libvmdird_la_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-libvmdird_la_LIBADD = \
+vmdird_LDADD = \
     $(top_builddir)/vmdir/server/vmkdc/libvmkdcserv.la \
     $(top_builddir)/vmdir/server/metrics/libmetrics.la \
     $(top_builddir)/vmdir/server/ldap-head/libldap-head.la \
@@ -90,6 +49,7 @@ libvmdird_la_LIBADD = \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     $(top_builddir)/vmcommon/libvmcommon.la \
+    $(top_builddir)/vmdir/server/vmdir/libvmdird.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -110,39 +70,10 @@ libvmdird_la_LIBADD = \
     @COPENAPI_LIBS@ \
     @CRESTENGINE_LIBS@
 
-libvmdird_la_LDFLAGS = \
-    -static
-
-CLEANFILES = \
-    vmdir_h.h \
-    vmdir_cstub.c \
-    vmdir_sstub.c \
-    vmdirftp_h.h \
-    vmdirdbcp_h.h \
-    vmdirftp_cstub.c \
-    vmdirdbcp_cstub.c \
-    vmdirftp_sstub.c \
-    vmdirdbcp_sstub.c \
-    srp_verifier_h.h \
-    srp_verifier_cstub.c \
-    srp_verifier_sstub.c \
-    vmdirsuperlog_h.h \
-    vmdirsuperlog_cstub.c \
-    vmdirsuperlog_sstrub.c
-
-BUILT_SOURCES = vmdir_h.h vmdirftp_h.h vmdirdbcp_h.h srp_verifier_h.h vmdirsuperlog_h.h
-
-vmdir_h.h vmdir_sstub.c: $(idl_srcdir)/vmdir.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdir_h.h -sstub_pref Srv_ -I$(idl_srcdir) $<
-
-vmdirftp_h.h vmdirftp_sstub.c: $(idl_srcdir)/vmdirftp.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirftp_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
-
-vmdirdbcp_h.h vmdirdbcp_sstub.c: $(idl_srcdir)/vmdirdbcp.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirdbcp_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
-
-srp_verifier_h.h srp_verifier_sstub.c: $(idl_srcdir)/srp_verifier.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header srp_verifier_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) $<
-
-vmdirsuperlog_h.h vmdirsuperlog_sstub.c: $(idl_srcdir)/vmdirsuperlog.idl
-	$(IDL) $(IDLFLAGS) -keep c_source -header vmdirsuperlog_h.h -cstub_pref Cli_ -sstub_pref Srv_ -I$(idl_srcdir) -I$(top_srcdir)/vmdir/include/public $<
+vmdird_LDFLAGS = \
+    -rdynamic -ldl \
+    @OPENSSL_LDFLAGS@ \
+    @LW_LDFLAGS@ \
+    @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@

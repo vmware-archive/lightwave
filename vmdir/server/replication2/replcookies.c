@@ -42,6 +42,7 @@ VmDirReplCookieUpdate(
     VDIR_BERVALUE   utdVector = VDIR_BERVALUE_INIT;
     PSTR            pszUsn = NULL;
     PSTR            pszUtdVector = NULL;
+    PSTR            pszOldUTDVector = NULL;
 
     // Update (both in memory and on disk) lastLocalUsnProcessed in the replication agreement, and the
     // utd vector in the server object.
@@ -64,6 +65,9 @@ VmDirReplCookieUpdate(
                 LDAP_DEBUG_REPL,
                 "VmDirReplUpdateCookies: Replication cycle done. Updating cookies");
 
+        retVal = VmDirUTDVectorGlobalCacheToString(&pszOldUTDVector);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
         // Update disk copy of utdVector
         retVal = _VmDirUpdateServerObject(pSchemaCtx, &utdVector, replAgr);
         BAIL_ON_VMDIR_ERROR(retVal);
@@ -71,6 +75,13 @@ VmDirReplCookieUpdate(
         // Update memory copy of utdVector
         retVal = VmDirUTDVectorGlobalCacheReplace(utdVector.lberbv.bv_val);
         BAIL_ON_VMDIR_ERROR(retVal);
+
+        VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: Updated UTDVector. Old UTDVector = %s New UTDVector =  %s",
+                    __FUNCTION__,
+                    pszOldUTDVector,
+                    pszUtdVector);
 
         // Update disk copy of lastLocalUsnProcessed
         retVal = _VmDirUpdateReplicationAgreement(pSchemaCtx, replAgr, &bvLastLocalUsnProcessed);
@@ -99,6 +110,7 @@ VmDirReplCookieUpdate(
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszUsn);
     VMDIR_SAFE_FREE_STRINGA(pszUtdVector);
+    VMDIR_SAFE_FREE_STRINGA(pszOldUTDVector);
     return retVal;
 
 error:
