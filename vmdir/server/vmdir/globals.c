@@ -43,6 +43,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowInsecureAuth, 0),
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),
         VMDIR_SF_INIT(.bDisableVECSIntegration, 0),
+        VMDIR_SF_INIT(.bEnableRegionalMaster, 0),
         VMDIR_SF_INIT(.pdwLdapListenPorts, NULL),
         VMDIR_SF_INIT(.dwLdapListenPorts, 0),
         VMDIR_SF_INIT(.pdwLdapsListenPorts, NULL),

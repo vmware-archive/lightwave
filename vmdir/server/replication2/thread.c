@@ -218,8 +218,6 @@ vdirReplicationThrFun(
         goto cleanup;
     }
 
-    VmDirClusterLoadCache();
-
     while (1)
     {
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)

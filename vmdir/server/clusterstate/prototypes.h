@@ -64,10 +64,6 @@ VmDirPersistTerm(
     int term
     );
 
-BOOLEAN
-VmDirIsRegionalMasterEnabled(
-    );
-
 // libmain.c
 
 

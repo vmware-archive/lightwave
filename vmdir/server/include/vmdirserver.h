@@ -170,6 +170,7 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowInsecureAuth;
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
+    BOOLEAN                         bEnableRegionalMaster;
 
     PDWORD                          pdwLdapListenPorts;
     DWORD                           dwLdapListenPorts;

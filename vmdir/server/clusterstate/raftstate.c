@@ -208,7 +208,7 @@ VmDirRaftGetLeaderString(
 
     VMDIR_RWLOCK_READLOCK(bLock, gpClusterState->pRWLock, 0);
     if (gpClusterState == NULL || gpClusterState->pNodeSelf == NULL ||
-        gpClusterState->pNodeSelf->pszFQDN == NULL)
+        gpClusterState->pNodeSelf->srvObj.pszFQDN == NULL)
     {
        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
@@ -216,13 +216,13 @@ VmDirRaftGetLeaderString(
     if (gRaftState.clusterSize < 2)
     {
         //Standalone server, show self as the leader.
-        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gpClusterState->pNodeSelf->pszFQDN);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gpClusterState->pNodeSelf->srvObj.pszFQDN);
     } else if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER && gRaftState.leader.lberbv_len > 0 )
     {
         dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gRaftState.leader.lberbv_val);
-    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gpClusterState->pNodeSelf->pszFQDN)
+    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER && gpClusterState->pNodeSelf->srvObj.pszFQDN)
     {
-        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gpClusterState->pNodeSelf->pszFQDN);
+        dwError = VmDirAllocateStringPrintf(&pszLeader, "%s", gpClusterState->pNodeSelf->srvObj.pszFQDN);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -256,14 +256,14 @@ VmDirRaftGetFollowers(
     }
 
     if (gpClusterState == NULL || gpClusterState->pNodeSelf == NULL ||
-        gpClusterState->pNodeSelf->pszFQDN == NULL)
+        gpClusterState->pNodeSelf->srvObj.pszFQDN == NULL)
     {
        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
     if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER)
     {
-        dwError = VmDirAllocateStringPrintf(&pFollower, "%s", gpClusterState->pNodeSelf->pszFQDN);
+        dwError = VmDirAllocateStringPrintf(&pFollower, "%s", gpClusterState->pNodeSelf->srvObj.pszFQDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = dequePush(pFollowers, pFollower);
@@ -284,7 +284,7 @@ VmDirRaftGetFollowers(
                 continue;
             }
             // list active followers only
-            dwError = VmDirAllocateStringPrintf(&pFollower, "%s", pNode->pszFQDN);
+            dwError = VmDirAllocateStringPrintf(&pFollower, "%s", pNode->srvObj.pszFQDN);
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = dequePush(pFollowers, pFollower);
@@ -318,12 +318,12 @@ VmDirRaftGetState(
     VMDIR_RWLOCK_READLOCK(bLock, gpClusterState->pRWLock, 0);
 
     if (gpClusterState == NULL || gpClusterState->pNodeSelf == NULL ||
-        gpClusterState->pNodeSelf->pszFQDN == NULL)
+        gpClusterState->pNodeSelf->srvObj.pszFQDN == NULL)
     {
        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
-    dwError = VmDirAllocateStringPrintf(&pNode, "node: %s", gpClusterState->pNodeSelf->pszFQDN);
+    dwError = VmDirAllocateStringPrintf(&pNode, "node: %s", gpClusterState->pNodeSelf->srvObj.pszFQDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = dequePush(pStateQueue, pNode);
@@ -371,7 +371,7 @@ VmDirRaftGetState(
             }
 
             PVMDIR_LDP_CONN pLdpConn = &pStateNode->nodeLDP;
-            dwError = VmDirAllocateStringPrintf(&pNode, "follower: %s %s", pStateNode->pszFQDN,
+            dwError = VmDirAllocateStringPrintf(&pNode, "follower: %s %s", pStateNode->srvObj.pszFQDN,
                         (pLdpConn && pLdpConn->connState==DC_CONNECTION_STATE_CONNECTED)? "active":"disconnected");
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -400,37 +400,25 @@ VmDirRaftGetMembers(
     )
 {
     DWORD dwError = 0;
-    VDIR_BERVALUE dcContainerDN = VDIR_BERVALUE_INIT;
+    VDIR_BERVALUE serverContainerDN = VDIR_BERVALUE_INIT;
     PSTR pHostname = NULL;
-    PSTR pszName = NULL;
-    VDIR_BERVALUE dcRdn = VDIR_BERVALUE_INIT;
     VDIR_ENTRY_ARRAY entryArray = {0};
     int i = 0;
 
-    VmDirGetParentDN(&(gVmdirServerGlobals.dcAccountDN), &dcContainerDN);
-    if (dcContainerDN.lberbv.bv_len == 0)
+    VmDirGetParentDN(&(gVmdirServerGlobals.serverObjDN), &serverContainerDN);
+    if (serverContainerDN.lberbv.bv_len == 0)
     {
-        dwError = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( dwError );
+        BAIL_WITH_VMDIR_ERROR(dwError, LDAP_OPERATIONS_ERROR);
     }
 
-    dwError = VmDirSimpleEqualFilterInternalSearch(dcContainerDN.lberbv.bv_val,
-                    LDAP_SCOPE_ONE, ATTR_OBJECT_CLASS, OC_COMPUTER, &entryArray);
+    dwError = VmDirSimpleEqualFilterInternalSearch(serverContainerDN.lberbv.bv_val,
+                    LDAP_SCOPE_ONE, ATTR_OBJECT_CLASS, OC_DIR_SERVER, &entryArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (i = 0; i < entryArray.iSize; i++)
     {
-        dwError = VmDirNormalizeDNWrapper(&(entryArray.pEntry[i].dn));
+        dwError = VmDirDnLastRDNToCn(entryArray.pEntry[i].dn.lberbv_val, &pHostname);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirGetRdn(&entryArray.pEntry[i].dn, &dcRdn);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirRdnToNameValue(&dcRdn, &pszName, &pHostname);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        VmDirFreeBervalContent(&dcRdn);
-        VMDIR_SAFE_FREE_STRINGA(pszName);
 
         dwError = dequePush(pMembers, pHostname);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -438,8 +426,7 @@ VmDirRaftGetMembers(
     }
 
 cleanup:
-    VmDirFreeBervalContent(&dcContainerDN);
-    VmDirFreeBervalContent(&dcRdn);
+    VmDirFreeBervalContent(&serverContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pHostname);
     VmDirFreeEntryArrayContent(&entryArray);
     return dwError;
@@ -473,7 +460,7 @@ VmDirClusterDeleteNode(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
-    if (VmDirStringCompareA(pszHost, gpClusterState->pNodeSelf->pszFQDN, FALSE)==0)
+    if (VmDirStringCompareA(pszHost, gpClusterState->pNodeSelf->srvObj.pszFQDN, FALSE)==0)
     {
         goto cleanup;
     }
@@ -485,8 +472,10 @@ VmDirClusterDeleteNode(
         gRaftState.initialized = FALSE;
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: set %s to InActive", __func__, pszHost);
     }
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
+
 cleanup:
+    VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
+
     VMDIR_SAFE_FREE_MEMORY(pszHost);
     VMDIR_SAFE_FREE_MEMORY(pzaName);
     VmDirFreeBervalContent(&serverDnRdn);
