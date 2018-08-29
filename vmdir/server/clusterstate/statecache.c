@@ -198,6 +198,7 @@ VmDirClusterLoadCache(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    LwRtlHashMapResetIter(&nodeIter);
     while (LwRtlHashMapIterate(gpClusterState->phmNodes, &nodeIter, &pair))
     {
         PSTR                pszKey = (PSTR)pair.pKey;
@@ -244,7 +245,7 @@ VmDirClusterNodeLDPConn(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VDIR_SAFE_UNBIND_EXT_S(pLdpConn->pLd);
-    dwError = VmDirConnectLDAPServerWithMachineAccount(pNode->pszFQDN, pszDomainName, &pLdpConn->pLd);
+    dwError = VmDirConnectLDAPServerWithMachineAccount(pNode->srvObj.pszFQDN, pszDomainName, &pLdpConn->pLd);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pLdpConn->dwLdapError = 0;
@@ -254,6 +255,142 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+VmDirClusterCacheCloneSrvObj(
+    PVDIR_LINKED_LIST*  ppSrvObjList
+    )
+{
+    DWORD               dwError = 0;
+    BOOLEAN             bInLock = FALSE;
+    LW_HASHMAP_ITER         nodeIter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR         pair = {NULL, NULL};
+    PVMDIR_SERVER_OBJECT    pSrvObj = 0;
+    PVMDIR_NODE_STATE       pNodeState = NULL;
+    PVDIR_LINKED_LIST       pLocalSrvObjList = NULL;
+
+    if (!ppSrvObjList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLinkedListCreate(&pLocalSrvObjList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VMDIR_RWLOCK_READLOCK(bInLock, gpClusterState->pRWLock, 0);
+
+    while (LwRtlHashMapIterate(gpClusterState->phmNodes, &nodeIter, &pair))
+    {
+        pNodeState = (PVMDIR_NODE_STATE)pair.pValue;
+
+        dwError = VmDirCloneServerObject(&pNodeState->srvObj, &pSrvObj);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(pLocalSrvObjList, pSrvObj, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pSrvObj = NULL;
+    }
+
+    *ppSrvObjList = pLocalSrvObjList;
+
+cleanup:
+    VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
+    VmDirFreeServerObject(pSrvObj);
+    return dwError;
+
+error:
+    VmDirFreeSrvObjLinkedList(pLocalSrvObjList);
+    goto cleanup;
+}
+
+VOID
+VmDirFreeSrvObjLinkedList(
+    PVDIR_LINKED_LIST   pSrvObjList
+    )
+{
+    PVDIR_LINKED_LIST_NODE  pNode = NULL;
+
+    if (pSrvObjList)
+    {
+        VmDirLinkedListGetHead(pSrvObjList, &pNode);
+        while (pNode)
+        {
+            if (pNode->pElement)
+            {
+                VmDirFreeServerObject((PVMDIR_SERVER_OBJECT) pNode->pElement);
+            }
+            pNode = pNode->pNext;
+        }
+        VmDirFreeLinkedList(pSrvObjList);
+    }
+}
+
+VOID
+VmDirFreeServerObjectContent(
+    PVMDIR_SERVER_OBJECT    pSrvObj
+    )
+{
+    if (pSrvObj)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pSrvObj->pszDN);
+        VMDIR_SAFE_FREE_MEMORY(pSrvObj->pszFQDN);
+        VMDIR_SAFE_FREE_MEMORY(pSrvObj->pszInvocationId);
+        VMDIR_SAFE_FREE_MEMORY(pSrvObj->pszSite);
+    }
+}
+
+VOID
+VmDirFreeServerObject(
+    PVMDIR_SERVER_OBJECT    pSrvObj
+    )
+{
+    if (pSrvObj)
+    {
+        VmDirFreeServerObjectContent(pSrvObj);
+        VMDIR_SAFE_FREE_MEMORY(pSrvObj);
+    }
+}
+
+DWORD
+VmDirCloneServerObject(
+    PVMDIR_SERVER_OBJECT    pSrvObj,
+    PVMDIR_SERVER_OBJECT*   ppOutSrvObj
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_SERVER_OBJECT pLocalSrvObj = NULL;
+
+    if (!pSrvObj || !ppOutSrvObj)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_SERVER_OBJECT), (PVOID)&pLocalSrvObj);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrvObj->pszDN, &pLocalSrvObj->pszDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrvObj->pszFQDN, &pLocalSrvObj->pszFQDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrvObj->pszInvocationId, &pLocalSrvObj->pszInvocationId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringA(pSrvObj->pszSite, &pLocalSrvObj->pszSite);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pLocalSrvObj->dwServerId = pSrvObj->dwServerId;
+
+    *ppOutSrvObj = pLocalSrvObj;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeServerObject(pLocalSrvObj);
     goto cleanup;
 }
 
@@ -316,17 +453,17 @@ _VmDirClusterAddNode_inWlock(
     dwError = VmDirAllocateMemory(sizeof(*pNode), (PVOID)&pNode);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringA(pEntry->dn.lberbv_val, &pNode->pszDN);
+    dwError = VmDirAllocateStringA(pEntry->dn.lberbv_val, &pNode->srvObj.pszDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringA(pAttCN->vals[0].lberbv_val, &pNode->pszFQDN);
+    dwError = VmDirAllocateStringA(pAttCN->vals[0].lberbv_val, &pNode->srvObj.pszFQDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if ((pAttInvocationId = VmDirFindAttrByName(pEntry, ATTR_INVOCATION_ID)) == NULL)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
-    dwError = VmDirAllocateStringA(pAttInvocationId->vals[0].lberbv_val, &pNode->pszInvocationId);
+    dwError = VmDirAllocateStringA(pAttInvocationId->vals[0].lberbv_val, &pNode->srvObj.pszInvocationId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if ((pAttServerId = VmDirFindAttrByName(pEntry, ATTR_SERVER_ID)) == NULL)
@@ -334,10 +471,10 @@ _VmDirClusterAddNode_inWlock(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
     }
 
-    dwError = VmDirStringToUINT32(pAttServerId->vals[0].lberbv_val, NULL, &pNode->dwServerId);
+    dwError = VmDirStringToUINT32(pAttServerId->vals[0].lberbv_val, NULL, &pNode->srvObj.dwServerId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirServerDNToSite(pNode->pszDN, (PSTR*)&pNode->pszSite);
+    dwError = VmDirServerDNToSite(pNode->srvObj.pszDN, (PSTR*)&pNode->srvObj.pszSite);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pNode->bIsActive = TRUE;
@@ -345,7 +482,7 @@ _VmDirClusterAddNode_inWlock(
 
     // is this self node?
     if (!gpClusterState->pNodeSelf &&
-        VmDirStringCompareA(pNode->pszFQDN, gVmdirServerGlobals.bvServerObjName.lberbv_val, FALSE) == 0
+        VmDirStringCompareA(pNode->srvObj.pszFQDN, gVmdirServerGlobals.bvServerObjName.lberbv_val, FALSE) == 0
        )
     {
         gpClusterState->pNodeSelf = pNode;
@@ -357,7 +494,7 @@ _VmDirClusterAddNode_inWlock(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // add to gpClusterState->phmNodes
-    dwError = VmDirAllocateStringA(pNode->pszFQDN, &pszHMKey);
+    dwError = VmDirAllocateStringA(pNode->srvObj.pszFQDN, &pszHMKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = LwRtlHashMapInsert(gpClusterState->phmNodes, pszHMKey, pNode, NULL);
@@ -439,7 +576,7 @@ _VmDirClusteAddNodeSite_inWlock(
 
     for (; pTmpList && pTmpList->dwArySize; pTmpList = pTmpList->pNextSiteList)
     {
-        if (VmDirStringCompareA(pNode->pszSite, pTmpList->pszSite, FALSE) == 0)
+        if (VmDirStringCompareA(pNode->srvObj.pszSite, pTmpList->pszSite, FALSE) == 0)
         {
             break;
         }
@@ -447,7 +584,7 @@ _VmDirClusteAddNodeSite_inWlock(
 
     if (!pTmpList || !pTmpList->dwArySize)
     {
-        dwError = _VmDirClusterAllocSiteList(pNode->pszSite, &pLocalList);
+        dwError = _VmDirClusterAllocSiteList(pNode->srvObj.pszSite, &pLocalList);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         if (gpClusterState->pSiteList)
@@ -503,10 +640,7 @@ _VmDirClusterFreeNode(
 {
     if (pNode)
     {
-        VMDIR_SAFE_FREE_MEMORY(pNode->pszFQDN);
-        VMDIR_SAFE_FREE_MEMORY(pNode->pszDN);
-        VMDIR_SAFE_FREE_MEMORY(pNode->pszSite);
-        VMDIR_SAFE_FREE_MEMORY(pNode->pszInvocationId);
+        VmDirFreeServerObjectContent(&pNode->srvObj);
         VDIR_SAFE_UNBIND_EXT_S(pNode->nodeLDP.pLd);
 
         VMDIR_SAFE_FREE_MEMORY(pNode);

@@ -464,4 +464,15 @@
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
     },                                                           \
+	{                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
 }

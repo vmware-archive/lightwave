@@ -12,20 +12,6 @@
  * under the License.
  */
 
-typedef struct _VMDIR_NODE_HEARTBEAT
-{
-    uint64_t    iServiceStartTimestamp;     // service start up timestamp of VMDIR_NODE_STATE.pszFQDN
-    uint64_t    iLastHBTimestamp;           // last HB received from VMDIR_NODE_STATE.pszFQDN
-} VMDIR_NODE_HEARTBEAT, *PVMDIR_NODE_HEARTBEAT;
-
-typedef struct _VMDIR_NODE_REPL_STATE
-{
-    DWORD       dwReplStateVersion;         // node supported replstateversion
-    USN         seenMyOrgUSN;               // my max org USN seen by VMDIR_NODE_STATE.pszFQDN
-    uint64_t    iLastReplCycleTimestamp;    // last done repl cycle timestamp of VMDIR_NODE_STATE.pszFQDN
-} VMDIR_NODE_REPL_STATE, *PVMDIR_NODE_REPL_STATE;
-
-
 typedef struct _VMDIR_LDP_CONN
 {
     LDAP*       pLd;
@@ -40,17 +26,11 @@ typedef struct _VMDIR_LDP_CONN
 
 typedef struct _VMDIR_NODE_STATE
 {
-    PSTR        pszFQDN;
-    PSTR        pszDN;
-    PSTR        pszSite;
-    PSTR        pszInvocationId;
-    DWORD       dwServerId;
+    VMDIR_SERVER_OBJECT srvObj;
     BOOLEAN     bIsSelf;                    // node of this vmdir service
     BOOLEAN     bIsActive;                  // inactive node will be removed during cache reload.
 
     VMDIR_LDP_CONN          nodeLDP;        // SUNG, TODO use VMDIR_DC_CONNECTION in PR 1994467
-    VMDIR_NODE_HEARTBEAT    nodeHB;
-    VMDIR_NODE_REPL_STATE   nodeReplState;
     BOOLEAN    bCtlSent;                    //The ping or vote control has sent and pending get result.
 } VMDIR_NODE_STATE, *PVMDIR_NODE_STATE;
 
