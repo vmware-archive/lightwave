@@ -21,7 +21,7 @@ DeleteMods(
     ModifyReq * modReq);
 
 static int
-GenerateDeleteAttrsMods(
+_GenerateDeleteAttrsMods(
     PVDIR_OPERATION pOperation,
     VDIR_ENTRY *    pEntry
     );
@@ -257,8 +257,8 @@ VmDirInternalDeleteEntry(
                 // Generate mods to delete attributes that need not be present in a DELETED entry
                 // Note: in case of executing the deadlock while loop multiple times, same attribute Delete mod be added
                 // multiple times in the modReq, which is expected to work correctly.
-                retVal = GenerateDeleteAttrsMods( pOperation, pEntry );
-                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
+                retVal = _GenerateDeleteAttrsMods( pOperation, pEntry );
+                BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "_GenerateDeleteAttrsMods failed - (%u)", retVal);
 
                 // Generate new meta-data for the attributes being updated
                 retVal = VmDirGenerateModsNewMetaData(pOperation, modReq->mods, pEntry->eId);
@@ -484,53 +484,53 @@ error:
 }
 
 static int
-GenerateDeleteAttrsMods(
+_GenerateDeleteAttrsMods(
     PVDIR_OPERATION pOperation,
-    VDIR_ENTRY *    pEntry
+    PVDIR_ENTRY     pEntry
     )
 {
     int                 retVal = 0;
-    VDIR_MODIFICATION * delMod = NULL;
-    VDIR_ATTRIBUTE *    attr = NULL;
-    PVDIR_ATTRIBUTE     objectGuidAttr = NULL;
-    VDIR_BERVALUE       deletedObjDN = VDIR_BERVALUE_INIT;
-    ModifyReq *         modReq = &(pOperation->request.modifyReq);
+    PVDIR_MODIFICATION  pDelMod = NULL;
+    PVDIR_ATTRIBUTE     pAttr = NULL;
+    PVDIR_ATTRIBUTE     pObjectGuidAttr = NULL;
+    VDIR_BERVALUE       bvDeletedObjDN = VDIR_BERVALUE_INIT;
+    ModifyReq*          pModReq = &(pOperation->request.modifyReq);
 
-    for (attr = pEntry->attrs; attr != NULL; attr = attr->next)
+    for (pAttr = pEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
     {
         // Retain the following kind of attributes
-        if (attr->pATDesc->usage != VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE ||
-            VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE ) == 0 ||
-            VmDirStringCompareA(attr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE ) == 0)
+        if (pAttr->pATDesc->usage != VDIR_LDAP_USER_APPLICATIONS_ATTRIBUTE ||
+            VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE) == 0 ||
+            VmDirStringCompareA(pAttr->type.lberbv.bv_val, ATTR_OBJECT_SECURITY_DESCRIPTOR, FALSE ) == 0)
         {
             continue;
         }
 
         retVal = VmDirAllocateMemory(
-                sizeof(VDIR_MODIFICATION), (PVOID*)&delMod);
+                sizeof(VDIR_MODIFICATION), (PVOID*)&pDelMod);
         BAIL_ON_VMDIR_ERROR(retVal);
 
-        delMod->operation = MOD_OP_DELETE;
+        pDelMod->operation = MOD_OP_DELETE;
 
-        delMod->attr.next = NULL;
-        delMod->attr.type = attr->type;
-        delMod->attr.pATDesc = attr->pATDesc;
-        delMod->attr.vals = NULL;
-        delMod->attr.numVals = 0;
+        pDelMod->attr.next = NULL;
+        pDelMod->attr.type = pAttr->type;
+        pDelMod->attr.pATDesc = pAttr->pATDesc;
+        pDelMod->attr.vals = NULL;
+        pDelMod->attr.numVals = 0;
 
-        delMod->next = modReq->mods;
-        modReq->mods = delMod;
-        modReq->numMods++;
+        pDelMod->next = pModReq->mods;
+        pModReq->mods = pDelMod;
+        pModReq->numMods++;
     }
 
     // Add mod to set new DN.
-    objectGuidAttr = VmDirEntryFindAttribute(ATTR_OBJECT_GUID, pEntry);
-    assert(objectGuidAttr);
+    pObjectGuidAttr = VmDirEntryFindAttribute(ATTR_OBJECT_GUID, pEntry);
+    assert(pObjectGuidAttr);
 
     retVal = constructDeletedObjDN(
             &pOperation->request.deleteReq.dn,
-            objectGuidAttr->vals[0].lberbv.bv_val,
-            &deletedObjDN);
+            pObjectGuidAttr->vals[0].lberbv.bv_val,
+            &bvDeletedObjDN);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirAppendAMod(
@@ -538,14 +538,35 @@ GenerateDeleteAttrsMods(
             MOD_OP_REPLACE,
             ATTR_DN,
             ATTR_DN_LEN,
-            deletedObjDN.lberbv.bv_val,
-            deletedObjDN.lberbv.bv_len);
+            bvDeletedObjDN.lberbv.bv_val,
+            bvDeletedObjDN.lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+#ifdef REPLICATION_V2
+    retVal = VmDirAppendAMod(
+            pOperation,
+            MOD_OP_REPLACE,
+            ATTR_OBJECT_CLASS,
+            ATTR_OBJECT_CLASS_LEN,
+            OC_DELETED_OBJECT,
+            OC_DELETED_OBJECT_LEN);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirAppendAMod(
+            pOperation,
+            MOD_OP_REPLACE,
+            ATTR_OBJECT_SECURITY_DESCRIPTOR,
+            ATTR_OBJECT_SECURITY_DESCRIPTOR_LEN,
+            (PSTR) gVmdirdSDGlobals.pSDdcAdminRPWPDE,
+            gVmdirdSDGlobals.ulSDdcAdminRPWPDELen);
+    BAIL_ON_VMDIR_ERROR(retVal);
+#endif
+
 cleanup:
-    VmDirFreeMemory(deletedObjDN.lberbv.bv_val);
+    VmDirFreeMemory(bvDeletedObjDN.lberbv.bv_val);
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
     goto cleanup;
 }

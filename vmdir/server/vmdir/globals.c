@@ -155,6 +155,8 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
 VMDIRD_SD_GLOBALS gVmdirdSDGlobals =
     {
         VMDIR_SF_INIT(.pSDdcAdminGX, NULL),
+        VMDIR_SF_INIT(.pSDdcAdminRPWPDE, NULL),
+        VMDIR_SF_INIT(.ulSDdcAdminRPWPDELen, 0),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;

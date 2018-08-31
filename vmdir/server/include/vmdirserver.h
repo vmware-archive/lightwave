@@ -146,6 +146,8 @@ extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
 typedef struct _VMDIRD_SD_GLOBALS
 {
     PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminGX;
+    PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminRPWPDE;
+    ber_len_t                     ulSDdcAdminRPWPDELen;
 } VMDIRD_SD_GLOBALS;
 
 extern VMDIRD_SD_GLOBALS gVmdirdSDGlobals;

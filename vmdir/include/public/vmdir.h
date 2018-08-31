@@ -432,6 +432,8 @@ extern "C" {
 #define OC_CLUSTER_STATE_LEN            sizeof(OC_CLUSTER_STATE)-1
 #define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
+#define OC_DELETED_OBJECT               "deletedObject"
+#define OC_DELETED_OBJECT_LEN           sizeof(OC_DELETED_OBJECT)-1
 
 #define OC_TRUSTED_DOMAIN               "trustedDomain"
 #define OC_TRUSTED_DOMAIN_LEN           sizeof(OC_TRUSTED_DOMAIN)-1
