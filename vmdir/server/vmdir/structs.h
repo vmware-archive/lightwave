@@ -109,6 +109,7 @@ typedef struct _VMDIR_INTEGRITY_JOB
     DWORD                           dwNumProcessed;
     PVMDIR_INTEGRITY_JOB_CTX        pJobctx;
     DWORD                           dwNumJobCtx;
+    DWORD                           dwNumValidJobCtx;
     VMDIR_INTEGRITY_CHECK_JOB_STATE state;
 
     // it's set when triggered by background thread

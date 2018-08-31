@@ -1101,6 +1101,7 @@ typedef enum
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+#define VMDIR_REG_KEY_INTEGRITY_CHK_PARTNER_POLICY  "IntegrityChkPartnerPolicy"
 #define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
 #define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
