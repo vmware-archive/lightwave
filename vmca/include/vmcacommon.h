@@ -73,6 +73,9 @@ typedef struct _VMW_CFG_KEY*        PVMW_CFG_KEY;
 
 #define VMCA_KEY_PARAMETERS "Services\\vmca\\Parameters"
 
+#define VMCA_MIN(a, b) ((a) < (b) ? (a) : (b))
+#define VMCA_MAX(a, b) ((a) > (b) ? (a) : (b))
+
 #define VMCA_SAFE_FREE_STRINGA(PTR)    \
     do {                          \
         if ((PTR)) {              \
@@ -418,11 +421,26 @@ VMCAReallocateMemory(
     );
 
 DWORD
+VMCAReallocateMemoryWithInit(
+    PVOID         pMemory,
+    PVOID*        ppNewMemory,
+    size_t        dwNewSize,
+    size_t        dwOldSize
+    );
+
+DWORD
 VMCACopyMemory(
     PVOID       pDst,
     size_t      dstSize,
     const void* pSrc,
     size_t      cpySize
+    );
+
+DWORD
+VMCAAllocateAndCopyMemory(
+    PVOID   pBlob,
+    size_t  iBlobSize,
+    PVOID*  ppOutBlob
     );
 
 VOID

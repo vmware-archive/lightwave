@@ -52,6 +52,7 @@ extern "C" {
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
+#include <vmcaresthead.h>
 #include <vmcapolicy.h>
 #include <vmcaconfig.h>
 #include <vmca_h.h>
@@ -124,6 +125,7 @@ extern "C" {
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
+#include <vmcaresthead.h>
 #include <vmcapolicy.h>
 #include <vmcaconfig.h>
 

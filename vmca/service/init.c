@@ -63,7 +63,7 @@ VMCAInitialize(
     // Don't bail on Error , this just sets up the current state
     dwError = VMCASrvInitCA();
 
-#ifdef REST_ENABLED
+#if defined(REST_ENABLED) || defined(REST_V2_ENABLED)
     dwError = OidcClientGlobalInit();
     BAIL_ON_VMCA_ERROR(dwError);
 #endif
@@ -73,6 +73,11 @@ VMCAInitialize(
 
     dwError = VMCARPCInit();
     BAIL_ON_VMCA_ERROR(dwError);
+
+#ifdef REST_V2_ENABLED
+    dwError = VMCARestServerInit();
+    BAIL_ON_VMCA_ERROR(dwError);
+#endif
 
 error:
 
@@ -89,10 +94,17 @@ VMCAShutdown(
     VMCASrvDirSyncShutdown();
     VMCATerminateLogging();
     VMCASrvCleanupGlobalState();
-#ifdef REST_ENABLED
+#if defined(REST_ENABLED) || defined(REST_V2_ENABLED)
     OidcClientGlobalCleanup();
 #endif
     VMCACommonShutdown();
+
+#ifdef REST_V2_ENABLED
+    if (VMCARestServerStop() == 0)
+    {
+        VMCARestServerShutdown();
+    }
+#endif
 }
 
 static

@@ -40,6 +40,13 @@ typedef struct _VMCA_REQ_CONTEXT
     PSTR            pszAuthPrincipal;
 } VMCA_REQ_CONTEXT, *PVMCA_REQ_CONTEXT;
 
+typedef enum
+{
+    VMCAD_STARTUP = 0,
+    VMCAD_NORMAL,
+    VMCAD_SHUTDOWN
+} VMCA_SERVER_STATE;
+
 /* ../common/config.c */
 
 DWORD

@@ -4,7 +4,8 @@ idl_srcdir=$(top_srcdir)/vmca/idl
 
 SUBDIRS = \
     common \
-    config
+    config \
+    rest-head
 
 vmcad_SOURCES = \
     auth.c \
@@ -52,11 +53,13 @@ vmcad_CPPFLAGS = \
     @POPT_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@ \
+    @COPENAPI_INCLUDES@ \
     @CRESTENGINE_INCLUDES@
 
 vmcad_LDADD = \
     $(top_builddir)/vmca/service/common/libvmcasrvcommon.la \
     $(top_builddir)/vmca/service/config/libvmcasrvconfig.la \
+    $(top_builddir)/vmca/service/rest-head/libvmcaresthead.la \
     $(top_builddir)/vmca/common/libcommon.la \
     $(top_builddir)/vmca/vmcadb/libvmcadb.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
@@ -76,6 +79,7 @@ vmcad_LDADD = \
     @UUID_LIBS@ \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
+    @COPENAPI_LIBS@ \
     @CRESTENGINE_LIBS@ \
     @DL_LIBS@
 
@@ -84,6 +88,7 @@ vmcad_LDFLAGS = \
     @LW_LDFLAGS@ \
     @POPT_LDFLAGS@ \
     @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
     @CRESTENGINE_LDFLAGS@
 
 CLEANFILES = \
