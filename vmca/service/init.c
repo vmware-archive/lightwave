@@ -158,7 +158,19 @@ VMCASrvInitCA(
     PVMCA_POLICY *ppPolicies = NULL;
     DWORD dwCRLNumberCurrent = 0;
     BOOL bIsHoldingMutex = FALSE;
+    PVMCA_JSON_OBJECT pJsonConfig = NULL;
 
+    dwError = VMCAConfigLoadFile(VMCA_CONFIG_FILE_PATH, &pJsonConfig);
+    if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
+    {
+        VMCA_LOG_INFO(
+                "[%s,%d] Failed to open VMCA config file (%s). Service starting without it...",
+                __FUNCTION__,
+                __LINE__,
+                VMCA_CONFIG_FILE_PATH);
+        dwError = 0;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAPolicyInit(VMCA_POLICY_FILE_PATH, &ppPolicies);
     if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
@@ -241,6 +253,7 @@ VMCASrvInitCA(
 
 error:
 
+    VMCAJsonCleanupObject(pJsonConfig);
     if (pPrivateKey != NULL)
     {
         VMCAFreeKey(pPrivateKey);

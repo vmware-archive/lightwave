@@ -12,23 +12,26 @@
  * under the License.
  */
 
-#ifndef _VMCA_SERVICE_UNITTEST_INCLUDES_H_
-#define _VMCA_SERVICE_UNITTEST_INCLUDES_H_
+#ifndef _VMCA_SERVICE_CONFIG_INCLUDES_H_
+#define _VMCA_SERVICE_CONFIG_INCLUDES_H_
 
-#include <stdarg.h>
-#include <stddef.h>
-#include <stdlib.h>
-#include <setjmp.h>
-#include <cmocka.h>
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+#include <sys/prctl.h>
 
 #include <config.h>
-
-#include <execinfo.h>
 #include <vmcasys.h>
 
 #include <lw/types.h>
 #include <lw/base.h>
 #include <lwerror.h>
+#include <dce/dcethread.h>
+#include <reg/lwreg.h>
+#include <lwrpcrt/lwrpcrt.h>
+#include <dce/rpc.h>
+#include <dce/id_base.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -41,18 +44,16 @@
 #include <openssl/engine.h>
 #endif
 
-#include <jansson.h>
-
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
-#include <vmcaconfig.h>
-#include <vmca_error.h>
+//#include <vmcasrvutils.h>
 #include <vmcadb.h>
-#include <vmrest.h>
+#include "vmca_error.h"
 
-#include "defines.h"
-#include "prototypes.h"
+#ifdef __cplusplus
+}
+#endif
 
-#endif /* _VMCA_SERVICE_UNITTEST_INCLUDES_H_ */
+#endif /* _VMCA_SERVICE_CONFIG_INCLUDES_H_ */

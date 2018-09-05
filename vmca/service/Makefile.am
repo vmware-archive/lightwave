@@ -3,7 +3,8 @@ sbin_PROGRAMS = vmcad
 idl_srcdir=$(top_srcdir)/vmca/idl
 
 SUBDIRS = \
-    common
+    common \
+    config
 
 vmcad_SOURCES = \
     auth.c \
@@ -42,6 +43,7 @@ vmcad_CPPFLAGS = \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmca/service/include \
     -I$(top_srcdir)/vmca/service/common \
+    -I$(top_srcdir)/vmca/service/config \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
@@ -54,6 +56,7 @@ vmcad_CPPFLAGS = \
 
 vmcad_LDADD = \
     $(top_builddir)/vmca/service/common/libvmcasrvcommon.la \
+    $(top_builddir)/vmca/service/config/libvmcasrvconfig.la \
     $(top_builddir)/vmca/common/libcommon.la \
     $(top_builddir)/vmca/vmcadb/libvmcadb.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \

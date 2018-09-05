@@ -12,23 +12,46 @@
  * under the License.
  */
 
-#ifndef POLICY_H_
-#define POLICY_H_
+#ifndef _VMCA_SRV_COMMON_PROTOTYPES_H_
+#define _VMCA_SRV_COMMON_PROTOTYPES_H_
 
-//
-//int
-//VMCAPolicyArrayTestSetup(
-//    VOID        **state
-//    );
-//
-//int
-//VMCAPolicyArrayTestFree(
-//    VOID    **state
-//    );
+/* VMCA Policy Validation Unit Tests */
 
 VOID
 VMCAPolicyInit_ValidInput(
     VOID            **state
     );
 
-#endif
+/* VMCA Config File Parser Unit Tests */
+
+VOID
+VMCAJsonLoadObjectFromFile_ValidInput(
+    VOID            **state
+    );
+
+VOID
+VMCAJsonLoadObjectFromFile_InvalidInput(
+    VOID            **state
+    );
+
+VOID
+VMCAJsonGetObjectFromKey_Valid(
+    VOID            **state
+    );
+
+VOID
+VMCAJsonGetObjectFromKey_Invalid(
+    VOID            **state
+    );
+
+VOID
+VMCAJsonGetStringFromKey_Valid(
+    VOID            **state
+    );
+
+VOID
+VMCAJsonGetStringFromKey_Invalid(
+    VOID            **state
+    );
+
+#endif /* _VMCA_SRV_COMMON_PROTOTYPES_H_ */

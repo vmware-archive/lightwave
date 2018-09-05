@@ -1788,6 +1788,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/common/Makefile
                  vmca/service/Makefile
                  vmca/service/common/Makefile
+                 vmca/service/config/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile

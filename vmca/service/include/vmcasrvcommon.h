@@ -49,6 +49,36 @@ VMCASrvGetMachineAccountInfoA(
     PSTR* ppszPassword
     );
 
+/* ../common/jsonutils.c */
+
+typedef struct json_t   _VMCA_JSON_OBJECT;
+typedef _VMCA_JSON_OBJECT   *PVMCA_JSON_OBJECT;
+
+DWORD
+VMCAJsonLoadObjectFromFile(
+    PCSTR                   pcszFilePath,
+    PVMCA_JSON_OBJECT       *ppJsonConfig
+    );
+
+DWORD
+VMCAJsonGetObjectFromKey(
+    PVMCA_JSON_OBJECT       pJson,
+    PCSTR                   pcszKey,
+    PVMCA_JSON_OBJECT       *ppJsonValue
+    );
+
+DWORD
+VMCAJsonGetStringFromKey(
+    PVMCA_JSON_OBJECT       pJson,
+    PCSTR                   pcszKey,
+    PSTR                    *ppszValue
+    );
+
+VOID
+VMCAJsonCleanupObject(
+    PVMCA_JSON_OBJECT       pJson
+    );
+
 /* ../common/ldap.c */
 
 DWORD
