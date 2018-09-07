@@ -21,11 +21,39 @@
 
 #include "includes.h"
 
+static PVM_METRICS_PUBLIC_HISTOGRAM _gpLdapWriteMetrics[METRICS_LDAP_OP_COUNT]
+                                                        [METRICS_LDAP_OP_TYPE_COUNT]
+                                                         [METRICS_LDAP_ERROR_COUNT]
+                                                          [METRICS_LAYER_COUNT];
 
 static
 DWORD
 _VmDirTombstoneReapingThreadFun(
     PVOID pArg
+    );
+
+static
+uint64_t
+_VmDirRefreshWriteMetric(
+    VOID
+    );
+
+static
+DWORD
+_VmDirInitWriteMetric(
+    VOID
+    );
+
+static
+VOID
+_VmDirShutdownWriteMetric(
+    VOID
+    );
+
+static
+VOID
+_VmDirReapEntryInBatch(
+    PVMDIR_STRING_LIST pStrList
     );
 
 DWORD
@@ -111,6 +139,139 @@ _VmDirIsEntryExpired(
 
 static
 DWORD
+_VmDirInitWriteMetric(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   i = 0, j = 0, k = 0;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        if (IS_METRICS_LDAP_WRITE_OP(i))
+        {
+            for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+            {
+                if (IS_METRICS_LDAP_EXT_WRITE_IMPACTING_OP(j))
+                {
+                    for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+                    {
+                        if (IS_METRICS_LDAP_SUCCESS_OP(k))
+                        {
+                            dwError = VmMetricsHistogramClone(
+                                gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND],
+                                &_gpLdapWriteMetrics[i][j][k][METRICS_LAYER_BACKEND]);
+                            BAIL_ON_VMDIR_ERROR(dwError);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+error:
+    return dwError;
+}
+
+static
+VOID
+_VmDirShutdownWriteMetric(
+    VOID
+    )
+{
+    DWORD   i = 0, j = 0, k = 0;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        if (IS_METRICS_LDAP_WRITE_OP(i))
+        {
+            for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+            {
+                if (IS_METRICS_LDAP_EXT_WRITE_IMPACTING_OP(j))
+                {
+                    for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+                    {
+                        if (IS_METRICS_LDAP_SUCCESS_OP(k))
+                        {
+                            VmMetricsPublicHistogramFree(
+                                _gpLdapWriteMetrics[i][j][k][METRICS_LAYER_BACKEND]);
+                        }
+                    }
+                }
+            }
+        }
+    }
+}
+
+static
+uint64_t
+_VmDirRefreshWriteMetric(
+    VOID
+    )
+{
+    DWORD   i = 0, j = 0, k = 0;
+    uint64_t    iCount = 0;
+    PVM_METRICS_PUBLIC_HISTOGRAM pHistogram = NULL;
+
+    for (i = 0; i < METRICS_LDAP_OP_COUNT; i++)
+    {
+        if (IS_METRICS_LDAP_WRITE_OP(i))
+        {
+            for (j = 0; j < METRICS_LDAP_OP_TYPE_COUNT; j++)
+            {
+                if (IS_METRICS_LDAP_EXT_WRITE_IMPACTING_OP(j))
+                {
+                    for (k = 0; k < METRICS_LDAP_ERROR_COUNT; k++)
+                    {
+                        if (IS_METRICS_LDAP_SUCCESS_OP(k))
+                        {
+                            VmMetricsHistogramCloneContent(
+                                gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND],
+                                _gpLdapWriteMetrics[i][j][k][METRICS_LAYER_BACKEND]);
+
+                            pHistogram = _gpLdapWriteMetrics[i][j][k][METRICS_LAYER_BACKEND];
+                            iCount += pHistogram->pBucketValues[1]; // number of 50 <  op <= 100
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    return iCount;
+}
+
+static
+VOID
+_VmDirReapEntryInBatch(
+    PVMDIR_STRING_LIST pStrList
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+
+    for (dwCnt=0; dwCnt < pStrList->dwCount; dwCnt++)
+    {
+        dwError = VmDirDeleteEntryViaDN(pStrList->pStringList[dwCnt]);
+        if (dwError != ERROR_SUCCESS)
+        {
+            //
+            // Log, but otherwise ignore, any error encountered while removing
+            // tombstones.
+            //
+            VMDIR_LOG_VERBOSE(
+                VMDIR_LOG_MASK_ALL,
+                "Deleting entry %s failed, error (%d)",
+                VDIR_SAFE_STRING(pStrList->pStringList[dwCnt]),
+                dwError);
+        }
+    }
+
+    return;
+}
+
+static
+DWORD
 _VmDirReapExpiredEntries(
     DWORD dwExpirationPeriodInSec
     )
@@ -121,15 +282,36 @@ _VmDirReapExpiredEntries(
     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR pIterator = NULL;
     ENTRYID eId = 0;
     VDIR_ENTRY entry = {0};
-    DWORD dwExpiredCount = 0;
-    DWORD dwUnexpiredCount = 0;
-    int expiredInBatch = 0;
+    DWORD       dwExpiredCount = 0;
+    DWORD       dwUnexpiredCount = 0;
+    int         expiredInBatch = 0;
+    BOOLEAN     bDoneFullCycle = FALSE;
+    PVMDIR_STRING_LIST  pStrList = NULL;
+    uint64_t    iCurrExpensiveWriteCount=0;
+    uint64_t    iNewExpensiveWriteCount=0;
+    uint64_t    iStartTime = VmDirGetTimeInMilliSec();
+    uint64_t    iEndTime = 0;
+
+    dwError = VmDirStringListInitialize(&pStrList, TOMBSTONE_REAPING_THROTTLE_COUNT);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    iNewExpensiveWriteCount  = _VmDirRefreshWriteMetric();
 
     pBE = VmDirBackendSelect(NULL);
     dwError = VmDirSimpleDNToEntry(gVmdirServerGlobals.delObjsContainerDN.lberbv.bv_val, &pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 newParentIdIndexIterator:
+
+    iCurrExpensiveWriteCount = iNewExpensiveWriteCount;
+    iNewExpensiveWriteCount  = _VmDirRefreshWriteMetric();
+
+    if (iNewExpensiveWriteCount - iCurrExpensiveWriteCount > 0)
+    {
+        VmDirSleep(1000); // 1 second
+
+        goto newParentIdIndexIterator;
+    }
 
     dwError = pBE->pfnBEParentIdIndexIteratorInit(pEntry->eId, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -151,30 +333,11 @@ newParentIdIndexIterator:
 
         if (_VmDirIsEntryExpired(&entry, gVmdirServerGlobals.dwTombstoneExpirationPeriod))
         {
-            dwError = VmDirDeleteEntry(&entry);
-            if (dwError != ERROR_SUCCESS)
-            {
-                //
-                // Log, but otherwise ignore, any error encountered while removing
-                // tombstones.
-                //
-                VMDIR_LOG_VERBOSE(
-                    VMDIR_LOG_MASK_ALL,
-                    "Deleting entry %s failed, error (%d)",
-                    VDIR_SAFE_STRING(entry.dn.lberbv.bv_val),
-                    dwError);
-            }
+            dwError = VmDirStringListAddStrClone(entry.dn.lberbv_val, pStrList);
+            BAIL_ON_VMDIR_ERROR(dwError);
 
             expiredInBatch++;
-
-            if ((++dwExpiredCount % TOMBSTONE_REAPING_THROTTLE_COUNT) == 0)
-            {
-                if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-                {
-                    break;
-                }
-                VmDirSleep(TOMBSTONE_REAPING_THROTTLE_SLEEP);
-            }
+            dwExpiredCount++;
         }
         else
         {
@@ -183,8 +346,16 @@ newParentIdIndexIterator:
 
         VmDirFreeEntryContent(&entry);
 
-        if (expiredInBatch >= VDIR_REAP_EXPIRED_ENTRIES_BATCH)
+        if (expiredInBatch >= TOMBSTONE_REAPING_THROTTLE_COUNT)
         {
+            if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+            {
+                break;
+            }
+
+            _VmDirReapEntryInBatch(pStrList);
+            VmDirStringListFreeContent(pStrList);
+
             // Must shorten the read-only transaction so that
             // MDB can free the allocated blocks from the expired entries.
             pBE->pfnBEParentIdIndexIteratorFree(pIterator);
@@ -194,15 +365,22 @@ newParentIdIndexIterator:
         }
     }
 
+    bDoneFullCycle = TRUE;
+
 cleanup:
+    iEndTime = VmDirGetTimeInMilliSec();
+
     VMDIR_LOG_INFO(
         VMDIR_LOG_MASK_ALL,
-        "Tombstone reaping thread removed %d expired entries, %d non-expired entries remain",
+        "Tombstone reaping thread removed %d expired entries, %d non-expired entries remain. Finished full cycle (%d/%d)",
         dwExpiredCount,
-        dwUnexpiredCount);
+        dwUnexpiredCount,
+        bDoneFullCycle,
+        iEndTime - iStartTime);
 
     pBE->pfnBEParentIdIndexIteratorFree(pIterator);
     VmDirFreeEntry(pEntry);
+    VmDirStringListFree(pStrList);
     return dwError;
 
 error:
@@ -226,6 +404,9 @@ _VmDirTombstoneReapingThreadFun(
     PVDIR_THREAD_INFO pThreadInfo = (PVDIR_THREAD_INFO)pArg;
 
     VmDirDropThreadPriority(DEFAULT_THREAD_PRIORITY_DELTA);
+
+    dwError = _VmDirInitWriteMetric();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     while (TRUE)
     {
@@ -267,6 +448,10 @@ _VmDirTombstoneReapingThreadFun(
 
 cleanup:
     VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL, "Tombstone reaping thread exiting");
+    _VmDirShutdownWriteMetric();
 
     return dwError;
+
+error:
+    goto cleanup;
 }

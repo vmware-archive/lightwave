@@ -23,9 +23,25 @@ VmAllocateMemory(
 
 DWORD
 VmReallocateMemory(
-    PVOID  ppMemory,
+    PVOID   ppMemory,
     PVOID*  ppNewMemory,
     size_t  dwSize
+    );
+
+DWORD
+VmReallocateMemoryWithInit(
+    PVOID        pMemory,
+    size_t       dwCurrentSize,
+    PVOID*       ppNewMemory,
+    size_t       dwNewSize
+    );
+
+DWORD
+VmReallocateString(
+    PSTR    pString,
+    size_t  dwCurrentSize,
+    PSTR*   ppszNewString,
+    size_t  dwNewSize
     );
 
 DWORD

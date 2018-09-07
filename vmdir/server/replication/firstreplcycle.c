@@ -157,7 +157,6 @@ VmDirShutdownDB(
     VmDirSchemaLibShutdown();
 
     pBE->pfnBEShutdown();
-    VmDirBackendContentFree(pBE);
 }
 
 static

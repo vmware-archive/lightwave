@@ -325,6 +325,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.dwWriteTimeoutInMilliSec = pEntry->dwValue;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER,
+                    TRUE))
+        {
+            gVmdirGlobals.bEnableRegionalMaster = pEntry->dwValue ? TRUE : FALSE;
+        }
     }
 
 cleanup:

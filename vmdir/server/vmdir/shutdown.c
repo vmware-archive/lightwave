@@ -108,7 +108,6 @@ VmDirShutdown(
     if ( pBE )
     {
         pBE->pfnBEShutdown();
-        VmDirBackendContentFree(pBE);
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s shutdown backend complete.", __func__);
     }
 

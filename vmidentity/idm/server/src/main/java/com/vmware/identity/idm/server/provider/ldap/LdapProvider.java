@@ -441,6 +441,21 @@ public class LdapProvider extends BaseLdapProvider
     }
 
    @Override
+   public String findNomalizedPrincipalId(PrincipalId id) throws Exception {
+       PersonUser user = findUser(id);
+       if (user != null) {
+           return user.getDetail().getUserPrincipalName();
+       }
+
+       Group group = findGroup(id);
+       if (group != null) {
+           return group.getNetbios();
+       }
+
+       return null;
+   }
+
+   @Override
    public PersonUser findUser(
          PrincipalId id)
                throws Exception

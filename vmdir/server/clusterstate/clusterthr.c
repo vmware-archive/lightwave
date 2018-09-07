@@ -91,6 +91,7 @@ _VmHandlePingReply(
 static
 VOID
 _VmDirSendNodeVote(
+    BOOLEAN *pbDelayVote
     );
 
 static
@@ -220,69 +221,91 @@ _VmDirClusterStateThreadFun(
             continue;
         }
 
-        if (gpClusterState->bReload)
-        {   // cluster member change event occurred, reload cache
-            VmDirClusterLoadCache();  // ignore error
+        if (!gVmdirGlobals.bEnableRegionalMaster)
+        {    // DisableRegionalMaster, just reload cache
 
-            VMDIR_RWLOCK_READLOCK(bClusterStateLock, gpClusterState->pRWLock, 0);
-            VmDirLoadRaftState();
-            VMDIR_RWLOCK_UNLOCK(bClusterStateLock, gpClusterState->pRWLock);
-        }
+            if (gpClusterState->bReload)
+            {   // cluster member change event occurred, reload cache
+                VmDirClusterLoadCache();  // ignore error
+            }
 
-        if (gpClusterState->pSiteListSelf == NULL)
-        {
-           //Wait for loading ClusterCache
-           VmDirSleep(1000);
-           continue;
-        }
-
-        VMDIR_RWLOCK_READLOCK(bClusterStateLock, gpClusterState->pRWLock, 0);
-        if (!gRaftState.initialized)
-        {
-            VmDirLoadRaftState();
-        }
-        VMDIR_RWLOCK_UNLOCK(bClusterStateLock, gpClusterState->pRWLock);
-
-        if (uWaitTime > 0)
-        {
             VMDIR_LOCK_MUTEX(bInLock, pThreadInfo->mutexUsed);
             VmDirConditionTimedWait(
                     pThreadInfo->conditionUsed,
                     pThreadInfo->mutexUsed,
-                    uWaitTime);
+                    10*1000);
             VMDIR_UNLOCK_MUTEX(bInLock, pThreadInfo->mutexUsed);
         }
+        else
+        {    // EnableRegionalMaster, perform Raft protocol
 
-        _VmDirEvaluateRaftState(&uWaitTime);
-        if (gRaftState.cmd == ExecNone)
-        {
-            assert(uWaitTime > 0);
-            continue;
-        }
+            if (gpClusterState->bReload)
+            {   // cluster member change event occurred, reload cache
+                VmDirClusterLoadCache();  // ignore error
 
-        VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "%s: sending RPC cmd %d", __func__, gRaftState.cmd);
-        if (gRaftState.cmd == ExecPing)
-        {
-            _VmDirSendNodePing();  // regular heart beat and state ping
-        } else if (gRaftState.cmd == ExecReqestVote)
-        {
-            _VmDirSendNodeVote(&bDelayVote);
-            if (bDelayVote)
+                VMDIR_RWLOCK_READLOCK(bClusterStateLock, gpClusterState->pRWLock, 0);
+                VmDirLoadRaftState();
+                VMDIR_RWLOCK_UNLOCK(bClusterStateLock, gpClusterState->pRWLock);
+            }
+
+            if (gpClusterState->pSiteListSelf == NULL)
             {
-                //if bDelayVote is TRUE, then there is not enough connected peers to obain Raft consensus
-                //   Pause to avoid wasting term numbers;
-                VmDirSleep(RaftDelayVoteMS);
+               //Wait for loading ClusterCache
+               VmDirSleep(1000);
+               continue;
+            }
+
+            VMDIR_RWLOCK_READLOCK(bClusterStateLock, gpClusterState->pRWLock, 0);
+            if (!gRaftState.initialized)
+            {
+                VmDirLoadRaftState();
+            }
+            VMDIR_RWLOCK_UNLOCK(bClusterStateLock, gpClusterState->pRWLock);
+
+            if (uWaitTime > 0)
+            {
+                VMDIR_LOCK_MUTEX(bInLock, pThreadInfo->mutexUsed);
+                VmDirConditionTimedWait(
+                        pThreadInfo->conditionUsed,
+                        pThreadInfo->mutexUsed,
+                        uWaitTime);
+                VMDIR_UNLOCK_MUTEX(bInLock, pThreadInfo->mutexUsed);
+            }
+
+            _VmDirEvaluateRaftState(&uWaitTime);
+            if (gRaftState.cmd == ExecNone)
+            {
+                assert(uWaitTime > 0);
                 continue;
             }
-        }
 
-        _VmDirEvaluateRpcResult(&uWaitTime);
+            VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "%s: sending RPC cmd %d", __func__, gRaftState.cmd);
+            if (gRaftState.cmd == ExecPing)
+            {
+                _VmDirSendNodePing();  // regular heart beat and state ping
+            }
+            else if (gRaftState.cmd == ExecReqestVote)
+            {
+                _VmDirSendNodeVote(&bDelayVote);
+                if (bDelayVote)
+                {
+                    //if bDelayVote is TRUE, then there is not enough connected peers to obain Raft consensus
+                    //   Pause to avoid wasting term numbers;
+                    VmDirSleep(RaftDelayVoteMS);
+                    continue;
+                }
+            }
+
+            _VmDirEvaluateRpcResult(&uWaitTime);
+        }
     }
 
     bInLock = FALSE;
     VMDIR_LOCK_MUTEX(bInLock, gConnStateMutex);
     VmDirConditionSignal(gConnLostCond);
     VMDIR_UNLOCK_MUTEX(bInLock, gConnStateMutex);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: exit", __FUNCTION__);
 
     return dwError;
 }
@@ -320,7 +343,7 @@ _VmDirClusterConnThreadFun(
                 break;
             }
 
-            if(!gpClusterState->pSiteListSelf->ppNodeStateAry[i]->bIsActive ||
+            if (!gpClusterState->pSiteListSelf->ppNodeStateAry[i]->bIsActive ||
                 gpClusterState->pSiteListSelf->ppNodeStateAry[i]->bIsSelf)
             {
                 continue;
@@ -338,11 +361,13 @@ _VmDirClusterConnThreadFun(
             {
                 pLdpConn->connState = DC_CONNECTION_STATE_CONNECTED;
                 VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: connection to %s established",
-                               __func__, gpClusterState->pSiteListSelf->ppNodeStateAry[i]->pszFQDN);
+                               __func__, gpClusterState->pSiteListSelf->ppNodeStateAry[i]->srvObj.pszFQDN);
             }
         }
         VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
     }
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: exit", __FUNCTION__);
 
     return dwError;
 }
@@ -415,11 +440,11 @@ _VmDirSendNodePing(
             _VmHandlePingReply(&pingReply);
         }
     }
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
 
 cleanup:
-    VmDirFreeBervalContent(&pingReply.fromFqdn);
     VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
+
+    VmDirFreeBervalContent(&pingReply.fromFqdn);
     return;
 }
 
@@ -430,12 +455,12 @@ _VmDirSendPingCtl(
     )
 {
     DWORD dwError = 0;
-    PSTR  ppszAttrs[] = {ATTR_RAFT_CURRENT_TERM, ATTR_RAFT_STATUS, ATTR_HIGHEST_COMMITTED_USN, NULL };
+    PSTR  ppszAttrs[] = {ATTR_RAFT_CURRENT_TERM, ATTR_RAFT_STATUS, NULL };
     LDAPControl     ldapCtr = {0};
     LDAPControl*    srvCtrls[2] = {&ldapCtr, NULL};
 
     dwError = VmDirCreateRaftPingCtrlContent(
-                gpClusterState->pNodeSelf->pszFQDN,     //candiateId
+                gpClusterState->pNodeSelf->srvObj.pszFQDN,     //candiateId
                 gRaftState.currentTerm,
                 &ldapCtr);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -464,13 +489,11 @@ _VmDirGetPingResult(
 
     VDIR_BERVALUE attrRatfStatusValue = {0};
     VDIR_BERVALUE attrCurrentTermValue ={0};
-    VDIR_BERVALUE attrHighestCommitUsnValue = {0};
     LdapRpcResult lrr[] =  {{ATTR_RAFT_STATUS, &attrRatfStatusValue},
                             {ATTR_RAFT_CURRENT_TERM, &attrCurrentTermValue},
-                            {ATTR_HIGHEST_COMMITTED_USN, &attrHighestCommitUsnValue},
                             {0}};
 
-   dwError = VmDirAllocateBerValueAVsnprintf(&pPingReply->fromFqdn, "%s", pNode->pszFQDN);
+   dwError = VmDirAllocateBerValueAVsnprintf(&pPingReply->fromFqdn, "%s", pNode->srvObj.pszFQDN);
    BAIL_ON_VMDIR_ERROR(dwError);
 
    dwError = pPingReply->dwError = _VmDirGetLdapResult(pNode, lrr);
@@ -482,18 +505,14 @@ _VmDirGetPingResult(
    dwError = VmDirStringToUINT32(attrCurrentTermValue.lberbv_val, NULL, &pPingReply->currentTerm);
    BAIL_ON_VMDIR_ERROR(dwError);
 
-   dwError = VmDirStringToINT64(attrHighestCommitUsnValue.lberbv_val, NULL, &pPingReply->localUSN);
-   BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
    VmDirFreeBervalContent(&attrRatfStatusValue);
    VmDirFreeBervalContent(&attrCurrentTermValue);
-   VmDirFreeBervalContent(&attrHighestCommitUsnValue);
    return;
 
 error:
    VMDIR_LOG_ERROR(LDAP_DEBUG_RPC, "%s for node %s failed, error %d",
-                   __FUNCTION__, pNode->pszFQDN,  dwError);
+                   __FUNCTION__, pNode->srvObj.pszFQDN,  dwError);
    goto cleanup;
 }
 
@@ -544,7 +563,8 @@ _VmDirGetLdapResult(PVMDIR_NODE_STATE pNode, LdapRpcResult *lrr)
       timeout.tv_sec = RaftGetResultTimeoutSec;
       timeout.tv_usec = 0;
       ldapError = ldap_result(pLdpConn->pLd, pLdpConn->msgid, 0, &timeout, &res);
-      switch(ldapError)
+
+      switch (ldapError)
       {
          case -1:
             ldap_get_option(pLdpConn->pLd, LDAP_OPT_RESULT_CODE, &ldapError);
@@ -560,6 +580,7 @@ _VmDirGetLdapResult(PVMDIR_NODE_STATE pNode, LdapRpcResult *lrr)
       };
 
       msgtype = ldap_msgtype(res);
+
       if (msgtype != LDAP_RES_SEARCH_ENTRY)
       {
          continue;
@@ -570,12 +591,12 @@ _VmDirGetLdapResult(PVMDIR_NODE_STATE pNode, LdapRpcResult *lrr)
 
       // loops through attributes and values
       attribute = ldap_first_attribute(pLdpConn->pLd, res, &ber);
-      while((attribute))
+      while (attribute)
       {
          vals = ldap_get_values_len(pLdpConn->pLd, res, attribute);
-         for(pos = 0; pos < ldap_count_values_len(vals); pos++)
+         for (pos = 0; pos < ldap_count_values_len(vals); pos++)
          {
-            for(i=0; lrr[i].attrName; i++)
+            for (i=0; lrr[i].attrName; i++)
             {
                 if (VmDirStringCompareA(attribute, lrr[i].attrName, FALSE)==0)
                 {
@@ -590,6 +611,7 @@ _VmDirGetLdapResult(PVMDIR_NODE_STATE pNode, LdapRpcResult *lrr)
          VMDIR_SAFE_FREE_MEMORY(attribute);
          attribute = ldap_next_attribute(pLdpConn->pLd, res, ber);
       }
+
       if (ber)
       {
           ber_free(ber, 1);
@@ -633,7 +655,7 @@ error:
     }
 
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: from %s error %d ",
-       __func__, (pNode && pNode->pszFQDN)?pNode->pszFQDN:"unknown", dwError);
+       __func__, (pNode && pNode->srvObj.pszFQDN)?pNode->srvObj.pszFQDN:"unknown", dwError);
     goto cleanup;
 }
 
@@ -789,6 +811,7 @@ _VmDirPingReply(
         gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
         newTerm = gRaftState.currentTerm = term;
         gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
+
         if (gRaftState.leader.lberbv.bv_len == 0 ||
             VmDirStringCompareA(gRaftState.leader.lberbv.bv_val, pLeader, FALSE) !=0)
         {
@@ -796,10 +819,12 @@ _VmDirPingReply(
             {
                 VmDirFreeBervalContent(&gRaftState.leader);
             }
+
             dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.leader, "%s", pLeader);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-    } else
+    }
+    else
     {
        //The ping is not sent from legitimate leader, tell the peer to become follower
        newTerm = gRaftState.currentTerm;
@@ -820,6 +845,7 @@ cleanup:
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: got Ping from %s, term %d newTerm %d",
           __func__, pLeader, term, newTerm);
     }
+
     return dwError;
 
 error:
@@ -834,7 +860,9 @@ error:
  */
 static
 VOID
-_VmHandlePingReply(PVMDIR_PING_REPLY pPingReply)
+_VmHandlePingReply(
+    PVMDIR_PING_REPLY pPingReply
+    )
 {
     DWORD dwError = 0;
     int oldTerm = 0;
@@ -865,8 +893,8 @@ _VmHandlePingReply(PVMDIR_PING_REPLY pPingReply)
 cleanup:
     if (!dwError)
     {
-      VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "%s: got reply from %s, currentTerm %d raftStatus %llu localUsn %llu",
-        __func__, pPingReply->fromFqdn.lberbv_val, pPingReply->currentTerm, pPingReply->raftStatus, pPingReply->localUSN);
+      VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "%s: got reply from %s, currentTerm %d raftStatus %llu",
+        __func__, pPingReply->fromFqdn.lberbv_val, pPingReply->currentTerm, pPingReply->raftStatus);
     }
     return;
 
@@ -880,7 +908,8 @@ error:
 static
 VOID
 _VmDirSendNodeVote(
-    BOOLEAN *pbDelayVote)
+    BOOLEAN *pbDelayVote
+    )
 {
     DWORD dwError = 0;
     BOOLEAN bInLock = FALSE;
@@ -896,12 +925,14 @@ _VmDirSendNodeVote(
     gRaftState.voteConsensusTerm = term;
     gRaftState.voteConsensusCnt = 1; //vote for self
     gRaftState.voteDeniedCnt = 0;
+
     if (gRaftState.votedFor.lberbv_len > 0)
     {
         VmDirFreeBervalContent(&gRaftState.votedFor);
     }
+
     dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.votedFor, "%s",
-                gpClusterState->pNodeSelf->pszFQDN);
+                gpClusterState->pNodeSelf->srvObj.pszFQDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
@@ -911,7 +942,6 @@ _VmDirSendNodeVote(
     VMDIR_RWLOCK_READLOCK(bInLock, gpClusterState->pRWLock, 0);
     if (gRaftState.role != VDIR_RAFT_ROLE_CANDIDATE || gRaftState.currentTerm > term)
     {
-
         //Server's role or term changed during persist the new term
         // Will evaluate the server's state
         goto cleanup;
@@ -943,6 +973,7 @@ _VmDirSendNodeVote(
 
         gpClusterState->pSiteListSelf->ppNodeStateAry[i]->bCtlSent = FALSE;
         _VmDirSendVoteCtl(gpClusterState->pSiteListSelf->ppNodeStateAry[i], term);
+
         if (gpClusterState->pSiteListSelf->ppNodeStateAry[i]->bCtlSent)
         {
             total_votes_sent++;
@@ -977,6 +1008,7 @@ _VmDirSendNodeVote(
         }
 
         _VmDirGetVoteResult(gpClusterState->pSiteListSelf->ppNodeStateAry[i], &voteReply);
+
         if (voteReply.dwError == VMDIR_ERROR_UNWILLING_TO_PERFORM)
         {
             //The peer has not enabled this feature, or in progress doing upgrade.
@@ -989,18 +1021,19 @@ _VmDirSendNodeVote(
         }
 
         _VmHandleVoteReply(&voteReply, &bDoneVote);
+
         if (bDoneVote)
         {
             break;
         }
     }
 
+cleanup:
     VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
 
-cleanup:
     *pbDelayVote = bDelayVote;
     VmDirFreeBervalContent(&voteReply.fromFqdn);
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpClusterState->pRWLock);
+
     return;
 
 error:
@@ -1036,12 +1069,14 @@ _VmDirEvaluateRaftState(
            gRaftState.cmd = ExecReqestVote;
            gRaftState.role = VDIR_RAFT_ROLE_CANDIDATE;
            *waitMS = 0;
-        } else
+        }
+        else
         {
             gRaftState.cmd = ExecNone;
             *waitMS = gRaftCfg.dwRaftElectionTimeoutMS - timeSinceLastPingRecv;
         }
-    } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
+    }
+    else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
     {
         UINT64 timeSinceLastPingSent = now - gRaftState.lastPingSendTime;
         if (timeSinceLastPingSent >= gRaftCfg.dwRaftPingIntervalMS)
@@ -1049,17 +1084,20 @@ _VmDirEvaluateRaftState(
            gRaftState.cmd = ExecPing;
            gRaftState.lastPingSendTime = now;
            *waitMS = 0;
-        } else
+        }
+        else
         {
            gRaftState.cmd = ExecNone;
            *waitMS = gRaftCfg.dwRaftPingIntervalMS - timeSinceLastPingSent;
         }
-    } else if(gRaftState.role == VDIR_RAFT_ROLE_CANDIDATE)
+    }
+    else if (gRaftState.role == VDIR_RAFT_ROLE_CANDIDATE)
     {
         //Previous had a split vote and has waited for a random time
         gRaftState.cmd = ExecReqestVote;
         *waitMS = 0;
-    } else
+    }
+    else
     {
         *waitMS = (UINT64)100;
         VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: invalid RAFT role %d", __func__, gRaftState.role);
@@ -1090,7 +1128,8 @@ _VmDirEvaluateRpcResult(
            //Become follower via other means
            goto done;
        }
-       if(gRaftState.currentTerm != gRaftState.voteConsensusTerm ||
+
+       if (gRaftState.currentTerm != gRaftState.voteConsensusTerm ||
          gRaftState.voteConsensusCnt < (gRaftState.clusterSize/2 + 1))
        {
             //Split vote; wait randomly with a mean value dwRaftPingIntervalMS
@@ -1102,7 +1141,8 @@ _VmDirEvaluateRpcResult(
        gRaftState.role = VDIR_RAFT_ROLE_LEADER;
        gRaftState.lastPingSendTime = 0; //Send ping right way.
        uWaitTime = 0;
-    } else if (gRaftState.cmd == ExecPing)
+    }
+    else if (gRaftState.cmd == ExecPing)
     {
        if (gRaftState.role == VDIR_RAFT_ROLE_FOLLOWER)
        {
@@ -1112,7 +1152,8 @@ _VmDirEvaluateRpcResult(
            {
                uWaitTime = gRaftCfg.dwRaftElectionTimeoutMS - uWaitTime;
            }
-       } else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
+       }
+       else if (gRaftState.role == VDIR_RAFT_ROLE_LEADER)
        {
            //Stay as a leader
            uWaitTime = now - gRaftState.lastPingSendTime;
@@ -1122,7 +1163,8 @@ _VmDirEvaluateRpcResult(
            }
        }
        //Become candidate via other means, uWaitTime is default to 0
-    } else if (gRaftState.cmd == ExecNone)
+    }
+    else if (gRaftState.cmd == ExecNone)
     {
        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: invalid RAFT state cmd %d role %d",
          __func__, gRaftState.cmd, gRaftState.role);
@@ -1138,7 +1180,8 @@ static
 VOID
 _VmDirGetVoteResult(
     PVMDIR_NODE_STATE pNode,
-    PVMDIR_VOTE_REPLY pVoteReply)
+    PVMDIR_VOTE_REPLY pVoteReply
+    )
 {
     DWORD dwError = 0;
 
@@ -1149,7 +1192,7 @@ _VmDirGetVoteResult(
                             {ATTR_RAFT_VOTE_GRANTED, &attrVoteGranted},
                             {0}};
 
-   dwError = VmDirAllocateBerValueAVsnprintf(&pVoteReply->fromFqdn, "%s", pNode->pszFQDN);
+   dwError = VmDirAllocateBerValueAVsnprintf(&pVoteReply->fromFqdn, "%s", pNode->srvObj.pszFQDN);
    BAIL_ON_VMDIR_ERROR(dwError);
 
    dwError = pVoteReply->dwError = _VmDirGetLdapResult(pNode, lrr);
@@ -1173,7 +1216,8 @@ static
 VOID
 _VmHandleVoteReply(
     PVMDIR_VOTE_REPLY pVoteReply,
-    BOOLEAN *pbDoneVote)
+    BOOLEAN *pbDoneVote
+    )
 {
     DWORD dwError = 0;
     int oldTerm = 0;
@@ -1192,7 +1236,7 @@ _VmHandleVoteReply(
 
     oldTerm = gRaftState.currentTerm;
 
-    if(pVoteReply->currentTerm > gRaftState.currentTerm)
+    if (pVoteReply->currentTerm > gRaftState.currentTerm)
     {
         gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
         gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
@@ -1206,7 +1250,8 @@ _VmHandleVoteReply(
     {
         //Vote granted by peer
         gRaftState.voteConsensusCnt++;
-    } else
+    }
+    else
     {
         //Vote denied by peer
         gRaftState.voteDeniedCnt++;
@@ -1254,7 +1299,7 @@ _VmDirSendVoteCtl(
     LDAPControl*    srvCtrls[2] = {&ldapCtr, NULL};
 
     dwError = VmDirCreateRaftVoteCtrlContent(
-                gpClusterState->pNodeSelf->pszFQDN,     // CandiateId
+                gpClusterState->pNodeSelf->srvObj.pszFQDN,     // CandiateId
                 term,
                 &ldapCtr);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1296,7 +1341,7 @@ _VmDirSendStateCtl(
         BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
     }
 
-    if(pLdpConn->pLd == NULL ||
+    if (pLdpConn->pLd == NULL ||
        pLdpConn->connState != DC_CONNECTION_STATE_CONNECTED)
     {
         if (pLdpConn->connState == DC_CONNECTION_STATE_CONNECTING)
@@ -1343,14 +1388,14 @@ _VmDirSendStateCtl(
     pLdpConn->msgid = msgid;
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_RPC, "%s: succeeded sending cluste control to %s dn %d",
-                   __FUNCTION__, pNode->pszFQDN, dn);
+                   __FUNCTION__, pNode->srvObj.pszFQDN, dn);
 cleanup:
     ldap_msgfree(pSearchRes);
     return dwError;
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, send %s cluster ctl with dn %s error %d",
-            __FUNCTION__, pNode->pszFQDN, dn, dwError);
+            __FUNCTION__, pNode->srvObj.pszFQDN, dn, dwError);
     goto cleanup;
 }
 
@@ -1395,19 +1440,22 @@ _VmDirVoteReply(
         BAIL_ON_VMDIR_ERROR(dwError);
         goto cleanup;
 
-    } else if (term == gRaftState.currentTerm)
+    }
+    else if (term == gRaftState.currentTerm)
     {
         newTerm = term;
-        if(gRaftState.votedFor.lberbv_len > 0 &&
+        if (gRaftState.votedFor.lberbv_len > 0 &&
            VmDirStringCompareA(gRaftState.votedFor.lberbv_val, candidateId, FALSE) != 0)
         {
             //I have voted for a different requester in the same term, deny the vote.
             goto cleanup;
-        } else
+        }
+        else
         {
             gRaftState.currentTerm = VDIR_RAFT_ROLE_FOLLOWER;
             gRaftState.lastPingRecvTime = VmDirGetTimeInMilliSec();
             *voteGranted = 0; //Grant the vote request.
+
             if (gRaftState.votedFor.lberbv_len == 0)
             {
                 dwError = VmDirAllocateBerValueAVsnprintf(&gRaftState.votedFor, "%s", candidateId);
@@ -1416,7 +1464,8 @@ _VmDirVoteReply(
         }
         goto cleanup;
 
-    } else
+    }
+    else
     {
        newTerm = gRaftState.currentTerm;
         //peer's term < my term
@@ -1445,22 +1494,11 @@ error:
     goto cleanup;
 }
 
-BOOLEAN
-VmDirIsRegionalMasterEnabled()
-{
-    DWORD dwRegionalMaster = 0;
-
-    VmDirGetRegKeyValueDword(
-        VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
-        VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER,
-        &dwRegionalMaster, 0);
-
-    return dwRegionalMaster;
-}
-
 static
 VOID
-_VmDirGetRaftParamters(VOID)
+_VmDirGetRaftParamters(
+    VOID
+    )
 {
     DWORD dwError = 0;
     VDIR_RAFT_CFG raftCfg = {0, 0};
@@ -1468,7 +1506,8 @@ _VmDirGetRaftParamters(VOID)
     dwError = VmDirGetRegKeyValueDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT,
-        &raftCfg.dwRaftElectionTimeoutMS, RaftElectionTimeoutDefault);
+        &raftCfg.dwRaftElectionTimeoutMS,
+        RaftElectionTimeoutDefault);
     if (dwError)
     {
         raftCfg.dwRaftElectionTimeoutMS = RaftElectionTimeoutDefault;
@@ -1477,7 +1516,8 @@ _VmDirGetRaftParamters(VOID)
     dwError = VmDirGetRegKeyValueDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_RAFT_PING_INTERVAL,
-        &raftCfg.dwRaftPingIntervalMS, RaftPingIntervalDefault);
+        &raftCfg.dwRaftPingIntervalMS,
+        RaftPingIntervalDefault);
     if (dwError)
     {
         raftCfg.dwRaftPingIntervalMS = RaftPingIntervalDefault;

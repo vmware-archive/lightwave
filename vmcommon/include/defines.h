@@ -25,6 +25,14 @@
         }                                      \
     } while(0)
 
+#define VM_COMMON_SAFE_FREE_CURL_MEMORY(PTR)   \
+    do {                                       \
+        if ((PTR)) {                           \
+            curl_free(PTR);          \
+            (PTR) = NULL;                      \
+        }                                      \
+    } while(0)
+
 #define BAIL_ON_VM_COMMON_ERROR(dwError)      \
     if (dwError)                               \
     {                                          \

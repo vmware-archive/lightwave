@@ -97,6 +97,7 @@ import com.vmware.vim.sso.client.SamlToken;
 import com.vmware.vim.sso.client.SubjectNameId;
 import com.vmware.vim.sso.client.ValidatableSamlTokenEx;
 import com.vmware.vim.sso.client.XmlParserFactory;
+import com.vmware.vim.sso.client.SecureTransformerFactory;
 import com.vmware.vim.sso.client.exception.InvalidSignatureException;
 import com.vmware.vim.sso.client.exception.InvalidTimingException;
 import com.vmware.vim.sso.client.exception.InvalidTokenException;
@@ -741,7 +742,8 @@ public class SamlTokenImpl implements ValidatableSamlTokenEx {
 
       Transformer tx;
       try {
-         tx = TransformerFactory.newInstance().newTransformer();
+         TransformerFactory transformerFactory = SecureTransformerFactory.newTransformerFactory();
+         tx = transformerFactory.newTransformer();
 
       } catch (TransformerException e) {
          throw new IllegalStateException("Failed to create identity XML "

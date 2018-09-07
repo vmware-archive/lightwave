@@ -116,8 +116,6 @@
 // taxing the server too much.
 //
 #define TOMBSTONE_REAPING_THROTTLE_COUNT 5
-#define TOMBSTONE_REAPING_THROTTLE_SLEEP 250
-#define VDIR_REAP_EXPIRED_ENTRIES_BATCH 10
 
 #define VDIR_INTEGRITY_CHECK_BATCH     1000
 
@@ -462,6 +460,17 @@
         /*.dwMin          = */ 1,                                \
         /*.dwMax          = */ 120000,                           \
         /*.dwDefault      = */ 60000,                            \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+	{                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1,                                \
+        /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

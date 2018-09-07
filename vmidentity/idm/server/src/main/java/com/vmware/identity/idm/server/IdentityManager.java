@@ -46,7 +46,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
-import com.vmware.identity.interop.directory.DirectoryException;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
@@ -96,7 +95,6 @@ import com.vmware.identity.idm.Group;
 import com.vmware.identity.idm.GroupDetail;
 import com.vmware.identity.idm.HostNotJoinedRequiredDomainException;
 import com.vmware.identity.idm.IDMException;
-import com.vmware.identity.idm.ReplicationException;
 import com.vmware.identity.idm.IDMLoginException;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.IDPConfig;
@@ -133,6 +131,7 @@ import com.vmware.identity.idm.RSAAMInstanceInfo;
 import com.vmware.identity.idm.RSAAMResult;
 import com.vmware.identity.idm.RSAAgentConfig;
 import com.vmware.identity.idm.RelyingParty;
+import com.vmware.identity.idm.ReplicationException;
 import com.vmware.identity.idm.ResourceServer;
 import com.vmware.identity.idm.STSSpnValidator;
 import com.vmware.identity.idm.SearchCriteria;
@@ -183,13 +182,13 @@ import com.vmware.identity.interop.IdmUtils;
 import com.vmware.identity.interop.accountmanager.AccountLockedOutException;
 import com.vmware.identity.interop.accountmanager.AccountPasswordExpiredException;
 import com.vmware.identity.interop.directory.Directory;
+import com.vmware.identity.interop.directory.DirectoryException;
 import com.vmware.identity.interop.domainmanager.DomainControllerInfo;
 import com.vmware.identity.interop.domainmanager.DomainTrustInfo;
 import com.vmware.identity.interop.idm.IIdmClientLibrary;
 import com.vmware.identity.interop.idm.IdmClientLibraryFactory;
 import com.vmware.identity.interop.ldap.AlreadyExistsLdapException;
 import com.vmware.identity.interop.ldap.ConstraintViolationLdapException;
-import com.vmware.identity.interop.ldap.InvalidCredentialsLdapException;
 import com.vmware.identity.interop.ldap.DirectoryStoreProtocol;
 import com.vmware.identity.interop.ldap.ILdapConnectionEx;
 import com.vmware.identity.interop.ldap.ServerDownLdapException;
@@ -4603,6 +4602,32 @@ public class IdentityManager implements IIdentityManager {
                             "Failed to find person users [Criteria : %s] in tenant [%s]",
                             criteria,
                             tenantName));
+
+            throw ex;
+        }
+    }
+
+    private String findNomalizedPrincipalId (String tenantName, PrincipalId principalId) throws Exception {
+        try {
+            ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
+            ValidateUtil.validateNotNull(principalId, "Principal id");
+
+            TenantInformation tenantInfo = findTenant(tenantName);
+            ServerUtils.validateNotNullTenant(tenantInfo, tenantName);
+
+            String domain = principalId.getDomain();
+            IIdentityProvider provider = tenantInfo.findProviderADAsFallBack(domain);
+            ServerUtils.validateNotNullIdp(provider, tenantName, domain);
+
+            return provider.findNomalizedPrincipalId(principalId);
+        } catch (InvalidPrincipalException e) {
+            logger.info(String.format("Failed to find prinpal id [%s] in tenant [%s]",
+                    principalId.getUPN(), tenantName));
+
+            return null;
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to find prinpal id [%s] in tenant [%s]",
+                    principalId != null ? principalId.getUPN() : "NULL", tenantName));
 
             throw ex;
         }
@@ -10488,6 +10513,23 @@ public class IdentityManager implements IIdentityManager {
             try
             {
                 return this.findPersonUsers(tenantName, criteria, limit);
+            }
+            catch(Exception ex)
+            {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String findNomalizedPrincipalId(String tenantName, PrincipalId principalId, IIdmServiceContext serviceContext) throws  IDMException {
+        try(IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "findPersonUsers"))
+        {
+            try
+            {
+                return this.findNomalizedPrincipalId(tenantName, principalId);
             }
             catch(Exception ex)
             {

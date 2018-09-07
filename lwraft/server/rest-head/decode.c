@@ -90,6 +90,8 @@ VmDirRESTDecodeAttributeNoAlloc(
         // check if value needs to be decoded
         if (VmDirSchemaAttrIsOctetString(pAttr->pATDesc))
         {
+            VDIR_BERVALUE bvDecodeVal = {0};
+
             VMDIR_SAFE_FREE_STRINGA(pszDecoded);
 
             valLen = VmDirStringLenA(pszVal);
@@ -97,6 +99,12 @@ VmDirRESTDecodeAttributeNoAlloc(
             BAIL_ON_VMDIR_ERROR(dwError);
 
             dwError = sasl_decode64(pszVal, valLen, pszDecoded, valLen, &len);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            bvDecodeVal.lberbv_val = pszDecoded;
+            bvDecodeVal.lberbv_len = len;
+
+            dwError = VmDirBervalContentDup(&bvDecodeVal, &pAttr->vals[i]);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
         else

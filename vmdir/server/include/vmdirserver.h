@@ -170,6 +170,7 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowInsecureAuth;
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
+    BOOLEAN                         bEnableRegionalMaster;
 
     PDWORD                          pdwLdapListenPorts;
     DWORD                           dwLdapListenPorts;
@@ -596,6 +597,11 @@ DWORD
 VmDirCreateDomainController(
     PCSTR   pszDomain,
     PCSTR   pszDCName
+    );
+
+size_t
+VmDirWriteQueueSize(
+    PVMDIR_WRITE_QUEUE          pWriteQueue
     );
 
 #ifdef __cplusplus

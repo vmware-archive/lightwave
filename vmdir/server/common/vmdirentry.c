@@ -1435,20 +1435,25 @@ error:
 }
 
 DWORD
-VmDirDeleteEntry(
-    PVDIR_ENTRY pEntry
+VmDirDeleteEntryViaDN(
+    PCSTR   pszDN
     )
 {
     DWORD dwError = 0;
     VDIR_OPERATION op = {0};
     DeleteReq *dr = NULL;
 
+    if (IsNullOrEmptyString(pszDN))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
     dwError = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_INTERNAL, LDAP_REQ_DELETE, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     op.pBEIF = VmDirBackendSelect(NULL);
-    op.reqDn.lberbv_val = pEntry->dn.lberbv.bv_val;
-    op.reqDn.lberbv_len = pEntry->dn.lberbv.bv_len;
+    op.reqDn.lberbv_val = (PSTR)pszDN;
+    op.reqDn.lberbv_len = VmDirStringLenA(pszDN);
 
     dr = &op.request.deleteReq;
     dr->dn.lberbv.bv_val = op.reqDn.lberbv.bv_val;
@@ -1462,6 +1467,25 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+DWORD
+VmDirDeleteEntry(
+    PVDIR_ENTRY pEntry
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pEntry)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirDeleteEntryViaDN(pEntry->dn.lberbv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
 }
 
 DWORD

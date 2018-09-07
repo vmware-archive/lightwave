@@ -13,12 +13,12 @@
  */
 package com.vmware.identity.wstrust.client.impl;
 
-import javax.xml.parsers.DocumentBuilderFactory;
 import javax.xml.parsers.ParserConfigurationException;
 import javax.xml.soap.MessageFactory;
 import javax.xml.soap.SOAPException;
 import javax.xml.soap.SOAPMessage;
 
+import com.vmware.vim.sso.client.XmlParserFactory;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.w3c.dom.Document;
@@ -37,6 +37,8 @@ class SoapMessage {
     private static final String CREATION_ERROR_MSG = "Error creating SOAP message";
     private static final String PARSING_ERROR_MSG = "Error parsing SOAP message";
     private static final String SOAP_FAULT_FOUND = "SOAP fault found in the message";
+
+    private static final XmlParserFactory xmlParserFactory = XmlParserFactory.Factory.createSecureXmlParserFactory();
 
     private final Logger log = LoggerFactory.getLogger(SoapMessage.class);
 
@@ -135,13 +137,10 @@ class SoapMessage {
      * @throws ParserException
      */
     private SOAPMessage createMessage(Node body, Node header) throws ParserException {
-
-        DocumentBuilderFactory dbf = DocumentBuilderFactory.newInstance();
-        dbf.setNamespaceAware(true);
         SOAPMessage message = null;
         try {
             message = MessageFactory.newInstance().createMessage();
-            Document adoptedBody = dbf.newDocumentBuilder().newDocument();
+            Document adoptedBody = xmlParserFactory.newDocumentBuilder().newDocument();
             adoptedBody.appendChild(adoptedBody.importNode(body, true));
             message.getSOAPBody().addDocument(adoptedBody);
 

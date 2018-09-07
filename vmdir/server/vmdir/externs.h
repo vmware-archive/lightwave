@@ -34,3 +34,8 @@ extern PVM_METRICS_HISTOGRAM gpRpcMetrics[METRICS_RPC_OP_COUNT];
 extern PVM_METRICS_GAUGE gpSrvStatMetrics[METRICS_SRV_STAT_COUNT];
 
 extern PVM_METRICS_GAUGE gpLwGitHashMetrics;
+
+extern PVM_METRICS_HISTOGRAM gpLdapMetrics[METRICS_LDAP_OP_COUNT]
+                                           [METRICS_LDAP_OP_TYPE_COUNT]
+                                            [METRICS_LDAP_ERROR_COUNT]
+                                             [METRICS_LAYER_COUNT];

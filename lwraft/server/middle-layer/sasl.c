@@ -148,6 +148,9 @@ VmDirSASLInit(
     dwError = sasl_server_init( saslServerCB, "postd");
     BAIL_ON_SASL_ERROR(dwError);
 
+    dwError = sasl_client_init(NULL);
+    BAIL_ON_SASL_ERROR(dwError);
+
 cleanup:
 
     return dwError;

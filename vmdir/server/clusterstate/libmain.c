@@ -56,7 +56,7 @@ VmDirClusterLibInit(
 {
     DWORD       dwError = 0;
 
-    if (!VmDirIsRegionalMasterEnabled() || !VmDirSchemaSupportSingleMaster())
+    if (!VmDirSchemaSupportSingleMaster())
     {
         goto cleanup;
     }

@@ -866,6 +866,42 @@ typedef struct _VMDIR_SECURITY_DESCRIPTOR
     SECURITY_INFORMATION SecInfo;
 } VMDIR_SECURITY_DESCRIPTOR, *PVMDIR_SECURITY_DESCRIPTOR;
 
+typedef struct _VMDIR_SERVER_OBJECT
+{
+    PSTR        pszFQDN;
+    PSTR        pszDN;
+    PSTR        pszSite;
+    PSTR        pszInvocationId;
+    DWORD       dwServerId;
+} VMDIR_SERVER_OBJECT, *PVMDIR_SERVER_OBJECT;
+
+//clusterstate/statecache.c
+DWORD
+VmDirClusterCacheCloneSrvObj(
+    PVDIR_LINKED_LIST*  ppSrvObjList
+    );
+
+VOID
+VmDirFreeSrvObjLinkedList(
+    PVDIR_LINKED_LIST   pSrvObjList
+    );
+
+VOID
+VmDirFreeServerObjectContent(
+    PVMDIR_SERVER_OBJECT    pSrvObj
+    );
+
+VOID
+VmDirFreeServerObject(
+    PVMDIR_SERVER_OBJECT    pSrvObj
+    );
+
+DWORD
+VmDirCloneServerObject(
+    PVMDIR_SERVER_OBJECT    pSrvObj,
+    PVMDIR_SERVER_OBJECT*   ppOutSrvObj
+    );
+
 // common/dcconnthr.c
 
 VOID
@@ -1107,6 +1143,11 @@ DWORD
 VmDirEntryReplaceAttribute(
     PVDIR_ENTRY     pEntry,
     PVDIR_ATTRIBUTE pNewAttr
+    );
+
+DWORD
+VmDirDeleteEntryViaDN(
+    PCSTR   pszDN
     );
 
 DWORD

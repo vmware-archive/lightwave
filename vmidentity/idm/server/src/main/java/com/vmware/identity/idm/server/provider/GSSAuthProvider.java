@@ -96,6 +96,11 @@ public class GSSAuthProvider implements IGssAuthIdentityProvider {
     }
 
     @Override
+    public String findNomalizedPrincipalId(PrincipalId id) throws Exception {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public PersonUser findUser(PrincipalId id) throws Exception {
         throw new UnsupportedOperationException();
     }

@@ -210,7 +210,7 @@ _VmDirBuildHighestCommittedUSNfAttribute(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    highestCommittedUSN = pOperation->pBEIF->pfnBEGetHighestCommittedUSN( pOperation->pBECtx );
+    highestCommittedUSN = VmDirGetMaxCommittedUSN();
 
     dwError = VmDirAttributeAllocate(   ATTR_HIGHEST_COMMITTED_USN,
                                         1,
