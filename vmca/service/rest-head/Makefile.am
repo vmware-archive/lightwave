@@ -9,6 +9,7 @@ libvmcaresthead_la_SOURCES += \
     globals.c \
     handler.c \
     httperror.c \
+    openssl.c \
     operation.c \
     resource.c \
     result.c
@@ -16,12 +17,12 @@ libvmcaresthead_la_SOURCES += \
 endif
 
 libvmcaresthead_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmca/service/include \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@ \

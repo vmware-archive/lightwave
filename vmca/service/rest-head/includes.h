@@ -17,9 +17,15 @@
 #include <lw/hash.h>
 #include <lwerror.h>
 
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
 #endif
+
+#include <dce/dcethread.h>
 
 #include <vmca.h>
 #include <vmca_error.h>
@@ -36,8 +42,8 @@
 #include <vmrest.h>
 
 #include "defines.h"
-#include "externs.h"
 #include "structs.h"
 #include "prototypes.h"
+#include "externs.h"
 
 #endif

@@ -28,7 +28,9 @@ VMCA_SERVER_GLOBALS gVMCAServerGlobals =
     VMCA_SF_INIT(.pDirSyncParams, NULL),
     VMCA_SF_INIT(.pDirSyncThr, NULL),
     VMCA_SF_INIT(.gpEventLog, NULL),
-    VMCA_SF_INIT(.gppPolicies, NULL)
+    VMCA_SF_INIT(.gppPolicies, NULL),
+    VMCA_SF_INIT(.bDisableVECSIntegration, 0),
+    VMCA_SF_INIT(.gpVMCASslCtx, NULL)
 };
 
 #ifdef REST_ENABLED

@@ -42,6 +42,7 @@
 #endif
 
 #include <jansson.h>
+#include <dce/dcethread.h>
 
 #include <vmcatypes.h>
 #include <vmcacommon.h>

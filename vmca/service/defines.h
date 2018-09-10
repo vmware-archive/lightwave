@@ -89,27 +89,10 @@
 
 #endif
 
-// States
-
-typedef DWORD VMCA_FUNC_LEVEL;
-
-#define VMCA_UNKNOWN                0x00000001
-#define VMCA_ROOT_INIT_FAILED       0x00000002
-#define VMCA_ROOT_INIT_DONE         0x00000004
-
-#define VMCA_FUNC_LEVEL_INITIAL     0x00000000
-#define VMCA_FUNC_LEVEL_SELF_CA     0x00000004
-
 #define    GetLastError() errno
 
 #ifndef  __RPC_USER
 #define  __RPC_USER
-#endif
-
-#ifndef _WIN32
-#define VMCA_SF_INIT( fieldName, fieldValue ) fieldName = fieldValue
-#else
-#define VMCA_SF_INIT( fieldName, fieldValue ) fieldValue
 #endif
 
 #define VMCA_ASSERT(x) assert( (x) )
