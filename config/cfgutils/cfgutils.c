@@ -312,6 +312,11 @@ VmwDeployIsRetriableError(
         break;
     }
 
+    if (!bIsRetriable)
+    {
+        bIsRetriable = VmAfdIsRetriableError(dwError);
+    }
+
     return bIsRetriable;
 }
 

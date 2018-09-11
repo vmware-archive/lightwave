@@ -31,6 +31,7 @@ libvmafdclient_la_SOURCES = \
     vecslocalclient.c
 
 libvmafdclient_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @top_builddir@/vmafd/common/libcommon.la \
     @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
     @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la \
