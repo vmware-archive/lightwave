@@ -168,6 +168,7 @@ public class AuthenticationRequestProcessor {
         if (idpConfig != null) {
             try{
                 // use federated idp login page
+                logger.info("Processing SP-initiated authentication request for tenant {}.", tenant);
                 final FederatedIdentityProcessor processor = this.federatedProcessorProvider.findProcessor(idpConfig);
                 return Pair.of((ModelAndView) null, processor.processAuthRequestForFederatedIDP(this.authnRequest, tenant, idpConfig));
             }catch(ServerException e){

@@ -96,6 +96,7 @@ public class FederationTokenController {
                     throw new ServerException(errorObject);
                 }
 
+                logger.info("Processing IDP-initiated authentication request for tenant {}.", tenant);
                 relayState = new FederationRelayState.Builder(relayState.getIssuer(),
                         relayState.getClientId(), relayState.getRedirectURI())
                         .withTenant(tenant)
@@ -106,7 +107,7 @@ public class FederationTokenController {
                 // validate state
                 relayState = authnRequestTracker.remove(State.parse(state));
                 if (relayState == null) {
-                    throw new ServerException(ErrorObject.invalidRequest("State not found."));
+                    throw new ServerException(ErrorObject.invalidRequest("Request state is not found."));
                 }
                 tenant = relayState.getTenant();
                 Validate.notEmpty(tenant, "Tenant name in auth request tracker should not be empty.");
