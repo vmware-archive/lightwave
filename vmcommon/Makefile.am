@@ -15,6 +15,7 @@ libvmcommon_la_CPPFLAGS = \
 
 libvmcommon_la_SOURCES = \
     memory.c \
+    vmcommonerror.c \
     vmstring.c \
     vmhttpclient.c \
     vmjsonresult.c \

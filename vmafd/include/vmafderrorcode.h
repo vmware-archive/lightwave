@@ -138,8 +138,8 @@ extern "C" {
 #define VMAFD_SSOERROR_OIDC_SERVER_SERVER_ERROR                 1121
 
 #define VMAFD_SSOERROR_UNKNOWN                                  1122
-#define VMAFD_OIDC_ERROR_RESPONSE                               1022
-#define VMAFD_OIDC_EMPTY_RESPONSE                               1023
+#define VMAFD_OIDC_ERROR_RESPONSE                               1123
+#define VMAFD_OIDC_EMPTY_RESPONSE                               1124
 
 #ifdef __cplusplus
 }

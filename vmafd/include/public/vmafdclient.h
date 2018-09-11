@@ -860,6 +860,11 @@ VmAfdEndUpgrade(
     PVMAFD_SERVER pServer
     );
 
+BOOLEAN
+VmAfdIsRetriableError(
+    DWORD dwError
+    );
+
 #ifdef UNICODE
 
 #define VmAfdOpenServer                 VmAfdOpenServerW
