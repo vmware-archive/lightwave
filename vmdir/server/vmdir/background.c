@@ -330,6 +330,7 @@ VmDirBkgdCompareIntegChkReports(
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VmDirFreeIntegrityReport(pNewReport);
+        pNewReport = NULL;
         dwError = VmDirIntegrityReportCreate(&pNewReport);
         BAIL_ON_VMDIR_ERROR(dwError);
 

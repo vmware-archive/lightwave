@@ -127,9 +127,11 @@ VmDirClusterFreeCache(
         PVMDIR_CLUSTER_SITE_LIST pCurr = gpClusterState->pSiteList;
         PVMDIR_CLUSTER_SITE_LIST pNext = NULL;
 
-        for (pNext = pCurr->pNextSiteList; pCurr; pCurr = pNext)
+        while (pCurr)
         {
+            pNext = pCurr->pNextSiteList;
             _VmDirClusterFreeRegionNodeList(pCurr);
+            pCurr = pNext;
         }
     }
 
