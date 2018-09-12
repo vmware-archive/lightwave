@@ -88,6 +88,7 @@ resume:
 
             // compute new task
             VmDirFreeIndexingTask(pTask);
+            pTask = NULL;
             dwError = VmDirIndexingTaskCompute(&pTask);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
