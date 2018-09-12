@@ -1675,6 +1675,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
+                 vmdir/server/main/Makefile
                  vmdir/client/Makefile
                  vmdir/config/vmdir.reg
                  vmdir/testing/Makefile
@@ -1724,6 +1725,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/unit-tests/Makefile
                  vmdir/unit-tests/server/Makefile
                  vmdir/unit-tests/server/common/Makefile
+                 vmdir/unit-tests/server/replication2/Makefile
                  vmdns/Makefile
                  vmdns/include/Makefile
                  vmdns/include/public/Makefile

@@ -215,6 +215,7 @@ VmDirUpdateUtdVectorLocalCache(
     );
 #endif
 
+//TODO_REMOVE_REPLV2
 /*
  * deadlockdetectionvector.c
  */
@@ -256,6 +257,10 @@ VmDirDDVectorToString(
     PSTR*   ppDeadlockDetectionVectorStr
     );
 
+VOID
+VmDirPopulateInvocationIdInReplAgr(
+    VOID
+    );
 #ifdef __cplusplus
 }
 #endif

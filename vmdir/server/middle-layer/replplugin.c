@@ -63,6 +63,7 @@ VmDirPluginReplAgrPostAddCommit(
             VmDirInsertRAToCache(pReplAgr);
             pReplAgr = NULL;  // gVmdirReplAgrs take over pReplAgr
 
+            //TODO_REMOVE_REPLV2
             VmDirPopulateInvocationIdInReplAgr();
         }
     }

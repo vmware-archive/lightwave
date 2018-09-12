@@ -55,12 +55,6 @@ _VmDirSkipReplicationCycle(
     VOID
     );
 
-static
-VOID
-_VmDirUpdateInvocationIdInReplAgr(
-    VOID
-    );
-
 DWORD
 VmDirGetReplCycleCounter(
     VOID
@@ -110,67 +104,6 @@ error:
     goto cleanup;
 }
 
-VOID
-VmDirPopulateInvocationIdInReplAgr(
-    VOID
-    )
-{
-    PSTR      pszCfgBaseDN = NULL;
-    DWORD     dwError = 0;
-    size_t    iCnt = 0;
-    BOOLEAN   bInLock = FALSE;
-    VDIR_ENTRY_ARRAY   entryArray = {0};
-    PVDIR_ATTRIBUTE    pAttrCN = NULL;
-    PVDIR_ATTRIBUTE    pAttrInvocID = NULL;
-    PVMDIR_REPLICATION_AGREEMENT   pReplAgr = NULL;
-
-    dwError = VmDirAllocateStringPrintf(
-            &pszCfgBaseDN,
-            "cn=%s,%s",
-            VMDIR_CONFIGURATION_CONTAINER_NAME,
-            gVmdirServerGlobals.systemDomainDN.lberbv_val);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSimpleEqualFilterInternalSearch(
-            pszCfgBaseDN,
-            LDAP_SCOPE_SUBTREE,
-            ATTR_OBJECT_CLASS,
-            OC_DIR_SERVER,
-            &entryArray);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-    //complexity should be a problem since size of 'n' number of partners is always small here.
-    for (iCnt = 0; iCnt < entryArray.iSize; iCnt++)
-    {
-        pAttrCN = VmDirFindAttrByName(&entryArray.pEntry[iCnt], ATTR_CN);
-        pAttrInvocID = VmDirFindAttrByName(&entryArray.pEntry[iCnt], ATTR_INVOCATION_ID);
-
-        if (pAttrCN && pAttrInvocID)
-        {
-            for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
-            {
-                if (VmDirStringCompareA(pReplAgr->pszHostname, pAttrCN->vals[0].lberbv_val, FALSE) == 0 &&
-                    pReplAgr->pszInvocationID == NULL)
-                {
-                    VmDirAllocateStringA(pAttrInvocID->vals[0].lberbv_val, &pReplAgr->pszInvocationID);
-                }
-            }
-        }
-    }
-
-cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-    VMDIR_SAFE_FREE_MEMORY(pszCfgBaseDN);
-    VmDirFreeEntryArrayContent(&entryArray);
-    return;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-
 // vdirReplicationThrFun is the main replication function that:
 //  - Executes replication cycles endlessly
 //  - Each replication cycle consist of processing all the RAs for this vmdird instance.
@@ -209,9 +142,6 @@ vdirReplicationThrFun(
 
     retVal = _VmDirWaitForReplicationAgreement(&bExitThread);
     BAIL_ON_VMDIR_ERROR(retVal);
-
-    // To handle - stand alone node - signaled by partner join
-    _VmDirUpdateInvocationIdInReplAgr();
 
     if (bExitThread)
     {
@@ -502,33 +432,4 @@ ldaperror:
             retVal);
 
     goto collectmetrics;
-}
-
-static
-VOID
-_VmDirUpdateInvocationIdInReplAgr(
-    VOID
-    )
-{
-    BOOLEAN   bInLock = FALSE;
-    BOOLEAN   bUpdate = FALSE;
-    PVMDIR_REPLICATION_AGREEMENT  pReplAgr = NULL;
-
-    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-    for (pReplAgr = gVmdirReplAgrs; pReplAgr; pReplAgr = pReplAgr->next)
-    {
-        if (pReplAgr->pszInvocationID == NULL)
-        {
-            bUpdate = TRUE;
-            break;
-        }
-    }
-
-    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
-
-    if (bUpdate)
-    {
-        VmDirPopulateInvocationIdInReplAgr();
-    }
 }

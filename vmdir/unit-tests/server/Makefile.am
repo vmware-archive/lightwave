@@ -1,2 +1,3 @@
 SUBDIRS = \
-    common
+    common \
+    replication2

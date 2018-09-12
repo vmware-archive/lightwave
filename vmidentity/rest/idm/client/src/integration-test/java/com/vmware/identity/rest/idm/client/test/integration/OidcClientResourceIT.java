@@ -21,23 +21,40 @@ import java.io.IOException;
 import java.security.GeneralSecurityException;
 import java.util.List;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+import com.vmware.identity.rest.core.client.AccessToken;
+import com.vmware.identity.rest.core.client.AccessToken.Type;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.client.test.integration.util.TestGenerator;
 import com.vmware.identity.rest.idm.data.OIDCClientDTO;
 import com.vmware.identity.rest.idm.data.OIDCClientMetadataDTO;
 
+@RunWith(value = Parameterized.class)
 public class OidcClientResourceIT extends IntegrationTestBase {
+
+    @Parameters
+    public static Object[] data() {
+           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
+    }
+
+    public OidcClientResourceIT(Type tokenType) throws Exception {
+        super(true, tokenType);
+    }
 
     private static OIDCClientDTO testOidcClient;
 
     @BeforeClass
-    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
+    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException, SOAPException {
         IntegrationTestBase.init(true);
 
         OIDCClientMetadataDTO metadata = TestGenerator.generateOIDCClientMetadata();

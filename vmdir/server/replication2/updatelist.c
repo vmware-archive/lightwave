@@ -329,7 +329,6 @@ VmDirReplUpdateListParseSyncDoneCtl(
     PSTR    pszStart = NULL;
     PSTR    pszEnd = NULL;
     DWORD   dwVectorLen = 0;
-    PSTR    pszOldUTDVector = NULL;
 
     retVal = VmDirStringToINT64(
                         ppSearchResCtrls[0]->ldctl_value.bv_val,
@@ -353,22 +352,11 @@ VmDirReplUpdateListParseSyncDoneCtl(
     retVal = VmDirAllocateAndCopyMemory((PVOID)pszStart, dwVectorLen, (PVOID*)&pszUTDVector);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    retVal = VmDirUTDVectorGlobalCacheToString(&pszOldUTDVector);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-    VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Updating Old UTD Vector = (%s) to New UTD Vector = (%s)",
-                __FUNCTION__,
-                pszOldUTDVector,
-                pszUTDVector);
-
     retVal = VmDirUTDVectorCacheReplace(pReplUpdateList->pNewUtdVector, pszUTDVector);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszUTDVector);
-    VMDIR_SAFE_FREE_MEMORY(pszOldUTDVector);
     return retVal;
 
 ldaperror:

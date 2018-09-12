@@ -21,12 +21,19 @@ import java.security.GeneralSecurityException;
 import java.util.ArrayList;
 import java.util.List;
 
+import javax.xml.soap.SOAPException;
+
 import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
+import com.vmware.identity.rest.core.client.AccessToken;
+import com.vmware.identity.rest.core.client.AccessToken.Type;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.data.CertificateDTO;
 import com.vmware.identity.rest.idm.client.test.integration.util.TestClientFactory;
@@ -37,13 +44,23 @@ import com.vmware.identity.rest.idm.data.TenantCredentialsDTO;
 import com.vmware.identity.rest.idm.data.attributes.CertificateGranularity;
 import com.vmware.identity.rest.idm.data.attributes.CertificateScope;
 
+@RunWith(value = Parameterized.class)
 public class CertificateResourceIT extends IntegrationTestBase {
+
+    public CertificateResourceIT(Type tokenType) throws Exception  {
+        super(true, tokenType);
+    }
+
+    @Parameters
+    public static Object[] data() {
+           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
+    }
 
     private static String TEST_CERT_DN = "C=US, ST=WA, L=Bellevue, O=VMware, OU=SSO, CN=junkcert";
     private static CertificateDTO testCert;
 
     @BeforeClass
-    public static void init() throws HttpException, IOException, GeneralSecurityException, ClientException {
+    public static void init() throws GeneralSecurityException, IOException, HttpException, ClientException, SOAPException {
         IntegrationTestBase.init(true);
 
         testCert = TestGenerator.generateCertificate(TEST_CERT_DN);
@@ -55,7 +72,7 @@ public class CertificateResourceIT extends IntegrationTestBase {
     }
 
     @Test
-    public void testSet() throws GeneralSecurityException, IOException, HttpException, ClientException {
+    public void testSet() throws GeneralSecurityException, IOException, HttpException, ClientException, SOAPException {
         List<CertificateDTO> certificates = new ArrayList<CertificateDTO>();
         certificates.add(testCert);
         certificates.add(TestGenerator.generateCertificate(TEST_CERT_DN + "1"));

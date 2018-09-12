@@ -3,9 +3,9 @@ noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
     conflictresolution.c \
-    deadlockdetectionvector.c \
     dbcopy.c \
     dbswap.c \
+    deadlockdetectionvector.c \
     drrestore.c \
     firstreplcycle.c \
     globals.c \

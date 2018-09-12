@@ -374,6 +374,7 @@ DeleteControls(
    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "DeleteControls: End." );
 }
 
+//TODO_REMOVE_REPLV2
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION pOp,
@@ -420,7 +421,7 @@ error:
     goto cleanup;
 }
 
-
+//TODO_REMOVE_REPLV2
 int
 WriteSyncDoneControl(
     VDIR_OPERATION *     op,

@@ -209,6 +209,18 @@ objectClasses: (
          )
     )
 
+objectClasses: (
+    VMWare.DIR.objectclass.14
+    NAME 'deletedObject'
+    DESC 'Tombstone entry'
+    SUP top
+    STRUCTURAL
+    MUST ( lastKnownDn
+         $ objectGUID
+         $ nTSecurityDescriptor
+         )
+    )
+
 attributeTypes: (
     VMWare.DIR.attribute.0.1
     NAME 'vmwAttributeToIdMap'

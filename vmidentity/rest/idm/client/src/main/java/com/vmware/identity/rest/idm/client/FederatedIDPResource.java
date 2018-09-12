@@ -13,6 +13,23 @@
  */
 package com.vmware.identity.rest.idm.client;
 
+import static com.vmware.identity.rest.core.client.RequestExecutor.execute;
+import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnList;
+import static com.vmware.identity.rest.core.client.URIFactory.buildParameters;
+import static com.vmware.identity.rest.core.client.URIFactory.buildURI;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.util.List;
+import java.util.Map;
+
+import org.apache.commons.codec.binary.Base64;
+import org.apache.http.HttpException;
+import org.apache.http.client.ClientProtocolException;
+import org.apache.http.client.methods.HttpGet;
+import org.apache.http.client.methods.HttpPost;
+
 import com.vmware.identity.rest.core.client.BaseClient;
 import com.vmware.identity.rest.core.client.ClientResource;
 import com.vmware.identity.rest.core.client.RequestFactory;
@@ -20,24 +37,6 @@ import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.client.methods.HttpDeleteWithBody;
 import com.vmware.identity.rest.idm.data.FederatedIdpDTO;
-import org.apache.commons.codec.binary.Base64;
-import org.apache.http.HttpException;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-
-import java.io.File;
-import java.io.IOException;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.util.Collection;
-import java.util.List;
-import java.util.Map;
-
-import static com.vmware.identity.rest.core.client.RequestExecutor.execute;
-import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnList;
-import static com.vmware.identity.rest.core.client.URIFactory.buildParameters;
-import static com.vmware.identity.rest.core.client.URIFactory.buildURI;
 
 /**
  * The {@code FederatedIDPResource} is effectively a container that gathers all of the
@@ -49,6 +48,8 @@ public class FederatedIDPResource extends ClientResource {
     private static final String FEDERATED_IDP_URI = "/idm/tenant/%s/federation";
     private static final String FEDERATED_IDP_REGISTRATION_URI = FEDERATED_IDP_URI + "/json";
     private static final String FEDERATED_IDP_NAME_URI = FEDERATED_IDP_URI + "/%s";
+    private static final String FEDERATED_IDP_POST_URI = "/idm/post/tenant/%s/federation";
+    private static final String FEDERATED_IDP_NAME_POST_URI = FEDERATED_IDP_POST_URI + "/%s";
 
     public FederatedIDPResource(BaseClient parent) {
         super(parent);
@@ -127,10 +128,10 @@ public class FederatedIDPResource extends ClientResource {
     getAll(
             String tenant
     ) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
-        URI uri = buildURI(parent.getHostRetriever(), FEDERATED_IDP_URI, tenant);
+        URI uri = buildURI(parent.getHostRetriever(), FEDERATED_IDP_POST_URI, tenant);
 
-        HttpGet request = RequestFactory.createGetRequest(uri, parent.getToken());
-        return executeAndReturnList(parent.getClient(), request, FederatedIdpDTO.class);
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken());
+        return executeAndReturnList(parent.getClient(), post, FederatedIdpDTO.class);
     }
 
     /**
@@ -154,13 +155,12 @@ public class FederatedIDPResource extends ClientResource {
     ) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
         URI uri = buildURI(
                     parent.getHostRetriever(),
-                    FEDERATED_IDP_NAME_URI,
+                    FEDERATED_IDP_NAME_POST_URI,
                     tenant,
                     Base64.encodeBase64String(entityId.getBytes("UTF-8"))
                     );
-
-        HttpGet request = RequestFactory.createGetRequest(uri, parent.getToken());
-        return execute(parent.getClient(), request, FederatedIdpDTO.class);
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken());
+        return execute(parent.getClient(), post, FederatedIdpDTO.class);
     }
 
     /**

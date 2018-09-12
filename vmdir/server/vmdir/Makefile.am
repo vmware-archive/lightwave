@@ -1,8 +1,16 @@
-sbin_PROGRAMS = vmdird
+noinst_LTLIBRARIES = libvmdird.la
 
 idl_srcdir=$(top_srcdir)/vmdir/idl
 
-vmdird_SOURCES = \
+VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
+
+if REPLICATION_V2
+    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
+else
+    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
+endif
+
+libvmdird_la_SOURCES = \
     accountmgmt.c \
     auth.c \
     background.c \
@@ -18,7 +26,6 @@ vmdird_SOURCES = \
     ipclocalapi.c \
     ipcapihandler.c \
     krb.c \
-    main.c \
     metrics.c \
     parseargs.c \
     promote/dcactmgmt.c \
@@ -45,16 +52,7 @@ vmdird_SOURCES = \
     vmdirsuperlog_sstub.c \
     vmevent.c
 
-VMDIRD_BACKEND_INCLUDES=
-VMDIRD_BACKEND_LD_FLAGS=
-VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
-if REPLICATION_V2
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
-else
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
-endif
-
-vmdird_CPPFLAGS = \
+libvmdird_la_CPPFLAGS = \
     -g \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
@@ -65,12 +63,11 @@ vmdird_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmevent/include/public \
     -I$(top_srcdir)/vmcommon/include/public \
-    $(VMDIRD_BACKEND_INCLUDES) \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
-vmdird_LDADD = \
+libvmdird_la_LIBADD = \
     $(top_builddir)/vmdir/server/vmkdc/libvmkdcserv.la \
     $(top_builddir)/vmdir/server/metrics/libmetrics.la \
     $(top_builddir)/vmdir/server/ldap-head/libldap-head.la \
@@ -113,14 +110,8 @@ vmdird_LDADD = \
     @COPENAPI_LIBS@ \
     @CRESTENGINE_LIBS@
 
-vmdird_LDFLAGS = \
-    -rdynamic -ldl \
-    $(VMDIRD_BACKEND_LD_FLAGS) \
-    @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@ \
-    @JANSSON_LDFLAGS@ \
-    @COPENAPI_LDFLAGS@ \
-    @CRESTENGINE_LDFLAGS@
+libvmdird_la_LDFLAGS = \
+    -static
 
 CLEANFILES = \
     vmdir_h.h \

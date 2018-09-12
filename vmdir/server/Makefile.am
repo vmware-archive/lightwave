@@ -35,4 +35,5 @@ SUBDIRS = \
     acl \
     vmkdc \
     vmdir \
+    main \
     vmkdc_mit_tools

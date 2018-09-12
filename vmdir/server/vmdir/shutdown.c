@@ -214,6 +214,7 @@ VmDirCleanupGlobals(
 #else
     VmDirUTDVectorCacheShutdown();
 #endif
+    //TODO_REMOVE_REPLV2
     VmDirDDVectorShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
@@ -245,6 +246,7 @@ VmDirCleanupGlobals(
 
     // Free gVmdirdSDGlobals upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminGX);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminRPWPDE);
 
     VMDIR_SAFE_FREE_MUTEX(gVmDirServerOpsGlobals.pMutex);
     VmDirFreeLinkedList(gVmDirServerOpsGlobals.pWriteQueue->pList);
