@@ -12,16 +12,15 @@
  * under the License.
  */
 
-#ifndef _VMCA_SERVICE_COMMON_INCLUDES_H__
-#define _VMCA_SERVICE_COMMON_INCLUDES_H__
+#ifndef _VMCA_SERVICE_PLUGIN_INCLUDES_H_
+#define _VMCA_SERVICE_PLUGIN_INCLUDES_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#ifndef _WIN32
-
 #include <sys/prctl.h>
+#include <dlfcn.h>
 
 #include <config.h>
 #include <vmcasys.h>
@@ -31,6 +30,7 @@ extern "C" {
 #include <lwerror.h>
 #include <dce/dcethread.h>
 #include <reg/lwreg.h>
+#include <lwrpcrt/lwrpcrt.h>
 #include <dce/rpc.h>
 #include <dce/id_base.h>
 
@@ -41,8 +41,6 @@ extern "C" {
 #include <openssl/pem.h>
 #include <openssl/bio.h>
 
-#include <gssapi/gssapi.h>
-
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
 #endif
@@ -51,75 +49,16 @@ extern "C" {
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
+#include <vmcaplugin.h>
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
-
-#include <jansson.h>
+#include "vmca_error.h"
 
 #include "defines.h"
 #include "structs.h"
-#include "prototypes.h"
-#include "vmca_error.h"
-
-#else
-
-#pragma once
-#pragma warning(disable : 4995)
-#define NOMINMAX 1
-
-#include "targetver.h"
-//#define WIN32_LEAN_AND_MEAN // Exclude rarely-used stuff from Windows headers
-
-#include <windows.h>
-#include <dce/dcethread.h>
-#include <dce/rpc.h>
-#include <dce/id_base.h>
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <tchar.h>
-#include <malloc.h>
-#include <errno.h>
-#include <Sddl.h>
-#include <process.h>
-#include <assert.h>
-#include <winsock2.h>
-#include <ctype.h>
-#include "banned.h"
-
-//#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/conf.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
-
-#ifndef _WIN32
-#include <lwrpcrt/lwrpcrt.h>
-#endif
-
-#include <dce/rpc.h>
-#include <dce/dcethread.h>
-
-#include <vmcasys.h>
-#include <vmcatypes.h>
-#include <vmcacommon.h>
-#include <vmcasrvcommon.h>
-#include <vmcapolicy.h>
-
-#include <vmcadb.h>
-
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include "vmca_error.h"
-#endif // _WIN32
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _VMCA_SERVICE_COMMON_INCLUDES_H__
+#endif /* _VMCA_SERVICE_PLUGIN_INCLUDES_H_ */

@@ -1812,6 +1812,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/service/common/Makefile
                  vmca/service/config/Makefile
                  vmca/service/rest-head/Makefile
+                 vmca/service/plugin/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile
@@ -1820,6 +1821,11 @@ AC_CONFIG_FILES([Makefile
                  vmca/unit-tests/service/Makefile
                  vmca/unit-tests/service/common/Makefile
                  vmca/unit-tests/service/common/test-policy-configs/Makefile
+                 vmca/unit-tests/service/plugin/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-invalidvtable/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-valid/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-noentry/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile

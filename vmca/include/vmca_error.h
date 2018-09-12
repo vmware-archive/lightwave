@@ -122,6 +122,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_ERROR_AUTH_BAD_DATA            (VMCA_ROOT_CA_MISSING + 76)
 #define VMCA_ERROR_INVALID_REQUEST          (VMCA_ROOT_CA_MISSING + 77)
 #define VMCA_ERROR_UNAVAILABLE              (VMCA_ROOT_CA_MISSING + 78)
+#define VMCA_ERROR_DLL_SYMBOL_NOTFOUND      (VMCA_ROOT_CA_MISSING + 79)
 
 // hashing
 #define VMCA_ERROR_EVP_DIGEST               (VMCA_ROOT_CA_MISSING + 80)
@@ -226,6 +227,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_AUTH_BAD_DATA          ,   "VMCA_ERROR_AUTH_BAD_DATA"          ,   "Bad auth data presented" }, \
     { VMCA_ERROR_INVALID_REQUEST        ,   "VMCA_ERROR_INVALID_REQUEST"        ,   "Bad request caused by client error"}, \
     { VMCA_ERROR_UNAVAILABLE            ,   "VMCA_ERROR_UNAVAILABLE"            ,   "Server is unavailable/shutdown"}, \
+    { VMCA_ERROR_DLL_SYMBOL_NOTFOUND    ,   "VMCA_ERROR_DLL_SYMBOL_NOTFOUND"    ,   "Unable to find symbol in library" }, \
     { VMCA_ERROR_EVP_DIGEST             ,   "VMCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
     { VMCA_JSON_FILE_LOAD_ERROR         ,   "VMCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
     { VMCA_JSON_PARSE_ERROR             ,   "VMCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \

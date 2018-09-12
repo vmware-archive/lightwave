@@ -634,10 +634,10 @@ VMCALoadLibrary(
     DWORD   dwError = 0;
     VMCA_LIB_HANDLE pLibHandle = NULL;
 
-    if (ppLibHandle == NULL)
+    if (IsNullOrEmptyString(pszLibPath) || ppLibHandle == NULL)
     {
-        dwError = VMCA_ARGUMENT_ERROR;
-        goto cleanup;
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
     }
 
 #ifdef _WIN32
@@ -667,10 +667,15 @@ VMCALoadLibrary(
     *ppLibHandle = pLibHandle;
 
 cleanup:
+
     return dwError;
 
 error:
-    *ppLibHandle = NULL;
+    VMCACloseLibrary(pLibHandle);
+    if (ppLibHandle)
+    {
+        *ppLibHandle = NULL;
+    }
     goto cleanup;
 }
 
@@ -702,6 +707,7 @@ VMCAGetLibSym(
 #ifdef _WIN32
     return GetProcAddress(pLibHandle, pszFunctionName);
 #else
+    dlerror();
     return dlsym(pLibHandle, pszFunctionName);
 #endif
 }

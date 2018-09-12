@@ -5,6 +5,7 @@ idl_srcdir=$(top_srcdir)/vmca/idl
 SUBDIRS = \
     common \
     config \
+    plugin \
     rest-head
 
 vmcad_SOURCES = \
