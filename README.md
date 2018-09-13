@@ -230,7 +230,7 @@ refer to our [FAQ](https://cla.vmware.com/faq).
 
 Before you start to code, we recommend discussing your plans through a  [GitHub
 issue](https://github.com/vmware/lightwave/issues) or discuss it first with the official project
-[maintainers](AUTHORS.md) via the [#Dispatch Slack Channel](https://vmwarecode.slack.com/messages/CCNLJNZ4M/), especially
+[maintainers](AUTHORS.md) via the [#Lightwave Slack Channel](https://vmwarecode.slack.com/messages/CCNLJNZ4M/), especially
 for more ambitious contributions. This gives other contributors a chance to point you in the right direction, give you
 feedback on your design, and help you find out if someone else is working on the same thing.
 
