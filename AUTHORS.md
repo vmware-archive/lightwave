@@ -1,5 +1,5 @@
 # Lightwave Maintainers
-* [Suresh Chellappan, @sureshpc] (https://github.com/schellappabn)
+* [Suresh Chellappan, @sureshpc] (https://github.com/schellappan)
 * [Wei Fu, @wfu] (https://github.com/wfu)
 * [Sung Ruo, @sruo] (https://github.com/sruo)
 * [Sriram Nambakam, @snambakam] (https://github.com/snambakam)
