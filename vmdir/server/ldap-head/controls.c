@@ -387,7 +387,7 @@ DeleteControls(
    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "DeleteControls: End." );
 }
 
-//TODO_REMOVE_REPLV2
+#ifndef REPLICATION_V2
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION pOp,
@@ -433,6 +433,7 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
+#endif
 
 //TODO_REMOVE_REPLV2
 int
@@ -442,7 +443,9 @@ WriteSyncDoneControl(
     )
 {
     int                     retVal = LDAP_OPERATIONS_ERROR;
+#ifndef REPLICATION_V2
     size_t                  deadlockDetectionVectorLen = 0;
+#endif
     PLW_HASHTABLE_NODE      pNode = NULL;
     LW_HASHTABLE_ITER       iter = LW_HASHTABLE_ITER_INIT;
     UptoDateVectorEntry *   pUtdVectorEntry = NULL;
@@ -458,20 +461,27 @@ WriteSyncDoneControl(
             retVal = LDAP_OPERATIONS_ERROR;
             BAIL_ON_VMDIR_ERROR( retVal );
         }
-        { // Construct string format of utdVector
+        {
+#ifndef REPLICATION_V2
+            //pszDeadlockDetectionVector will be populated only for non replv2
             if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
             {
                 deadlockDetectionVectorLen = VmDirStringLenA(op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
             }
+#endif
 
             int     numEntries = LwRtlHashTableGetCount( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector );
             char *  writer = NULL;
             size_t  tmpLen = 0;
+#ifdef REPLICATION_V2
+            size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
+                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) + 1;
+#else
             size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
                                 (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) +
                                 VMDIR_REPL_CONT_INDICATOR_LEN +
                                 deadlockDetectionVectorLen + 1;
-
+#endif
             // Sync Done control value looks like: <lastLocalUsnChanged>,<serverId1>:<server 1 last originating USN>,
             // <serverId2>,<server 2 originating USN>,...,
             // [continue:1,vector:<servername>:<consecutiveEmptyPageCounter>,<servername>:<consecutiveEmptyPageCounter>...]
@@ -500,6 +510,8 @@ WriteSyncDoneControl(
                 bvCtrlVal.lberbv.bv_len += tmpLen;
             }
 
+#ifndef REPLICATION_V2
+            //bContinue will be populated only for non replv2
             if (op->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
             {
                 VmDirStringPrintFA( writer, bufferSize, VMDIR_REPL_CONT_INDICATOR );
@@ -509,6 +521,7 @@ WriteSyncDoneControl(
                 bvCtrlVal.lberbv.bv_len += tmpLen;
             }
 
+            //pszDeadlockDetectionVector will be populated only for non replv2
             if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
             {
                 VmDirStringPrintFA(writer, bufferSize, op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
@@ -517,6 +530,7 @@ WriteSyncDoneControl(
                 bufferSize -= tmpLen;
                 bvCtrlVal.lberbv.bv_len += tmpLen;
             }
+#endif
         }
 
         if (ber_printf( ber, "O}}", &bvCtrlVal.lberbv) == -1 )
@@ -1071,6 +1085,8 @@ ParseSyncRequestControlVal(
 
         tag = ber_peek_tag(ber, &len);
     }
+
+#ifndef REPLICATION_V2
     if (tag == LBER_BOOLEAN)
     {
         ber_int_t firstPage;
@@ -1093,6 +1109,8 @@ ParseSyncRequestControlVal(
             syncReqCtrlVal->bFirstPage = TRUE;
         }
     }
+#endif
+
     if (ber_scanf(ber, "}") == LBER_ERROR) // End of control value
     {
         VMDIR_LOG_ERROR(
