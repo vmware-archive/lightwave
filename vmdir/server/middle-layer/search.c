@@ -230,6 +230,17 @@ VmDirInternalSearch(
         pOperation->opType = VDIR_OPERATION_TYPE_REPL;
     }
 
+    if (pOperation->pReplAgrDisableCtrl)
+    {
+        retVal = VmDirExecReplAgrEnableDisableCtrl(BERVAL_NORM_VAL(pOperation->reqDn), FALSE);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+    else if (pOperation->pReplAgrEnableCtrl)
+    {
+        retVal = VmDirExecReplAgrEnableDisableCtrl(BERVAL_NORM_VAL(pOperation->reqDn), TRUE);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // If base is not ROOT, read lock the base object (DnToEntryId index entry) to make sure it exists, and it does
     // not get deleted during this search processing.
     if (pOperation->reqDn.lberbv.bv_len != 0)

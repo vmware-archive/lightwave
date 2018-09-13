@@ -232,3 +232,55 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
     goto cleanup;
 }
+
+DWORD
+VmDirExecReplAgrEnableDisableCtrl(
+    PCSTR   pszDn,
+    BOOLEAN bFlag
+    )
+{
+    DWORD                        dwError = 0;
+    PVMDIR_REPLICATION_AGREEMENT pCurrReplAgr = NULL;
+    BOOLEAN                      bInLock = FALSE;
+
+    if (!pszDn)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+
+    for (pCurrReplAgr = gVmdirReplAgrs; pCurrReplAgr != NULL; pCurrReplAgr = pCurrReplAgr->next)
+    {
+        if (!VmDirStringNCompareA(
+                pszDn,
+                pCurrReplAgr->dn.lberbv.bv_val,
+                pCurrReplAgr->dn.lberbv.bv_len,
+                FALSE))
+        {
+            VMDIR_LOG_INFO(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: %s Replication Agreement with dn %s",
+                    __FUNCTION__,
+                    bFlag? "Enabling" : "Disabling",
+                    pCurrReplAgr->dn.lberbv.bv_val);
+
+            pCurrReplAgr->isDisabled = !bFlag;
+
+            break;
+        }
+    }
+
+    if (!pCurrReplAgr)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVmdirGlobals.replAgrsMutex);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: Error: %d", __FUNCTION__, dwError);
+    goto cleanup;
+}

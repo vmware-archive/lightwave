@@ -247,4 +247,9 @@ VmDirExecDbCopyCtrl(
     PVDIR_OPERATION pOperation
     );
 
+DWORD
+VmDirExecReplAgrEnableDisableCtrl(
+    PCSTR   pszDn,
+    BOOLEAN bFlag   /*TRUE: Enable, FALSE: Disable*/
+    );
 #endif /* ML_INTERFACE_H_ */

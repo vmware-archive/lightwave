@@ -87,7 +87,7 @@ _ParseDbCopyControlVal(
 
 static
 DWORD
-_VmDirCheckDbCopyCtrlAccess(
+_VmDirCheckAdminGXAccess(
     PVDIR_OPERATION pOperation
     );
 
@@ -318,6 +318,20 @@ ParseRequestControls(
 
                 op->dbCopyCtrl = *control;
             }
+            if (VmDirStringCompareA((*control)->type, LDAP_REPL_AGR_DISABLE_CONTROL, TRUE) == 0)
+            {
+                retVal = _VmDirCheckAdminGXAccess(op);
+                BAIL_ON_VMDIR_ERROR(retVal);
+
+                op->pReplAgrDisableCtrl = *control;
+            }
+            if (VmDirStringCompareA((*control)->type, LDAP_REPL_AGR_ENABLE_CONTROL, TRUE) == 0)
+            {
+                retVal = _VmDirCheckAdminGXAccess(op);
+                BAIL_ON_VMDIR_ERROR(retVal);
+
+                op->pReplAgrEnableCtrl = *control;
+            }
             if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -326,7 +340,6 @@ ParseRequestControls(
                         retVal,
                         pszLocalErrorMsg,
                         "ParseRequestControls: ber_scanf failed while parsing the end of control");
-
             }
             control = &((*control)->next);
         }
@@ -1525,7 +1538,7 @@ _ParseDbCopyControlVal(
     ber_int_t           localBlock = 0;
     BerValue            localPath = {0};
 
-    retVal = _VmDirCheckDbCopyCtrlAccess(pOp);
+    retVal = _VmDirCheckAdminGXAccess(pOp);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     ber_init2( ber, controlValue, LBER_USE_DER );
@@ -1846,7 +1859,7 @@ error:
 
 static
 DWORD
-_VmDirCheckDbCopyCtrlAccess(
+_VmDirCheckAdminGXAccess(
     PVDIR_OPERATION pOperation
     )
 {
