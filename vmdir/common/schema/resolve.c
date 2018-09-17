@@ -76,10 +76,14 @@ error:
     goto cleanup;
 }
 
+/*
+ * This is helpful to reduce log noise when loading schema from file
+ */
 DWORD
-VmDirLdapAtResolveSup(
+VmDirLdapAtResolveSupWithLogOpt(
     PVDIR_LDAP_SCHEMA           pSchema,
-    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt,
+    BOOLEAN                     bLogOpt
     )
 {
     DWORD   dwError = 0;
@@ -99,9 +103,12 @@ VmDirLdapAtResolveSup(
             if (LwRtlHashMapFindKey(
                     pSchema->attributeTypes, (PVOID*)&pParentAt, pszSup))
             {
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                        "%s: (%s) cannot resolve syntax, unknown sup (%s).",
-                        __FUNCTION__, pAt->pszName, pszSup);
+                if (bLogOpt)
+                {
+                    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+                            "%s: (%s) cannot resolve syntax, unknown sup (%s).",
+                            __FUNCTION__, pAt->pszName, pszSup);
+                }
                 dwError = ERROR_INVALID_SCHEMA;
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
@@ -120,9 +127,18 @@ error:
 }
 
 DWORD
-VmDirLdapOcResolveSup(
+VmDirLdapAtResolveSup(
     PVDIR_LDAP_SCHEMA           pSchema,
-    PVDIR_LDAP_OBJECT_CLASS     pOc
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt
+    )
+{
+    return VmDirLdapAtResolveSupWithLogOpt(pSchema, pAt, TRUE);
+}
+
+DWORD
+VmDirLdapOcResolveSup(
+    PVDIR_LDAP_SCHEMA       pSchema,
+    PVDIR_LDAP_OBJECT_CLASS pOc
     )
 {
     DWORD   dwError = 0;

@@ -84,7 +84,7 @@ extern "C" {
 #define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
 #define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
 
-
+#define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
@@ -933,10 +933,14 @@ VmDirInitDCConnThread(
 // vmdir/init.c
 
 DWORD
-VmDirInitBackend();
+VmDirInitBackend(
+    VOID
+    );
 
 DWORD
-VmDirSetSdGlobals();
+VmDirSetSdGlobals(
+    VOID
+    );
 
 // vmdirentry.c
 

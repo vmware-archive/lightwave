@@ -105,7 +105,7 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreModify), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginSchemaLibUpdatePreModify), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -152,7 +152,7 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
     VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePostModifyCommit), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginSchemaLibUpdatePostModifyCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -223,13 +223,13 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_REPL_OPERATIONS),             \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaEntryPreAdd),     \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginSchemaEntryPreAdd),     \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
     VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePreAdd), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginSchemaLibUpdatePreAdd), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -259,7 +259,7 @@
     {                                                               \
     VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
     VMDIR_SF_INIT(.bSkipOnError, FALSE),                            \
-    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSchemaLibUpdatePostAddCommit), \
+    VMDIR_SF_INIT(.pPluginFunc, VmDirPluginSchemaLibUpdatePostAddCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
     {                                                               \
@@ -336,21 +336,7 @@ _VmDirPluginLockoutPolicyEntryIntegrityCheck(
 
 static
 DWORD
-_VmDirPluginSchemaLibUpdatePreModify(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
 _VmDirPluginDflValidatePreModify(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -408,27 +394,6 @@ _VmDirPluginAddOpAttrsPreAdd(
 static
 DWORD
 _VmDirPluginCreateFSPsPreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginSchemaEntryPreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult);
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePostAddCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -780,41 +745,6 @@ _VmDirPluginLockoutPolicyEntryIntegrityCheck(
 error:
 
     return dwRtn;
-}
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePreModify(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD dwRtn = 0;
-    PVDIR_MODIFICATION pMod = NULL;
-
-    if (pOperation->dwSchemaWriteOp)
-    {
-        pMod = pOperation->request.modifyReq.mods;
-        for (; pMod; pMod = pMod->next)
-        {
-            // reject the following changes:
-            // - objectclass
-            // - cn
-            PSTR pszType = pMod->attr.type.lberbv.bv_val;
-            if (VmDirStringCompareA(pszType, ATTR_OBJECT_CLASS, FALSE) == 0
-                    || VmDirStringCompareA(pszType, ATTR_CN, FALSE) == 0)
-            {
-                dwRtn = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-                BAIL_ON_VMDIR_ERROR(dwRtn);
-            }
-        }
-
-        dwRtn = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
-        BAIL_ON_VMDIR_ERROR(dwRtn);
-    }
-
-error:
-    return dwPriorResult ? dwPriorResult : dwRtn;
 }
 
 /*
@@ -1431,101 +1361,6 @@ error:
 
 static
 DWORD
-_VmDirPluginSchemaEntryPreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD   dwRtn = 0;
-    PVDIR_ATTRIBUTE pCnAttr = NULL;
-    PSTR    pszSchemaIdGuid = NULL;
-
-    if (pOperation->dwSchemaWriteOp)
-    {
-        // lDAPDisplayName attribute takes cn as default
-        if (!VmDirFindAttrByName(pEntry, ATTR_LDAP_DISPLAYNAME))
-        {
-            pCnAttr = VmDirFindAttrByName(pEntry, ATTR_CN);
-            if (!pCnAttr)
-            {
-                dwRtn = VMDIR_ERROR_INVALID_ENTRY;
-                BAIL_ON_VMDIR_ERROR(dwRtn);
-            }
-
-            dwRtn = VmDirEntryAddSingleValueStrAttribute(
-                    pEntry,
-                    ATTR_LDAP_DISPLAYNAME,
-                    pCnAttr->vals[0].lberbv.bv_val);
-            BAIL_ON_VMDIR_ERROR(dwRtn);
-        }
-
-        // schemaIDGUID attribute takes a generated guid as default
-        if (!VmDirFindAttrByName(pEntry, ATTR_SCHEMAID_GUID))
-        {
-            dwRtn = VmDirGenerateGUID(&pszSchemaIdGuid);
-            BAIL_ON_VMDIR_ERROR(dwRtn);
-
-            dwRtn = VmDirEntryAddSingleValueStrAttribute(
-                    pEntry,
-                    ATTR_SCHEMAID_GUID,
-                    pszSchemaIdGuid);
-            BAIL_ON_VMDIR_ERROR(dwRtn);
-        }
-
-        if (VmDirEntryIsObjectclass(pEntry, OC_CLASS_SCHEMA))
-        {
-            // defaultObjectCategory attribute takes dn as default
-            if (!VmDirFindAttrByName(pEntry, ATTR_DEFAULT_OBJECT_CATEGORY))
-            {
-                dwRtn = VmDirEntryAddSingleValueStrAttribute(
-                        pEntry,
-                        ATTR_DEFAULT_OBJECT_CATEGORY,
-                        pEntry->dn.lberbv.bv_val);
-                BAIL_ON_VMDIR_ERROR(dwRtn);
-            }
-        }
-    }
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszSchemaIdGuid);
-    return dwPriorResult ? dwPriorResult : dwRtn;
-}
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePreAdd(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD   dwRtn = 0;
-
-    if (pOperation->dwSchemaWriteOp)
-    {
-        dwRtn = VmDirSchemaCheck(pEntry);
-        BAIL_ON_VMDIR_ERROR(dwRtn);
-
-        dwRtn = VmDirSchemaLibPrepareUpdateViaModify(pOperation, pEntry);
-        BAIL_ON_VMDIR_ERROR(dwRtn);
-    }
-
-error:
-    return dwPriorResult ? dwPriorResult : dwRtn;
-}
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePostAddCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwResult)
-{
-    return _VmDirPluginSchemaLibUpdatePostModifyCommit(
-            pOperation, pEntry, dwResult);
-}
-
-static
-DWORD
 _VmDIrPluginPasswordPreModApplyModify(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,     // pEntry is NULL
@@ -1692,23 +1527,6 @@ error:
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
     goto cleanup;
-}
-
-static
-DWORD
-_VmDirPluginSchemaLibUpdatePostModifyCommit(
-    PVDIR_OPERATION  pOperation,
-    PVDIR_ENTRY      pEntry,
-    DWORD            dwPriorResult)
-{
-    DWORD   dwRtn = 0;
-
-    if (pOperation->dwSchemaWriteOp)
-    {
-        dwRtn = VmDirSchemaLibUpdate(dwPriorResult);
-    }
-
-    return dwPriorResult ? dwPriorResult : dwRtn;
 }
 
 /*

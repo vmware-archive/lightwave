@@ -39,7 +39,6 @@ main(
     const char * pszStateDir = VMDIR_DB_DIR VMDIR_PATH_SEP;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bConsoleMode = FALSE;
-    BOOLEAN      bPatchSchema = FALSE;
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
     BOOLEAN      bShutdownKDCService = FALSE;
@@ -55,8 +54,7 @@ main(
                     &iLocalLogMask,
                     &logFileName,
                     &bEnableSysLog,
-                    &bConsoleMode,
-                    &bPatchSchema);
+                    &bConsoleMode);
     if(dwError != ERROR_SUCCESS)
     {
         ShowUsage( argv[0] );
@@ -67,8 +65,6 @@ main(
             pszBootstrapSchemaFile,
             &gVmdirGlobals.pszBootStrapSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    gVmdirGlobals.bPatchSchema = bPatchSchema;
 
     dwError = VmDirAllocateStringA(pszStateDir, &gVmdirGlobals.pszBDBHome);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -91,7 +87,7 @@ main(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmkdcd: starting...");
 
 
-    if ( ! bPatchSchema && VmDirdGetTargetState() != VMDIRD_STATE_RESTORE )
+    if (VmDirdGetTargetState() != VMDIRD_STATE_RESTORE)
     {   // Normal server startup route
 
         dwError = VmKdcServiceStartup();
@@ -149,7 +145,9 @@ error:
 
 static
 DWORD
-VmDirNotifyLikewiseServiceManager()
+VmDirNotifyLikewiseServiceManager(
+    VOID
+    )
 {
     DWORD dwError = ERROR_SUCCESS;
     PCSTR   pszSmNotify = NULL;
@@ -184,7 +182,6 @@ VmDirNotifyLikewiseServiceManager()
             BAIL_ON_VMDIR_ERROR(dwError);
 #undef BUFFER_SIZE
         }
-
     }
 
 error:
@@ -200,7 +197,7 @@ static
 DWORD
 VmDirSetEnvironment(
     VOID
-)
+    )
 {
     DWORD dwError = 0;
     PSTR pszKrb5Conf = NULL;
@@ -219,13 +216,11 @@ VmDirSetEnvironment(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_STRINGA(pszKrb5Conf);
 
     return dwError;
 
 error:
-
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirSetEnvironment failed (%u)", dwError);
 
     goto cleanup;

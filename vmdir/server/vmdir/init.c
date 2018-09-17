@@ -203,7 +203,7 @@ error:
 
 DWORD
 VmDirInitBackend(
-    PBOOLEAN    pbLegacyDataLoaded
+    VOID
     )
 {
     DWORD   dwError = 0;
@@ -234,10 +234,10 @@ VmDirInitBackend(
     dwError = VmDirIndexLibInit(pSchemaModMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadSchema(&bInitializeEntries, pbLegacyDataLoaded);
+    dwError = VmDirLoadSchema(&bInitializeEntries);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLoadIndex(bInitializeEntries || *pbLegacyDataLoaded);
+    dwError = VmDirLoadIndex();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Guarantee safe USN for replication where there is no I/O
@@ -325,7 +325,6 @@ VmDirInit(
     )
 {
     DWORD   dwError = 0;
-    BOOLEAN bLegacyDataLoaded = FALSE;
     BOOLEAN bWriteInvocationId = FALSE;
     BOOLEAN bWaitTimeOut = FALSE;
     VDIR_SERVER_STATE targetState = VmDirdGetTargetState();
@@ -371,7 +370,7 @@ VmDirInit(
     dwError = VmDirPluginInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirInitBackend(&bLegacyDataLoaded);
+    dwError = VmDirInitBackend();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirVmAclInit();
@@ -391,93 +390,42 @@ VmDirInit(
     dwError = VmDirKrbInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!gVmdirGlobals.bPatchSchema && bLegacyDataLoaded)
+    // Startup actions depend on what state is next.
+    if ( targetState == VMDIRD_STATE_NORMAL ||
+         targetState == VMDIRD_STATE_STANDALONE ||
+         targetState == VMDIRD_STATE_READ_ONLY)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "Legacy data store is detected. "
-                "Run schema patch (-u option) before running in normal mode");
-        dwError = ERROR_NO_SCHEMA;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (gVmdirGlobals.bPatchSchema)
-    {
-        if (IsNullOrEmptyString(gVmdirGlobals.pszBootStrapSchemaFile))
-        {
-            VMDIR_LOG_ERROR(
-                    VMDIR_LOG_MASK_ALL,
-                    "Schema file must be provided in schema patch mode (-u option)");
-            dwError = VMDIR_ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
-        // Check default LDAP port availability - If it fails, then it means
-        // another vmdird process is running in normal mode.
-        dwError = VmDirCheckPortAvailability(DEFAULT_LDAP_PORT_NUM);
+        dwError = _VmDirCheckPartnerDomainFunctionalLevel();
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                ">>> Schema patch starts <<<");
+        dwError = VmDirRpcServerInit();
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (bLegacyDataLoaded)
+        dwError = VmDirIpcServerInit();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirReplicationLibInit();
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (gVmdirGlobals.bTrackLastLoginTime)
         {
-            dwError = VmDirSchemaPatchLegacyViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
+            dwError = VmDirInitTrackLastLoginThread();
             BAIL_ON_VMDIR_ERROR(dwError);
         }
-        else
-        {
-            dwError = VmDirSchemaPatchViaFile(
-                    gVmdirGlobals.pszBootStrapSchemaFile);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
 
-        VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                ">>> Schema patch ends <<<");
+        dwError = VmDirInitTombstoneReapingThread();
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-        (VOID)VmDirSetAdministratorPasswordNeverExpires();
+        // TBD: Can other threads be turned into background tasks?
+        dwError = VmDirBkgdThreadInitialize();
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else
+    else if (targetState == VMDIRD_STATE_RESTORE)
     {
-        // Startup actions depend on what state is next.
-        if ( targetState == VMDIRD_STATE_NORMAL ||
-             targetState == VMDIRD_STATE_STANDALONE ||
-             targetState == VMDIRD_STATE_READ_ONLY)
-        {
-
-            dwError = _VmDirCheckPartnerDomainFunctionalLevel();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirRpcServerInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirIpcServerInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            dwError = VmDirReplicationLibInit();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if (gVmdirGlobals.bTrackLastLoginTime)
-            {
-                dwError = VmDirInitTrackLastLoginThread();
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-
-            dwError = VmDirInitTombstoneReapingThread();
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            // TBD: Can other threads be turned into background tasks?
-            dwError = VmDirBkgdThreadInitialize();
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
-        else if (targetState == VMDIRD_STATE_RESTORE)
-        {
-            // TBD: What happens if server is started in restore mode even when it has not been promoted?
-            dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
+        // TBD: What happens if server is started in restore mode even when it has not been promoted?
+        dwError = _VmDirRestoreInstance(); // fix invocationId and up-to-date-vector before starting replicating in.
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     if (bWriteInvocationId) // Logic for backward compatibility. Needs to come after schema patch logic.
@@ -505,7 +453,7 @@ VmDirInit(
     BAIL_ON_VMDIR_ERROR(dwError);
 #endif
 
-    if (!(targetState == VMDIRD_STATE_RESTORE || gVmdirGlobals.bPatchSchema))
+    if (!(targetState == VMDIRD_STATE_RESTORE))
     {
         dwError = VmDirInitConnAcceptThread();
         BAIL_ON_VMDIR_ERROR(dwError);

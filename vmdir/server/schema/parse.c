@@ -25,8 +25,7 @@ VmDirSchemaATDescCreate(
 
     if (!pLdapAt || !ppATDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -77,8 +76,7 @@ VmDirSchemaOCDescCreate(
 
     if (!pLdapOc || !ppOCDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -116,8 +114,7 @@ VmDirSchemaCRDescCreate(
 
     if (!pLdapCr || !ppCRDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -155,8 +152,7 @@ VmDirSchemaSRDescCreate(
 
     if (!pLdapSr || !ppSRDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -189,8 +185,7 @@ VmDirSchemaNFDescCreate(
 
     if (!pLdapNf || !ppNFDesc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -229,8 +224,7 @@ VmDirLdapAtParseVdirEntry(
 
     if (!pEntry || !ppAt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -308,17 +302,20 @@ VmDirLdapAtParseVdirEntry(
         else if (VmDirStringCompareA(ATTR_UNIQUENESS_SCOPE,
                 pAttr->type.lberbv_val, FALSE) == 0)
         {
-            dwError = VmDirAllocateMemory(
-                    sizeof(char*)*(pAttr->numVals+1),
-                    (PVOID*)&ppszUniqueScopes);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            for (i = 0; i < pAttr->numVals; i++)
+            if (pAttr->numVals > 0)
             {
-                dwError = VmDirAllocateStringA(
-                        pAttr->vals[i].lberbv_val,
-                        &ppszUniqueScopes[i]);
+                dwError = VmDirAllocateMemory(
+                        sizeof(char*)*(pAttr->numVals+1),
+                        (PVOID*)&ppszUniqueScopes);
                 BAIL_ON_VMDIR_ERROR(dwError);
+
+                for (i = 0; i < pAttr->numVals; i++)
+                {
+                    dwError = VmDirAllocateStringA(
+                            pAttr->vals[i].lberbv_val,
+                            &ppszUniqueScopes[i]);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
             }
         }
         pAttr = pAttr->next;
@@ -340,6 +337,7 @@ error:
     {
         ldap_attributetype_free(pSource);
     }
+    VmDirFreeStrArray(ppszUniqueScopes);
     VmDirFreeLdapAt(pAt);
     goto cleanup;
 }
@@ -357,8 +355,7 @@ VmDirLdapOcParseVdirEntry(
 
     if (!pEntry || !ppOc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -478,8 +475,7 @@ VmDirLdapCrParseVdirEntry(
 
     if (!pEntry || !ppCr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(

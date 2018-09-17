@@ -141,6 +141,13 @@ VmDirLdapAtResolveAliases(
     );
 
 DWORD
+VmDirLdapAtResolveSupWithLogOpt(
+    PVDIR_LDAP_SCHEMA           pSchema,
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pAt,
+    BOOLEAN                     bLogOpt
+    );
+
+DWORD
 VmDirLdapAtResolveSup(
     PVDIR_LDAP_SCHEMA           pSchema,
     PVDIR_LDAP_ATTRIBUTE_TYPE   pAt

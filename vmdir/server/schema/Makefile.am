@@ -15,11 +15,7 @@ libschema_la_SOURCES = \
     patch.c \
     replstatus.c \
     syntax.c \
-    util.c \
-    legacy/legacylibmain.c \
-    legacy/legacyload.c \
-    legacy/legacypatch.c \
-    legacy/legacyutil.c
+    util.c
 
 libschema_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

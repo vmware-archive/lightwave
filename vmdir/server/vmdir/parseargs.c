@@ -16,8 +16,6 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
 DWORD
 VmDirParseArgs(
     int         argc,
@@ -26,8 +24,7 @@ VmDirParseArgs(
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
+    PBOOLEAN    pbConsoleMode
     )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -74,13 +71,6 @@ VmDirParseArgs(
                 }
                 break;
 
-            case VMDIR_OPTION_PATCH_SCHEMA:
-                if ( pbPatchSchema != NULL )
-                {
-                    *pbPatchSchema = TRUE;
-                }
-                break;
-
             case VMDIR_OPTION_RUN_MODE:
                 if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, optarg, TRUE ) == 0 )
                 {
@@ -112,113 +102,6 @@ VmDirParseArgs(
 error:
     return dwError;
 }
-
-#else
-
-DWORD
-VmDirParseArgs(
-    int         argc,
-    char*       argv[],
-    PCSTR*      ppszBootstrapSchemaFile,
-    int*        pLoggingLevel,
-    PCSTR*      ppszLogFileName,
-    PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    int i = 1; // first arg is the <name of exe>.exe
-    PCSTR   pszRunMode = NULL;
-
-    while( i < argc )
-    {
-        if( VmDirIsCmdLineOption( argv[i] ) != FALSE )
-        {
-            if ( VmDirStringCompareA(
-                    VMDIR_OPTION_BOOTSTRAP_SCHEMA_FILE, argv[i], TRUE ) == 0 )
-            {
-                VmDirGetCmdLineOption(
-                    argc, argv, &i, ppszBootstrapSchemaFile
-                );
-            }
-            else if ( VmDirStringCompareA(
-                          VMDIR_OPTION_LOGGING_LEVEL, argv[i], TRUE ) == 0 )
-            {
-                dwError = VmDirGetCmdLineIntOption(
-                    argc, argv, &i, pLoggingLevel
-                );
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-            else if ( VmDirStringCompareA(
-                          VMDIR_OPTION_LOG_FILE_NAME, argv[i], TRUE ) == 0 )
-            {
-                VmDirGetCmdLineOption( argc, argv, &i, ppszLogFileName );
-            }
-            else if ( VmDirStringCompareA(
-                          VMDIR_OPTION_ENABLE_SYSLOG, argv[i], TRUE ) == 0 )
-            {
-                if ( pbEnableSysLog != NULL )
-                {
-                    *pbEnableSysLog = TRUE;
-                }
-            }
-            else if ( VmDirStringCompareA(
-                            VMDIR_OPTION_CONSOLE_MODE, argv[i], TRUE ) == 0 )
-            {
-                if ( pbConsoleMode != NULL )
-                {
-                    *pbConsoleMode = TRUE;
-                }
-            }
-            else if ( VmDirStringCompareA(
-                            VMDIR_OPTION_PATCH_SCHEMA, argv[i], TRUE ) == 0 )
-            {
-                if ( pbPatchSchema != NULL )
-                {
-                    *pbPatchSchema = TRUE;
-                }
-            }
-            else if ( VmDirStringCompareA(
-                            VMDIR_OPTION_RUN_MODE, argv[i], TRUE ) == 0 )
-            {
-                VmDirGetCmdLineOption(argc, argv, &i, &pszRunMode);
-
-                if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, pszRunMode, TRUE ) == 0 )
-                {
-                    VmDirdSetTargetState( VMDIRD_STATE_RESTORE );
-                }
-                else if ( VmDirStringCompareA(VMDIR_RUN_MODE_STANDALONE, pszRunMode, TRUE ) == 0 )
-                {
-                    VmDirdSetTargetState( VMDIRD_STATE_STANDALONE );
-                }
-                else
-                {
-                    dwError = ERROR_INVALID_PARAMETER;
-                    BAIL_ON_VMDIR_ERROR(dwError);
-                }
-
-                if ( pbEnableSysLog != NULL )
-                {
-                    *pbEnableSysLog = TRUE;
-                }
-            }
-            else
-            {
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
-        }
-
-        i++;
-    } // while
-
-error:
-
-    return dwError;
-}
-
-#endif
 
 VOID
 ShowUsage(

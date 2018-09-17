@@ -149,7 +149,7 @@ VdcSchemaOpPatchSchemaDefs(
     // perform patch (if not dryrun)
     if (!pOpParam->bDryrun)
     {
-        dwError = VmDirPatchRemoteSchemaObjects(pConn->pLd, pNewSchema);
+        dwError = VmDirPatchRemoteSchemaObjects(pConn->pLd, pSchemaDiff);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         printf("\nSuccessfully patched schema definitions\n");
