@@ -580,6 +580,7 @@ build/include/
 build/stage/
 build/config/
 build/lwraft/
+build/mutentca/
 build/vmafd/
 build/vmca/
 build/vmdir/

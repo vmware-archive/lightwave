@@ -80,6 +80,10 @@ VMware Lightwave Server
 %define _vmca_prefix /opt/vmware
 %endif
 
+%if 0%{?_mutentca_prefix:1} == 0
+%define _mutentca_prefix /opt/vmware
+%endif
+
 %if 0%{?_vmdns_prefix:1} == 0
 %define _vmdns_prefix /opt/vmware
 %endif
@@ -121,14 +125,15 @@ VMware Lightwave Server
 %define _pymodulesdir /opt/vmware/site-packages/identity
 %define _jreextdir /usr/java/packages/lib/ext
 
-%define _post_dbdir   %{_localstatedir}/post
-%define _vmca_dbdir   %{_localstatedir}/vmca
-%define _vmdir_dbdir  %{_localstatedir}/vmdir
-%define _vmafd_dbdir  %{_localstatedir}/vmafd
-%define _vmsts_dbdir  %{_localstatedir}/vmsts
-%define _rpcdir       %{_localstatedir}/rpc
-%define _ipcdir       %{_localstatedir}/ipc
-%define _lw_tmp_dir   %{_localstatedir}/lightwave_tmp
+%define _post_dbdir         %{_localstatedir}/post
+%define _vmca_dbdir         %{_localstatedir}/vmca
+%define _mutentca_dbdir     %{_localstatedir}/mutentca
+%define _vmdir_dbdir        %{_localstatedir}/vmdir
+%define _vmafd_dbdir        %{_localstatedir}/vmafd
+%define _vmsts_dbdir        %{_localstatedir}/vmsts
+%define _rpcdir             %{_localstatedir}/rpc
+%define _ipcdir             %{_localstatedir}/ipc
+%define _lw_tmp_dir         %{_localstatedir}/lightwave_tmp
 
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
@@ -168,6 +173,12 @@ Summary: Lightwave POST Service
 Requires: lightwave-client >= %{_version}
 %description post
 Lightwave POST service
+
+%package mutentca
+Summary: Lightwave MutentCA Service
+Requires: lightwave-client >= %{_version}
+%description mutentca
+Lightwave MutentCA Service
 
 %package samples
 Summary: Lightwave Samples
@@ -259,6 +270,31 @@ Lightwave Samples
     esac
 
 %pre post
+
+    # First argument is 1 => New Installation
+    # First argument is 2 => Upgrade
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            if [ ! -f /.dockerenv ]; then
+                # Not in container
+                if [ -z "`pidof lwsmd`" ]; then
+                    /bin/systemctl start lwsmd
+                fi
+            fi
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%pre mutentca
 
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
@@ -700,6 +736,75 @@ Lightwave Samples
             ;;
     esac
 
+%post mutentca
+
+    # start the firewall service
+    if [ ! -f /.dockerenv ]; then
+        # Not in container
+        /bin/systemctl restart firewall.service
+        if [ $? -ne 0 ]; then
+            echo "Firewall service not restarted"
+        fi
+    fi
+
+    /bin/install -d %{_mutentca_dbdir} -o lightwave -g lightwave -m 700
+
+    if [ -a %{_logconfdir}/mutentcad-syslog-ng.conf ]; then
+        /bin/rm %{_logconfdir}/mutentcad-syslog-ng.conf
+    fi
+    /bin/ln -s %{_datadir}/config/mutentcad-syslog-ng.conf %{_logconfdir}/mutentcad-syslog-ng.conf
+
+    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/mutentca.reg
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+            stop_lwsmd=0
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
+                fi
+            fi
+
+            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/mutentca.reg
+
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
+
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
+            fi
+
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+
+            # Note: Upgrades are not handled in container
+
+            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/mutentca.reg
+            %{_likewise_open_bindir}/lwsm -q refresh
+            sleep 5
+
+            chown lightwave:lightwave /var/log/lightwave/mutentca.log.* >/dev/null 2>&1
+
+            ;;
+    esac
+
+    setcap cap_dac_read_search+ep %{_sbindir}/mutentcad
+    chown -R lightwave:lightwave %{_mutentca_dbdir}
+
+
 %post samples
 
     case "$1" in
@@ -868,6 +973,39 @@ Lightwave Samples
             #
             ;;
     esac
+
+%preun mutentca
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+
+            %{_likewise_open_bindir}/lwsm info mutentca > /dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                %{_likewise_open_bindir}/lwsm stop mutentca
+                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\mutentca'
+                /bin/systemctl restart lwsmd
+                sleep 5
+
+            fi
+
+            if [ -h %{_logconfdir}/mutentcad-syslog-ng.conf ]; then
+                /bin/rm -f %{_logconfdir}/mutentcad-syslog-ng.conf
+            fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
 
 %preun samples
 
@@ -1285,6 +1423,18 @@ Lightwave Samples
 %config %attr(750, root, root) %{_datadir}/config/refresh-resolve-conf.sh
 %config %attr(750, root, root) %{_datadir}/config/post-demote-deads.sh
 %config %attr(750, root, root) %{_datadir}/config/monitor-core-dump.sh
+
+%files mutentca
+
+%defattr(-,root,root)
+
+%{_sbindir}/mutentcad
+
+%{_datadir}/config/mutentca.reg
+%{_datadir}/config/mutentcad-syslog-ng.conf
+%{_datadir}/config/mutentca-telegraf.conf
+
+%{_configdir}/lw-firewall-mutentca.json
 
 %files devel
 

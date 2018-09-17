@@ -13,6 +13,7 @@ scriptsconf_SCRIPTS = \
  setfirewallrules.py \
  lw-firewall-server.json \
  lw-firewall-post.json \
+ lw-firewall-mutentca.json \
  lw-firewall-client.json \
  lightwave-syslog-logrotate.conf
 
