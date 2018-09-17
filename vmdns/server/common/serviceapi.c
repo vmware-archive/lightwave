@@ -368,7 +368,7 @@ VmDnsSrvAddRecord(
         dwType = VMDNS_RR_QTYPE_ANY;
     }
 
-    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->pszName, dwType, &pRecordList);
+    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->pszName, dwType, &pRecordList, NULL);
 
     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -556,7 +556,8 @@ VmDnsSrvGetRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
-    PVMDNS_RECORD_LIST  *ppRecordList
+    PVMDNS_RECORD_LIST  *ppRecordList,
+    BOOLEAN             *pbNameInZone
     )
 {
     DWORD dwError = 0;
@@ -564,6 +565,7 @@ VmDnsSrvGetRecords(
     PSTR szNameFqdn = NULL;
     PCSTR szNameQuery = NULL;
     PVMDNS_RECORD_LIST pRecordList = NULL;
+    BOOLEAN bNameInZone = FALSE;
 
     dwError = VmDnsCacheGetZoneName(
                 pZoneObject,
@@ -584,7 +586,8 @@ VmDnsSrvGetRecords(
                 pZoneObject,
                 szNameQuery,
                 dwType,
-                &pRecordList
+                &pRecordList,
+                &bNameInZone
                 );
     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -614,7 +617,8 @@ VmDnsSrvGetRecords(
                         pZoneObject,
                         szNameQuery,
                         dwType,
-                        &pRecordList
+                        &pRecordList,
+                        &bNameInZone
                         );
             BAIL_ON_VMDNS_ERROR(dwError);
         }
@@ -623,6 +627,10 @@ VmDnsSrvGetRecords(
     *ppRecordList = pRecordList;
 
 cleanup:
+    if (pbNameInZone)
+    {
+        *pbNameInZone = bNameInZone;
+    }
     VMDNS_SAFE_FREE_STRINGA(pszZone);
     VMDNS_SAFE_FREE_STRINGA(szNameFqdn);
 
@@ -645,7 +653,8 @@ VmDnsSrvQueryRecords(
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
     DWORD               dwOptions,
-    PVMDNS_RECORD_LIST  *ppRecordList
+    PVMDNS_RECORD_LIST  *ppRecordList,
+    BOOLEAN             *pbNameInZone
     )
 {
     DWORD dwError = 0, dwRecordListSize = 0, dwRecursionIndex = 0, i = 0;
@@ -653,6 +662,7 @@ VmDnsSrvQueryRecords(
     PVMDNS_RECORD_LIST pLinkedRecordList = NULL;
     PVMDNS_RECORD_LIST pTempRecordList = NULL;
     PVMDNS_RECORD_OBJECT pRecordObject = NULL;
+    BOOLEAN bNameInZone = FALSE;
 
     if (!pZoneObject)
     {
@@ -669,7 +679,7 @@ VmDnsSrvQueryRecords(
     dwError = VmDnsRecordListCreate(&pLinkedRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsSrvGetRecords(pZoneObject, pszName, dwType, &pRecordList);
+    dwError = VmDnsSrvGetRecords(pZoneObject, pszName, dwType, &pRecordList, &bNameInZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwRecordListSize = VmDnsRecordListGetSize(pRecordList);
@@ -699,6 +709,10 @@ VmDnsSrvQueryRecords(
     *ppRecordList = pRecordList;
 
 cleanup:
+    if (pbNameInZone)
+    {
+        *pbNameInZone = bNameInZone;
+    }
     VmDnsRecordObjectRelease(pRecordObject);
     VmDnsRecordListRelease(pLinkedRecordList);
 
@@ -729,6 +743,7 @@ VmDnsGetLinkedRecords(
     PVMDNS_RECORD_LIST pTempRecordList = NULL;
     PVMDNS_RECORD_LIST pLinkedRecordList = NULL;
     PVMDNS_RECORD_OBJECT pRecordObject = NULL;
+    BOOLEAN bNameInZone = FALSE;
 
     if(pRecord->dwType != VMDNS_RR_TYPE_CNAME)
         return 0;
@@ -742,7 +757,7 @@ VmDnsGetLinkedRecords(
     dwError = VmDnsRecordListCreate(&pLinkedRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->Data.CNAME.pNameHost, dwType, &pRecordList);
+    dwError = VmDnsSrvGetRecords(pZoneObject, pRecord->Data.CNAME.pNameHost, dwType, &pRecordList, &bNameInZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwRecordListSize = VmDnsRecordListGetSize(pRecordList);
@@ -1664,7 +1679,8 @@ VmDnsSrvCleanupNSRecords(
                     pszDomain,
                     VMDNS_RR_TYPE_NS,
                     0,
-                    &pRecordList
+                    &pRecordList,
+                    NULL
                     );
     if (dwError)
     {
@@ -1755,7 +1771,8 @@ VmDnsSrvCleanupSRVRecords(
                     pszSrvName,
                     VMDNS_RR_TYPE_SRV,
                     0,
-                    &pRecordList
+                    &pRecordList,
+                    NULL
                     );
     if (dwError)
     {
@@ -1837,7 +1854,8 @@ VmDnsSrvCleanupAddressRecords(
                     pszAddressRecordName,
                     recordType,
                     0,
-                    &pRecordList
+                    &pRecordList,
+                    NULL
                     );
     if (dwError)
     {
@@ -1951,7 +1969,8 @@ VmDnsSrvCleanupPTRRecords(
                     pszRecordName,
                     VMDNS_RR_TYPE_PTR,
                     0,
-                    &pRecordList
+                    &pRecordList,
+                    NULL
                     );
     if (dwError)
     {

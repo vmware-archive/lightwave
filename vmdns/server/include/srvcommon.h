@@ -300,7 +300,8 @@ VmDnsSrvQueryRecords(
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
     DWORD               dwOptions,
-    PVMDNS_RECORD_LIST  *ppRecordList
+    PVMDNS_RECORD_LIST  *ppRecordList,
+    BOOLEAN             *pbNameInZone
     );
 
 DWORD
@@ -308,7 +309,8 @@ VmDnsSrvGetRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
-    PVMDNS_RECORD_LIST  *ppRecordList
+    PVMDNS_RECORD_LIST  *ppRecordList,
+    BOOLEAN             *pbNameInZone
     );
 
 DWORD
