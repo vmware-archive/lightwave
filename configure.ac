@@ -1872,6 +1872,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-invalidvtable/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-valid/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-noentry/Makefile
+                 vmca/unit-tests/service/security/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
