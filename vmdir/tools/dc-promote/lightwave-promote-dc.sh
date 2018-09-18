@@ -8,10 +8,10 @@
 # Configure these constants to match your environment
 # ADMIN_PASSWORD must meet password complexity requirements of vmdir
 #                Upper/Lower/Number/Legal punctuation/ 9 < pwd_len <= 20
-LIGHTWAVE_AD=10.118.96.198
+LIGHTWAVE_AD=10.62.20.90
 DC_DOMAIN="lightwave.local"
 DC_NAME="photon-addc2"
-DNS_FORWARDER="10.118.98.1"
+DNS_FORWARDER="10.84.54.30"
 ADMIN_PASSWORD="VMware123@"
 PRIV_USER="root"
 
@@ -113,6 +113,10 @@ if [ $? -ne 0 ]; then
   exit 1
 fi
 
+# 0 Fix system time
+echo_status "ntpdate to fix system time"
+ssh $PRIV_USER@$LIGHTWAVE_AD ntpdate -u 10.166.17.90
+
 # 1 Copy custom build of Likewise-Open
 echo_status "Copy likewise-open to DC"
 scp $LIKEWISE_BASE/release/package/rpm/likewise-open/likewise-open-6.2.11-*.x86_64.rpm $PRIV_USER@$LIGHTWAVE_AD:/tmp
@@ -165,8 +169,8 @@ ssh $PRIV_USER@$LIGHTWAVE_AD '( /opt/likewise/bin/lwsm start npfs && /opt/likewi
     /opt/likewise/bin/lwsm start rdr && /opt/likewise/bin/lwsm start srv )'
 
 ## 9 Add DNS forwarder
-ssh $PRIV_USER@$LIGHTWAVE_AD '/opt/vmware/bin/vmdns-cli add-forwarder $DNS_FORWARDER \
-    --server localhost --username Administrator --domain "$DC_DOMAIN" --password `cat /var/tmp/promote-pwd.txt`'
+ssh $PRIV_USER@$LIGHTWAVE_AD /opt/vmware/bin/vmdns-cli add-forwarder $DNS_FORWARDER \
+    --server localhost --username Administrator --domain "$DC_DOMAIN" '--password `cat /var/tmp/promote-pwd.txt`'
 
 # 10 Additional DNS SRV records:
 echo_status "DNS kerberos-master SRV tcp record"
@@ -339,24 +343,26 @@ ssh $PRIV_USER@$LIGHTWAVE_AD sh /tmp/computers-container.sh
 ## 
 ## Using TKEY / TSIG dynamic update is the right approach...
 ## Lightwave may have to use RPC interface...
-echo_status "Adding DNS A record for joined client photon-102-test2"
-ssh $PRIV_USER@$LIGHTWAVE_AD \
-/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
-  --hostname photon-102-test2 --ip 10.118.96.61  \
-  --server localhost --username Administrator --password $ADMIN_PASSWORD
+#echo_status "Adding DNS A record for joined client photon-102-test2"
+#ssh $PRIV_USER@$LIGHTWAVE_AD \
+#/opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type A \
+#  --hostname photon-102-test2 --ip 10.118.96.61  \
+#  --server localhost --username Administrator --password $ADMIN_PASSWORD
 
 echo_status "Adding SRV record for Default-First-Site-Name..."
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
   --service-literal _ldap._tcp.Default-First-Site-Name._sites.dc._msdcs \
   --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
-  --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
+  --priority 1 --weight 1 --port 389 --server localhost \
+  --username administrator --password $ADMIN_PASSWORD
 
 ssh $PRIV_USER@$LIGHTWAVE_AD \
 /opt/vmware/bin/vmdns-cli add-record --zone lightwave.local --type SRV \
   --service-literal _ldap._tcp.Default-First-Site-Name._sites \
   --protocol tcp --target ${DC_NAME}.${DC_DOMAIN} \
-  --priority 1 --weight 1 --port 389 --server localhost --password $ADMIN_PASSWORD
+  --priority 1 --weight 1 --port 389 --server localhost \
+  --username administrator --password $ADMIN_PASSWORD
 
 # Move this into lwsmd job
 #
