@@ -69,7 +69,7 @@ matchBlob(unsigned char *blob, int bloblen, char *match, char **foundPtr)
         m = 0;
         j = 0;
         while (match[m] && (i+j) < bloblen &&
-               ((unsigned char) match[m]) == blob[i+j])
+               ((char) tolower((int) match[m]) == (char) tolower((int) blob[i+j])))
         {
             m++;
             j++;
