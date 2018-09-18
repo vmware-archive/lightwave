@@ -17,13 +17,15 @@
 #include <dce/dcethread.h>
 #include <srp_verifier_h.h>
 
+
 #define DO_RPC(rpc_pfn, sts) \
   do {                       \
-    dcethread_exc *exc;      \
+    dcethread_exc *exc = NULL;      \
     DCETHREAD_TRY            \
     {                        \
       exc = NULL;            \
       (sts) = rpc_pfn;       \
+      sts = sts ? sts : exc ? dcethread_exc_getstatus(exc) : 0; \
     }                        \
     DCETHREAD_CATCH_ALL(exc) \
     {                        \
@@ -31,6 +33,7 @@
     }                        \
     DCETHREAD_ENDTRY         \
   } while (0)
+
 
 long cli_rpc_srp_verifier_new(
     handle_t hServer,
