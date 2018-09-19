@@ -380,7 +380,6 @@ ReplModifyEntry(
     VDIR_OPERATION      modOp = {0};
     ModifyReq *         mr = &(modOp.request.modifyReq);
     BOOLEAN             bHasTxn = FALSE;
-    PVDIR_ENTRY         pEntry = NULL;
     VDIR_BERVALUE       bvParentDn = VDIR_BERVALUE_INIT;
     ENTRYID             entryId = 0;
     DEQUE               valueMetaDataQueue = {0};
@@ -393,16 +392,13 @@ ReplModifyEntry(
                                      NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    pEntry = pUpdate->pEntry;
-    pUpdate->pEntry = NULL;
-
-    retVal = VmDirGetParentDN(&pEntry->dn, &bvParentDn);
+    retVal = VmDirGetParentDN(&pUpdate->pEntry->dn, &bvParentDn);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = ReplFixUpEntryDn(pEntry);
+    retVal = ReplFixUpEntryDn(pUpdate->pEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    retVal = VmDirBervalContentDup(&pEntry->dn, &mr->dn);
+    retVal = VmDirBervalContentDup(&pUpdate->pEntry->dn, &mr->dn);
     if (retVal)
     {
         VMDIR_LOG_ERROR(
@@ -473,7 +469,7 @@ ReplModifyEntry(
     modOp.pszPartner = pUpdate->pszPartner;
     modOp.ulPartnerUSN = pUpdate->partnerUsn;
 
-    pEntry->eId = entryId;
+    pUpdate->pEntry->eId = entryId;
 
     retVal = SetupReplModifyRequest(&modOp, pUpdate);
     if (retVal != LDAP_SUCCESS)
@@ -481,7 +477,7 @@ ReplModifyEntry(
         PSZ_METADATA_BUF    pszMetaData = {'\0'};
 
         //Ignore error - used only for logging
-        VmDirMetaDataSerialize(pEntry->attrs[0].pMetaData, pszMetaData);
+        VmDirMetaDataSerialize(pUpdate->pEntry->attrs[0].pMetaData, pszMetaData);
 
         switch (retVal)
         {
@@ -494,8 +490,8 @@ ReplModifyEntry(
                         "Partner USN %" PRId64,
                         __FUNCTION__,
                         retVal,
-                        pEntry->dn.lberbv.bv_val,
-                        pEntry->attrs[0].type.lberbv.bv_val,
+                        pUpdate->pEntry->dn.lberbv.bv_val,
+                        pUpdate->pEntry->attrs[0].type.lberbv.bv_val,
                         pszMetaData,
                         pUpdate->partnerUsn);
                 break;
@@ -590,7 +586,6 @@ cleanup:
     VmDirFreeBervalContent(&bvParentDn);
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
-    VmDirFreeEntry(pEntry);
     VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
 
     return retVal;

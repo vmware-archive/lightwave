@@ -251,7 +251,7 @@ VmDirAttributeValueMetaDataToList(
     PVDIR_LINKED_LIST                  pValueMetaDataList = NULL;
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
 
-    if (!pAttrAttrValueMetaData || !ppValueMetaDataList)
+    if (!ppValueMetaDataList)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -260,7 +260,7 @@ VmDirAttributeValueMetaDataToList(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwCnt = 0;
-         pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val != NULL;
+         pAttrAttrValueMetaData && pAttrAttrValueMetaData->vals[dwCnt].lberbv.bv_val != NULL;
          dwCnt++)
     {
         dwError = VmDirValueMetaDataDeserialize(

@@ -208,6 +208,12 @@ VmDirReplUpdateToUSNList(
     {
         pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA) pNode->pElement;
 
+        if (VmDirStringCompareA(pReplMetaData->pszAttrType, ATTR_OBJECT_GUID, FALSE) == 0)
+        {
+            pNode = pNode->pNext;
+            continue;
+        }
+
         dwError = VmDirAllocateMemory(sizeof(USN), (PVOID*)&pLocalUSN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -368,15 +374,26 @@ VmDirReplUpdateLocalUsn(
     PVDIR_LINKED_LIST_NODE            pLeastUSNNode = NULL;
     PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
 
-    if (!pCombinedUpdate || !pUSNList)
+    if (!pCombinedUpdate || VmDirLinkedListGetSize(pUSNList) < 1)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    VmDirLinkedListGetTail(pUSNList, &pLeastUSNNode);
+    /*
+     * ADD (1 USN) => ADD
+     * ADD (2+ USN) => ADD + MODIFY + ... (regular entry)
+     * ADD (2+ USN) => ADD + MODIFY + ... + DELETE (tombstone entry)
+     * MODIFY (1 USN) => MODIFY
+     * MODIFY (2+ USN) => MODIFY + MODIFY + ...
+     * DELETE (1 USN) => DELETE
+     * DELETE (2+ USN) => MODIFY + ... + DELETE  <<< this needs to be handled specially
+     */
+    if (VmDirLinkedListGetSize(pUSNList) > 1 && pCombinedUpdate->syncState == LDAP_SYNC_DELETE)
+    {
+        pCombinedUpdate->syncState = LDAP_SYNC_MODIFY;
+    }
 
-    //pUSNList should have atleast one USN
-    assert(pLeastUSNNode != NULL);
+    VmDirLinkedListGetTail(pUSNList, &pLeastUSNNode);
 
     localUSN = (USN) pLeastUSNNode->pElement;
 
@@ -396,6 +413,7 @@ VmDirReplUpdateLocalUsn(
         if (VmDirStringCompareA(pReplMetaData->pszAttrType, ATTR_USN_CHANGED, FALSE) == 0)
         {
             pReplMetaData->pMetaData->localUsn = localUSN;
+            pReplMetaData->pMetaData->origUsn = localUSN;
             break;
         }
 
@@ -403,7 +421,15 @@ VmDirReplUpdateLocalUsn(
     }
 
     // MetaDataList should have a attribute USNChanged
-    assert(pCurrNode != NULL);
+    if (pCurrNode == NULL)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: AttrMetaData not found for : %s",
+                __FUNCTION__,
+                ATTR_USN_CHANGED);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_ATTRIBUTE_METADATA);
+    }
 
     VmDirLinkedListRemove(pUSNList, pLeastUSNNode);
 
@@ -502,7 +528,7 @@ VmDirSortedLinkedListInsertCompareReplUpdate(
     pCombinedUpdate = (PVMDIR_REPLICATION_UPDATE) pElement;
     pIndividualUpdate = (PVMDIR_REPLICATION_UPDATE) pNewElement;
 
-    if (pIndividualUpdate->partnerUsn <= pCombinedUpdate->partnerUsn)
+    if (pIndividualUpdate->partnerUsn >= pCombinedUpdate->partnerUsn)
     {
         bResult = TRUE;
     }

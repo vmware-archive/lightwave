@@ -25,6 +25,22 @@ int main(VOID)
                 VmDirReplUpdateListParseSyncDoneCtl_ValidInput,
                 VmDirSetupReplUpdateListTest,
                 VmDirTeardownReplUpdateListTest),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateListExpand_AddTest,
+                VmDirSetupReplUpdateListExpand_AddTest,
+                VmDirTeardownReplUpdateListTest),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateListExpand_ModifyTest,
+                VmDirSetupReplUpdateListExpand_ModifyTest,
+                VmDirTeardownReplUpdateListTest),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateListExpand_DeleteTest,
+                VmDirSetupReplUpdateListExpand_DeleteTest,
+                VmDirTeardownReplUpdateListTest),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateListExpand_AddTombstoneTest,
+                VmDirSetupReplUpdateListExpand_AddTombstoneTest,
+                VmDirTeardownReplUpdateListTest),
     };
 
     const struct CMUnitTest update_tests[] =
@@ -70,6 +86,14 @@ int main(VOID)
         cmocka_unit_test_setup_teardown(
                 VmDirExtractEventAttributeValueChanges_ValidInput,
                 VmDirSetupExtractEventAttributeValueChanges,
+                VmDirTeardownExtractEvent),
+        cmocka_unit_test_setup_teardown(
+                VmDirExtractEventPopulateMustAttributes_ValidInput,
+                VmDirSetupExtractEventPopulateMustAttributes,
+                VmDirTeardownExtractEvent),
+        cmocka_unit_test_setup_teardown(
+                VmDirExtractEventPopulateOperationAttributes_ValidInput,
+                VmDirSetupExtractEventPopulateOperationAttributes,
                 VmDirTeardownExtractEvent),
     };
 
