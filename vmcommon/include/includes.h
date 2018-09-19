@@ -35,3 +35,4 @@
 #include "vmjsonresult.h"
 #include "vmmetrics.h"
 #include "vmnetworkutil.h"
+#include "vmutil.h"

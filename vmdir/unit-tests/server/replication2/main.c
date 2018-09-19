@@ -16,7 +16,9 @@
 
 int main(VOID)
 {
-    const struct CMUnitTest tests[] =
+    int    retVal = 0;
+
+    const struct CMUnitTest updatelist_tests[] =
     {
         //updatelist.c
         cmocka_unit_test_setup_teardown(
@@ -25,5 +27,76 @@ int main(VOID)
                 VmDirTeardownReplUpdateListTest),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    const struct CMUnitTest update_tests[] =
+    {
+        //update.c
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_NoDupMetaDataOnly,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_DupMetaDataOnly,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_MetaDataOnly,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_ValueMetaDataOnly,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_MetaDataAndValueMetaData,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateToUSNList_MetaDataAndValueMetaDataSame,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VmDirReplUpdateLocalUsn_ValidInput,
+                NULL,
+                NULL),
+    };
+
+    const struct CMUnitTest extractevent_tests[] =
+    {
+        //extractevents.c
+        cmocka_unit_test_setup_teardown(
+                VmDirExtractEventAttributeChanges_ValidInput,
+                VmDirSetupExtractEventAttributeChanges,
+                VmDirTeardownExtractEvent),
+        cmocka_unit_test_setup_teardown(
+                VmDirExtractEventAttributeValueChanges_ValidInput,
+                VmDirSetupExtractEventAttributeValueChanges,
+                VmDirTeardownExtractEvent),
+    };
+
+    retVal = cmocka_run_group_tests(updatelist_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("UpdateList tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = cmocka_run_group_tests(update_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("Update tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = cmocka_run_group_tests(extractevent_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("ExtractEvent tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+cleanup:
+    return retVal;
+
+error:
+    goto cleanup;
 }

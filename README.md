@@ -1,29 +1,24 @@
-VMware Lightwave
+What is Lightwave
 ================
 
-VMware Lightwave is a software stack geared towards providing identity services
-including authentication and authorization for large-scale distributed
-infrastructure, applications and containers.
+Project Lightwave is an open source project comprised of enterprise-grade, identity and access management services targeting critical security, governance, and compliance challenges for Cloud-Native Apps within the enterprise. Through integration with Project Photon, Project Lightwave can provide security and governance for container workloads. Project Lightwave can also serve a variety of use cases such as single sign-on, authentication, authorization and certificate authority, as well as certificate key management services across the entire infrastructure and application stack. Project Lightwave is based on a production quality code and an enterprise-grade architecture that is multi-tenant, scalable, and highly available multi master replication topology.
 
-VMware Lightwave consists of the following primary components.
+Project Lightwave is made up of the following key identity infrastructure elements:
 
-1.  VMware Directory Service (vmdir)
+  * Lightwave Directory Service - standards based, multi-tenant, multi-master, highly scalable LDAP v3 directory service enables an enterprise’s infrastructure to be used by the most-demanding applications as well as by multiple teams.
+  * Lightwave Certificate Authority - directory integrated certificate authority helps to simplify certificate-based operations and key management across the infrastructure.
+  * Lightwave Certificate Store - endpoint certificate store to store certificate credentials.
+  * Lightwave Authentication Services - cloud authentication services with support for Kerberos, OAuth 2.0/OpenID Connect, SAML and WSTrust enable interoperability with other standards-based technologies in the data center.
+  * Lightwave Domain Name Services - directory integrated domain name service to ensure Kerberos Authentication to the Directory Service and Authentication Service (STS). It also support for site-affinity using SRV records as well as DNS Forwarders.
 
-2.  VMware Certificate Authority (vmca)
-
-3.  VMware Authentication Framework Daemon/Service (vmafd)
-
-4.  VMware Secure Token Service (vmware-sts)
-
-Prerequisites
+Dependencies
 -------------
 
-Lightwave uses several existing open source packages. These include
+Lightwave uses following existing open source packages.
 
 1.  OpenLDAP
 
-OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning
-MDB embedded database is used as the underlying LDAP store
+OpenLDAP is used for the LDAP server protocol head and the OpenLDAP Lightning MDB embedded database is used as the underlying LDAP store
 
 1.  Heimdal Kerberos
 
@@ -31,18 +26,13 @@ The Heimdal Kerberos stack is used as the Kerberos protocol head.
 
 1.  DCE/RPC
 
-DCE/RPC is used as the control infrastructure for configuration of the Lightwave
-LDAP directory service
+DCE/RPC is used as the control infrastructure for configuration of the Lightwave LDAP directory service
 
 1.  Likewise Open
 
-The Likewise Open stack is used for its service control infrastructure, its
-registry infrastructure and its NT Security Descriptor support. Likewise Open
-also provides a easy mechanism to provide ssh support for Lightwave clients
-
-The first three packages are co-located within the Lightwave project. The
-Likewise Open project is a separate project and needs to be built from a
-separate git repository. A binary RPM is also available, please see instructions
+The Likewise Open stack is used for its service control infrastructure, its registry infrastructure and its NT Security Descriptor support. Likewise Open
+also provides a easy mechanism to provide ssh support for Lightwave clients The first three packages are co-located within the Lightwave project. The
+Likewise Open project is a separate project and needs to be built from a separate git repository. A binary RPM is also available, please see instructions
 below to add the repository.
 
 Source code
@@ -56,7 +46,7 @@ Build
 -----
 
 These build instructions are to build Lightwave on VMware's Photon Linux
-distribution.
+distribution. (See wiki for building on other platforms)
 
 1.  Clone lightwave git repository onto your Photon (Full) installation.
 
@@ -87,16 +77,12 @@ Domain Clients.
 Pre-built lightwave binaries
 ----------------------------
 
-Pre-built binaries for Lightwave are available through the following YUM
-repositories that can be configured on your Photon deployment.
+Pre-built binaries for Lightwave are available through the following YUM repositories that can be configured on your Photon deployment.
 
-After the following YUM repositories have been configured, it should be possible
-to install the Lightwave Domain Controller and Lightwave Clients using "tdnf
-install vmware-lightwave-server" and "tdnf install vmware-lightwave-clients"
-respectively.
+After the following YUM repositories have been configured, it should be possible to install the Lightwave Domain Controller and Lightwave Clients using "tdnf
+install vmware-lightwave-server" and "tdnf install vmware-lightwave-clients" respectively.
 
-Note : After configuring the following YUM repositories, please disable the
-photon-iso.repo; this is achieved by setting "enabled=0" in
+Note : After configuring the following YUM repositories, please disable the photon-iso.repo; this is achieved by setting "enabled=0" in
 /etc/yum.repos.d/photon-iso.repo.
 
 ### Lightwave YUM repository
@@ -161,9 +147,7 @@ skip_if_unavailable=True
 You must first install the following packages on your Photon instance
 
 1. lightwave-client
-
 2. lightwave-server
-
 3. lightwave
 
 For installing these simply execute the following tdnf commands:
@@ -235,3 +219,21 @@ Domain Client using "tdnf install vmware-lightwave-clients".
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 /opt/vmware/bin/domainjoin join <domain hostname>
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+## Contributing
+
+You are invited to contribute new features, fixes, or updates, large or small; we are always thrilled to receive pull
+requests, and do our best to process them as fast as we can. If you wish to contribute code and you have not signed our
+contributor license agreement (CLA), our bot will update the issue when you open a [Pull
+Request](https://help.github.com/articles/creating-a-pull-request). For any questions about the CLA process, please
+refer to our [FAQ](https://cla.vmware.com/faq).
+
+Before you start to code, we recommend discussing your plans through a  [GitHub
+issue](https://github.com/vmware/lightwave/issues) or discuss it first with the official project
+[maintainers](AUTHORS.md) via the [#Lightwave Slack Channel](https://vmwarecode.slack.com/messages/CCNLJNZ4M/), especially
+for more ambitious contributions. This gives other contributors a chance to point you in the right direction, give you
+feedback on your design, and help you find out if someone else is working on the same thing.
+
+## License
+
+Lightwave is available under the [Apache 2 license](LICENSE).

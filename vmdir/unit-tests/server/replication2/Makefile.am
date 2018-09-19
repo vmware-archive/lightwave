@@ -7,9 +7,12 @@ TESTS = replication2
 
 replication2_SOURCES = \
     main.c \
+    extractevents.c \
+    update.c \
     updatelist.c
 
 replication2_CPPFLAGS = \
+    -g \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \

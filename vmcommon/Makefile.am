@@ -15,11 +15,13 @@ libvmcommon_la_CPPFLAGS = \
 
 libvmcommon_la_SOURCES = \
     memory.c \
+    vmcommonerror.c \
     vmstring.c \
     vmhttpclient.c \
     vmjsonresult.c \
     vmmetrics.c \
-    vmnetworkutil.c
+    vmnetworkutil.c \
+    vmutil.c
 
 libvmcommon_la_LIBADD = \
     @CURL_LIBS@ \

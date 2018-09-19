@@ -5638,3 +5638,21 @@ VmAfdFreeWString(
 {
     VMAFD_SAFE_FREE_STRINGW(pwszString);
 }
+
+BOOLEAN
+VmAfdIsRetriableError(
+    DWORD dwError
+    )
+{
+    BOOLEAN bCanRetry = FALSE;
+    if (dwError >= VMAFD_SSOERROR_CURL_FAILURE &&
+        dwError <= VMAFD_OIDC_EMPTY_RESPONSE)
+    {
+        bCanRetry = TRUE;
+    }
+    else if (VmCommonErrorIsRetriable(dwError))
+    {
+        bCanRetry = TRUE;
+    }
+    return bCanRetry;
+}

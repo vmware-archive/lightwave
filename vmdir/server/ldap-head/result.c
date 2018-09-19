@@ -558,8 +558,8 @@ cleanup:
     }
     VmDirFreeAttrMetaDataNode(pAttrMetaData, numAttrMetaData);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
-    VmDirFreeAttrValueMetaDataContent(&allValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToSend);
+    VmDirFreeAttrValueMetaDataDequeueContent(&allValueMetaData);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataToSend);
     return( retVal );
 
 error:

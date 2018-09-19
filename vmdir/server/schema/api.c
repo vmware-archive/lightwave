@@ -957,3 +957,56 @@ VmDirSchemaBervalCompare(
 
     return FALSE;
 }
+
+DWORD
+VmDirEntryGetAllMustAttrs(
+    PVDIR_ENTRY     pEntry,
+    PLW_HASHMAP*    ppAllMustAttrMap
+    )
+{
+    DWORD                   dwError = 0;
+    DWORD                   dwCnt = 0;
+    PLW_HASHMAP             pAllMustAttrMap = NULL;
+    PVDIR_ATTRIBUTE         pAttrOC = NULL;
+    PVDIR_SCHEMA_CTX        pLocalSchemaCtx = NULL;
+    PVDIR_SCHEMA_OC_DESC    pOCDesc = NULL;
+
+    pAttrOC = VmDirFindAttrByName(pEntry, ATTR_OBJECT_CLASS);
+    if (pAttrOC == NULL)
+    {
+        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: no object class attr found", __FUNCTION__);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirSchemaCtxAcquire(&pLocalSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = LwRtlCreateHashMap(
+            &pAllMustAttrMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0; dwCnt < pAttrOC->numVals; dwCnt++)
+    {
+        dwError = VmDirSchemaOCNameToDescriptor(
+                pLocalSchemaCtx, pAttrOC->vals[dwCnt].lberbv.bv_val, &pOCDesc);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSchemaClassGetAllMustAttrs(pLocalSchemaCtx, pOCDesc, pAllMustAttrMap);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    *ppAllMustAttrMap = pAllMustAttrMap;
+
+cleanup:
+    VmDirSchemaCtxRelease(pLocalSchemaCtx);
+    return dwError;
+
+error:
+    LwRtlHashMapClear(pAllMustAttrMap, VmDirNoopHashMapPairFree, NULL);
+    LwRtlFreeHashMap(&pAllMustAttrMap);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}

@@ -21,6 +21,7 @@ libcommon_la_SOURCES = \
     logging.c \
     marshalutil.c \
     memory.c  \
+    mergesort.c \
     networkutil.c \
     networkutiluniximpl.c \
     opensslclient.c  \
@@ -30,6 +31,7 @@ libcommon_la_SOURCES = \
     rpcmemory.c  \
     securityutil.c \
     securityutiluniximpl.c \
+    sortedlinkedlist.c \
     string.c  \
     stringlist.c \
     superlogutil.c \

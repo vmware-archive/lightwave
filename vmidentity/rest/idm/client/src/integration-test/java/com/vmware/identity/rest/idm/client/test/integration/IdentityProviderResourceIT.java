@@ -22,22 +22,11 @@ import org.apache.http.HttpException;
 import org.apache.http.client.ClientProtocolException;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
-import com.vmware.identity.rest.core.client.AccessToken;
 import com.vmware.identity.rest.core.client.AccessToken.Type;
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 
-@RunWith(value = Parameterized.class)
 public class IdentityProviderResourceIT extends IntegrationTestBase {
-
-    // TODO toggle comments below after adding runnable tests
-//    @Parameters
-//    public static Object[] data() {
-//           return new Object[] { AccessToken.Type.JWT, AccessToken.Type.SAML };
-//    }
 
     public IdentityProviderResourceIT(Type tokenType) throws Exception {
         super(true, tokenType);

@@ -41,15 +41,16 @@
 #include <openssl/engine.h>
 #endif
 
+#include <jansson.h>
+
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
+#include <vmcaconfig.h>
 #include <vmca_error.h>
 #include <vmcadb.h>
-
 #include <vmrest.h>
-#include <jansson.h>
 
 #include "defines.h"
 #include "prototypes.h"

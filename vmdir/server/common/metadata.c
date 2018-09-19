@@ -204,6 +204,114 @@ error:
 }
 
 DWORD
+VmDirAttributeMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrMetaData,
+    PVDIR_LINKED_LIST*    ppMetaDataList
+    )
+{
+    DWORD                            dwError = 0;
+    DWORD                            dwCnt = 0 ;
+    PVDIR_LINKED_LIST                pMetaDataList = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA   pReplMetaData = NULL;
+
+    if (!pAttrAttrMetaData || !ppMetaDataList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLinkedListCreate(&pMetaDataList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt = 0; pAttrAttrMetaData->vals[dwCnt].lberbv.bv_val != NULL; dwCnt++)
+    {
+        dwError = VmDirReplMetaDataDeserialize(
+                pAttrAttrMetaData->vals[dwCnt].lberbv.bv_val, &pReplMetaData);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertHead(pMetaDataList, pReplMetaData, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+        pReplMetaData = NULL;
+    }
+
+    *ppMetaDataList = pMetaDataList;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeReplMetaData(pReplMetaData);
+    VmDirFreeReplMetaDataList(pMetaDataList);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirAttributeMetaDataListConvertToHashMap(
+    PVDIR_LINKED_LIST    pMetaDataList,
+    PLW_HASHMAP         *ppMetaDataMap
+    )
+{
+    DWORD                            dwError = 0;
+    PLW_HASHMAP                      pMetaDataMap = NULL;
+    PVDIR_LINKED_LIST_NODE           pCurrNode = NULL;
+    PVDIR_LINKED_LIST_NODE           pNextNode = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA   pReplMetaData = NULL;
+
+    if (!pMetaDataList || !ppMetaDataMap)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwRtlCreateHashMap(
+            &pMetaDataMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListGetHead(pMetaDataList, &pCurrNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (pCurrNode)
+    {
+        pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA) pCurrNode->pElement;
+
+        pNextNode = pCurrNode->pNext;
+
+        dwError = LwRtlHashMapInsert(
+                pMetaDataMap, pReplMetaData->pszAttrType, pReplMetaData->pMetaData, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pReplMetaData->pszAttrType = NULL;
+        pReplMetaData->pMetaData = NULL;
+        VmDirFreeReplMetaData(pReplMetaData);
+
+        dwError = VmDirLinkedListRemove(pMetaDataList, pCurrNode);
+        BAIL_ON_VMDIR_ERROR(dwError)
+
+        pCurrNode = pNextNode;
+    }
+
+    *ppMetaDataMap = pMetaDataMap;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pMetaDataMap)
+    {
+        LwRtlHashMapClear(
+                pMetaDataMap,
+                VmDirFreeMetaDataMapPair,
+                NULL);
+        LwRtlFreeHashMap(&pMetaDataMap);
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+//TODO_REMOVE_REPLV2
+DWORD
 VmDirAttributeMetaDataToHashMap(
     PVDIR_ATTRIBUTE   pAttrAttrMetaData,
     PLW_HASHMAP*      ppMetaDataMap

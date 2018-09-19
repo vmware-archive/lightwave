@@ -114,8 +114,6 @@ typedef DWORD VMCA_FUNC_LEVEL;
 
 #define VMCA_ASSERT(x) assert( (x) )
 
-#define VMCA_MAX(x, y) ((x) > (y) ? (x) : (y))
-
 #define _PTHREAD_FUNCTION_RTN_ASSERT(Function, ...)       \
     do {                                                  \
         int error = Function(__VA_ARGS__);                \

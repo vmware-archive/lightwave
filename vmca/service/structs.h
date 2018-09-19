@@ -29,13 +29,6 @@
 extern "C" {
 #endif
 
-typedef enum
-{
-    VMCAD_STARTUP = 0,
-    VMCAD_RUNNING,
-    VMCA_SHUTDOWN
-} VMCA_SERVER_STATE;
-
 typedef struct _VMCA_ENDPOINT
 {
     PCSTR pszProtSeq;

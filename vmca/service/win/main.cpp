@@ -213,7 +213,7 @@ VMCAServiceMain(
     );
     BAIL_ON_VMCA_ERROR(dwError);
 
-    VMCASrvSetState(VMCAD_RUNNING);
+    VMCASrvSetState(VMCAD_NORMAL);
 
     /*
     MSDN:
@@ -235,7 +235,7 @@ VMCAServiceMain(
 
 error:
 
-    VMCASrvSetState(VMCA_SHUTDOWN);
+    VMCASrvSetState(VMCAD_SHUTDOWN);
 
     // TODO: once we have backend ported and can test etc.
     // and have the VMCAInit() above,

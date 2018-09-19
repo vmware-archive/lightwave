@@ -16,7 +16,9 @@
 
 int main(VOID)
 {
-    const struct CMUnitTest tests[] =
+    int ret = 0;
+
+    const struct CMUnitTest VMCASrvPolicy_Tests[] =
     {
         cmocka_unit_test_setup_teardown(
                 VMCAPolicyInit_ValidInput,
@@ -24,5 +26,45 @@ int main(VOID)
                 NULL),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    const struct CMUnitTest VMCASrvJSONUtils_Tests[] =
+    {
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonLoadObjectFromFile_ValidInput,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonLoadObjectFromFile_InvalidInput,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonGetObjectFromKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonGetObjectFromKey_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonGetStringFromKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                VMCAJsonGetStringFromKey_Invalid,
+                NULL,
+                NULL),
+    };
+
+    ret = cmocka_run_group_tests_name("VMCA Policy Tests", VMCASrvPolicy_Tests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "VMCA service policy tests failed");
+    }
+
+    ret = cmocka_run_group_tests_name("VMCA JSON Utils Tests", VMCASrvJSONUtils_Tests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "VMCA service JSON utils failed");
+    }
+
+    return 0;
 }

@@ -302,6 +302,12 @@ typedef struct _VMDIR_ATTRIBUTE_METADATA
     USN     origUsn;
 } VMDIR_ATTRIBUTE_METADATA, *PVMDIR_ATTRIBUTE_METADATA;
 
+typedef struct _VMDIR_REPL_ATTRIBUTE_METADATA
+{
+    PSTR                         pszAttrType;
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData;
+} VMDIR_REPL_ATTRIBUTE_METADATA, *PVMDIR_REPL_ATTRIBUTE_METADATA;
+
 typedef struct _VMDIR_ATTRIBUTE_VALUE_METADATA
 {
     PSTR            pszAttrType;
@@ -950,6 +956,19 @@ VmDirEntryUnpack(
     PVDIR_ENTRY  pEntry
     );
 
+DWORD
+VmDirEntryAttributeAppendBervArray(
+    PVDIR_ATTRIBUTE    pAttr,
+    PVDIR_BERVALUE     pBervs,
+    USHORT             usBervSize
+    );
+
+DWORD
+VmDirEntryAttributeRemoveValue(
+    PVDIR_ATTRIBUTE    pAttr,
+    PCSTR              pszValue
+    );
+
 /*
  * release contents of an entry (but not entry itself, e.g. stack entry)
  */
@@ -1041,11 +1060,6 @@ VmDirAttributeInitialize(
     USHORT  usBerSize,
     PVDIR_SCHEMA_CTX pCtx,
     PVDIR_ATTRIBUTE pAttr
-    );
-
-VOID
-VmDirFreeAttrValueMetaDataContent(
-    PDEQUE  pValueMetaData
     );
 
 VOID
@@ -1670,6 +1684,25 @@ VdirPasswordCheck(
     PVDIR_ENTRY         pEntry
     );
 
+// middle-layer usn.c
+DWORD
+VmDirEntryUpdateUsnChanged(
+    PVDIR_ENTRY    pEntry,
+    USN            localUSN
+    );
+
+DWORD
+VmDirEntryUpdateUsnCreated(
+    PVDIR_ENTRY    pEntry,
+    USN            localUSN
+    );
+
+DWORD
+VmDirAttributeUpdateUsnValue(
+    PVDIR_ATTRIBUTE    pAttr,
+    USN                localUSN
+    );
+
 // security-sd.c
 DWORD
 VmDirSetGroupSecurityDescriptor(
@@ -1973,6 +2006,18 @@ VmDirAttributeMetaDataToHashMap(
     );
 
 DWORD
+VmDirAttributeMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrMetaData,
+    PVDIR_LINKED_LIST*    ppMetaDataList
+    );
+
+DWORD
+VmDirAttributeMetaDataListConvertToHashMap(
+    PVDIR_LINKED_LIST    pMetaDataList,
+    PLW_HASHMAP         *ppMetaDataMap
+    );
+
+DWORD
 VmDirMetaDataCopyContent(
     PVMDIR_ATTRIBUTE_METADATA    pSrcMetaData,
     PVMDIR_ATTRIBUTE_METADATA    pDestMetaData
@@ -2021,6 +2066,34 @@ VmDirFreeMetaDataMapPair(
     PVOID               pUnused
     );
 
+//replmetadata.c
+VOID
+VmDirFreeReplMetaData(
+    PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData
+    );
+
+VOID
+VmDirFreeReplMetaDataList(
+    PVDIR_LINKED_LIST    pMetaDataList
+    );
+
+DWORD
+VmDirReplMetaDataDeserialize(
+    PCSTR                              pszReplMetaData,
+    PVMDIR_REPL_ATTRIBUTE_METADATA*    ppReplMetaData
+    );
+
+DWORD
+VmDirReplMetaDataCreate(
+    PCSTR                              pszAttrType,
+    USN                                localUsn,
+    UINT64                             version,
+    PCSTR                              pszOrigInvoId,
+    PCSTR                              pszOrigTime,
+    USN                                origUsn,
+    PVMDIR_REPL_ATTRIBUTE_METADATA*    ppReplMetaData
+    );
+
 //valuemetadata.c
 DWORD
 VmDirValueMetaDataDeserialize(
@@ -2032,12 +2105,6 @@ DWORD
 VmDirValueMetaDataSerialize(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
     PVDIR_BERVALUE                     pBervValueMetaData
-    );
-
-DWORD
-VmDirValueMetaDataMaxLen(
-    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
-    PDWORD                             pdwLength
     );
 
 BOOLEAN
@@ -2053,6 +2120,28 @@ VmDirValueMetaDataIsEmpty(
 VOID
 VmDirFreeValueMetaData(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
+    );
+
+DWORD
+VmDirAttributeValueMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrValueMetaData,
+    PVDIR_LINKED_LIST*    ppValueMetaDataList
+    );
+
+DWORD
+VmDirAttributeValueMetaDataListConvertToDequeue(
+    PVDIR_LINKED_LIST    pValueMetaDataList,
+    PDEQUE               pValueMetaDataQueue
+    );
+
+VOID
+VmDirFreeValueMetaDataList(
+    PVDIR_LINKED_LIST    pValueMetaDataList
+    );
+
+VOID
+VmDirFreeAttrValueMetaDataDequeueContent(
+    PDEQUE  pValueMetaData
     );
 
 DWORD

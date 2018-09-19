@@ -28,8 +28,8 @@
 static
 int
 SetupReplModifyRequest(
-    PVDIR_OPERATION    modOp,
-    PVDIR_ENTRY        pEntry
+    PVDIR_OPERATION              pModOp,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
     );
 
 static
@@ -138,14 +138,18 @@ ReplAddEntry(
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: next generated USN: %" PRId64, __FUNCTION__, localUsn);
 
-    retVal = VmDirValueMetaDataDetachFromEntry(pEntry, &valueMetaDataQueue);
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirAttributeValueMetaDataListConvertToDequeue(
+            pUpdate->pValueMetaDataList, &valueMetaDataQueue);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     // need these before DetectAndResolveAttrsConflicts
     op.pszPartner = pUpdate->pszPartner;
     op.ulPartnerUSN = pUpdate->partnerUsn;
 
-    retVal = VmDirReplSetAttrNewMetaData(&op, pEntry, &pMetaDataMap);
+    retVal = VmDirAttributeMetaDataListConvertToHashMap(pUpdate->pMetaDataList, &pMetaDataMap);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirReplSetAttrNewMetaData(&op, pEntry, pMetaDataMap);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // Creating deleted object scenario: Create attributes just with attribute meta data, and no values.
@@ -232,8 +236,8 @@ cleanup:
         LwRtlFreeHashMap(&pMetaDataMap);
     }
     // pAttrAttrMetaData is local, needs to be freed within the call
-    VmDirFreeAttribute( pAttrAttrMetaData );
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttribute(pAttrAttrMetaData);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     VmDirFreeOperationContent(&op);
 
     return retVal;
@@ -300,7 +304,7 @@ ReplDeleteEntry(
     }
 
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
-    retVal = SetupReplModifyRequest(&delOp, pUpdate->pEntry);
+    retVal = SetupReplModifyRequest(&delOp, pUpdate);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
@@ -461,7 +465,8 @@ ReplModifyEntry(
     }
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirValueMetaDataDetachFromEntry(pEntry, &valueMetaDataQueue);
+    retVal = VmDirAttributeValueMetaDataListConvertToDequeue(
+            pUpdate->pValueMetaDataList, &valueMetaDataQueue);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // need these before DetectAndResolveAttrsConflicts
@@ -470,7 +475,7 @@ ReplModifyEntry(
 
     pEntry->eId = entryId;
 
-    retVal = SetupReplModifyRequest(&modOp, pEntry);
+    retVal = SetupReplModifyRequest(&modOp, pUpdate);
     if (retVal != LDAP_SUCCESS)
     {
         PSZ_METADATA_BUF    pszMetaData = {'\0'};
@@ -586,7 +591,7 @@ cleanup:
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
     VmDirFreeEntry(pEntry);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
 
     return retVal;
 
@@ -757,8 +762,8 @@ error:
 static
 int
 SetupReplModifyRequest(
-    VDIR_OPERATION *    pOperation,
-    PVDIR_ENTRY         pEntry
+    PVDIR_OPERATION              pOperation,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -776,6 +781,9 @@ SetupReplModifyRequest(
     LW_HASHMAP_ITER     iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR     pair = {NULL, NULL};
     PVMDIR_ATTRIBUTE_METADATA    pSupplierMetaData = NULL;
+    PVDIR_ENTRY         pEntry = NULL;
+
+    pEntry = pUpdate->pEntry;
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "SetupReplModifyRequest: next entry being replicated/Modified is: %s",
               pEntry->dn.lberbv.bv_val );
@@ -790,7 +798,10 @@ SetupReplModifyRequest(
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirReplSetAttrNewMetaData(pOperation, pEntry, &pMetaDataMap);
+    retVal = VmDirAttributeMetaDataListConvertToHashMap(pUpdate->pMetaDataList, &pMetaDataMap);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirReplSetAttrNewMetaData(pOperation, pEntry, pMetaDataMap);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     for (currAttr = pEntry->attrs; currAttr; currAttr = currAttr->next)

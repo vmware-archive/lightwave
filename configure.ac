@@ -162,6 +162,27 @@ fi
 AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
 
 #--------------------------------------------------------------------
+# v2 rest head flag
+
+REST_V2_ENABLED=false
+AC_ARG_ENABLE([restv2],
+    [AC_HELP_STRING([--enable-rest-v2],
+                    [enable v2 rest heads (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            REST_V2_ENABLED=true
+        fi
+    ])
+
+if $REST_V2_ENABLED
+then
+AC_DEFINE_UNQUOTED(REST_V2_ENABLED, 1, [ Enable v2 rest heads ])
+fi
+
+AM_CONDITIONAL(REST_V2_ENABLED, [$REST_V2_ENABLED])
+
+#--------------------------------------------------------------------
 # datastore flag
 
 AC_ARG_WITH([datastore],
@@ -1723,6 +1744,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile
                  vmdir/unit-tests/Makefile
+                 vmdir/unit-tests/common/Makefile
                  vmdir/unit-tests/server/Makefile
                  vmdir/unit-tests/server/common/Makefile
                  vmdir/unit-tests/server/replication2/Makefile
@@ -1788,6 +1810,8 @@ AC_CONFIG_FILES([Makefile
                  vmca/common/Makefile
                  vmca/service/Makefile
                  vmca/service/common/Makefile
+                 vmca/service/config/Makefile
+                 vmca/service/rest-head/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile

@@ -79,7 +79,7 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     VmDirFreeValueMetaData(pValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
     goto cleanup;
 }
 
@@ -190,7 +190,7 @@ VmDirValueMetaDataDeleteOldForReplace(
     }
 
 cleanup:
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataToDelete);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataToDelete);
     return dwError;
 
 error:

@@ -117,6 +117,12 @@ VmDirFreeSwapDBInfo(
     PVMDIR_SWAP_DB_INFO pSwapDBInfo
     );
 
+//consume.c
+VOID
+VmDirConsumePartner(
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
+    );
+
 // dbcopy.c
 int
 VmDirCopyRemoteDB(
@@ -126,10 +132,16 @@ VmDirCopyRemoteDB(
 
 // metadata.c
 DWORD
+VmDirReplGetAttrMetaDataList(
+    PVDIR_ENTRY           pEntry,
+    PVDIR_LINKED_LIST*    ppMetaDataList
+    );
+
+DWORD
 VmDirReplSetAttrNewMetaData(
     PVDIR_OPERATION     pOperation,
     PVDIR_ENTRY         pSupplierEntry,
-    PLW_HASHMAP*        ppMetaDataMap
+    PLW_HASHMAP         pMetaDataMap
     );
 
 // conflictresolution.c
@@ -153,8 +165,13 @@ VmDirReplUpdateListFetch(
     );
 
 VOID
-VmDirReplUpdateListProcess(
+VmDirReplUpdateListApply(
     PVMDIR_REPLICATION_UPDATE_LIST  pReplUpdateList
+    );
+
+DWORD
+VmDirReplUpdateListExpand(
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList
     );
 
 VOID
@@ -166,6 +183,11 @@ int
 VmDirReplUpdateListParseSyncDoneCtl(
     PVMDIR_REPLICATION_UPDATE_LIST  pReplUpdateList,
     LDAPControl**                   ppSearchResCtrls
+    );
+
+VOID
+VmDirFreeReplUpdateListLinkedList(
+    PVDIR_LINKED_LIST    pUpdateLinkedList
     );
 
 //update.c
@@ -185,6 +207,37 @@ VmDirReplUpdateApply(
 VOID
 VmDirFreeReplUpdate(
     PVMDIR_REPLICATION_UPDATE   pUpdate
+    );
+
+DWORD
+VmDirReplUpdateToUSNList(
+    PVMDIR_REPLICATION_UPDATE   pUpdate,
+    PVDIR_LINKED_LIST*          ppUSNList
+    );
+
+DWORD
+VmDirReplUpdateSplit(
+    PVMDIR_REPLICATION_UPDATE    pUpdate,
+    PVDIR_SORTED_LINKED_LIST     pNewReplUpdateList
+    );
+
+DWORD
+VmDirReplUpdateLocalUsn(
+    PVMDIR_REPLICATION_UPDATE    pUpdate,
+    PVDIR_LINKED_LIST            pUSNList
+    );
+
+DWORD
+VmDirReplUpdateExtractEvent(
+    PVMDIR_REPLICATION_UPDATE    pCombinedUpdate,
+    USN                          usn,
+    PVMDIR_REPLICATION_UPDATE*   ppIndividualUpdate
+    );
+
+BOOLEAN
+VmDirSortedLinkedListInsertCompareReplUpdate(
+    PVOID    pElement,
+    PVOID    pNewElement
     );
 
 //utdvector.c
@@ -226,9 +279,9 @@ VmDirFreeUTDVectorCache(
 
 //valuemetadata.c
 DWORD
-VmDirValueMetaDataDetachFromEntry(
-    PVDIR_ENTRY         pEntry,
-    PDEQUE              pValueMetaDataQueue
+VmDirReplGetAttrValueMetaDataList(
+    PVDIR_ENTRY           pEntry,
+    PVDIR_LINKED_LIST*    ppValueMetaDataList
     );
 
 DWORD
@@ -262,6 +315,33 @@ VmDirReplResolveValueMetaDataConflicts(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pSupplierValueMetaData,
     ENTRYID                            entryId,
     PBOOLEAN                           pInScope
+    );
+
+//extractevents.c
+DWORD
+VmDirExtractEventAttributeChanges(
+    PVMDIR_REPLICATION_UPDATE    pCombinedUpdate,
+    USN                          usn,
+    PVMDIR_REPLICATION_UPDATE    pIndividualUpdate
+    );
+
+DWORD
+VmDirExtractEventAttributeValueChanges(
+    PVMDIR_REPLICATION_UPDATE    pCombinedUpdate,
+    USN                          usn,
+    PVMDIR_REPLICATION_UPDATE    pIndividualUpdate
+    );
+
+DWORD
+VmDirExtractEventPopulateMustAttributes(
+    PVMDIR_REPLICATION_UPDATE    pIndividualUpdate,
+    PVMDIR_REPLICATION_UPDATE    pCombinedUpdate
+    );
+
+DWORD
+VmDirExtractEventPopulateOperationAttributes(
+    PVMDIR_REPLICATION_UPDATE    pCombinedUpdate,
+    PVMDIR_REPLICATION_UPDATE    pIndividualUpdate
     );
 
 #ifdef __cplusplus

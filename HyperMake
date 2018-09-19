@@ -248,31 +248,6 @@ targets:
     cmds:
       - ./support/scripts/post-container-build.sh
 
-  # deploy a server and client node,
-  # promote the server, join the client
-  deploy_test_env:
-    description: start test environment
-    after:
-      - pack
-    compose: support/tests/lightwave
-
-  # run tests. use the test env from deploy_test_env
-  # note that network name and
-  # image name are prefixed after the
-  # docker compose directory
-  test:
-    description: run tests
-    after:
-      - deploy_test_env
-    always: true
-    image: lightwave_lightwave-client
-    net: lightwave_lightwave
-    env:
-      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
-    cmds:
-      - bash support/tests/run_hmake_sanity.sh
-      - bash support/tests/run_hmake_afd_rest.sh
-
   clean-photon1:
     description: Cleanup
     always: true
@@ -337,3 +312,5 @@ settings:
   default-targets:
     - build
     - pack
+includes:
+ - support/tests/tests.hmake

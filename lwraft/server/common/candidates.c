@@ -323,6 +323,7 @@ OrFilterResults(
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }
+            break;
         case FILTER_RES_UNDEFINED:
             switch (dst->computeResult)
             {

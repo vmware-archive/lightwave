@@ -1143,6 +1143,7 @@ Lightwave Samples
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
+%{_datadir}/config/vmca-rest-v2.json
 %{_datadir}/config/vmca-telegraf.conf
 
 %{_datadir}/config/saslvmdird.conf
