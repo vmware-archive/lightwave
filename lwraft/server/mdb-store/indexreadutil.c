@@ -727,11 +727,11 @@ MdbScanIndex(
     VDIR_DB_DBT         value = {0};
     VDIR_DB_DBT         currKey = {0};
     ENTRYID             eId = 0;
-    PVDIR_DB_TXN        pLocalTxn = NULL;
     PVDIR_INDEX_CFG     pIndexCfg = NULL;
     PVDIR_DB_DBC        pCursor = NULL;
     unsigned int        cursorFlags;
-    PVDIR_MDB_DB        pDB = (PVDIR_MDB_DB)VmDirSafeDBFromBE(pBE);
+    VDIR_BACKEND_CTX mdbBECtx = {0};
+    BOOLEAN bHasTxn = FALSE;
 
     // GE filter is neither exactMatch nor a partialMatch
     BOOLEAN     bIsExactMatch = (pFilter->choice == LDAP_FILTER_EQUALITY || pFilter->choice == FILTER_ONE_LEVEL_SEARCH);
@@ -763,22 +763,13 @@ MdbScanIndex(
 
     bIsUniqueVal = pIndexCfg->bGlobalUniq;
 
-    if (pTxn == NULL)
-    {
-        dwError = mdb_txn_begin(    pDB->mdbEnv,
-                                    BE_DB_PARENT_TXN_NULL,
-                                    MDB_RDONLY,
-                                    &pLocalTxn);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-    {
-        pLocalTxn = pTxn;
-    }
+    mdbBECtx.pBE = pBE;
+    dwError = VmDirMDBTxnBegin(&mdbBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if ( bIsExactMatch && bIsUniqueVal )
     {
-        dwError = mdb_get( pLocalTxn, mdbDBi, pKey, &value);
+        dwError = mdb_get( mdbBECtx.pBEPrivate, mdbDBi, pKey, &value);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         MDBDBTToEntryId( &value, &eId);
@@ -790,7 +781,7 @@ MdbScanIndex(
     }
     else
     {
-        dwError = mdb_cursor_open(pLocalTxn, mdbDBi, &pCursor);
+        dwError = mdb_cursor_open(mdbBECtx.pBEPrivate, mdbDBi, &pCursor);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         memset(&currKey, 0, sizeof(currKey));
@@ -888,15 +879,15 @@ cleanup:
         mdb_cursor_close(pCursor);
     }
 
-    if (pTxn == NULL && pLocalTxn != NULL) /* commit/abort local transaction */
+    if (bHasTxn)
     {
         if (dwError == 0 || dwError == MDB_NOTFOUND)
         {
-            mdb_txn_commit(pLocalTxn);
+            dwError = VmDirMDBTxnCommit(&mdbBECtx);
         }
         else
         {
-            mdb_txn_abort(pLocalTxn);
+            VmDirMDBTxnAbort(&mdbBECtx);
         }
     }
 

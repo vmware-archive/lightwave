@@ -168,12 +168,50 @@ VmDirMDBMaxEntryId(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     key.mv_data = &EIDBytes[0];
-    MDBEntryIdToDBT(eId, &key);
 
-    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_LAST);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (pBE == VmDirBackendSelect(ALIAS_MAIN))
+    {
+       //Set cursor position equal or above LOG_ENTRY_EID_PREFIX
+       // it would find the first entry id of raft log entry on legacy data
+       // i.e. database creaded before we implemented a split log.
+       eId = LOG_ENTRY_EID_PREFIX;
+       MDBEntryIdToDBT(eId, &key);
+       dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
+       if (dwError == MDB_NOTFOUND)
+       {
+           //mainDb was created after we implemented split log (no log entries in mainDb)
+           // - simply find the last id which will be the last entry-id in normal entries.
+           eId = 0;
+           MDBEntryIdToDBT(eId, &key);
+           dwError = mdb_cursor_get(pCursor, &key, &value, MDB_LAST);
+           BAIL_ON_VMDIR_ERROR(dwError);
 
-    MDBDBTToEntryId(&key, &eId);
+           MDBDBTToEntryId(&key, &eId);
+
+       } else
+       {
+          BAIL_ON_VMDIR_ERROR(dwError);
+          //Found an entry that is LOG_ENTRY_EID_PREFIX or above
+          // - search backward, and the first one is the last normal entry
+          do
+          {
+             dwError = mdb_cursor_get(pCursor, &key, &value, MDB_PREV);
+             BAIL_ON_VMDIR_ERROR(dwError);
+
+             MDBDBTToEntryId(&key, &eId);
+          }
+          while (eId >= LOG_ENTRY_EID_PREFIX);
+       }
+    } else
+    {
+       //For logDb, the last one is the log entry.
+       eId = 0;
+       MDBEntryIdToDBT(eId, &key);
+       dwError = mdb_cursor_get(pCursor, &key, &value, MDB_LAST);
+       BAIL_ON_VMDIR_ERROR(dwError);
+
+       MDBDBTToEntryId(&key, &eId);
+    }
 
     mdb_cursor_close(pCursor);
     pCursor = NULL;

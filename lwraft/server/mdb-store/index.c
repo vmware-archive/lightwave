@@ -166,7 +166,7 @@ VmDirMDBIndexExist(
 error:
     if (bHasTxn)
     {
-        mdb_txn_abort(mdbBECtx.pBEPrivate);
+        VmDirMDBTxnAbort(&mdbBECtx);
     }
     VMDIR_SAFE_FREE_MEMORY(pszDBName);
     return bExist;
