@@ -1005,7 +1005,10 @@ cleanup:
     return dwError;
 
 error:
-    LwRtlHashMapClear(pAllMustAttrMap, VmDirNoopHashMapPairFree, NULL);
+    if (pAllMustAttrMap)
+    {
+        LwRtlHashMapClear(pAllMustAttrMap, VmDirNoopHashMapPairFree, NULL);
+    }
     LwRtlFreeHashMap(&pAllMustAttrMap);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;

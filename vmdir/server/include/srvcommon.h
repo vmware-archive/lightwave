@@ -359,12 +359,29 @@ typedef struct _ATTRIBUTE_META_DATA_NODE
 
 #define VDIR_DEFAULT_FORCE_VERSION_GAP  512
 
+/*
+ * MOD_IGNORE_ALL
+ *     Used internally, to skip processing a Delete mod when the attr
+ *     does not exist in the entry
+ * MOD_IGNORE_ATTR_VALUES
+ *     Used internally, in the repl scenario to commit attrMetaData only and ignore
+ *     attr value and attrValueMetaData update.
+ *     1) Attr was added and deleted on the supplier side (only attrMetaData will remain)
+ *     2) In the consumer side, attrMetaData has to be committed even though corresponding
+ *        attr does not exist, to avoid data discrepancy.
+ */
+typedef enum _VDIR_MOD_IGNORE
+{
+    MOD_IGNORE_NONE = 0,
+    MOD_IGNORE_ALL,
+    MOD_IGNORE_ATTR_VALUES
+} VDIR_MOD_IGNORE;
+
 typedef struct _VDIR_MODIFICATION
 {
     VDIR_LDAP_MOD_OP            operation;
     VDIR_ATTRIBUTE              attr;
-    BOOLEAN                     ignore; // Used internally, e.g. to skip processing a Delete modification when the attribute
-                                  // does not exist in the entry
+    VDIR_MOD_IGNORE             modIgnoreType;
     unsigned short              usForceVersionGap;  // to intentionally create gap between attribute version
     struct _VDIR_MODIFICATION * next;
 } VDIR_MODIFICATION, *PVDIR_MODIFICATION;

@@ -185,12 +185,6 @@ vdirReplicationThrFun(
             }
 
             VmDirConsumePartner(pReplAgr);
-            /*
-             * To avoid race condition after resetting the vector
-             * if this node plays consumer role before supplying the new vector value
-             * could result in longer replication cycle.
-             */
-            VmDirSleep(100);
         }
 
         VMDIR_LOG_DEBUG(
@@ -227,12 +221,7 @@ vdirReplicationThrFun(
                 goto cleanup;
             }
 
-            // An RPC call requested a replication cycle to start immediately
-            if (VmDirdGetReplNow() == TRUE)
-            {
-                VmDirdSetReplNow(FALSE);
-                break;
-            }
+            VmDirSleep(500); //500ms
         }
     } // Endless replication loop
 

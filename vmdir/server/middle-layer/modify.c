@@ -595,9 +595,17 @@ VmDirApplyModsToEntryStruct(
                 PVDIR_ATTRIBUTE attr = VmDirFindAttrByName( pEntry, currMod->attr.type.lberbv.bv_val);
                 if (attr == NULL) // Attribute to be deleted does not exist in the entry
                 {
-                    if ( currMod->attr.numVals == 0 ) // If whole attribute is to be deleted, ignore this mod.
+                    // If whole attribute is to be deleted, ignore this mod.
+                    if (currMod->attr.numVals == 0)
                     {
-                        currMod->ignore = TRUE;
+                        if (bIsReplOp)
+                        {
+                            currMod->modIgnoreType = MOD_IGNORE_ATTR_VALUES;
+                        }
+                        else
+                        {
+                            currMod->modIgnoreType = MOD_IGNORE_ALL;
+                        }
                     }
                     else // If some specific attribute values are to be deleted from the attribute => error case
                     {

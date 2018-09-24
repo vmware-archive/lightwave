@@ -691,6 +691,7 @@ WriteSyncStateControl(
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
 
+#ifndef REPLICATION_V2
                 if (bPresentInSyncStateOneMap == FALSE)
                 {
                     retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
@@ -709,6 +710,7 @@ WriteSyncStateControl(
                             pEntry->dn.lberbv_val,
                             pAttr->vals[0].lberbv_val);
                 }
+#endif
             }
         }
     }

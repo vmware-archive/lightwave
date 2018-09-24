@@ -767,35 +767,37 @@ VmDirMDBModifyEntry(
     // Create/Delete appropriate indices for DN first in case DN is already in use
     for (mod = pMods; mod != NULL; mod = mod->next)
     {
-        if (mod->ignore)
+        if (mod->modIgnoreType == MOD_IGNORE_ALL)
         {
             continue;
         }
 
         if (VmDirStringCompareA(mod->attr.type.lberbv.bv_val, ATTR_DN, FALSE) == 0)
         {
-            switch (mod->operation)
+            if (mod->modIgnoreType != MOD_IGNORE_ATTR_VALUES)
             {
-                case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
-                        ||
-                        (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
-                       )
-                    {
-                        dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
-                                                     VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                        BAIL_ON_VMDIR_ERROR( dwError );
-                    }
-                    break;
+                switch (mod->operation)
+                {
+                    case MOD_OP_ADD:
+                        if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals,
+                                        mod->attr.numVals, pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
+                             ||
+                            (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
+                                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
+                           )
+                        {
+                            dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
+                                    VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                            BAIL_ON_VMDIR_ERROR( dwError );
+                        }
+                        break;
 
-                case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0
-                        ||
-                        (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE)) != 0
+                    case MOD_OP_DELETE:
+                        if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals,
+                                        mod->attr.numVals, pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0
+                             ||
+                            (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
+                                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE)) != 0
                        )
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
@@ -804,84 +806,157 @@ VmDirMDBModifyEntry(
                     }
                     break;
 
-                case MOD_OP_REPLACE:
-                default:
-                    assert( FALSE );
+                    case MOD_OP_REPLACE:
+                    default:
+                        assert( FALSE );
+                }
             }
 
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
+            dwError = MdbUpdateAttrMetaData(
+                    pTxn,
+                    &(mod->attr),
+                    pEntry->eId,
+                    BE_INDEX_OP_TYPE_UPDATE);
+
+            if (dwError != 0)
             {
-                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
-                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                BAIL_ON_VMDIR_ERROR( dwError );
+                dwError = MDBToBackendError(
+                        dwError,
+                        0,
+                        ERROR_BACKEND_ERROR,
+                        pBECtx,
+                        VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
 
-        if (!dequeIsEmpty(&mod->attr.valueMetaDataToAdd))
+        if (!dequeIsEmpty(&mod->attr.valueMetaDataToAdd) &&
+             mod->modIgnoreType != MOD_IGNORE_ATTR_VALUES)
         {
-            dwError = VmDirMdbUpdateAttrValueMetaData( pBECtx, pEntry->eId, mod->attr.pATDesc->usAttrID,
-                                                       BE_INDEX_OP_TYPE_UPDATE, &mod->attr.valueMetaDataToAdd );
+            dwError = VmDirMdbUpdateAttrValueMetaData(
+                    pBECtx,
+                    pEntry->eId,
+                    mod->attr.pATDesc->usAttrID,
+                    BE_INDEX_OP_TYPE_UPDATE,
+                    &mod->attr.valueMetaDataToAdd);
+
             if (dwError != 0)
             {
-                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
-                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                BAIL_ON_VMDIR_ERROR( dwError );
+                dwError = MDBToBackendError(
+                        dwError,
+                        0,
+                        ERROR_BACKEND_ERROR,
+                        pBECtx,
+                        VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
     }
 
-    // Create/Delete appropriate indices for DN
+    // Create/Delete appropriate indices for all attrs except DN
     for (mod = pMods; mod != NULL; mod = mod->next)
     {
-        if (mod->ignore)
+        if (mod->modIgnoreType == MOD_IGNORE_ALL)
         {
             continue;
         }
+
         if (VmDirStringCompareA(mod->attr.type.lberbv.bv_val, ATTR_DN, FALSE) != 0)
         {
-            switch (mod->operation)
+            if (mod->modIgnoreType != MOD_IGNORE_ATTR_VALUES)
             {
-                case MOD_OP_ADD:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
-                    {
-                        dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
-                                                     VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                        BAIL_ON_VMDIR_ERROR( dwError );
-                    }
-                    break;
+                switch (mod->operation)
+                {
+                    case MOD_OP_ADD:
 
-                case MOD_OP_DELETE:
-                    if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
-                    {
-                        dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
-                                                    VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                        BAIL_ON_VMDIR_ERROR( dwError );
-                    }
-                    break;
+                        dwError = MdbUpdateIndicesForAttr(
+                                pTxn,
+                                &(pEntry->dn),
+                                &(mod->attr.type),
+                                mod->attr.vals,
+                                mod->attr.numVals,
+                                pEntry->eId,
+                                BE_INDEX_OP_TYPE_CREATE);
 
-                case MOD_OP_REPLACE:
-                default:
-                    assert( FALSE );
+                        if (dwError)
+                        {
+                            dwError = MDBToBackendError(
+                                    dwError,
+                                    MDB_KEYEXIST,
+                                    ERROR_BACKEND_CONSTRAINT,
+                                    pBECtx,
+                                    VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                            BAIL_ON_VMDIR_ERROR(dwError);
+                        }
+
+                        break;
+
+                    case MOD_OP_DELETE:
+
+                        dwError = MdbUpdateIndicesForAttr(
+                                pTxn,
+                                &(pEntry->dn),
+                                &(mod->attr.type),
+                                mod->attr.vals,
+                                mod->attr.numVals,
+                                pEntry->eId,
+                                BE_INDEX_OP_TYPE_DELETE);
+
+                        if (dwError)
+                        {
+                            dwError = MDBToBackendError(
+                                    dwError,
+                                    0,
+                                    ERROR_BACKEND_ERROR,
+                                    pBECtx,
+                                    VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                            BAIL_ON_VMDIR_ERROR(dwError);
+                        }
+                        break;
+
+                    case MOD_OP_REPLACE:
+                    default:
+                        assert(FALSE);
+                }
             }
 
-            if ((dwError = MdbUpdateAttrMetaData( pTxn, &(mod->attr), pEntry->eId, BE_INDEX_OP_TYPE_UPDATE )) != 0)
+            dwError = MdbUpdateAttrMetaData(
+                    pTxn,
+                    &(mod->attr),
+                    pEntry->eId,
+                    BE_INDEX_OP_TYPE_UPDATE);
+
+            if (dwError)
             {
-                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
-                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                BAIL_ON_VMDIR_ERROR( dwError );
+                dwError = MDBToBackendError(
+                        dwError,
+                        0,
+                        ERROR_BACKEND_ERROR,
+                        pBECtx,
+                        VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
 
-        if (!dequeIsEmpty(&mod->attr.valueMetaDataToDelete))
+        if (!dequeIsEmpty(&mod->attr.valueMetaDataToDelete) &&
+             mod->modIgnoreType != MOD_IGNORE_ATTR_VALUES)
         {
-            if ((dwError = VmDirMdbUpdateAttrValueMetaData( pBECtx, pEntry->eId, mod->attr.pATDesc->usAttrID,
-                                                            BE_INDEX_OP_TYPE_DELETE, &mod->attr.valueMetaDataToDelete )) != 0)
+            dwError = VmDirMdbUpdateAttrValueMetaData(
+                    pBECtx,
+                    pEntry->eId,
+                    mod->attr.pATDesc->usAttrID,
+                    BE_INDEX_OP_TYPE_DELETE,
+                    &mod->attr.valueMetaDataToDelete);
+
+            if (dwError)
             {
-                dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
-                                            VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
-                BAIL_ON_VMDIR_ERROR( dwError );
+                dwError = MDBToBackendError(
+                        dwError,
+                        0,
+                        ERROR_BACKEND_ERROR,
+                        pBECtx,
+                        VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
+                BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
     }
