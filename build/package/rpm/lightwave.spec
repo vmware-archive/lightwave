@@ -1433,6 +1433,7 @@ Lightwave Samples
 %{_datadir}/config/mutentca.reg
 %{_datadir}/config/mutentcad-syslog-ng.conf
 %{_datadir}/config/mutentca-telegraf.conf
+%{_datadir}/config/mutentca-rest.json
 
 %{_configdir}/lw-firewall-mutentca.json
 
