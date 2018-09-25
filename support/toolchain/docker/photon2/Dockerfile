@@ -50,6 +50,6 @@ RUN tdnf update -qy  tdnf  && \
         sqlite-devel-3.21.0 \
         util-linux-devel-2.29.2 && \
     echo 'ALL ALL=NOPASSWD: ALL' >>/etc/sudoers && \
-    chmod -R o+r /opt/likewise/include
-
-
+    chmod -R o+r /opt/likewise/include && \
+    curl -sSLf https://github.com/go-swagger/go-swagger/releases/download/0.11.0/swagger_linux_amd64 >/usr/local/bin/swagger && \
+    chmod a+rx /usr/local/bin/swagger
