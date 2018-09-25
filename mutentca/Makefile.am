@@ -2,4 +2,4 @@ SUBDIRS = \
     config \
     common \
     server \
-    unit-tests
+    tests

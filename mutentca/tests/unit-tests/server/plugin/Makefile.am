@@ -16,7 +16,7 @@ testmutentcasrvplugin_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/server/include \
     -I$(top_srcdir)/mutentca/server/common \
     -I$(top_srcdir)/mutentca/server/plugin \
-    -I$(top_srcdir)/mutentca/unit-tests/server/plugin/test-plugins \
+    -I$(top_srcdir)/mutentca/tests/unit-tests/server/plugin/test-plugins \
     -I$(top_srcdir)/vmafd/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \

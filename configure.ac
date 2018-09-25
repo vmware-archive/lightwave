@@ -1886,14 +1886,15 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/plugin/Makefile
                  mutentca/server/mutentca/Makefile
-                 mutentca/unit-tests/Makefile
-                 mutentca/unit-tests/server/Makefile
-                 mutentca/unit-tests/server/common/Makefile
-                 mutentca/unit-tests/server/plugin/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
+                 mutentca/tests/Makefile
+                 mutentca/tests/unit-tests/Makefile
+                 mutentca/tests/unit-tests/server/Makefile
+                 mutentca/tests/unit-tests/server/common/Makefile
+                 mutentca/tests/unit-tests/server/plugin/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/sample/setenv.sh

@@ -1,7 +1,7 @@
 pkglib_LTLIBRARIES = testpluginvalid.la
 
 testplugin_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmca/unit-tests/service/plugin/test-plugins
+    -I$(top_srcdir)/mutentca/tests/unit-tests/service/plugin/test-plugins
 
 testpluginvalid_la_SOURCES = \
     testpluginvalid.c
