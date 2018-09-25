@@ -1878,6 +1878,8 @@ AC_CONFIG_FILES([Makefile
                  vmca/tools/Makefile
                  vmca/tools/lw-certool/Makefile
                  mutentca/Makefile
+                 mutentca/include/Makefile
+                 mutentca/include/public/Makefile
                  mutentca/config/Makefile
                  mutentca/config/mutentca.reg
                  mutentca/common/Makefile

@@ -1457,6 +1457,7 @@ Lightwave Samples
 %{_includedir}/vmdns.h
 %{_includedir}/vmdnstypes.h
 %{_includedir}/vmmetrics.h
+%{_includedir}/mutentcadb.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la

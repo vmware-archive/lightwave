@@ -1,4 +1,5 @@
 SUBDIRS = \
+    include \
     config \
     common \
     server \
