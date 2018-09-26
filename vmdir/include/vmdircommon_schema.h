@@ -271,7 +271,8 @@ VmDirReadSchemaFile(
     PCSTR               pszSchemaFilePath,
     PVMDIR_STRING_LIST* ppAtStrList,
     PVMDIR_STRING_LIST* ppOcStrList,
-    PVMDIR_STRING_LIST* ppCrStrList
+    PVMDIR_STRING_LIST* ppCrStrList,
+    PVMDIR_STRING_LIST* ppIdxStrList
     );
 
 // load.c
@@ -280,7 +281,8 @@ VmDirLdapSchemaLoadStrLists(
     PVDIR_LDAP_SCHEMA   pSchema,
     PVMDIR_STRING_LIST  pAtStrList,
     PVMDIR_STRING_LIST  pOcStrList,
-    PVMDIR_STRING_LIST  pCrStrList
+    PVMDIR_STRING_LIST  pCrStrList,
+    PVMDIR_STRING_LIST  pIdxStrList
     );
 
 DWORD
@@ -332,6 +334,13 @@ DWORD
 VmDirLdapNfParseStr(
     PCSTR                   pcszStr,
     PVDIR_LDAP_NAME_FORM*   ppNf
+    );
+
+DWORD
+VmDirLdapIdxParseStr(
+    PCSTR       pcszStr,
+    PSTR*       ppszAtName,
+    PBOOLEAN    pbGlobalUniq
     );
 
 DWORD
@@ -388,15 +397,15 @@ VmDirLdapNfToStr(
 // patch.c
 DWORD
 VmDirPatchRemoteSchemaObjects(
-    LDAP*               pLd,
-    PVDIR_LDAP_SCHEMA   pNewSchema
+    LDAP*                   pLd,
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff
     );
 
 // resolve.c
 DWORD
 VmDirLdapOcResolveSup(
-    PVDIR_LDAP_SCHEMA           pSchema,
-    PVDIR_LDAP_OBJECT_CLASS     pOc
+    PVDIR_LDAP_SCHEMA       pSchema,
+    PVDIR_LDAP_OBJECT_CLASS pOc
     );
 
 // schema.c
@@ -433,6 +442,13 @@ DWORD
 VmDirLdapSchemaAddNf(
     PVDIR_LDAP_SCHEMA       pSchema,
     PVDIR_LDAP_NAME_FORM    pNf
+    );
+
+DWORD
+VmDirLdapSchemaAddIdx(
+    PVDIR_LDAP_SCHEMA   pSchema,
+    PCSTR               pszAtName,
+    BOOLEAN             bGlobalUniq
     );
 
 DWORD

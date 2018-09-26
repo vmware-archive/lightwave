@@ -68,6 +68,7 @@ public final class STSImpl implements STS {
    private static final IDiagnosticsLogger log = DiagnosticsLoggerFactory.getLogger(STSImpl.class);
 
    private static final String actAsGroupName = "ActAsUsers";
+   private static final String knownClaimsDialect = "http://schemas.xmlsoap.org/ws/2005/05/fedclaims";
 
    // TODO [848560] make the number of max simultaneous session configurable
    private final LRURequests spnegoSessions = new LRURequests(1024);
@@ -205,6 +206,7 @@ public final class STSImpl implements STS {
       } catch (com.vmware.identity.saml.InvalidSignatureException e) {
          throw new InvalidSignatureException(e);
       } catch (InvalidTokenException e) {
+         log.info("Token is invalid.", e);
          valid = false;
       }
 
@@ -318,6 +320,12 @@ public final class STSImpl implements STS {
             + requestValidityPlusTolerance.getStartTime() + "; "
             + requestValidityPlusTolerance.getEndTime() + ")."
             + " This might be due to a clock skew problem.");
+      }
+
+      if ( req.getRst().getClaims() != null ) {
+          if ( !knownClaimsDialect.equals(req.getRst().getClaims().getDialect()) ) {
+              throw new InvalidRequestException("The only supported claims dialect is: " + knownClaimsDialect);
+          }
       }
    }
 

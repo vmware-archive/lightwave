@@ -526,7 +526,12 @@ extern "C" {
 #define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 // vmw OID for password export/import. This does NOT apply to srp/krb secrets.
 #define VDIR_LDAP_CONTROL_PASSWD_BLOB           "1.3.6.1.4.1.6876.40.10.8"
+// vmw LDAP control for copying DB over LDAP
 #define LDAP_DB_COPY_CONTROL                    "1.3.6.1.4.1.6876.40.10.9"
+// vmw LDAP control for disabling a replication agreement
+#define LDAP_REPL_AGR_DISABLE_CONTROL           "1.3.6.1.4.1.6876.40.10.10"
+// vmw LDAP control for enabling a replication agreement
+#define LDAP_REPL_AGR_ENABLE_CONTROL            "1.3.6.1.4.1.6876.40.10.11"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

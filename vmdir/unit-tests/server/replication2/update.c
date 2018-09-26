@@ -551,6 +551,9 @@ _VmDirReplUpdateInsertToMetaDataList(
     dwError = VmDirAllocateMemory(sizeof(VMDIR_REPL_ATTRIBUTE_METADATA), (PVOID*)&pReplMetaData);
     assert_int_equal(dwError, 0);
 
+    dwError = VmDirAllocateStringA(ATTR_CN, &pReplMetaData->pszAttrType);
+    assert_int_equal(dwError, 0);
+
     dwError = VmDirAllocateMemory(
             sizeof(VMDIR_ATTRIBUTE_METADATA), (PVOID*)&pReplMetaData->pMetaData);
     assert_int_equal(dwError, 0);

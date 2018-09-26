@@ -1,0 +1,332 @@
+/*
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an “AS IS” BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+#ifndef __LWCA_ERROR_H__
+#define __LWCA_ERROR_H__
+
+typedef struct _LWCA_ERROR_CODE_NAME_MAP
+{
+    DWORD       dwCount;
+    PCSTR       pcszName;
+    PCSTR       pcszDesc;
+} LWCA_ERROR_CODE_NAME_MAP, *PLWCA_DB_ERROR_CODE_NAME_MAP;
+
+typedef struct _LWCA_ERRNO_MAP
+{
+    DWORD   dwUnixErrno;
+    DWORD   dwLwCAError;
+} LWCA_ERRNO_MAP;
+
+#define UNKNOWN_STRING                      "UNKNOWN"
+
+#define LWCA_SUCCESS                        0
+
+#define LWCA_ERROR_BASE                     80000
+#define LWCA_ERROR_MAX                      9999
+
+#define LWCA_RANGE(n,x,y)                  (((x) <= (n)) && ((n) <= (y)))
+
+// LwCA error space (80000 - 89999)
+#define IS_LWCA_ERROR_SPACE(n) \
+    LWCA_RANGE((n), (LWCA_ERROR_BASE), (LWCA_ERROR_BASE + LWCA_ERROR_MAX)) || n == LWCA_SUCCESS
+
+#define IS_LWCA_UNKNOWN_ERROR(n) \
+    (IS_LWCA_ERROR_SPACE((n)) ? (n) : (LWCA_UNKNOWN_ERROR))
+
+#define LWCA_SYSTEM_ERROR_BASE              0
+#define LWCA_AUTH_ERROR_BASE                100
+#define LWCA_POLICY_ERROR_BASE              200
+#define LWCA_SSL_ERROR_BASE                 300
+#define LWCA_KEY_ERROR_BASE                 500
+#define LWCA_STORAGE_ERROR_BASE             600
+#define LWCA_REST_ERROR_BASE                700
+#define LWCA_ERRNO_BASE                     800
+#define LWCA_MISC_ERROR_BASE                1000
+
+// System Error Codes (80000 - 80099)
+#define LWCA_ERROR_INVALID_PARAMETER        (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  1)
+#define LWCA_OUT_OF_MEMORY_ERROR            (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  2)
+#define LWCA_FILE_IO_ERROR                  (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  3)
+#define LWCA_FILE_TIME_ERROR                (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  4)
+#define LWCA_FILE_REMOVE_ERROR              (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  5)
+#define LWCA_ERROR_TIME_OUT                 (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  6)
+#define LWCA_REQUEST_ERROR                  (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  7)
+#define LWCA_DIR_CREATE_ERROR               (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  8)
+#define LWCA_ERROR_NO_FILE_OR_DIRECTORY     (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  9)
+#define LWCA_NOT_IMPLEMENTED                (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  10)
+#define LWCA_GET_NAME_INFO_FAIL             (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  11)
+#define LWCA_ERROR_DLL_SYMBOL_NOTFOUND      (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  12)
+#define LWCA_ERROR_CANNOT_LOAD_LIBRARY      (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  13)
+#define LWCA_ERROR_ENTRY_NOT_FOUND          (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  14)
+#define LWCA_ERROR_INVALID_STATE            (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  15)
+#define LWCA_ERROR_INVALID_ENTRY            (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  16)
+#define LWCA_ERROR_INVALID_DATA             (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  17)
+#define LWCA_ERROR_BUFFER_OVERFLOW          (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  18)
+
+// Auth and AuthZ Error Codes (80100 - 80199)
+#define LWCA_INVALID_USER_NAME              (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 1)
+#define LWCA_ERROR_AUTH_BAD_DATA            (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 2)
+#define LWCA_UNABLE_GET_CRED_CACHE_NAME     (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 3)
+#define LWCA_NO_CACHE_FOUND                 (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 4)
+#define LWCA_KRB_ACCESS_DENIED              (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 5)
+#define LWCA_GET_ADDR_INFO_FAIL             (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 6)
+#define LWCA_LDAP_UPN_FAIL                  (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 7)
+#define LWCA_ACCESS_DENIED                  (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 8)
+
+// Policy Error Codes (80200 - 80299)
+#define LWCA_POLICY_VALIDATION_ERROR        (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
+#define LWCA_POLICY_CONFIG_ERROR            (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
+
+// SSL (CA) Error Codes (80300 - 80499)
+#define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
+#define LWCA_SSL_SET_PUBKEY_ERR             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 2)
+#define LWCA_ROOT_CA_ALREADY_EXISTS         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 3)
+#define LWCA_INVALID_TIME_SPECIFIED         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 4)
+#define LWCA_KEY_CREATION_FAILURE           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 5)
+#define LWCA_CERT_DECODE_FAILURE            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 6)
+#define LWCA_KEY_IO_FAILURE                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 7)
+#define LWCA_CERT_IO_FAILURE                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 8)
+#define LWCA_NOT_CA_CERT                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 9)
+#define LWCA_INVALID_CSR_FIELD              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 10)
+#define LWCA_SELF_SIGNATURE_FAILED          (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 11)
+#define LWCA_INIT_CA_FAILED                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 12)
+#define LWCA_ERROR_INVALID_KEY_LENGTH       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 13)
+#define LWCA_PKCS12_CREAT_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 14)
+#define LWCA_PKCS12_IO_FAIL                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 15)
+#define LWCA_CRL_ERROR                      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 16)
+#define LWCA_NO_NEW_CRL                     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 17)
+#define LWCA_ERROR_READING_CRL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 18)
+#define LWCA_CRL_LOCAL_ERROR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 19)
+#define LWCA_SSL_ADD_EXTENSION              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 20)
+#define LWCA_SSL_REQ_SIGN_ERR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 21)
+#define LWCA_SSL_RAND_ERR                   (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 22)
+#define LWCA_SSL_CERT_SIGN_ERR              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 23)
+#define LWCA_SSL_TIME_ERROR                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 24)
+#define LWCA_SSL_EXT_ERR                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 25)
+#define LWCA_SSL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 26)
+#define LWCA_SSL_SET_ISSUER_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 27)
+#define LWCA_SSL_SET_START_TIME             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 28)
+#define LWCA_SSL_SET_END_TIME               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 29)
+#define LWCA_SSL_SET_EXT_ERR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 30)
+#define LWCA_CERT_PRIVATE_KEY_MISMATCH      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 31)
+#define LWCA_INVALID_DOMAIN_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 32)
+#define LWCA_CRL_SET_SERIAL_FAIL            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 33)
+#define LWCA_CRL_SET_TIME_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 34)
+#define LWCA_CRL_CERT_ALREADY_REVOKED       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 35)
+#define LWCA_CRLNUMBER_READ_ERROR           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 36)
+#define LWCA_CRL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 37)
+#define LWCA_CRL_REASON_FAIL                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 38)
+#define LWCA_CRL_SORT_FAILED                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 39)
+#define LWCA_CRL_NULL_TIME                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 40)
+#define LWCA_CRL_DECODE_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 41)
+#define LWCA_VPX_RSUTIL_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 42)
+#define LWCA_ERROR_INVALID_SN               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 43)
+#define LWCA_ERROR_INVALID_SAN              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 44)
+#define LWCA_ERROR_INCOMPLETE_CHAIN         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 45)
+#define LWCA_ERROR_INVALID_CHAIN            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 46)
+#define LWCA_ERROR_CANNOT_FORM_REQUEST      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 47)
+#define LWCA_KEY_DECODE_FAILURE             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 48)
+#define LWCA_ERROR_CN_HOSTNAME_MISMATCH     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 49)
+#define LWCA_ERROR_SAN_HOSTNAME_MISMATCH    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 50)
+#define LWCA_ERROR_SAN_IPADDR_INVALID       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 51)
+#define LWCA_ERROR_EVP_DIGEST               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 52)
+#define LWCA_OPENSSL_ERROR                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 53)
+
+// ERRNO to LwCA Codes (80800 - 80899)
+#define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
+#define LWCA_ERRNO_ENOENT                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOENT)
+#define LWCA_ERRNO_ESRCH                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ESRCH)
+#define LWCA_ERRNO_EINTR                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EINTR)
+#define LWCA_ERRNO_EIO                      (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EIO)
+#define LWCA_ERRNO_ENXIO                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENXIO)
+#define LWCA_ERRNO_E2BIG                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + E2BIG)
+#define LWCA_ERRNO_ENOEXEC                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOEXE)
+#define LWCA_ERRNO_EBADF                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EBADF)
+#define LWCA_ERRNO_ECHILD                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ECHILD)
+#define LWCA_ERRNO_EAGAIN                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EAGAIN)
+#define LWCA_ERRNO_ENOMEM                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOMEM)
+#define LWCA_ERRNO_EACCES                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EACCES)
+#define LWCA_ERRNO_EFAULT                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EFAULT)
+#define LWCA_ERRNO_ENOTBLK                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTBL)
+#define LWCA_ERRNO_EBUSY                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EBUSY)
+#define LWCA_ERRNO_EEXIST                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EEXIST)
+#define LWCA_ERRNO_EXDEV                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EXDEV)
+#define LWCA_ERRNO_ENODEV                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENODEV)
+#define LWCA_ERRNO_ENOTDIR                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTDI)
+#define LWCA_ERRNO_EISDIR                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EISDIR)
+#define LWCA_ERRNO_EINVAL                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EINVAL)
+#define LWCA_ERRNO_ENFILE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENFILE)
+#define LWCA_ERRNO_EMFILE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EMFILE)
+#define LWCA_ERRNO_ENOTTY                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTTY)
+#define LWCA_ERRNO_ETXTBSY                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ETXTBS)
+#define LWCA_ERRNO_EFBIG                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EFBIG)
+#define LWCA_ERRNO_ENOSPC                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOSPC)
+#define LWCA_ERRNO_ESPIPE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ESPIPE)
+#define LWCA_ERRNO_EROFS                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EROFS)
+#define LWCA_ERRNO_EMLINK                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EMLINK)
+#define LWCA_ERRNO_EPIPE                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPIPE)
+#define LWCA_ERRNO_EDOM                     (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EDOM)
+#define LWCA_ERRNO_ERANGE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ERANGE)
+
+// REST Error Codes (80700 - 80799)
+#define LWCA_ERROR_INVALID_URI              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 1)
+#define LWCA_ERROR_MISSING_PARAMETER        (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 2)
+#define LWCA_ERROR_INVALID_METHOD           (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 3)
+#define LWCA_ERROR_INVALID_REQUEST          (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 4)
+#define LWCA_ERROR_UNAVAILABLE              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 5)
+
+// Misc. Error Codes (8100 - 8999)
+#define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
+#define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
+#define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
+#define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 4)
+
+#define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
+    ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
+
+#define LWCA_ERROR_TABLE_INITIALIZER \
+{ \
+    { LWCA_SUCCESS                      ,   "LWCA_SUCCESS"                      ,   "The request succeded without any errors"}, \
+    { LWCA_ROOT_CA_MISSING              ,   "LWCA_ROOT_CA_MISSING"              ,   "The Root CA certificate is missing or failed to Initialize" }, \
+    { LWCA_ROOT_CA_ALREADY_EXISTS       ,   "LWCA_ROOT_CA_ALREADY_EXISTS"       ,   "Root CA Certificate is already present, Please use --force if you want to overwrite." }, \
+    { LWCA_INVALID_TIME_SPECIFIED       ,   "LWCA_INVALID_TIME_SPECIFIED"       ,   "Invalid time specified for the Certififcate" }, \
+    { LWCA_ERROR_INVALID_PARAMETER      ,   "LWCA_ERROR_INVALID_PARAMETER"      ,   "Invalid parameter presented" }, \
+    { LWCA_ERROR_TIME_OUT               ,   "LWCA_ERROR_TIME_OUT"               ,   "Time out occurred before specified Event." }, \
+    { LWCA_OUT_OF_MEMORY_ERR            ,   "LWCA_OUT_OF_MEMORY_ERR"            ,   "Unable to allocate Memory" }, \
+    { LWCA_REQUEST_ERROR                ,   "LWCA_REQUEST_ERROR"                ,   "Unable decode CSR" }, \
+    { LWCA_KEY_CREATION_FAILURE         ,   "LWCA_KEY_CREATION_FAILURE"         ,   "Key Creation failure" }, \
+    { LWCA_CERT_DECODE_FAILURE          ,   "LWCA_CERT_DECODE_FAILURE"          ,   "Cert Decode failure" }, \
+    { LWCA_KEY_IO_FAILURE               ,   "LWCA_KEY_IO_FAILURE"               ,   "Key I/O failure" }, \
+    { LWCA_CERT_IO_FAILURE              ,   "LWCA_CERT_IO_FAILURE"              ,   "Cert I/O failure" }, \
+    { LWCA_NOT_CA_CERT                  ,   "LWCA_NOT_CA_CERT"                  ,   "Not a CA Cert" }, \
+    { LWCA_INVALID_CSR_FIELD            ,   "LWCA_INVALID_CSR_FIELD"            ,   "Invalid CSR field" }, \
+    { LWCA_SELF_SIGNATURE_FAILED        ,   "LWCA_SELF_SIGNATURE_FAILED"        ,   "Self Signature failed" }, \
+    { LWCA_INIT_CA_FAILED               ,   "LWCA_INIT_CA_FAILED"               ,   "Init CA failure" }, \
+    { LWCA_ERROR_INVALID_KEY_LENGTH     ,   "LWCA_ERROR_INVALID_KEY_LENGTH"     ,   "Key length has to be between 2048(2KB) and 16384(16KB)" }, \
+    { LWCA_PKCS12_CREAT_FAIL            ,   "LWCA_PKCS12_CREAT_FAIL"            ,   "PKCS12 creation Failure" }, \
+    { LWCA_PKCS12_IO_FAIL               ,   "LWCA_PKCS12_IO_FAIL"               ,   "PCKS12 I/O failure" }, \
+    { LWCA_CRL_ERROR                    ,   "LWCA_CRL_ERROR"                    ,   "CRL update failed" }, \
+    { LWCA_NO_NEW_CRL                   ,   "LWCA_NO_NEW_CRL"                   ,   "Client already has the latest CRL" }, \
+    { LWCA_CRL_LOCAL_ERROR              ,   "LWCA_CRL_LOCAL_ERROR"              ,   "Failed in File I/O, Please Check Path / Permission" }, \
+    { LWCA_FILE_IO_ERROR                ,   "LWCA_FILE_IO_ERROR"                ,   "File I/O Error" }, \
+    { LWCA_FILE_TIME_ERROR              ,   "LWCA_FILE_TIME_ERROR"              ,   "Unable to parse time" }, \
+    { LWCA_FILE_REMOVE_ERROR            ,   "LWCA_FILE_REMOVE_ERROR"            ,   "Unable to Remove File" }, \
+    { LWCA_INVALID_DOMAIN_NAME          ,   "LWCA_INVALID_DOMAIN_NAME"          ,   "Invalid Domain Name" }, \
+    { LWCA_INVALID_USER_NAME            ,   "LWCA_INVALID_USER_NAME"            ,   "Invalid User Name" }, \
+    { LWCA_UNABLE_GET_CRED_CACHE_NAME   ,   "LWCA_UNABLE_GET_CRED_CACHE_NAME"   ,   "Failed to get cache Name" }, \
+    { LWCA_NO_CACHE_FOUND               ,   "LWCA_NO_CACHE_FOUND"               ,   "Cred Cache not found" }, \
+    { LWCA_GET_ADDR_INFO_FAIL           ,   "LWCA_GET_ADDR_INFO_FAIL"           ,   "getaddrinfo failure" }, \
+    { LWCA_NOT_IMPLEMENTED              ,   "LWCA_NOT_IMPLEMENTED"              ,   "Not Implemented" }, \
+    { LWCA_GET_NAME_INFO_FAIL           ,   "LWCA_GET_NAME_INFO_FAIL"           ,   "getnameinfo failure" }, \
+    { LWCA_SSL_SET_PUBKEY_ERR           ,   "LWCA_SSL_SET_PUBKEY_ERR"           ,   "Set Public Key Failed" }, \
+    { LWCA_SSL_ADD_EXTENSION            ,   "LWCA_SSL_ADD_EXTENSION"            ,   "Adding Extesions to cert failed" }, \
+    { LWCA_SSL_REQ_SIGN_ERR             ,   "LWCA_SSL_REQ_SIGN_ERR"             ,   "Request Signing Failed" }, \
+    { LWCA_SSL_RAND_ERR                 ,   "LWCA_SSL_RAND_ERR"                 ,   "Rand generation failed" }, \
+    { LWCA_SSL_CERT_SIGN_ERR            ,   "LWCA_SSL_CERT_SIGN_ERR"            ,   "Certificate Signing failed" }, \
+    { LWCA_SSL_TIME_ERROR               ,   "LWCA_SSL_TIME_ERROR"               ,   "Invalid Time Argument" }, \
+    { LWCA_SSL_EXT_ERR                  ,   "LWCA_SSL_EXT_ERR"                  ,   "Unable to add this Extension" }, \
+    { LWCA_SSL_SIGN_FAIL                ,   "LWCA_SSL_SIGN_FAIL"                ,   "Failed to sign the certificate" }, \
+    { LWCA_SSL_SET_ISSUER_NAME          ,   "LWCA_SSL_SET_ISSUER_NAME"          ,   "Failed to set issuer name" }, \
+    { LWCA_SSL_SET_START_TIME           ,   "LWCA_SSL_SET_START_TIME"           ,   "Start Time Error" }, \
+    { LWCA_SSL_SET_END_TIME             ,   "LWCA_SSL_SET_END_TIME"             ,   "End Time Error" }, \
+    { LWCA_SSL_SET_EXT_ERR              ,   "LWCA_SSL_SET_EXT_ERR"              ,   "Set Extenion Failed" }, \
+    { LWCA_CERT_PRIVATE_KEY_MISMATCH    ,   "LWCA_CERT_PRIVATE_KEY_MISMATCH"    ,   "Cert/Key pair does not match" }, \
+    { LWCA_INVALID_DOMAIN_NAME          ,   "LWCA_INVALID_DOMAIN_NAME"          ,   "Domain name error" }, \
+    { LWCA_INVALID_USER_NAME            ,   "LWCA_INVALID_USER_NAME"            ,   "User name error" }, \
+    { LWCA_UNABLE_GET_CRED_CACHE_NAME   ,   "LWCA_UNABLE_GET_CRED_CACHE_NAME"   ,   "Krb cred cache name error" }, \
+    { LWCA_NO_CACHE_FOUND               ,   "LWCA_NO_CACHE_FOUND"               ,   "Krb cache not found" }, \
+    { LWCA_KRB_ACCESS_DENIED            ,   "LWCA_KRB_ACCESS_DENIED"            ,   "Kerb access denied" }, \
+    { LWCA_ACCESS_DENIED                ,   "LWCA_ACCESS_DENIED"                ,   "Access denied" }, \
+    { LWCA_GET_ADDR_INFO_FAIL           ,   "LWCA_GET_ADDR_INFO_FAIL"           ,   "Network - Get addr info call failed" }, \
+    { LWCA_NOT_IMPLEMENTED              ,   "LWCA_NOT_IMPLEMENTED"              ,   "Not implemented" }, \
+    { LWCA_GET_NAME_INFO_FAIL           ,   "LWCA_GET_NAME_INFO_FAIL"           ,   "Network - Get name info call failed" }, \
+    { LWCA_CRL_SET_SERIAL_FAIL          ,   "LWCA_CRL_SET_SERIAL_FAIL"          ,   "CRL - Setting serial number failed" }, \
+    { LWCA_CRL_SET_TIME_FAIL            ,   "LWCA_CRL_SET_TIME_FAIL"            ,   "CRL - Setting time failed" }, \
+    { LWCA_CRL_CERT_ALREADY_REVOKED     ,   "LWCA_CRL_CERT_ALREADY_REVOKED"     ,   "This is already revoked cert" }, \
+    { LWCA_CRLNUMBER_READ_ERROR         ,   "LWCA_CRLNUMBER_READ_ERROR"         ,   "Unable to read CRL serial" }, \
+    { LWCA_CRL_SIGN_FAIL                ,   "LWCA_CRL_SIGN_FAIL"                ,   "CRL - signing failed" }, \
+    { LWCA_CRL_REASON_FAIL              ,   "LWCA_CRL_REASON_FAIL"              ,   "CRL - Unable to set reason" }, \
+    { LWCA_CRL_SORT_FAILED              ,   "LWCA_CRL_SORT_FAILED"              ,   "CRL - Sorting failed" }, \
+    { LWCA_CRL_NULL_TIME                ,   "LWCA_CRL_NULL_TIME"                ,   "CRL - Null time encountered" }, \
+    { LWCA_CRL_DECODE_ERROR             ,   "LWCA_CRL_DECODE_ERROR"             ,   "CRL - Unable to decode CRL" }, \
+    { LWCA_VPX_RSUTIL_ERROR             ,   "LWCA_VPX_RSUTIL_ERROR"             ,   "Unable to find a dependency." }, \
+    { LWCA_DIR_CREATE_ERROR             ,   "LWCA_DIR_CREATE_ERROR"             ,   "Directory creation failed" }, \
+    { LWCA_LDAP_UPN_FAIL                ,   "LWCA_LDAP_UPN_FAIL"                ,   "LDAP call to dn2upn failed." }, \
+    { LWCA_ERROR_INVALID_SN             ,   "LWCA_ERROR_INVALID_SN"             ,   "Invalid Subject Name specified" }, \
+    { LWCA_ERROR_INVALID_SAN            ,   "LWCA_ERROR_INVALID_SAN"            ,   "Invalid Subject Alternate Name specified." }, \
+    { LWCA_ERROR_INCOMPLETE_CHAIN       ,   "LWCA_ERROR_INCOMPLETE_CERT_CHAIN"  ,   "Certificate Chain is not complete" }, \
+    { LWCA_ERROR_INVALID_CHAIN          ,   "LWCA_ERROR_INVALID_CERT_CHAIN"     ,   "Invalid Certificate Chain was gives as input" }, \
+    { LWCA_ERROR_CANNOT_FORM_REQUEST    ,   "LWCA_ERROR_CANNOT_FORM_REQUEST"    ,   "Could not create the CSR from the certificate" }, \
+    { LWCA_KEY_DECODE_FAILURE           ,   "LWCA_KEY_DECODE_FAILURE"           ,   "Could not decode the Private Key from the given format" }, \
+    { LWCA_ERROR_CN_HOSTNAME_MISMATCH   ,   "LWCA_ERROR_CN_HOSTNAME_MISMATCH"   ,   "CSR CN does not match to hostname" }, \
+    { LWCA_ERROR_SAN_HOSTNAME_MISMATCH  ,   "LWCA_ERROR_SAN_HOSTNAME_MISMATCH"  ,   "CSR SAN does not match to hostname" }, \
+    { LWCA_ERROR_SAN_IPADDR_INVALID     ,   "LWCA_ERROR_SAN_IPADDR_INVALID"     ,   "CSR SAN has an invalid ip" }, \
+    { LWCA_OPENSSL_ERROR                ,   "LWCA_OPENSSL_ERROR"                ,   "OpenSSL Error" }, \
+    { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
+    { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \
+    { LWCA_ERROR_INVALID_METHOD         ,   "LWCA_ERROR_INVALID_METHOD"         ,   "Invalid HTTP method" }, \
+    { LWCA_ERROR_CANNOT_LOAD_LIBRARY    ,   "LWCA_ERROR_CANNOT_LOAD_LIBRARY"    ,   "Unable to load library" }, \
+    { LWCA_ERROR_NO_FILE_OR_DIRECTORY   ,   "LWCA_ERROR_NO_FILE_OR_DIRECTORY"   ,   "Unable to find the specified file or directory" }, \
+    { LWCA_ERROR_AUTH_BAD_DATA          ,   "LWCA_ERROR_AUTH_BAD_DATA"          ,   "Bad auth data presented" }, \
+    { LWCA_ERROR_INVALID_REQUEST        ,   "LWCA_ERROR_INVALID_REQUEST"        ,   "Bad request caused by client error"}, \
+    { LWCA_ERROR_UNAVAILABLE            ,   "LWCA_ERROR_UNAVAILABLE"            ,   "Server is unavailable/shutdown"}, \
+    { LWCA_ERROR_DLL_SYMBOL_NOTFOUND    ,   "LWCA_ERROR_DLL_SYMBOL_NOTFOUND"    ,   "Unable to find symbol in library" }, \
+    { LWCA_ERROR_EVP_DIGEST             ,   "LWCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
+    { LWCA_JSON_FILE_LOAD_ERROR         ,   "LWCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
+    { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
+    { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
+    { LWCA_POLICY_CONFIG_ERROR          ,   "LWCA_POLICY_CONFIG_ERROR"          ,   "Invalid content in policy config file" }, \
+    { LWCA_ERROR_ENTRY_NOT_FOUND        ,   "LWCA_ERROR_ENTRY_NOT_FOUND"        ,   "Unable to find requested entry" }, \
+    { LWCA_ERROR_INVALID_STATE          ,   "LWCA_ERROR_INVALID_STATE"          ,   "Invalid state of service" }, \
+    { LWCA_ERROR_INVALID_ENTRY          ,   "LWCA_ERROR_INVALID_ENTRY"          ,   "Requested entry is invalid" }, \
+    { LWCA_ERROR_INVALID_DATA           ,   "LWCA_ERROR_INVALID_DATA"           ,   "Invalid data" }, \
+    { LWCA_ERROR_BUFFER_OVERFLOW        ,   "LWCA_ERROR_BUFFER_OVERFLOW"        ,   "Buffer overflow" }, \
+    { LWCA_ERRNO_EPERM                  ,   "LWCA_ERRNO_EPERM"                  ,   "Operation not permitted" }, \
+    { LWCA_ERRNO_ENOENT                 ,   "LWCA_ERRNO_ENOENT"                 ,   "No such file or directory" }, \
+    { LWCA_ERRNO_ESRCH                  ,   "LWCA_ERRNO_ESRCH"                  ,   "No such process" }, \
+    { LWCA_ERRNO_EINTR                  ,   "LWCA_ERRNO_EINTR"                  ,   "Interrupted system call" }, \
+    { LWCA_ERRNO_EIO                    ,   "LWCA_ERRNO_EIO"                    ,   "I/O error" }, \
+    { LWCA_ERRNO_ENXIO                  ,   "LWCA_ERRNO_ENXIO"                  ,   "No such device or address" }, \
+    { LWCA_ERRNO_E2BIG                  ,   "LWCA_ERRNO_E2BIG"                  ,   "Argument list too long" }, \
+    { LWCA_ERRNO_ENOEXEC                ,   "LWCA_ERRNO_ENOEXEC"                ,   "Exec format error" }, \
+    { LWCA_ERRNO_EBADF                  ,   "LWCA_ERRNO_EBADF"                  ,   "Bad file number" }, \
+    { LWCA_ERRNO_ECHILD                 ,   "LWCA_ERRNO_ECHILD"                 ,   "No child processes" }, \
+    { LWCA_ERRNO_EAGAIN                 ,   "LWCA_ERRNO_EAGAIN"                 ,   "Try again" }, \
+    { LWCA_ERRNO_ENOMEM                 ,   "LWCA_ERRNO_ENOMEM"                 ,   "Out of memory" }, \
+    { LWCA_ERRNO_EACCES                 ,   "LWCA_ERRNO_EACCES"                 ,   "Permission denied" }, \
+    { LWCA_ERRNO_EFAULT                 ,   "LWCA_ERRNO_EFAULT"                 ,   "Bad address" }, \
+    { LWCA_ERRNO_ENOTBLK                ,   "LWCA_ERRNO_ENOTBLK"                ,   "Block device required" }, \
+    { LWCA_ERRNO_EBUSY                  ,   "LWCA_ERRNO_EBUSY"                  ,   "Device or resource busy" }, \
+    { LWCA_ERRNO_EEXIST                 ,   "LWCA_ERRNO_EEXIST"                 ,   "File exists" }, \
+    { LWCA_ERRNO_EXDEV                  ,   "LWCA_ERRNO_EXDEV"                  ,   "Cross-device link" }, \
+    { LWCA_ERRNO_ENODEV                 ,   "LWCA_ERRNO_ENODEV"                 ,   "No such device" }, \
+    { LWCA_ERRNO_ENOTDIR                ,   "LWCA_ERRNO_ENOTDIR"                ,   "Not a directory" }, \
+    { LWCA_ERRNO_EISDIR                 ,   "LWCA_ERRNO_EISDIR"                 ,   "Is a directory" }, \
+    { LWCA_ERRNO_EINVAL                 ,   "LWCA_ERRNO_EINVAL"                 ,   "Invalid argument" }, \
+    { LWCA_ERRNO_ENFILE                 ,   "LWCA_ERRNO_ENFILE"                 ,   "File table overflow" }, \
+    { LWCA_ERRNO_EMFILE                 ,   "LWCA_ERRNO_EMFILE"                 ,   "Too many open files" }, \
+    { LWCA_ERRNO_ENOTTY                 ,   "LWCA_ERRNO_ENOTTY"                 ,   "Not a typewriter" }, \
+    { LWCA_ERRNO_ETXTBSY                ,   "LWCA_ERRNO_ETXTBSY"                ,   "Text file busy" }, \
+    { LWCA_ERRNO_EFBIG                  ,   "LWCA_ERRNO_EFBIG"                  ,   "File too large" }, \
+    { LWCA_ERRNO_ENOSPC                 ,   "LWCA_ERRNO_ENOSPC"                 ,   "No space left on device" }, \
+    { LWCA_ERRNO_ESPIPE                 ,   "LWCA_ERRNO_ESPIPE"                 ,   "Illegal seek" }, \
+    { LWCA_ERRNO_EROFS                  ,   "LWCA_ERRNO_EROFS"                  ,   "Read-only file system" }, \
+    { LWCA_ERRNO_EMLINK                 ,   "LWCA_ERRNO_EMLINK"                 ,   "Too many links" }, \
+    { LWCA_ERRNO_EPIPE                  ,   "LWCA_ERRNO_EPIPE"                  ,   "Broken pipe" }, \
+    { LWCA_ERRNO_EDOM                   ,   "LWCA_ERRNO_EDOM"                   ,   "Math argument out of domain func" }, \
+    { LWCA_ERRNO_ERANGE                 ,   "LWCA_ERRNO_ERANGE"                 ,   "Math result not representable" }, \
+    { LWCA_UNKNOWN_ERROR                ,   "LWCA_UNKNOWN_ERROR"                ,   "Certificate Server Unknown Error" }, \
+};
+
+#endif //__LWCA_ERROR_H__

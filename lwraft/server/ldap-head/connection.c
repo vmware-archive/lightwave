@@ -606,12 +606,9 @@ ProcessAConnection(
             {
                 if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0 && ber->ber_len == 0)
                 {
-                    VMDIR_LOG_INFO(
-                            LDAP_DEBUG_CONNS,
-                            "%s: disconnecting peer (%s), idle > %d seconds",
-                            __func__,
-                            pConn->szClientIP,
-                            gVmdirGlobals.dwLdapRecvTimeoutSec);
+                    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                            "%s: disconnecting peer (%s) due to idle on connection",
+                            __func__, pConn->szClientIP);
 
                     retVal = LDAP_NOTICE_OF_DISCONNECT;
                     BAIL_ON_VMDIR_ERROR( retVal );
@@ -730,9 +727,12 @@ ProcessAConnection(
             retVal = VmDirPerformRename(pOperation);
             break;
 
+        case LDAP_REQ_EXTENDED:
+            retVal = VmDirPerformExtended(pOperation);
+            break;
+
         case LDAP_REQ_COMPARE:
         case LDAP_REQ_ABANDON:
-        case LDAP_REQ_EXTENDED:
             VMDIR_LOG_INFO(
                     VMDIR_LOG_MASK_ALL,
                     "ProcessAConnection: %d Operation is not yet implemented..",
@@ -805,6 +805,8 @@ cleanup:
     VmDirDeleteConnection(&pConn);
     VMDIR_SAFE_FREE_MEMORY(pConnCtx);
     VmDirFreeOperation(pOperation);
+
+    VmDirMDBTxnAbortAll();
 
     if (bDownOpThrCount)
     {

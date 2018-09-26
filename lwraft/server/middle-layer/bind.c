@@ -198,7 +198,7 @@ txnretry:
             pEntry = NULL;
         }
 
-        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
+        retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
@@ -223,10 +223,13 @@ txnretry:
             }
         }
 
-        retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
-        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
+        if (bHasTxn)
+        {
+            retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx );
+            bHasTxn = FALSE;
+            BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-        bHasTxn = FALSE;
+        }
 
         pEntry = &entry;
     }

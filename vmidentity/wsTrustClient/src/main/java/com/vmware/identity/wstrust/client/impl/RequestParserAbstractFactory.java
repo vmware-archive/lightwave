@@ -45,7 +45,8 @@ abstract class RequestParserAbstractFactory<T> {
 
         try {
             jaxbContext = JAXBContext.newInstance(Constants.WS_1_4_TRUST_JAXB_PACKAGE + ":"
-                    + Constants.WS_1_3_TRUST_JAXB_PACKAGE + ":" + WSSE_JAXB_PACKAGE + ":" + WSSU_JAXB_PACKAGE);
+                    + Constants.WS_1_3_TRUST_JAXB_PACKAGE + ":" + WSSE_JAXB_PACKAGE + ":"
+                    + WSSU_JAXB_PACKAGE + ":" + Constants.WSFED_JAXB_PACKAGE);
         } catch (JAXBException e) {
             throw new IllegalStateException("JAXBContext cannot be initialized", e);
         }

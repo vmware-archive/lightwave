@@ -84,7 +84,7 @@ extern "C" {
 #define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
 #define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
 
-
+#define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
@@ -708,21 +708,23 @@ typedef struct _VDIR_OPERATION
     PVDIR_CONNECTION    conn;        // Connection
     BOOLEAN             bOwnConn;    // true if own connection
 
-    VDIR_LDAP_CONTROL *       reqControls; // Request Controls, sent by client.
-    VDIR_LDAP_CONTROL *       syncReqCtrl; // Sync Request Control, points in reqControls list.
-    VDIR_LDAP_CONTROL *       syncDoneCtrl; // Sync Done Control.
-    VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
-    VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
-    VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
-    VDIR_LDAP_CONTROL *       digestCtrl;
-    VDIR_LDAP_CONTROL *       raftPingCtrl;
-    VDIR_LDAP_CONTROL *       raftVoteCtrl;
-    VDIR_LDAP_CONTROL *       statePingCtrl;
-    VDIR_LDAP_CONTROL *       passblobCtrl;
-    VDIR_LDAP_CONTROL *       dbCopyCtrl;
+    PVDIR_LDAP_CONTROL  reqControls; // Request Controls, sent by client.
+    PVDIR_LDAP_CONTROL  syncReqCtrl; // Sync Request Control, points in reqControls list.
+    PVDIR_LDAP_CONTROL  syncDoneCtrl; // Sync Done Control.
+    PVDIR_LDAP_CONTROL  showDeletedObjectsCtrl; // points in reqControls list.
+    PVDIR_LDAP_CONTROL  showMasterKeyCtrl;
+    PVDIR_LDAP_CONTROL  showPagedResultsCtrl;
+    PVDIR_LDAP_CONTROL  digestCtrl;
+    PVDIR_LDAP_CONTROL  raftPingCtrl;
+    PVDIR_LDAP_CONTROL  raftVoteCtrl;
+    PVDIR_LDAP_CONTROL  statePingCtrl;
+    PVDIR_LDAP_CONTROL  passblobCtrl;
+    PVDIR_LDAP_CONTROL  dbCopyCtrl;
+    PVDIR_LDAP_CONTROL  pReplAgrDisableCtrl;
+    PVDIR_LDAP_CONTROL  pReplAgrEnableCtrl;
 
-                                     // SJ-TBD: If we add quite a few controls, we should consider defining a
-                                     // structure to hold all those pointers.
+    // SJ-TBD: If we add quite a few controls, we should consider defining a
+    // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
@@ -847,6 +849,7 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
+    BOOLEAN                     isDisabled;
 
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
@@ -930,10 +933,14 @@ VmDirInitDCConnThread(
 // vmdir/init.c
 
 DWORD
-VmDirInitBackend();
+VmDirInitBackend(
+    VOID
+    );
 
 DWORD
-VmDirSetSdGlobals();
+VmDirSetSdGlobals(
+    VOID
+    );
 
 // vmdirentry.c
 

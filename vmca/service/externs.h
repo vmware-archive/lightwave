@@ -29,8 +29,6 @@
 extern "C" {
 #endif
 
-extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
-
 #ifdef REST_ENABLED
 
 extern PVMREST_HANDLE gpVMCAHTTPHandle;

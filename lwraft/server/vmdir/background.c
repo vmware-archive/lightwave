@@ -162,6 +162,8 @@ VmDirBkgdThreadFun(
         VMDIR_UNLOCK_MUTEX(bInLock, pThrInfo->mutex);
     }
 
+    VmDirMDBTxnAbortAll();
+
     return 0;
 }
 

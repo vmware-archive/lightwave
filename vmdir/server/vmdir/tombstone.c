@@ -353,14 +353,15 @@ newParentIdIndexIterator:
                 break;
             }
 
-            _VmDirReapEntryInBatch(pStrList);
-            VmDirStringListFreeContent(pStrList);
-
             // Must shorten the read-only transaction so that
             // MDB can free the allocated blocks from the expired entries.
             pBE->pfnBEParentIdIndexIteratorFree(pIterator);
             pIterator = NULL;
             expiredInBatch = 0;
+
+            _VmDirReapEntryInBatch(pStrList);
+            VmDirStringListFreeContent(pStrList);
+
             goto newParentIdIndexIterator;
         }
     }

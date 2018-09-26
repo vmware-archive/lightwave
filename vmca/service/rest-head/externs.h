@@ -15,3 +15,5 @@
 extern PREST_API_DEF gpVMCARestApiDef;
 
 extern PVMREST_HANDLE gpVMCARestHTTPSHandle;
+
+extern VMCA_SERVER_OPENSSL_GLOBALS gVMCAOpensslGlobals;

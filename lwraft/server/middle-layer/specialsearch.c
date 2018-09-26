@@ -142,10 +142,8 @@ VmDirHandleSpecialSearch(
     {
         bRetVal = TRUE;
 
-        dwError = pOp->pBEIF->pfnBETxnBegin(pOp->pBECtx, VDIR_BACKEND_TXN_READ);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        bHasTxn = TRUE;
+        dwError = pOp->pBEIF->pfnBETxnBegin(pOp->pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg), "pfnBETxnBegin");
 
         dwError = VmDirSendSearchEntry( pOp, pEntry );
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg),
@@ -159,15 +157,22 @@ VmDirHandleSpecialSearch(
         }
     }
 
-cleanup:
     if (bHasTxn)
     {
-        pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
+         dwError = pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
+         bHasTxn = FALSE;
+         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pLdapResult->pszErrMsg), "pfnBETxnCommit");
     }
+
+cleanup:
     VmDirFreeEntry(pEntry);
     return bRetVal;
 
 error:
+    if (bHasTxn)
+    {
+        pOp->pBEIF->pfnBETxnAbort(pOp->pBECtx);
+    }
     VmDirLog( LDAP_DEBUG_ANY, "VmDirHandleSpecialSearch: (%d)(%s)",
             dwError, VDIR_SAFE_STRING(pLdapResult->pszErrMsg) );
     pLdapResult->errCode = dwError;

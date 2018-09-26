@@ -34,6 +34,45 @@ VmDirReplUpdateListParseSyncDoneCtl_ValidInput(
     VOID    **state
     );
 
+int
+VmDirSetupReplUpdateListExpand_ModifyTest(
+    VOID    **state
+    );
+
+int
+VmDirSetupReplUpdateListExpand_AddTest(
+    VOID    **state
+    );
+
+int
+VmDirSetupReplUpdateListExpand_DeleteTest(
+    VOID    **state
+    );
+
+int
+VmDirSetupReplUpdateListExpand_AddTombstoneTest(
+    VOID    **state
+    );
+
+VOID
+VmDirReplUpdateListExpand_ModifyTest(
+    VOID    **state
+    );
+
+VOID
+VmDirReplUpdateListExpand_AddTest(
+    VOID    **state
+    );
+
+VOID
+VmDirReplUpdateListExpand_DeleteTest(
+    VOID    **state
+    );
+
+VOID
+VmDirReplUpdateListExpand_AddTombstoneTest(
+    VOID    **state
+    );
 //////////////////
 // update.c
 //////////////////
@@ -77,11 +116,6 @@ VmDirSetupExtractEventAttributeChanges(
     VOID    **state
     );
 
-int
-VmDirTeardownExtractEvent(
-    VOID    **state
-    );
-
 VOID
 VmDirExtractEventAttributeChanges_ValidInput(
     VOID    **state
@@ -97,4 +131,69 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
     VOID    **state
     );
 
+int
+VmDirSetupExtractEventPopulateMustAttributes(
+    VOID    **state
+    );
+
+VOID
+VmDirExtractEventPopulateMustAttributes_ValidInput(
+    VOID    **state
+    );
+int
+VmDirSetupExtractEventPopulateOperationAttributes(
+    VOID **state
+    );
+
+VOID
+VmDirExtractEventPopulateOperationAttributes_ValidInput(
+    VOID    **state
+    );
+
+int
+VmDirTeardownExtractEvent(
+    VOID    **state
+    );
+
+/////////////////////
+// testcommon.c
+////////////////////
+PVMDIR_REPL_ATTRIBUTE_METADATA
+VmDirFindAttrMetaData(
+    PVDIR_LINKED_LIST    pList,
+    PSTR                 pszAttrType
+    );
+
+VOID
+VmDirAllocateAttrMetaData(
+    PSTR                         pszAttrType,
+    USN                          localUsn,
+    USN                          origUsn,
+    UINT64                       version,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
+    );
+
+VOID
+VmDirAllocateAttrAndMetaData(
+    PSTR                         pszAttrType,
+    PSTR                         pszValue,
+    USN                          localUsn,
+    USN                          origUsn,
+    UINT64                       version,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
+    );
+
+VOID
+VmDirAllocateAttrValueMetaData(
+    PSTR                         pszValueMetaData,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
+    );
+
+VOID
+VmDirAllocateMultiValueAttr(
+    PSTR                         pszAttrType,
+    USN                          localUSN,
+    USN                          origUSN,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
+    );
 #endif

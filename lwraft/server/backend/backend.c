@@ -359,17 +359,14 @@ VmDirBackendConfig(
     pUSNList = NULL;
 
 
-    if (gVmdirGlobals.bUseLogDB)
-    {
-        dwError = _VmDirInitInstance(LOG1_DB_PATH, &pLogInstance);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = _VmDirInitInstance(LOG1_DB_PATH, &pLogInstance);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirMapDNToBackend(ALIAS_LOG_CURRENT, pLogInstance->pBE);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = _VmDirMapDNToBackend(ALIAS_LOG_CURRENT, pLogInstance->pBE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = _VmDirMapDNToBackend(RAFT_LOGS_CONTAINER_DN, pLogInstance->pBE);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = _VmDirMapDNToBackend(RAFT_LOGS_CONTAINER_DN, pLogInstance->pBE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
 
@@ -408,26 +405,23 @@ VmDirBackendSelect(
 {
     PVDIR_BACKEND_INTERFACE pBE = gVdirBEGlobals.pBE;
 
-    if (gVmdirGlobals.bUseLogDB)
+    if (!IsNullOrEmptyString(pszDN))
     {
-        if (!IsNullOrEmptyString(pszDN))
+        /* allow overrides before matching parts */
+        PVDIR_BACKEND_INTERFACE pNewBE = _LookupBE(pszDN);
+
+        if (!pNewBE)
         {
-            /* allow overrides before matching parts */
-            PVDIR_BACKEND_INTERFACE pNewBE = _LookupBE(pszDN);
-
-            if (!pNewBE)
+            if (VmDirStringEndsWith(pszDN, RAFT_CONTEXT_DN, FALSE))
             {
-                if (VmDirStringEndsWith(pszDN, RAFT_CONTEXT_DN, FALSE))
-                {
-                    pszDN = RAFT_LOGS_CONTAINER_DN;
-                    pNewBE = _LookupBE(pszDN);
-                }
+                pszDN = RAFT_LOGS_CONTAINER_DN;
+                pNewBE = _LookupBE(pszDN);
             }
+        }
 
-            if (pNewBE)
-            {
-                pBE = pNewBE;
-            }
+        if (pNewBE)
+        {
+            pBE = pNewBE;
         }
     }
 
@@ -511,11 +505,6 @@ VmDirBackendCtxContentFree(
 {
     if ( pBECtx )
     {
-        if (pBECtx->pBE && pBECtx->pBEPrivate)
-        {
-            pBECtx->pBE->pfnBETxnAbort(pBECtx);
-        }
-
         if (pBECtx->pBE && pBECtx->wTxnUSN > 0)
         {
             // NOTE, one operation context may be used by multiple (or nested) txns.  However,
@@ -759,28 +748,35 @@ VmDirBackendUniqKeyGetValue(
     }
 
     beCtx.pBE = VmDirBackendSelect(ALIAS_MAIN);
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_READ);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = beCtx.pBE->pfnBEUniqKeyGetValue(
                             &beCtx, pKey, &pValue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *ppValue = pValue;
     pValue = NULL;
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnCommit(&beCtx);
-    }
     VMDIR_SAFE_FREE_MEMORY(pValue);
     VmDirBackendCtxContentFree(&beCtx);
 
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
                     "%s error (%d)", __FUNCTION__, dwError );
     goto cleanup;
@@ -805,9 +801,8 @@ VmDirBackendUniqKeySetValue(
     }
 
     beCtx.pBE = VmDirBackendSelect(ALIAS_MAIN);
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     if (!bForce)
     {
@@ -831,20 +826,24 @@ VmDirBackendUniqKeySetValue(
                             &beCtx, pKey, pValue);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    beCtx.pBE->pfnBETxnCommit(&beCtx);
-    bHasTxn = FALSE;
-
-cleanup:
     if (bHasTxn)
     {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+cleanup:
     VMDIR_SAFE_FREE_MEMORY(pLocalValue);
     VmDirBackendCtxContentFree(&beCtx);
 
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_LOG_INFO( LDAP_DEBUG_BACKEND,
                     "%s error (%d)", __FUNCTION__, dwError );
     goto cleanup;
@@ -1232,7 +1231,6 @@ VmDirBackendCtxMoveContents(
     }
 
     pBECtxTo->pBE = pBECtxFrom->pBE;
-    pBECtxTo->iBEPrivateRef = pBECtxFrom->iBEPrivateRef;
     pBECtxTo->pBEPrivate = pBECtxFrom->pBEPrivate;
     pBECtxTo->dwBEErrorCode = pBECtxFrom->dwBEErrorCode;
     pBECtxTo->pszBEErrorMsg = pBECtxFrom->pszBEErrorMsg;

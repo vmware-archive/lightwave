@@ -170,3 +170,14 @@ VOID
 VMCAFreeRESTResult(
     PVMCA_REST_RESULT   pRestRslt
     );
+
+// openssl.c
+DWORD
+VMCAOpensslInit(
+    VOID
+    );
+
+VOID
+VMCAOpensslShutdown(
+    VOID
+    );

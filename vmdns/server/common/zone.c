@@ -409,17 +409,21 @@ VmDnsZoneGetRecords(
     PVMDNS_ZONE_OBJECT  pZoneObject,
     PCSTR               pszName,
     VMDNS_RR_TYPE       dwType,
-    PVMDNS_RECORD_LIST *ppRecordList
+    PVMDNS_RECORD_LIST  *ppRecordList,
+    BOOLEAN             *pbNameInZone
     )
 {
     DWORD dwError;
     PVMDNS_NAME_ENTRY pNameEntry = NULL;
     PVMDNS_RECORD_LIST pRecordList = NULL;
+    BOOLEAN bNameInZone = FALSE;
 
     VmDnsLockRead(pZoneObject->pLock);
 
     dwError = VmDnsZoneFindNameEntry(pZoneObject, pszName, &pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
+
+    bNameInZone = TRUE;
 
     dwError = VmDnsNameEntryGetRecords(pNameEntry, dwType, &pRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -428,7 +432,12 @@ VmDnsZoneGetRecords(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppRecordList = pRecordList;
+
 cleanup:
+    if (pbNameInZone)
+    {
+        *pbNameInZone = bNameInZone;
+    }
     VmDnsUnlockRead(pZoneObject->pLock);
     VmDnsNameEntryRelease(pNameEntry);
 

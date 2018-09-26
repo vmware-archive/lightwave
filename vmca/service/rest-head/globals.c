@@ -17,3 +17,10 @@
 PREST_API_DEF gpVMCARestApiDef = NULL;
 
 PVMREST_HANDLE gpVMCARestHTTPSHandle = NULL;
+
+VMCA_SERVER_OPENSSL_GLOBALS gVMCAOpensslGlobals =
+    {
+        VMCA_SF_INIT(.pMutexBuf,        NULL),
+        VMCA_SF_INIT(.dwMutexBufSize,   0),
+        VMCA_SF_INIT(.bSSLInitialized,  FALSE),
+    };

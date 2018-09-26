@@ -15,6 +15,7 @@ package com.vmware.identity.rest.idm.client;
 
 import static com.vmware.identity.rest.core.client.RequestExecutor.execute;
 import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnList;
+import static com.vmware.identity.rest.core.client.RequestExecutor.executeAndReturnMap;
 import static com.vmware.identity.rest.core.client.URIFactory.buildParameters;
 import static com.vmware.identity.rest.core.client.URIFactory.buildURI;
 
@@ -35,6 +36,7 @@ import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.core.client.exceptions.WebApplicationException;
 import com.vmware.identity.rest.core.client.methods.HttpDeleteWithBody;
 import com.vmware.identity.rest.idm.data.IdentityProviderDTO;
+import com.vmware.identity.rest.idm.data.UpdateAttributesMapDTO;
 
 /**
  * The {@code IdentityProviderResource} is effectively a container that gathers all of
@@ -149,6 +151,71 @@ public class IdentityProviderResource extends ClientResource {
 
         HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), provider);
         return execute(parent.getClient(), put, IdentityProviderDTO.class);
+    }
+
+    /**
+     * Get attribute maps of requested identity provider.
+     *
+     * <p><b>Required Role:</b> {@code user}.
+     *
+     * @param tenant the name of the tenant the identity provider is associated with.
+     * @param name the name of the identity provider to request.
+     * @return the attribute map of requested identity provider.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public Map<String,String> getAttributesMap(String tenant, String name) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), PROVIDER_NAME_POST_URI + "/attributesMap", tenant, name);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken());
+        return executeAndReturnMap(parent.getClient(), post, String.class, String.class);
+    }
+
+    /**
+     * Update attribute maps of an identity provider.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the name of the tenant the identity provider is associated with.
+     * @param name the name of the identity provider to update.
+     * @param updateAttrsDto details of identity provider to be updated with. @see {@link UpdateAttributesMapDTO}
+     * @return the updated attribute map of an identity provider.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public Map<String, String> updateAttributesMap(String tenant, String name, UpdateAttributesMapDTO updateAttrsDto) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), PROVIDER_NAME_URI + "/attributesMap", tenant, name);
+
+        HttpPut put = RequestFactory.createPutRequest(uri, parent.getToken(), updateAttrsDto);
+        return executeAndReturnMap(parent.getClient(), put, String.class, String.class);
+    }
+
+    /**
+     * Set attribute maps of an identity provider.
+     *
+     * <p><b>Required Role:</b> {@code administrator}.
+     *
+     * @param tenant the name of the tenant the identity provider is associated with.
+     * @param name the name of the identity provider to update.
+     * @param attributesMap attribute map to be set.
+     * @return the attribute maps of an identity provider.
+     * @throws ClientException if a client side error occurs.
+     * @throws ClientProtocolException in case of an http protocol error.
+     * @throws WebApplicationException in the event of an application error.
+     * @throws HttpException if there was a generic error with the remote call.
+     * @throws IOException if there was an error with the IO stream.
+     */
+    public Map<String, String> setAttributesMap(String tenant, String name, Map<String, String> attributesMap) throws ClientException, ClientProtocolException, WebApplicationException, HttpException, IOException {
+        URI uri = buildURI(parent.getHostRetriever(), PROVIDER_NAME_URI + "/attributesMap", tenant, name);
+
+        HttpPost post = RequestFactory.createPostRequest(uri, parent.getToken(), attributesMap);
+        return executeAndReturnMap(parent.getClient(), post, String.class, String.class);
     }
 
     /**

@@ -273,6 +273,16 @@ ParseRequestControls(
                 op->requestVoteCtrl = *control;
             }
 
+            if (VmDirStringCompareA( (*control)->type, VMDIR_LDAP_CONTROL_TXN_SPEC, TRUE ) == 0)
+            {
+                retVal = VmDirAllocateMemory(lberBervCtlValue.bv_len+1, (PVOID*)&((*control)->value.txnSpecCtrlVal).pszTxnId);
+                BAIL_ON_VMDIR_ERROR(retVal);
+                VmDirStringNCpyA(((*control)->value.txnSpecCtrlVal).pszTxnId, lberBervCtlValue.bv_len+1,
+                                 lberBervCtlValue.bv_val, lberBervCtlValue.bv_len);
+                op->txnSpecCtrl = *control;
+                op->pBECtx->pszTxnId = (op->txnSpecCtrl->value.txnSpecCtrlVal).pszTxnId;
+            }
+
             if ( ber_scanf( op->ber, "}") == LBER_ERROR ) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;

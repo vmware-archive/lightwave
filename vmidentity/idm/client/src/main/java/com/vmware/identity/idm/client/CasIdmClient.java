@@ -24,6 +24,7 @@ import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import javax.xml.XMLConstants;
@@ -927,6 +928,49 @@ public class CasIdmClient
     }
 
     /**
+     * Updates sts attribute map for provider.
+     *
+     * @param tenantName Name of tenant. Required, non-null, non-empty, case insensitive.
+     * @param providerName Identity provider name
+     * @param attributesMap maps sts attribute name to identoity store name
+     * @throws IDMException
+     * @throws Exception
+     * @throws NoSuchTenantException
+     * @throws InvalidArgumentException
+     *            when the sanity check of input failure, such as null or empty
+     *            value was used;
+     * @throws InvalidProviderException
+     *              Invalid configuration for provider, such as invalid users baseDN or groups baseDN.
+     */
+    public
+    void
+    setProviderAttributesMap(String tenantName, String providerName, Map<String,String> attributesMap ) throws Exception
+    {
+        getService().setProviderAttributesMap(tenantName, providerName, attributesMap, this.getServiceContext());
+    }
+
+    /**
+     * Gets sts attribute map for provider.
+     *
+     * @param tenantName Name of tenant. Required, non-null, non-empty, case insensitive.
+     * @param providerName Identity provider name
+     * @throws IDMException
+     * @throws Exception
+     * @throws NoSuchTenantException
+     * @throws InvalidArgumentException
+     *            when the sanity check of input failure, such as null or empty
+     *            value was used;
+     * @throws InvalidProviderException
+     *              Invalid configuration for provider, such as invalid users baseDN or groups baseDN.
+     */
+    public
+    Map<String,String>
+    getProviderAttributesMap(String tenantName, String providerName ) throws Exception
+    {
+        return getService().getProviderAttributesMap(tenantName, providerName, this.getServiceContext());
+    }
+
+    /**
      * Retrieves all providers configured for a tenant, system, local, external.
      *
      * @param tenantName Name of tenant, non-null, non-empty, required.
@@ -1376,6 +1420,20 @@ public class CasIdmClient
     getAttributeDefinitions(String tenantName) throws Exception
     {
         return getService().getAttributeDefinitions(tenantName, this.getServiceContext());
+    }
+
+    /**
+     * Set attribute definitions for a tenant.
+     *
+     * @param tenantName Name of tenant
+     * @throws IDMException
+     * @throws Exception
+     */
+    public
+    void
+    setAttributeDefinitions(String tenantName, Collection<Attribute> attributes) throws Exception
+    {
+        getService().setAttributeDefinitions(tenantName, attributes, this.getServiceContext());
     }
 
     /**

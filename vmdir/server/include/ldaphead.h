@@ -128,11 +128,13 @@ ParseAndFreeSyncStateControl(
     USN*        pulPartnerUSN
     );
 
+#ifndef REPLICATION_V2
 DWORD
 VmDirUpdateSyncDoneCtl(
     PVDIR_OPERATION   pOp,
     DWORD     dwSentEntryCount
     );
+#endif
 
 int
 WriteSyncDoneControl(

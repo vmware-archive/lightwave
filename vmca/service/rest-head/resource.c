@@ -23,6 +23,7 @@ static VMCA_REST_RESOURCE resources[VMCA_REST_RSC_COUNT] =
         VMCARestUnknownSetResult,
         VMCARestUnknownGetHttpError,
         NULL,
+        NULL,
         NULL
     }
 };

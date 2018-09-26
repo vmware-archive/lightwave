@@ -80,6 +80,8 @@ public abstract class BaseLdapProvider implements IIdentityProvider
     final private String tenantName;
     final private IPooledConnectionProvider connectionProvider;
     final private ILdapConnectionProvider ldapConnectionProvider;
+    private static final String CONST_VALUE_PREFIX = "const:";
+    private static final int CONST_VALUE_PREFIX_LEN = CONST_VALUE_PREFIX.length();
 
     @Override
     public Set<String> getRegisteredUpnSuffixes()
@@ -1009,4 +1011,10 @@ public abstract class BaseLdapProvider implements IIdentityProvider
         }
     }
 
+    public static boolean IsConstantValueAttribute(String mappedAttribute) {
+        return (mappedAttribute!= null) && (mappedAttribute.startsWith(CONST_VALUE_PREFIX));
+    }
+    public static String getConstantAttributeValue(String mappedAttribute) {
+        return mappedAttribute.substring(CONST_VALUE_PREFIX_LEN);
+    }
 }

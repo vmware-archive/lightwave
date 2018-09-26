@@ -47,19 +47,19 @@ extern "C" {
 #include <openssl/engine.h>
 #endif
 
-#include <jansson.h>
-
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>
 #include <vmcapolicy.h>
 //#include <vmcasrvutils.h>
 #include <vmcadb.h>
-#include "vmca_error.h"
+
+#include <jansson.h>
 
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
+#include "vmca_error.h"
 
 #else
 
@@ -115,7 +115,6 @@ extern "C" {
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
-#include "externs.h"
 #include "vmca_error.h"
 #endif // _WIN32
 

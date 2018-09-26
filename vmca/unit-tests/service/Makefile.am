@@ -1,2 +1,4 @@
 SUBDIRS = \
-    common
+    common \
+    plugin
+

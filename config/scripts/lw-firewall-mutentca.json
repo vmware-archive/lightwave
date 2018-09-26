@@ -1,0 +1,38 @@
+{
+    "mutentca": {
+        "enable": "true",
+        "ip4_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7877",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7878",
+                "portoffset": 0
+            }
+        ],
+        "ip6_rules": [
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7877",
+                "portoffset": 0
+            },
+            {
+                "direction": "inbound",
+                "protocol": "tcp",
+                "porttype": "dst",
+                "port": "7878",
+                "portoffset": 0
+            }
+        ]
+
+    }
+}

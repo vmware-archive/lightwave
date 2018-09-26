@@ -1,0 +1,47 @@
+[HKEY_THIS_MACHINE\Services]
+
+[HKEY_THIS_MACHINE\Services\mutentca]
+"Description" = {
+    default = "Lightwave MutentCA Service"
+    doc = ""
+}
+"Path" = {
+    default = "@MUTENTCA_SBIN_DIR@/mutentcad"
+    doc = ""
+}
+"Arguments" = {
+    default = "@MUTENTCA_SBIN_DIR@/mutentcad -s"
+    doc = ""
+}
+"Environment" = {
+    default = ""
+    doc = ""
+}
+"Dependencies" = {
+    default = "lwreg vmafd"
+    doc = ""
+}
+"Type" = {
+    default = dword:00000001
+    doc = ""
+}
+"Autostart" = {
+    default = dword:00000001
+    doc = ""
+}
+
+"AllowInsecureAuthentication" = {
+    default = dword:00000000
+    value   = dword:00000000
+    doc = "Set to '0' to disallow clear-text password authentication."
+}
+
+[HKEY_THIS_MACHINE\Services\mutentca\Parameters\Credentials]
+"RootCert" = {
+    default = "@MUTENTCA_DB_DIR@/root.cer"
+    doc = "The Root CA Cert"
+}
+"RootPrivateKey" = {
+    default = "@MUTENTCA_DB_DIR@/privatekey.pem"
+    doc = "The Private Key to be used for the RootCert"
+}

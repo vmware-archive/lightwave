@@ -54,14 +54,11 @@ VmDirShutdown(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
 
-    if (!gVmdirGlobals.bPatchSchema)
-    {
-        VmDirRpcServerShutdown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
+    VmDirRpcServerShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
 
-        VmDirIpcServerShutDown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
-    }
+    VmDirIpcServerShutDown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
     VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);

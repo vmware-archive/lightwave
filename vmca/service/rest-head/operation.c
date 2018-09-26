@@ -181,7 +181,7 @@ VMCARestOperationReadRequest(
     // save for signature validation
     pRestOp->pszBody = pszBody;
 
-    VMCA_LOG_ERROR(
+    VMCA_LOG_INFO(
             "Received REST request from: %s request type: %s request URI: %s",
             VMCA_SAFE_STRING(pRestOp->pszClientIP),
             VMCA_SAFE_STRING(pRestOp->pszMethod),

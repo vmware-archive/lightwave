@@ -24,8 +24,7 @@ VmDirLdapSchemaInit(
 
     if (!ppSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(
@@ -69,8 +68,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeLdapSchema(pSchema);
     goto cleanup;
@@ -92,8 +94,7 @@ VmDirLdapSchemaAddDef(
 
     if (!pDefMap || !pDef)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = LwRtlHashMapInsert(pDefMap, pDef->pszName, pDef, &pair);
@@ -147,8 +148,7 @@ VmDirLdapSchemaAddAt(
 
     if (!pSchema || !pAt)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaAddDef(
@@ -171,8 +171,7 @@ VmDirLdapSchemaAddOc(
 
     if (!pSchema || !pOc)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     for (; pOc->ppszMust && pOc->ppszMust[dwNumMust]; dwNumMust++);
@@ -204,8 +203,7 @@ VmDirLdapSchemaAddCr(
 
     if (!pSchema || !pCr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     for (; pCr->ppszAux && pCr->ppszAux[dwNumAux]; dwNumAux++);
@@ -238,8 +236,7 @@ VmDirLdapSchemaAddSr(
 
     if (!pSchema || !pSr)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaAddDef(
@@ -260,8 +257,7 @@ VmDirLdapSchemaAddNf(
 
     if (!pSchema || !pNf)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirLdapSchemaAddDef(
@@ -270,6 +266,78 @@ VmDirLdapSchemaAddNf(
 
 error:
     return dwError;
+}
+
+DWORD
+VmDirLdapSchemaAddIdx(
+    PVDIR_LDAP_SCHEMA   pSchema,
+    PCSTR               pszAtName,
+    BOOLEAN             bGlobalUniq
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pOldAt = NULL;
+    PVDIR_LDAP_ATTRIBUTE_TYPE   pNewAt = NULL;
+
+    if (!pSchema || IsNullOrEmptyString(pszAtName))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    // look up attribute type by name
+    if (LwRtlHashMapFindKey(
+            pSchema->attributeTypes, (PVOID*)&pOldAt, pszAtName))
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: unknown attribute type (%s)",
+                __FUNCTION__,
+                pszAtName);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_SCHEMA);
+    }
+
+    // update index only if it was switched off
+    if (pOldAt->dwSearchFlags & 1)
+    {
+        goto cleanup;
+    }
+
+    // scope array should be null if search flag is switched off
+    if (pOldAt->ppszUniqueScopes)
+    {
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: index in invalid state for attribute type (%s)",
+                __FUNCTION__,
+                pszAtName);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    dwError = VmDirLdapAtDeepCopy(pOldAt, &pNewAt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pNewAt->dwSearchFlags |= 1;
+
+    if (bGlobalUniq)
+    {
+        dwError = VmDirAllocateMemory(
+                sizeof(PSTR)*2, (PVOID*)&pNewAt->ppszUniqueScopes);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirAllocateStringA(
+                PERSISTED_DSE_ROOT_DN, &pNewAt->ppszUniqueScopes[0]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirLdapSchemaAddAt(pSchema, pNewAt);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirFreeLdapAt(pNewAt);
+    goto cleanup;
 }
 
 DWORD
@@ -285,8 +353,7 @@ VmDirLdapSchemaResolveAndVerifyAll(
 
     if (!pSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     while (LwRtlHashMapIterate(pSchema->attributeTypes, &atIter, &pair))
@@ -343,8 +410,7 @@ VmDirLdapSchemaRemoveNoopData(
 
     if (!pSchema)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     while (LwRtlHashMapIterate(pSchema->attributeTypes, &atIter, &pair))

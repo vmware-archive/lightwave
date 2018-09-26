@@ -343,6 +343,7 @@ MdbValidateAttrUniqueness(
     PSTR        pszDNCopy = NULL;
     PVMDIR_MUTEX    pMutex = NULL;
     BOOLEAN         bInLock = FALSE;
+    int loopCnt = 0;
 
     if (!pBE || !pIndexCfg || IsNullOrEmptyString(pszAttrVal))
     {
@@ -382,6 +383,7 @@ MdbValidateAttrUniqueness(
     // find all uniqueness scopes that are already occupied
     while (pIterator->bHasNext)
     {
+        loopCnt++;
         dwError = VmDirMDBIndexIterate(pIterator, &pszVal, &eId);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -506,6 +508,9 @@ cleanup:
     }
     VMDIR_SAFE_FREE_MEMORY(pszVal);
     VmDirFreeEntryContent(&entry);
+    if (loopCnt > 1000)
+       VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+                "%s looped (%d)", __FUNCTION__, loopCnt);
     return dwError;
 
 error:

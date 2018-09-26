@@ -12,10 +12,10 @@
  * under the License.
  */
 
-#define ATTRIBUTETYPS_TAG           "attributetypes:"
-#define ATTRIBUTETYPS_TAG_LEN       sizeof(ATTRIBUTETYPS_TAG) - 1
+#define ATTRIBUTETYPES_TAG           "attributetypes:"
+#define ATTRIBUTETYPES_TAG_LEN       sizeof(ATTRIBUTETYPES_TAG) - 1
 #define IS_ATTRIBUTETYPES_TAG(tag)  \
-    (VmDirStringNCompareA(tag, ATTRIBUTETYPS_TAG,  ATTRIBUTETYPS_TAG_LEN, FALSE) == 0)
+    (VmDirStringNCompareA(tag, ATTRIBUTETYPES_TAG,  ATTRIBUTETYPES_TAG_LEN, FALSE) == 0)
 
 #define OBJECTCLASSES_TAG           "objectclasses:"
 #define OBJECTCLASSES_TAG_LEN       sizeof(OBJECTCLASSES_TAG) - 1
@@ -36,3 +36,8 @@
 #define NAMEFORM_TAG_LEN            sizeof(NAMEFORM_TAG) - 1
 #define IS_NAMEFORM_TAG(tag)        \
     (VmDirStringNCompareA(tag, NAMEFORM_TAG, NAMEFORM_TAG_LEN, FALSE) == 0)
+
+#define ATTRIBUTEINDICES_TAG        "attributeindices:"
+#define ATTRIBUTEINDICES_TAG_LEN    sizeof(ATTRIBUTEINDICES_TAG) - 1
+#define IS_ATTRIBUTEINDICES_TAG(tag)    \
+    (VmDirStringNCompareA(tag, ATTRIBUTEINDICES_TAG,  ATTRIBUTEINDICES_TAG_LEN, FALSE) == 0)

@@ -6,8 +6,10 @@ check_PROGRAMS = replication2
 TESTS = replication2
 
 replication2_SOURCES = \
-    main.c \
     extractevents.c \
+    main.c \
+    mock.c \
+    testcommon.c \
     update.c \
     updatelist.c
 
@@ -76,6 +78,6 @@ replication2_LDADD = \
 
 replication2_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
-    @LW_LDFLAGS@
-
+    @LW_LDFLAGS@ \
+    -Wl,--wrap,VmDirEntryGetAllMustAttrs
 endif

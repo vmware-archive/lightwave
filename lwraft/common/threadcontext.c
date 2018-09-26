@@ -28,14 +28,22 @@ VOID
 _VmDirInitThreadContextOnce(VOID)
 {
     DWORD dwError = 0;
+    PSTR pszLocalErrorMsg = NULL;
 
     dwError = pthread_key_create(&pThreadContext->threadLogContext, NULL);
-    if (dwError)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL, "_VmDirInitThreadContextOnce failed (%d)", dwError);
-        VMDIR_SAFE_FREE_MEMORY(pThreadContext);
-    }
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "pthread_key_create failed on threadLogContext");
+
+    dwError = pthread_key_create(&pThreadContext->threadTxnContext, NULL);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "pthread_key_create failed on threadTxnContext");
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
+    return;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: %s errcode %d", __func__, VDIR_SAFE_STRING(pszLocalErrorMsg), dwError);
+    VMDIR_SAFE_FREE_MEMORY(pThreadContext);
+    goto cleanup;
 }
 
 VOID
@@ -128,7 +136,7 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL, "VmDirGetThreadLogContextValue failed (%d)", dwError);
+            VMDIR_LOG_MASK_ALL, "%s failed (%d)", __func__, dwError);
     goto cleanup;
 }
 
@@ -151,7 +159,7 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL, "VmDirSetThreadLogContextValue failed (%d)", dwError);
+            VMDIR_LOG_MASK_ALL, "%s: failed (%d)", __func__, dwError);
     goto cleanup;
 }
 
@@ -181,6 +189,50 @@ VmDirUnsetAndFreeThrLogCtx(
         }
 
         VmDirFreeThreadLogContext(pThrLogCtx);
+    }
+}
+
+static
+VOID
+_VmDirFreeThreadTxnContext(
+    PVMDIR_THREAD_TXN_CONTEXT pThreadTxnContext
+    )
+{
+    if (pThreadTxnContext)
+    {
+        assert(pThreadContext->threadTxnContext);
+        pthread_setspecific(pThreadContext->threadTxnContext, NULL);
+        VMDIR_SAFE_FREE_MEMORY(pThreadTxnContext->mainDbTxnCtx.pszTxnId);
+        VMDIR_SAFE_FREE_MEMORY(pThreadTxnContext);
+    }
+}
+
+VOID
+VmDirUnsetAndFreeThrTxnCtx(
+    PVMDIR_THREAD_TXN_CONTEXT   pThrTxnCtx
+    )
+{
+    PVMDIR_THREAD_TXN_CONTEXT pLocalTxnCtx = NULL;
+
+    if (pThrTxnCtx)
+    {
+        VmDirGetThreadTxnContextValue(&pLocalTxnCtx);
+        if (pLocalTxnCtx)
+        {
+            if (pLocalTxnCtx == pThrTxnCtx)
+            {
+                VmDirSetThreadTxnContextValue(NULL);
+            }
+            else
+            {
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s thrtxnctx mismatch. curr ctx (%p), parm ctx (%p)",
+                    __FUNCTION__,
+                    pLocalTxnCtx,
+                    pThrTxnCtx);
+            }
+        }
+
+        _VmDirFreeThreadTxnContext(pThrTxnCtx);
     }
 }
 
@@ -220,5 +272,98 @@ cleanup:
 
 error:
     VmDirUnsetAndFreeThrLogCtx(pLocalLogCtx);
+    goto cleanup;
+}
+
+DWORD
+VmDirAllocAndSetThrTxnCtx(
+    PVMDIR_THREAD_TXN_CONTEXT*  ppThrTxnCtx
+    )
+{
+    DWORD   dwError = 0;
+    PVMDIR_THREAD_TXN_CONTEXT pCurrTxnCtx = NULL;
+    PVMDIR_THREAD_TXN_CONTEXT pLocalTxnCtx = NULL;
+
+    if (!ppThrTxnCtx)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirGetThreadTxnContextValue(&pCurrTxnCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pCurrTxnCtx)
+    {
+        *ppThrTxnCtx = pCurrTxnCtx;
+        goto cleanup;
+    }
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_THREAD_TXN_CONTEXT), (PVOID)&pLocalTxnCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSetThreadTxnContextValue(pLocalTxnCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppThrTxnCtx = pLocalTxnCtx;
+    pLocalTxnCtx = NULL;
+
+cleanup:
+    return dwError;
+
+error:
+    VmDirUnsetAndFreeThrTxnCtx(pLocalTxnCtx);
+    goto cleanup;
+}
+
+DWORD
+VmDirGetThreadTxnContextValue(
+    PVMDIR_THREAD_TXN_CONTEXT*  ppThreadTxnContext
+    )
+{
+    DWORD dwError = 0;
+    PVMDIR_THREAD_TXN_CONTEXT   pThreadTxnContext = NULL;
+
+    if (!ppThreadTxnContext)
+    {
+        dwError = VMDIR_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pThreadContext)
+    {
+        pThreadTxnContext = pthread_getspecific(pThreadContext->threadTxnContext);
+    }
+
+    *ppThreadTxnContext = pThreadTxnContext;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL, "%s: failed (%d)", __FUNCTION__,  dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirSetThreadTxnContextValue(
+    PVMDIR_THREAD_TXN_CONTEXT  pThreadTxnContext
+    )
+{
+    DWORD dwError = 0;
+
+    assert(pThreadContext);
+
+    dwError = pthread_setspecific(
+            pThreadContext->threadTxnContext,
+            (PVOID)pThreadTxnContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL, "%s: failed (%d)", __FUNCTION__,  dwError);
     goto cleanup;
 }

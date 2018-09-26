@@ -64,7 +64,7 @@ AC_ARG_ENABLE([debug],
         if test x"$enableval" = x"yes"
         then
             AM_CFLAGS="$AM_CFLAGS -g -O0"
-            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DLDAP_DEBUG -DVMCA_DEBUG"
+            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DLDAP_DEBUG -DVMCA_DEBUG -DMUTENTCA_DEBUG"
         fi
     ])
 
@@ -1137,6 +1137,11 @@ AC_SUBST(vmcalibdir)
 AS_AC_EXPAND(VMCA_LIB_DIR, $vmcalibdir)
 AC_DEFINE_UNQUOTED(VMCA_LIB_DIR, "$VMCA_LIB_DIR", [Lib directory])
 
+mutentcalibdir=$prefix/lib64
+AC_SUBST(mutentcalibdir)
+AS_AC_EXPAND(MUTENTCA_LIB_DIR, $mutentcalibdir)
+AC_DEFINE_UNQUOTED(MUTENTCA_LIB_DIR, "$MUTENTCA_LIB_DIR", [Lib directory])
+
 #--------------------------------------------------------------------
 
 AC_ARG_WITH([logdir],
@@ -1162,6 +1167,11 @@ vmcalogdir=$LOG_BASE_PATH
 AC_SUBST(vmcalogdir)
 AS_AC_EXPAND(VMCA_LOG_DIR, $vmcalogdir)
 AC_DEFINE_UNQUOTED(VMCA_LOG_DIR, "$VMCA_LOG_DIR", [Log directory])
+
+mutentcalibdir=$LOG_BASE_PATH
+AC_SUBST(mutentcalogdir)
+AS_AC_EXPAND(MUTENTCA_LOG_DIR, $mutentcalogdir)
+AC_DEFINE_UNQUOTED(MUTENTCA_LOG_DIR, "$MUTENTCA_LOG_DIR", [Log directory])
 #--------------------------------------------------------------------
 
 AC_ARG_WITH([psc-version],
@@ -1372,7 +1382,7 @@ AC_ARG_ENABLE([gcov],
         if test x"$enableval" = x"yes"
         then
             AM_CFLAGS="$AM_CFLAGS -g -O0 -fprofile-arcs -ftestcoverage"
-            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DVMCA_DEBUG"
+            AM_CPPFLAGS="$AM_CPPFLAGS -DDEBUG -DVMCA_DEBUG -DMUTENTCA_DEBUG"
         fi
     ])
 
@@ -1443,6 +1453,42 @@ AC_SUBST(vmcajarsdir)
 
 lwcertooldir=$prefix/bin
 AC_SUBST(lwcertooldir)
+
+AS_AC_EXPAND(MUTENTCA_BIN_DIR, $prefix)
+AC_SUBST(MUTENTCA_BIN_DIR)
+
+AS_AC_EXPAND(MUTENTCA_SBIN_DIR, ["${sbindir}"])
+AC_SUBST(MUTENTCA_SBIN_DIR)
+
+if test x"$localstatedir" = x"/var"; then
+    mutentcadbdir="$localstatedir/lib/vmware/mutentca"
+else
+    mutentcadbdir="$localstatedir/mutentca"
+fi
+AC_SUBST(mutentcadbdir)
+AS_AC_EXPAND(MUTENTCA_DB_DIR, $mutentcadbdir)
+AC_SUBST(MUTENTCA_DB_DIR)
+AC_DEFINE_UNQUOTED(MUTENTCA_DB_DIR, "$MUTENTCA_DB_DIR", [Database directory])
+
+AS_AC_EXPAND(MUTENTCA_INSTALL_DIR, $prefix)
+AC_DEFINE_UNQUOTED(MUTENTCA_INSTALL_DIR, "$MUTENTCA_INSTALL_DIR", [Install folder])
+
+mutentcaconfdir="$datadir/config"
+AC_SUBST(mutentcaconfdir)
+
+AS_AC_EXPAND(MUTENTCA_CONFIG_DIR, $mutentcaconfdir)
+AC_SUBST(MUTENTCA_CONFIG_DIR)
+
+AC_DEFINE_UNQUOTED(MUTENTCA_CONFIG_DIR, "$MUTENTCA_CONFIG_DIR", [Config directory])
+
+mutentcatoolsdir=$prefix/bin
+AC_SUBST(mutentcatoolsdir)
+
+mutentcapyutilsdir=$prefix/site-packages/cis
+AC_SUBST(mutentcapyutilsdir)
+
+mutentcajarsdir="$prefix/jars"
+AC_SUBST(mutentcajarsdir)
 
 #--------------------------------------------------------------------
 # CURL components
@@ -1812,6 +1858,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/service/common/Makefile
                  vmca/service/config/Makefile
                  vmca/service/rest-head/Makefile
+                 vmca/service/plugin/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile
@@ -1820,11 +1867,33 @@ AC_CONFIG_FILES([Makefile
                  vmca/unit-tests/service/Makefile
                  vmca/unit-tests/service/common/Makefile
                  vmca/unit-tests/service/common/test-policy-configs/Makefile
+                 vmca/unit-tests/service/plugin/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-invalidvtable/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-valid/Makefile
+                 vmca/unit-tests/service/plugin/test-plugins/testplugin-noentry/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
                  vmca/tools/Makefile
                  vmca/tools/lw-certool/Makefile
+                 mutentca/Makefile
+                 mutentca/config/Makefile
+                 mutentca/config/mutentca.reg
+                 mutentca/common/Makefile
+                 mutentca/server/Makefile
+                 mutentca/server/common/Makefile
+                 mutentca/server/config/Makefile
+                 mutentca/server/plugin/Makefile
+                 mutentca/server/mutentca/Makefile
+                 mutentca/unit-tests/Makefile
+                 mutentca/unit-tests/server/Makefile
+                 mutentca/unit-tests/server/common/Makefile
+                 mutentca/unit-tests/server/plugin/Makefile
+                 mutentca/unit-tests/server/plugin/test-plugins/Makefile
+                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
+                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
+                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/sample/setenv.sh

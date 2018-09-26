@@ -66,7 +66,9 @@ distribution. (See wiki for building on other platforms)
 
     4. lightwave-post-1.3.0-0.x86\_64.rpm
 
-    5. lightwave-server-1.3.0-0.x86\_64.rpm
+    5. lightwave-mutentca-1.3.0-0.x86\_64.rpm
+
+    6. lightwave-server-1.3.0-0.x86\_64.rpm
 
 Deployment
 ----------

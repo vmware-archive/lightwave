@@ -55,6 +55,8 @@ public class ObjectFactory {
             "http://docs.oasis-open.org/ws-sx/ws-trust/200512", "DelegateTo");
     private final static QName _Participants_QNAME = new QName(
             "http://docs.oasis-open.org/ws-sx/ws-trust/200512", "Participants");
+    private final static QName _Claims_QNAME = new QName(
+            "http://docs.oasis-open.org/ws-sx/ws-trust/200512", "Claims");
     private final static QName _KeyType_QNAME = new QName(
             "http://docs.oasis-open.org/ws-sx/ws-trust/200512", "KeyType");
     private final static QName _Renewing_QNAME = new QName(
@@ -145,6 +147,14 @@ public class ObjectFactory {
      */
     public ParticipantsType createParticipantsType() {
         return new ParticipantsType();
+    }
+
+    /**
+     * Create an instance of {@link ClaimsType }
+     * 
+     */
+    public ClaimsType createClaimsType() {
+        return new ClaimsType();
     }
 
     /**

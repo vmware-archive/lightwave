@@ -47,6 +47,7 @@ import com.vmware.identity.idm.UserAccountLockedException;
 import com.vmware.identity.idm.ValidateUtil;
 import com.vmware.identity.idm.server.IdentityManager;
 import com.vmware.identity.idm.server.ServerUtils;
+import com.vmware.identity.idm.server.provider.BaseLdapProvider;
 import com.vmware.identity.idm.server.provider.IIdentityProvider;
 import com.vmware.identity.idm.server.provider.NoSuchGroupException;
 import com.vmware.identity.idm.server.provider.NoSuchUserException;
@@ -256,6 +257,9 @@ public class LocalOsIdentityProvider implements IIdentityProvider
                         else if (matchedAttribute.equals(EMAIL_ATTRIBUTE))
                         {
                             avPair.getValues().add("");
+                        }
+                        else if (BaseLdapProvider.IsConstantValueAttribute(matchedAttribute)){
+                            avPair.getValues().add(BaseLdapProvider.getConstantAttributeValue(matchedAttribute));
                         }
                         else
                         {

@@ -230,6 +230,8 @@ VmDnsProcessQuery(
     DWORD dwDnsResponseSize = 0;
     UINT64 startTime = 0;
     UINT64 endTime = 0;
+    UINT64 responseTime = 0;
+    BOOLEAN bNameInZone = FALSE;
 
     startTime = VmDnsGetTimeInMilliSec();
 
@@ -306,7 +308,8 @@ VmDnsProcessQuery(
                             pQuestion->pszQName,
                             pQuestion->uQType,
                             0,
-                            &pAnswerList
+                            &pAnswerList,
+                            &bNameInZone
                             );
         BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -314,7 +317,14 @@ VmDnsProcessQuery(
             !pAnswerList ||
             !VmDnsRecordListGetSize(pAnswerList))
         {
-            ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
+            if (bNameInZone)
+            {
+                ResponseHeader.codes.RCODE = VM_DNS_RCODE_NOERROR;
+            }
+            else
+            {
+                ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
+            }
             dwError = ERROR_SUCCESS;
             goto response;
         }
@@ -348,13 +358,20 @@ response:
     VmDnsZoneObjectRelease(pZoneObject);
     VmDnsRecordListRelease(pAnswerList);
 
-    VmDnsCleanupDnsMessage(&ResponseMessage);
-
     endTime = VmDnsGetTimeInMilliSec();
+
+    responseTime = endTime - startTime;
+    if (responseTime > 1000)
+    {
+        VMDNS_LOG_INFO("%s: request processing time exceeded 1s (%lu ms)", __FUNCTION__, responseTime);
+        (VOID)VmDnsLogDnsMessage(VMDNS_LOG_LEVEL_INFO, "DNS RESP: ", pDnsResponse, dwDnsResponseSize);
+    }
+
+    VmDnsCleanupDnsMessage(&ResponseMessage);
 
     (VOID)VmMetricsHistogramUpdate(
                         gVmDnsHistogramMetrics[DNS_QUERY_DURATION],
-                        VDNS_RESPONSE_TIME(endTime - startTime)
+                        VDNS_RESPONSE_TIME(responseTime)
                         );
 
     return dwError;
@@ -686,7 +703,8 @@ VmDnsProcessUpdatePrerequisites(
                                     pRecord->pszName,
                                     VMDNS_RR_QTYPE_ANY,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -706,7 +724,8 @@ VmDnsProcessUpdatePrerequisites(
                                     pRecord->pszName,
                                     pRecord->dwType,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -742,7 +761,8 @@ VmDnsProcessUpdatePrerequisites(
                                     pRecord->pszName,
                                     VMDNS_RR_QTYPE_ANY,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -762,7 +782,8 @@ VmDnsProcessUpdatePrerequisites(
                                     pRecord->pszName,
                                     pRecord->dwType,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -816,7 +837,8 @@ VmDnsProcessUpdatePrerequisites(
                             pRecordObj->pRecord->pszName,
                             pRecordObj->pRecord->dwType,
                             0,
-                            &pRecordList
+                            &pRecordList,
+                            NULL
                             );
         BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -993,7 +1015,8 @@ VmDnsProcessUpdateCommit(
                                     pRecord->pszName,
                                     VMDNS_RR_QTYPE_ANY,
                                     0,
-                                    &pTempRecordList
+                                    &pTempRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1023,7 +1046,8 @@ VmDnsProcessUpdateCommit(
                                     pRecord->pszName,
                                     VMDNS_RR_TYPE_CNAME,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1048,7 +1072,8 @@ VmDnsProcessUpdateCommit(
                                     pRecord->pszName,
                                     VMDNS_RR_TYPE_SOA,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1087,7 +1112,8 @@ VmDnsProcessUpdateCommit(
                                 pRecord->pszName,
                                 pRecord->dwType,
                                 0,
-                                &pRecordList
+                                &pRecordList,
+                                NULL
                                 );
             BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1155,7 +1181,8 @@ VmDnsProcessUpdateCommit(
                                         pRecord->pszName,
                                         VMDNS_RR_QTYPE_ANY,
                                         0,
-                                        &pTempRecordList
+                                        &pTempRecordList,
+                                        NULL
                                         );
                     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1219,7 +1246,8 @@ VmDnsProcessUpdateCommit(
                                         pRecord->pszName,
                                         VMDNS_RR_QTYPE_ANY,
                                         0,
-                                        &pRecordList
+                                        &pRecordList,
+                                        NULL
                                         );
                     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1251,7 +1279,8 @@ VmDnsProcessUpdateCommit(
                                     pRecord->pszName,
                                     pRecord->dwType,
                                     0,
-                                    &pRecordList
+                                    &pRecordList,
+                                    NULL
                                     );
                 BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 
@@ -1280,7 +1309,8 @@ VmDnsProcessUpdateCommit(
                                 pRecord->pszName,
                                 pRecord->dwType,
                                 0,
-                                &pRecordList
+                                &pRecordList,
+                                NULL
                                 );
             BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
 

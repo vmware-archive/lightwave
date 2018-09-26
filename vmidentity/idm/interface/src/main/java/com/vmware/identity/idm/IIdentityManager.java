@@ -22,6 +22,7 @@ import java.security.cert.X509Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 import com.vmware.identity.performanceSupport.IIdmAuthStat;
@@ -301,6 +302,10 @@ public interface IIdentityManager
 
     public void setProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws  IDMException;
 
+    public void setProviderAttributesMap(String tenantName, String providerName, Map<String,String> attributesMap, IIdmServiceContext serviceContext ) throws Exception;
+
+    public Map<String,String> getProviderAttributesMap(String tenantName, String providerName, IIdmServiceContext serviceContext ) throws Exception;
+
     public void setNativeADProvider(String tenantName, IIdentityStoreData idpData, IIdmServiceContext serviceContext ) throws  IDMException;
 
     public Collection<IIdentityStoreData> getProviders(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
@@ -364,6 +369,8 @@ public interface IIdentityManager
     public boolean IsActive(String tenantName,PrincipalId principal, IIdmServiceContext serviceContext) throws  IDMException;
 
     public Collection<Attribute> getAttributeDefinitions(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
+
+    public void setAttributeDefinitions(String tenantName, Collection<Attribute> attributes, IIdmServiceContext serviceContext) throws  IDMException;
 
     public Collection<AttributeValuePair> getAttributeValues(String tenantName, PrincipalId principal, Collection<Attribute> attributes, IIdmServiceContext serviceContext) throws  IDMException;
 

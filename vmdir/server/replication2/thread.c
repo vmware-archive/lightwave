@@ -46,7 +46,7 @@ vdirReplicationThrFun(
 static
 BOOLEAN
 _VmDirSkipReplicationCycle(
-    VOID
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
     );
 
 DWORD
@@ -174,7 +174,7 @@ vdirReplicationThrFun(
                 goto cleanup;
             }
 
-            if (pReplAgr->isDeleted || _VmDirSkipReplicationCycle()) // skip deleted RAs
+            if (_VmDirSkipReplicationCycle(pReplAgr))
             {
                 continue;
             }
@@ -252,11 +252,13 @@ error:
 static
 BOOLEAN
 _VmDirSkipReplicationCycle(
-    VOID
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr
     )
 {
     return (VmDirdState() == VMDIRD_STATE_READ_ONLY_DEMOTE ||
-            VmDirdState() == VMDIRD_STATE_READ_ONLY);
+            VmDirdState() == VMDIRD_STATE_READ_ONLY ||
+            pReplAgr->isDeleted ||
+            pReplAgr->isDisabled);
 }
 
 static

@@ -340,7 +340,7 @@ VmDirMDBGetCandidates(
     ENTRYID         parentId = 0;
     PVDIR_DB_TXN    pTxn = NULL;
 
-    assert(pBECtx && pBECtx->pBE && pBECtx->pBEPrivate && pFilter);
+    assert(pBECtx && pBECtx->pBEPrivate && pFilter);
 
     pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
 

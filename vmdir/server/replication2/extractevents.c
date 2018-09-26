@@ -161,6 +161,7 @@ VmDirExtractEventAttributeValueChanges(
     )
 {
     DWORD                              dwError = 0;
+    PSTR                               pszValue = NULL;
     PVDIR_ATTRIBUTE                    pAttr = NULL;
     PVDIR_LINKED_LIST                  pNewValueMetaDataList = NULL;
     PVDIR_LINKED_LIST_NODE             pCurrNode = NULL;
@@ -205,8 +206,14 @@ VmDirExtractEventAttributeValueChanges(
                 {
                     VDIR_BERVALUE    bvValue = VDIR_BERVALUE_INIT;
 
-                    dwError = VmDirStringToBervalContent(pValueMetaData->pszValue, &bvValue);
+                    dwError = VmDirAllocateAndCopyMemory(
+                            pValueMetaData->pszValue, pValueMetaData->dwValSize, (PVOID*)&pszValue);
                     BAIL_ON_VMDIR_ERROR(dwError);
+
+                    bvValue.lberbv_val = pszValue;
+                    bvValue.lberbv_len = pValueMetaData->dwValSize;
+                    bvValue.bOwnBvVal = TRUE;
+                    pszValue = NULL;
 
                     //bvValue contents will be copied into pAttr,, should not free bvValue contents
                     dwError = VmDirEntryAttributeAppendBervArray(pAttr, &bvValue, 1);
@@ -225,6 +232,7 @@ cleanup:
     return dwError;
 
 error:
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
     VmDirFreeValueMetaDataList(pNewValueMetaDataList);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
@@ -258,10 +266,11 @@ VmDirExtractEventPopulateMustAttributes(
         return 0;
     }
 
+    //pCombinedUpdate because we have to examine the objectclass
     dwError = VmDirEntryGetAllMustAttrs(pCombinedUpdate->pEntry, &pAllMustAttrMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //MustAttrs in PNewUpdate copy to pCombinedUpdate
+    //copy MustAttrs in PIndividualUpdate to pCombinedUpdate
     dwError = VmDirLinkedListGetHead(pIndividualUpdate->pMetaDataList, &pCurrNode);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -450,7 +459,7 @@ _VmDirReplUpdateHandleTombStoneAdd(
     )
 {
     DWORD                             dwError = 0;
-    PVDIR_ATTRIBUTE                   pAttr = NULL;
+    PVDIR_ATTRIBUTE                   pCurrAttr = NULL;
     PVDIR_ATTRIBUTE                   pNewAttr = NULL;
     PVDIR_LINKED_LIST_NODE            pCurrNode = NULL;
     PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
@@ -463,7 +472,7 @@ _VmDirReplUpdateHandleTombStoneAdd(
     {
         pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA) pCurrNode->pElement;
 
-        //copy Attr MetaData
+        //copy LastKnownDN attr metadata as EntryDN attr metadata to pCombinedUdpate
         if (VmDirStringCompareA(pReplMetaData->pszAttrType, ATTR_LAST_KNOWN_DN, FALSE) == 0)
         {
             dwError = VmDirReplMetaDataCreate(
@@ -472,7 +481,7 @@ _VmDirReplUpdateHandleTombStoneAdd(
                     1,
                     pReplMetaData->pMetaData->pszOrigInvoId,
                     pReplMetaData->pMetaData->pszOrigTime,
-                    pIndividualUpdate->partnerUsn,
+                    pCombinedUpdate->partnerUsn,
                     &pNewReplMetaData);
             BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -480,44 +489,55 @@ _VmDirReplUpdateHandleTombStoneAdd(
                     pCombinedUpdate->pMetaDataList, (PVOID)pNewReplMetaData, NULL);
             BAIL_ON_VMDIR_ERROR(dwError);
             pNewReplMetaData = NULL;
-
-            break;
         }
+
+        //copy ObjectClass attr metadata to pCombinedUdpate
+        if (VmDirStringCompareA(pReplMetaData->pszAttrType, ATTR_OBJECT_CLASS, FALSE) == 0)
+        {   
+            dwError = VmDirReplMetaDataCreate(
+                    ATTR_OBJECT_CLASS,
+                    pCombinedUpdate->partnerUsn,
+                    1,
+                    pReplMetaData->pMetaData->pszOrigInvoId,
+                    pReplMetaData->pMetaData->pszOrigTime,
+                    pCombinedUpdate->partnerUsn,
+                    &pNewReplMetaData);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            
+            dwError = VmDirLinkedListInsertHead(
+                    pCombinedUpdate->pMetaDataList, (PVOID)pNewReplMetaData, NULL);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pNewReplMetaData = NULL;
+        }
+
         pCurrNode = pCurrNode->pNext;
     }
 
-    if (pCurrNode == NULL)
+    for (pCurrAttr = pIndividualUpdate->pEntry->attrs; pCurrAttr; pCurrAttr = pCurrAttr->next)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: AttrMetaData not found for : %s",
-                __FUNCTION__,
-                ATTR_LAST_KNOWN_DN);
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_ATTRIBUTE_METADATA);
+        //copy LastKnownDN Attr as EntryDN Attr to pCombinedUpdate
+        if (VmDirStringCompareA(pCurrAttr->type.lberbv.bv_val, ATTR_LAST_KNOWN_DN, FALSE) == 0)
+        {
+            dwError = VmDirAttributeDup(pCurrAttr, &pNewAttr);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringToBervalContent(ATTR_DN, &pNewAttr->type);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pNewAttr->next = pCombinedUpdate->pEntry->attrs;
+            pCombinedUpdate->pEntry->attrs = pNewAttr;
+            pNewAttr = NULL;
+        }
+        else if (VmDirStringCompareA(pCurrAttr->type.lberbv.bv_val, ATTR_OBJECT_CLASS, FALSE) == 0)
+        {
+            dwError = VmDirAttributeDup(pCurrAttr, &pNewAttr);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pNewAttr->next = pCombinedUpdate->pEntry->attrs;
+            pCombinedUpdate->pEntry->attrs = pNewAttr;
+            pNewAttr = NULL;
+        }
     }
-
-    //copy Attr
-    pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_LAST_KNOWN_DN);
-
-    if (pAttr == NULL)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: AttrMetaData present but no attr for: %s",
-                __FUNCTION__,
-                pReplMetaData->pszAttrType);
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_ATTRIBUTE);
-    }
-
-    dwError = VmDirAttributeDup(pAttr, &pNewAttr);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringToBervalContent(ATTR_DN, &pNewAttr->type);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pNewAttr->next = pCombinedUpdate->pEntry->attrs;
-    pCombinedUpdate->pEntry->attrs = pNewAttr;
-    pNewAttr = NULL;
 
 cleanup:
     return dwError;

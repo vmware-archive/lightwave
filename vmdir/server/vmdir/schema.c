@@ -21,28 +21,20 @@
     NULL                                                \
 }
 
-static
-DWORD
-_MarkDefaultIndices(
-    VOID
-    );
-
 /*
  * Examines the following options in order and use the first detected source
  * to initialize schema:
  *
  * 1. Schema subtree (6.6 and higher)
- * 2. Subschema subentry (6.5 and lower)
+ * 2. Subschema subentry (6.5 and lower) : out dated
  * 3. Schema file
  *
  * OUTPUT:
  * pbWriteSchemaEntry will be TRUE if option 3 was used
- * pbLegacyDataLoaded will be TRUE if option 2 was used
  */
 DWORD
 VmDirLoadSchema(
-    PBOOLEAN    pbWriteSchemaEntry,
-    PBOOLEAN    pbLegacyDataLoaded
+    PBOOLEAN    pbWriteSchemaEntry
     )
 {
     DWORD               dwError = 0;
@@ -50,7 +42,7 @@ VmDirLoadSchema(
     PVDIR_ENTRY_ARRAY   pOcEntries = NULL;
     PVDIR_ENTRY         pSchemaEntry = NULL;
 
-    assert(pbWriteSchemaEntry && pbLegacyDataLoaded);
+    assert(pbWriteSchemaEntry);
 
     dwError = VmDirReadAttributeSchemaObjects(&pAtEntries);
     if (dwError == 0)
@@ -69,10 +61,7 @@ VmDirLoadSchema(
         dwError = VmDirReadSubSchemaSubEntry(&pSchemaEntry);
         if (dwError == 0)
         {
-            dwError = VmDirSchemaLibLoadSubSchemaSubEntry(pSchemaEntry);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            *pbLegacyDataLoaded = TRUE;
+            assert(FALSE);  // no longer support single schema entry scheme
         }
         else if (dwError == ERROR_BACKEND_ENTRY_NOTFOUND)
         {
@@ -88,9 +77,6 @@ VmDirLoadSchema(
 
             *pbWriteSchemaEntry = TRUE;
         }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = _MarkDefaultIndices();
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -113,7 +99,7 @@ error:
 
 /*
  * Initialize schemacontext subtree entries
- * Should be called if InitializeSchema() results pbWriteSchemaEntry = TRUE
+ * Should be called if VmDirLoadSchema() results pbWriteSchemaEntry = TRUE
  */
 DWORD
 VmDirSchemaInitializeSubtree(
@@ -217,159 +203,44 @@ error:
     goto cleanup;
 }
 
-/*
- * If upgrading from 6.6 or higher, use this function to patch schema.
- *
- * INPUT:
- * new version of Lotus schema file
- */
 DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    )
-{
-    DWORD    dwError = 0;
-    PVDIR_SCHEMA_CTX    pOldSchemaCtx = NULL;
-    PVDIR_SCHEMA_CTX    pNewSchemaCtx = NULL;
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
-
-    dwError = VmDirSchemaCtxAcquire(&pOldSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    // support for mixed version (with 6.5 or lower) federation upgrade scenario
-    dwError = VmDirPatchLocalSubSchemaSubEntry();
-    dwError = dwError == ERROR_BACKEND_ENTRY_NOTFOUND ? 0 : dwError;
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSchemaCtxAcquire(&pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSchemaObjects(pOldSchemaCtx, pNewSchemaCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEApplyIndicesNewMR();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirSchemaCtxRelease(pOldSchemaCtx);
-    VmDirSchemaCtxRelease(pNewSchemaCtx);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
-    goto cleanup;
-}
-
-/*
- * If upgrading from 6.5 or lower, use this function to patch schema.
- * Should be called if InitializeSchema() results pbLegacyDataLoaded = TRUE
- *
- * INPUT:
- * new version of Lotus schema file
- */
-DWORD
-VmDirSchemaPatchLegacyViaFile(
-    PCSTR       pszSchemaFilePath
-    )
-{
-    DWORD    dwError = 0;
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
-
-    dwError = VmDirSchemaLibLoadFile(pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirPatchLocalSubSchemaSubEntry();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirWriteSchemaObjects();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEApplyIndicesNewMR();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
-    goto cleanup;
-}
-
-static
-DWORD
-_MarkDefaultIndices(
-    VOID
+VmDirReadSubSchemaSubEntry(
+    PVDIR_ENTRY*    ppSubSchemaSubEntry
     )
 {
     DWORD   dwError = 0;
-    PLW_HASHMAP pIndexCfgMap = NULL;
-    PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
-    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
-    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    PVDIR_BACKEND_INTERFACE pBE = NULL;
+    PVDIR_ENTRY pEntry = NULL;
 
-    dwError = VmDirIndexCfgMap(&pIndexCfgMap);
+    pBE = VmDirBackendSelect(NULL);
+    assert(pBE);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    dwError = pBE->pfnBESimpleIdToEntry(SUB_SCEHMA_SUB_ENTRY_ID, pEntry);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    while (LwRtlHashMapIterate(pIndexCfgMap, &iter, &pair))
-    {
-        PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pair.pValue;
-        PVDIR_SCHEMA_AT_DESC pATDesc = NULL;
-
-        dwError = VmDirSchemaAttrNameToDescriptor(
-                pSchemaCtx, pIndexCfg->pszAttrName, &pATDesc);
-
-        // VMIT support
-        if (dwError == VMDIR_ERROR_NO_SUCH_ATTRIBUTE)
-        {
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                    "%s detected index for unknown attribute %s, "
-                    "the index will be deleted",
-                    __FUNCTION__, pIndexCfg->pszAttrName, dwError );
-
-            pIndexCfg->status = VDIR_INDEXING_DISABLED;
-            continue;
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirIndexCfgGetAllScopesInStrArray(
-                pIndexCfg, &pATDesc->ppszUniqueScopes);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        pATDesc->dwSearchFlags |= 1;
-
-        // for free later
-        pATDesc->pLdapAt->ppszUniqueScopes = pATDesc->ppszUniqueScopes;
-        pATDesc->pLdapAt->dwSearchFlags = pATDesc->dwSearchFlags;
-    }
+    *ppSubSchemaSubEntry = pEntry;
 
 cleanup:
-    VmDirSchemaCtxRelease(pSchemaCtx);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
+    // fix EID lookup found but not the same DN. it must be deleted tombstone entry.
+    // such as "cn=aggregate#objectGUID:187ac1c1-924d-4b16-a40d-fcea4ab35e7b,cn=Deleted Objects,dc=vsphere,dc=local"
+    // in vmdir log file, you will see ERROR: DecodeEntry failed (9602) line. you can ignore this.
+    // unfortunately, we would not have exact DN at this layer. thus, rely on error code to determine the case.
+    if (dwError == VMDIR_ERROR_BACKEND_ERROR)
+    {   // treats as if this entry does not exit.
+        dwError = ERROR_BACKEND_ENTRY_NOTFOUND;
+    }
+    else
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+            "%s subschema subentry not found (%d)", __FUNCTION__, dwError );
+    }
 
+    VmDirFreeEntry(pEntry);
     goto cleanup;
 }

@@ -49,6 +49,13 @@ VmDirMLSearch(
     pOperation->pBEIF = VmDirBackendSelect(pOperation->reqDn.lberbv.bv_val);
     assert(pOperation->pBEIF);
 
+    if (!VmDirValidTxnState(pOperation->pBECtx, pOperation->reqCode))
+    {
+       retVal = LDAP_UNWILLING_TO_PERFORM;
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg,
+               "%s: invaid request for transaction state", __func__);
+    }
+    
     retVal = VmDirInternalSearch(pOperation);
     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -208,22 +215,16 @@ VmDirInternalSearch(
         goto cleanup;  // done special search
     }
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+                "txn begin (%u)(%s)", retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+
     // If base is not ROOT, read lock the base object (DnToEntryId index entry) to make sure it exists, and it does
     // not get deleted during this search processing.
     if (pOperation->reqDn.lberbv.bv_len != 0)
     {
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
-
-        retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_READ);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                retVal, pszLocalErrMsg,
-                "txn begin (%u)(%s)",
-                retVal,
-                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
-        bHasTxn = TRUE;
-
         // Lookup in the DN index.
         retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(pOperation->reqDn), &eId);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -231,22 +232,6 @@ VmDirInternalSearch(
                 "DNToEID (%u)(%s)",
                 retVal,
                 VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-    }
-
-    // start txn if not has one already.
-    if (!pOperation->pBECtx->pBEPrivate)
-    {
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
-
-        retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_READ);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                retVal, pszLocalErrMsg,
-                "txn begin (%u)(%s)",
-                retVal,
-                VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
-        bHasTxn = TRUE;
     }
 
     retVal = AppendDNFilter(pOperation);
@@ -314,17 +299,19 @@ VmDirInternalSearch(
         pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
     }
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
-
-    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+    if (bHasTxn)
+    {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+        retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "txn commit (%u)(%s)",
             retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
-    bHasTxn = FALSE;
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    }
 
 cleanup:
 
@@ -336,7 +323,6 @@ cleanup:
     return retVal;
 
 error:
-
     if (bHasTxn)
     {
         VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);

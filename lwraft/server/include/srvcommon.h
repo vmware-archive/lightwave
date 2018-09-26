@@ -129,7 +129,6 @@ typedef struct _VDIR_BACKEND_CTX
 {
     PVDIR_BACKEND_INTERFACE pBE;
     // per data store specific private structure to support transaction context
-    int         iBEPrivateRef;
     PVOID       pBEPrivate;
     DWORD       dwBEErrorCode;
     PSTR        pszBEErrorMsg;
@@ -139,6 +138,7 @@ typedef struct _VDIR_BACKEND_CTX
                                        // build when search has a size limit hint. Unlimited if it is 0
     int         iPartialCandidates; // indicate at least one of the filters with candidates contains partial result
                                     //   valid only when iMaxScanForSizeLimt > 0
+    PSTR        pszTxnId;           // user transaction Id pointing to txnSpecCtrlVal (RFC 5805)
 } VDIR_BACKEND_CTX, *PVDIR_BACKEND_CTX;
 
 // accessRoleBitmap is a bit map on bind dn access role if the info is valid
@@ -423,6 +423,13 @@ typedef struct DeleteReq
     unsigned                numMods;
 } DeleteReq;
 
+typedef struct ExtendedReq
+{
+    VDIR_BERVALUE dn;
+    VDIR_BERVALUE oid;
+    int extOp;
+} ExtendedReq;
+
 typedef struct ModifyReq
 {
     VDIR_BERVALUE           dn;
@@ -456,6 +463,7 @@ typedef union _VDIR_LDAP_REQUEST
     DeleteReq  deleteReq;
     ModifyReq  modifyReq;
     SearchReq  searchReq;
+    ExtendedReq extendedReq;
 } VDIR_LDAP_REQUEST;
 
 typedef enum _VDIR_REPLY_TYPE
@@ -550,6 +558,11 @@ typedef struct _VDIR_REQUEST_VOTE_CONTROL_VALUE
     uint32_t                lastLogTerm;
 } VDIR_REQUEST_VOTE_CONTROL_VALUE, *PVDIR_REQUEST_VOTE_CONTROL_VALUE;
 
+typedef struct _VDIR_REQUEST_TXN_SPEC_VALUE
+{
+    PSTR pszTxnId;
+} VDIR_REQUEST_TXN_SPEC_VALUE, *PVDIR_REQUEST_TXN_SPEC_VALUE;
+
 typedef union LdapControlValue
 {
     SyncRequestControlValue                 syncReqCtrlVal;
@@ -559,6 +572,7 @@ typedef union LdapControlValue
     VDIR_CONDWRITE_CONTROL_VALUE            condWriteCtrlVal;
     VDIR_APPEND_ENTRIES_CONTROL_VALUE       appendEntriesCtrlVal;
     VDIR_REQUEST_VOTE_CONTROL_VALUE         requestVoteCtrlVal;
+    VDIR_REQUEST_TXN_SPEC_VALUE             txnSpecCtrlVal;
 } LdapControlValue;
 
 typedef struct _VDIR_LDAP_CONTROL
@@ -622,6 +636,7 @@ typedef struct _VDIR_OPERATION
     VDIR_LDAP_CONTROL *     pCondWriteCtrl;
     VDIR_LDAP_CONTROL *     appendEntriesCtrl;
     VDIR_LDAP_CONTROL *     requestVoteCtrl;
+    VDIR_LDAP_CONTROL *     txnSpecCtrl;
                                      // SJ-TBD: If we add quite a few controls, we should consider defining a
                                      // structure to hold all those pointers.
     DWORD                   dwSchemaWriteOp; // this operation is schema modification
@@ -1512,6 +1527,27 @@ VmDirBkgdTaskUpdatePrevTime(
 DWORD
 VmDirOidcToVmdirError(
     DWORD dwOidcError
+    );
+
+// User Transaction
+int
+VmDirMLTxnStart(
+    PVDIR_OPERATION pOperation,
+    BOOLEAN         *pBresultSent
+    );
+
+int
+VmDirMLTxnCommit(
+    PVDIR_OPERATION pOperation,
+    VDIR_BERVALUE   txnid,
+    BOOLEAN         *pBresultSent
+    );
+
+int
+VmDirMLTxnAbort(
+    PVDIR_OPERATION pOperation,
+    VDIR_BERVALUE   txnid,
+    BOOLEAN         *pBresultSent
     );
 
 #ifdef __cplusplus

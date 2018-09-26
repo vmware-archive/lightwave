@@ -14,17 +14,6 @@
 
 #include "includes.h"
 
-static
-VOID
-_VmDirAllocateAttrAndMetaData(
-    PSTR                         pszAttrType,
-    PSTR                         pszValue,
-    USN                          localUsn,
-    USN                          origUsn,
-    UINT64                       version,
-    PVMDIR_REPLICATION_UPDATE    pUpdate
-    );
-
 //AttributeChanges Setup Functions
 int
 VmDirSetupExtractEventAttributeChanges(
@@ -47,28 +36,13 @@ VmDirSetupExtractEventAttributeChanges(
     dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
     assert_int_equal(dwError, 0);
 
-    _VmDirAllocateAttrAndMetaData(ATTR_USN_CHANGED, "101", 101, 101, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CHANGED, "101", 101, 101, 2, pUpdate);
 
-    _VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 100, 100, 1, pUpdate);
+    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 100, 100, 1, pUpdate);
 
-    _VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 101, 100, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 101, 101, 2, pUpdate);
 
     *state = pUpdate;
-
-    return 0;
-}
-
-//AttributeChanges TearDown functions
-int
-VmDirTeardownExtractEvent(
-    VOID    **state
-    )
-{
-    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
-
-    pUpdate = (PVMDIR_REPLICATION_UPDATE)*state;
-
-    VmDirFreeReplUpdate(pUpdate);
 
     return 0;
 }
@@ -98,7 +72,7 @@ VmDirSetupExtractEventAttributeValueChanges(
     dwError = VmDirLinkedListCreate(&pUpdate->pValueMetaDataList);
     assert_int_equal(dwError, 0);
 
-    //Create Value MetaData
+    //Add Value MetaData
     dwError = VmDirAllocateStringA(
             "member:101:1:de62357c-e8b1-4532-9c81-91c4f58c3248:de62357c-e8b1-4532-9c81-91c4f58c3248:20180726170334.296:101:0:1:B",
             &pszValueMetaData);
@@ -113,6 +87,7 @@ VmDirSetupExtractEventAttributeValueChanges(
 
     VMDIR_SAFE_FREE_MEMORY(pszValueMetaData);
 
+    //Delete value MetaData
     dwError = VmDirAllocateStringA(
             "member:102:2:de62357c-e8b1-4532-9c81-91c4f58c3248:de62357c-e8b1-4532-9c81-91c4f58c3248:20180726170334.296:102:1:1:C",
             &pszValueMetaData);
@@ -153,7 +128,101 @@ VmDirSetupExtractEventAttributeValueChanges(
     return 0;
 }
 
-//AttributeChanges unit test functions
+//PopulateMustAttributes Setup Functions
+int
+VmDirSetupExtractEventPopulateMustAttributes(
+    VOID    **state
+    )
+{
+    DWORD                        dwError = 0;
+    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pUpdate);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pUpdate);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pUpdate->pEntry);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pUpdate->pEntry);
+
+    pUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+    pUpdate->syncState = LDAP_SYNC_ADD;
+
+    dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
+    assert_int_equal(dwError, 0);
+
+    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 100, 100, 1, pUpdate);
+
+    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 101, 101, 2, pUpdate);
+
+    *state = pUpdate;
+
+    return 0;
+}
+
+//PopulateOperationAttributes Setup Functions
+int
+VmDirSetupExtractEventPopulateOperationAttributes(
+    VOID **state
+    )
+{
+    DWORD    dwError = 0;
+    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pUpdate);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pUpdate);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pUpdate->pEntry);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pUpdate->pEntry);
+
+    pUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+    pUpdate->partnerUsn = 100;
+    pUpdate->syncState = LDAP_SYNC_ADD;
+
+    dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
+    assert_int_equal(dwError, 0);
+
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CHANGED, "101", 101, 101, 2, pUpdate);
+
+    VmDirAllocateAttrAndMetaData(
+            ATTR_OBJECT_GUID, "e7f6eae8-9902-4270-91ee-1ab36c898580", 100, 100, 1, pUpdate);
+
+    *state = pUpdate;
+
+    return 0;
+}
+
+//AttributeChanges TearDown functions
+int
+VmDirTeardownExtractEvent(
+    VOID    **state
+    )
+{
+    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
+
+    pUpdate = (PVMDIR_REPLICATION_UPDATE)*state;
+
+    VmDirFreeReplUpdate(pUpdate);
+
+    return 0;
+}
+
+/*
+ * AttributeChanges unit test functions
+ * Input:
+ *     pCombinedUpdate:
+ *         USN: 101    ATTR: USN_CHANGED
+ *         USN: 100    ATTR: CN
+ *         USN: 101    ATTR: SN
+ * Expected outcome:
+ *     pIndividualUpdate:
+ *         USN: 101    ATTR: SN
+ *     pCombinedUpdate:
+ *         USN: 101    ATTR: USN_CHANGED
+ *         USN: 100    ATTR: CN
+ */
 VOID
 VmDirExtractEventAttributeChanges_ValidInput(
     VOID    **state
@@ -162,7 +231,6 @@ VmDirExtractEventAttributeChanges_ValidInput(
     DWORD                             dwError = 0;
     PVMDIR_REPLICATION_UPDATE         pCombinedUpdate = NULL;
     PVMDIR_REPLICATION_UPDATE         pIndividualUpdate = NULL;
-    PVDIR_LINKED_LIST_NODE            pNode = NULL;
     PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
     PVDIR_ATTRIBUTE                   pAttr = NULL;
 
@@ -183,8 +251,8 @@ VmDirExtractEventAttributeChanges_ValidInput(
     assert_int_equal(dwError, 0);
 
     //Verify Attr MetaData is as expected
-    pNode = pIndividualUpdate->pMetaDataList->pHead;
-    pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA)pNode->pElement;
+    pReplMetaData = VmDirFindAttrMetaData(pIndividualUpdate->pMetaDataList, ATTR_SN);
+    assert_non_null(pReplMetaData);
 
     assert_string_equal(pReplMetaData->pszAttrType, ATTR_SN);
     assert_int_equal(pReplMetaData->pMetaData->localUsn, 101);
@@ -192,20 +260,18 @@ VmDirExtractEventAttributeChanges_ValidInput(
     assert_string_equal(
             pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
     assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
-    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
-
-    assert_null(pNode->pNext);
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 101);
 
     //Verify Attr is as expected
-    pAttr = pIndividualUpdate->pEntry->attrs;
+    pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_SN);
+    assert_non_null(pAttr);
     assert_string_equal(pAttr->type.lberbv_val, ATTR_SN);
     assert_string_equal(pAttr->vals[0].lberbv_val, "newuser_sn");
-    assert_null(pAttr->next);
 
     //Verify pUpdate contents USN: 100 (Attr: CN and UsnChanged)
     //Verify Attr MetaData is as expected
-    pNode = pCombinedUpdate->pMetaDataList->pHead;
-    pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA)pNode->pElement;
+    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_CN);
+    assert_non_null(pReplMetaData);
 
     assert_string_equal(pReplMetaData->pszAttrType, ATTR_CN);
     assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
@@ -215,8 +281,8 @@ VmDirExtractEventAttributeChanges_ValidInput(
     assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
     assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
 
-    pNode = pNode->pNext;
-    pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA)pNode->pElement;
+    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_USN_CHANGED);
+    assert_non_null(pReplMetaData);
 
     assert_string_equal(pReplMetaData->pszAttrType, ATTR_USN_CHANGED);
     assert_int_equal(pReplMetaData->pMetaData->localUsn, 101);
@@ -226,23 +292,35 @@ VmDirExtractEventAttributeChanges_ValidInput(
     assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
     assert_int_equal(pReplMetaData->pMetaData->origUsn, 101);
 
-    assert_null(pNode->pNext);
-
     //Verify Attr is as expected
-    pAttr = pCombinedUpdate->pEntry->attrs;
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_USN_CHANGED);
+    assert_non_null(pAttr);
     assert_string_equal(pAttr->type.lberbv_val, ATTR_USN_CHANGED);
     assert_string_equal(pAttr->vals[0].lberbv_val, "101");
-    assert_non_null(pAttr->next);
 
-    pAttr = pCombinedUpdate->pEntry->attrs->next;
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_CN);
+    assert_non_null(pAttr);
     assert_string_equal(pAttr->type.lberbv_val, ATTR_CN);
     assert_string_equal(pAttr->vals[0].lberbv_val, "newuser_cn");
-    assert_null(pAttr->next);
 
     VmDirFreeReplUpdate(pIndividualUpdate);
 }
 
-//AttributeValue Changes unit test functions
+/*
+ * AttributeValue Changes unit test functions
+ * Input:
+ *     pCombinedUpdate:
+ *         USN: 101 ATTR: MEMBER Value: B OP: ADD
+ *         USN: 102 ATTR: MEMBER Value: C OP: DEL
+ *         ATTR: MEMBER Value: A, B
+ * Expected outcome:
+ *     pIndividualUpdate:
+ *         USN: 102 ATTR: MEMBER Value: C OP: DEL
+ *         ATTR: MEMBER Value: A, B, C
+ *     pIndividualUpdate:
+ *         USN: 101 ATTR: MEMBER Value: B OP: ADD
+ *         ATTR: MEMBER Value: A, C
+ */
 VOID
 VmDirExtractEventAttributeValueChanges_ValidInput(
     VOID    **state
@@ -291,13 +369,14 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
     VmDirFreeValueMetaDataList(pIndividualUpdate->pValueMetaDataList);
 
     //validate pUpdate entry attrs
-    pAttr = pCombinedUpdate->pEntry->attrs;
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_MEMBER);
+    assert_non_null(pAttr);
+
     assert_string_equal(pAttr->type.lberbv_val, ATTR_MEMBER);
     assert_string_equal(pAttr->vals[0].lberbv_val, "A");
     assert_string_equal(pAttr->vals[1].lberbv_val, "B");
     assert_string_equal(pAttr->vals[2].lberbv_val, "C");
     assert_int_equal(pAttr->numVals, 3);
-    assert_null(pAttr->next);
 
     //Extract Event for USN: 101 (Value: B)
     dwError = VmDirExtractEventAttributeValueChanges(pCombinedUpdate, 101, pIndividualUpdate);
@@ -315,12 +394,13 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
     assert_null(pNode->pNext);
     assert_null(pIndividualUpdate->pEntry->attrs);
 
-    pAttr = pCombinedUpdate->pEntry->attrs;
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_MEMBER);
+    assert_non_null(pAttr);
+
     assert_string_equal(pAttr->type.lberbv_val, ATTR_MEMBER);
     assert_string_equal(pAttr->vals[0].lberbv_val, "A");
     assert_string_equal(pAttr->vals[1].lberbv_val, "C");
     assert_int_equal(pAttr->numVals, 2);
-    assert_null(pAttr->next);
 
     assert_int_equal(VmDirLinkedListGetSize(pIndividualUpdate->pValueMetaDataList), 1);
     assert_int_equal(VmDirLinkedListGetSize(pCombinedUpdate->pValueMetaDataList), 0);
@@ -328,57 +408,203 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
     VmDirFreeReplUpdate(pIndividualUpdate);
 }
 
-//Helper Functions
-static
+/*
+ * PopulateMustAttributes unit test functions
+ * Input:
+ *     pIndividualUpdate:
+ *         USN: 101    ATTR: CN
+ *         USN: 100    ATTR: SN
+ * Expected outcome:
+ *     pCombinedUpdate:
+ *         USN: 100    ATTR: CN
+ */
 VOID
-_VmDirAllocateAttrAndMetaData(
-    PSTR                         pszAttrType,
-    PSTR                         pszValue,
-    USN                          localUsn,
-    USN                          origUsn,
-    UINT64                       version,
-    PVMDIR_REPLICATION_UPDATE    pUpdate
+VmDirExtractEventPopulateMustAttributes_ValidInput(
+    VOID    **state
     )
 {
     DWORD                             dwError = 0;
+    PVMDIR_REPLICATION_UPDATE         pCombinedUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE         pIndividualUpdate = NULL;
     PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
     PVDIR_ATTRIBUTE                   pAttr = NULL;
 
-    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPL_ATTRIBUTE_METADATA), (PVOID*)&pReplMetaData);
+    pIndividualUpdate = (PVMDIR_REPLICATION_UPDATE) *state;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pCombinedUpdate);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCombinedUpdate);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pCombinedUpdate->pEntry);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCombinedUpdate->pEntry);
+
+    dwError = VmDirLinkedListCreate(&pCombinedUpdate->pMetaDataList);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCombinedUpdate->pMetaDataList);
+
+    pCombinedUpdate->syncState = LDAP_SYNC_ADD;
+    pCombinedUpdate->partnerUsn = 100;
+    pCombinedUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    dwError = VmDirExtractEventPopulateMustAttributes(pIndividualUpdate, pCombinedUpdate);
     assert_int_equal(dwError, 0);
 
-    dwError = VmDirAllocateStringA(pszAttrType, &pReplMetaData->pszAttrType);
+    //Verify Attr MetaData is as expected in pIndividualUpdate
+    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_CN);
+    assert_non_null(pReplMetaData);
+    assert_string_equal(pReplMetaData->pszAttrType, ATTR_CN);
+    assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
+    assert_int_equal(pReplMetaData->pMetaData->version, 1);
+    assert_string_equal(
+            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
+    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
+
+    //Verify Attr value is as expected in pCombinedUpdate
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_CN);
+    assert_non_null(pAttr);
+    assert_string_equal(pAttr->type.lberbv_val, ATTR_CN);
+    assert_string_equal(pAttr->vals[0].lberbv_val, "newuser_cn");
+
+    VmDirFreeReplUpdate(pCombinedUpdate);
+}
+
+/*
+ * PopulateOperationAttributes unit test functions
+ * Input:
+ *     pCombinedUpdate:
+ *         USN: 101    ATTR: USN_CHANGED
+ *         USN: 100    ATTR: OBJECT_GUID
+ *     pIndividualUpdate:
+ *         USN: 101    ATTR: LAST_KNOWN_DN
+ *         USN: 101    ATTR: IS_DELETED
+ *         USN: 101    ATTR: OBJECT_CLASS
+ * Expected outcome:
+ *     pIndividualUpdate->syncState = LDAP_SYNC_DELETE
+ *     pIndividualUpdate:
+ *         USN: 101    ATTR: USN_CHANGED
+ *         USN: 100    ATTR: OBJECT_GUID
+ *         USN: 101    ATTR: LAST_KNOWN_DN
+ *         USN: 101    ATTR: IS_DELETED
+ *     pCombinedUpdate:
+ *         USN: 101    ATTR: USN_CHANGED
+ *         USN: 100    ATTR: OBJECT_GUID
+ *         USN: 100    ATTR: ENTRY_DN
+ *         USN: 100    ATTR: OBJECT_CLASS
+ */
+VOID
+VmDirExtractEventPopulateOperationAttributes_ValidInput(
+    VOID    **state
+    )
+{
+    DWORD                             dwError = 0;
+    PVDIR_ATTRIBUTE                   pAttr = NULL;
+    PVMDIR_REPLICATION_UPDATE         pCombinedUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE         pIndividualUpdate = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
+
+    pCombinedUpdate = (PVMDIR_REPLICATION_UPDATE) *state;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pIndividualUpdate);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pIndividualUpdate);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pIndividualUpdate->pEntry);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pIndividualUpdate->pEntry);
+
+    dwError = VmDirLinkedListCreate(&pIndividualUpdate->pMetaDataList);
     assert_int_equal(dwError, 0);
 
-    dwError = VmDirMetaDataCreate(
-            localUsn,
-            version,
-            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
-            "20180702222545.584",
-            origUsn,
-            &pReplMetaData->pMetaData);
+    pIndividualUpdate->partnerUsn = 101;
+    pIndividualUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    VmDirAllocateAttrAndMetaData(
+            ATTR_OBJECT_CLASS, OC_DELETED_OBJECT, 101, 101, 2, pIndividualUpdate);
+
+    VmDirAllocateAttrAndMetaData(ATTR_IS_DELETED, "true", 101, 101, 1, pIndividualUpdate);
+
+    VmDirAllocateAttrAndMetaData(
+            ATTR_LAST_KNOWN_DN,
+            "cn=newuser,cn=users,dc=lw-testdom,dc=com",
+            101,
+            101,
+            1,
+            pIndividualUpdate);
+
+    dwError = VmDirExtractEventPopulateOperationAttributes(pCombinedUpdate, pIndividualUpdate);
     assert_int_equal(dwError, 0);
 
-    //Populate pAttr
-    dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttr);
-    assert_int_equal(dwError, 0);
+    assert_int_equal(pIndividualUpdate->syncState, LDAP_SYNC_DELETE);
 
-    dwError = VmDirStringToBervalContent(pszAttrType, &pAttr->type);
-    assert_int_equal(dwError, 0);
+    //Verify Attr MetaData is as expected in pIndividualUpdate
+    pReplMetaData = VmDirFindAttrMetaData(pIndividualUpdate->pMetaDataList, ATTR_USN_CHANGED);
+    assert_non_null(pReplMetaData);
 
-    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (2), (PVOID*)&pAttr->vals);
-    assert_int_equal(dwError, 0);
+    assert_string_equal(pReplMetaData->pszAttrType, ATTR_USN_CHANGED);
+    assert_int_equal(pReplMetaData->pMetaData->localUsn, 101);
+    assert_int_equal(pReplMetaData->pMetaData->version, 2);
+    assert_string_equal(
+            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
+    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 101);
 
-    dwError = VmDirStringToBervalContent(pszValue, &pAttr->vals[0]);
-    assert_int_equal(dwError, 0);
+    pReplMetaData = VmDirFindAttrMetaData(pIndividualUpdate->pMetaDataList, ATTR_OBJECT_GUID);
+    assert_non_null(pReplMetaData);
 
-    pAttr->numVals = 1;
+    assert_string_equal(pReplMetaData->pszAttrType, ATTR_OBJECT_GUID);
+    assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
+    assert_int_equal(pReplMetaData->pMetaData->version, 1);
+    assert_string_equal(
+            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
+    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
 
-    //Insert MetaData to pUpdate
-    dwError = VmDirLinkedListInsertHead(pUpdate->pMetaDataList, (PVOID)pReplMetaData, NULL);
-    assert_int_equal(dwError, 0);
+    //Verify Attr MetaData is as expected in pCombinedUpdate
+    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_DN);
+    assert_non_null(pReplMetaData);
+    assert_string_equal(pReplMetaData->pszAttrType, ATTR_DN);
+    assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
+    assert_int_equal(pReplMetaData->pMetaData->version, 1);
+    assert_string_equal(
+            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
+    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
 
-    //Insert pAttr to pEntry
-    pAttr->next = pUpdate->pEntry->attrs;
-    pUpdate->pEntry->attrs = pAttr;
+    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_OBJECT_CLASS);
+    assert_non_null(pReplMetaData);
+
+    assert_string_equal(pReplMetaData->pszAttrType, ATTR_OBJECT_CLASS);
+    assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
+    assert_int_equal(pReplMetaData->pMetaData->version, 1);
+    assert_string_equal(
+            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
+    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
+    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
+
+    //Verify Attr value is as expected in pIndividualUpdate
+    pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_USN_CHANGED);
+    assert_non_null(pAttr);
+    assert_string_equal(pAttr->type.lberbv_val, ATTR_USN_CHANGED);
+    assert_string_equal(pAttr->vals[0].lberbv_val, "101");
+
+    pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_OBJECT_GUID);
+    assert_non_null(pAttr);
+    assert_string_equal(pAttr->type.lberbv_val, ATTR_OBJECT_GUID);
+    assert_string_equal(pAttr->vals[0].lberbv_val, "e7f6eae8-9902-4270-91ee-1ab36c898580");
+
+    //Verify Attr value is as expected in pCombinedUdpate
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_DN);
+    assert_non_null(pAttr);
+    assert_string_equal(pAttr->type.lberbv_val, ATTR_DN);
+    assert_string_equal(pAttr->vals[0].lberbv_val, "cn=newuser,cn=users,dc=lw-testdom,dc=com");
+    assert_non_null(pAttr->next);
+
+    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_OBJECT_CLASS);
+    assert_non_null(pAttr);
+    assert_string_equal(pAttr->type.lberbv_val, ATTR_OBJECT_CLASS);
+    assert_string_equal(pAttr->vals[0].lberbv_val, OC_DELETED_OBJECT);
+
+    VmDirFreeReplUpdate(pIndividualUpdate);
 }

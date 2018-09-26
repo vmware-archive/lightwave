@@ -320,7 +320,7 @@ VmDnsRpcQueryRecords(
     dwError = VmDnsSrvFindZone(pszZone, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsSrvQueryRecords(pZoneObject, pszName, dwType, 0, &pRecordList);
+    dwError = VmDnsSrvQueryRecords(pZoneObject, pszName, dwType, 0, &pRecordList, NULL);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsRpcCopyRecordArray(pRecordList, &pRecordArray);

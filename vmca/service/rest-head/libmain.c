@@ -72,6 +72,9 @@ VMCARestServerInit(
     dwError = coapi_map_api_impl(gpVMCARestApiDef, stRegMap);
     BAIL_ON_VMCA_ERROR(dwError);
 
+    dwError = VMCAOpensslInit();
+    BAIL_ON_VMCA_ERROR(dwError);
+
     dwError = _VMCARestServerInitHTTPS();
     if (dwError != 0)
     {
@@ -120,6 +123,8 @@ VMCARestServerShutdown(
     _VMCARestServerShutdownHTTPS();
 
     coapi_free_api_def(gpVMCARestApiDef);
+
+    VMCAOpensslShutdown();
 }
 
 VMREST_LOG_LEVEL
@@ -171,7 +176,7 @@ _VMCARestServerInitHTTPS(
     config.serverPort = VMCA_HTTPS_V2_PORT_NUM;
     config.connTimeoutSec = VMCA_REST_CONN_TIMEOUT_SEC;
     config.maxDataPerConnMB = VMCA_MAX_DATA_PER_CONN_MB;
-    config.pSSLContext = NULL;                  // TODO: Set SSL Context before initiazlizing
+    config.pSSLContext = gVMCAServerGlobals.gpVMCASslCtx;
     config.nWorkerThr = VMCA_REST_WORKERTHCNT;
     config.nClientCnt = VMCA_REST_CLIENTCNT;
     config.SSLCtxOptionsFlag = 0;

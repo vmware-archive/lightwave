@@ -92,28 +92,28 @@ public class SubjectConfirmationDataType {
 
     /**
      *
-     *         Section 3.4.2: The SubjectConfirmationDataType SHALL NOT
-     *         contain the NotBefore, Recipient, InResponseTo or Address
-     *         attributes. The NotOnOrAfter attribute SHALL be present if the
-     *         confirmation type is bearer and MUST be UTC time.
+     *  Section 3.4.2: The SubjectConfirmationDataType SHALL NOT
+     *  contain the NotBefore or Address attributes. The NotOnOrAfter
+     *  attribute SHALL be present if the confirmation type is bearer
+     *  and MUST be UTC time.
      *
-     *         If the value of the Method attribute is
-     *         urn:oasis:names:tc:SAML:2.0:cm:bearer then this attribute
-     *         SHALL be present and SHALL contain a time that is not later
-     *         than the NotOnOrAfter attribute of the Conditions element
+     *  If the value of the Method attribute is
+     *  urn:oasis:names:tc:SAML:2.0:cm:bearer then this attribute
+     *  SHALL be present and SHALL contain a time that is not later
+     *  than the NotOnOrAfter attribute of the Conditions element
      *
-     *         This element SHALL be present in all SubjectConfirmation
-     *         elements but if the value of the Method attribute of the
-     *         SubjectConfirmation is
-     *         urn:oasis:names:tc:SAML:2.0:cm:holder-of-key then this element
-     *         SHALL be of type saml:KeyInfoConfirmationDataType.  In this
-     *         case, the element SHALL contain a single KeyInfo element with
-     *         an X509Data element containing a certificate within an
-     *         X509Certificate element.
+     *  This element SHALL be present in all SubjectConfirmation
+     *  elements but if the value of the Method attribute of the
+     *  SubjectConfirmation is
+     *  urn:oasis:names:tc:SAML:2.0:cm:holder-of-key then this element
+     *  SHALL be of type saml:KeyInfoConfirmationDataType.  In this
+     *  case, the element SHALL contain a single KeyInfo element with
+     *  an X509Data element containing a certificate within an
+     *  X509Certificate element.
      *
-     *         Note: This profile does not enforce the fact that the
-     *         NotOnOrAfter attribute must be present if the method is
-     *         bearer.
+     *  Note: This profile does not enforce the fact that the
+     *  NotOnOrAfter attribute must be present if the method is
+     *  bearer.
      *       Gets the value of the content property.
      *
      * <p>
@@ -168,4 +168,51 @@ public class SubjectConfirmationDataType {
         this.notOnOrAfter = value;
     }
 
+    /**
+     * Gets the value of the recipient property.
+     *
+     * @return
+     *     possible object is
+     *     {@link String }
+     *
+     */
+    public String getRecipient() {
+        return recipient;
+    }
+
+    /**
+     * Sets the value of the recipient property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *
+     */
+    public void setRecipient(String value) {
+        this.recipient = value;
+    }
+
+    /**
+     * Gets the value of the inResponseTo property.
+     *
+     * @return
+     *     possible object is
+     *     {@link String }
+     *
+     */
+    public String getInResponseTo() {
+        return inResponseTo;
+    }
+
+    /**
+     * Sets the value of the inResponseTo property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link String }
+     *
+     */
+    public void setInResponseTo(String value) {
+        this.inResponseTo = value;
+    }
 }

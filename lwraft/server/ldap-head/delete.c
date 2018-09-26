@@ -33,6 +33,7 @@ VmDirPerformDelete(
     DeleteReq * dr = &(pOperation->request.deleteReq);
     BOOLEAN     bRefSent = FALSE;
     PSTR        pszRefStr = NULL;
+    PSTR        pszLocalErrMsg = NULL;
 
     // Get entry DN. 'm' => pOperation->reqDn.lberbv.bv_val points to DN within (in-place) ber
     if ( ber_scanf( pOperation->ber, "m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
@@ -78,9 +79,11 @@ cleanup:
         VmDirSendLdapResult( pOperation );
     }
     VMDIR_SAFE_FREE_MEMORY(pszRefStr);
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
 error:
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);
     goto cleanup;
 }
 

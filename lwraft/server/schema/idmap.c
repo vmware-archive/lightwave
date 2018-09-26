@@ -83,17 +83,19 @@ VmDirSchemaAttrIdMapReadDB(
 
     beCtx.pBE = VmDirBackendSelect(PERSISTED_DSE_ROOT_DN);
 
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_READ);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = beCtx.pBE->pfnBEDupKeyGetValues(
             &beCtx, ATTR_ID_MAP_KEY, &pStringList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     for (i = 0; i < pStringList->dwCount; i++)
     {
@@ -122,15 +124,15 @@ VmDirSchemaAttrIdMapReadDB(
     }
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
-    }
     VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pStringList);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
@@ -181,16 +183,18 @@ VmDirSchemaAttrIdMapUpdateDB(
 
     beCtx.pBE = VmDirBackendSelect(PERSISTED_DSE_ROOT_DN);
 
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR( dwError );
-    bHasTxn = TRUE;
 
     dwError = beCtx.pBE->pfnBEDupKeySetValues(&beCtx, ATTR_ID_MAP_KEY, pMapStrList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pAttrIdMap->pNewIds, &iter, &pair))
@@ -203,15 +207,15 @@ VmDirSchemaAttrIdMapUpdateDB(
     LwRtlHashMapClear(pAttrIdMap->pNewIds, VmDirNoopHashMapPairFree, NULL);
 
 cleanup:
-    if (bHasTxn)
-    {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
-    }
     VmDirBackendCtxContentFree(&beCtx);
     VmDirStringListFree(pMapStrList);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 

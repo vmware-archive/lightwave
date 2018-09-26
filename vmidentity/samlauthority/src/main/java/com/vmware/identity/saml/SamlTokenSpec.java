@@ -216,7 +216,7 @@ public final class SamlTokenSpec {
        * Creates BEARER type confirmation.
        */
       public Confirmation() {
-         this(null, null);
+         this((String)null, null);
       }
 
       /**
@@ -248,6 +248,23 @@ public final class SamlTokenSpec {
          this.recipient = null;
          this.certificate = certificate;
       }
+
+      /**
+       * Creates HOK type confirmation.
+       *
+       * @param certificate
+       *           the HolderOfKey certificate. Cannot be null.
+       * @param recipient
+       *           optional
+       */
+      public Confirmation(X509Certificate certificate, String recipient) {
+        Validate.notNull(certificate);
+
+        this.type = ConfirmationType.HOLDER_OF_KEY;
+        this.inResponseTo = null;
+        this.recipient = recipient;
+        this.certificate = certificate;
+     }
 
       /**
        * @return token confirmation type. Cannot be null.

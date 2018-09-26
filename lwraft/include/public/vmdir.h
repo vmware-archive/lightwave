@@ -54,6 +54,8 @@ extern "C" {
 #define LEGACY_DEFAULT_LDAP_PORT_STR       "11711"
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
 #define LEGACY_DEFAULT_LDAPS_PORT_STR      "11712"
+#define DEFAULT_LDAP_USER_TXN_RECV_TIMEOUT_MS 250
+#define DEFAULT_LDAP_USER_TXN_MAXTIME_MS 1500
 
 // Fixed DNs
 #define DSE_ROOT_DN                             ""
@@ -496,6 +498,12 @@ extern "C" {
 #define LDAP_APPEND_ENTRIES_CONTROL             "1.3.6.1.4.1.6876.40.10.9"
 // vmw LDAP RequestVote control OID
 #define LDAP_REQUEST_VOTE_CONTROL               "1.3.6.1.4.1.6876.40.10.10"
+
+/* RFC 5805 */
+#define VMDIR_LDAP_EXOP_TXN_START "1.3.6.1.1.21.1"
+#define VMDIR_LDAP_CONTROL_TXN_SPEC "1.3.6.1.1.21.2"
+#define VMDIR_LDAP_EXOP_TXN_END "1.3.6.1.1.21.3"
+#define VMDIR_LDAP_EXOP_TXN_ABORTED_NOTICE "1.3.6.1.1.21.4"
 
 #ifndef _WIN32
 #define LWRAFT_NCALRPC_END_POINT "postsvc"

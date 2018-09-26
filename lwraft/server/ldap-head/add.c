@@ -316,6 +316,8 @@ VmDirPerformAdd(
     int              retVal = LDAP_SUCCESS;
     BOOLEAN          bRefSent = FALSE;
     PSTR             pszRefStr = NULL;
+    PVDIR_LDAP_RESULT pResult = &(pOperation->ldapResult);
+    PSTR             pszLocalErrorMsg = NULL;
 
     retVal = VmDirParseEntry( pOperation );
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -344,10 +346,12 @@ cleanup:
     {
         VmDirSendLdapResult( pOperation );
     }
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     VMDIR_SAFE_FREE_MEMORY(pszRefStr);
     return retVal;
 
 error:
+    VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
     goto cleanup;
 }
 

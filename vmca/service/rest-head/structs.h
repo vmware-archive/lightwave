@@ -93,3 +93,11 @@ typedef struct _VMCA_REST_OPERATION
 
     PFN_GET_HTTP_ERROR  pfnGetHttpError;
 } VMCA_REST_OPERATION, *PVMCA_REST_OPERATION;
+
+typedef struct _VMCA_SERVER_OPENSSL_GLOBALS
+{
+    pthread_mutex_t*        pMutexBuf;
+    DWORD                   dwMutexBufSize;
+    BOOLEAN                 bSSLInitialized;
+
+} VMCA_SERVER_OPENSSL_GLOBALS, *PVMCA_SERVER_OPENSSL_GLOBALS;

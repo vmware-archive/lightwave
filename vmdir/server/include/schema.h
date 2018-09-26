@@ -221,11 +221,6 @@ VmDirPatchLocalSchemaObjects(
     );
 
 DWORD
-VmDirWriteSchemaObjects(
-    VOID
-    );
-
-DWORD
 VmDirEntryGetAllMustAttrs(
     PVDIR_ENTRY     pEntry,
     PLW_HASHMAP*    ppAllMustAttrMap

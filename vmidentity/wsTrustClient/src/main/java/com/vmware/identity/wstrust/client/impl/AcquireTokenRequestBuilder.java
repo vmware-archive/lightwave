@@ -13,17 +13,20 @@
  */
 package com.vmware.identity.wstrust.client.impl;
 
+import java.util.ArrayList;
 import java.util.List;
 
 import javax.xml.bind.JAXBContext;
 
 import org.oasis_open.docs.ws_sx.ws_trust._200512.BinaryExchangeType;
+import org.oasis_open.docs.ws_sx.ws_trust._200512.ClaimsType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.DelegateToType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.ObjectFactory;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.ParticipantType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.ParticipantsType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RenewingType;
 import org.oasis_open.docs.ws_sx.ws_trust._200512.RequestSecurityTokenType;
+import org.oasis_open.docs.wsfed.authorization._200706.ClaimType;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.AttributedString;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.PasswordString;
 import org.oasis_open.docs.wss._2004._01.oasis_200401_wss_wssecurity_secext_1_0.SecurityHeaderType;
@@ -56,6 +59,7 @@ abstract class AcquireTokenRequestBuilder implements RequestBuilder {
     private static final String BEARER_CONFIRMATION_TYPE = "http://docs.oasis-open.org/ws-sx/ws-trust/200512/Bearer";
 
     private static final String WST14_ACTAS = "ActAs";
+    private static final String CLAIM_DIALECT = "http://schemas.xmlsoap.org/ws/2005/05/fedclaims";
     private final RequestBuilderHelper requestBuilderHelper;
 
     private final TokenSpec spec;
@@ -95,6 +99,7 @@ abstract class AcquireTokenRequestBuilder implements RequestBuilder {
         setRequestKeyType(request);
         addAudienceRestriction(request, wstFactory);
         addAdvice(request);
+        addCustomClaims(request, wstFactory);
 
         if (spec.getDelegationSpec() != null) {
             request.setDelegatable(spec.getDelegationSpec().isDelegable());
@@ -251,6 +256,22 @@ abstract class AcquireTokenRequestBuilder implements RequestBuilder {
             }
 
             request.setAdviceSet(adviceSet);
+        }
+    }
+
+    private void addCustomClaims(RequestSecurityTokenType request, ObjectFactory wstFactory) {
+        if (spec.getClaims() != null && !spec.getClaims().isEmpty()) {
+            List<ClaimType> claimList = new ArrayList<>();
+            for (String uri : spec.getClaims()) {
+                org.oasis_open.docs.wsfed.authorization._200706.ObjectFactory claimFactory = new org.oasis_open.docs.wsfed.authorization._200706.ObjectFactory();
+                ClaimType claim = claimFactory.createClaimType();
+                claim.setUri(uri);
+                claimList.add(claim);
+            }
+            ClaimsType claims = wstFactory.createClaimsType();
+            claims.setDialect(CLAIM_DIALECT);
+            claims.setClaimType(claimList);
+            request.setClaims(claims);
         }
     }
 

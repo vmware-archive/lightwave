@@ -103,7 +103,7 @@ public class IdentityStoreAttributeMapping implements Serializable {
         }
     }
 
-    static void validateName(String name, String fieldName)
+    public static void validateName(String name, String fieldName)
     {
         // for the name we are following the Oid from RFC4512
         ValidateUtil.validateNotEmpty(name, fieldName);

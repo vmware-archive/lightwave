@@ -316,6 +316,11 @@ extern VMCA_LOG_LEVEL VMCALogGetLevel();
 
 #define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
 
+#ifdef REST_V2_ENABLED
+#define RSA_SERVER_CERT                     VMCA_CONFIG_DIR "/vmcacert.pem"
+#define RSA_SERVER_KEY                      VMCA_CONFIG_DIR "/vmcakey.pem"
+#endif
+
 #if 0
 /* mutexes/threads/conditions */
 typedef struct _VMCA_MUTEX* PVMCA_MUTEX;
@@ -673,6 +678,12 @@ VMCACopyFile(
 DWORD
 VMCARestrictDirectoryAccess(
     PCSTR pszDirectoryName
+    );
+
+DWORD
+VMCAFileExists(
+    PCSTR       pszFileName,
+    PBOOLEAN    pbFound
     );
 
 DWORD

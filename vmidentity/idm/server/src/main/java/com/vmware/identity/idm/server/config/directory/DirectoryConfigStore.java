@@ -2177,6 +2177,91 @@ public class DirectoryConfigStore implements IConfigStore {
   }
 
   @Override
+  public
+  void
+  setProviderAttributesMap(
+          String tenantName,
+          String providerName,
+          Map<String,String> attributesMap ) throws Exception{
+    ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+    ValidateUtil.validateNotEmpty(providerName, "providerName");
+
+    try (PooledLdapConnection pooledConnection = borrowConnection()) {
+        ILdapConnectionEx connection = pooledConnection.getConnection();
+
+        String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+        IdentityProviderLdapObject identityProviderConfigObject = IdentityProviderLdapObject.getInstance();
+
+        String identityProvidersContainerDn = DirectoryConfigStore.ensureObjectExists(
+            connection,
+            tenantsRootDn,
+            ContainerLdapObject.getInstance(),
+            ContainerLdapObject.CONTAINER_IDENTITY_PROVIDERS,
+            false
+        );
+
+        String providerDn = null;
+
+        if (ServerUtils.isNullOrEmpty(identityProvidersContainerDn)==false) {
+            providerDn = identityProviderConfigObject.lookupObject(
+                connection,
+                identityProvidersContainerDn,
+                LdapScope.SCOPE_ONE_LEVEL,
+                providerName
+            );
+        }
+        if (ServerUtils.isNullOrEmpty(providerDn)) {
+            throw new NoSuchIdpException(
+                String.format("Provider [%s] not found in tenant [%s]", providerName, tenantName));
+        }
+
+        DirectoryConfigStore.saveIdentityProviderAttributesMap(connection, providerDn, attributesMap);
+    }
+  }
+
+  @Override
+  public
+  Map<String,String>
+  getProviderAttributesMap(
+          String             tenantName,
+          String providerName ) throws Exception {
+    ValidateUtil.validateNotEmpty(tenantName, "tenantName");
+    ValidateUtil.validateNotEmpty(providerName, "providerName");
+
+    try (PooledLdapConnection pooledConnection = borrowConnection()) {
+        ILdapConnectionEx connection = pooledConnection.getConnection();
+
+        String tenantsRootDn = this.ensureTenantExists(connection, tenantName);
+        IdentityProviderLdapObject identityProviderConfigObject = IdentityProviderLdapObject.getInstance();
+
+        String identityProvidersContainerDn = DirectoryConfigStore.ensureObjectExists(
+            connection,
+            tenantsRootDn,
+            ContainerLdapObject.getInstance(),
+            ContainerLdapObject.CONTAINER_IDENTITY_PROVIDERS,
+            false
+        );
+
+        String providerDn = null;
+
+        if (ServerUtils.isNullOrEmpty(identityProvidersContainerDn)==false) {
+            providerDn = identityProviderConfigObject.lookupObject(
+                connection,
+                identityProvidersContainerDn,
+                LdapScope.SCOPE_ONE_LEVEL,
+                providerName
+            );
+        }
+        if (ServerUtils.isNullOrEmpty(providerDn)) {
+            throw new NoSuchIdpException(
+                String.format("Provider [%s] not found in tenant [%s]", providerName, tenantName));
+        }
+
+        return DirectoryConfigStore.retrieveIdentityProviderAttributesMap(connection, providerDn);
+    }
+  }
+
+  @Override
   public void registerExternalIdpConfig(String tenantName, IDPConfig idpConfig) throws Exception {
     // validation has been done on IIdentityManager
     PooledLdapConnection pooledConnection = borrowConnection();

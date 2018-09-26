@@ -15,6 +15,7 @@ package com.vmware.identity.rest.idm.server.resources;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 
 import javax.ws.rs.Consumes;
 import javax.ws.rs.DefaultValue;
@@ -32,6 +33,7 @@ import javax.ws.rs.core.UriInfo;
 import com.vmware.identity.rest.core.server.authorization.Role;
 import com.vmware.identity.rest.core.server.authorization.annotation.RequiresRole;
 import com.vmware.identity.rest.core.server.resources.BaseResource;
+import com.vmware.identity.rest.idm.data.AttributeDTO;
 import com.vmware.identity.rest.idm.data.CertificateChainDTO;
 import com.vmware.identity.rest.idm.data.EventLogDTO;
 import com.vmware.identity.rest.idm.data.EventLogStatusDTO;
@@ -114,6 +116,19 @@ public class PostResource extends BaseResource {
         return new TenantResource(getRequest(), getSecurityContext()).getSecurityDomains(tenantName);
     }
 
+    /**
+     * Retrieve all attributes associated with requested tenant
+     * @return A Collection of attributes @see {@link AttributeDTO}
+     * @throws BadRequestException On client side errors like bad input.
+     * @throws InternalServerErrorException Otherwise
+     */
+    @POST @Path("/tenant/{tenantName}/attributes")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.REGULAR_USER)
+    public Collection<AttributeDTO> getAllAttributes(@PathParam("tenantName") String tenantName) {
+        return new AttributesResource(tenantName, getRequest(), getSecurityContext()).getAll();
+    }
+
     @POST @Path("/tenant/{tenantName}/config")
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
@@ -137,6 +152,13 @@ public class PostResource extends BaseResource {
         return new IdentityProviderResource(tenantName, getRequest(), getSecurityContext()).get(providerName);
     }
 
+    @POST @Path("/tenant/{tenantName}/providers/{providerName}/attributesMap")
+    @Produces(MediaType.APPLICATION_JSON)
+    @RequiresRole(role=Role.REGULAR_USER)
+    public Map<String,String> getAttributesMap(
+        @PathParam("tenantName") String tenantName, @PathParam("providerName") String providerName) {
+            return new IdentityProviderResource(tenantName, getRequest(), getSecurityContext()).getAttributesMap(providerName);
+    }
     // External IDP Resource
 
     @POST @Path("/tenant/{tenantName}/externalidp")

@@ -51,10 +51,11 @@ VmDirMLDelete(
                 "Not bind/authenticate yet");
     }
 
-    if (VmDirRaftDisallowUpdates("Delete"))
+    if (!VmDirValidTxnState(pOperation->pBECtx, pOperation->reqCode))
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+       dwError = LDAP_UNWILLING_TO_PERFORM;
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+               "%s: invaid request for transaction state", __func__);
     }
 
     dwError = VmDirInternalDeleteEntry(pOperation);
@@ -122,6 +123,19 @@ VmDirInternalDeleteEntry(
             retVal,
             VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)));
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+            "txn begin (%u)(%s)", retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+
+    if (bHasTxn)
+    {
+       retVal = VmDirValidateOp(pOperation, __func__);
+       BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // Execute pre modify apply Delete plugin logic
     VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
 
@@ -137,18 +151,6 @@ VmDirInternalDeleteEntry(
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // BUGBUG, need to protect some system entries such as schema,domain....etc?
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
-
-    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal, pszLocalErrMsg,
-            "txn begin (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
-    bHasTxn = TRUE;
 
     // Read current entry from DB
     retVal = pOperation->pBEIF->pfnBEDNToEntry(
@@ -303,24 +305,30 @@ VmDirInternalDeleteEntry(
                 "Update domain list entry failed.");
     }
 
-    retVal = VmDirDeleteRaftPreCommit(
+    if (pOperation->bNoRaftLog == FALSE)
+    {
+        retVal = VmDirDeleteRaftPreCommit(
             pOperation->pSchemaCtx, pEntry->eId, BERVAL_NORM_VAL(pEntry->dn), pOperation);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "VmDirDeleteRaftPreCommit error (%u)",
             retVal);
+    }
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
-    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal, pszLocalErrMsg,
-            "txn commit (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+    if (bHasTxn)
+    {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
-    bHasTxn = FALSE;
+        retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+             retVal, pszLocalErrMsg,
+             "txn commit (%u)(%s)",
+             retVal,
+             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    }
 
     if (!pOperation->bSuppressLogInfo)
     {
@@ -337,6 +345,7 @@ VmDirInternalDeleteEntry(
 
 cleanup:
 
+    if (retVal == 0)
     {
         int iPostCommitPluginRtn  = 0;
 
@@ -373,9 +382,7 @@ cleanup:
 error:
     if (bHasTxn)
     {
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);

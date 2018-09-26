@@ -53,7 +53,8 @@ typedef struct _VDIR_MDB_INDEX_ITERATOR
     PSTR            pszVal;
     ENTRYID         eId;
     BOOLEAN         bAbort;
-
+    BOOLEAN         bHasTxn;
+    PVDIR_BACKEND_CTX pBECtx;
 } VDIR_MDB_INDEX_ITERATOR, *PVDIR_MDB_INDEX_ITERATOR;
 
 typedef struct _VDIR_MDB_DB
@@ -66,6 +67,7 @@ typedef struct _VDIR_MDB_DB
     MDB_dbi                         mdbGenericDupKeyDBi;
     MDB_dbi                         mdbGenericUniqKeyDBi;
     PSTR                            pszDBPath;
+    BOOLEAN                         bIsMainDB;
     struct _VDIR_MDB_DB *           pNext;
 }VDIR_MDB_DB, *PVDIR_MDB_DB;
 

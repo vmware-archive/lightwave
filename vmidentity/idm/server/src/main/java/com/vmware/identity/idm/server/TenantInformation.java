@@ -282,6 +282,23 @@ public class TenantInformation
         return null;
     }
 
+    public
+    IIdentityStoreData findIdsByName(String name) throws Exception
+    {
+        if (this._idsStores != null && !this._idsStores.isEmpty())
+        {
+            for (IIdentityStoreData ids : this._idsStores)
+            {
+                if (ids.getName().equalsIgnoreCase(name))
+                {
+                    return ids;
+                }
+            }
+        }
+
+        return null;
+    }
+
     public IIdentityProvider getAdProvider()
     {
         return _adProvider;

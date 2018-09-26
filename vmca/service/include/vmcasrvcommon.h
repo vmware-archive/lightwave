@@ -35,6 +35,23 @@ extern "C" {
 #define VMDIR_REG_KEY_DC_ACCOUNT    "dcAccount"
 #define VMAFD_REG_KEY_DOMAIN_NAME   "DomainName"
 
+#ifndef _WIN32
+#define VMCA_SF_INIT( fieldName, fieldValue ) fieldName = fieldValue
+#else
+#define VMCA_SF_INIT( fieldName, fieldValue ) fieldValue
+#endif
+
+typedef DWORD VMCA_FUNC_LEVEL;
+
+#define VMCA_UNKNOWN                0x00000001
+#define VMCA_ROOT_INIT_FAILED       0x00000002
+#define VMCA_ROOT_INIT_DONE         0x00000004
+
+#define VMCA_FUNC_LEVEL_INITIAL     0x00000000
+#define VMCA_FUNC_LEVEL_SELF_CA     0x00000004
+
+typedef struct _VMCA_POLICY VMCA_POLICY, *PVMCA_POLICY;
+
 typedef struct _VMCA_REQ_CONTEXT
 {
     PSTR            pszAuthPrincipal;
@@ -46,6 +63,81 @@ typedef enum
     VMCAD_NORMAL,
     VMCAD_SHUTDOWN
 } VMCA_SERVER_STATE;
+
+typedef PVOID (*PFN_VMCA_THR_FUNC)(PVOID pData);
+
+typedef struct _VMCA_THREAD_DATA
+{
+    pthread_mutex_t                 mutex;
+    pthread_mutex_t*                pMutex;
+
+    pthread_cond_t                  cond;
+    pthread_cond_t*                 pCond;
+
+    BOOLEAN                         bShutdown;
+
+    PVOID                           pData;
+
+} VMCA_THREAD_DATA, *PVMCA_THREAD_DATA;
+
+typedef struct _VMCA_THREAD
+{
+    LONG                            refCount;
+
+    pthread_t                       thread;
+    pthread_t*                      pThread;
+
+    PVMCA_THREAD_DATA               pThrData;
+
+} VMCA_THREAD, *PVMCA_THREAD;
+
+typedef struct _VMCA_DIR_SYNC_PARAMS
+{
+    LONG                            refCount;
+
+    pthread_mutex_t                 mutex;
+    pthread_mutex_t*                pMutex;
+
+    DWORD                           dwSyncIntervalSecs;
+
+    time_t                          lastUpdateTime;
+
+    BOOLEAN                         bRefresh;
+
+} VMCA_DIR_SYNC_PARAMS, *PVMCA_DIR_SYNC_PARAMS;
+
+typedef struct _VMCA_SERVER_GLOBALS
+{
+    pthread_mutex_t                 mutex;
+    pthread_mutex_t                 mutexCRL;
+    DWORD                           dwCurrentCRLNumber;
+
+    pthread_rwlock_t                svcMutex;
+
+    FILE*                           fVMCALog;
+
+    // Security descriptor for VMCA-Service resources.
+    // PSECURITY_DESCRIPTOR_ABSOLUTE   gpVMCAServSD;
+
+    dcethread*                      pRPCServerThread;
+    VMCA_SERVER_STATE               vmcadState;
+
+    PVMCA_X509_CA                   pCA;
+    VMCA_FUNC_LEVEL                 dwFuncLevel;
+
+    PVMCA_DIR_SYNC_PARAMS           pDirSyncParams;
+    PVMCA_THREAD                    pDirSyncThr;
+
+    HANDLE                          gpEventLog;
+
+    PVMCA_POLICY                    *gppPolicies;
+
+    BOOLEAN                         bDisableVECSIntegration;
+    SSL_CTX*                        gpVMCASslCtx;
+
+} VMCA_SERVER_GLOBALS, *PVMCA_SERVER_GLOBALS;
+
+extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
 
 /* ../common/config.c */
 
@@ -142,10 +234,6 @@ VMCAUtilIsValueInWhitelist(
     PCSTR                           pcszRegValue,
     PBOOLEAN                        pbInWhitelist
     );
-
-#ifdef __cplusplus
-extern "C" {
-#endif
 
 #ifdef __cplusplus
 }

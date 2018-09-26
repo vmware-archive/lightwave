@@ -225,8 +225,12 @@ public final class ValidateUtil {
          return ((java.util.Collection<?>) obj).isEmpty();
       }
 
-      final String message = "String, java.lang.Array or java.util.Collection "
-         + "expected but " + obj.getClass().getName() + " was found ";
+      if (obj instanceof java.util.Map<?, ?>) {
+         return ((java.util.Map<?, ?>) obj).isEmpty();
+      }
+
+      final String message = "String, java.lang.Array, java.util.Collection, "
+         + "java.util.Map expected but " + obj.getClass().getName() + " was found ";
 
       getLog().error(message);
       throw new IllegalArgumentException(message);

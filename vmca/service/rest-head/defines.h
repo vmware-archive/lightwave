@@ -28,6 +28,10 @@
 #define VMCA_REST_STOP_TIMEOUT_SEC          10
 
 #define VMCA_MAX_LOG_OUTPUT_LEN             256
+#define VMCA_SSL_DISABLED_PROTOCOL_LEN      64
+
+#define VMCA_REG_KEY_SSL_DISABLED_PROTOCOLS "SslDisabledProtocols"
+#define VMCA_REG_KEY_SSL_CIPHER_SUITE       "SslCipherSuite"
 
 // HTTP headers
 #define VMCA_REST_HEADER_AUTHORIZATION      "Authorization"

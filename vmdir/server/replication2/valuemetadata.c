@@ -53,13 +53,10 @@ VmDirReplGetAttrValueMetaDataList(
     }
 
     //pAttrAttrValueMetaData metadata may be not be present in some cases
-    if (pAttrAttrValueMetaData)
-    {
-        dwError = VmDirAttributeValueMetaDataToList(pAttrAttrValueMetaData, &pValueMetaDataList);
-        BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmDirAttributeValueMetaDataToList(pAttrAttrValueMetaData, &pValueMetaDataList);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-        *ppValueMetaDataList = pValueMetaDataList;
-    }
+    *ppValueMetaDataList = pValueMetaDataList;
 
 cleanup:
     VmDirFreeAttribute(pAttrAttrValueMetaData);

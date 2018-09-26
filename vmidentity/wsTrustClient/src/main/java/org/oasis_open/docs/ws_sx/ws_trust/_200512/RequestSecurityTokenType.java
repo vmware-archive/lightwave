@@ -72,6 +72,7 @@ import com.rsa.names._2009._12.std_ext.ws_trust1_4.advice.AdviceSetType;
  *         &lt;element ref="{http://docs.oasis-open.org/ws-sx/ws-trust/200512}SignatureAlgorithm" minOccurs="0"/>
  *         &lt;element ref="{http://docs.oasis-open.org/ws-sx/ws-trust/200512}BinaryExchange" minOccurs="0"/>
  *         &lt;element ref="{http://docs.oasis-open.org/ws-sx/ws-trust/200512}Participants" minOccurs="0"/>
+ *         &lt;element ref="{http://docs.oasis-open.org/ws-sx/ws-trust/200512}Claims" minOccurs="0"/>
  *         &lt;element ref="{http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice}AdviceSet" minOccurs="0"/>
  *       &lt;/sequence>
  *       &lt;attribute name="Context" type="{http://www.w3.org/2001/XMLSchema}anyURI" />
@@ -86,7 +87,7 @@ import com.rsa.names._2009._12.std_ext.ws_trust1_4.advice.AdviceSetType;
 @XmlType(name = "RequestSecurityTokenType", propOrder = { "tokenType",
         "requestType", "lifetime", "validateTarget", "renewTarget", "renewing",
         "delegateTo", "delegatable", "actAs", "useKey", "keyType",
-        "signatureAlgorithm", "binaryExchange", "participants", "adviceSet" })
+        "signatureAlgorithm", "binaryExchange", "participants", "claims", "adviceSet" })
 @XmlRootElement(name = "RequestSecurityToken")
 public class RequestSecurityTokenType {
 
@@ -120,6 +121,8 @@ public class RequestSecurityTokenType {
     protected BinaryExchangeType binaryExchange;
     @XmlElement(name = "Participants")
     protected ParticipantsType participants;
+    @XmlElement(name = "Claims")
+    protected ClaimsType claims;
     @XmlElement(name = "AdviceSet", namespace = "http://www.rsa.com/names/2009/12/std-ext/WS-Trust1.4/advice")
     protected AdviceSetType adviceSet;
     @XmlAttribute(name = "Context")
@@ -418,6 +421,30 @@ public class RequestSecurityTokenType {
      */
     public void setParticipants(ParticipantsType value) {
         this.participants = value;
+    }
+
+    /**
+     * Gets the value of the claims property.
+     *
+     * @return
+     *     possible object is
+     *     {@link ClaimsType }
+     *
+     */
+    public ClaimsType getClaims() {
+        return claims;
+    }
+
+    /**
+     * Sets the value of the claims property.
+     *
+     * @param value
+     *     allowed object is
+     *     {@link ClaimsType }
+     *
+     */
+    public void setClaims(ClaimsType value) {
+        this.claims = value;
     }
 
     /**

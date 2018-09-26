@@ -265,3 +265,35 @@ error:
 }
 
 #endif
+
+DWORD
+VMCAFileExists(
+    PCSTR       pszFileName,
+    PBOOLEAN    pbFound
+    )
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bFound = FALSE;
+    struct stat statBuf = {0};
+    int         iRetVal = 0;
+
+    if (!pszFileName || !pbFound)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    iRetVal = stat(pszFileName, &statBuf);
+    if (iRetVal == 0 && S_ISREG(statBuf.st_mode))
+    {
+        bFound = TRUE;
+    }
+
+    *pbFound = bFound;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

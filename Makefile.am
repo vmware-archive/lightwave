@@ -19,6 +19,7 @@ SUBDIRS = \
         vmdns \
         vmafd \
         vmca \
+        mutentca \
         vmidentity \
         config
 
@@ -73,6 +74,7 @@ package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_vmdir_prefix /opt/vmware" \
               --define "_vmafd_prefix /opt/vmware" \
               --define "_vmca_prefix /opt/vmware" \
+              --define "_mutentca_prefix /opt/vmware" \
               --define "_vmdns_prefix /opt/vmware" \
               --define "_vmsts_prefix /opt/vmware" \
               --define "_javahome $(JAVA_HOME)" \

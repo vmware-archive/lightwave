@@ -21,6 +21,7 @@ import java.security.cert.Certificate;
 import java.util.Collection;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 
 import com.vmware.identity.idm.Attribute;
 import com.vmware.identity.idm.CertificateType;
@@ -324,6 +325,18 @@ public interface IConfigStore
             String             tenantName,
             Collection<String> defaultProviders
             ) throws Exception;
+
+    public
+    void
+    setProviderAttributesMap(
+            String             tenantName,
+            String providerName,
+            Map<String,String> attributesMap ) throws Exception;
+    public
+    Map<String,String>
+    getProviderAttributesMap(
+            String             tenantName,
+            String providerName ) throws Exception;
 
     public
     void setEntityID(String tenantName, String entityID) throws Exception;
