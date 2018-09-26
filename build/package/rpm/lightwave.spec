@@ -1431,9 +1431,10 @@ Lightwave Samples
 %{_sbindir}/mutentcad
 
 %{_datadir}/config/mutentca.reg
+%{_datadir}/config/mutentca-rest.json
+%{_datadir}/config/mutentca-schema.ldif
 %{_datadir}/config/mutentcad-syslog-ng.conf
 %{_datadir}/config/mutentca-telegraf.conf
-%{_datadir}/config/mutentca-rest.json
 
 %{_configdir}/lw-firewall-mutentca.json
 
