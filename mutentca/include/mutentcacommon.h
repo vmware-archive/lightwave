@@ -81,6 +81,12 @@ typedef UINT8 BOOLEAN, *PBOOLEAN;
 typedef struct _LWCA_CFG_CONNECTION* PLWCA_CFG_CONNECTION;
 typedef struct _LWCA_CFG_KEY*        PLWCA_CFG_KEY;
 
+typedef struct _LWCA_STRING_ARRAY
+{
+    PSTR    *ppData;
+    DWORD   dwCount;
+} LWCA_STRING_ARRAY, *PLWCA_STRING_ARRAY;
+
 #define LWCA_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define LWCA_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
 #define LWCA_ASCII_DIGIT(c)    ( (c) >= '0' && (c) <= '9' )
