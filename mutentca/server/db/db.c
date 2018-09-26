@@ -14,6 +14,31 @@
 
 #include "includes.h"
 
+
+static
+DWORD
+LwCADbValidateContext(
+    )
+{
+    if (!gDbCtx.isInitialized)
+    {
+        return  LWCA_DB_NOT_INITIALIZED;
+    }
+
+    return LWCA_SUCCESS;
+}
+
+static
+BOOLEAN
+IsValidFunctionTable(
+    PLWCA_DB_FUNCTION_TABLE pFt
+    )
+{
+    return (pFt && pFt->pFnInit && pFt->pFnAddCA && pFt->pFnAddCertData && pFt->pFnGetCACertificates &&
+        pFt->pFnGetCertData && pFt->pFnUpdateCA && pFt->pFnUpdateCAStatus && pFt->pFnUpdateCertData &&
+        pFt->pFnFreeCertDataArray && pFt->pFnFreeCertArray);
+}
+
 /*
  * To initialize db context, the Mutent CA config file must provide db plugin with absolute path
  * Example:
@@ -30,17 +55,17 @@ LwCADbInitCtx(
     PSTR pszPlugin = NULL;
     BOOLEAN bLocked = FALSE;
 
+    if (!pConfig)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
     LWCA_LOCK_MUTEX_EXCLUSIVE(&gDbCtx.dbMutex, bLocked);
 
     if (gDbCtx.isInitialized)
     {
         dwError = LWCA_DB_ALREADY_INITIALIZED;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!pConfig)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -59,6 +84,12 @@ LwCADbInitCtx(
     dwError = gDbCtx.pFt->pFnInit(&gDbCtx.pDbHandle);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (!IsValidFunctionTable(gDbCtx.pFt))
+    {
+        dwError = LWCA_DB_INVALID_PLUGIN;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
     gDbCtx.isInitialized = TRUE;
 
 cleanup:
@@ -68,197 +99,270 @@ cleanup:
     return dwError;
 
 error:
+    if (dwError != LWCA_DB_ALREADY_INITIALIZED)
+    {
+        LwCADbFreeCtx();
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbAddCA(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        pCAData,
+    PCSTR                   pcszParentCA
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pCAData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnAddCA(gDbCtx.pDbHandle, pcszCAId, pCAData, pcszParentCA);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
-    LwCADbFreeCtx();
+    return dwError;
+
+error:
     goto cleanup;
 }
 
 DWORD
-LwCADbCreateCAData(
-    PCSTR                       pcszIssuer,
-    PCSTR                       pcszSubject,
-    PLWCA_CERTIFICATE_ARRAY     pCertificates,
-    PLWCA_KEY                   pEncryptedPrivateKey,
-    PLWCA_KEY                   pEncryptedEncryptionKey,
-    PCSTR                       pcszTimeValidFrom,
-    PCSTR                       pcszTimeValidTo,
-    LWCA_CA_STATUS              status,
-    PLWCA_DB_CA_DATA            *ppCAData
+LwCADbAddCertData(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
+    BOOLEAN bLocked = FALSE;
 
-    if (!pCertificates || !pEncryptedPrivateKey || !pEncryptedEncryptionKey ||
-            IsNullOrEmptyString(pcszIssuer) || IsNullOrEmptyString(pcszSubject) || !ppCAData)
+    if (IsNullOrEmptyString(pcszCAId) || !pCertData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
+    dwError = gDbCtx.pFt->pFnAddCertData(gDbCtx.pDbHandle, pcszCAId, pCertData);
     BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszIssuer, &pCAData->pszIssuer);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszSubject, &pCAData->pszSubject);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pcszTimeValidFrom))
-    {
-        dwError = LwCAAllocateStringA(pcszTimeValidFrom, &pCAData->pszTimeValidFrom);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pcszTimeValidTo))
-    {
-        dwError = LwCAAllocateStringA(pcszTimeValidTo, &pCAData->pszTimeValidTo);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCACopyKey(pEncryptedPrivateKey, &pCAData->pEncryptedPrivateKey);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACopyKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    pCAData->status = status;
-
-    *ppCAData = pCAData;
 
 cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
     return dwError;
 
 error:
-    LwCADbFreeCAData(pCAData);
-    if (ppCAData)
-    {
-        *ppCAData = NULL;
-    }
     goto cleanup;
 }
 
 DWORD
-LwCADbCreateCertData(
-    PCSTR                   pcszSerialNumber,
-    PCSTR                   pcszIssuer,
-    PCSTR                   pcszTimeValidFrom,
-    PCSTR                   pcszTimeValidTo,
-    PCSTR                   pcszRevokedReason,
-    PCSTR                   pcszRevokedDate,
-    LWCA_CERT_STATUS        status,
-    PLWCA_DB_CERT_DATA      *ppCertData
+LwCADbGetCACertificates(
+    PCSTR                      pcszCAId,
+    PLWCA_CERTIFICATE_ARRAY    *ppCertArray
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CERT_DATA pCertData = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    PLWCA_CERTIFICATE_ARRAY pTempCertArray = NULL;
+    BOOLEAN bLocked = FALSE;
 
-    if (IsNullOrEmptyString(pcszSerialNumber) || IsNullOrEmptyString(pcszRevokedReason) ||
-            IsNullOrEmptyString(pcszRevokedDate) || IsNullOrEmptyString(pcszTimeValidFrom) ||
-            IsNullOrEmptyString(pcszTimeValidTo) || !ppCertData)
+    if (IsNullOrEmptyString(pcszCAId) || !ppCertArray)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateStringA(pcszSerialNumber, &(pCertData->pszSerialNumber));
+    dwError = gDbCtx.pFt->pFnGetCACertificates(gDbCtx.pDbHandle, pcszCAId, &pTempCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (!IsNullOrEmptyString(pcszIssuer))
+    if (pTempCertArray)
     {
-        dwError = LwCAAllocateStringA(pcszIssuer, &pCertData->pszIssuer);
+        dwError = LwCACopyCertArray(pTempCertArray, &pCertArray);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateStringA(pcszTimeValidFrom, &pCertData->pszTimeValidFrom);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszTimeValidTo, &pCertData->pszTimeValidTo);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszRevokedReason, &pCertData->pszRevokedReason);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszRevokedDate, &pCertData->pszRevokedDate);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    pCertData->status = status;
-
-    *ppCertData = pCertData;
+    *ppCertArray = pCertArray;
 
 cleanup:
+    if (!gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeCertArray(pTempCertArray);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
     return dwError;
 
 error:
-    LwCADbFreeCertData(pCertData);
-    if (ppCertData)
+    LwCAFreeCertificates(pCertArray);
+    if (ppCertArray)
     {
-        *ppCertData = NULL;
+        *ppCertArray = NULL;
     }
+
     goto cleanup;
 }
 
-VOID
-LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
+DWORD
+LwCADbGetCertData(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
     )
 {
-    if (pCAData)
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray = NULL;
+    PLWCA_DB_CERT_DATA_ARRAY pTempCertDataArray = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppCertDataArray)
     {
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszIssuer);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszSubject);
-        LwCAFreeCertificates(pCAData->pCertificates);
-        LwCAFreeKey(pCAData->pEncryptedPrivateKey);
-        LwCAFreeKey(pCAData->pEncryptedEncryptionKey);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidFrom);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidTo);
-        LWCA_SAFE_FREE_MEMORY(pCAData);
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetCertData(gDbCtx.pDbHandle, pcszCAId, &pTempCertDataArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pTempCertDataArray)
+    {
+        dwError = LwCADbCopyCertDataArray(pTempCertDataArray, &pCertDataArray);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCertDataArray = pCertDataArray;
+
+cleanup:
+    if (!gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeCertDataArray(pTempCertDataArray);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+
+    return dwError;
+
+error:
+    LwCADbFreeCertDataArray(pCertDataArray);
+    if (ppCertDataArray)
+    {
+        *ppCertDataArray = NULL;
+    }
+
+    goto cleanup;
 }
 
-VOID
-LwCADbFreeCertData(
-    PLWCA_DB_CERT_DATA pCertData
+DWORD
+LwCADbUpdateCA(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        pCAData
     )
 {
-    if (pCertData != NULL)
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pCAData)
     {
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszSerialNumber);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszIssuer);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedReason);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedDate);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidFrom);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidTo);
-        LWCA_SAFE_FREE_MEMORY(pCertData);
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUpdateCA(gDbCtx.pDbHandle, pcszCAId, pCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
-VOID
-LwCADbFreeCertDataArray(
-    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
+DWORD
+LwCADbUpdateCAStatus(
+    PCSTR                pcszCAId,
+    LWCA_CA_STATUS       status
     )
 {
-    DWORD iEntry = 0;
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
 
-    if (pCertDataArray != NULL)
+    if (IsNullOrEmptyString(pcszCAId))
     {
-        if (pCertDataArray->dwCount > 0 && pCertDataArray->ppCertData)
-        {
-            for(; iEntry < pCertDataArray->dwCount; ++iEntry)
-            {
-                LwCADbFreeCertData(pCertDataArray->ppCertData[iEntry]);
-            }
-        }
-        LWCA_SAFE_FREE_MEMORY(pCertDataArray->ppCertData);
-        LWCA_SAFE_FREE_MEMORY(pCertDataArray);
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUpdateCAStatus(gDbCtx.pDbHandle, pcszCAId, status);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbUpdateCertData(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pCertData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUpdateCertData(gDbCtx.pDbHandle, pcszCAId, pCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 VOID

@@ -18,6 +18,41 @@ Test_LwCADbInitCtx(
     );
 
 VOID
+Test_LwCADbAddCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbAddCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCACertificates(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCAStatus(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCertData(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbFreeCtx(
     VOID **state
     );

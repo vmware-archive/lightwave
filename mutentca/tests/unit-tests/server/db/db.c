@@ -36,6 +36,116 @@ Test_LwCADbInitCtx(
 }
 
 VOID
+Test_LwCADbAddCA(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pCAData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData, NULL);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData, TEST_PARENT_CA_ID);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pCAData);
+}
+
+VOID
+Test_LwCADbAddCertData(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA pCertData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbAddCertData(TEST_CA_ID, pCertData);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pCertData);
+}
+
+VOID
+Test_LwCADbGetCACertificates(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+
+    dwError = LwCADbGetCACertificates(TEST_CA_ID, &pCertArray);
+    assert_int_equal(dwError, 0);
+
+    LwCAFreeCertificates(pCertArray);
+}
+
+VOID
+Test_LwCADbGetCertData(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray = NULL;
+
+    dwError = LwCADbGetCertData(TEST_CA_ID, &pCertDataArray);
+    assert_int_equal(dwError, 0);
+
+    LwCADbFreeCertDataArray(pCertDataArray);
+}
+
+VOID
+Test_LwCADbUpdateCA(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pDbCAData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pDbCAData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbUpdateCA(TEST_CA_ID, pDbCAData);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pDbCAData);
+}
+
+VOID
+Test_LwCADbUpdateCAStatus(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = LwCADbUpdateCAStatus(TEST_CA_ID, LWCA_CA_STATUS_INACTIVE);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbUpdateCertData(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA pCertData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbUpdateCertData(TEST_CA_ID, pCertData);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pCertData);
+}
+
+VOID
 Test_LwCADbFreeCtx(
     VOID **state
     )

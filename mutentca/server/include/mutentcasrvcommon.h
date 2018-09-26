@@ -314,6 +314,46 @@ LwCAFreeKey(
     PLWCA_KEY pKey
     );
 
+DWORD
+LwCADbCreateCAData(
+    PCSTR                           pcszIssuer,
+    PCSTR                           pcszSubject,
+    PLWCA_CERTIFICATE_ARRAY         pCertificates,
+    PLWCA_KEY                       pEncryptedPrivateKey,
+    PLWCA_KEY                       pEncryptedEncryptionKey,
+    PCSTR                           pcszTimeValidFrom,
+    PCSTR                           pcszTimeValidTo,
+    LWCA_CA_STATUS                  status,
+    PLWCA_DB_CA_DATA                *ppCAData
+    );
+
+DWORD
+LwCADbCreateCertData(
+    PCSTR               pcszSerialNumber,
+    PCSTR               pcszIssuer,
+    PCSTR               pcszTimeValidFrom,
+    PCSTR               pcszTimeValidTo,
+    PCSTR               pcszRevokedReason,
+    PCSTR               pcszRevokedDate,
+    LWCA_CERT_STATUS    status,
+    PLWCA_DB_CERT_DATA  *ppCertData
+    );
+
+VOID
+LwCADbFreeCAData(
+    PLWCA_DB_CA_DATA pCAData
+    );
+
+VOID
+LwCADbFreeCertData(
+    PLWCA_DB_CERT_DATA pCertData
+    );
+
+VOID
+LwCADbFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
+    );
+
 /* ../common/state.c */
 
 VOID

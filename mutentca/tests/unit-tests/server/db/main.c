@@ -19,11 +19,18 @@ int main(VOID)
 
     const struct CMUnitTest tests[] = {
         cmocka_unit_test_setup_teardown(Test_LwCADbInitCtx, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbFreeCtx, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbCAData, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbCAData_Invalid, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbCertData, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbCertData_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbAddCA, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbAddCertData, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbGetCACertificates, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbGetCertData, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCA, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCAStatus, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCertData, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbFreeCtx, NULL, NULL),
     };
 
     ret = cmocka_run_group_tests(tests, NULL, NULL);

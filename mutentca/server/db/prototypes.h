@@ -12,6 +12,18 @@
  * under the License.
  */
 
+DWORD
+LwCADbCopyCertData(
+    PLWCA_DB_CERT_DATA pCertData,
+    PLWCA_DB_CERT_DATA *ppCertData
+    );
+
+DWORD
+LwCADbCopyCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray,
+    PLWCA_DB_CERT_DATA_ARRAY *ppCertDataArray
+    );
+
 VOID
 LwCADbFreeFunctionTable(
     PLWCA_DB_FUNCTION_TABLE pFt

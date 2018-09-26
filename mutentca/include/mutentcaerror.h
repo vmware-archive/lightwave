@@ -187,7 +187,9 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_UNAVAILABLE              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 5)
 
 // Storage Error codes (80600 - 80699)
-#define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 1)
+#define LWCA_DB_NOT_INITIALIZED             (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 1)
+#define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 2)
+#define LWCA_DB_INVALID_PLUGIN              (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 3)
 
 // Misc. Error Codes (8100 - 8999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
@@ -293,7 +295,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
     { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
     { LWCA_POLICY_CONFIG_ERROR          ,   "LWCA_POLICY_CONFIG_ERROR"          ,   "Invalid content in policy config file" }, \
+    { LWCA_DB_NOT_INITIALIZED           ,   "LWCA_DB_NOT_INITIALIZED"           ,   "Db context is not initialized" }, \
     { LWCA_DB_ALREADY_INITIALIZED       ,   "LWCA_DB_ALREADY_INITIALIZED"       ,   "Db context is already initialized" }, \
+    { LWCA_DB_INVALID_PLUGIN            ,   "LWCA_DB_INVALID_PLUGIN"            ,   "Db plugin is not valid" }, \
     { LWCA_ERROR_ENTRY_NOT_FOUND        ,   "LWCA_ERROR_ENTRY_NOT_FOUND"        ,   "Unable to find requested entry" }, \
     { LWCA_ERROR_INVALID_STATE          ,   "LWCA_ERROR_INVALID_STATE"          ,   "Invalid state of service" }, \
     { LWCA_ERROR_INVALID_ENTRY          ,   "LWCA_ERROR_INVALID_ENTRY"          ,   "Requested entry is invalid" }, \

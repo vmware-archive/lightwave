@@ -30,10 +30,10 @@ extern "C" {
 #include <cmocka.h>
 
 #include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
-#include <mutentcadb.h>
 #include <mutentcadbapi.h>
 
 #include "prototypes.h"

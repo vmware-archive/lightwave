@@ -27,6 +27,7 @@ extern "C" {
 #endif
 
 #include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcaerror.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>

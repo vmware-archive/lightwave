@@ -27,11 +27,11 @@ extern "C" {
 #endif
 
 #include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaplugin.h>
 #include <mutentcaerror.h>
-#include <mutentcadb.h>
 #include <mutentcadbapi.h>
 
 #include "structs.h"
