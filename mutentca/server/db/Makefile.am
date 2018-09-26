@@ -2,7 +2,8 @@ noinst_LTLIBRARIES = libmutentcadb.la
 
 libmutentcadb_la_SOURCES = \
     globals.c \
-    db.c
+    db.c \
+    utils.c
 
 libmutentcadb_la_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \

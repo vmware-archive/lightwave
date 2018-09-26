@@ -12,13 +12,37 @@
  * under the License.
  */
 
+#include "includes.h"
+
 DWORD
 LwCADbCopyEncryptedKey(
     PLWCA_DB_ENCRYPTED_KEY pEncryptedKey,
     PLWCA_DB_ENCRYPTED_KEY *ppEncryptedKey
-    );
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_ENCRYPTED_KEY pTempEncryptedKey = NULL;
 
-VOID
-LwCADbFreeFunctionTable(
-    PLWCA_DB_FUNCTION_TABLE pFt
-    );
+    if (!pEncryptedKey || !ppEncryptedKey)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCADbCreateEncryptedKey(pEncryptedKey->pData, pEncryptedKey->dwLength, &pTempEncryptedKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppEncryptedKey = pTempEncryptedKey;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeEncryptedKey(pTempEncryptedKey);
+    if (ppEncryptedKey)
+    {
+        *ppEncryptedKey = NULL;
+    }
+
+    goto cleanup;
+}

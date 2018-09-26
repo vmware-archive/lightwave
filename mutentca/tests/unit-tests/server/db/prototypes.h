@@ -21,3 +21,23 @@ VOID
 Test_LwCADbFreeCtx(
     VOID **state
     );
+
+VOID
+Test_LwCADbCAData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbCAData_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbCertData_Invalid(
+    VOID **state
+    );

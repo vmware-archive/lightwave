@@ -50,6 +50,11 @@ typedef const char* PCSTR;
 typedef const wchar16_t* PCWSTR;
 #endif /* LWCA_PCWSTR_DEFINED */
 
+#ifndef LWCA_BYTE_DEFINED
+#define LWCA_BYTE_DEFINED 1
+typedef unsigned char BYTE;
+#endif /* LWCA_BYTE_DEFINED */
+
 #ifndef LWCA_VOID_DEFINED
 #define LWCA_VOID_DEFINED 1
 
