@@ -1887,12 +1887,16 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
+                 mutentca/server/db/Makefile
                  mutentca/server/plugin/Makefile
                  mutentca/server/mutentca/Makefile
                  mutentca/tests/Makefile
                  mutentca/tests/unit-tests/Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
+                 mutentca/tests/unit-tests/server/db/Makefile
+                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile
+                 mutentca/tests/unit-tests/server/db/test-mutentcadb-plugin/Makefile
                  mutentca/tests/unit-tests/server/plugin/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
@@ -1961,6 +1965,10 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_LINKS([
                 vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
+                ])
+
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])
 
 AC_OUTPUT

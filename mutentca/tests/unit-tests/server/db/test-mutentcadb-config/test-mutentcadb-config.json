@@ -1,0 +1,3 @@
+{
+  "dbPlugin": "./test-mutentcadb-plugin/.libs/mutentcadbtestplugin.so"
+}

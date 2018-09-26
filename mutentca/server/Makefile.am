@@ -2,4 +2,5 @@ SUBDIRS = \
     common \
     config \
     mutentca \
-    plugin
+    plugin \
+    db
