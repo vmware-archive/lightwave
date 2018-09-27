@@ -527,7 +527,6 @@ VmwCaReadFromFile(
 {
     DWORD   dwError     = 0;
     size_t  size        = 0;
-    size_t  sizeRead    = 0;
     FILE*   pFile       = NULL;
     PSTR    pszContents = NULL;
 
@@ -552,13 +551,7 @@ VmwCaReadFromFile(
                     (PVOID*)&pszContents);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    sizeRead = fread(pszContents, size, 1, pFile);
-
-    if (sizeRead < size)
-    {
-        dwError = VMW_CA_DEFAULT_ERROR;
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
+    fread(pszContents, size, 1, pFile);
     pszContents[size] = '\0';
 
     *ppszContents = pszContents;

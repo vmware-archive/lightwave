@@ -417,6 +417,7 @@ VmDirPluginInit(
 {
     DWORD       dwError = 0;
 
+    VDIR_OP_PLUGIN_INFO initPreModApplyDeleteTbl[] = VDIR_PRE_MODAPPLY_DELETE_PLUGIN_INITIALIZER;
     VDIR_OP_PLUGIN_INFO initPreModApplyModifyTbl[] = VDIR_PRE_MODAPPLY_MODIFY_PLUGIN_INITIALIZER;
     VDIR_OP_PLUGIN_INFO initPreModifyTbl[] = VDIR_PRE_MODIFY_PLUGIN_INITIALIZER;
     VDIR_OP_PLUGIN_INFO initPostModifyCommitTbl[] = VDIR_POST_MODIFY_COMMIT_PLUGIN_INITIALIZER;
@@ -427,8 +428,8 @@ VmDirPluginInit(
 
     dwError = _VmDirPluginInit(
                 &gVmdirPluginGlobals.pPreModApplyDeletePluginInfo,
-                NULL,
-                0);
+                &(initPreModApplyDeleteTbl[0]),
+                sizeof(initPreModApplyDeleteTbl)/sizeof(initPreModApplyDeleteTbl[0]));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirPluginInit(

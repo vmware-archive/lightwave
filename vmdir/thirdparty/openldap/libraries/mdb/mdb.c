@@ -3020,7 +3020,7 @@ mdb_txn_commit(MDB_txn *txn)
 {
 	int		rc;
 	unsigned int i;
-	MDB_env	*env = NULL;
+	MDB_env	*env;
         void *raft_commit_ctx = NULL;
 
 	if (txn == NULL || txn->mt_env == NULL)
@@ -3244,7 +3244,7 @@ done:
 	return MDB_SUCCESS;
 
 fail:
-        if (env && env->me_raft_commit_fail_func)
+        if (env->me_raft_commit_fail_func)
         {
             env->me_raft_commit_fail_func(raft_commit_ctx);
         }

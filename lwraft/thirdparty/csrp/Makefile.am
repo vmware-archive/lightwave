@@ -4,5 +4,4 @@ libcsrp_la_SOURCES = \
     srp.c
 
 libcsrp_la_CPPFLAGS = \
-    @OPENSSL_INCLUDES@ \
-    -Wno-unused-result
+    @OPENSSL_INCLUDES@

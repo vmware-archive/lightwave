@@ -9,8 +9,7 @@ liblwraftmdb_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/public \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
     -D MDB_USE_PWRITEV \
-    -D MDB_PARANOID \
-    -Wno-unused-result
+    -D MDB_PARANOID
 
 liblwraftmdb_la_LDFLAGS = \
     -static

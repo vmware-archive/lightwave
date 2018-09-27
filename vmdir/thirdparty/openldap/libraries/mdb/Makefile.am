@@ -9,8 +9,7 @@ libvmdirmdb_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
     -D MDB_USE_PWRITEV \
-    -D MDB_PARANOID \
-    -Wno-unused-result
+    -D MDB_PARANOID
 
 libvmdirmdb_la_LDFLAGS = \
     -static

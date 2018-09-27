@@ -9,8 +9,7 @@ vecs_cli_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@ \
-    -Wno-unused-result
+    @OPENSSL_INCLUDES@
     
 vecs_cli_LDADD = \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
