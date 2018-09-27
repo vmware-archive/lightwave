@@ -6,7 +6,8 @@ vmevent_test_CPPFLAGS = \
     -I$(top_builddir)/vmafd/vmevent/client \
     @SQLITE_INCLUDES@ \
     @LW_INCLUDES@  \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    -Wno-unused-result
 
 vmevent_test_SOURCES = \
 	testsrv.c

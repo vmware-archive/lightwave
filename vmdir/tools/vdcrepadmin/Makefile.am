@@ -12,7 +12,8 @@ vdcrepadmin_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/tools/include \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    -Wno-unused-result
 
 vdcrepadmin_LDADD = \
     $(top_builddir)/vmdir/client/libvmdirclient.la \

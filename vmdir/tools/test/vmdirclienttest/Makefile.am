@@ -12,7 +12,8 @@ vmdirclienttest_CPPFLAGS = \
     -I$(top_builddir)/vmdir/client \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+    -Wno-unused-result
 
 vmdirclienttest_LDADD = \
     $(top_builddir)/vmdir/common/libcommon.la \

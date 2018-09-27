@@ -9,7 +9,8 @@ unix_srp_CPPFLAGS = \
    -I$(top_srcdir)/vmdir/include/public \
    -I$(top_srcdir)/vmdir/thirdparty \
    -I$(top_builddir)/vmdir/client \
-    @OPENSSL_INCLUDES@
+    @OPENSSL_INCLUDES@ \
+   -Wno-unused-result
 
 unix_srp_LDADD = \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
@@ -31,7 +32,8 @@ libgssapi_unix_la_CPPFLAGS = \
    -I$(top_srcdir)/vmdir/thirdparty \
    -I$(top_builddir)/vmdir/client \
     @OPENSSL_INCLUDES@ \
-    @LW_INCLUDES@
+    @LW_INCLUDES@ \
+    -Wno-unused-result
 
 libgssapi_unix_la_SOURCES = \
         gssapi_alloc.c \
