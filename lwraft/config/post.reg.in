@@ -44,7 +44,7 @@
 }
 
 "SslDisabledProtocols" = {
-    default = "TLSv1"
+    default = "TLSv1,TLSv1.1"
     doc     = "List of protocols to disable"
 }
 
