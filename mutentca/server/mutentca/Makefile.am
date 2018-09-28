@@ -18,12 +18,15 @@ mutentcad_CPPFLAGS = \
     @LW_INCLUDES@ \
     @POPT_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
-    @JANSSON_INCLUDES@
+    @JANSSON_INCLUDES@ \
+    @COPENAPI_INCLUDES@ \
+    @CRESTENGINE_INCLUDES@
 
 mutentcad_LDADD = \
-    $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/config/libmutentcasrvconfig.la \
+    $(top_builddir)/mutentca/server/rest-head/libmutentcaresthead.la \
+    $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -38,10 +41,14 @@ mutentcad_LDADD = \
     @UUID_LIBS@ \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
+    @COPENAPI_LIBS@ \
+    @CRESTENGINE_LIBS@ \
     @DL_LIBS@
 
 mutentcad_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
     @POPT_LDFLAGS@ \
-    @JANSSON_LDFLAGS@
+    @JANSSON_LDFLAGS@ \
+    @COPENAPI_LDFLAGS@ \
+    @CRESTENGINE_LDFLAGS@

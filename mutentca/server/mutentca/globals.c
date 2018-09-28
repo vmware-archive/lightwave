@@ -25,4 +25,5 @@ LWCA_SERVER_GLOBALS gLwCAServerGlobals =
     LWCA_SF_INIT(.pDirSyncParams, NULL),
     LWCA_SF_INIT(.pDirSyncThr, NULL),
     LWCA_SF_INIT(.gpEventLog, NULL),
+    LWCA_SF_INIT(.pSslCtx, NULL)
 };

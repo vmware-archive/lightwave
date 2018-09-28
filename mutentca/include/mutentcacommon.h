@@ -243,29 +243,41 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
         goto error;                                                         \
     }
 
-#define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
-    if ((dwError) == 0)                                                     \
+#define BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, errMsg)                       \
+    if (dwError)                                                            \
     {                                                                       \
-        (dwError) = (ERROR_CODE);                                           \
-        LWCA_LOG_WARNING("error code: %#010x", (dwError));                  \
-        if ((ERROR_CODE) == LWCA_CERT_IO_FAILURE)                           \
-        {                                                                   \
-            printf(" Failed at %s %d \n", __FUNCTION__, __LINE__);          \
-        }                                                                   \
+        LWCA_LOG_ERROR("[%s:%d] %s. copenapi error (%d)",                   \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_COAPI_ERROR;                                         \
         goto error;                                                         \
-    } else {                                                                \
-        (dwError) = 0;                                                      \
-    }                                                                       \
+    }
 
-#define BAIL_ON_NULL(ptr, dwError , ERROR_CODE)                             \
-    if ((ptr) == NULL)                                                      \
+#define BAIL_ON_CREST_ERROR_WITH_MSG(dwError, errMsg)                       \
+    if (dwError)                                                            \
     {                                                                       \
-        (dwError) = (ERROR_CODE);                                           \
-        LWCA_LOG_DEBUG("error code: %#010x", (dwError));                    \
+        LWCA_LOG_ERROR("[%s:%d] %s. c-rest-engine error (%d)",              \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_CREST_ENGINE_ERROR;                                  \
         goto error;                                                         \
-    } else {                                                                \
-        (dwError) = 0;                                                      \
-    }                                                                       \
+    }
+
+#define BAIL_ON_JSON_ERROR_WITH_MSG(dwError, errMsg)                        \
+    if (dwError)                                                            \
+    {                                                                       \
+        LWCA_LOG_ERROR("[%s:%d] %s. jansson api error (%d)",                \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_JSON_ERROR;                                          \
+        goto error;                                                         \
+    }
 
 #define BAIL_ON_JSON_PARSE_ERROR(dwError)       \
     if ((dwError))                              \

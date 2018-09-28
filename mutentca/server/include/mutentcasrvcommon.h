@@ -172,7 +172,11 @@ typedef struct _LWCA_SERVER_GLOBALS
     PLWCA_THREAD                    pDirSyncThr;
 
     HANDLE                          gpEventLog;
+
+    SSL_CTX*                        pSslCtx;
 } LWCA_SERVER_GLOBALS, *PLWCA_SERVER_GLOBALS;
+
+extern LWCA_SERVER_GLOBALS gLwCAServerGlobals;
 
 /* ../common/config.c */
 

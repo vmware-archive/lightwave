@@ -52,7 +52,6 @@ extern "C" {
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
-#include "externs.h"
 
 #include <stdio.h>
 #include <stdlib.h>

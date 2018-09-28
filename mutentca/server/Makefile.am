@@ -1,6 +1,7 @@
 SUBDIRS = \
     common \
     config \
-    mutentca \
     plugin \
-    db
+    db \
+    rest-head \
+    mutentca

@@ -193,7 +193,10 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
 #define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
 #define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
-#define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 4)
+#define LWCA_JSON_ERROR                     (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 4)
+#define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 5)
+#define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
+#define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -331,6 +334,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERRNO_EDOM                   ,   "LWCA_ERRNO_EDOM"                   ,   "Math argument out of domain func" }, \
     { LWCA_ERRNO_ERANGE                 ,   "LWCA_ERRNO_ERANGE"                 ,   "Math result not representable" }, \
     { LWCA_UNKNOWN_ERROR                ,   "LWCA_UNKNOWN_ERROR"                ,   "Certificate Server Unknown Error" }, \
+    { LWCA_JSON_ERROR                   ,   "LWCA_JSON_ERROR"                   ,   "Error from jansson api" }, \
+    { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
+    { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
 };
 
 #endif //__LWCA_ERROR_H__

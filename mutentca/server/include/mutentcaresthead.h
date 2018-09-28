@@ -12,34 +12,31 @@
  * under the License.
  */
 
-#ifndef _LWCA_SERVICE_DB_INCLUDES_H_
-#define _LWCA_SERVICE_DB_INCLUDES_H_
+#ifndef _MUTENTCA_RESTHEAD_H_
+#define _MUTENTCA_RESTHEAD_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <config.h>
-#include <mutentcasys.h>
+// rest-head/libmain.c
+DWORD
+LwCARestServerInit(
+    VOID
+    );
 
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
+DWORD
+LwCARestServerStop(
+    VOID
+    );
 
-#include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaplugin.h>
-#include <mutentcaerror.h>
-#include <mutentcadb.h>
-#include <mutentcadbapi.h>
-
-#include "structs.h"
-#include "externs.h"
-#include "defines.h"
-#include "prototypes.h"
+VOID
+LwCARestServerShutdown(
+    VOID
+    );
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _LWCA_SERVICE_DB_INCLUDES_H_ */
+#endif /* _MUTENTCA_RESTHEAD_H_ */

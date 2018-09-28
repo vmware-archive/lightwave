@@ -1891,6 +1891,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/db/Makefile
                  mutentca/server/plugin/Makefile
+                 mutentca/server/rest-head/Makefile
                  mutentca/server/mutentca/Makefile
                  mutentca/tests/Makefile
                  mutentca/tests/unit-tests/Makefile

@@ -21,6 +21,10 @@ extern "C" {
 #include <config.h>
 #include <mutentcasys.h>
 
+#ifndef OPENSSL_NO_ENGINE
+#include <openssl/engine.h>
+#endif
+
 #include <lwrpcrt/lwrpcrt.h>
 
 #include <cmocka.h>
