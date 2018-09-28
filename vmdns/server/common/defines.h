@@ -60,6 +60,7 @@ extern "C" {
 #define VMDNS_LDAP_ATTR_DNSANY          "dns*"
 #define VMDNS_LDAP_ATTR_RUNTIMESTATUS   "vmwServerRunTimeStatus"
 #define VMDNS_LDAP_ATTR_USN             "USN: "
+#define VMDNS_LDAP_ATTR_LAST_KNOWN_DN   "lastKnownDn"
 
 #define VMDNS_LDAP_DELETE_CONTROL       "1.2.840.113556.1.4.417"
 #define VMDNS_LDAP_DELETE_DELIMITER     "#"

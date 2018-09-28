@@ -2426,6 +2426,166 @@ error:
     goto cleanup;
 }
 
+#ifdef REPLICATION_V2
+DWORD
+VmDnsDirSyncDeleted(
+    DWORD                        dwLastChangedUSN,
+    LPVMDNS_ADD_REMOVE_ZONE_PROC LpRemoveZoneProc,
+    PVOID                        pData
+    )
+{
+    DWORD dwError = 0;
+    LDAPMessage* pResult = NULL;
+    LDAPMessage* pEntry = NULL;
+    PSTR pszNodeDNCopy = NULL;
+    PSTR pszNodeDC = NULL;
+    PSTR pszFilter = NULL;
+    PSTR pszNodeDN = NULL;
+    PCSTR pszParentDC = NULL;
+    PCSTR pszZone = NULL;
+    PSTR pszBaseDN = NULL;
+    PVMDNS_DIR_CONTEXT pDirContext = NULL;
+    LDAPControl* pCtrl = NULL;
+    LDAPControl* pServerControl[2] = {NULL, NULL};
+    BerValue** ppValues = NULL;
+    PCSTR ppszAttrs[] = {VMDNS_LDAP_ATTR_LAST_KNOWN_DN, NULL};
+    dwError = VmDnsDirConnect("localhost", &pDirContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsDirGetDeletedObjDN(
+                        pDirContext,
+                        &pszBaseDN
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsAllocateStringPrintfA(
+                        &pszFilter,
+                        "(%s>=%d)",
+                        VMDNS_LDAP_ATTR_USNCHANGED,
+                        dwLastChangedUSN
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = ldap_control_create(
+                        VMDNS_LDAP_DELETE_CONTROL,
+                        0,
+                        NULL,
+                        0,
+                        &pCtrl
+                        );
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != LDAP_SUCCESS);
+
+    pServerControl[0] = pCtrl;
+
+    //sync zones, remove any from cache that do not exist in store
+    dwError = ldap_search_ext_s(
+                        pDirContext->pLdap,
+                        pszBaseDN,
+                        LDAP_SCOPE_SUB,
+                        pszFilter,
+                        (PSTR*)ppszAttrs,
+                        FALSE,
+                        pServerControl,
+                        NULL,
+                        NULL,
+                        0,
+                        &pResult
+                        );
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    while ((pEntry = ldap_next_entry(pDirContext->pLdap, pEntry)) != NULL)
+    {
+        pszNodeDN = ldap_get_dn(pDirContext->pLdap, pEntry);
+        if (IsNullOrEmptyString(pszNodeDN))
+        {
+            dwError = ERROR_INVALID_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        ppValues = ldap_get_values_len(
+                            pDirContext->pLdap,
+                            pEntry,
+                            VMDNS_LDAP_ATTR_LAST_KNOWN_DN);
+        if (!ppValues)
+        {
+            dwError = ERROR_NO_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        if (ldap_count_values_len(ppValues) != 1)
+        {
+            dwError = ERROR_INVALID_DATA;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        dwError = VmDnsAllocateStringA(ppValues[0]->bv_val, &pszNodeDNCopy);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsDirParseDN(pszNodeDNCopy, (PCSTR*)&pszNodeDC, &pszParentDC);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (VmDnsStringCompareA(
+                    pszParentDC,
+                    VMDNS_DOMAINDNSZONES_NAME,
+                    FALSE
+                    ) == 0)
+        {
+            //format zone1.#ObjectGUID
+            pszZone = strtok(pszNodeDC, VMDNS_LDAP_DELETE_DELIMITER);
+            if (!pszZone)
+            {
+                dwError = ERROR_INVALID_DATA;
+                BAIL_ON_VMDNS_ERROR(dwError);
+            }
+            dwError = LpRemoveZoneProc(pData, pszZone);
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+
+        VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+        if (ppValues != NULL)
+        {
+            ldap_value_free_len(ppValues);
+            ppValues = NULL;
+        }
+
+        if (pszNodeDN)
+        {
+            ldap_memfree(pszNodeDN);
+            pszNodeDN = NULL;
+        }
+    }
+
+cleanup:
+    VmDnsDirClose(pDirContext);
+
+    VMDNS_SAFE_FREE_MEMORY(pszFilter);
+    VMDNS_SAFE_FREE_MEMORY(pszNodeDNCopy);
+    VMDNS_SAFE_FREE_MEMORY(pszBaseDN);
+
+    if (pszNodeDN)
+    {
+        ldap_memfree(pszNodeDN);
+    }
+    if (pCtrl)
+    {
+        ldap_control_free(pCtrl);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
+    if (ppValues != NULL)
+    {
+        ldap_value_free_len(ppValues);
+    }
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+#else
 DWORD
 VmDnsDirSyncDeleted(
     DWORD                        dwLastChangedUSN,
@@ -2559,6 +2719,7 @@ cleanup:
 error:
     goto cleanup;
 }
+#endif
 
 DWORD
 VmDnsDirSyncNewObjects(
