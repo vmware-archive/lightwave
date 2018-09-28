@@ -15,6 +15,7 @@
 #include "includes.h"
 #include "vmmetricstest.h"
 #include "vmhttpclienttest.h"
+#include "vmsignaturetest.h"
 #include "vmjsonresulttest.h"
 
 int main(int argc, char *argv[])
@@ -26,6 +27,7 @@ int main(int argc, char *argv[])
     dwError += VmMetricsHistogramTest();
     dwError += VmMetricsMixedTest();
     dwError += VmHttpClientTest();
+    dwError += VmSignatureTest();
     dwError += VmJsonResultTest();
 
     if (dwError == 0)

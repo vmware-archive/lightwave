@@ -70,4 +70,9 @@ VmFreeMemory(
     PVOID   pMemory
     );
 
+VOID
+VmCommonFreeStringA(
+    PSTR pszString
+    );
+
 #endif /* __VM_COMMON_MEMORY_H__ */

@@ -328,7 +328,10 @@ VmAfdRestGetCACerts(
     dwError = VmHttpClientInit(&pHttpClient, NULL);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmHttpClientSetToken(pHttpClient, pszToken);
+    dwError = VmHttpClientSetToken(pHttpClient,
+                                   VMHTTP_TOKEN_TYPE_BEARER,
+                                   pszToken
+                                   );
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmHttpClientPerform(pHttpClient, VMHTTP_METHOD_GET, pszUrl);

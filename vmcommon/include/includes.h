@@ -25,6 +25,10 @@
 
 #include <curl/curl.h>
 #include <jansson.h>
+#include <openssl/evp.h>
+#include <openssl/bio.h>
+#include <openssl/rsa.h>
+#include <openssl/pem.h>
 
 #include "defines.h"
 #include "errorcode.h"
@@ -35,4 +39,5 @@
 #include "vmjsonresult.h"
 #include "vmmetrics.h"
 #include "vmnetworkutil.h"
+#include "vmsignature.h"
 #include "vmutil.h"

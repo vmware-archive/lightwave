@@ -12,34 +12,19 @@
  * under the License.
  */
 
-#ifndef _VM_COMMON_STRING_H__
-#define _VM_COMMON_STRING_H__
+#ifndef LIGHTWAVE_VMSIGNATURETEST_H
+#define LIGHTWAVE_VMSIGNATURETEST_H
 
-DWORD
-VmAllocateStringPrintf(
-    PSTR* ppszString,
-    PCSTR pszFormat,
-    ...
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+DWORD  VmSignatureTest(
+    VOID
     );
 
-DWORD
-VmStringPrintFA(
-    PSTR pDestination,
-    size_t destinationSize,
-    PCSTR pszFormat,
-    ...
-);
+#ifdef __cplusplus
+}
+#endif
 
-int
-VmStringCompareA(
-    PCSTR pszStr1,
-    PCSTR pszStr2,
-    BOOLEAN bIsCaseSensitive
-    );
-
-VOID
-VmStringTrimSpace(
-    PSTR pszStr
-    );
-
-#endif /* __VM_COMMON_STRING_H__ */
+#endif //LIGHTWAVE_VMSIGNATURETEST_H
