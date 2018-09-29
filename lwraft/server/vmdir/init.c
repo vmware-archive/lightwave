@@ -938,6 +938,10 @@ LoadServerGlobals(BOOLEAN *pbWriteInvocationId)
 
 cleanup:
 
+    if (bHasTxn) // for goto cleanup stmts
+    {
+        op.pBEIF->pfnBETxnCommit(op.pBECtx);
+    }
     VMDIR_SECURE_FREE_STRINGA(pszDcAccountPwd);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     VMDIR_SAFE_FREE_MEMORY(pszServerName);
@@ -960,6 +964,7 @@ error:
     if (bHasTxn)
     {
         op.pBEIF->pfnBETxnAbort( op.pBECtx );
+        bHasTxn = FALSE;
     }
 
     goto cleanup;
