@@ -568,6 +568,7 @@
         },
         "signatureAlgorithm": {
           "type": "string",
+          "enum": ["SHA256"],
           "description": "Certificate signature algorithm"
         }
       }

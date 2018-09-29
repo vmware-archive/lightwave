@@ -31,6 +31,7 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
+#include <mutentcaapi.h>
 #include <mutentcaresthead.h>
 
 #include <vmutil.h>
@@ -43,6 +44,7 @@ extern "C" {
 
 #include "defines.h"
 #include "structs.h"
+#include "apidefs.h"
 #include "prototypes.h"
 #include "externs.h"
 

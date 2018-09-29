@@ -25,6 +25,24 @@
 #define LWCA_MAX_REST_PAYLOAD_LENGTH            4096
 #define LWCA_MAX_LOG_OUTPUT_LEN                 256
 
+// Signing Algorithms
+#define LWCA_REST_SHA256_ALGO                   "SHA256"
+
+// JSON Keys
+#define LWCA_JSON_KEY_CA_ID                     "caId"
+#define LWCA_JSON_KEY_PARENT_CA_ID              "parentCaId"
+#define LWCA_JSON_KEY_COUNTRY                   "country"
+#define LWCA_JSON_KEY_STATE                     "state"
+#define LWCA_JSON_KEY_LOCALITY                  "locality"
+#define LWCA_JSON_KEY_OU                        "organizationalUnit"
+#define LWCA_JSON_KEY_POLICY                    "policy"
+#define LWCA_JSON_KEY_VALIDITY                  "validity"
+#define LWCA_JSON_KEY_START_TIME                "startTime"
+#define LWCA_JSON_KEY_END_TIME                  "endTime"
+#define LWCA_JSON_KEY_CSR                       "csr"
+#define LWCA_JSON_KEY_SIGN_ALGO                 "signatureAlgorithm"
+#define LWCA_JSON_KEY_CERT                      "cert"
+
 // HTTP headers
 #define LWCA_REST_HEADER_AUTHORIZATION          "Authorization"
 #define LWCA_REST_HEADER_IF_MATCH               "If-Match"

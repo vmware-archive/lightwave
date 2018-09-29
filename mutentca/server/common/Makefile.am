@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libmutentcasrvcommon.la
 
 libmutentcasrvcommon_la_SOURCES = \
+    api.c \
     jsonutils.c \
     util.c
 

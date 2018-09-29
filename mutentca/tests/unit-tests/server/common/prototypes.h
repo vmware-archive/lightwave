@@ -47,6 +47,25 @@ LwCAJsonGetStringFromKey_Invalid(
     VOID            **state
     );
 
+VOID
+LwCAJsonGetStringArrayFromKey_Valid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetStringArrayFromKey_Invalid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetTimeFromKey_Valid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetTimeFromKey_Invalid(
+    VOID            **state
+    );
 
 // structs.c
 

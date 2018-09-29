@@ -69,7 +69,7 @@ LwCADbInitCtx(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAJsonGetStringFromKey(pConfig, CONFIG_DB_PLUGIN_KEY_NAME, &pszPlugin);
+    dwError = LwCAJsonGetStringFromKey(pConfig, FALSE, CONFIG_DB_PLUGIN_KEY_NAME, &pszPlugin);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateMemory(sizeof(LWCA_DB_FUNCTION_TABLE), (PVOID*)&gDbCtx.pFt);

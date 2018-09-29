@@ -201,6 +201,7 @@ LwCAJsonLoadObjectFromFile(
 DWORD
 LwCAJsonGetObjectFromKey(
     PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     PLWCA_JSON_OBJECT       *ppJsonValue
     );
@@ -208,8 +209,25 @@ LwCAJsonGetObjectFromKey(
 DWORD
 LwCAJsonGetStringFromKey(
     PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     PSTR                    *ppszValue
+    );
+
+DWORD
+LwCAJsonGetStringArrayFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PLWCA_STRING_ARRAY      *ppStrArrValue
+    );
+
+DWORD
+LwCAJsonGetTimeFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    time_t                  *ptValue
     );
 
 VOID

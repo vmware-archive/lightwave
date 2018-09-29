@@ -396,6 +396,12 @@ LwCACopyStringArrayA(
     DWORD           dwSrcLen
     );
 
+DWORD
+LwCACopyStringArray(
+    PLWCA_STRING_ARRAY  pStrInputArray,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
+    );
+
 VOID
 LwCAFreeStringA(
     PSTR pszString
@@ -405,6 +411,11 @@ VOID
 LwCAFreeStringArrayA(
     PSTR* ppszStrings,
     DWORD dwCount
+    );
+
+VOID
+LwCAFreeStringArray(
+    PLWCA_STRING_ARRAY pStrArray
     );
 
 DWORD

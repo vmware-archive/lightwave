@@ -447,6 +447,72 @@ LwCAFreeStringArrayA(
     }
 }
 
+DWORD
+LwCACopyStringArray(
+    PLWCA_STRING_ARRAY  pStrInputArray,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIdx = 0;
+    PLWCA_STRING_ARRAY pStrTempArray = NULL;
+
+    if (!pStrInputArray || !pStrInputArray->ppData || pStrInputArray->dwCount == 0 || !ppStrOutputArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_STRING_ARRAY), (PVOID*)&pStrTempArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * pStrInputArray->dwCount, (PVOID*)&pStrTempArray->ppData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for(; dwIdx < pStrInputArray->dwCount; ++dwIdx)
+    {
+        dwError = LwCAAllocateStringA(pStrInputArray->ppData[dwIdx], &pStrTempArray->ppData[dwIdx]);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        pStrTempArray->dwCount++;
+    }
+
+    *ppStrOutputArray = pStrTempArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pStrTempArray);
+    if (ppStrOutputArray)
+    {
+        *ppStrOutputArray = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+LwCAFreeStringArray(
+    PLWCA_STRING_ARRAY pStrArray
+    )
+{
+    DWORD dwIdx = 0;
+
+    if (pStrArray)
+    {
+        if (pStrArray->ppData)
+        {
+            for (dwIdx = 0; dwIdx < pStrArray->dwCount; ++dwIdx)
+            {
+                LwCAFreeStringA(pStrArray->ppData[dwIdx]);
+            }
+            LwCAFreeMemory(pStrArray->ppData);
+        }
+        LwCAFreeMemory(pStrArray);
+    }
+}
+
 void
 LwCASetBit(unsigned long *flag, int bit)
 {

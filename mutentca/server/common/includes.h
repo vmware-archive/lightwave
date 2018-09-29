@@ -49,6 +49,7 @@ extern "C" {
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
+#include <mutentcaapi.h>
 
 #include "defines.h"
 

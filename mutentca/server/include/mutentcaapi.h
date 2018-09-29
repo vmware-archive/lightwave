@@ -19,22 +19,16 @@
 extern "C" {
 #endif
 
-typedef struct _LWCA_INTERMEDIATE_CA_REQ_DATA
+typedef struct _LWCA_INT_CA_REQ_DATA
 {
-    PLWCA_STRING_ARRAY     pCountryList;
-    PLWCA_STRING_ARRAY     pLocalityList;
-    PLWCA_STRING_ARRAY     pStateList;
-    PLWCA_STRING_ARRAY     pOUList;
-    PSTR                   pszPolicy;
-} LWCA_INTERMEDIATE_CA_REQ_DATA, *PLWCA_INTERMEDIATE_CA_REQ_DATA;
+    PLWCA_STRING_ARRAY      pCountryList;
+    PLWCA_STRING_ARRAY      pStateList;
+    PLWCA_STRING_ARRAY      pLocalityList;
+    PLWCA_STRING_ARRAY      pOUList;
+    PSTR                    pszPolicy;
+} LWCA_INT_CA_REQ_DATA, *PLWCA_INT_CA_REQ_DATA;
 
 typedef PSTR PLWCA_CERTIFICATE;
-
-typedef struct _LWCA_CERTIFICATE_ARRAY
-{
-    PLWCA_CERTIFICATE *ppCertificates;
-    DWORD             dwCount;
-} LWCA_CERTIFICATE_ARRAY, *PLWCA_CERTIFICATE_ARRAY;
 
 typedef PSTR PLWCA_CRL;
 
@@ -52,20 +46,20 @@ typedef enum _LWCA_SIGNING_ALGORITHM
 } LWCA_SIGNING_ALGORITHM, *PLWCA_SIGNING_ALGORITHM;
 
 DWORD
-LwCACreateCARequest(
-    PLWCA_STRING_ARRAY              pCountryList,
-    PLWCA_STRING_ARRAY              pLocalityList,
-    PLWCA_STRING_ARRAY              pStateList,
-    PLWCA_STRING_ARRAY              pOUList,
-    PCSTR                           pcszPolicy,
-    PLWCA_INTERMEDIATE_CA_REQ_DATA  *ppCARequest
+LwCACreateIntCARequest(
+    PLWCA_STRING_ARRAY      pCountryList,
+    PLWCA_STRING_ARRAY      pStateList,
+    PLWCA_STRING_ARRAY      pLocalityList,
+    PLWCA_STRING_ARRAY      pOUList,
+    PCSTR                   pcszPolicy,
+    PLWCA_INT_CA_REQ_DATA   *ppIntCARequest
     );
 
 DWORD
 LwCACreateCertValidity(
-    time_t              tmNotBefore,
-    time_t              tmNotAfter,
-    PLWCA_CERT_VALIDITY *ppCertValidity
+    time_t                  tmNotBefore,
+    time_t                  tmNotAfter,
+    PLWCA_CERT_VALIDITY     *ppCertValidity
     );
 
 DWORD
@@ -79,11 +73,11 @@ LwCACreateRootCA(
 
 DWORD
 LwCACreateIntermediateCA(
-    PLWCA_REQ_CONTEXT               pReqCtx,
-    PCSTR                           pcszCAId,
-    PCSTR                           pcszParentCAId,
-    PLWCA_INTERMEDIATE_CA_REQ_DATA  pCARequest,
-    PLWCA_CERT_VALIDITY             pValidity
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszCAId,
+    PCSTR                   pcszParentCAId,
+    PLWCA_INT_CA_REQ_DATA   pIntCARequest,
+    PLWCA_CERT_VALIDITY     pValidity
     );
 
 DWORD
@@ -124,8 +118,8 @@ LwCARevokeCertificate(
     );
 
 VOID
-LwCAFreeCARequest(
-    PLWCA_INTERMEDIATE_CA_REQ_DATA   pCAReqData
+LwCAFreeIntCARequest(
+    PLWCA_INT_CA_REQ_DATA   pIntCAReqData
     );
 
 VOID
@@ -146,11 +140,6 @@ LwCAFreeCrl(
 VOID
 LwCAFreeCertificate(
     PLWCA_CERTIFICATE pCertificate
-    );
-
-VOID
-LwCAFreeCertificates(
-    PLWCA_CERTIFICATE_ARRAY ppCertificates
     );
 
 #ifdef __cplusplus

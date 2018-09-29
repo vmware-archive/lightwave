@@ -45,6 +45,22 @@ int main(VOID)
                 NULL,
                 NULL),
         cmocka_unit_test_setup_teardown(
+                LwCAJsonGetStringArrayFromKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                LwCAJsonGetStringArrayFromKey_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                LwCAJsonGetTimeFromKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                LwCAJsonGetTimeFromKey_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
                 Test_LwCACreateCertificate_Valid,
                 NULL,
                 NULL),
@@ -89,7 +105,7 @@ int main(VOID)
     ret = cmocka_run_group_tests_name("MutentCA JSON Utils Tests", LwCASrvJSONUtils_Tests, NULL, NULL);
     if (ret)
     {
-        fail_msg("%s", "MutentCA service JSON utils failed");
+        fail_msg("%s", "MutentCA server JSON utils failed");
     }
 
     return 0;

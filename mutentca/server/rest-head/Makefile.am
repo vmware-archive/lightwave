@@ -6,6 +6,7 @@ libmutentcaresthead_la_SOURCES = \
 if REST_ENABLED
 
 libmutentcaresthead_la_SOURCES += \
+    apiutil.c \
     globals.c \
     handler.c \
     httperror.c \
