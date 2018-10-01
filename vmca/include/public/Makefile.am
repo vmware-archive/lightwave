@@ -1,2 +1,2 @@
 vmwincludedir=$(includedir)
-vmwinclude_HEADERS=vmca.h vmcatypes.h vmca_security.h
+vmwinclude_HEADERS=vmca.h vmcatypes.h

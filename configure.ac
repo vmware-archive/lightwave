@@ -1661,6 +1661,9 @@ AC_CONFIG_FILES([Makefile
                  vmcommon/include/public/Makefile
                  vmcommon/config/Makefile
                  vmcommon/testing/Makefile
+                 plugins/Makefile
+                 plugins/unit-tests/Makefile
+                 plugins/unit-tests/security/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile
@@ -1872,7 +1875,6 @@ AC_CONFIG_FILES([Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-invalidvtable/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-valid/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-noentry/Makefile
-                 vmca/unit-tests/service/security/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile

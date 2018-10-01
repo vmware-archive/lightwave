@@ -97,6 +97,7 @@ Security_Test_Impl_SignCertificate(
     X509 *pX509Certificate,
     LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
+    PCSTR pszPassPhrase,
     PSTR *ppszCertificate
     )
 {
@@ -110,6 +111,7 @@ Security_Test_Impl_VerifyCertificate(
     PLWCA_SECURITY_HANDLE pHandle,
     PCSTR pszCertificate,
     PCSTR pKeyId,
+    PCSTR pszPassPhrase,
     BOOLEAN **ppbValid
     )
 {

@@ -1,4 +1,3 @@
 SUBDIRS = \
     common \
-    plugin \
-    security
+    plugin

@@ -215,6 +215,7 @@ typedef DWORD
     X509 *pX509Certificate,
     LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
+    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     PSTR *ppszCertificate
     );
 
@@ -226,6 +227,7 @@ typedef DWORD
     PLWCA_SECURITY_HANDLE pHandle,
     PCSTR pszCertificate,
     PCSTR pKeyId,
+    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     BOOLEAN **ppbValid
     );
 
@@ -276,6 +278,7 @@ typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_SIGN)(
     X509 *pX509Certificate,
     PCSTR pszKeyId,
+    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     PSTR *ppszCertificate
     );
 
@@ -283,6 +286,7 @@ typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_VERIFY)(
     PCSTR pszCertificate,
     PCSTR pszKeyId,
+    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     BOOLEAN **ppbValid
     );
 

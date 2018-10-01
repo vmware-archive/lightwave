@@ -41,7 +41,7 @@ int main(VOID)
     ret = cmocka_run_group_tests(Security_Tests, Security_Tests_Load, Security_Tests_Unload);
     if (ret)
     {
-        fail_msg("%s", "VMCA security plugin tests failed");
+        fail_msg("%s", "ca security plugin tests failed");
     }
 
     return ret;

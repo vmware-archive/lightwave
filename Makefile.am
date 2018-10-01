@@ -12,6 +12,7 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = \
         vmcommon \
+        plugins \
         vmevent \
         vmidentity/ssoclients \
         lwraft \

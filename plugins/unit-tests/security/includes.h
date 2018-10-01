@@ -12,8 +12,8 @@
  * under the License.
  */
 
-#ifndef _VMCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_
-#define _VMCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_
+#ifndef _LWCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_
+#define _LWCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_
 
 #include <stdarg.h>
 #include <stddef.h>
@@ -30,9 +30,8 @@
 #include <lw/base.h>
 #include <lwerror.h>
 
-#include <vmcatypes.h>
-#include <vmca_security.h>
+#include <lwca_security.h>
 #include "structs.h"
 #include "prototypes.h"
 
-#endif /* _VMCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_ */
+#endif /* _LWCA_SECURITY_PLUGIN_UNITTEST_INCLUDES_H_ */

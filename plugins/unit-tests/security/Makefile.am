@@ -4,8 +4,8 @@ check_PROGRAMS = security_test
 TESTS = security_test
 
 security_test_CPPFLAGS = \
-    -I$(top_srcdir)/vmca/unit-tests/service/security \
-    -I$(top_srcdir)/vmca/include/public \
+    -I$(top_srcdir)/plugins/unit-tests/security \
+    -I$(top_srcdir)/plugins/include/public \
     @LW_INCLUDES@
 
 security_test_SOURCES = \
@@ -25,8 +25,8 @@ security_test_LDFLAGS = \
 pkglib_LTLIBRARIES = security_plugin_test.la
 
 security_plugin_test_la_CPPFLAGS = \
-    -I$(top_srcdir)/vmca/unit-tests/service/security \
-    -I$(top_srcdir)/vmca/include/public \
+    -I$(top_srcdir)/plugins/unit-tests/security \
+    -I$(top_srcdir)/plugins/include/public \
     @LW_INCLUDES@
 
 security_plugin_test_la_SOURCES = \
