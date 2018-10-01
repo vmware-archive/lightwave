@@ -38,7 +38,8 @@ VM_SOCK_PACKAGE gVmDnsSockWinPackage =
     .pfnCloseSocket = &VmDnsSockWinClose,
     .pfnGetAddress = &VmDnsSockWinGetAddress,
     .pfnAllocateIoBuffer = &VmDnsSockWinAllocateIoBuffer,
-    .pfnReleaseIoBuffer = &VmDnsSockWinFreeIoBuffer
+    .pfnReleaseIoBuffer = &VmDnsSockWinFreeIoBuffer,
+    .pfnCreateTimerSocket = &VmDnsSockWinCreateTimerSocket,
 };
 
 PVM_SOCK_PACKAGE gpVmWinSockPackage = &gVmDnsSockWinPackage;

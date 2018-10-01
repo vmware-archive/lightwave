@@ -40,7 +40,8 @@ VM_SOCK_PACKAGE gVmDnsSockPosixPackage =
     .pfnAllocateIoBuffer = &VmDnsSockPosixAllocateIoBuffer,
     .pfnSetEventContext = &VmDnsSockPosixSetEventContext,
     .pfnGetEventContext = &VmDnsSockPosixGetEventContext,
-    .pfnReleaseIoBuffer = &VmDnsSockPosixFreeIoBuffer
+    .pfnReleaseIoBuffer = &VmDnsSockPosixFreeIoBuffer,
+    .pfnCreateTimerSocket = &VmDnsSockPosixCreateTimerSocket
 };
 
 PVM_SOCK_PACKAGE gpVmDnsSockPosixPackage = &gVmDnsSockPosixPackage;

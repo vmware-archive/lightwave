@@ -16,11 +16,12 @@
 /**
  * @brief Opens a client socket
  *
- * @param[in]  pszHost  Target hostname or IP Address.
- *                      An empty string will imply the localhost.
- * @param[in]  usPort   16 bit port number
- * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
- * @param[out] ppSocket Pointer to created socket context
+ * @param[in]  pszHost     Target hostname or IP Address.
+ *                         An empty string will imply the localhost.
+ * @param[in]  usPort      16 bit port number
+ * @param[in]  dwFlags     32 bit flags specifying socket creation preferences
+ * @param[in]  dwTimeoutMS Connect timeout in milliseconds
+ * @param[out] ppSocket    Pointer to created socket context
  *
  * @return 0 on success
  */
@@ -29,6 +30,7 @@ VmDnsSockPosixOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
+    DWORD                dwTimeoutMS,
     PVM_SOCKET*          ppSocket
     );
 
@@ -332,4 +334,11 @@ VmDnsSockPosixGetEventContext(
 VOID
 VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer
+    );
+
+DWORD
+VmDnsSockPosixCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
     );

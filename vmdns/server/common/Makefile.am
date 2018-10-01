@@ -20,6 +20,7 @@ libsrvcommon_la_SOURCES = \
     lru.c                 \
     metricsenums.c        \
     nameEntry.c           \
+    packetlist.c          \
     recordlist.c          \
     recordobject.c        \
     registry.c            \

@@ -168,6 +168,8 @@ typedef struct _VMDNS_SOCK_CONTEXT
     PVM_SOCKET           pListenerUDP6;
     PVM_SOCKET           pListenerTCP;
     PVM_SOCKET           pListenerTCP6;
+    PVM_SOCKET           pTimerSocket;
+    PVMDNS_FORWARDER_PACKET_LIST   pForwarderPacketList;
 
     PVM_SOCK_EVENT_QUEUE pEventQueue;
 
@@ -347,8 +349,25 @@ typedef struct _VMDNS_DRIVER_GLOBALS
 
 typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
 {
-    DWORD              dwCurrentIndex;
-    PVM_SOCK_IO_BUFFER pQueryBuffer;
-    PVM_SOCKET         pClientSocket;
-    DWORD              dwRefCount;
+    DWORD                         dwCurrentIndex;
+    PVM_SOCK_IO_BUFFER            pQueryBuffer;
+    PVM_SOCKET                    pClientSocket;
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry;
+    DWORD                         dwRefCount;
 } VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
+
+typedef struct _VMDNS_FORWARDER_PACKET_LIST
+{
+    LIST_ENTRY          ForwarderPacketListHead;
+    DWORD               dwCurrentCount;
+    PVMDNS_MUTEX        pLock;
+} VMDNS_FORWARDER_PACKET_LIST;
+
+typedef struct _VMDNS_FORWARDER_PACKET_ENTRY
+{
+    volatile ULONG                  lRefCount;
+    LIST_ENTRY                      ForwarderPacketList;
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderPacketContext;
+    PVM_SOCKET                      pSocket;
+    UINT64                          uiExpirationTime;
+} VMDNS_FORWARDER_PACKET_ENTRY;

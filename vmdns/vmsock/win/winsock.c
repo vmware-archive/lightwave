@@ -1431,5 +1431,16 @@ cleanup:
 error :
 
     goto cleanup;
+}
 
+DWORD
+VmDnsSockWinCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
+    )
+{
+    DWORD dwError = ERROR_NOT_IMPLEMENTED;
+
+    return dwError;
 }

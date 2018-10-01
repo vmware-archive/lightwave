@@ -265,7 +265,6 @@ VmDnsCacheEvictEntryProc(
 
 /* lru.c */
 
-
 DWORD
 VmDnsLruInitialize(
     PVMDNS_ZONE_OBJECT pZoneObject,
@@ -930,6 +929,59 @@ DWORD
 VmDnsRegLoadForwarders(
     PDWORD         pdwCount,
     PSTR**         pppszForwarders
+    );
+
+/* packetlist.c */
+
+DWORD
+VmDnsForwarderPacketEntryCreate(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderPacketContext,
+    PVM_SOCKET                      pSocket,
+    UINT64                          uiExpirationTime,
+    PVMDNS_FORWARDER_PACKET_ENTRY   *ppForwarderPacketEntry
+    );
+
+PVMDNS_FORWARDER_PACKET_ENTRY
+VmDnsForwarderPacketEntryAcquire(
+    PVMDNS_FORWARDER_PACKET_ENTRY  pForwarderPacketEntry
+    );
+
+VOID
+VmDnsForwarderPacketEntryRelease(
+    PVMDNS_FORWARDER_PACKET_ENTRY   pForwarderPacketEntry
+    );
+
+VOID
+VmDnsForwarderPacketEntryDelete(
+    PVMDNS_FORWARDER_PACKET_ENTRY   pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListInitialize(
+    PVMDNS_FORWARDER_PACKET_LIST* ppForwarderPacketList
+    );
+
+VOID
+VmDnsForwarderPacketListFree(
+    PVMDNS_FORWARDER_PACKET_LIST pForwarderPacketList
+    );
+
+DWORD
+VmDnsForwarderPacketListAddEntry(
+    PVMDNS_FORWARDER_PACKET_LIST  pForwarderPacketList,
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListRemoveEntry(
+    PVMDNS_FORWARDER_PACKET_LIST  pForwarderPacketList,
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListClearEntries(
+    PVMDNS_FORWARDER_PACKET_LIST pForwarderPacketList,
+    DWORD dwCount
     );
 
 // Zone

@@ -75,6 +75,7 @@ VmDnsSockPosixOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
+    DWORD                dwTimeoutMS,
     PVM_SOCKET*          ppSocket
     )
 {
@@ -85,6 +86,7 @@ VmDnsSockPosixOpenClient(
     int fd = -1;
     PVM_SOCKET pSocket = NULL;
     CHAR szPort[32];
+    struct timeval sTimeout = {0};
 
     if (!pszHost || !usPort || !ppSocket)
     {
@@ -132,6 +134,19 @@ VmDnsSockPosixOpenClient(
         if (fd < 0)
         {
             continue;
+        }
+
+        if (dwTimeoutMS)
+        {
+            sTimeout.tv_sec  = dwTimeoutMS / 1000;
+            sTimeout.tv_usec = (dwTimeoutMS % 1000) * 1000;
+            if (setsockopt(fd, SOL_SOCKET, SO_SNDTIMEO, (const char *)&sTimeout, sizeof(sTimeout)) == -1)
+            {
+                close(fd);
+                fd = -1;
+
+                continue;
+            }
         }
 
         if (connect(fd, pInfo->ai_addr, pInfo->ai_addrlen) < 0)
@@ -550,6 +565,7 @@ VmDnsSockPosixWaitForEvent(
     PVM_SOCKET pSocket = NULL;
     PVM_SOCK_IO_BUFFER pIoBuffer = NULL;
     PVM_SOCK_IO_CONTEXT pIoContext = NULL;
+    uint64_t uiTriggerCount = 0;
 
     if (!pQueue || !ppSocket || !pEventType)
     {
@@ -567,7 +583,6 @@ VmDnsSockPosixWaitForEvent(
         dwError = ERROR_SHUTDOWN_IN_PROGRESS;
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-
 
     if ((pQueue->state == VM_SOCK_POSIX_EVENT_STATE_PROCESS) &&
         (pQueue->iReady >= pQueue->nReady))
@@ -621,7 +636,7 @@ VmDnsSockPosixWaitForEvent(
             {
                 eventType = VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED;
 
-                pSocket = pEventSocket;
+                pSocket = VmDnsSockPosixAcquireSocket(pEventSocket);
 
                 dwError = VmDnsSockPosixEventQueueDelete_inlock(
                                         pQueue,
@@ -647,6 +662,7 @@ VmDnsSockPosixWaitForEvent(
                         break;
 
                     case VM_SOCK_PROTOCOL_UDP:
+
                         pSocket = VmDnsSockPosixAcquireSocket(pEventSocket);
 
                         eventType = VM_SOCK_EVENT_TYPE_DATA_AVAILABLE;
@@ -670,12 +686,12 @@ VmDnsSockPosixWaitForEvent(
                         {
                             eventType = VM_SOCK_EVENT_TYPE_TCP_REQUEST_SIZE_READ;
                         }
+
                         pSocket = VmDnsSockPosixAcquireSocket(pEventSocket);
 
                         break;
 
                     default:
-
                         dwError = ERROR_INVALID_STATE;
                         BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
@@ -693,7 +709,25 @@ VmDnsSockPosixWaitForEvent(
                 {
                     pSocket = VmDnsSockPosixAcquireSocket(pEventSocket);
                 }
+            }
+            else if (pEventSocket->type == VM_SOCK_TYPE_TIMER)
+            {
+                if (pQueue->bShutdown)
+                {
+                    dwError = ERROR_SHUTDOWN_IN_PROGRESS;
+                    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+                }
+                else
+                {
+                    pSocket = VmDnsSockPosixAcquireSocket(pEventSocket);
 
+                    if (read(pSocket->fd, &uiTriggerCount, sizeof(uiTriggerCount)) < 0)
+                    {
+                        VMDNS_LOG_ERROR("%s: read() on timer fd failed (%d)", __FUNCTION__, errno);
+                    }
+
+                    eventType = VM_SOCK_EVENT_TYPE_TIMER_EXPIRATION;
+                }
             }
             else
             {
@@ -709,7 +743,6 @@ VmDnsSockPosixWaitForEvent(
 
     if (pIoBuffer && eventType == VM_SOCK_EVENT_TYPE_UNKNOWN)
     {
-
         pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
         eventType = pIoContext->eventType;
     }
@@ -724,8 +757,6 @@ cleanup:
     {
         VmDnsUnlockMutex(pQueue->pMutex);
     }
-
-
 
     return dwError;
 
@@ -756,8 +787,8 @@ VmDnsSockPosixShutdownEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     )
 {
-
     LONG result = 0;
+
     if (pQueue)
     {
         result = InterlockedExchange((LONG*)(&pQueue->bShutdown), TRUE);
@@ -1321,7 +1352,6 @@ VmDnsSockPosixEventQueueAdd_inlock(
        event.events = event.events | EPOLLONESHOT;
     }
 
-
     VmDnsSockPosixAcquireSocket(pSocket);
     if (pSocket->bInEventQueue == FALSE &&
         epoll_ctl(pQueue->epollFd, EPOLL_CTL_ADD, pSocket->fd, &event) < 0)
@@ -1329,8 +1359,8 @@ VmDnsSockPosixEventQueueAdd_inlock(
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-    pSocket->bInEventQueue = TRUE;
 
+    pSocket->bInEventQueue = TRUE;
 
 error:
 
@@ -1355,15 +1385,12 @@ VmDnsSockPosixEventQueueRearm_inlock(
        event.events = event.events | EPOLLONESHOT;
     }
 
-
-    VmDnsSockPosixAcquireSocket(pSocket);
     if (pSocket->bInEventQueue == TRUE &&
         epoll_ctl(pQueue->epollFd, EPOLL_CTL_MOD, pSocket->fd, &event) < 0)
     {
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-
 
 error:
 
@@ -1380,7 +1407,6 @@ VmDnsSockPosixEventQueueDelete_inlock(
     DWORD dwError = 0;
     struct epoll_event event = {0};
 
-
     if (pSocket->bInEventQueue == TRUE &&
         epoll_ctl(pQueue->epollFd, EPOLL_CTL_DEL, pSocket->fd, &event) < 0)
     {
@@ -1388,10 +1414,10 @@ VmDnsSockPosixEventQueueDelete_inlock(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
     pSocket->bInEventQueue = FALSE;
-
     VmDnsSockPosixReleaseSocket(pSocket);
 
 error:
+
     return dwError;
 }
 
@@ -1423,7 +1449,6 @@ VmDnsSockPosixAcceptConnection(
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
-
 
     pSocket->fd = fd;
 
@@ -1505,15 +1530,18 @@ VmDnsSockPosixFreeSocket(
     PVM_SOCKET pSocket
     )
 {
-    if (pSocket->fd >= 0)
+    if (pSocket)
     {
-        close(pSocket->fd);
+        if (pSocket->fd >= 0)
+        {
+            close(pSocket->fd);
+        }
+        if (pSocket->pMutex)
+        {
+            VmDnsFreeMutex(pSocket->pMutex);
+        }
+        VmDnsFreeMemory(pSocket);
     }
-    if (pSocket->pMutex)
-    {
-        VmDnsFreeMutex(pSocket->pMutex);
-    }
-    VmDnsFreeMemory(pSocket);
 }
 
 DWORD
@@ -1644,13 +1672,17 @@ VmDnsSockPosixFreeIoBuffer(
     PVM_SOCK_IO_BUFFER     pIoBuffer
     )
 {
-//    VMDNS_LOG_DEBUG("pIoBuffer:%p released from thread %p", pIoBuffer, pthread_self());
-    if (pIoBuffer && pIoBuffer->pClientSocket)
+    PVM_SOCK_IO_CONTEXT pIoContext = NULL;
+
+    if (pIoBuffer)
     {
-        VmDnsSockPosixReleaseSocket(pIoBuffer->pClientSocket);
+        if (pIoBuffer->pClientSocket)
+        {
+            VmDnsSockPosixReleaseSocket(pIoBuffer->pClientSocket);
+        }
+        pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
+        VMDNS_SAFE_FREE_MEMORY(pIoContext);
     }
-    PVM_SOCK_IO_CONTEXT pIoContext = CONTAINING_RECORD(pIoBuffer, VM_SOCK_IO_CONTEXT, IoBuffer);
-    VMDNS_SAFE_FREE_MEMORY(pIoContext);
 }
 
 /**
@@ -1685,8 +1717,84 @@ cleanup:
 
     return dwError;
 
-error :
+error:
 
     goto cleanup;
+}
 
+DWORD
+VmDnsSockPosixCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
+    )
+{
+    DWORD       dwError = 0;
+    int         timerFd = -1;
+    PVM_SOCKET  pSocket = NULL;
+    struct      itimerspec ts = {0};
+    int         nSec = 0;
+    int         nNanoSec = 0;
+
+    if (!ppSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+    timerFd = timerfd_create(CLOCK_MONOTONIC, 0);
+    if (timerFd == -1)
+    {
+        dwError = LwErrnoToWin32Error(errno);
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+
+    nSec = dwInitialMS / 1000;
+    nNanoSec = (dwInitialMS % 1000) * 1000000;
+    ts.it_value.tv_sec = nSec;
+    ts.it_value.tv_nsec = nNanoSec;
+
+    nSec = dwIntervalMS / 1000;
+    nNanoSec = (dwIntervalMS % 1000) * 1000000;
+    ts.it_interval.tv_sec = nSec;
+    ts.it_interval.tv_nsec = nNanoSec;
+
+    if (timerfd_settime(timerFd, 0, &ts, NULL) < 0)
+    {
+        dwError = LwErrnoToWin32Error(errno);
+        BAIL_ON_POSIX_SOCK_ERROR(dwError);
+    }
+
+    dwError = VmDnsAllocateMemory(
+                  sizeof(VM_SOCKET),
+                  (PVOID*)&pSocket);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    dwError = VmDnsAllocateMutex(&pSocket->pMutex);
+    BAIL_ON_POSIX_SOCK_ERROR(dwError);
+
+    pSocket->refCount = 1;
+    pSocket->protocol = VM_SOCK_PROTOCOL_UNKNOWN;
+    pSocket->type = VM_SOCK_TYPE_TIMER;
+    pSocket->fd = timerFd;
+
+    *ppSocket = pSocket;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (timerFd > 0)
+    {
+        close(timerFd);
+    }
+
+    if (pSocket)
+    {
+        VmDnsSockPosixFreeSocket(pSocket);
+        pSocket = NULL;
+    }
+
+    goto cleanup;
 }
