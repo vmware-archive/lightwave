@@ -85,6 +85,7 @@ VmDirFreeEntryContent(
           VMDIR_SAFE_FREE_MEMORY(e->pParentEntry);
       }
 
+      VmDirFreeLDAPDNContent( &(e->ldapDN) );
       VmDirFreeBervalContent( &(e->dn) );
       VmDirFreeBervalContent( &(e->pdn) );
       VmDirFreeBervalContent( &(e->newpdn) );

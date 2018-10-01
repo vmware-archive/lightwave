@@ -375,6 +375,14 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
+typedef struct _VDIR_LDAP_DN
+{
+    // libldap data structure to handle DN parsing
+    LDAPDN                       internalDN;
+    VDIR_BERVALUE                dn;
+    PCSTR                        pszParentNormDN;   // in place into dn.bvnorm_val; otherwise, NULL if no parent.
+} VDIR_LDAP_DN, *PVDIR_LDAP_DN;
+
 typedef struct _VDIR_ENTRY
 {
 
@@ -383,6 +391,7 @@ typedef struct _VDIR_ENTRY
    // Internally constructed Entry (non-persist entry) has eId == 0
    ENTRYID                      eId;     // type must match BDB's db_seq_t
 
+   VDIR_LDAP_DN                 ldapDN; // will replace following dn later.
    // dn.bv_val is heap allocated; dn.bvnorm_bv follows BerValue rule
    VDIR_BERVALUE                dn;
    // pdn.bv_val is in-place into dn.bv_val.  pdn.bvnrom_val follows BerValue rule
@@ -928,6 +937,33 @@ VmDirFreeDCConnContent(
 DWORD
 VmDirInitDCConnThread(
     PVMDIR_DC_CONNECTION pDCConn
+    );
+
+// schema/dn.c
+DWORD
+VmDirDNStrToInternalDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+DWORD
+VmDirNormDN(
+    PVDIR_LDAP_DN       pLdapDN,
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirParentNormDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDNContent(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDN(
+    PVDIR_LDAP_DN   pLdapDN
     );
 
 // vmdir/init.c

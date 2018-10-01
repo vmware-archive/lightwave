@@ -227,6 +227,14 @@ extern "C" {
         }                                       \
     } while(0)
 
+#define VDIR_SAFE_FREE_LDAPDN(pLdapDN)          \
+    do {                                        \
+        if (pLdapDN) {                          \
+            ldap_dnfree(pLdapDN);               \
+            (pLdapDN) = NULL;                   \
+        }                                       \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_STRINGA(PTR)      \
     do {                                  \
         if ((PTR)) {                      \
@@ -673,6 +681,14 @@ extern "C" {
     do {                                            \
         if ((pBerMem)) {                            \
             ber_memfree(pBerMem);                   \
+        }                                           \
+    } while(0)
+
+#define VMDIR_SAFE_LDAP_MEMFREE(pLDAPMem)           \
+    do {                                            \
+        if (pLDAPMem) {                             \
+            ldap_memfree(pLDAPMem);                 \
+            pLDAPMem = NULL;                        \
         }                                           \
     } while(0)
 

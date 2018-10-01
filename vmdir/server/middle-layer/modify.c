@@ -1443,6 +1443,9 @@ VmDirGenerateRenameAttrsMods(
     PSTR pszOldRdnAttrVal = NULL;
     PSTR pszNewRdnAttrName = NULL;
     PSTR pszNewRdnAttrVal = NULL;
+    VDIR_LDAP_DN    localLdapNewRDN = {0};
+    VDIR_LDAP_DN    localLdapNewSuperiorDN = {0};
+    VDIR_LDAP_DN    localLdapNewDN = {0};
 
     if (modReq->newrdn.lberbv.bv_len == 0)
     {
@@ -1456,18 +1459,30 @@ VmDirGenerateRenameAttrsMods(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
+    // validate RFC4514 DN syntax
+    // once switch to RFC 4514, this will be done in VmDirNormalizeMods
+    localLdapNewRDN.dn.lberbv_val = modReq->newrdn.lberbv.bv_val;
+    localLdapNewRDN.dn.lberbv_len = modReq->newrdn.lberbv.bv_len;
+    retVal = VmDirNormDN(&localLdapNewRDN, pOperation->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
     if (modReq->newSuperior.lberbv.bv_len)
     {
         retVal = VmDirNormalizeDN( &(modReq->newSuperior), pOperation->pSchemaCtx);
-        //BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-        //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
         BAIL_ON_VMDIR_ERROR(retVal)
+
+        // validate RFC4514 DN syntax
+        localLdapNewSuperiorDN.dn.lberbv_val = modReq->newSuperior.lberbv.bv_val;
+        localLdapNewSuperiorDN.dn.lberbv_len = modReq->newSuperior.lberbv.bv_len;
+        retVal = VmDirNormDN(&localLdapNewSuperiorDN, pOperation->pSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         retVal = VmDirCatDN(&modReq->newrdn, &modReq->newSuperior, &NewDn);
         BAIL_ON_VMDIR_ERROR(retVal);
     }
     else
     {
+        // TODO, need to get parentDN in original form in RFC4514 to properly support modrdn.
         retVal = VmDirGetParentDN(&modReq->dn, &parentdn);
         BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -1476,9 +1491,13 @@ VmDirGenerateRenameAttrsMods(
     }
 
     retVal = VmDirNormalizeDN( &NewDn, pOperation->pSchemaCtx);
-    //BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
-    //                              retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pOperation->pSchemaCtx)) );
     BAIL_ON_VMDIR_ERROR( retVal );
+
+    // validate RFC4514 DN syntax
+    localLdapNewDN.dn.lberbv_val = NewDn.lberbv.bv_val;
+    localLdapNewDN.dn.lberbv_len = NewDn.lberbv.bv_len;
+    retVal = VmDirNormDN(&localLdapNewDN, pOperation->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirGetRdn(&NewDn, &NewRdn);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -1492,7 +1511,7 @@ VmDirGenerateRenameAttrsMods(
     retVal = VmDirRdnToNameValue(&OldRdn, &pszOldRdnAttrName, &pszOldRdnAttrVal);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // Change DN
+    // Change DN (replace will be converted to DELETE and ADD mod then processed in backend as key delet and add.)
     retVal = VmDirAppendAMod(pOperation, MOD_OP_REPLACE, ATTR_DN, ATTR_DN_LEN, NewDn.bvnorm_val, NewDn.bvnorm_len);
     BAIL_ON_VMDIR_ERROR( retVal );
 
@@ -1537,6 +1556,9 @@ cleanup:
     VMDIR_SAFE_FREE_STRINGA(pszOldRdnAttrVal);
     VMDIR_SAFE_FREE_STRINGA(pszNewRdnAttrName);
     VMDIR_SAFE_FREE_STRINGA(pszNewRdnAttrVal);
+    VmDirFreeLDAPDNContent(&localLdapNewRDN);
+    VmDirFreeLDAPDNContent(&localLdapNewSuperiorDN);
+    VmDirFreeLDAPDNContent(&localLdapNewDN);
     return retVal;
 
 error:

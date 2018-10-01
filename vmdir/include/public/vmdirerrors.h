@@ -196,6 +196,7 @@
 #define VMDIR_ERROR_SCHEMA_BAD_METADATA               (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 22 )  // 9622
 #define VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE             (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 23 )  // 9623
 #define VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH         (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 24 )  // 9624
+#define VMDIR_ERROR_INVALID_NORMALIZATION             (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 25 )  // 9625
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // generic backend error (range 9700 - 9799)

@@ -16,6 +16,25 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VmDirRFC4154DNAddCompliance(
+    PVDIR_DB_TXN    pTxn,
+    PVDIR_ENTRY     pEntry,
+    ENTRYID         entryId,
+    ULONG           ulOPMask
+    );
+
+static
+DWORD
+_VmDirRFC4154DNModifyCompliance(
+    PVDIR_DB_TXN    pTxn,
+    PVDIR_ENTRY     pEntry,
+    PVDIR_BERVALUE  pBVDN,
+    ENTRYID         entryId,
+    ULONG           ulOPMask
+    );
+
 DWORD
 VmDirMDBSimpleEIdToEntry(
     ENTRYID         eId,
@@ -342,7 +361,10 @@ VmDirMDBAddEntry(
             BAIL_ON_VMDIR_ERROR(dwError);
 
             if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(nextAttr->type), nextAttr->vals, nextAttr->numVals,
-                                                    entryId, BE_INDEX_OP_TYPE_CREATE)) != 0)
+                                                    entryId, BE_INDEX_OP_TYPE_CREATE)) != 0
+                ||
+                (dwError = _VmDirRFC4154DNAddCompliance(pTxn, pEntry, entryId, BE_INDEX_OP_TYPE_CREATE)) != 0
+               )
             {
                 dwError = MDBToBackendError( dwError,
                                              MDB_KEYEXIST,
@@ -351,6 +373,7 @@ VmDirMDBAddEntry(
                                              VDIR_SAFE_STRING(nextAttr->vals[0].bvnorm_val));
                 BAIL_ON_VMDIR_ERROR( dwError );
             }
+
             if ((dwError = MdbUpdateAttrMetaData( pTxn, nextAttr, entryId, BE_INDEX_OP_TYPE_CREATE )) != 0)
             {
                 dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "UpdateDNAttrMetaData");
@@ -755,7 +778,11 @@ VmDirMDBModifyEntry(
             {
                 case MOD_OP_ADD:
                     if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0)
+                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
+                        ||
+                        (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
+                                                           pEntry->eId, BE_INDEX_OP_TYPE_CREATE)) != 0
+                       )
                     {
                         dwError = MDBToBackendError( dwError, MDB_KEYEXIST, ERROR_BACKEND_CONSTRAINT, pBECtx,
                                                      VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
@@ -765,7 +792,11 @@ VmDirMDBModifyEntry(
 
                 case MOD_OP_DELETE:
                     if ((dwError = MdbUpdateIndicesForAttr( pTxn, &(pEntry->dn), &(mod->attr.type), mod->attr.vals, mod->attr.numVals,
-                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0)
+                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE )) != 0
+                        ||
+                        (dwError = _VmDirRFC4154DNModifyCompliance(pTxn, pEntry, mod->attr.vals,
+                                                           pEntry->eId, BE_INDEX_OP_TYPE_DELETE)) != 0
+                       )
                     {
                         dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx,
                                                     VDIR_SAFE_STRING(mod->attr.type.lberbv.bv_val));
@@ -884,4 +915,135 @@ error:
              "ModifyEntry failed: error=%d,DN=%s", dwError, VDIR_SAFE_STRING(pEntry->dn.lberbv.bv_val));
 
      goto cleanup;
+}
+
+/*
+ * add RFC 4514 normalize value if different.
+ * will delete once switch to RFC 4514 compliance.
+ */
+static
+DWORD
+_VmDirRFC4154DNAddCompliance(
+    PVDIR_DB_TXN    pTxn,
+    PVDIR_ENTRY     pEntry,
+    ENTRYID         entryId,
+    ULONG           ulOPMask
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_ATTRIBUTE  attrDN = {0};
+
+    if (VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn), pEntry->ldapDN.dn.bvnorm_val, TRUE) != 0)
+    {
+        attrDN.type.lberbv_val = ATTR_DN;
+        attrDN.type.lberbv_len = VmDirStringLenA(attrDN.type.lberbv_val);
+
+        dwError = MdbUpdateIndicesForAttr(
+            pTxn,
+            &(pEntry->dn),
+            &(attrDN.type),
+            &pEntry->ldapDN.dn,
+            1,
+            entryId,
+            ulOPMask);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+            "%s RCF4514 add DN (%s)(%s)",
+            __FUNCTION__,
+            BERVAL_NORM_VAL(pEntry->dn),
+            BERVAL_NORM_VAL(pEntry->ldapDN.dn));
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "%s RCF4514 (%d) (%s)",
+        __FUNCTION__,
+        dwError,
+        VDIR_SAFE_STRING(pEntry->ldapDN.dn.lberbv_val));
+    goto cleanup;
+}
+
+/*
+ * add RFC 4514 normalize value if different.
+ * will delete once switch to RFC 4514 compliance.
+ */
+static
+DWORD
+_VmDirRFC4154DNModifyCompliance(
+    PVDIR_DB_TXN    pTxn,
+    PVDIR_ENTRY     pEntry,
+    PVDIR_BERVALUE  pBVDN,
+    ENTRYID         entryId,
+    ULONG           ulOPMask
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_ATTRIBUTE  attrDN = {0};
+    VDIR_LDAP_DN    localLdapDN = {0};
+
+    localLdapDN.dn.lberbv_val = pBVDN->lberbv_val;
+    localLdapDN.dn.lberbv_len = pBVDN->lberbv_len;
+
+    dwError = VmDirNormDN(&localLdapDN, pEntry->pSchemaCtx);
+    if (dwError)
+    {   // In delete entry code path, it basically renames DN to under tombstone container.
+        // Before asserting all existing live DN data pass RFC4514 syntax validate, we can't bail here.
+        // Log warning message instead.
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+            "%s RCF4514 %ul (%d)(%s)",
+            __FUNCTION__,
+            ulOPMask,
+            dwError,
+            BERVAL_NORM_VAL(localLdapDN.dn));
+
+        dwError = 0;
+        goto cleanup;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (VmDirStringCompareA(localLdapDN.dn.bvnorm_val, pBVDN->bvnorm_val, TRUE) != 0)
+    {
+        attrDN.type.lberbv_val = ATTR_DN;
+        attrDN.type.lberbv_len = VmDirStringLenA(attrDN.type.lberbv_val);
+
+        dwError = MdbUpdateIndicesForAttr(
+            pTxn,
+            &(pEntry->dn),
+            &(attrDN.type),
+            &localLdapDN.dn,
+            1,
+            entryId,
+            ulOPMask);
+        if (dwError == 0)
+        {
+            VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                "%s RCF4514 %ul (%s)(%s)",
+                __FUNCTION__,
+                ulOPMask,
+                BERVAL_NORM_VAL(*pBVDN),
+                BERVAL_NORM_VAL(localLdapDN.dn));
+        }
+        else if (dwError == MDB_NOTFOUND && ulOPMask == BE_INDEX_OP_TYPE_DELETE)
+        {
+            dwError = 0;  // old data does not have this value.
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VmDirFreeLDAPDNContent(&localLdapDN);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+        "%s RCF4514 (%d) (%s)(%s)",
+        __FUNCTION__,
+        dwError,
+        pBVDN->lberbv_val,
+        VDIR_SAFE_STRING(localLdapDN.dn.lberbv_val));
+    goto cleanup;
 }
