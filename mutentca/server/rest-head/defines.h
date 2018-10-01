@@ -12,9 +12,11 @@
  * under the License.
  */
 
+// Version
+#define LWCA_REST_VERSION                       "Lightwave Multi-Tenanted CA Version 1.0"
+
 // C REST ENGINE CONFIG VALUES
 #define LWCA_REST_API_SPEC                      MUTENTCA_CONFIG_DIR "/mutentca-rest.json"
-
 #define LWCA_HTTPS_PORT_NUM                     7878
 #define LWCA_DAEMON_NAME                        "mutentcad"
 #define LWCA_REST_CONN_TIMEOUT_SEC              10
@@ -28,7 +30,12 @@
 // Signing Algorithms
 #define LWCA_REST_SHA256_ALGO                   "SHA256"
 
+// REST Paramaeters
+#define LWCA_REST_PARAM_REQ_ID                  "X-Request-ID"
+#define LWCA_REST_PARAM_CA_ID                   "ca-id"
+
 // JSON Keys
+#define LWCA_JSON_KEY_VERSION                   "version"
 #define LWCA_JSON_KEY_CA_ID                     "caId"
 #define LWCA_JSON_KEY_PARENT_CA_ID              "parentCaId"
 #define LWCA_JSON_KEY_COUNTRY                   "country"
@@ -42,6 +49,8 @@
 #define LWCA_JSON_KEY_CSR                       "csr"
 #define LWCA_JSON_KEY_SIGN_ALGO                 "signatureAlgorithm"
 #define LWCA_JSON_KEY_CERT                      "cert"
+#define LWCA_JSON_KEY_CERTS                     "certs"
+#define LWCA_JSON_KEY_CRL                       "crl"
 
 // HTTP headers
 #define LWCA_REST_HEADER_AUTHORIZATION          "Authorization"
@@ -123,3 +132,6 @@
 #define HTTP_NOT_EXTENDED                       510
 #define HTTP_NETWORK_AUTHENTICATION_REQUIRED    511
 #define HTTP_NETWORK_CONNECT_TIMEOUT_ERROR      599
+
+// Dummy return value
+#define LWCA_NOT_IMPLEMENTED_VALUE              "This api is not yet implemented"

@@ -7,14 +7,18 @@ if REST_ENABLED
 
 libmutentcaresthead_la_SOURCES += \
     apiutil.c \
+    certificatesapi.c \
+    crlapi.c \
     globals.c \
     handler.c \
     httperror.c \
+    intermediatecaapi.c \
     openssl.c \
     operation.c \
     param.c \
     resource.c \
-    result.c
+    result.c \
+    rootcaapi.c
 
 endif
 

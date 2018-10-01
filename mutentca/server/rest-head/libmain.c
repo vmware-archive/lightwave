@@ -58,6 +58,10 @@ LwCARestServerInit(
 
     MODULE_REG_MAP stRegMap[] =
     {
+        {"rootca", LwCARestRootCAModule},
+        {"intermediateca", LwCARestIntermediateCAModule},
+        {"crl", LwCARestCRLModule},
+        {"certificates", LwCARestCertificatesModule},
         {NULL, NULL}
     };
 

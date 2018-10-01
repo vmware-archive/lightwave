@@ -56,7 +56,7 @@ LwCARestApiRequestHandler(
 
 cleanup:
     // write response
-    LwCASetRestResult(pRestOp, dwError, NULL);
+    LwCASetRestResult(pRestOp, NULL, dwError, NULL);
     dwRspErr = LwCARestOperationWriteResponse(pRestOp, pRESTHandle, ppResponse);
 
     // free memory

@@ -535,6 +535,11 @@ LwCAStringToLower(
     PSTR *ppszNewString
     );
 
+int
+LwCAStringToInt(
+    PCSTR pszStr
+    );
+
 VOID
 LwCASetBit(
     unsigned long *flag,

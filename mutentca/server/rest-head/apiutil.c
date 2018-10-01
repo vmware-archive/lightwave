@@ -216,13 +216,14 @@ error:
 DWORD
 LwCARestGetCertificateInput(
     PLWCA_JSON_OBJECT           pJsonBody,
-    PSTR*                       ppszCert
+    PLWCA_CERTIFICATE*          ppCert
     )
 {
-    DWORD   dwError = 0;
-    PSTR    pszCert = NULL;
+    DWORD                       dwError = 0;
+    PSTR                        pszCert = NULL;
+    PLWCA_CERTIFICATE           pCert   = NULL;
 
-    if (!pJsonBody || !ppszCert)
+    if (!pJsonBody || !ppCert)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -231,9 +232,14 @@ LwCARestGetCertificateInput(
     dwError = LwCAJsonGetStringFromKey(pJsonBody, FALSE, LWCA_JSON_KEY_CERT, &pszCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    *ppszCert = pszCert;
+    dwError = LwCACreateCertificate(pszCert, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCert = pCert;
 
 cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszCert);
+
     return dwError;
 
 error:
@@ -242,10 +248,10 @@ error:
         dwError = LWCA_ERROR_INVALID_REQUEST;
     }
 
-    LWCA_SAFE_FREE_STRINGA(pszCert);
-    if (ppszCert)
+    LwCAFreeCertificate(pCert);
+    if (ppCert)
     {
-        *ppszCert = pszCert;
+        *ppCert = pCert;
     }
 
     goto cleanup;

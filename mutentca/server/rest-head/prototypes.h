@@ -137,6 +137,7 @@ LwCARestGetResource(
 DWORD
 LwCARestUnknownSetResult(
     PLWCA_REST_RESULT       pRestRslt,
+    PSTR                    pszRequestId,
     DWORD                   dwErr,
     PCSTR                   pcszErrMsg
     );
@@ -194,6 +195,13 @@ LwCARestResultSetStrArrayData(
     );
 
 DWORD
+LwCARestResultSetCertArrayData(
+    PLWCA_REST_RESULT       pRestRslt,
+    PCSTR                   pcszKey,
+    PLWCA_CERTIFICATE_ARRAY pVal
+    );
+
+DWORD
 LwCARestResultSetObjData(
     PLWCA_REST_RESULT       pRestRslt,
     PCSTR                   pcszKey,
@@ -210,6 +218,7 @@ LwCARestResultGenerateResponseBody(
 VOID
 LwCASetRestResult(
     PLWCA_REST_OPERATION    pRestOp,
+    PSTR                    pszRequestId,
     DWORD                   dwError,
     PCSTR                   pcszErrMsg
     );
@@ -217,6 +226,98 @@ LwCASetRestResult(
 VOID
 LwCAFreeRESTResult(
     PLWCA_REST_RESULT       pRestRslt
+    );
+
+
+// rootcaapi.c
+DWORD
+LwCARestRootCAModule(
+    PREST_MODULE*           ppRestModule
+    );
+
+DWORD
+LwCARestGetVersion(
+    PVOID                   pIn,
+    PVOID*                  ppOut
+    );
+
+DWORD
+LwCARestGetRootCACert(
+    PVOID                   pIn,
+    PVOID*                  ppOut
+    );
+
+// intermediatecaapi.c
+DWORD
+LwCARestIntermediateCAModule(
+    PREST_MODULE*           ppRestModule
+    );
+
+DWORD
+LwCARestCreateIntermediateCA(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestGetIntermediateCACert(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestRevokeIntermediateCA(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+
+// crlapi.c
+DWORD
+LwCARestCRLModule(
+    PREST_MODULE*           ppRestModule
+    );
+
+DWORD
+LwCARestGetRootCACRL(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestGetIntermediateCACRL(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+// certificatesapi.c
+DWORD
+LwCARestCertificatesModule(
+    PREST_MODULE*           ppRestModule
+    );
+
+DWORD
+LwCARestGetRootCASignedCert(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestRevokeRootCASignedCert(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestGetIntermediateCASignedCert(
+    PVOID                   pIn,
+    PVOID*                  pOut
+    );
+
+DWORD
+LwCARestRevokeIntermediateCASignedCert(
+    PVOID                   pIn,
+    PVOID*                  pOut
     );
 
 #ifdef __cplusplus

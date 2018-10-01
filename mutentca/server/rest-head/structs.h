@@ -18,6 +18,7 @@ extern "C" {
 
 typedef enum
 {
+    LWCA_REST_RSC_API,
     LWCA_REST_RSC_UNKNOWN,
     LWCA_REST_RSC_COUNT,
 } LWCA_REST_RESOURCE_TYPE;
@@ -31,6 +32,9 @@ typedef struct _LWCA_HTTP_ERROR
 
 typedef struct _LWCA_REST_RESULT
 {
+    // request id
+    PSTR                        pszRequestId;
+
     // error result
     BOOLEAN                     bErrSet;
     int                         errCode;
@@ -44,6 +48,7 @@ typedef struct _LWCA_REST_RESULT
 
 typedef DWORD (*PFN_SET_RESULT)(
         PLWCA_REST_RESULT       pRestRslt,
+        PSTR                    pRequestId,
         DWORD                   dwErr,
         PCSTR                   pcszErrDetail
         );

@@ -81,7 +81,7 @@ LwCARestGetIntParam(
     }
     else
     {
-        *piVal = LwCAStringToIA(pszVal);
+        *piVal = LwCAStringToInt(pszVal);
     }
 
 cleanup:

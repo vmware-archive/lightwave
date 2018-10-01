@@ -274,7 +274,7 @@ LwCARestOperationProcessRequest(
                     &pRestOp->pMethod);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        dwError = pRestOp->pMethod->pFnImpl((void*)pRestOp, NULL);
+        dwError = pRestOp->pMethod->pFnImpl((PVOID)pRestOp, NULL);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 

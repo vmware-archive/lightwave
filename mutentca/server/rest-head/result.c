@@ -267,6 +267,56 @@ error:
 }
 
 DWORD
+LwCARestResultSetCertArrayData(
+    PLWCA_REST_RESULT       pRestRslt,
+    PCSTR                   pcszKey,
+    PLWCA_CERTIFICATE_ARRAY pVal
+    )
+{
+    DWORD               dwError     = 0;
+    int                 iJsonErr    = 0;
+    DWORD               dwIdx       = 0;
+    PLWCA_JSON_OBJECT   pjArray     = NULL;
+
+    if (!pRestRslt || IsNullOrEmptyString(pcszKey) || !pVal)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pjArray = json_array();
+    if (!pjArray)
+    {
+        dwError = LWCA_JSON_ERROR;
+        BAIL_ON_JSON_ERROR_WITH_MSG(dwError, "Failed to create json array result data");
+    }
+
+    for (; dwIdx < pVal->dwCount; ++dwIdx)
+    {
+        iJsonErr = json_array_append_new(pjArray, json_string(pVal->ppCertificates[dwIdx]));
+        if (iJsonErr)
+        {
+            dwError = LWCA_JSON_ERROR;
+            BAIL_ON_JSON_ERROR_WITH_MSG(dwError, "Failed to append to json array result data");
+        }
+    }
+
+    dwError = LwCARestResultSetObjData(pRestRslt, pcszKey, pjArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_LOG_ERROR(
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+DWORD
 LwCARestResultSetObjData(
     PLWCA_REST_RESULT   pRestRslt,
     PCSTR               pcszKey,
@@ -311,6 +361,7 @@ LwCARestResultGenerateResponseBody(
     DWORD               dwError         = 0;
     int                 iJsonErr        = 0;
     PLWCA_JSON_OBJECT   pjBody          = NULL;
+    PLWCA_JSON_OBJECT   pjReqId         = NULL;
     PLWCA_JSON_OBJECT   pjStrErrCode    = NULL;
     PLWCA_JSON_OBJECT   pjErrCode       = NULL;
     PLWCA_JSON_OBJECT   pjErrMsg        = NULL;
@@ -342,6 +393,10 @@ LwCARestResultGenerateResponseBody(
 
         if (pRestRslt->errCode)
         {
+            pjReqId = json_string(LWCA_SAFE_STRING(pRestRslt->pszRequestId));
+            dwError = json_object_set_new(pjBody, "requestId", pjReqId);
+            BAIL_ON_JSON_ERROR_WITH_MSG(dwError, "Failed to set new json object 'requestId'");
+
             pjStrErrCode = json_string(pHttpError->pszHttpStatus);
             iJsonErr = json_object_set_new(pjBody, "code", pjStrErrCode);
             if (iJsonErr)
@@ -427,6 +482,7 @@ _DataMapPairFree(
 VOID
 LwCASetRestResult(
     PLWCA_REST_OPERATION    pRestOp,
+    PSTR                    pszRequestId,
     DWORD                   dwError,
     PCSTR                   pcszErrDetail
     )
@@ -438,7 +494,7 @@ LwCASetRestResult(
     {
         pResource = ((PLWCA_REST_OPERATION)pRestOp)->pResource;
         pRestRslt = ((PLWCA_REST_OPERATION)pRestOp)->pResult;
-        pResource->pfnSetResult(pRestRslt, dwError, pcszErrDetail);
+        pResource->pfnSetResult(pRestRslt, pszRequestId, dwError, pcszErrDetail);
     }
 }
 
@@ -449,6 +505,7 @@ LwCAFreeRESTResult(
 {
     if (pRestRslt)
     {
+        LWCA_SAFE_FREE_STRINGA(pRestRslt->pszRequestId);
         LWCA_SAFE_FREE_MEMORY(pRestRslt->pszErrDetail);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);

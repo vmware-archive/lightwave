@@ -17,6 +17,14 @@
 static LWCA_REST_RESOURCE resources[LWCA_REST_RSC_COUNT] =
 {
     {
+        LWCA_REST_RSC_API,
+        "/v1/mutentca",
+        TRUE,
+        LwCARestUnknownSetResult,
+        LwCARestUnknownGetHttpError,
+        "application/json",
+    },
+    {
         LWCA_REST_RSC_UNKNOWN,
         NULL,
         FALSE,
@@ -63,6 +71,7 @@ LwCARestGetResource(
 DWORD
 LwCARestUnknownSetResult(
     PLWCA_REST_RESULT   pRestRslt,
+    PSTR                pszRequestId,
     DWORD               dwErr,
     PCSTR               pcszErrDetail
     )
@@ -74,6 +83,9 @@ LwCARestUnknownSetResult(
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    dwError = LwCAAllocateStringA(LWCA_SAFE_STRING(pszRequestId), &pRestRslt->pszRequestId);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetError(pRestRslt, (int)dwErr, pcszErrDetail);
     BAIL_ON_LWCA_ERROR(dwError);
