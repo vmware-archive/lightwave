@@ -20,6 +20,7 @@ VmDnsSockOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
+    DWORD                dwTimeoutMS,
     PVM_SOCKET*          ppSocket
     )
 {
@@ -35,6 +36,7 @@ VmDnsSockOpenClient(
                                     pszHost,
                                     usPort,
                                     dwFlags,
+                                    dwTimeoutMS,
                                     ppSocket);
 
 error:
@@ -589,5 +591,26 @@ VmDnsSockReleaseIoBuffer(
 error:
 
     return dwError;
+}
 
+DWORD
+VmDnsSockCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
+    )
+{
+    DWORD dwError = 0;
+
+    if (!ppSocket)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMSOCK_ERROR(dwError);
+    }
+
+    gpVmDnsSockPackage->pfnCreateTimerSocket(dwInitialMS, dwIntervalMS, ppSocket);
+
+error:
+
+    return dwError;
 }

@@ -60,6 +60,7 @@ typedef enum
     VM_SOCK_EVENT_TYPE_UDP_FWD_RESPONSE_DATA_READ,
     VM_SOCK_EVENT_TYPE_CONNECTION_CLOSED,
     VM_SOCK_EVENT_TYPE_QUERY,
+    VM_SOCK_EVENT_TYPE_TIMER_EXPIRATION,
     VM_SOCK_EVENT_TYPE_MAX,
 } VM_SOCK_EVENT_TYPE, *PVM_SOCK_EVENT_TYPE;
 
@@ -73,16 +74,18 @@ typedef enum
  */
 DWORD
 VmDnsSockInitialize(
+    VOID
     );
 
 /**
  * @brief Opens a client socket
  *
- * @param[in]  pszHost  Target hostname or IP Address.
- *                      An empty string will imply the localhost.
- * @param[in]  usPort   16 bit port number
- * @param[in]  dwFlags  32 bit flags specifying socket creation preferences
- * @param[out] ppSocket Pointer to created socket context
+ * @param[in]  pszHost     Target hostname or IP Address.
+ *                         An empty string will imply the localhost.
+ * @param[in]  usPort      16 bit port number
+ * @param[in]  dwFlags     32 bit flags specifying socket creation preferences
+ * @param[in]  dwTimeoutMS connect timeout in milliseconds
+ * @param[out] ppSocket    Pointer to created socket context
  *
  * @return 0 on success
  */
@@ -91,6 +94,7 @@ VmDnsSockOpenClient(
     PCSTR                pszHost,
     USHORT               usPort,
     VM_SOCK_CREATE_FLAGS dwFlags,
+    DWORD                dwTimeoutMS,
     PVM_SOCKET*          ppSocket
     );
 
@@ -148,8 +152,9 @@ VmDnsSockCreateEventQueue(
 /**
  * @brief Adds a socket to the event queue
  *
- * @param[in] pQueue  Pointer to Event queue
- * @param[in] pSocket Pointer to Socket
+ * @param[in] pQueue   Pointer to Event queue
+ * @param[in] bOneShot One-shot flag
+ * @param[in] pSocket  Pointer to Socket
  *
  * @return 0 on success
  */
@@ -163,8 +168,9 @@ VmDnsSockEventQueueAdd(
 /**
  * @brief Rearms a socket to the event queue
  *
- * @param[in] pQueue  Pointer to Event queue
- * @param[in] pSocket Pointer to Socket
+ * @param[in] pQueue   Pointer to Event queue
+ * @param[in] bOneShot One-shot flag
+ * @param[in] pSocket  Pointer to Socket
  *
  * @return 0 on success
  */
@@ -236,7 +242,6 @@ VmDnsSockSetTimeOut(
     PVM_SOCKET           pSocket,
     DWORD                dwTimeOut
     );
-
 
 /**
  * @brief Retrieves the protocol the socket has been configured with
@@ -366,7 +371,7 @@ VmDnsSockIsValidIPAddress(
  *
  * @param[in] pSocket       socket bound to a service
  * @param[inout] pAddress   socket address
- * @param[in] addresLen     lenth of th address
+ * @param[in] addressLen    length of the address
  *
  * @return DWORD - 0 on success
  */
@@ -416,5 +421,21 @@ VmDnsSockReleaseIoBuffer(
  */
 VOID
 VmDnsSockShutdown(
+    VOID
     );
 
+/**
+ * @brief Creates a timer socket
+ *
+ * @param[in]  dwInitialMS   Initial timeout in milliseconds
+ * @param[in]  dwIntervalMS  Subsequent interval timeout in milliseconds
+ * @param[out] ppSocket      Pointer to timer socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
+    );
