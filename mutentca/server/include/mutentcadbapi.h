@@ -28,12 +28,12 @@ DWORD
 LwCADbCreateCAData(
     PCSTR                           pcszIssuer,
     PCSTR                           pcszSubject,
-    PLWCA_DB_CERTIFICATE_ARRAY      pCertificates,
-    PLWCA_DB_ENCRYPTED_KEY          pEncryptedPrivateKey,
-    PLWCA_DB_ENCRYPTED_KEY          pEncryptedEncryptionKey,
+    PLWCA_CERTIFICATE_ARRAY         pCertificates,
+    PLWCA_KEY                       pEncryptedPrivateKey,
+    PLWCA_KEY                       pEncryptedEncryptionKey,
     PCSTR                           pcszTimeValidFrom,
     PCSTR                           pcszTimeValidTo,
-    LWCA_DB_CA_STATUS               status,
+    LWCA_CA_STATUS                  status,
     PLWCA_DB_CA_DATA                *ppCAData
     );
 
@@ -45,22 +45,8 @@ LwCADbCreateCertData(
     PCSTR               pcszTimeValidTo,
     PCSTR               pcszRevokedReason,
     PCSTR               pcszRevokedDate,
-    LWCA_DB_CERT_STATUS status,
+    LWCA_CERT_STATUS    status,
     PLWCA_DB_CERT_DATA  *ppCertData
-    );
-
-DWORD
-LwCADbCreateCertArray(
-    PSTR                        *ppCertificates,
-    DWORD                       dwCount,
-    PLWCA_DB_CERTIFICATE_ARRAY  *ppCertArray
-    );
-
-DWORD
-LwCADbCreateEncryptedKey(
-    PBYTE                     pData,
-    DWORD                     dwLength,
-    PLWCA_DB_ENCRYPTED_KEY    *ppEncryptedKey
     );
 
 DWORD
@@ -79,7 +65,7 @@ LwCADbAddCertData(
 DWORD
 LwCADbGetCACertificates(
     PCSTR                      pcszCAId,
-    PLWCA_DB_CERTIFICATE_ARRAY *ppCertArray
+    PLWCA_CERTIFICATE_ARRAY    *ppCertArray
     );
 
 DWORD
@@ -96,8 +82,8 @@ LwCADbUpdateCA(
 
 DWORD
 LwCADbUpdateCAStatus(
-    PCSTR                   pcszCAId,
-    LWCA_DB_CA_STATUS       status
+    PCSTR                pcszCAId,
+    LWCA_CA_STATUS       status
     );
 
 DWORD
@@ -119,21 +105,6 @@ LwCADbFreeCertData(
 VOID
 LwCADbFreeCertDataArray(
     PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    );
-
-VOID
-LwCADbFreeCertificate(
-    PSTR pCertificate
-    );
-
-VOID
-LwCADbFreeCertificates(
-    PLWCA_DB_CERTIFICATE_ARRAY pCertArray
-    );
-
-VOID
-LwCADbFreeEncryptedKey(
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedKey
     );
 
 VOID

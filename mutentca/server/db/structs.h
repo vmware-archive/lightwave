@@ -14,8 +14,10 @@
 
 typedef struct _LWCA_DB_CONTEXT
 {
+    pthread_rwlock_t                dbMutex;
     PSTR                            pszPlugin;
     PLWCA_DB_FUNCTION_TABLE         pFt;
     PLWCA_PLUGIN_HANDLE             pPluginHandle;
     PLWCA_DB_HANDLE                 pDbHandle;
+    BOOLEAN                         isInitialized;
 } LWCA_DB_CONTEXT, *PLWCA_DB_CONTEXT;

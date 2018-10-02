@@ -12,12 +12,6 @@
  * under the License.
  */
 
-DWORD
-LwCADbCopyEncryptedKey(
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedKey,
-    PLWCA_DB_ENCRYPTED_KEY *ppEncryptedKey
-    );
-
 VOID
 LwCADbFreeFunctionTable(
     PLWCA_DB_FUNCTION_TABLE pFt

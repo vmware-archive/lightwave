@@ -29,6 +29,7 @@ extern "C" {
 
 #include <cmocka.h>
 
+#include <mutentca.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>

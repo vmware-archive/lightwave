@@ -48,13 +48,13 @@ Test_LwCADbFreeCtx(
  */
 VOID
 TestCreateCertificates(
-    PLWCA_DB_CERTIFICATE_ARRAY  *ppCertArray
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
     )
 {
     DWORD dwError = 0;
     PSTR *ppCertificates = NULL;
 
-    dwError = LwCAAllocateMemory(2 * sizeof(ppCertificates[0]), (PVOID*)&ppCertificates);
+    dwError = LwCAAllocateMemory(2 * sizeof(PSTR), (PVOID*)&ppCertificates);
     assert_int_equal(dwError, 0);
 
     dwError = LwCAAllocateStringA("dummyCert1", &ppCertificates[0]);
@@ -63,7 +63,7 @@ TestCreateCertificates(
     dwError = LwCAAllocateStringA("dummyCert2", &ppCertificates[1]);
     assert_int_equal(dwError, 0);
 
-    dwError = LwCADbCreateCertArray(ppCertificates, 2, ppCertArray);
+    dwError = LwCACreateCertArray(ppCertificates, 2, ppCertArray);
     assert_int_equal(dwError, 0);
 
     assert_non_null(ppCertArray);
@@ -80,16 +80,16 @@ Test_LwCADbCAData(
 {
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
-    PLWCA_DB_CERTIFICATE_ARRAY pCertArray = NULL;
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedPrivateKey = NULL;
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedEncryptionKey = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    PLWCA_KEY pEncryptedPrivateKey = NULL;
+    PLWCA_KEY pEncryptedEncryptionKey = NULL;
     BYTE testKey1[20] = "testKey1";
     BYTE testKey2[20] = "testKey2";
 
-    dwError = LwCADbCreateEncryptedKey(testKey1, 20, &pEncryptedPrivateKey);
+    dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
     assert_int_equal(dwError, 0);
 
-    dwError = LwCADbCreateEncryptedKey(testKey2, 20, &pEncryptedEncryptionKey);
+    dwError = LwCACreateKey(testKey2, 20, &pEncryptedEncryptionKey);
     assert_int_equal(dwError, 0);
 
     TestCreateCertificates(&pCertArray);
@@ -104,7 +104,7 @@ Test_LwCADbCAData(
                                 pEncryptedEncryptionKey,
                                 "-1",
                                 "-1",
-                                LWCA_DB_CA_STATUS_ACTIVE,
+                                LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
 
@@ -126,11 +126,11 @@ Test_LwCADbCAData(
     assert_string_equal(pCAData->pszTimeValidFrom, "-1");
     assert_string_equal(pCAData->pszTimeValidTo, "-1");
 
-    assert_int_equal(pCAData->status, LWCA_DB_CA_STATUS_ACTIVE);
+    assert_int_equal(pCAData->status, LWCA_CA_STATUS_ACTIVE);
 
-    LwCADbFreeEncryptedKey(pEncryptedPrivateKey);
-    LwCADbFreeEncryptedKey(pEncryptedEncryptionKey);
-    LwCADbFreeCertificates(pCertArray);
+    LwCAFreeKey(pEncryptedPrivateKey);
+    LwCAFreeKey(pEncryptedEncryptionKey);
+    LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
 }
 
@@ -141,16 +141,16 @@ Test_LwCADbCAData_Invalid(
 {
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
-    PLWCA_DB_CERTIFICATE_ARRAY pCertArray = NULL;
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedPrivateKey = NULL;
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedEncryptionKey = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    PLWCA_KEY pEncryptedPrivateKey = NULL;
+    PLWCA_KEY pEncryptedEncryptionKey = NULL;
     BYTE testKey1[20] = "testKey1";
     BYTE testKey2[20] = "testKey2";
 
-    dwError = LwCADbCreateEncryptedKey(testKey1, 20, &pEncryptedPrivateKey);
+    dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
     assert_int_equal(dwError, 0);
 
-    dwError = LwCADbCreateEncryptedKey(testKey2, 20, &pEncryptedEncryptionKey);
+    dwError = LwCACreateKey(testKey2, 20, &pEncryptedEncryptionKey);
     assert_int_equal(dwError, 0);
 
     TestCreateCertificates(&pCertArray);
@@ -165,7 +165,7 @@ Test_LwCADbCAData_Invalid(
                                 pEncryptedEncryptionKey,
                                 NULL,
                                 NULL,
-                                LWCA_DB_CA_STATUS_ACTIVE,
+                                LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCAData);
@@ -177,7 +177,7 @@ Test_LwCADbCAData_Invalid(
                                 NULL,
                                 NULL,
                                 NULL,
-                                LWCA_DB_CA_STATUS_ACTIVE,
+                                LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCAData);
@@ -189,14 +189,14 @@ Test_LwCADbCAData_Invalid(
                                 pEncryptedEncryptionKey,
                                 NULL,
                                 NULL,
-                                LWCA_DB_CA_STATUS_ACTIVE,
+                                LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCAData);
 
-    LwCADbFreeEncryptedKey(pEncryptedPrivateKey);
-    LwCADbFreeEncryptedKey(pEncryptedEncryptionKey);
-    LwCADbFreeCertificates(pCertArray);
+    LwCAFreeKey(pEncryptedPrivateKey);
+    LwCAFreeKey(pEncryptedEncryptionKey);
+    LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
 }
 
@@ -215,7 +215,7 @@ Test_LwCADbCertData(
                                     "-1",
                                     "dummyReason",
                                     "dummyDate",
-                                    LWCA_DB_CERT_STATUS_ACTIVE,
+                                    LWCA_CERT_STATUS_ACTIVE,
                                     &pCertData);
     assert_int_equal(dwError, 0);
 
@@ -226,7 +226,7 @@ Test_LwCADbCertData(
     assert_string_equal(pCertData->pszTimeValidTo, "-1");
     assert_string_equal(pCertData->pszRevokedReason, "dummyReason");
     assert_string_equal(pCertData->pszRevokedDate, "dummyDate");
-    assert_int_equal(pCertData->status, LWCA_DB_CERT_STATUS_ACTIVE);
+    assert_int_equal(pCertData->status, LWCA_CERT_STATUS_ACTIVE);
 
     LwCADbFreeCertData(pCertData);
 }
@@ -245,7 +245,7 @@ Test_LwCADbCertData_Invalid(
                                     NULL,
                                     "dummyReason",
                                     "dummyDate",
-                                    LWCA_DB_CERT_STATUS_ACTIVE,
+                                    LWCA_CERT_STATUS_ACTIVE,
                                     &pCertData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertData);
@@ -256,7 +256,7 @@ Test_LwCADbCertData_Invalid(
                                     "-1",
                                     NULL,
                                     NULL,
-                                    LWCA_DB_CERT_STATUS_ACTIVE,
+                                    LWCA_CERT_STATUS_ACTIVE,
                                     &pCertData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertData);

@@ -26,6 +26,7 @@ extern "C" {
 #include <openssl/engine.h>
 #endif
 
+#include <mutentca.h>
 #include <mutentcaerror.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>

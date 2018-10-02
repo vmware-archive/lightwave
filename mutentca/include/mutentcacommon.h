@@ -125,6 +125,17 @@ typedef struct _LWCA_STRING_ARRAY
         }                           \
     } while(0)
 
+#define LWCA_SECURE_SAFE_FREE_MEMORY(PTR, n)     \
+    do {                                         \
+        if ((PTR)) {                             \
+            if ((n) > 0) {                       \
+                memset(PTR, 0, n);               \
+            }                                    \
+            LwCAFreeMemory(PTR);                 \
+            (PTR) = NULL;                        \
+        }                                        \
+    } while(0)
+
 #define LWCA_LOCK_MUTEX(bInLock, mutex)     \
     do {                                    \
         if (!(bInLock))                     \

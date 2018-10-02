@@ -189,3 +189,247 @@ LwCAUtilDoesValueHaveWildcards(
 
     return FALSE;
 }
+
+DWORD
+LwCACreateCertificate(
+    PCSTR               pcszCertificate,
+    PLWCA_CERTIFICATE   *ppCertificate
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszCert = NULL;
+
+    if (IsNullOrEmptyString(pcszCertificate) || !ppCertificate)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateStringA(pcszCertificate, &pszCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCertificate = (PLWCA_CERTIFICATE)pszCert;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_MEMORY(pszCert);
+
+    if (ppCertificate)
+    {
+        *ppCertificate = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCACreateCertArray(
+    PSTR                        *ppszCertificates,
+    DWORD                       dwCount,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    )
+{
+    DWORD dwError = 0;
+    DWORD iEntry = 0;
+    PLWCA_CERTIFICATE_ARRAY  pCertArray = NULL;
+
+    if (!ppszCertificates || dwCount <=0 || !ppCertArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_CERTIFICATE_ARRAY), (PVOID*)&pCertArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pCertArray->dwCount = dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_CERTIFICATE) * dwCount, (PVOID*)&pCertArray->ppCertificates);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for(; iEntry < dwCount; ++iEntry)
+    {
+        dwError = LwCACreateCertificate(ppszCertificates[iEntry], &pCertArray->ppCertificates[iEntry]);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCertArray = pCertArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeCertificates(pCertArray);
+    if (ppCertArray)
+    {
+        *ppCertArray = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCACreateKey(
+    PBYTE     pData,
+    DWORD     dwLength,
+    PLWCA_KEY *ppKey
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_KEY pKey = NULL;
+
+    if (!pData || dwLength <= 0 || !ppKey)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_KEY), (PVOID*)&pKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(dwLength * sizeof(BYTE), (PVOID*) &pKey->pData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACopyMemory((PVOID) pKey->pData, dwLength * sizeof(BYTE), pData, (size_t)dwLength);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pKey->dwLength = dwLength;
+
+    *ppKey = pKey;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeKey(pKey);
+    if (ppKey)
+    {
+        *ppKey = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCACopyCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    )
+{
+    DWORD dwError = 0;
+    DWORD iEntry = 0;
+    PLWCA_CERTIFICATE_ARRAY  pTempCertArray = NULL;
+
+    if (!pCertArray || !pCertArray->ppCertificates || pCertArray->dwCount <=0 || !ppCertArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_CERTIFICATE_ARRAY), (PVOID*)&pTempCertArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pTempCertArray->dwCount = pCertArray->dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_CERTIFICATE) * pCertArray->dwCount, (PVOID*)&pTempCertArray->ppCertificates);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for(; iEntry < pCertArray->dwCount; ++iEntry)
+    {
+        dwError = LwCACreateCertificate(pCertArray->ppCertificates[iEntry], &pTempCertArray->ppCertificates[iEntry]);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCertArray = pTempCertArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeCertificates(pTempCertArray);
+    if (ppCertArray)
+    {
+        *ppCertArray = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCACopyKey(
+    PLWCA_KEY pKey,
+    PLWCA_KEY *ppKey
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_KEY pTempKey = NULL;
+
+    if (!pKey || !ppKey)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCACreateKey(pKey->pData, pKey->dwLength, &pTempKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppKey = pTempKey;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeKey(pTempKey);
+    if (ppKey)
+    {
+        *ppKey = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+LwCAFreeCertificate(
+    PLWCA_CERTIFICATE pCertificate
+    )
+{
+    if (pCertificate)
+    {
+        LWCA_SAFE_FREE_MEMORY(pCertificate);
+    }
+}
+
+VOID
+LwCAFreeCertificates(
+    PLWCA_CERTIFICATE_ARRAY pCertArray
+    )
+{
+    DWORD iEntry = 0;
+
+    if (pCertArray != NULL)
+    {
+        if (pCertArray->dwCount > 0 && pCertArray->ppCertificates)
+        {
+            for(; iEntry < pCertArray->dwCount; ++iEntry)
+            {
+                LwCAFreeCertificate(pCertArray->ppCertificates[iEntry]);
+            }
+        }
+        LWCA_SAFE_FREE_MEMORY(pCertArray->ppCertificates);
+        LWCA_SAFE_FREE_MEMORY(pCertArray);
+    }
+}
+
+VOID
+LwCAFreeKey(
+    PLWCA_KEY pKey
+    )
+{
+    if (pKey)
+    {
+        LWCA_SECURE_SAFE_FREE_MEMORY(pKey->pData, pKey->dwLength);
+        LWCA_SAFE_FREE_MEMORY(pKey);
+    }
+}

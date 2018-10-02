@@ -12,4 +12,4 @@
  * under the License.
  */
 
-extern PLWCA_DB_CONTEXT gpDbCtx;
+extern LWCA_DB_CONTEXT gDbCtx;

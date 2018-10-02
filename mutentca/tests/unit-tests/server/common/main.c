@@ -44,6 +44,46 @@ int main(VOID)
                 LwCAJsonGetStringFromKey_Invalid,
                 NULL,
                 NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateCertificate_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateCertificate_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateCertArray_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateCertArray_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACreateKey_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACopyCertArray_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACopyCertArray_Invalid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACopyKey_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                Test_LwCACopyKey_Invalid,
+                NULL,
+                NULL),
     };
 
     ret = cmocka_run_group_tests_name("MutentCA JSON Utils Tests", LwCASrvJSONUtils_Tests, NULL, NULL);

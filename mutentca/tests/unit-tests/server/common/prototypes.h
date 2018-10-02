@@ -47,4 +47,57 @@ LwCAJsonGetStringFromKey_Invalid(
     VOID            **state
     );
 
+
+// structs.c
+
+VOID
+Test_LwCACreateCertificate_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateCertificate_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateCertArray_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateCertArray_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateKey_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateKey_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACopyCertArray_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACopyCertArray_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACopyKey_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACopyKey_Invalid(
+    VOID **state
+    );
+
 #endif /* _LWCA_SRV_COMMON_PROTOTYPES_H_ */

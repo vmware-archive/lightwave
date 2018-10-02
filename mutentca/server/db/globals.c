@@ -13,4 +13,13 @@
  */
 #include "includes.h"
 
-PLWCA_DB_CONTEXT gpDbCtx = NULL;
+LWCA_DB_CONTEXT gDbCtx =
+{
+    // NOTE: order of fields MUST stay in sync with struct definition...
+    LWCA_SF_INIT(.pszPlugin, NULL),
+    LWCA_SF_INIT(.dbMutex, PTHREAD_RWLOCK_INITIALIZER),
+    LWCA_SF_INIT(.pFt, NULL),
+    LWCA_SF_INIT(.pPluginHandle, NULL),
+    LWCA_SF_INIT(.pDbHandle, NULL),
+    LWCA_SF_INIT(.isInitialized, FALSE),
+};

@@ -28,8 +28,11 @@ LwCADbInitCtx(
 {
     DWORD dwError = 0;
     PSTR pszPlugin = NULL;
+    BOOLEAN bLocked = FALSE;
 
-    if (gpDbCtx != NULL)
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gDbCtx.dbMutex, bLocked);
+
+    if (gDbCtx.isInitialized)
     {
         dwError = LWCA_DB_ALREADY_INITIALIZED;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -44,118 +47,29 @@ LwCADbInitCtx(
     dwError = LwCAJsonGetStringFromKey(pConfig, CONFIG_DB_PLUGIN_KEY_NAME, &pszPlugin);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CONTEXT), (PVOID*)&gpDbCtx);
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_FUNCTION_TABLE), (PVOID*)&gDbCtx.pFt);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_FUNCTION_TABLE), (PVOID*)&gpDbCtx->pFt);
+    dwError = LwCAAllocateStringA(pszPlugin, &gDbCtx.pszPlugin);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateStringA(pszPlugin, &gpDbCtx->pszPlugin);
+    dwError = LwCAPluginInitialize(pszPlugin, gDbCtx.pFt, &gDbCtx.pPluginHandle);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAPluginInitialize(pszPlugin, gpDbCtx->pFt, &gpDbCtx->pPluginHandle);
+    dwError = gDbCtx.pFt->pFnInit(&gDbCtx.pDbHandle);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = gpDbCtx->pFt->pFnInit(&gpDbCtx->pDbHandle);
-    BAIL_ON_LWCA_ERROR(dwError);
+    gDbCtx.isInitialized = TRUE;
 
 cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+
     LWCA_SAFE_FREE_STRINGA(pszPlugin);
     return dwError;
 
 error:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
     LwCADbFreeCtx();
-    goto cleanup;
-}
-
-DWORD
-LwCADbCreateCertArray(
-    PSTR                        *ppCertificates,
-    DWORD                       dwCount,
-    PLWCA_DB_CERTIFICATE_ARRAY  *ppCertArray
-    )
-{
-    DWORD dwError = 0;
-    DWORD iEntry = 0;
-    PLWCA_DB_CERTIFICATE_ARRAY  pCertArray = NULL;
-
-    if (!ppCertificates || dwCount <=0 || !ppCertArray)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERTIFICATE_ARRAY), (PVOID*)&pCertArray);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateMemory(sizeof(PSTR) * dwCount, (PVOID*)&pCertArray->ppCertificates);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-
-    for(; iEntry < dwCount; ++iEntry)
-    {
-        if (!IsNullOrEmptyString(ppCertificates[iEntry]))
-        {
-            dwError = LwCAAllocateStringA(ppCertificates[iEntry], &pCertArray->ppCertificates[iEntry]);
-            BAIL_ON_LWCA_ERROR(dwError);
-            pCertArray->dwCount++;
-        }
-    }
-
-    *ppCertArray = pCertArray;
-
-cleanup:
-    return dwError;
-
-error:
-    LwCADbFreeCertificates(pCertArray);
-    if (ppCertArray)
-    {
-        *ppCertArray = NULL;
-    }
-
-    goto cleanup;
-}
-
-DWORD
-LwCADbCreateEncryptedKey(
-    PBYTE                   pData,
-    DWORD                   dwLength,
-    PLWCA_DB_ENCRYPTED_KEY  *ppEncryptedKey
-    )
-{
-    DWORD dwError = 0;
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedKey = NULL;
-
-    if (!pData || dwLength <= 0 || !ppEncryptedKey)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_ENCRYPTED_KEY), (PVOID*)&pEncryptedKey);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateMemory(dwLength * sizeof(BYTE), (PVOID*) &pEncryptedKey->pData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACopyMemory((PVOID) pEncryptedKey->pData, dwLength * sizeof(BYTE), pData, (size_t)dwLength);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    pEncryptedKey->dwLength = dwLength;
-
-    *ppEncryptedKey = pEncryptedKey;
-
-cleanup:
-    return dwError;
-
-error:
-    LwCADbFreeEncryptedKey(pEncryptedKey);
-    if (ppEncryptedKey)
-    {
-        *ppEncryptedKey = NULL;
-    }
-
     goto cleanup;
 }
 
@@ -163,12 +77,12 @@ DWORD
 LwCADbCreateCAData(
     PCSTR                       pcszIssuer,
     PCSTR                       pcszSubject,
-    PLWCA_DB_CERTIFICATE_ARRAY  pCertificates,
-    PLWCA_DB_ENCRYPTED_KEY      pEncryptedPrivateKey,
-    PLWCA_DB_ENCRYPTED_KEY      pEncryptedEncryptionKey,
+    PLWCA_CERTIFICATE_ARRAY     pCertificates,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PLWCA_KEY                   pEncryptedEncryptionKey,
     PCSTR                       pcszTimeValidFrom,
     PCSTR                       pcszTimeValidTo,
-    LWCA_DB_CA_STATUS           status,
+    LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     )
 {
@@ -185,7 +99,7 @@ LwCADbCreateCAData(
     dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbCreateCertArray(pCertificates->ppCertificates, pCertificates->dwCount, &pCAData->pCertificates);
+    dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateStringA(pcszIssuer, &pCAData->pszIssuer);
@@ -206,10 +120,10 @@ LwCADbCreateCAData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCADbCopyEncryptedKey(pEncryptedPrivateKey, &pCAData->pEncryptedPrivateKey);
+    dwError = LwCACopyKey(pEncryptedPrivateKey, &pCAData->pEncryptedPrivateKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbCopyEncryptedKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
+    dwError = LwCACopyKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     pCAData->status = status;
@@ -236,7 +150,7 @@ LwCADbCreateCertData(
     PCSTR                   pcszTimeValidTo,
     PCSTR                   pcszRevokedReason,
     PCSTR                   pcszRevokedDate,
-    LWCA_DB_CERT_STATUS     status,
+    LWCA_CERT_STATUS        status,
     PLWCA_DB_CERT_DATA      *ppCertData
     )
 {
@@ -292,18 +206,6 @@ error:
 }
 
 VOID
-LwCADbFreeEncryptedKey(
-    PLWCA_DB_ENCRYPTED_KEY pEncryptedKey
-    )
-{
-    if (pEncryptedKey)
-    {
-        LWCA_SAFE_FREE_MEMORY(pEncryptedKey->pData);
-        LWCA_SAFE_FREE_MEMORY(pEncryptedKey);
-    }
-}
-
-VOID
 LwCADbFreeCAData(
     PLWCA_DB_CA_DATA pCAData
     )
@@ -312,9 +214,9 @@ LwCADbFreeCAData(
     {
         LWCA_SAFE_FREE_STRINGA(pCAData->pszIssuer);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszSubject);
-        LwCADbFreeCertificates(pCAData->pCertificates);
-        LwCADbFreeEncryptedKey(pCAData->pEncryptedPrivateKey);
-        LwCADbFreeEncryptedKey(pCAData->pEncryptedEncryptionKey);
+        LwCAFreeCertificates(pCAData->pCertificates);
+        LwCAFreeKey(pCAData->pEncryptedPrivateKey);
+        LwCAFreeKey(pCAData->pEncryptedEncryptionKey);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidFrom);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidTo);
         LWCA_SAFE_FREE_MEMORY(pCAData);
@@ -360,38 +262,6 @@ LwCADbFreeCertDataArray(
 }
 
 VOID
-LwCADbFreeCertificate(
-    PSTR pCertificate
-    )
-{
-    if (pCertificate)
-    {
-        LWCA_SAFE_FREE_STRINGA(pCertificate);
-    }
-}
-
-VOID
-LwCADbFreeCertificates(
-    PLWCA_DB_CERTIFICATE_ARRAY pCertArray
-    )
-{
-    DWORD iEntry = 0;
-
-    if (pCertArray != NULL)
-    {
-        if (pCertArray->dwCount > 0 && pCertArray->ppCertificates)
-        {
-            for(; iEntry < pCertArray->dwCount; ++iEntry)
-            {
-                LwCADbFreeCertificate(pCertArray->ppCertificates[iEntry]);
-            }
-        }
-        LWCA_SAFE_FREE_MEMORY(pCertArray->ppCertificates);
-        LWCA_SAFE_FREE_MEMORY(pCertArray);
-    }
-}
-
-VOID
 LwCADbFreeFunctionTable(
     PLWCA_DB_FUNCTION_TABLE pFt
     )
@@ -407,21 +277,25 @@ LwCADbFreeCtx(
    VOID
    )
 {
-    if (gpDbCtx)
+    BOOLEAN bLocked = FALSE;
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gDbCtx.dbMutex, bLocked);
+
+    if (gDbCtx.pDbHandle)
     {
-        if(gpDbCtx->pFt)
-        {
-            if (gpDbCtx->pDbHandle)
-            {
-                gpDbCtx->pFt->pFnFreeHandle(gpDbCtx->pDbHandle);
-            }
-            LwCADbFreeFunctionTable(gpDbCtx->pFt);
-        }
-        if (gpDbCtx->pPluginHandle)
-        {
-            LwCAPluginDeinitialize(gpDbCtx->pPluginHandle);
-        }
-        LWCA_SAFE_FREE_MEMORY(gpDbCtx->pszPlugin);
-        LWCA_SAFE_FREE_MEMORY(gpDbCtx);
+        gDbCtx.pFt->pFnFreeHandle(gDbCtx.pDbHandle);
     }
+    if(gDbCtx.pFt)
+    {
+        LwCADbFreeFunctionTable(gDbCtx.pFt);
+    }
+    if (gDbCtx.pPluginHandle)
+    {
+        LwCAPluginDeinitialize(gDbCtx.pPluginHandle);
+    }
+    LWCA_SAFE_FREE_MEMORY(gDbCtx.pszPlugin);
+
+    gDbCtx.isInitialized = FALSE;
+
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
 }

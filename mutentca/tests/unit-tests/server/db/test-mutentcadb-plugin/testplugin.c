@@ -86,7 +86,7 @@ DWORD
 LwCADbTestPluginGetCACertificates(
     PLWCA_DB_HANDLE              pHandle,
     PCSTR                        pcszCAId,
-    PLWCA_DB_CERTIFICATE_ARRAY   *ppCertArray
+    PLWCA_CERTIFICATE_ARRAY      *ppCertArray
     )
 {
     return 0;
@@ -117,7 +117,7 @@ DWORD
 LwCADbTestPluginUpdateCAStatus(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
-    LWCA_DB_CA_STATUS       status
+    LWCA_CA_STATUS          status
     )
 {
     return 0;
@@ -142,7 +142,7 @@ LwCADbTestPluginFreeCertDataArray(
 
 VOID
 LwCADbTestPluginFreeCertificates(
-    PLWCA_DB_CERTIFICATE_ARRAY pCertArray
+    PLWCA_CERTIFICATE_ARRAY pCertArray
     )
 {
 }

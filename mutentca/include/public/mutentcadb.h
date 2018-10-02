@@ -12,73 +12,12 @@
  * under the License.
  */
 
-#ifndef __MutentCADB_H__
-#define __MutentCADB_H__
+#ifndef __MUTENTCADB_H__
+#define __MUTENTCADB_H__
 
 #ifdef __cplusplus
 extern "C" {
 #endif
-
-#ifndef VMW_PSTR_DEFINED
-#define VMW_PSTR_DEFINED 1
-typedef char* PSTR;
-#endif /* VMW_PSTR_DEFINED */
-
-#ifndef VMW_PCSTR_DEFINED
-#define VMW_PCSTR_DEFINED 1
-typedef const char* PCSTR;
-#endif /* VMW_PCSTR_DEFINED */
-
-#ifndef VMW_VOID_DEFINED
-#define VMW_VOID_DEFINED 1
-typedef void VOID, *PVOID;
-#endif /* VMW_VOID_DEFINED */
-
-#ifndef VMW_DWORD_DEFINED
-#define VMW_DWORD_DEFINED 1
-typedef uint32_t DWORD, *PDWORD;
-#endif /* VMW_DWORD_DEFINED */
-
-#ifndef VMW_PBYTE_DEFINED
-#define VMW_PBYTE_DEFINED 1
-typedef unsigned char* PBYTE;
-#endif /* VMW_PBYTE_DEFINED */
-
-/*
- * Represents CA status
- */
-typedef enum _LWCA_DB_CA_STATUS
-{
-    LWCA_DB_CA_STATUS_INACTIVE = 0,
-    LWCA_DB_CA_STATUS_ACTIVE
-} LWCA_DB_CA_STATUS,*PLWCA_DB_CA_STATUS;
-
-/*
- * Represents Certificate status
- */
-typedef enum _LWCA_DB_CERT_STATUS
-{
-    LWCA_DB_CERT_STATUS_INACTIVE = 0,
-    LWCA_DB_CERT_STATUS_ACTIVE
-} LWCA_DB_CERT_STATUS,*PLWCA_DB_CERT_STATUS;
-
-/*
- * Defines Certificate array
- */
-typedef struct _LWCA_DB_CERTIFICATE_ARRAY
-{
-    DWORD   dwCount;
-    PSTR    *ppCertificates;
-} LWCA_DB_CERTIFICATE_ARRAY, *PLWCA_DB_CERTIFICATE_ARRAY;
-
-/*
- * Defines encrypted key
- */
-typedef struct _LWCA_DB_ENCRYPTED_KEY
-{
-    PBYTE pData;
-    DWORD dwLength;
-} LWCA_DB_ENCRYPTED_KEY, *PLWCA_DB_ENCRYPTED_KEY;
 
 /*
  * Defines CA data
@@ -87,12 +26,12 @@ typedef struct _LWCA_DB_CA_DATA
 {
     PSTR                            pszIssuer;
     PSTR                            pszSubject;
-    PLWCA_DB_CERTIFICATE_ARRAY      pCertificates;
-    PLWCA_DB_ENCRYPTED_KEY          pEncryptedPrivateKey;
-    PLWCA_DB_ENCRYPTED_KEY          pEncryptedEncryptionKey;
+    PLWCA_CERTIFICATE_ARRAY         pCertificates;
+    PLWCA_KEY                       pEncryptedPrivateKey;
+    PLWCA_KEY                       pEncryptedEncryptionKey;
     PSTR                            pszTimeValidFrom;
     PSTR                            pszTimeValidTo;
-    LWCA_DB_CA_STATUS               status;
+    LWCA_CA_STATUS                  status;
 } LWCA_DB_CA_DATA, *PLWCA_DB_CA_DATA;
 
 /*
@@ -106,7 +45,7 @@ typedef struct _LWCA_DB_CERT_DATA
     PSTR                    pszRevokedDate;
     PSTR                    pszTimeValidFrom;
     PSTR                    pszTimeValidTo;
-    LWCA_DB_CERT_STATUS     status;
+    LWCA_CERT_STATUS        status;
 } LWCA_DB_CERT_DATA, *PLWCA_DB_CERT_DATA;
 
 /*
@@ -168,7 +107,7 @@ typedef DWORD
 (*PFN_LWCA_DB_GET_CA_CERTIFICATES)(
     PLWCA_DB_HANDLE            pHandle,     //IN
     PCSTR                      pcszCAId,    //IN
-    PLWCA_DB_CERTIFICATE_ARRAY *ppCertArray //OUT
+    PLWCA_CERTIFICATE_ARRAY    *ppCertArray //OUT
     );
 
 /*
@@ -198,7 +137,7 @@ typedef DWORD
 (*PFN_LWCA_DB_UPDATE_CA_STATUS)(
     PLWCA_DB_HANDLE          pHandle,     //IN
     PCSTR                    pcszCAId,    //IN
-    LWCA_DB_CA_STATUS        status       //IN
+    LWCA_CA_STATUS           status       //IN
     );
 
 /*
@@ -224,7 +163,7 @@ typedef VOID
  */
 typedef VOID
 (*PFN_LWCA_DB_FREE_CERTIFICATE_ARRAY)(
-    PLWCA_DB_CERTIFICATE_ARRAY  pCertArray     //IN
+    PLWCA_CERTIFICATE_ARRAY  pCertArray     //IN
     );
 
 /*
@@ -257,4 +196,4 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
 }
 #endif
 
-#endif // __MutentCADB_H__
+#endif // __MUTENTCADB_H__

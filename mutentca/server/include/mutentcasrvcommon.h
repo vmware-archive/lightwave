@@ -267,6 +267,53 @@ LwCAUtilIsValueInWhitelist(
     PBOOLEAN                        pbInWhitelist
     );
 
+DWORD
+LwCACreateCertificate(
+    PCSTR               pcszCertificate,
+    PLWCA_CERTIFICATE   *ppCertificate
+    );
+
+DWORD
+LwCACreateCertArray(
+    PSTR                     *ppszCertificates,
+    DWORD                    dwCount,
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    );
+
+DWORD
+LwCACopyCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
+DWORD
+LwCACreateKey(
+    PBYTE       pData,
+    DWORD       dwLength,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCACopyKey(
+    PLWCA_KEY pKey,
+    PLWCA_KEY *ppKey
+    );
+
+VOID
+LwCAFreeCertificate(
+    PLWCA_CERTIFICATE pCertificate
+    );
+
+VOID
+LwCAFreeCertificates(
+    PLWCA_CERTIFICATE_ARRAY pCertArray
+    );
+
+VOID
+LwCAFreeKey(
+    PLWCA_KEY pKey
+    );
+
 /* ../common/state.c */
 
 VOID

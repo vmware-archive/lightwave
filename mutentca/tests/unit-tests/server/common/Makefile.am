@@ -5,6 +5,7 @@ TESTS = testmutentcasrvcommon
 
 testmutentcasrvcommon_SOURCES = \
     jsonutils.c \
+    structs.c \
     main.c
 
 testmutentcasrvcommon_CPPFLAGS = \

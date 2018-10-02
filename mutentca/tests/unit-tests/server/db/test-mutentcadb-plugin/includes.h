@@ -12,6 +12,7 @@
  * under the License.
  */
 #include <stdint.h>
+#include <mutentca.h>
 #include <mutentcadb.h>
 
 #include "testplugin.h"
