@@ -49,4 +49,9 @@ typedef enum
 
 #define LWCA_MAX_PATH_LEN 512
 
+#define LWCA_MACHINE_CERT_STORE_NAME        "MACHINE_SSL_CERT"
+#define LWCA_MACHINE_CERT_ALIAS             "__MACHINE_CERT"
+#define LWCA_MUTENTCA_STORE_NAME            "mutentca-srv-store"
+#define LWCA_MUTENTCA_ALIAS                 "mutentca-srv-creds"
+
 #endif //__LWCA_COMMON_DEFINES_H__

@@ -28,9 +28,6 @@
 #define FN_VECS_CLOSE_CERT_STORE            "VecsCloseCertStore"
 #define FN_VECS_FREE_ENTRY_A                "VecsFreeCertEntryA"
 
-#define MACHINE_CERT_STORE_NAME             "MACHINE_SSL_CERT"
-#define MACHINE_CERT_ALIAS                  "__MACHINE_CERT"
-
 typedef DWORD   (*fpVecsOpenCertStoreA)     ( PCSTR,PCSTR, PCSTR, PVECS_STORE* );
 typedef DWORD   (*fpVecsGetEntryByAliasA)   ( PVECS_STORE, PCSTR, ENTRY_INFO_LEVEL, PVECS_CERT_ENTRY_A* );
 typedef DWORD   (*fpVecsGetKeyByAliasA)     ( PVECS_STORE, PCSTR, PCSTR, PSTR* );
@@ -42,86 +39,19 @@ DWORD
 _LwCAGetSSLCert(
     LWCA_LIB_HANDLE plibHandle,
     PSTR*           ppszCert,
-    PSTR*           ppszKey
-    )
-{
-    DWORD   dwError = 0;
-    PSTR    pszCert = NULL;
-    PSTR    pszKey = NULL;
-    PVECS_STORE         pVECSStore = NULL;
-    PVECS_CERT_ENTRY_A  pCertEntry = NULL;
+    PSTR*           ppszKey,
+    PSTR            pszVecsStore,
+    PSTR            pszVecsAlias
+    );
 
-    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        goto cleanup;
-    }
-
-    fpVecsOpenCertStoreA    fpOpenStore = NULL;
-    fpVecsGetEntryByAliasA  fpGetEntry = NULL;
-    fpVecsGetKeyByAliasA    fpGetKey = NULL;
-    fpVecsCloseCertStore    fpCloseStore = NULL;
-    fpVecsFreeCertEntryA    fpFreeEntry = NULL;
-
-    if ( (fpOpenStore = (fpVecsOpenCertStoreA) LwCAGetLibSym(plibHandle, FN_VECS_OPEN_CERT_STORE_A) ) == NULL
-          ||
-         (fpGetEntry = (fpVecsGetEntryByAliasA) LwCAGetLibSym(plibHandle, FN_VECS_GET_ENTRY_BY_ALIAS_A) ) == NULL
-          ||
-         (fpGetKey = (fpVecsGetKeyByAliasA) LwCAGetLibSym(plibHandle, FN_VECS_GET_KEY_BY_ALIAS_A) ) == NULL
-          ||
-         (fpCloseStore = (fpVecsCloseCertStore) LwCAGetLibSym(plibHandle, FN_VECS_CLOSE_CERT_STORE) ) == NULL
-          ||
-         (fpFreeEntry = (fpVecsFreeCertEntryA) LwCAGetLibSym(plibHandle, FN_VECS_FREE_ENTRY_A) ) == NULL
-       )
-    {
-        LWCA_LOG_ERROR("VECS sym lookup failed, %s", LWCA_SAFE_STRING(dlerror()));
-        dwError = LWCA_UNKNOWN_ERROR;
-    }
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = (*fpOpenStore)( "localhost", MACHINE_CERT_STORE_NAME, NULL, &pVECSStore );
-    BAIL_ON_VECS_ERROR(dwError);
-
-    dwError = (*fpGetEntry)( pVECSStore, MACHINE_CERT_ALIAS, ENTRY_INFO_LEVEL_2, &pCertEntry );
-    BAIL_ON_VECS_ERROR(dwError);
-
-    dwError = (*fpGetKey)( pVECSStore, MACHINE_CERT_ALIAS, NULL, &pszKey );
-    BAIL_ON_VECS_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA( pCertEntry->pszCertificate, &pszCert );
-    BAIL_ON_VECS_ERROR(dwError);
-
-    *ppszCert = pszCert;
-    *ppszKey  = pszKey;
-
-cleanup:
-
-    if ( fpFreeEntry && pCertEntry )
-    {
-        (*fpFreeEntry)(pCertEntry);
-    }
-
-    if ( fpCloseStore && pVECSStore )
-    {
-        (*fpCloseStore)(pVECSStore);
-    }
-
-    return dwError;
-
-error:
-    *ppszCert = NULL;
-    *ppszKey = NULL;
-    LWCA_SAFE_FREE_MEMORY(pszCert);
-    LWCA_SAFE_FREE_MEMORY(pszKey);
-
-    LWCA_LOG_ERROR("%s failed, error (%u)", __FUNCTION__, dwError);
-
-    goto cleanup;
-
-vecs_error:
-    goto cleanup;
-}
-
+static
+DWORD
+_LwCAGetVecsCert(
+    PLWCA_CERTIFICATE   *ppszCert,
+    PSTR                *ppszKey,
+    PSTR                pszVecsStore,
+    PSTR                pszVecsAlias
+    );
 
 DWORD
 LwCAGetVecsMachineCert(
@@ -129,38 +59,79 @@ LwCAGetVecsMachineCert(
     PSTR*   ppszKey
     )
 {
-    DWORD            dwError = 0;
-    LWCA_LIB_HANDLE  plibHandle = NULL;
-    PSTR             pszCert = NULL;
-    PSTR             pszKey = NULL;
+    DWORD   dwError = 0;
+    PSTR    pszCert = NULL;
+    PSTR    pszKey = NULL;
 
-    if (ppszCert == NULL || ppszKey == NULL)
+    if (!ppszCert || !ppszKey)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
-        goto cleanup;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAOpenVmAfdClientLib( &plibHandle );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCAGetSSLCert( plibHandle, &pszCert, &pszKey );
+    dwError = _LwCAGetVecsCert(&pszCert,
+                               &pszKey,
+                               LWCA_MACHINE_CERT_STORE_NAME,
+                               LWCA_MACHINE_CERT_ALIAS
+                               );
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszCert = pszCert;
-    *ppszKey  = pszKey;
-
-    LWCA_LOG_INFO("Acquired SSL Cert from VECS");
+    *ppszKey = pszKey;
 
 cleanup:
-    LwCACloseLibrary( plibHandle );
-
     return dwError;
 
 error:
-    *ppszCert = NULL;
-    *ppszKey = NULL;
-    LWCA_SAFE_FREE_MEMORY(pszCert);
-    LWCA_SAFE_FREE_MEMORY(pszKey);
+    if (ppszCert)
+    {
+        *ppszCert = NULL;
+    }
+    if (ppszKey)
+    {
+        *ppszKey = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCAGetVecsMutentCACert(
+    PLWCA_CERTIFICATE   *ppszCert,
+    PSTR                *ppszKey
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszCert = NULL;
+    PSTR    pszKey = NULL;
+
+    if (!ppszCert || !ppszKey)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAGetVecsCert(&pszCert,
+                               &pszKey,
+                               LWCA_MUTENTCA_STORE_NAME,
+                               LWCA_MUTENTCA_ALIAS
+                              );
+    BAIL_ON_LWCA_ERROR(dwError);
+    *ppszCert = pszCert;
+    *ppszKey = pszKey;
+
+cleanup:
+    return dwError;
+
+error:
+    if (ppszCert)
+    {
+        *ppszCert = NULL;
+    }
+    if (ppszKey)
+    {
+        *ppszKey = NULL;
+    }
 
     goto cleanup;
 }
@@ -225,3 +196,161 @@ cleanup:
 error:
     goto cleanup;
 }
+
+static
+DWORD
+_LwCAGetSSLCert(
+    LWCA_LIB_HANDLE plibHandle,
+    PSTR*           ppszCert,
+    PSTR*           ppszKey,
+    PSTR            pszVecsStore,
+    PSTR            pszVecsAlias
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszCert = NULL;
+    PSTR    pszKey = NULL;
+    PVECS_STORE         pVECSStore = NULL;
+    PVECS_CERT_ENTRY_A  pCertEntry = NULL;
+
+    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        goto cleanup;
+    }
+
+    fpVecsOpenCertStoreA    fpOpenStore = NULL;
+    fpVecsGetEntryByAliasA  fpGetEntry = NULL;
+    fpVecsGetKeyByAliasA    fpGetKey = NULL;
+    fpVecsCloseCertStore    fpCloseStore = NULL;
+    fpVecsFreeCertEntryA    fpFreeEntry = NULL;
+
+    if ( (fpOpenStore = (fpVecsOpenCertStoreA)LwCAGetLibSym(
+                             plibHandle,
+                             FN_VECS_OPEN_CERT_STORE_A)) == NULL
+          ||
+         (fpGetEntry = (fpVecsGetEntryByAliasA)LwCAGetLibSym(
+                              plibHandle,
+                              FN_VECS_GET_ENTRY_BY_ALIAS_A)) == NULL
+          ||
+         (fpGetKey = (fpVecsGetKeyByAliasA)LwCAGetLibSym(
+                              plibHandle,
+                              FN_VECS_GET_KEY_BY_ALIAS_A)) == NULL
+          ||
+         (fpCloseStore = (fpVecsCloseCertStore)LwCAGetLibSym(
+                              plibHandle,
+                              FN_VECS_CLOSE_CERT_STORE)) == NULL
+          ||
+         (fpFreeEntry = (fpVecsFreeCertEntryA)LwCAGetLibSym(
+                              plibHandle,
+                              FN_VECS_FREE_ENTRY_A)) == NULL
+       )
+    {
+        LWCA_LOG_ERROR("VECS sym lookup failed, %s",
+                       LWCA_SAFE_STRING(dlerror())
+                       );
+        dwError = LWCA_UNKNOWN_ERROR;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = (*fpOpenStore)("localhost", pszVecsStore, NULL, &pVECSStore);
+    BAIL_ON_VECS_ERROR(dwError);
+
+    dwError = (*fpGetEntry)(pVECSStore,
+                            pszVecsAlias,
+                            ENTRY_INFO_LEVEL_2,
+                            &pCertEntry
+                            );
+    BAIL_ON_VECS_ERROR(dwError);
+
+    dwError = (*fpGetKey)(pVECSStore, pszVecsAlias, NULL, &pszKey);
+    BAIL_ON_VECS_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pCertEntry->pszCertificate, &pszCert);
+    BAIL_ON_VECS_ERROR(dwError);
+
+    *ppszCert = pszCert;
+    *ppszKey  = pszKey;
+
+cleanup:
+
+    if ( fpFreeEntry && pCertEntry )
+    {
+        (*fpFreeEntry)(pCertEntry);
+    }
+
+    if ( fpCloseStore && pVECSStore )
+    {
+        (*fpCloseStore)(pVECSStore);
+    }
+
+    return dwError;
+
+error:
+    *ppszCert = NULL;
+    *ppszKey = NULL;
+    LWCA_SAFE_FREE_MEMORY(pszCert);
+    LWCA_SAFE_FREE_MEMORY(pszKey);
+
+    LWCA_LOG_ERROR("%s failed, error (%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+
+vecs_error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetVecsCert(
+    PLWCA_CERTIFICATE   *ppszCert,
+    PSTR                *ppszKey,
+    PSTR                pszVecsStore,
+    PSTR                pszVecsAlias
+    )
+{
+    DWORD               dwError = 0;
+    LWCA_LIB_HANDLE     plibHandle = NULL;
+    PSTR                pszCert = NULL;
+    PSTR                pszKey = NULL;
+
+    if (!ppszCert || !ppszKey || !pszVecsStore || !pszVecsAlias)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAOpenVmAfdClientLib(&plibHandle);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetSSLCert(plibHandle,
+                              &pszCert,
+                              &pszKey,
+                              pszVecsStore,
+                              pszVecsAlias);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszCert = pszCert;
+    *ppszKey = pszKey;
+
+    LWCA_LOG_INFO("Acquired Certs from VECS");
+
+cleanup:
+    LwCACloseLibrary(plibHandle);
+    return dwError;
+
+error:
+    if (ppszCert)
+    {
+        *ppszCert = NULL;
+    }
+    if (ppszKey)
+    {
+        *ppszKey = NULL;
+    }
+    LWCA_SAFE_FREE_MEMORY(pszCert);
+    LWCA_SAFE_FREE_MEMORY(pszKey);
+
+    goto cleanup;
+}
+

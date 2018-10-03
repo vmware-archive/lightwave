@@ -199,6 +199,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 5)
 #define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
 #define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
+#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 8)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -341,6 +342,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_ERROR                   ,   "LWCA_JSON_ERROR"                   ,   "Error from jansson api" }, \
     { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
     { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
+    { LWCA_OIDC_RESPONSE_ERROR          ,   "LWCA_OIDC_RESPONSE_ERROR"          ,   "Error in the response from OIDC" }, \
 };
 
 #endif //__LWCA_ERROR_H__

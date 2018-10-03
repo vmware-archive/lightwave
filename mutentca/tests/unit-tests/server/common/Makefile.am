@@ -5,8 +5,10 @@ TESTS = testmutentcasrvcommon
 
 testmutentcasrvcommon_SOURCES = \
     jsonutils.c \
-    utils.c \
-    main.c
+    main.c \
+    mock.c \
+    token_util.c \
+    utils.c
 
 testmutentcasrvcommon_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \
@@ -15,6 +17,8 @@ testmutentcasrvcommon_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/server/common \
     -I$(top_srcdir)/mutentca/server/config \
     -I$(top_srcdir)/vmafd/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@
@@ -31,4 +35,7 @@ testmutentcasrvcommon_LDADD = \
 testmutentcasrvcommon_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
-    @JANSSON_LDFLAGS@
+    @JANSSON_LDFLAGS@ \
+    -Wl,--wrap,LwCAGetVecsMutentCACert \
+    -Wl,--wrap,OidcClientBuild \
+    -Wl,--wrap,OidcClientAcquireTokensBySolutionUserCredentials

@@ -119,4 +119,14 @@ Test_LwCACopyKey_Invalid(
     VOID **state
     );
 
+VOID
+LwCAAuthTokenGetHOTK_Valid(
+    VOID **state
+    );
+
+VOID
+LwCAAuthTokenGetHOTK_InvalidInput(
+    VOID **state
+    );
+
 #endif /* _LWCA_SRV_COMMON_PROTOTYPES_H_ */

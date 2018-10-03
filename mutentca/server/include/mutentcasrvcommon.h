@@ -235,25 +235,6 @@ LwCAJsonCleanupObject(
     PLWCA_JSON_OBJECT       pJson
     );
 
-/* ../common/opensslutil.c */
-
-DWORD
-LwCAOpenSSLGetValuesFromSubjectName(
-    PCSTR                           pszPKCS10Request,
-    DWORD                           dwNIDType,
-    PDWORD                          pdwNumValues,
-    PSTR                            **pppszValues
-    );
-
-DWORD
-LwCAOpenSSLGetSANEntries(
-    PCSTR                           pszPKCS10Request,
-    PDWORD                          pdwNumSANDNSEntries,
-    PSTR                            **pppszSANDNSEntires,
-    PDWORD                          pdwNumSANIPEntries,
-    PSTR                            **pppszSANIPEntires
-    );
-
 /* ../common/util.c */
 
 BOOLEAN
@@ -407,6 +388,12 @@ LwCASrvGetDirSvcThread(
 VOID
 LwCASrvCleanupGlobalState(
     VOID
+    );
+
+DWORD
+LwCAGetCommonNameFromSubject(
+    PLWCA_CERTIFICATE   pCert,
+    PSTR                *ppszCommonName
     );
 
 #ifdef __cplusplus

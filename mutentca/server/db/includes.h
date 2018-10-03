@@ -24,6 +24,7 @@ extern "C" {
 
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
+#include <openssl/x509v3.h>
 #endif
 
 #include <mutentca.h>

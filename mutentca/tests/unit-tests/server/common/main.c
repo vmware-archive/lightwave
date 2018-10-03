@@ -102,10 +102,29 @@ int main(VOID)
                 NULL),
     };
 
+    const struct CMUnitTest LwCAAuthToken_Tests[] =
+    {
+        cmocka_unit_test_setup_teardown(
+                LwCAAuthTokenGetHOTK_Valid,
+                NULL,
+                NULL),
+        cmocka_unit_test_setup_teardown(
+                LwCAAuthTokenGetHOTK_InvalidInput,
+                NULL,
+                NULL),
+    };
+
     ret = cmocka_run_group_tests_name("MutentCA JSON Utils Tests", LwCASrvJSONUtils_Tests, NULL, NULL);
     if (ret)
     {
         fail_msg("%s", "MutentCA server JSON utils failed");
+    }
+
+    ret = cmocka_run_group_tests_name("MutentCA Auth Token Tests",
+        LwCAAuthToken_Tests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA Auth Token Tests Failed");
     }
 
     return 0;

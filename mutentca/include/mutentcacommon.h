@@ -799,6 +799,12 @@ LwCAGetVecsMachineCert(
     );
 
 DWORD
+LwCAGetVecsMutentCACert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
+
+DWORD
 LwCAOpenVmAfdClientLib(
     LWCA_LIB_HANDLE*   pplibHandle
     );

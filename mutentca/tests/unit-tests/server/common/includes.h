@@ -49,6 +49,10 @@
 #include <mutentcasrvcommon.h>
 #include <mutentcaconfig.h>
 #include <mutentcaerror.h>
+#include <vecsclient.h>
+#include <ssotypes.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "prototypes.h"
 
