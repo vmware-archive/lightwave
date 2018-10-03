@@ -29,6 +29,7 @@ LwCAPluginLoad(
     pFt->pFnInit = &LwCADbTestPluginInitialize;
     pFt->pFnAddCA = &LwCADbTestPluginAddCA;
     pFt->pFnAddCertData = &LwCADbTestPluginAddCertData;
+    pFt->pFnCheckCA = &LwCADbTestPluginCheckCA;
     pFt->pFnGetCACertificates = &LwCADbTestPluginGetCACertificates;
     pFt->pFnGetCertData = &LwCADbTestPluginGetCertData;
     pFt->pFnUpdateCA = &LwCADbTestPluginUpdateCA;
@@ -77,6 +78,16 @@ LwCADbTestPluginAddCertData(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
     PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginCheckCA(
+    PLWCA_DB_HANDLE        pHandle,
+    PCSTR                  pcszCAId,
+    PBOOLEAN               pbExists
     )
 {
     return 0;

@@ -39,10 +39,20 @@ typedef void VOID, *PVOID;
 typedef uint32_t DWORD, *PDWORD;
 #endif /* VMW_DWORD_DEFINED */
 
+#ifndef LWCA_UINT8_DEFINED
+#define LWCA_UINT8_DEFINED 1
+typedef uint8_t  UINT8;
+#endif /* LWCA_UINT8_DEFINED */
+
 #ifndef VMW_PBYTE_DEFINED
 #define VMW_PBYTE_DEFINED 1
 typedef unsigned char* PBYTE;
 #endif /* VMW_PBYTE_DEFINED */
+
+#ifndef LWCA_BOOLEAN_DEFINED
+#define LWCA_BOOLEAN_DEFINED 1
+typedef UINT8 BOOLEAN, *PBOOLEAN;
+#endif /* LWCA_BOOLEAN_DEFINED */
 
 #ifndef LWCA_CERTIFICATE_DEFINED
 #define LWCA_CERTIFICATE_DEFINED 1

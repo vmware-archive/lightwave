@@ -43,6 +43,13 @@ LwCADbTestPluginAddCertData(
     );
 
 DWORD
+LwCADbTestPluginCheckCA(
+    PLWCA_DB_HANDLE        pHandle,
+    PCSTR                  pcszCAId,
+    PBOOLEAN               pbExists
+    );
+
+DWORD
 LwCADbTestPluginGetCACertificates(
     PLWCA_DB_HANDLE              pHandle,
     PCSTR                        pcszCAId,

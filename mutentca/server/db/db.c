@@ -34,9 +34,18 @@ IsValidFunctionTable(
     PLWCA_DB_FUNCTION_TABLE pFt
     )
 {
-    return (pFt && pFt->pFnInit && pFt->pFnAddCA && pFt->pFnAddCertData && pFt->pFnGetCACertificates &&
-        pFt->pFnGetCertData && pFt->pFnUpdateCA && pFt->pFnUpdateCAStatus && pFt->pFnUpdateCertData &&
-        pFt->pFnFreeCertDataArray && pFt->pFnFreeCertArray);
+    return (pFt && pFt->pFnInit
+            && pFt->pFnAddCA
+            && pFt->pFnAddCertData
+            && pFt->pFnCheckCA
+            && pFt->pFnGetCACertificates
+            && pFt->pFnGetCertData
+            && pFt->pFnUpdateCA
+            && pFt->pFnUpdateCAStatus
+            && pFt->pFnUpdateCertData
+            && pFt->pFnFreeCertDataArray
+            && pFt->pFnFreeCertArray
+            );
 }
 
 /*
@@ -160,6 +169,40 @@ LwCADbAddCertData(
 
     dwError = gDbCtx.pFt->pFnAddCertData(gDbCtx.pDbHandle, pcszCAId, pCertData);
     BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbCheckCA(
+    PCSTR                   pcszCAId,
+    PBOOLEAN                pbExists
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bExists = FALSE;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pbExists)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnCheckCA(gDbCtx.pDbHandle, pcszCAId, &bExists);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *pbExists = bExists;
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);

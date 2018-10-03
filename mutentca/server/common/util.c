@@ -450,8 +450,8 @@ LwCADbCreateCAData(
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
 
-    if (!pCertificates || !pEncryptedPrivateKey || !pEncryptedEncryptionKey ||
-            IsNullOrEmptyString(pcszIssuer) || IsNullOrEmptyString(pcszSubject) || !ppCAData)
+    if (!pCertificates || IsNullOrEmptyString(pcszIssuer) ||
+        IsNullOrEmptyString(pcszSubject) || !ppCAData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -481,11 +481,17 @@ LwCADbCreateCAData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCACopyKey(pEncryptedPrivateKey, &pCAData->pEncryptedPrivateKey);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (pEncryptedPrivateKey)
+    {
+        dwError = LwCACopyKey(pEncryptedPrivateKey, &pCAData->pEncryptedPrivateKey);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
-    dwError = LwCACopyKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (pEncryptedEncryptionKey)
+    {
+        dwError = LwCACopyKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     pCAData->status = status;
 

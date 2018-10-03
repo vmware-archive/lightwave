@@ -38,6 +38,12 @@ LwCADbAddCertData(
     );
 
 DWORD
+LwCADbCheckCA(
+    PCSTR                   pcszCAId,
+    PBOOLEAN                pbExists
+    );
+
+DWORD
 LwCADbGetCACertificates(
     PCSTR                      pcszCAId,
     PLWCA_CERTIFICATE_ARRAY    *ppCertArray

@@ -101,6 +101,16 @@ typedef DWORD
     );
 
 /*
+ * Check whether CA exists or not
+ */
+typedef DWORD
+(*PFN_LWCA_DB_CHECK_CA)(
+    PLWCA_DB_HANDLE        pHandle,      //IN
+    PCSTR                  pcszCAId,     //IN
+    PBOOLEAN               pbExists      //OUT
+    );
+
+/*
  * Get CA stored certificates.
  */
 typedef DWORD
@@ -182,6 +192,7 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_INITIALIZE              pFnInit;
     PFN_LWCA_DB_ADD_CA                  pFnAddCA;
     PFN_LWCA_DB_ADD_CERT_DATA           pFnAddCertData;
+    PFN_LWCA_DB_CHECK_CA                pFnCheckCA;
     PFN_LWCA_DB_GET_CA_CERTIFICATES     pFnGetCACertificates;
     PFN_LWCA_DB_GET_CERT_DATA           pFnGetCertData;
     PFN_LWCA_DB_UPDATE_CA               pFnUpdateCA;

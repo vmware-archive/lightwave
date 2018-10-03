@@ -1,7 +1,7 @@
 /*
  * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
- * Licensed under the Apache License, Version 2.0 (the “License”);; you may not
+ * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
  * of the License at http://www.apache.org/licenses/LICENSE-2.0
  *
@@ -13,71 +13,31 @@
  */
 
 VOID
-Test_LwCADbInitCtx(
+Test_LwCACreateRootCA_Valid(
     VOID **state
     );
 
 VOID
-Test_LwCADbAddCA(
+Test_LwCACreateRootCA_Invalid(
     VOID **state
     );
 
 VOID
-Test_LwCADbAddCertData(
+Test_LwCAGetCACertificates_Valid(
     VOID **state
     );
 
 VOID
-Test_LwCADbCheckCA(
+Test_LwCAGetCACertificates_Invalid(
     VOID **state
     );
 
-VOID
-Test_LwCADbGetCACertificates(
+int
+TestLwCACreateRequestContext(
     VOID **state
     );
 
-VOID
-Test_LwCADbGetCertData(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbUpdateCA(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbUpdateCAStatus(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbUpdateCertData(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbFreeCtx(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbCAData(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbCAData_Invalid(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbCertData(
-    VOID **state
-    );
-
-VOID
-Test_LwCADbCertData_Invalid(
+int
+TestLwCAFreeRequestContext(
     VOID **state
     );

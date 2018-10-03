@@ -28,8 +28,6 @@ typedef struct _LWCA_INT_CA_REQ_DATA
     PSTR                    pszPolicy;
 } LWCA_INT_CA_REQ_DATA, *PLWCA_INT_CA_REQ_DATA;
 
-typedef PSTR PLWCA_CERTIFICATE;
-
 typedef PSTR PLWCA_CRL;
 
 typedef struct _LWCA_CERT_VALIDITY

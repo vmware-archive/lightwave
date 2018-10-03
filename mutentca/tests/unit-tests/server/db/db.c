@@ -73,6 +73,18 @@ Test_LwCADbAddCertData(
 }
 
 VOID
+Test_LwCADbCheckCA(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCAExists = FALSE;
+
+    dwError = LwCADbCheckCA(TEST_CA_ID, &bCAExists);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
 Test_LwCADbGetCACertificates(
     VOID **state
     )
@@ -282,7 +294,7 @@ Test_LwCADbCAData_Invalid(
 
     dwError = LwCADbCreateCAData("cn=CA",
                                 "cn=CA",
-                                pCertArray,
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -361,7 +373,7 @@ Test_LwCADbCertData_Invalid(
     assert_null(pCertData);
 
     dwError = LwCADbCreateCertData("dummySerial",
-                                    "cn=CA",
+                                    NULL,
                                     "-1",
                                     "-1",
                                     NULL,

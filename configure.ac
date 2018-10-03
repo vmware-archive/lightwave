@@ -1887,6 +1887,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/config/mutentca.reg
                  mutentca/common/Makefile
                  mutentca/server/Makefile
+                 mutentca/server/api/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/db/Makefile
@@ -1896,6 +1897,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/Makefile
                  mutentca/tests/unit-tests/Makefile
                  mutentca/tests/unit-tests/server/Makefile
+                 mutentca/tests/unit-tests/server/api/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile
                  mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile

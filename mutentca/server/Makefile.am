@@ -3,5 +3,6 @@ SUBDIRS = \
     config \
     plugin \
     db \
+    api \
     rest-head \
     mutentca

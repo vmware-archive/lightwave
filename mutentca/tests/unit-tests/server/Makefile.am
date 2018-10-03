@@ -1,4 +1,5 @@
 SUBDIRS = \
     common \
     plugin \
-    db
+    db \
+    api

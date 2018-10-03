@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -13,6 +13,9 @@
  */
 
 #include "includes.h"
+
+#define X509_CERT_PRIVATE_KEY_MISMATCH 0
+#define X509_CERT_PRIVATE_KEY_MATCH 1
 
 static
 DWORD
@@ -55,17 +58,18 @@ _LwCAX509NameEntryGetData(
 
 static
 DWORD
-_LwCAPEMToX509(
-    PLWCA_CERTIFICATE   pCertificate,
-    X509                **ppX509Cert
-    );
-
-static
-DWORD
 _LwCAOpenSSLGetValuesFromSubjectName(
     PLWCA_CERTIFICATE               pCert,
     DWORD                           dwNIDType,
     PLWCA_STRING_ARRAY              *ppszValues
+    );
+
+static
+DWORD
+_LwCAPEMToPrivateKey(
+    PCSTR   pcszKey,
+    PCSTR   pcszPassPhrase,
+    RSA     **ppPrivateKey
     );
 
 DWORD
@@ -100,6 +104,226 @@ error:
     return dwError;
 }
 
+DWORD
+LwCAPEMToX509(
+    PCSTR       pCertificate,
+    X509        **ppX509Cert
+    )
+{
+    DWORD dwError = 0;
+    X509 *pCert = NULL;
+    BIO *pBioMem = NULL;
+
+    if (IsNullOrEmptyString(pCertificate) || !ppX509Cert)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pBioMem = BIO_new_mem_buf((PVOID) pCertificate, -1);
+    if (pBioMem == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pCert  = PEM_read_bio_X509(pBioMem, NULL, NULL, NULL);
+    if (pCert  == NULL)
+    {
+        dwError = LWCA_CERT_IO_FAILURE;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppX509Cert = pCert;
+
+cleanup:
+    if (pBioMem)
+    {
+        BIO_free(pBioMem);
+    }
+
+    return dwError;
+
+error:
+    if (pCert)
+    {
+        X509_free(pCert);
+    }
+    if (ppX509Cert)
+    {
+        *ppX509Cert = NULL;
+    }
+    goto cleanup;
+}
+
+
+DWORD
+LwCAValidateCertificate(
+    X509    *pCert,
+    PCSTR   pcszPrivateKey,
+    PCSTR   pcszPassPhrase
+    )
+{
+    DWORD dwError = 0;
+    EVP_PKEY *pKey = NULL;
+    RSA *pRsa = NULL;
+
+    if (!pCert || IsNullOrEmptyString(pcszPrivateKey))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pKey = EVP_PKEY_new();
+    if (pKey == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAPEMToPrivateKey(pcszPrivateKey, pcszPassPhrase, &pRsa);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    EVP_PKEY_assign_RSA(pKey, pRsa);
+
+    if (X509_check_private_key(pCert, pKey) == X509_CERT_PRIVATE_KEY_MISMATCH)
+    {
+        dwError = LWCA_CERT_PRIVATE_KEY_MISMATCH;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+error :
+    // This will free RSA too.
+    if (pKey)
+    {
+        EVP_PKEY_free(pKey);
+    }
+
+    return dwError;
+}
+
+DWORD
+LwCAGetCertSubjectName(
+    X509 *pCert,
+    PSTR *ppszSubjectName
+    )
+{
+    DWORD dwError = 0;
+    X509_NAME *pSubjectName = NULL;
+    PSTR pszTempSubjectName = NULL;
+    PSTR pszSubjectName = NULL;
+
+    if (!pCert || !ppszSubjectName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pSubjectName = X509_get_subject_name(pCert);
+    if (pSubjectName == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pszSubjectName = X509_NAME_oneline(pSubjectName, NULL , 0);
+    if( pszSubjectName == NULL )
+    {
+        dwError = LWCA_ERROR_INVALID_CERTIFICATE;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    dwError = LwCAAllocateStringA(pszSubjectName, &pszTempSubjectName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszSubjectName = pszTempSubjectName;
+
+cleanup:
+    LWCA_SAFE_FREE_MEMORY(pszSubjectName);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszTempSubjectName);
+    if (ppszSubjectName)
+    {
+        *ppszSubjectName = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAGetCertIssuerName(
+    X509 *pCert,
+    PSTR *ppszIssuerName
+    )
+{
+    DWORD dwError = 0;
+    X509_NAME *pIssuerName = NULL;
+    PSTR pszIssuerName = NULL;
+    PSTR pszTempIssuerName = NULL;
+
+    if (!pCert || !ppszIssuerName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pIssuerName = X509_get_issuer_name(pCert);
+    if (pIssuerName == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pszIssuerName = X509_NAME_oneline(pIssuerName, NULL , 0);
+    if (pszIssuerName == NULL)
+    {
+        dwError = LWCA_ERROR_INVALID_CERTIFICATE;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    dwError = LwCAAllocateStringA(pszIssuerName, &pszTempIssuerName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszIssuerName = pszTempIssuerName;
+
+cleanup:
+    LWCA_SAFE_FREE_MEMORY(pszIssuerName);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszTempIssuerName);
+    if (ppszIssuerName)
+    {
+        *ppszIssuerName = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCACheckCACert(
+    X509 *pCert
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pCert)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = X509_check_ca(pCert);
+    if (dwError == 1) // it is  a CA
+    {
+        dwError = 0;
+    } else { // 3 , 4 means it is a CA, but we don't care
+        dwError = LWCA_NOT_CA_CERT;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 static
 DWORD
 _LwCAOpenSSLGetValuesFromSubjectName(
@@ -125,7 +349,7 @@ _LwCAOpenSSLGetValuesFromSubjectName(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCAPEMToX509(pCert, &pX509Cert);
+    dwError = LwCAPEMToX509(pCert, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAGetSubjectName(pX509Cert, &pszSubjName);
@@ -205,7 +429,6 @@ cleanup:
     return dwError;
 
 error:
-
     LwCAFreeStringArray(pszValues);
     if (ppszValues)
     {
@@ -359,44 +582,86 @@ error:
     return dwError;
 }
 
+
 static
-DWORD
-_LwCAPEMToX509(
-    PLWCA_CERTIFICATE   pCertificate,
-    X509                **ppX509Cert
+int
+_LwCAPemPasswordCallback(
+    PSTR    pszBuf,
+    int     bufLen,
+    int     flag,
+    PVOID   pCtx
     )
 {
-    X509 *pCert = NULL;
-    BIO *pBioMem = NULL;
     DWORD dwError = 0;
+    size_t len = 0;
 
-    pBioMem = BIO_new_mem_buf((PVOID) pCertificate, -1);
+    len = LwCAStringLenA(pCtx);
+    if(len > bufLen)
+    {
+        return 0;
+    }
+
+    dwError = LwCACopyMemory(pszBuf, bufLen, pCtx, len);
+    if (dwError != 0)
+    {
+        return 0;
+    }
+    return len;
+}
+
+static
+DWORD
+_LwCAPEMToPrivateKey(
+    PCSTR   pcszKey,
+    PCSTR   pcszPassPhrase,
+    RSA     **ppPrivateKey
+    )
+{
+    DWORD dwError = 0;
+    BIO *pBioMem = NULL;
+    RSA *pRsa = NULL;
+    PSTR pszPassPhrase = NULL;
+
+    pBioMem = BIO_new_mem_buf((PVOID) pcszKey, -1);
     if (pBioMem == NULL)
     {
         dwError = LWCA_OUT_OF_MEMORY_ERROR;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    pCert  = PEM_read_bio_X509(pBioMem, NULL, NULL, NULL);
-    if (pCert  == NULL)
+    OpenSSL_add_all_algorithms();
+
+    if (!IsNullOrEmptyString(pcszPassPhrase))
     {
-        dwError = LWCA_CERT_IO_FAILURE;
+        dwError = LwCAAllocateStringA(pcszPassPhrase, &pszPassPhrase);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    *ppX509Cert = pCert;
-
-cleanup:
-    if(pBioMem) {
-        BIO_free(pBioMem);
+    pRsa  = PEM_read_bio_RSAPrivateKey(pBioMem, NULL, _LwCAPemPasswordCallback, pszPassPhrase);
+    if (pRsa  == NULL)
+    {
+        dwError = LWCA_KEY_IO_FAILURE;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
+    *ppPrivateKey = pRsa;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszPassPhrase);
+    if (pBioMem)
+    {
+        BIO_free(pBioMem);
+    }
     return dwError;
 
 error:
-    if (pCert)
+    if (pRsa)
     {
-        X509_free(pCert);
+        RSA_free(pRsa);
+    }
+    if (ppPrivateKey)
+    {
+        *ppPrivateKey = NULL;
     }
     goto cleanup;
 }
