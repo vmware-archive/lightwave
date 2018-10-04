@@ -1012,6 +1012,7 @@ VmDnsOnTcpRequestDataRead(
     DWORD dwDnsResponseSize = 0;
     UCHAR rCode = 0;
     BOOL bQueryInZone = FALSE;
+    BOOL bUpdateInZone = FALSE;
 
     if (!pIoBuffer)
     {
@@ -1058,10 +1059,11 @@ VmDnsOnTcpRequestDataRead(
                             &pResponse,
                             &dwDnsResponseSize,
                             &rCode,
-                            &bQueryInZone
+                            &bQueryInZone,
+                            &bUpdateInZone
                             );
 
-        if (rCode && !bQueryInZone)
+        if (rCode && !bUpdateInZone && !bQueryInZone)
         {
             dwFrwdError = VmDnsOnForwarderRequest(
                                     pEventQueue,
@@ -1186,6 +1188,7 @@ VmDnsOnUdpRequestDataRead(
     DWORD dwDnsResponseSize = 0;
     UCHAR rCode = 0;
     BOOL bQueryInZone = FALSE;
+    BOOL bUpdateInZone = FALSE;
 
     if (!pIoBuffer)
     {
@@ -1206,9 +1209,10 @@ VmDnsOnUdpRequestDataRead(
                         &pResponse,
                         &dwDnsResponseSize,
                         &rCode,
-                        &bQueryInZone
+                        &bQueryInZone,
+                        &bUpdateInZone
                         );
-    if (rCode && !bQueryInZone)
+    if (rCode && !bUpdateInZone && !bQueryInZone)
     {
         dwFrwdError = VmDnsOnForwarderRequest(
                             pEventQueue,
