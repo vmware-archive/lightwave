@@ -30,7 +30,8 @@ VmDnsProcessUpdate(
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage,
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
-    PCHAR pcrCode
+    PCHAR pcrCode,
+    PBOOL pbUpdateInZone
     );
 
 static
@@ -101,7 +102,8 @@ VmDnsProcessRequest(
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
     PUCHAR pRCode,
-    PBOOL pbQueryInZone
+    PBOOL pbQueryInZone,
+    PBOOL pbUpdateInZone
     )
 {
     DWORD dwError = 0;
@@ -113,6 +115,7 @@ VmDnsProcessRequest(
     PVMDNS_MESSAGE pDnsMessage = NULL;
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
     BOOL bQueryInZone = FALSE;
+    BOOL bUpdateInZone = FALSE;
     UCHAR rCode = 0;
 
     if (!pDnsRequest || !ppDnsResponse ||
@@ -170,7 +173,8 @@ VmDnsProcessRequest(
                         pDnsUpdateMessage,
                         &pDnsResponse,
                         &dwDnsResponseSize,
-                        &rCode
+                        &rCode,
+                        &bUpdateInZone
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
@@ -199,6 +203,7 @@ cleanup:
     *pdwDnsResponseSize = dwDnsResponseSize;
     *pRCode = rCode;
     *pbQueryInZone = bQueryInZone;
+    *pbUpdateInZone = bUpdateInZone;
 
 
     return dwError;
@@ -388,7 +393,8 @@ VmDnsProcessUpdate(
     PVMDNS_UPDATE_MESSAGE   pDnsUpdateMessage,
     PBYTE                   *ppDnsResponse,
     PDWORD                  pdwDnsResponseSize,
-    PCHAR                   pcRCode
+    PCHAR                   pcRCode,
+    PBOOL                   pbUpdateInZone
     )
 {
     DWORD dwError = 0;
@@ -405,6 +411,7 @@ VmDnsProcessUpdate(
     DWORD dwDnsResponseSize = 0;
     UINT64 startTime = 0;
     UINT64 endTime = 0;
+    BOOLEAN bUpdateInZone = FALSE;
 
     startTime = VmDnsGetTimeInMilliSec();
 
@@ -476,6 +483,7 @@ VmDnsProcessUpdate(
             goto response;
         }
     }
+    bUpdateInZone = TRUE;
 
     // Process prerequisite section
     if (dwPRCount > 0 && pDnsUpdateMessage->pPrerequisite)
@@ -561,6 +569,7 @@ response:
 
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
+    *pbUpdateInZone = bUpdateInZone;
 
     VmDnsZoneObjectRelease(pZoneObject);
 
