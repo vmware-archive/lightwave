@@ -1,0 +1,21 @@
+version: '3'
+services:
+  lightwave-mutentca:
+    build: mutentca
+    hostname: mutentca.${LIGHTWAVE_DOMAIN}
+    command: scripts/setup.sh
+    volumes:
+     - ./mutentca:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     lightwave:
+       aliases:
+         - mutentca.${LIGHTWAVE_DOMAIN}
+    privileged: true
+    environment:
+        - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
+        - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
+    tty: true
+networks:
+  lightwave:
+    driver: bridge

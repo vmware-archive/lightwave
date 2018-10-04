@@ -1,2 +1,7 @@
 # Ignore swagger generated folder/files
 gen/
+
+# Ignore folders created while running the tests
+github.com/
+golang.org/
+gopkg.in/
