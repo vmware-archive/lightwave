@@ -139,6 +139,27 @@ VmDirMDBGetAllAttrValueMetaData(
     PDEQUE              metaValueData
     );
 
+DWORD
+VmDirMDBIndexTableReadRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_KEY_ORDER  keyOrder,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVKey,  // normalize key
+    PVDIR_BERVALUE          pBVValue // output copy of value
+    );
+
+DWORD
+VmDirBVToEntryId(
+    PVDIR_BERVALUE  pBV,
+    ENTRYID*        pEID
+    );
+
+DWORD
+VmDirEntryIdToBV(
+    ENTRYID         eId,
+    PVDIR_BERVALUE  pBV
+    );
+
 // writeutil.c
 DWORD
 VmDirMdbUpdateAttrValueMetaData(

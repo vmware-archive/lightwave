@@ -241,6 +241,8 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX(gVmdirIntegrityCheck.pMutex);
     VMDIR_SAFE_FREE_MEMORY(gVmdirIntegrityCheck.pJob);
 
+    VMDIR_SAFE_FREE_MUTEX(gVmdirDBCrossCheck.pMutex);
+
     // Free gVmdirdSDGlobals upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminGX);
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminRPWPDE);

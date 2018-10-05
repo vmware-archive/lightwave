@@ -1807,6 +1807,9 @@ InitializeGlobalVars(
     dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMutex(&gVmdirDBCrossCheck.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 #ifdef REPLICATION_V2
     dwError = VmDirUTDVectorGlobalCacheInit();
 #else

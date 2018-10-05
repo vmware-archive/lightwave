@@ -289,6 +289,16 @@ typedef struct _VMDIR_INTEGRITY_CHECK_GLOBALS
 
 extern VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck;
 
+
+typedef struct _VMDIR_DB_CROSS_CHECK_GLOBALS
+{
+    PVMDIR_MUTEX    pMutex;
+    BOOLEAN         bInProgress;
+
+} VMDIR_DB_CROSS_CHECK_GLOBALS, *PVMDIR_DB_CROSS_CHECK_GLOBALS;
+
+extern VMDIR_DB_CROSS_CHECK_GLOBALS gVmdirDBCrossCheck;
+
 typedef struct _VMDIR_WRITE_QUEUE
 {
     PVDIR_LINKED_LIST  pList;

@@ -15,6 +15,7 @@ libvmdird_la_SOURCES = \
     auth.c \
     background.c \
     dbbackup.c \
+    dbcrosschk.c \
     globals.c \
     heartbeat.c \
     index.c \
