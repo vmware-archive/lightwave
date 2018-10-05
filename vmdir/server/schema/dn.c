@@ -222,15 +222,19 @@ _VmDirNormalizeRDN(
           {
               BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_NORMALIZATION);
           }
-          dwError = VmDirCopyMemory(
-              pAVA->la_value.bv_val,
-              pAVA->la_value.bv_len,
-              bvNormVal.bvnorm_val,
-              bvNormVal.bvnorm_len);
-          BAIL_ON_VMDIR_ERROR(dwError);
 
-          pAVA->la_value.bv_val[bvNormVal.bvnorm_len] = '\0';
-          pAVA->la_value.bv_len = bvNormVal.bvnorm_len;
+          if (pAVA->la_value.bv_val != bvNormVal.bvnorm_val)
+          {   // copy back to pAVA buffer only if norm has different value
+              dwError = VmDirCopyMemory(
+                  pAVA->la_value.bv_val,
+                  pAVA->la_value.bv_len,
+                  bvNormVal.bvnorm_val,
+                  bvNormVal.bvnorm_len);
+              BAIL_ON_VMDIR_ERROR(dwError);
+
+              pAVA->la_value.bv_val[bvNormVal.bvnorm_len] = '\0';
+              pAVA->la_value.bv_len = bvNormVal.bvnorm_len;
+          }
 
           VmDirFreeBervalContent(&bvNormVal);
     }

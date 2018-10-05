@@ -109,8 +109,14 @@ VmDirCopyMemory(
 
     if (!pDestination || !pSource || maxCount > destinationSize)
     {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    //  dest and src should not overlap
+    if ((PBYTE)pSource > (((PBYTE)pDestination)-maxCount) &&
+        (PBYTE)pSource < (((PBYTE)pDestination)+maxCount))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_MEMORY);
     }
 
 #ifndef _WIN32

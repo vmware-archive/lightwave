@@ -61,6 +61,7 @@
 #define VMDIR_ERROR_FILE_READ                         (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 11 )     // 9011
 #define VMDIR_ERROR_PATH_EXISTS                       (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 12 )     // 9012
 #define VMDIR_ERROR_INVALID_PATH                      (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 13 )     // 9013
+#define VMDIR_ERROR_INVALID_MEMORY                    (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 14 )     // 9014
 
 // generic error 9100~9599
 #define IS_VMDIR_GENERIC_ERROR_SPACE(n) \
