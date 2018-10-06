@@ -104,6 +104,7 @@ ReplAddEntry(
     retVal = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_ADD, NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    VMDIR_SAFE_FREE_MEMORY(op.request.addReq.pEntry);
     pEntry = op.request.addReq.pEntry = pUpdate->pEntry;
     pUpdate->pEntry = NULL;
 
