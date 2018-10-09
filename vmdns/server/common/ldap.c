@@ -2438,7 +2438,6 @@ VmDnsDirSyncDeleted(
     LDAPMessage* pResult = NULL;
     LDAPMessage* pEntry = NULL;
     PSTR pszNodeDNCopy = NULL;
-    PSTR pszNodeDC = NULL;
     PSTR pszFilter = NULL;
     PSTR pszNodeDN = NULL;
     PCSTR pszParentDC = NULL;
@@ -2493,7 +2492,10 @@ VmDnsDirSyncDeleted(
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    while ((pEntry = ldap_next_entry(pDirContext->pLdap, pEntry)) != NULL)
+
+    for ( pEntry = ldap_first_entry(pDirContext->pLdap, pResult);
+          pEntry != NULL;
+          pEntry = ldap_next_entry(pDirContext->pLdap, pEntry))
     {
         pszNodeDN = ldap_get_dn(pDirContext->pLdap, pEntry);
         if (IsNullOrEmptyString(pszNodeDN))
@@ -2521,7 +2523,7 @@ VmDnsDirSyncDeleted(
         dwError = VmDnsAllocateStringA(ppValues[0]->bv_val, &pszNodeDNCopy);
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        dwError = VmDnsDirParseDN(pszNodeDNCopy, (PCSTR*)&pszNodeDC, &pszParentDC);
+        dwError = VmDnsDirParseDN(pszNodeDNCopy, (PCSTR*)&pszZone, &pszParentDC);
         BAIL_ON_VMDNS_ERROR(dwError);
 
         if (VmDnsStringCompareA(
@@ -2530,13 +2532,6 @@ VmDnsDirSyncDeleted(
                     FALSE
                     ) == 0)
         {
-            //format zone1.#ObjectGUID
-            pszZone = strtok(pszNodeDC, VMDNS_LDAP_DELETE_DELIMITER);
-            if (!pszZone)
-            {
-                dwError = ERROR_INVALID_DATA;
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
             dwError = LpRemoveZoneProc(pData, pszZone);
             BAIL_ON_VMDNS_ERROR(dwError);
         }
