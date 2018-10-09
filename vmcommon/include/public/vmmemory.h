@@ -55,7 +55,7 @@ VmCopyMemory(
 DWORD
 VmAllocateStringOfLenA(
     PCSTR   pszSource,
-    SIZE_T  sLength,
+    size_t  sLength,
     PSTR*   ppszDestination
     );
 

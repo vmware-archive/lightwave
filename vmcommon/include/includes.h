@@ -28,7 +28,7 @@
 
 #include "defines.h"
 #include "errorcode.h"
-#include "memory.h"
+#include "vmmemory.h"
 #include "vmstring.h"
 #include "structs.h"
 #include "vmhttpclient.h"
