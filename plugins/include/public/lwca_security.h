@@ -80,7 +80,7 @@ typedef const char* PCSTR;
 
 #ifndef VMW_PBYTE_DEFINED
 #define VMW_PBYTE_DEFINED 1
-typedef unsigned char *PBYTE;
+typedef unsigned char BYTE, *PBYTE;
 #endif /* VMW_PBYTE_DEFINED */
 
 #ifndef VMW_PVOID_DEFINED
@@ -161,7 +161,7 @@ typedef DWORD
     );
 
 /*
- * Retrun error description for errors originating from this plugin.
+ * Return error description for errors originating from this plugin.
  * Return human readable error strings. Do not include user supplied
  * data in error strings.
 */
@@ -243,35 +243,28 @@ typedef struct _LWCA_BINARY_DATA_
     DWORD dwLength;
 }LWCA_BINARY_DATA, *PLWCA_BINARY_DATA;
 
-/* assumes envelope encryption */
-typedef struct _LWCA_ENCRYPTED_DATA_
-{
-    PLWCA_BINARY_DATA pEncryptedData;
-    PLWCA_BINARY_DATA pEncryptedKey;
-}LWCA_ENCRYPTED_DATA, *PLWCA_ENCRYPTED_DATA;
-
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_CRYPT_ENCRYPT)(
     PLWCA_BINARY_DATA pData,
-    PLWCA_ENCRYPTED_DATA *ppEncryptedData
+    PLWCA_BINARY_DATA *ppEncryptedData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_CRYPT_DECRYPT)(
-    PLWCA_ENCRYPTED_DATA pEncryptedData,
+    PLWCA_BINARY_DATA pEncryptedData,
     PLWCA_BINARY_DATA *ppData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_STORAGE_PUT)(
     PCSTR pszKeyId,
-    PLWCA_ENCRYPTED_DATA pEncryptedData
+    PLWCA_BINARY_DATA pEncryptedData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_STORAGE_GET)(
     PCSTR pszKeyId,
-    PLWCA_ENCRYPTED_DATA *ppEncryptedData
+    PLWCA_BINARY_DATA *ppEncryptedData
     );
 
 typedef DWORD
@@ -316,6 +309,7 @@ typedef struct _LWCA_SECURITY_INTERFACE_
     PFN_LWCA_SECURITY_CREATE_KEY_PAIR     pFnCreateKeyPair;
     PFN_LWCA_SECURITY_SIGN_CERTIFICATE    pFnSignCertificate;
     PFN_LWCA_SECURITY_VERIFY_CERTIFICATE  pFnVerifyCertificate;
+    PFN_LWCA_SECURITY_GET_ERROR_STRING    pFnGetErrorString;
     PFN_LWCA_SECURITY_CLOSE_HANDLE        pFnCloseHandle;
     PFN_LWCA_SECURITY_FREE_MEMORY         pFnFreeMemory;
 }LWCA_SECURITY_INTERFACE, *PLWCA_SECURITY_INTERFACE;
