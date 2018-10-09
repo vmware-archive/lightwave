@@ -116,7 +116,7 @@ Security_Test_Impl_VerifyCertificate(
     PCSTR pszCertificate,
     PCSTR pKeyId,
     PCSTR pszPassPhrase,
-    BOOLEAN **ppbValid
+    BOOLEAN *pbValid
     )
 {
     DWORD dwError = 0;

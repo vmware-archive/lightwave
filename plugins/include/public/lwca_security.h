@@ -93,6 +93,13 @@ typedef void VOID, *PVOID;
 typedef uint8_t BOOLEAN, *PBOOLEAN;
 #endif /* VMW_BOOLEAN_DEFINED */
 
+#ifndef TRUE
+#define TRUE 1
+#endif
+#ifndef FALSE
+#define FALSE 0
+#endif
+
 #define LWCA_SECURITY_VERSION_MAJOR   "1"
 #define LWCA_SECURITY_VERSION_MINOR   "0"
 #define LWCA_SECURITY_VERSION_RELEASE "0"
@@ -232,7 +239,7 @@ typedef DWORD
     PCSTR pszCertificate,
     PCSTR pKeyId,
     PCSTR pszPassPhrase, /* optional pass phrase to access key */
-    BOOLEAN **ppbValid
+    BOOLEAN *pbValid
     );
 
 /*

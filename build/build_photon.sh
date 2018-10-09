@@ -19,7 +19,7 @@ if [[ $ARG == "" || $ARG == "--with-ui" ]]; then
     --enable-debug=yes \
     --libdir=/opt/vmware/lib64 \
     --localstatedir=/var/lib/vmware \
-    --with-config=./config \
+    --with-config=./config --enable-plugins --enable-security_aws_kms \
   && \
  make \
   && \

@@ -277,6 +277,40 @@ fi
 AM_CONDITIONAL(GO_ENABLED, [$GO_ENABLED])
 
 #--------------------------------------------------------------------
+# plugins
+
+ENABLE_PLUGINS=false
+AC_ARG_ENABLE([plugins],
+ [AS_HELP_STRING([--enable-plugins],
+                 [enable all plugin builds (default: disabled])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_PLUGINS=true
+            AC_DEFINE(ENABLE_PLUGINS, 1, [Build plugins?])
+        fi
+    ]
+])
+AM_CONDITIONAL(ENABLE_PLUGINS, [$ENABLE_PLUGINS])
+
+#--------------------------------------------------------------------
+# aws kms sdk
+
+ENABLE_SECURITY_AWS_KMS=false
+AC_ARG_ENABLE([security_aws_kms],
+ [AS_HELP_STRING([--enable-security_aws_kms],
+                 [enable security plugin aws kms (default: disabled])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_SECURITY_AWS_KMS=true
+            AC_DEFINE(ENABLE_SECURITY_AWS_KMS, 1, [Build security plugin for aws kms?])
+        fi
+    ]
+])
+AM_CONDITIONAL(ENABLE_SECURITY_AWS_KMS, [$ENABLE_SECURITY_AWS_KMS])
+
+#--------------------------------------------------------------------
 # openssl component
 
 case "${host_os}:${host_cpu}" in
@@ -836,6 +870,17 @@ if test x"$JAVAH" = x"no"; then
 fi
 
 #--------------------------------------------------------------------
+# aws kms sdk
+
+AS_IF([test "x$ENABLE_PLUGINS" != "xfalse"], [
+  AS_IF([test "x$ENABLE_SECURITY_AWS_KMS" != "xfalse"], [
+    PKG_CHECK_MODULES([AWS_SDK_KMS], [aws-cpp-sdk-kms], [have_aws_sdk_kms=yes], [have_aws_sdk_kms=no])
+    if test "$have_aws_sdk_kms" = "no"; then
+      AC_MSG_ERROR([--enable-security-aws-kms specified, but not available])
+    fi
+  ])
+])
+
 
 AC_CHECK_LIB([dl],
     [dlopen],
@@ -1662,8 +1707,10 @@ AC_CONFIG_FILES([Makefile
                  vmcommon/config/Makefile
                  vmcommon/testing/Makefile
                  plugins/Makefile
+                 plugins/lwca_security_aws_kms/Makefile
                  plugins/unit-tests/Makefile
                  plugins/unit-tests/security/Makefile
+                 plugins/unit-tests/security_aws_kms/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile

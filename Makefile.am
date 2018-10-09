@@ -12,7 +12,6 @@ ACLOCAL_AMFLAGS = -I m4
 
 SUBDIRS = \
         vmcommon \
-        plugins \
         vmevent \
         vmidentity/ssoclients \
         lwraft \
@@ -23,6 +22,10 @@ SUBDIRS = \
         mutentca \
         vmidentity \
         config
+
+if ENABLE_PLUGINS
+SUBDIRS+=plugins
+endif
 
 PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/$(ARCH)/$(LIGHTWAVE_RPM) \
