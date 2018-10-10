@@ -411,6 +411,31 @@ func TestBuildClientIssuer(t *testing.T) {
 	assert.Nil(t, oidcClient, "Client returned on error should be nil")
 }
 
+func TestParseTokenType(t *testing.T) {
+	reqID := "TestAcquireTokensBySolutionUserCert"
+	logger := getLogger(reqID)
+
+	oidcClient, err := buildOidcClient(config.Issuer1, "", "", logger)
+	if err != nil {
+		t.Fatalf("Error in building Oidc Client")
+	}
+
+	tokens, err := oidcClient.AcquireTokensByPassword(config.Username, config.Password, scope, reqID)
+	require.Nil(t, err, "Error in acquiring tokens by password: %+v", err)
+	checkToken(t, tokens)
+
+	signers, _ := oidcClient.Signers(false, reqID)
+	_, err = ParseAndValidateIDToken(tokens.AccessToken(), oidcClient.Issuer(), oidcClient.ClientID(), "", signers, config.NoopLogger)
+	if assert.NotNil(t, err, "Error expected when parsing Access Token as ID token") {
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "Invalid Token error expected")
+	}
+
+	_, err = ParseAndValidateAccessToken(tokens.IDToken(), oidcClient.Issuer(), "", signers, config.NoopLogger)
+	if assert.NotNil(t, err, "Error expected when parsing ID token as Access Token") {
+		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "Invalid Token error expected")
+	}
+}
+
 func BuildIDToken(oidcClient Client, tokens Tokens, reqID string, logger Logger) (IDToken, error) {
 	signers, _ := oidcClient.Signers(false, reqID)
 	return ParseAndValidateIDToken(
