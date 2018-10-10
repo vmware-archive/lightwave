@@ -19,6 +19,8 @@ const (
 	ClaimNonce = "nonce"
 	// ClaimTokenType is the name of the token type token claim
 	ClaimTokenType = "token_type"
+	// ClaimTokenClass is the name of the token class claim
+	ClaimTokenClass = "token_class"
 	// ClaimHotKJWK is the name of the HOTK JWK set claim
 	ClaimHotKJWK = "hotk"
 	// ClaimAudience is the name of the audience token claim
@@ -34,9 +36,12 @@ const (
 
 	// BearerTokenType is type of a Bearer token
 	BearerTokenType = "Bearer"
-
 	// HOKTokenType is type of a holder-of-key token
 	HOKTokenType = "hotk-pk"
+	// AccessTokenClass is the class of an access token
+	AccessTokenClass = "access_token"
+	// IDTokenClass is the class of an id token
+	IDTokenClass = "id_token"
 )
 
 // jwt interface represents a parsed/validated jwt
@@ -45,6 +50,7 @@ type jwt interface {
 	Nonce() (string, bool)
 	Groups() ([]string, bool)
 	Type() string
+	Class() string
 	Subject() string
 	Expiration() time.Time
 	IssuedAt() time.Time
@@ -84,8 +90,8 @@ func parseTenantInToken(token string) (string, error) {
 	return tenant, nil
 }
 
-func parseAccessToken(
-	token string, issuer string, audience string, signers IssuerSigners, logger Logger) (AccessToken, error) {
+func parseToken(
+	token string, issuer string, audience string, nonce string, signers IssuerSigners, tokenType string, logger Logger) (jwt, error) {
 	var err error
 
 	if signers == nil {
@@ -108,34 +114,17 @@ func parseAccessToken(
 		}
 	}
 
-	return verifyToken(token, s.signers, issuer, audience, "", defaultClockToleranceSecs, logger)
-}
-
-func parseIDToken(
-	token string, issuer string, audience string, nonce string, signers IssuerSigners, logger Logger) (IDToken, error) {
-	var err error
-
-	if signers == nil {
-		return nil, OIDCInvalidArgError.MakeError("signers must be provided", nil)
+	tok, err := verifyToken(token, s.signers, issuer, audience, nonce, defaultClockToleranceSecs, logger)
+	if err != nil {
+		return nil, err
 	}
 
-	s, ok := signers.(*signersImpl)
-	if ok == false || s.signers == nil {
-		return nil, OIDCInvalidArgError.MakeError("signers argument is invalid", nil)
+	if !strings.EqualFold(tokenType, tok.Class()) {
+		PrintLog(logger, LogLevelError, "Failed to verify token: token class %s does not match expected %s", tokenType, tok.Class())
+		return nil, OIDCTokenInvalidError.MakeError("Failed to validate " + tok.Class() + " token", nil)
 	}
 
-	if len(issuer) <= 0 {
-		return nil, OIDCInvalidArgError.MakeError("issuer must be provided", nil)
-	}
-
-	if logger == nil {
-		logger = NewLogger()
-		if err != nil {
-			return nil, err
-		}
-	}
-
-	return verifyToken(token, s.signers, issuer, audience, nonce, defaultClockToleranceSecs, logger)
+	return tok, nil
 }
 
 func verifyToken(token string, signers *jose.JSONWebKeySet, issuer string, audience string, nonce string,
@@ -175,7 +164,7 @@ func verifyToken(token string, signers *jose.JSONWebKeySet, issuer string, audie
 
 func validateAndNormalizeClaims(rawClaims *map[string]interface{}, issuer string, clockToleranceSecs int) error {
 	// issuer must match
-	// type, subject must be present
+	// type, class, subject must be present
 	// expiration should not be in the past
 	// issued at should not be in the future
 
@@ -198,6 +187,10 @@ func validateAndNormalizeClaims(rawClaims *map[string]interface{}, issuer string
 		return err
 	}
 	err = ensureStringClaim(rawClaims, ClaimTokenType)
+	if err != nil {
+		return err
+	}
+	err = ensureStringClaim(rawClaims, ClaimTokenClass)
 	if err != nil {
 		return err
 	}
@@ -565,6 +558,10 @@ func (t *jwtImpl) Groups() ([]string, bool) {
 
 func (t *jwtImpl) Type() string {
 	return t.claims[ClaimTokenType].(string)
+}
+
+func (t *jwtImpl) Class() string {
+	return t.claims[ClaimTokenClass].(string)
 }
 
 func (t *jwtImpl) Subject() string {
