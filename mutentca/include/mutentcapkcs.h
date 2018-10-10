@@ -60,6 +60,12 @@ LwCAPEMToX509(
     );
 
 DWORD
+LwCAPEMToCSR(
+    PCSTR       pcszCSR,
+    X509_REQ    **ppReq
+    );
+
+DWORD
 LwCAValidateCertificate(
     X509    *pCert,
     PCSTR   pcszPrivateKey,
@@ -86,7 +92,16 @@ LwCACheckCACert(
 DWORD
 LwCACreateCertificateSignRequest(
     PLWCA_PKCS_10_REQ_DATA  pCertRequest,
+    EVP_PKEY                *pPublicKey,
     X509_REQ                **ppReq
+    );
+
+DWORD
+LwCAGenerateX509Certificate(
+    PLWCA_CERT_REQUEST      pCertRequest,
+    PLWCA_CERT_VALIDITY     pValidity,
+    PLWCA_CERTIFICATE       pCACert,
+    X509                    **ppCert
     );
 
 DWORD
