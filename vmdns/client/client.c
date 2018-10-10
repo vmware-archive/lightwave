@@ -30,6 +30,30 @@
 
 static
 DWORD
+_GetForwarders(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszZone,
+    PVMDNS_FORWARDERS*      ppForwarders
+    );
+
+static
+DWORD
+_AddForwarder(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
+    );
+
+static
+DWORD
+_DeleteForwarder(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
+    );
+
+static
+DWORD
 VmDnsRpcGetErrorCode(
 dcethread_exc* pDceException
 )
@@ -180,10 +204,11 @@ VmDnsCloseServer(PVMDNS_SERVER_CONTEXT pServerContext)
 	}
 }
 
-VMDNS_API
+static
 DWORD
-VmDnsGetForwardersA(
+_GetForwarders(
     PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszZone,
     PVMDNS_FORWARDERS*      ppForwarders
     )
 {
@@ -200,9 +225,19 @@ VmDnsGetForwardersA(
 
     DCETHREAD_TRY
     {
-        dwError = VmDnsRpcGetForwarders(
-                            pServerContext->hBinding,
-                            &pDnsForwarders);
+        if (pszZone)
+        {
+            dwError = VmDnsRpcGetZoneForwarders(
+                                pServerContext->hBinding,
+                                (PDNS_STRING)pszZone,
+                                &pDnsForwarders);
+        }
+        else
+        {
+            dwError = VmDnsRpcGetForwarders(
+                                pServerContext->hBinding,
+                                &pDnsForwarders);
+        }
     }
     DCETHREAD_CATCH_ALL(THIS_CATCH)
     {
@@ -269,28 +304,39 @@ error:
     }
 
     goto cleanup;
-
 }
 
-VMDNS_API
+static
 DWORD
-VmDnsAddForwarderA(
+_AddForwarder(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR                    pszForwarders
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
     )
 {
     DWORD dwError = 0;
     dwError = VmDnsValidateContext(pServerContext);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    BAIL_ON_VMDNS_INVALID_POINTER(pszForwarders, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(pszForwarder, dwError);
+
     DCETHREAD_TRY
     {
-        dwError = VmDnsRpcAddForwarder(
-                            pServerContext->hBinding,
-                            pszForwarders);
+        if (pszZone)
+        {
+            dwError = VmDnsRpcAddZoneForwarder(
+                                pServerContext->hBinding,
+                                (PDNS_STRING)pszForwarder,
+                                (PDNS_STRING)pszZone);
+        }
+        else
+        {
+            dwError = VmDnsRpcAddForwarder(
+                                pServerContext->hBinding,
+                                (PDNS_STRING)pszForwarder);
+        }
     }
-        DCETHREAD_CATCH_ALL(THIS_CATCH)
+    DCETHREAD_CATCH_ALL(THIS_CATCH)
     {
         dwError = VmDnsRpcGetErrorCode(THIS_CATCH);
     }
@@ -304,14 +350,14 @@ cleanup:
 error:
 
     goto cleanup;
-
 }
 
-VMDNS_API
+static
 DWORD
-VmDnsDeleteForwarderA(
+_DeleteForwarder(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR                    pszForwarder
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
     )
 {
     DWORD dwError = 0;
@@ -320,13 +366,24 @@ VmDnsDeleteForwarderA(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     BAIL_ON_VMDNS_INVALID_POINTER(pszForwarder, dwError);
+
     DCETHREAD_TRY
     {
-        dwError = VmDnsRpcDeleteForwarder(
-                        pServerContext->hBinding,
-                        pszForwarder);
+        if (pszZone)
+        {
+            dwError = VmDnsRpcDeleteZoneForwarder(
+                            pServerContext->hBinding,
+                            (PDNS_STRING)pszForwarder,
+                            (PDNS_STRING)pszZone);
+        }
+        else
+        {
+            dwError = VmDnsRpcDeleteForwarder(
+                            pServerContext->hBinding,
+                            (PDNS_STRING)pszForwarder);
+        }
     }
-        DCETHREAD_CATCH_ALL(THIS_CATCH)
+    DCETHREAD_CATCH_ALL(THIS_CATCH)
     {
         dwError = VmDnsRpcGetErrorCode(THIS_CATCH);
     }
@@ -340,7 +397,111 @@ cleanup:
 error:
 
     goto cleanup;
+}
 
+VMDNS_API
+DWORD
+VmDnsGetForwardersA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PVMDNS_FORWARDERS*      ppForwarders
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _GetForwarders(
+                    pServerContext,
+                    NULL,
+                    ppForwarders);
+
+    return dwError;
+}
+
+VMDNS_API
+DWORD
+VmDnsAddForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _AddForwarder(
+                    pServerContext,
+                    pszForwarder,
+                    NULL);
+
+    return dwError;
+}
+
+VMDNS_API
+DWORD
+VmDnsDeleteForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _DeleteForwarder(
+                    pServerContext,
+                    pszForwarder,
+                    NULL);
+
+    return dwError;
+}
+
+VMDNS_API
+DWORD
+VmDnsGetZoneForwardersA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszZone,
+    PVMDNS_FORWARDERS*      ppForwarders
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _GetForwarders(
+                    pServerContext,
+                    pszZone,
+                    ppForwarders);
+
+    return dwError;
+}
+
+VMDNS_API
+DWORD
+VmDnsAddZoneForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _AddForwarder(
+                    pServerContext,
+                    pszForwarder,
+                    pszZone);
+
+    return dwError;
+}
+
+VMDNS_API
+DWORD
+VmDnsDeleteZoneForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _DeleteForwarder(
+                    pServerContext,
+                    pszForwarder,
+                    pszZone);
+
+    return dwError;
 }
 
 VMDNS_API

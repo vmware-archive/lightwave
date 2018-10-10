@@ -216,6 +216,7 @@ VmDnsCacheLoadZoneFromStore(
     PVMDNS_RECORD_LIST pList = NULL;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     BOOL bLocked = FALSE;
+    PVMDNS_PROPERTY_LIST pPropertyList = NULL;
 
     if (IsNullOrEmptyString(pZoneName))
     {
@@ -226,10 +227,19 @@ VmDnsCacheLoadZoneFromStore(
     VmDnsLockWrite(pContext->pLock);
     bLocked = TRUE;
 
-    dwError = VmDnsStoreGetRecords(pZoneName, pZoneName, &pList);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    dwError = VmDnsStoreGetProperties(pZoneName, &pPropertyList);
+    if (dwError && dwError != ERROR_NOT_FOUND)
+    {
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
-    dwError = VmDnsZoneCreateFromRecordList(pZoneName, pList, &pZoneObject);
+    dwError = VmDnsStoreGetRecords(pZoneName, pZoneName, &pList);
+    if (dwError && dwError != ERROR_NOT_FOUND)
+    {
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwError = VmDnsZoneCreateFromRecordList(pZoneName, pList, pPropertyList, &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
@@ -242,6 +252,7 @@ cleanup:
     }
 
     VmDnsRecordListRelease(pList);
+    VmDnsPropertyListRelease(pPropertyList);
     VmDnsZoneObjectRelease(pZoneObject);
 
     return dwError;
@@ -272,7 +283,6 @@ VmDnsCacheRemoveZone(
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
-
     if (bLocked)
     {
         VmDnsUnlockWrite(pContext->pLock);
@@ -287,10 +297,11 @@ error:
 DWORD
 VmDnsCacheGetZoneName(
     PVMDNS_ZONE_OBJECT  pZoneObject,
-    PSTR                *pszZoneName
+    PSTR                *ppszZoneName
     )
 {
     DWORD dwError = 0;
+    PSTR pszZoneName = NULL;
 
     if (!pZoneObject)
     {
@@ -298,11 +309,12 @@ VmDnsCacheGetZoneName(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsZoneGetName(pZoneObject, pszZoneName);
+    dwError = VmDnsZoneGetName(pZoneObject, &pszZoneName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-cleanup:
+    *ppszZoneName = pszZoneName;
 
+cleanup:
     return dwError;
 
 error:
@@ -339,7 +351,7 @@ error:
 DWORD
 VmDnsCacheFindZone(
     PVMDNS_CACHE_CONTEXT    pContext,
-    PCSTR                   szZoneName,
+    PCSTR                   pszZoneName,
     PVMDNS_ZONE_OBJECT      *ppZoneObject
     )
 {
@@ -347,7 +359,7 @@ VmDnsCacheFindZone(
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     BOOL bLocked = FALSE;
 
-    if (!pContext || IsNullOrEmptyString(szZoneName) || !ppZoneObject)
+    if (!pContext || IsNullOrEmptyString(pszZoneName) || !ppZoneObject)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -358,7 +370,7 @@ VmDnsCacheFindZone(
 
     dwError = VmDnsZoneListFindZone(
                     pContext->pZoneList,
-                    szZoneName,
+                    pszZoneName,
                     &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -539,6 +551,8 @@ VmDnsCacheSyncZoneProc(
     PVMDNS_CACHE_CONTEXT pCacheContext = (PVMDNS_CACHE_CONTEXT) pData;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     DWORD dwError = 0;
+    DWORD dwForwarderCount = 0;
+    PSTR* ppszForwarders = NULL;
 
     dwError = VmDnsCacheFindZone(
                         pCacheContext,
@@ -558,9 +572,38 @@ VmDnsCacheSyncZoneProc(
             pszZone
             );
     }
+    else if (pZoneObject && pZoneObject->zoneId == VMDNS_ZONE_ID_FORWARDER)
+    {
+        dwError = VmDnsStoreGetForwarders(
+                    pszZone,
+                    &dwForwarderCount,
+                    &ppszForwarders);
+        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NO_DATA);
+
+        dwError = 0;
+
+        if (dwForwarderCount > 0 && *ppszForwarders)
+        {
+            dwError = VmDnsSetForwarders(
+                            pZoneObject->pForwarderContext,
+                            pszZone,
+                            dwForwarderCount,
+                            ppszForwarders);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            VmDnsFreeStringCountedArrayA(ppszForwarders, dwForwarderCount);
+            ppszForwarders = NULL;
+            dwForwarderCount = 0;
+        }
+    }
 
 cleanup:
     VmDnsZoneObjectRelease(pZoneObject);
+
+    if (ppszForwarders)
+    {
+        VmDnsFreeStringCountedArrayA(ppszForwarders, dwForwarderCount);
+    }
 
     return dwError;
 
@@ -833,6 +876,7 @@ VmDnsCacheEvictEntryProc(
 
 cleanup:
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -948,40 +992,82 @@ VmDnsCacheLoadInitialData(
 {
     DWORD dwError = 0;
     PSTR *ppszZones = NULL;
-    DWORD dwCount = 0, i = 0;
+    DWORD dwZoneCount = 0;
+    DWORD i = 0;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     PVMDNS_RECORD_LIST pList = NULL;
     PSTR *ppszForwarders = NULL;
+    PVMDNS_PROPERTY_LIST pPropertyList = NULL;
+    DWORD dwForwarderCount = 0;
 
     VmDnsLockWrite(pContext->pLock);
 
     dwError = VmDnsStoreInitialize();
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsStoreListZones(&ppszZones, &dwCount);
-    for (i = 0; i < dwCount; ++i)
+    dwError = VmDnsStoreListZones(&ppszZones, &dwZoneCount);
+
+    for (i = 0; i < dwZoneCount; ++i)
     {
         VmDnsRecordListRelease(pList);
         pList = NULL;
 
         dwError = VmDnsStoreGetRecords(ppszZones[i], ppszZones[i], &pList);
+        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND)
+
+        dwError = VmDnsStoreGetProperties(ppszZones[i], &pPropertyList);
+        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND)
+
+        dwError = VmDnsZoneCreateFromRecordList(ppszZones[i], pList, pPropertyList, &pZoneObject);
         BAIL_ON_VMDNS_ERROR(dwError);
 
-        dwError = VmDnsZoneCreateFromRecordList(ppszZones[i], pList, &pZoneObject);
-        BAIL_ON_VMDNS_ERROR(dwError);
+        if (pPropertyList)
+        {
+            VmDnsPropertyListRelease(pPropertyList);
+            pPropertyList = NULL;
+        }
 
         dwError = VmDnsZoneListAddZone(pContext->pZoneList, pZoneObject);
         BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsStoreGetForwarders(
+                    ppszZones[i],
+                    &dwForwarderCount,
+                    &ppszForwarders);
+        BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NO_DATA);
+
+        dwError = 0;
+
+        if (dwForwarderCount > 0 && *ppszForwarders)
+        {
+            dwError = VmDnsSetForwarders(
+                            pZoneObject->pForwarderContext,
+                            ppszZones[i],
+                            dwForwarderCount,
+                            ppszForwarders);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            VmDnsFreeStringCountedArrayA(ppszForwarders, dwForwarderCount);
+            ppszForwarders = NULL;
+            dwForwarderCount = 0;
+        }
     }
 
-    dwError = VmDnsStoreGetForwarders(&dwCount, &ppszForwarders);
+    dwError = VmDnsStoreGetForwarders(
+                    NULL,
+                    &dwForwarderCount,
+                    &ppszForwarders);
     BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NO_DATA);
 
     dwError = 0;
 
-    if (dwCount > 0 && *ppszForwarders)
+    if (dwForwarderCount > 0 && *ppszForwarders)
     {
-        dwError = VmDnsSetForwarders(gpSrvContext->pForwarderContext, dwCount, ppszForwarders);
+        dwError = VmDnsSetForwarders(
+                        gpSrvContext->pForwarderContext,
+                        NULL,
+                        dwForwarderCount,
+                        ppszForwarders);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -990,10 +1076,11 @@ cleanup:
     VmDnsFreeStringArrayA(ppszZones);
     VmDnsUnlockWrite(pContext->pLock);
     VmDnsRecordListRelease(pList);
+    VmDnsPropertyListRelease(pPropertyList);
     VmDnsZoneObjectRelease(pZoneObject);
     if (ppszForwarders)
     {
-        VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+        VmDnsFreeStringCountedArrayA(ppszForwarders, dwForwarderCount);
     }
     return dwError;
 

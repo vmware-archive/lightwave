@@ -141,9 +141,20 @@ VmDnsNameEntryGetRecords(
 {
     DWORD dwError = 0, i = 0, dwListSize = 0;
     PVMDNS_RECORD_OBJECT pRecordObj = NULL;
-    DWORD dwSize = VmDnsRecordListGetSize(pNameEntry->pRecords);
+    DWORD dwSize = 0;
     PVMDNS_RECORD_LIST pRecordList = NULL, pTempRecordList = NULL;
     DWORD dwRoundRobinIndex = 0;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(pNameEntry, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(ppRecordList, dwError);
+
+    if (!pNameEntry->pRecords)
+    {
+        dwError = ERROR_NOT_FOUND;
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    dwSize = VmDnsRecordListGetSize(pNameEntry->pRecords);
 
     if (pNameEntry->dwRoundRobinType == rrType)
     {

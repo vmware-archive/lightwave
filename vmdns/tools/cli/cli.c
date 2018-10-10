@@ -77,6 +77,18 @@ VmDnsCliValidateRecordInput(
 
 static
 DWORD
+VmDnsCliAddForwarder(
+    PVM_DNS_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
+VmDnsCliDelForwarder(
+    PVM_DNS_CLI_CONTEXT pContext
+    );
+
+static
+DWORD
 VmDnsCliListForwarders(
     PVM_DNS_CLI_CONTEXT pContext
     );
@@ -133,23 +145,19 @@ VmDnsCliExecute(
 
         case VM_DNS_ACTION_ADD_FORWARDER:
 
-            dwError = VmDnsAddForwarderA(
-                            pContext->pServerContext,
-                            pContext->pszForwarder);
+            dwError = VmDnsCliAddForwarder(pContext);
+
+            break;
+
+        case VM_DNS_ACTION_DEL_FORWARDER:
+
+            dwError = VmDnsCliDelForwarder(pContext);
 
             break;
 
         case VM_DNS_ACTION_LIST_FORWARDERS:
 
             dwError = VmDnsCliListForwarders(pContext);
-
-            break;
-
-        case VM_DNS_ACTION_DEL_FORWARDER:
-
-            dwError = VmDnsDeleteForwarderA(
-                            pContext->pServerContext,
-                            pContext->pszForwarder);
 
             break;
 
@@ -165,7 +173,39 @@ VmDnsCliExecute(
 
 static
 DWORD
-VmDnsCliCreateZone(
+VmDnsCliCreateForwarderZone(
+    PVM_DNS_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+    VMDNS_ZONE_INFO zoneInfo = { 0 };
+
+    zoneInfo.pszName                = pContext->pszZone;
+    zoneInfo.pszPrimaryDnsSrvName   = NULL;
+    zoneInfo.pszRName               = pContext->pszMboxDomain;
+    zoneInfo.serial                 = 1;
+    zoneInfo.refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL;
+    zoneInfo.retryInterval          = VMDNS_DEFAULT_RETRY_INTERVAL;
+    zoneInfo.expire                 = VMDNS_DEFAULT_EXPIRE;
+    zoneInfo.minimum                = VMDNS_DEFAULT_TTL;
+    zoneInfo.dwFlags                = 0;
+    zoneInfo.dwZoneType             = pContext->dwZoneType;
+
+    dwError = VmDnsCreateZoneA(pContext->pServerContext, &zoneInfo);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCliCreatePrimaryZone(
     PVM_DNS_CLI_CONTEXT pContext
     )
 {
@@ -186,6 +226,7 @@ VmDnsCliCreateZone(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
     if (IsNullOrEmptyString(pContext->pszNSHost)
        || VmDnsCheckIfIPV4AddressA(pContext->pszNSHost)
        || VmDnsCheckIfIPV6AddressA(pContext->pszNSHost))
@@ -195,6 +236,7 @@ VmDnsCliCreateZone(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
     if (pContext->dwZoneType == VMDNS_ZONE_TYPE_FORWARD &&
         IsNullOrEmptyString(pContext->pszNSIp))
     {
@@ -203,6 +245,7 @@ VmDnsCliCreateZone(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
     if (IsNullOrEmptyString(pContext->pszMboxDomain))
     {
         dwError = VmDnsAllocateStringA("hostmaster", &pszMboxDomain);
@@ -223,8 +266,7 @@ VmDnsCliCreateZone(
     zoneInfo.expire                 = VMDNS_DEFAULT_EXPIRE;
     zoneInfo.minimum                = VMDNS_DEFAULT_TTL;
     zoneInfo.dwFlags                = 0;
-    zoneInfo.dwZoneType             = VmDnsIsReverseZoneName(zoneInfo.pszName) ?
-                                        VMDNS_ZONE_TYPE_REVERSE : VMDNS_ZONE_TYPE_FORWARD;
+    zoneInfo.dwZoneType             = pContext->dwZoneType;
 
     dwError = VmDnsCreateZoneA(pContext->pServerContext, &zoneInfo);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -334,24 +376,77 @@ error:
 }
 
 static
+DWORD
+VmDnsCliCreateZone(
+    PVM_DNS_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+
+    if (pContext->dwZoneType == VMDNS_ZONE_TYPE_FORWARDER)
+    {
+        dwError = VmDnsCliCreateForwarderZone(pContext);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDnsCliCreatePrimaryZone(pContext);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
 VOID
 VmDnsCliPrintZone(
     PVMDNS_ZONE_INFO pZoneInfo
     )
 {
+    PSTR pszZoneType = NULL;
+
+    switch (pZoneInfo->dwZoneType)
+    {
+    case VMDNS_ZONE_TYPE_FORWARD:
+        pszZoneType = "Forward";
+        break;
+    case VMDNS_ZONE_TYPE_REVERSE:
+        pszZoneType = "Reverse";
+        break;
+    case VMDNS_ZONE_TYPE_FORWARDER:
+        pszZoneType = "Forwarder";
+        break;
+    default:
+        pszZoneType = "unknown";
+        break;
+    }
+
     if (pZoneInfo)
     {
         printf("Name:               %s\n", pZoneInfo->pszName);
-        printf("Type:               %s\n",
-                    VmDnsIsReverseZoneName(pZoneInfo->pszName) ?
-                        "Reverse" : "Forward");
-        printf("Serial:             %u\n", pZoneInfo->serial);
-        printf("Primary DNS server: %s\n", pZoneInfo->pszPrimaryDnsSrvName);
-        printf("Administrator:      %s\n", pZoneInfo->pszRName);
-        printf("Expiration:         %u\n", pZoneInfo->expire);
-        printf("Minimum TTL:        %u\n", pZoneInfo->minimum);
-        printf("Refresh interval:   %u\n", pZoneInfo->refreshInterval);
-        printf("Retry interval:     %u\n", pZoneInfo->retryInterval);
+        printf("Type:               %s\n", pszZoneType);
+        if (pZoneInfo->dwZoneType == VMDNS_ZONE_TYPE_FORWARD ||
+            pZoneInfo->dwZoneType == VMDNS_ZONE_TYPE_REVERSE)
+        {
+            printf("Serial:             %u\n", pZoneInfo->serial);
+            printf("Primary DNS server: %s\n", pZoneInfo->pszPrimaryDnsSrvName);
+            printf("Administrator:      %s\n", pZoneInfo->pszRName);
+            printf("Expiration:         %u\n", pZoneInfo->expire);
+            printf("Minimum TTL:        %u\n", pZoneInfo->minimum);
+            printf("Refresh interval:   %u\n", pZoneInfo->refreshInterval);
+            printf("Retry interval:     %u\n", pZoneInfo->retryInterval);
+        }
+        else if (pZoneInfo->dwZoneType == VMDNS_ZONE_TYPE_FORWARDER)
+        {
+            printf("Serial:             %u\n", pZoneInfo->serial);
+            printf("Administrator:      %s\n", pZoneInfo->pszRName);
+        }
     }
 }
 
@@ -857,6 +952,71 @@ error:
     return dwError;
 }
 
+static
+DWORD
+VmDnsCliAddForwarder(
+    PVM_DNS_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+
+    if (pContext->pszZone)
+    {
+        dwError = VmDnsAddZoneForwarderA(
+                        pContext->pServerContext,
+                        pContext->pszForwarder,
+                        pContext->pszZone);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDnsAddForwarderA(
+                        pContext->pServerContext,
+                        pContext->pszForwarder);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmDnsCliDelForwarder(
+    PVM_DNS_CLI_CONTEXT pContext
+    )
+{
+    DWORD dwError = 0;
+
+    if (pContext->pszZone)
+    {
+        dwError = VmDnsDeleteZoneForwarderA(
+                        pContext->pServerContext,
+                        pContext->pszForwarder,
+                        pContext->pszZone);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDnsDeleteForwarderA(
+                        pContext->pServerContext,
+                        pContext->pszForwarder);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
 
 static
 DWORD
@@ -868,12 +1028,32 @@ VmDnsCliListForwarders(
     PVMDNS_FORWARDERS pForwarders = NULL;
     DWORD iForwarder = 0;
 
-    dwError = VmDnsGetForwardersA(pContext->pServerContext, &pForwarders);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (pContext->pszZone)
+    {
+        dwError = VmDnsGetZoneForwardersA(
+                        pContext->pServerContext,
+                        pContext->pszZone,
+                        &pForwarders);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmDnsGetForwardersA(
+                        pContext->pServerContext,
+                        &pForwarders);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     if (pForwarders->dwCount > 0)
     {
-        fprintf(stdout, "Forwarders:\n");
+        if (pContext->pszZone)
+        {
+            fprintf(stdout, "Forwarders for zone %s:\n", pContext->pszZone);
+        }
+        else
+        {
+            fprintf(stdout, "Forwarders:\n");
+        }
 
         for (; iForwarder < pForwarders->dwCount; iForwarder++)
         {

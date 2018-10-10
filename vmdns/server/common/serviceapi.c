@@ -79,6 +79,13 @@ VmDnsSrvCleanupPTRRecords(
     PSTR pszRecordName
     );
 
+static
+DWORD
+_GetForwarderContext(
+    PCSTR pszZone,
+    PVMDNS_FORWARDER_CONTEXT* ppForwarderContext
+    );
+
 DWORD
 VmDnsSrvInitialize(
     BOOL bUseDirectoryStore
@@ -876,10 +883,12 @@ error:
 
 DWORD
 VmDnsSrvAddForwarder(
-    PCSTR     pszForwarder
+    PCSTR     pszForwarder,
+    PCSTR     pszZone
     )
 {
     DWORD dwError = 0;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
 
     if (VMDNS_READY != VmDnsSrvGetState())
     {
@@ -888,14 +897,68 @@ VmDnsSrvAddForwarder(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    if (pszZone)
+    {
+        dwError = _GetForwarderContext(
+                     pszZone,
+                     &pForwarderContext);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        pForwarderContext = gpSrvContext->pForwarderContext;
+    }
+
     dwError = VmDnsAddForwarder(
-                    gpSrvContext->pForwarderContext,
-                    pszForwarder
+                    pForwarderContext,
+                    pszForwarder,
+                    pszZone
                     );
-    VmDnsLog(VMDNS_LOG_LEVEL_ERROR,"dns Add Forwarder = %d\n", dwError);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    VmDnsLog(VMDNS_LOG_LEVEL_ERROR,"dns Add Forwarder = %d\n", dwError);
+
 cleanup:
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
+DWORD
+_GetForwarderContext(
+    PCSTR pszZone,
+    PVMDNS_FORWARDER_CONTEXT* ppForwarderContext
+    )
+{
+    DWORD dwError = 0;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
+    PVMDNS_ZONE_LIST pZoneList = NULL;
+    PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    PSTR pszZoneName = NULL;
+
+    dwError = VmDnsAllocateStringPrintfA(
+                  &pszZoneName,
+                  "%s.",
+                  pszZone);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pZoneList = gpSrvContext->pCacheContext->pZoneList;
+
+    dwError = VmDnsZoneListFindZone(
+                  pZoneList,
+                  pszZoneName,
+                  &pZoneObject);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    pForwarderContext = pZoneObject->pForwarderContext;
+
+    *ppForwarderContext = pForwarderContext;
+
+cleanup:
+    VMDNS_SAFE_FREE_STRINGA(pszZoneName);
     return dwError;
 
 error:
@@ -904,11 +967,13 @@ error:
 
 DWORD
 VmDnsSrvGetForwarders(
+    PCSTR                       pszZone,
     PSTR**                      pppszForwarders,
     PDWORD                      pdwCount
     )
 {
     DWORD dwError = 0;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
 
     if (VMDNS_READY != VmDnsSrvGetState())
     {
@@ -916,8 +981,20 @@ VmDnsSrvGetForwarders(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    if (pszZone)
+    {
+        dwError = _GetForwarderContext(
+                        pszZone,
+                        &pForwarderContext);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        pForwarderContext = gpSrvContext->pForwarderContext;
+    }
+
     dwError = VmDnsGetForwarders(
-                        gpSrvContext->pForwarderContext,
+                        pForwarderContext,
                         pppszForwarders,
                         pdwCount
                         );
@@ -932,10 +1009,12 @@ error:
 
 DWORD
 VmDnsSrvDeleteForwarder(
-    PCSTR     pszForwarder
+    PCSTR     pszForwarder,
+    PCSTR     pszZone
     )
 {
     DWORD dwError = 0;
+    PVMDNS_FORWARDER_CONTEXT pForwarderContext = NULL;
 
     if (VMDNS_READY != VmDnsSrvGetState())
     {
@@ -943,9 +1022,22 @@ VmDnsSrvDeleteForwarder(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
+    if (pszZone)
+    {
+        dwError = _GetForwarderContext(
+                        pszZone,
+                        &pForwarderContext);
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+    else
+    {
+        pForwarderContext = gpSrvContext->pForwarderContext;
+    }
+
     dwError = VmDnsDeleteForwarder(
-                        gpSrvContext->pForwarderContext,
-                        pszForwarder
+                        pForwarderContext,
+                        pszForwarder,
+                        pszZone
                         );
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -1063,7 +1155,9 @@ VmDnsSrvInitRecords(
         .refreshInterval        = VMDNS_DEFAULT_REFRESH_INTERVAL,
         .retryInterval          = VMDNS_DEFAULT_RETRY_INTERVAL,
         .expire                 = VMDNS_DEFAULT_EXPIRE,
-        .minimum                = VMDNS_DEFAULT_TTL
+        .minimum                = VMDNS_DEFAULT_TTL,
+        .dwFlags                = 0,
+        .dwZoneType             = VMDNS_ZONE_TYPE_FORWARD
     };
 
     VMDNS_RECORD nsRecord = {

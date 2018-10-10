@@ -103,13 +103,13 @@ VmDnsProcessRequest(
     PDWORD pdwDnsResponseSize,
     PUCHAR pRCode,
     PBOOL pbQueryInZone,
-    PBOOL pbUpdateInZone
+    PBOOL pbUpdateInZone,
+    PVMDNS_MESSAGE *ppDnsMessage
     )
 {
     DWORD dwError = 0;
     PBYTE pDnsResponse = NULL;
     DWORD dwDnsResponseSize = 0;
-    PBYTE pForwarderResponse = NULL;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
     PVMDNS_HEADER pDnsHeader = NULL;
     PVMDNS_MESSAGE pDnsMessage = NULL;
@@ -187,16 +187,11 @@ cleanup:
     {
         VmDnsFreeBufferStream(pDnsMessageBuffer);
     }
-    if (pDnsMessage)
-    {
-        VmDnsFreeDnsMessage(pDnsMessage);
-    }
     if (pDnsUpdateMessage)
     {
         VmDnsFreeDnsUpdateMessage(pDnsUpdateMessage);
     }
 
-    VMDNS_SAFE_FREE_MEMORY(pForwarderResponse);
     VMDNS_SAFE_FREE_MEMORY(pDnsHeader);
 
     *ppDnsResponse = pDnsResponse;
@@ -204,11 +199,16 @@ cleanup:
     *pRCode = rCode;
     *pbQueryInZone = bQueryInZone;
     *pbUpdateInZone = bUpdateInZone;
-
+    *ppDnsMessage = pDnsMessage;
 
     return dwError;
 
 error:
+    if (pDnsMessage)
+    {
+        VmDnsFreeDnsMessage(pDnsMessage);
+        pDnsMessage = NULL;
+    }
 
     VMDNS_SAFE_FREE_MEMORY(pDnsResponse);
     goto cleanup;
@@ -306,6 +306,14 @@ VmDnsProcessQuery(
             dwError = ERROR_SUCCESS;
             goto response;
         }
+ 
+        if (pZoneObject->zoneId == VMDNS_ZONE_ID_FORWARDER)
+        {
+            bQueryInZone = FALSE;
+            ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
+            dwError = ERROR_SUCCESS;
+            goto response;
+        }
 
         bQueryInZone = TRUE;
         dwError = VmDnsSrvQueryRecords(
@@ -344,7 +352,6 @@ VmDnsProcessQuery(
 
         ResponseHeader.codes.RCODE = VM_DNS_RCODE_NOERROR;
     }
-
 
 response:
 

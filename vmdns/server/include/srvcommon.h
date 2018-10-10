@@ -168,6 +168,8 @@ typedef struct _VMDNS_LRU_LIST          *PVMDNS_LRU_LIST;
 typedef struct _VMDNS_NAME_ENTRY        *PVMDNS_NAME_ENTRY;
 typedef struct _VMDNS_RECORD_LIST       *PVMDNS_RECORD_LIST;
 typedef struct _VMDNS_RECORD_OBJECT     *PVMDNS_RECORD_OBJECT;
+typedef struct _VMDNS_PROPERTY_LIST     *PVMDNS_PROPERTY_LIST;
+typedef struct _VMDNS_PROPERTY_OBJECT   *PVMDNS_PROPERTY_OBJECT;
 typedef struct _VMDNS_FORWARDER_CONTEXT *PVMDNS_FORWARDER_CONTEXT;
 typedef struct _VMDNS_CACHE_CONETXT     *PVMDNS_CACHE_CONETXT;
 typedef struct _VMDNS_SECURITY_CONTEXT  *PVMDNS_SECURITY_CONTEXT;
@@ -332,18 +334,21 @@ VmDnsSrvListRecords(
 
 DWORD
 VmDnsSrvAddForwarder(
-    PCSTR               pszForwarder
+    PCSTR               pszForwarder,
+    PCSTR               pszZone
     );
 
 DWORD
 VmDnsSrvGetForwarders(
+    PCSTR               pszZone,
     PSTR**              pppszForwarders,
     PDWORD              pdwCount
     );
 
 DWORD
 VmDnsSrvDeleteForwarder(
-    PCSTR               pszForwarder
+    PCSTR               pszForwarder,
+    PCSTR               pszZone
     );
 
 DWORD
@@ -384,6 +389,62 @@ VOID
 VmDnsRpcServerFreeStringArrayA(
     PSTR*  ppszStrArray,
     DWORD  dwCount
+    );
+
+//propertylist.c
+DWORD
+VmDnsPropertyListCreate(
+    PVMDNS_PROPERTY_LIST      *ppList
+    );
+
+DWORD
+VmDnsPropertyListAdd(
+    PVMDNS_PROPERTY_LIST      pList,
+    PVMDNS_PROPERTY_OBJECT    pProperty
+    );
+
+DWORD
+VmDnsPropertyListAddList(
+    PVMDNS_PROPERTY_LIST      pDestList,
+    PVMDNS_PROPERTY_LIST      pSrcList
+    );
+
+UINT
+VmDnsPropertyListGetSize(
+    PVMDNS_PROPERTY_LIST      pList
+    );
+
+PVMDNS_PROPERTY_OBJECT
+VmDnsPropertyListGetProperty(
+    PVMDNS_PROPERTY_LIST    pList,
+    UINT                    nIndex
+    );
+
+ULONG
+VmDnsPropertyListAddRef(
+    PVMDNS_PROPERTY_LIST      pPropertyList
+    );
+
+VOID
+VmDnsPropertyListRelease(
+    PVMDNS_PROPERTY_LIST      pPropertyList
+    );
+
+//propertobject.c
+DWORD
+VmDnsPropertyObjectCreate(
+    PVMDNS_PROPERTY   pProperty,
+    PVMDNS_PROPERTY_OBJECT    *ppPropertyObj
+    );
+
+DWORD
+VmDnsPropertyObjectAddRef(
+    PVMDNS_PROPERTY_OBJECT    pPropertyObj
+    );
+
+VOID
+VmDnsPropertyObjectRelease(
+    PVMDNS_PROPERTY_OBJECT    pPropertyObj
     );
 
 //record-list

@@ -21,6 +21,8 @@
 #include <sys/epoll.h>
 #endif
 
+#include <sys/timerfd.h>
+
 #include <vmdns.h>
 #include <vmdnsdefines.h>
 

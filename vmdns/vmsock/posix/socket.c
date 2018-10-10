@@ -481,7 +481,7 @@ VmDnsSockPosixEventQueueAdd(
         BAIL_ON_POSIX_SOCK_ERROR(dwError);
     }
 
-    dwError = VmDnsSockPosixEventQueueAdd_inlock(pQueue, bOneShot,pSocket);
+    dwError = VmDnsSockPosixEventQueueAdd_inlock(pQueue, bOneShot, pSocket);
     BAIL_ON_POSIX_SOCK_ERROR(dwError);
 
 cleanup:
@@ -799,7 +799,6 @@ VmDnsSockPosixShutdownEventQueue(
             nWritten = write(pQueue->pSignalWriter->fd, szBuf, sizeof(szBuf));
         }
     }
-
 }
 
 VOID

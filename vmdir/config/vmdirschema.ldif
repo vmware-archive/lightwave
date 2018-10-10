@@ -12951,6 +12951,7 @@ objectClasses: (
         $ dnsNotifySecondaries
         $ managedBy
         $ dNSProperty
+        $ vmwDNSForwarders
         )
     )
 

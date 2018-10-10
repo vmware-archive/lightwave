@@ -60,6 +60,7 @@ extern "C" {
 #define VMDNS_LDAP_ATTR_FORWARDERS      "vmwDNSForwarders"
 #define VMDNS_LDAP_ATTR_NAME            "name"
 #define VMDNS_LDAP_ATTR_DNS_RECORD      "dnsRecord"
+#define VMDNS_LDAP_ATTR_DNS_PROPERTY    "dnsProperty"
 #define VMDNS_LDAP_ATTR_OBJECTCLASS     "objectclass"
 #define VMDNS_LDAP_ATTR_USNCHANGED      "USNChanged"
 #define VMDNS_LDAP_ATTR_DNSANY          "dns*"

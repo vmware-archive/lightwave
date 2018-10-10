@@ -247,6 +247,8 @@ typedef struct _VMDNS_ZONE_OBJECT
     PVMDNS_HASH_TABLE   pNameEntries;
     PVMDNS_LRU_LIST     pLruList;
     PVMDNS_RWLOCK       pLock;
+    VMDNS_ZONE_ID       zoneId;
+    PVMDNS_FORWARDER_CONTEXT  pForwarderContext;
 } VMDNS_ZONE_OBJECT;
 
 typedef struct _VMDNS_LRU_LIST
@@ -290,6 +292,20 @@ typedef struct _VMDNS_RECORD_LIST
     DWORD               dwCurrentSize;
     PVMDNS_RECORD_OBJECT *ppRecords;
 } VMDNS_RECORD_LIST;
+
+typedef struct _VMDNS_PROPERTY_OBJECT
+{
+    volatile ULONG      lRefCount;
+    PVMDNS_PROPERTY     pProperty;
+} VMDNS_PROPERTY_OBJECT;
+
+typedef struct _VMDNS_PROPERTY_LIST
+{
+    volatile ULONG      lRefCount;
+    DWORD               dwMaxSize;
+    DWORD               dwCurrentSize;
+    PVMDNS_PROPERTY_OBJECT *ppProperties;
+} VMDNS_PROPERTY_LIST;
 
 typedef struct _VMDNS_CACHE_CONTEXT
 {
