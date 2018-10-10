@@ -4,6 +4,7 @@ libcommon_la_SOURCES = \
     fsutils.c \
     globals.c \
     logging.c \
+    ldap.c \
     memory.c \
     misc.c \
     opensslctx.c \

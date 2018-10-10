@@ -839,6 +839,21 @@ LwCAOpenVmAfdClientLib(
     LWCA_LIB_HANDLE*   pplibHandle
     );
 
+// ldap.c
+
+DWORD
+LwCAIsValidDN(
+    PCSTR       pcszDN,
+    PBOOLEAN    pbIsValid
+    );
+
+DWORD
+LwCADNToRDNArray(
+    PCSTR               pcszDN,
+    BOOLEAN             bNotypes,
+    PLWCA_STRING_ARRAY* ppRDNStrArray
+    );
+
 #ifdef __cplusplus
 }
 #endif

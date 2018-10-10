@@ -28,6 +28,7 @@ extern "C" {
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
+#include <openssl/objects.h>
 
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>

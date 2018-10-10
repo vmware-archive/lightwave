@@ -145,6 +145,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_SAN_IPADDR_INVALID       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 54)
 #define LWCA_ERROR_EVP_DIGEST               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 55)
 #define LWCA_OPENSSL_ERROR                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 56)
+#define LWCA_ERROR_INVALID_DN               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 57)
+
 
 // ERRNO to LwCA Codes (80800 - 80899)
 #define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
@@ -288,6 +290,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_SAN_HOSTNAME_MISMATCH  ,   "LWCA_ERROR_SAN_HOSTNAME_MISMATCH"  ,   "CSR SAN does not match to hostname" }, \
     { LWCA_ERROR_SAN_IPADDR_INVALID     ,   "LWCA_ERROR_SAN_IPADDR_INVALID"     ,   "CSR SAN has an invalid ip" }, \
     { LWCA_OPENSSL_ERROR                ,   "LWCA_OPENSSL_ERROR"                ,   "OpenSSL Error" }, \
+    { LWCA_ERROR_INVALID_DN             ,   "LWCA_ERROR_INVALID_DN"             ,   "Invalid DN specified" }, \
     { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
     { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \
     { LWCA_ERROR_INVALID_METHOD         ,   "LWCA_ERROR_INVALID_METHOD"         ,   "Invalid HTTP method" }, \

@@ -83,6 +83,18 @@ LwCACheckCACert(
     X509 *pCert
     );
 
+DWORD
+LwCACreateCertificateSignRequest(
+    PLWCA_PKCS_10_REQ_DATA  pCertRequest,
+    X509_REQ                **ppReq
+    );
+
+DWORD
+LwCACSRToPEM(
+    X509_REQ           *pX509Req,
+    PLWCA_CERT_REQUEST *ppCertReq
+    );
+
 #ifdef __cplusplus
 }
 #endif
