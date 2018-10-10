@@ -189,6 +189,7 @@ typedef VOID
 typedef DWORD
 (*PFN_LWCA_SECURITY_CREATE_KEY_PAIR)(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,     /* capability overrides can use this for context */
     PCSTR pszKeyId,      /* user supplied id to refer to this key */
     PCSTR pszPassPhrase, /* optional pass phrase to access key */
     size_t nKeyLength,   /* key length 1024 to 16384 */
@@ -201,6 +202,7 @@ typedef DWORD
 typedef DWORD
 (*PFN_LWCA_SECURITY_ADD_KEY_PAIR)(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,     /* capability overrides can use this for context */
     PCSTR pszKeyId,      /* user supplied id to refer to this key */
     PCSTR pszPassPhrase, /* optional pass phrase to access key */
     PCSTR pszPrivateKey  /* pem encoded private key */
@@ -212,6 +214,7 @@ typedef DWORD
 typedef DWORD
 (*PFN_LWCA_SECURITY_SIGN_CERTIFICATE)(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,     /* capability overrides can use this for context */
     X509 *pX509Certificate,
     LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
@@ -225,6 +228,7 @@ typedef DWORD
 typedef DWORD
 (*PFN_LWCA_SECURITY_VERIFY_CERTIFICATE)(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,     /* capability overrides can use this for context */
     PCSTR pszCertificate,
     PCSTR pKeyId,
     PCSTR pszPassPhrase, /* optional pass phrase to access key */
@@ -245,41 +249,45 @@ typedef struct _LWCA_BINARY_DATA_
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_CRYPT_ENCRYPT)(
+    PVOID pUserData,
     PLWCA_BINARY_DATA pData,
     PLWCA_BINARY_DATA *ppEncryptedData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_CRYPT_DECRYPT)(
+    PVOID pUserData,
     PLWCA_BINARY_DATA pEncryptedData,
     PLWCA_BINARY_DATA *ppData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_STORAGE_PUT)(
+    PVOID pUserData,
     PCSTR pszKeyId,
     PLWCA_BINARY_DATA pEncryptedData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_STORAGE_GET)(
+    PVOID pUserData,
     PCSTR pszKeyId,
     PLWCA_BINARY_DATA *ppEncryptedData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_SIGN)(
+    PVOID pUserData,
     X509 *pX509Certificate,
-    PCSTR pszKeyId,
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
+    PLWCA_BINARY_DATA pKey,
     PSTR *ppszCertificate
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_VERIFY)(
+    PVOID pUserData,
     PCSTR pszCertificate,
-    PCSTR pszKeyId,
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
+    PLWCA_BINARY_DATA pKey,
     BOOLEAN **ppbValid
     );
 

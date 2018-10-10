@@ -67,6 +67,7 @@ Security_Test_Impl_CapOverride(
 DWORD
 Security_Test_Impl_AddKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,
     PCSTR pszKeyId,
     PCSTR pszPassPhrase,
     PCSTR pszPrivateKey
@@ -80,6 +81,7 @@ Security_Test_Impl_AddKeyPair(
 DWORD
 Security_Test_Impl_CreateKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,
     PCSTR pszKeyId,
     PCSTR pszPassPhrase,
     size_t nKeyLength,
@@ -94,6 +96,7 @@ Security_Test_Impl_CreateKeyPair(
 DWORD
 Security_Test_Impl_SignCertificate(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,
     X509 *pX509Certificate,
     LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
@@ -109,6 +112,7 @@ Security_Test_Impl_SignCertificate(
 DWORD
 Security_Test_Impl_VerifyCertificate(
     PLWCA_SECURITY_HANDLE pHandle,
+    PVOID pUserData,
     PCSTR pszCertificate,
     PCSTR pKeyId,
     PCSTR pszPassPhrase,
