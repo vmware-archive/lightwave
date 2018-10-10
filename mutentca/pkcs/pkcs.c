@@ -14,9 +14,6 @@
 
 #include "includes.h"
 
-#define X509_CERT_PRIVATE_KEY_MISMATCH 0
-#define X509_CERT_PRIVATE_KEY_MATCH 1
-
 static
 DWORD
 _LwCAOpenSSLGetNIDIndex(

@@ -30,14 +30,6 @@ typedef struct _LWCA_INT_CA_REQ_DATA
 
 typedef PSTR PLWCA_CRL;
 
-typedef struct _LWCA_CERT_VALIDITY
-{
-    time_t tmNotBefore;
-    time_t tmNotAfter;
-} LWCA_CERT_VALIDITY, *PLWCA_CERT_VALIDITY;
-
-typedef PSTR PLWCA_CERT_REQUEST;
-
 typedef enum _LWCA_SIGNING_ALGORITHM
 {
     LWCA_SHA_256 = 0

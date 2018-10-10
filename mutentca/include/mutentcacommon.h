@@ -254,6 +254,22 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
         goto error;                                                         \
     }
 
+#define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
+    if (dwError == 0)                                                       \
+    {                                                                       \
+        dwError = ERROR_CODE;                                               \
+        LWCA_LOG_WARNING("error code: %#010x", dwError);                    \
+        if (ERROR_CODE == LWCA_CERT_IO_FAILURE)                             \
+        {                                                                   \
+            LWCA_LOG_ERROR(" Failed at %s %d \n",                           \
+                            __FUNCTION__,                                   \
+                            __LINE__);                                      \
+        }                                                                   \
+        goto error;                                                         \
+    } else {                                                                \
+        dwError = 0;                                                        \
+    }
+
 #define BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, errMsg)                       \
     if (dwError)                                                            \
     {                                                                       \
@@ -311,6 +327,20 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 // Event logs related constants.
 
 #define LWCA_EVENT_SOURCE   "Lightwave MutentCA Service"
+
+#define LWCA_TIME_SECS_PER_MINUTE           ( 60)
+#define LWCA_TIME_SECS_PER_HOUR             ( 60 * LWCA_TIME_SECS_PER_MINUTE)
+#define LWCA_TIME_SECS_PER_DAY              ( 24 * LWCA_TIME_SECS_PER_HOUR)
+#define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
+#define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
+
+typedef struct _LWCA_CERT_VALIDITY
+{
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+} LWCA_CERT_VALIDITY, *PLWCA_CERT_VALIDITY;
+
+typedef PSTR PLWCA_CERT_REQUEST;
 
 SIZE_T
 LwCAStringLenA(

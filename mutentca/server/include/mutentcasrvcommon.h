@@ -34,12 +34,6 @@ extern "C" {
 
 #define FILE_CHUNK (64 * 1024)
 
-#define LWCA_TIME_SECS_PER_MINUTE           ( 60)
-#define LWCA_TIME_SECS_PER_HOUR             ( 60 * LWCA_TIME_SECS_PER_MINUTE)
-#define LWCA_TIME_SECS_PER_DAY              ( 24 * LWCA_TIME_SECS_PER_HOUR)
-#define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
-#define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
-
 // States
 
 typedef DWORD LWCA_FUNC_LEVEL;
@@ -177,34 +171,6 @@ typedef struct _LWCA_SERVER_GLOBALS
 } LWCA_SERVER_GLOBALS, *PLWCA_SERVER_GLOBALS;
 
 extern LWCA_SERVER_GLOBALS gLwCAServerGlobals;
-
-typedef struct _LWCA_PKCS_10_REQ_DATA
-{
-    PSTR                pszName;
-    PSTR                pszDomainName;
-    PLWCA_STRING_ARRAY  pCountryList;
-    PLWCA_STRING_ARRAY  pLocalityList;
-    PLWCA_STRING_ARRAY  pStateList;
-    PLWCA_STRING_ARRAY  pOrganizationList;
-    PLWCA_STRING_ARRAY  pOUList;
-    PLWCA_STRING_ARRAY  pDNSList;
-    PLWCA_STRING_ARRAY  pURIList;
-    PLWCA_STRING_ARRAY  pEmailList;
-    PLWCA_STRING_ARRAY  pIPAddressList;
-    DWORD               dwKeyUsageConstraints;
-} LWCA_PKCS_10_REQ_DATA,*PLWCA_PKCS_10_REQ_DATA;
-
-enum _LWCA_KEY_USAGE {
-    LWCA_DIGITAL_SIGNATURE      = 0,
-    LWCA_NON_REPUDIATION        = 1,
-    LWCA_KEY_ENCIPHERMENT       = 2,
-    LWCA_DATA_ENCIPHERMENT      = 3,
-    LWCA_KEY_AGREEMENT          = 4,
-    LWCA_KEY_CERT_SIGN          = 5,
-    LWCA_KEY_CRL_SIGN           = 6,
-    LWCA_ENCIPHER_ONLY          = 7,
-    LWCA_DECIPHER_ONLY          = 8
-};
 
 /* ../common/config.c */
 
@@ -417,45 +383,6 @@ VOID
 LwCASrvCleanupGlobalState(
     VOID
     );
-
-// pkcs_openssl.c
-
-DWORD
-LwCAGetCommonNameFromSubject(
-    PLWCA_CERTIFICATE   pCert,
-    PSTR                *ppszCommonName
-    );
-
-DWORD
-LwCAPEMToX509(
-    PCSTR       pCertificate,
-    X509        **ppX509Cert
-    );
-
-DWORD
-LwCAValidateCertificate(
-    X509    *pCert,
-    PCSTR   pcszPrivateKey,
-    PCSTR   pcszPassPhrase
-    );
-
-DWORD
-LwCAGetCertSubjectName(
-    X509 *pCert,
-    PSTR *ppszSubjectName
-    );
-
-DWORD
-LwCAGetCertIssuerName(
-    X509 *pCert,
-    PSTR *ppszIssuerName
-    );
-
-DWORD
-LwCACheckCACert(
-    X509 *pCert
-    );
-
 #ifdef __cplusplus
 }
 #endif

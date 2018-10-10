@@ -12,22 +12,15 @@
  * under the License.
  */
 
-#ifndef _LWCA_SERVICE_COMMON_INCLUDES_H__
-#define _LWCA_SERVICE_COMMON_INCLUDES_H__
+#ifndef _LWCA_MUTENTCA_PKCS_INCLUDES_H_
+#define _LWCA_MUTENTCA_PKCS_INCLUDES_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <sys/prctl.h>
-
 #include <config.h>
 #include <mutentcasys.h>
-
-#include <lw/types.h>
-#include <lw/base.h>
-#include <lwerror.h>
-#include <reg/lwreg.h>
 
 #include <openssl/ssl.h>
 #include <openssl/err.h>
@@ -40,37 +33,16 @@ extern "C" {
 #include <openssl/engine.h>
 #endif
 
-#include <gssapi/gssapi.h>
-
-#include <jansson.h>
-
 #include <mutentca.h>
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
 #include <mutentcapkcs.h>
-#include <mutentcaapi.h>
-#include <vmafdclient.h>
-#include <vmafdtypes.h>
-#include <vecsclient.h>
-#include <ssotypes.h>
-#include <oidc_types.h>
-#include <oidc.h>
 
 #include "defines.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <errno.h>
-#include <assert.h>
-#include <ctype.h>
-
-#include <lwrpcrt/lwrpcrt.h>
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _LWCA_SERVICE_COMMON_INCLUDES_H__
+#endif /* _LWCA_MUTENTCA_PKCS_INCLUDES_H_ */
