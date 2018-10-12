@@ -39,14 +39,23 @@ IsValidFunctionTable(
             && pFt->pFnAddCertData
             && pFt->pFnCheckCA
             && pFt->pFnGetCACertificates
+            && pFt->pFnGetCA
             && pFt->pFnGetCertData
             && pFt->pFnUpdateCA
             && pFt->pFnUpdateCAStatus
+            && pFt->pFnFreeCAData
             && pFt->pFnUpdateCertData
             && pFt->pFnFreeCertDataArray
             && pFt->pFnFreeCertArray
             );
 }
+
+static
+DWORD
+_LwCADbCopyCAData(
+    PLWCA_DB_CA_DATA pCAData,
+    PLWCA_DB_CA_DATA *ppCAData
+    );
 
 /*
  * To initialize db context, the Mutent CA config file must provide db plugin with absolute path
@@ -213,6 +222,57 @@ error:
 }
 
 DWORD
+LwCADbGetCA(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        *ppCAData
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_DB_CA_DATA pTempCAData = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppCAData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetCA(gDbCtx.pDbHandle, pcszCAId, &pTempCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pTempCAData)
+    {
+        dwError = _LwCADbCopyCAData(pTempCAData, &pCAData);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCAData = pCAData;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeCAData(pTempCAData);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pCAData);
+    if (ppCAData)
+    {
+        *ppCAData = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCADbGetCACertificates(
     PCSTR                      pcszCAId,
     PLWCA_CERTIFICATE_ARRAY    *ppCertArray
@@ -246,7 +306,7 @@ LwCADbGetCACertificates(
     *ppCertArray = pCertArray;
 
 cleanup:
-    if (!gDbCtx.isInitialized)
+    if (gDbCtx.isInitialized)
     {
         gDbCtx.pFt->pFnFreeCertArray(pTempCertArray);
     }
@@ -297,7 +357,7 @@ LwCADbGetCertData(
     *ppCertDataArray = pCertDataArray;
 
 cleanup:
-    if (!gDbCtx.isInitialized)
+    if (gDbCtx.isInitialized)
     {
         gDbCtx.pFt->pFnFreeCertDataArray(pTempCertDataArray);
     }
@@ -445,4 +505,47 @@ LwCADbFreeCtx(
     gDbCtx.isInitialized = FALSE;
 
     LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+}
+
+static
+DWORD
+_LwCADbCopyCAData(
+    PLWCA_DB_CA_DATA pCAData,
+    PLWCA_DB_CA_DATA *ppCAData
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pTempCAData = NULL;
+
+    if (!pCAData || !ppCAData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCADbCreateCAData(
+                    pCAData->pszIssuer,
+                    pCAData->pszSubject,
+                    pCAData->pCertificates,
+                    pCAData->pEncryptedPrivateKey,
+                    pCAData->pEncryptedEncryptionKey,
+                    pCAData->pszTimeValidFrom,
+                    pCAData->pszTimeValidTo,
+                    pCAData->status,
+                    &pTempCAData
+                );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCAData = pTempCAData;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pTempCAData);
+    if (ppCAData)
+    {
+        *ppCAData = NULL;
+    }
+    goto cleanup;
 }

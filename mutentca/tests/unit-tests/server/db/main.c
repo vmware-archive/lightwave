@@ -26,6 +26,7 @@ int main(VOID)
         cmocka_unit_test_setup_teardown(Test_LwCADbAddCA, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbAddCertData, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbCheckCA, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCADbGetCA, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbGetCACertificates, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbGetCertData, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCA, NULL, NULL),

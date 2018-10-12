@@ -50,6 +50,13 @@ LwCADbTestPluginCheckCA(
     );
 
 DWORD
+LwCADbTestPluginGetCA(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        *ppCAData
+    );
+
+DWORD
 LwCADbTestPluginGetCACertificates(
     PLWCA_DB_HANDLE              pHandle,
     PCSTR                        pcszCAId,
@@ -83,6 +90,11 @@ LwCADbTestPluginUpdateCertData(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
     PLWCA_DB_CERT_DATA      pCertData
+    );
+
+VOID
+LwCADbTestPluginFreeCAData(
+    PLWCA_DB_CA_DATA pCAData
     );
 
 VOID

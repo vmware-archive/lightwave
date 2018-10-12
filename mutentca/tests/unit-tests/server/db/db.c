@@ -85,6 +85,20 @@ Test_LwCADbCheckCA(
 }
 
 VOID
+Test_LwCADbGetCA(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pDbCAData = NULL;
+
+    dwError = LwCADbGetCA(TEST_CA_ID, &pDbCAData);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pDbCAData);
+}
+
+VOID
 Test_LwCADbGetCACertificates(
     VOID **state
     )

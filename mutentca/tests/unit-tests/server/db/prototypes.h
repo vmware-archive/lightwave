@@ -33,6 +33,11 @@ Test_LwCADbCheckCA(
     );
 
 VOID
+Test_LwCADbGetCA(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbGetCACertificates(
     VOID **state
     );

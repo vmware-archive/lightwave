@@ -44,6 +44,12 @@ LwCADbCheckCA(
     );
 
 DWORD
+LwCADbGetCA(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        *ppCAData
+    );
+
+DWORD
 LwCADbGetCACertificates(
     PCSTR                      pcszCAId,
     PLWCA_CERTIFICATE_ARRAY    *ppCertArray

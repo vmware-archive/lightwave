@@ -111,6 +111,16 @@ typedef DWORD
     );
 
 /*
+ * Get CA data
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_CA)(
+    PLWCA_DB_HANDLE          pHandle,    //IN
+    PCSTR                    pcszCAId,   //IN
+    PLWCA_DB_CA_DATA         *ppCAData   //OUT
+    );
+
+/*
  * Get CA stored certificates.
  */
 typedef DWORD
@@ -161,6 +171,14 @@ typedef DWORD
     );
 
 /*
+ * Free memory allocated to plugin CA data
+ */
+typedef VOID
+(*PFN_LWCA_DB_FREE_CA_DATA)(
+    PLWCA_DB_CA_DATA  pCAData       //IN
+    );
+
+/*
  * Free memory allocated to plugin certificate data array
  */
 typedef VOID
@@ -193,11 +211,13 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_ADD_CA                  pFnAddCA;
     PFN_LWCA_DB_ADD_CERT_DATA           pFnAddCertData;
     PFN_LWCA_DB_CHECK_CA                pFnCheckCA;
+    PFN_LWCA_DB_GET_CA                  pFnGetCA;
     PFN_LWCA_DB_GET_CA_CERTIFICATES     pFnGetCACertificates;
     PFN_LWCA_DB_GET_CERT_DATA           pFnGetCertData;
     PFN_LWCA_DB_UPDATE_CA               pFnUpdateCA;
     PFN_LWCA_DB_UPDATE_CA_STATUS        pFnUpdateCAStatus;
     PFN_LWCA_DB_UPDATE_CERT_DATA        pFnUpdateCertData;
+    PFN_LWCA_DB_FREE_CA_DATA            pFnFreeCAData;
     PFN_LWCA_DB_FREE_CERT_DATA_ARRAY    pFnFreeCertDataArray;
     PFN_LWCA_DB_FREE_CERTIFICATE_ARRAY  pFnFreeCertArray;
     PFN_LWCA_DB_FREE_HANDLE             pFnFreeHandle;
