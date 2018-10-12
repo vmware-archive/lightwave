@@ -469,32 +469,6 @@ error:
 }
 
 DWORD
-LwCACheckCACert(
-    X509 *pCert
-    )
-{
-    DWORD dwError = 0;
-
-    if (!pCert)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = X509_check_ca(pCert);
-    if (dwError == 1) // it is  a CA
-    {
-        dwError = 0;
-    } else { // 3 , 4 means it is a CA, but we don't care
-        dwError = LWCA_NOT_CA_CERT;
-    }
-    BAIL_ON_LWCA_ERROR(dwError);
-
-error:
-    return dwError;
-}
-
-DWORD
 LwCACSRToPEM(
     X509_REQ                *pX509Req,
     PLWCA_CERT_REQUEST      *ppCertReq
@@ -540,6 +514,57 @@ error :
     if (ppCertReq)
     {
         *ppCertReq = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCAX509ToPEM(
+    X509* pX509,
+    PSTR* ppCertificate
+    )
+{
+    DWORD dwError = 0;
+    PSTR pCert = NULL;
+    BUF_MEM *pBuffMem = NULL;
+    BIO* pBioMem = NULL;
+
+    if (!pX509 || !ppCertificate)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pBioMem = BIO_new(BIO_s_mem());
+    if (pBioMem == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = PEM_write_bio_X509(pBioMem, pX509);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
+
+    BIO_get_mem_ptr(pBioMem, &pBuffMem);
+
+    dwError = LwCAAllocateStringWithLengthA(pBuffMem->data, pBuffMem->length - 1, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCertificate = pCert;
+
+cleanup:
+    if (pBioMem != NULL)
+    {
+        BIO_free(pBioMem);
+    }
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pCert);
+    if (ppCertificate)
+    {
+        *ppCertificate = NULL;
     }
 
     goto cleanup;
@@ -656,17 +681,24 @@ LwCAGenerateX509Certificate(
     BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
 
     pStack = X509_REQ_get_extensions(pRequest);
-    if (pStack)
+    if (!pStack)
     {
-        dwError = _LwCASetAuthorityKeyIdentifier(pStack, pCert, pIssuer);
-        BAIL_ON_LWCA_ERROR(dwError);
-
-        dwError = _LwCASetAuthorityInfoAccess(pStack, pCert, pIssuer);
-        BAIL_ON_LWCA_ERROR(dwError);
-
-        dwError = _LwCAAddExtensionsToX509Cert(pStack, pCert);
-        BAIL_ON_LWCA_ERROR(dwError);
+        pStack = sk_X509_EXTENSION_new_null();
+        if (pStack == NULL)
+        {
+            dwError = LWCA_OUT_OF_MEMORY_ERROR;
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
     }
+
+    dwError = _LwCASetAuthorityKeyIdentifier(pStack, pCert, pIssuer);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCASetAuthorityInfoAccess(pStack, pCert, pIssuer);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAAddExtensionsToX509Cert(pStack, pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     *ppCert = pCert;
 
@@ -699,6 +731,344 @@ error:
         *ppCert = NULL;
     }
     goto cleanup;
+}
+
+DWORD
+LwCASignX509Req(
+    X509_REQ    *pReq,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    )
+{
+    DWORD dwError = 0;
+    RSA *pRsa = NULL;
+    EVP_PKEY *pKey = NULL;
+
+    if (!pReq || IsNullOrEmptyString(pcszPrivateKey))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAPEMToPrivateKey(pcszPrivateKey, pcszPassPhrase, &pRsa);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pKey = EVP_PKEY_new();
+    if (pKey == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    EVP_PKEY_assign_RSA(pKey, pRsa);
+
+    dwError = X509_REQ_sign(pReq, pKey, EVP_sha256());
+    BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_REQ_SIGN_ERR);
+
+cleanup:
+    if(pKey)
+    {
+        EVP_PKEY_free(pKey); // will free RSA too
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCASignX509Certificate(
+    X509        *pCert,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    )
+{
+    DWORD dwError = 0;
+    RSA *pRsa = NULL;
+    EVP_PKEY *pKey = NULL;
+
+    if (!pCert || IsNullOrEmptyString(pcszPrivateKey))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAPEMToPrivateKey(pcszPrivateKey, pcszPassPhrase, &pRsa);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pKey = EVP_PKEY_new();
+    if (pKey == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    EVP_PKEY_assign_RSA(pKey, pRsa);
+
+    dwError = X509_sign(pCert, pKey, EVP_sha256());
+    BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_REQ_SIGN_ERR);
+
+cleanup:
+    if(pKey)
+    {
+        EVP_PKEY_free(pKey); // will free RSA too
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCACheckIfCACert(
+    X509     *pCert,
+    PBOOLEAN pbIsCA
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pCert || !pbIsCA)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (X509_check_ca(pCert))
+    {
+        *pbIsCA = TRUE;
+    }
+    else
+    {
+        *pbIsCA = FALSE;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    if (pbIsCA)
+    {
+        *pbIsCA = FALSE;
+    }
+    goto cleanup;
+}
+
+/*
+*  Verifies certficate against CA chain cert.
+*  Input Parameters:
+*    pCACerts - CA certificate chain
+*    pCertificate - Certificate which needs to be verified
+*/
+DWORD
+LwCAVerifyCertificate(
+    PLWCA_CERTIFICATE_ARRAY pCACertChain,
+    PLWCA_CERTIFICATE       pCertificate
+    )
+{
+    DWORD dwError = 0;
+    DWORD iEntry = 0;
+    X509 *pCACert = NULL;
+    X509 *pCert = NULL;
+    X509_STORE *pStore = NULL;
+    X509_STORE_CTX  *pStoreCtx = NULL;
+
+    if (!pCACertChain || !pCertificate)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pStore = X509_STORE_new();
+    if (pStore == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pStoreCtx = X509_STORE_CTX_new();
+    if (pStoreCtx == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    for (iEntry=0; iEntry < pCACertChain->dwCount; ++iEntry)
+    {
+        dwError = LwCAPEMToX509(pCACertChain->ppCertificates[iEntry], &pCACert);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = X509_STORE_add_cert(pStore, pCACert);
+        BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_STORE_ADD_CERT_FAIL);
+
+        if (pCACert)
+        {
+            X509_free(pCACert);
+            pCACert = NULL;
+        }
+    }
+
+    dwError = LwCAPEMToX509(pCertificate, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = X509_STORE_CTX_init(pStoreCtx, pStore, pCert, NULL);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_STORE_CTX_INIT_FAIL);
+
+    if (!X509_verify_cert(pStoreCtx))
+    {
+        LWCA_LOG_INFO("Cert verification error: %s",
+                        X509_verify_cert_error_string(pStoreCtx->error));
+
+        BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+    }
+
+error:
+    if (pCACert)
+    {
+        X509_free(pCACert);
+    }
+    if (pCert)
+    {
+        X509_free(pCert);
+    }
+    if (pStoreCtx)
+    {
+        X509_STORE_CTX_free(pStoreCtx);
+    }
+    if (pStore)
+    {
+        X509_STORE_free(pStore);
+    }
+    return dwError;
+}
+
+DWORD
+LwCACreatePkcsRequest(
+    PCSTR                   pcszName,
+    PCSTR                   pcszDomainName,
+    PLWCA_STRING_ARRAY      pCountryList,
+    PLWCA_STRING_ARRAY      pLocalityList,
+    PLWCA_STRING_ARRAY      pStateList,
+    PLWCA_STRING_ARRAY      pOrganizationList,
+    PLWCA_STRING_ARRAY      pOUList,
+    PLWCA_STRING_ARRAY      pDNSList,
+    PLWCA_STRING_ARRAY      pURIList,
+    PLWCA_STRING_ARRAY      pEmailList,
+    PLWCA_STRING_ARRAY      pIPAddressList,
+    DWORD                   dwKeyUsageConstraints,
+    PLWCA_PKCS_10_REQ_DATA  *ppPKCSRequest
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_PKCS_10_REQ_DATA pPKCSRequest = NULL;
+
+    if (!ppPKCSRequest)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszName))
+    {
+        dwError = LwCAAllocateStringA(pcszName, &pPKCSRequest->pszName);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszDomainName))
+    {
+        dwError = LwCAAllocateStringA(pcszDomainName, &pPKCSRequest->pszDomainName);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pCountryList)
+    {
+        dwError = LwCACopyStringArray(pCountryList, &pPKCSRequest->pCountryList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pLocalityList)
+    {
+        dwError = LwCACopyStringArray(pLocalityList, &pPKCSRequest->pLocalityList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pStateList)
+    {
+        dwError = LwCACopyStringArray(pStateList, &pPKCSRequest->pStateList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pOrganizationList)
+    {
+        dwError = LwCACopyStringArray(pOrganizationList, &pPKCSRequest->pOrganizationList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pOUList)
+    {
+        dwError = LwCACopyStringArray(pOUList, &pPKCSRequest->pOUList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pDNSList)
+    {
+        dwError = LwCACopyStringArray(pDNSList, &pPKCSRequest->pDNSList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pURIList)
+    {
+        dwError = LwCACopyStringArray(pURIList, &pPKCSRequest->pURIList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pEmailList)
+    {
+        dwError = LwCACopyStringArray(pEmailList, &pPKCSRequest->pEmailList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pIPAddressList)
+    {
+        dwError = LwCACopyStringArray(pIPAddressList, &pPKCSRequest->pIPAddressList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pPKCSRequest->dwKeyUsageConstraints = dwKeyUsageConstraints;
+
+    *ppPKCSRequest = pPKCSRequest;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreePkcsRequest(pPKCSRequest);
+    if (ppPKCSRequest)
+    {
+        *ppPKCSRequest = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+LwCAFreePkcsRequest(
+    PLWCA_PKCS_10_REQ_DATA pPKCSRequest
+    )
+{
+    if (pPKCSRequest)
+    {
+        LWCA_SAFE_FREE_STRINGA(pPKCSRequest->pszName);
+        LWCA_SAFE_FREE_STRINGA(pPKCSRequest->pszDomainName);
+        LwCAFreeStringArray(pPKCSRequest->pCountryList);
+        LwCAFreeStringArray(pPKCSRequest->pLocalityList);
+        LwCAFreeStringArray(pPKCSRequest->pStateList);
+        LwCAFreeStringArray(pPKCSRequest->pOrganizationList);
+        LwCAFreeStringArray(pPKCSRequest->pOUList);
+        LwCAFreeStringArray(pPKCSRequest->pDNSList);
+        LwCAFreeStringArray(pPKCSRequest->pURIList);
+        LwCAFreeStringArray(pPKCSRequest->pEmailList);
+        LwCAFreeStringArray(pPKCSRequest->pIPAddressList);
+        LWCA_SAFE_FREE_MEMORY(pPKCSRequest);
+    }
 }
 
 static
@@ -1849,21 +2219,40 @@ _LwCAX509VerifyAndSetValidity(
     time(&tmNow);
     if (pValidity->tmNotBefore < (tmNow - LWCA_VALIDITY_SYNC_BACK_DATE))
     {
-        LWCA_LOG_DEBUG("Invalid start date");
+        LWCA_LOG_DEBUG("Invalid start date. Start date: %ld",
+                        pValidity->tmNotBefore
+                        );
+        dwError = LWCA_INVALID_TIME_SPECIFIED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if ((pValidity->tmNotAfter - pValidity->tmNotBefore) < 0)
+    {
+        LWCA_LOG_DEBUG("Invalid validity period requested. \
+                        Start date: %ld, End date:%ld",
+                        pValidity->tmNotBefore,  pValidity->tmNotAfter
+                        );
         dwError = LWCA_INVALID_TIME_SPECIFIED;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     if ((pValidity->tmNotAfter - pValidity->tmNotBefore) > LWCA_MAX_CERT_DURATION)
     {
-        LWCA_LOG_DEBUG("Invalid validity period requested");
+        LWCA_LOG_DEBUG("Validity period exceeded max cert duration. \
+                        Start date: %ld, End date:%ld",
+                        pValidity->tmNotBefore,  pValidity->tmNotAfter
+                        );
         dwError = LWCA_INVALID_TIME_SPECIFIED;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     if (X509_cmp_time(X509_get_notBefore(pIssuer), &pValidity->tmNotBefore) >= 0)
     {
-        LWCA_LOG_DEBUG("Invalid validity period requested");
+        LWCA_LOG_DEBUG("Invalid start date. CA certificate is not valid \
+                        during the requested start date. \
+                        Start date: %ld, CA start date:%s",
+                        pValidity->tmNotBefore,  X509_get_notBefore(pIssuer)->data
+                        );
         dwError = LWCA_SSL_SET_START_TIME;
         BAIL_ON_LWCA_ERROR(dwError);
     }

@@ -32,6 +32,16 @@ Test_LwCAGetCACertificates_Invalid(
     VOID **state
     );
 
+VOID
+Test_LwCAGetSignedCertificate_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetSignedCertificate_Invalid(
+    VOID **state
+    );
+
 int
 TestLwCACreateRequestContext(
     VOID **state

@@ -15,6 +15,7 @@ testmutentcaapi_CPPFLAGS = \
 
 testmutentcaapi_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
+    $(top_builddir)/mutentca/pkcs/libmutentcapkcs.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/db/libmutentcadb.la \
     $(top_builddir)/mutentca/server/api/libmutentcaapi.la \
@@ -29,4 +30,5 @@ testmutentcaapi_LDFLAGS = \
     @JANSSON_LDFLAGS@ \
     -Wl,--wrap,LwCADbAddCA \
     -Wl,--wrap,LwCADbCheckCA \
-    -Wl,--wrap,LwCADbGetCACertificates
+    -Wl,--wrap,LwCADbGetCACertificates \
+    -Wl,--wrap,LwCADbGetCA

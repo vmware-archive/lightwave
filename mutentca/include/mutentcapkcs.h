@@ -85,11 +85,6 @@ LwCAGetCertIssuerName(
     );
 
 DWORD
-LwCACheckCACert(
-    X509 *pCert
-    );
-
-DWORD
 LwCACreateCertificateSignRequest(
     PLWCA_PKCS_10_REQ_DATA  pCertRequest,
     EVP_PKEY                *pPublicKey,
@@ -105,9 +100,63 @@ LwCAGenerateX509Certificate(
     );
 
 DWORD
+LwCAX509ToPEM(
+    X509* pX509,
+    PSTR* ppCertificate
+    );
+
+DWORD
 LwCACSRToPEM(
     X509_REQ           *pX509Req,
     PLWCA_CERT_REQUEST *ppCertReq
+    );
+
+DWORD
+LwCASignX509Req(
+    X509_REQ    *pReq,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    );
+
+DWORD
+LwCASignX509Certificate(
+    X509        *pX509,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    );
+
+DWORD
+LwCAVerifyCertificate(
+    PLWCA_CERTIFICATE_ARRAY pCACertChain,
+    PLWCA_CERTIFICATE       pCertificate
+    );
+
+DWORD
+LwCACheckIfCACert(
+    X509     *pCert,
+    PBOOLEAN pbIsCA
+    );
+
+DWORD
+LwCACreatePKCSRequest(
+    PCSTR                   pcszName,
+    PCSTR                   pcszDomainName,
+    PLWCA_STRING_ARRAY      pCountryList,
+    PLWCA_STRING_ARRAY      pLocalityList,
+    PLWCA_STRING_ARRAY      pStateList,
+    PLWCA_STRING_ARRAY      pOrganizationList,
+    PLWCA_STRING_ARRAY      pOUList,
+    PLWCA_STRING_ARRAY      pDNSList,
+    PLWCA_STRING_ARRAY      pURIList,
+    PLWCA_STRING_ARRAY      pEmailList,
+    PLWCA_STRING_ARRAY      pIPAddressList,
+    DWORD                   dwKeyUsageConstraints,
+    PLWCA_PKCS_10_REQ_DATA  *ppPKCSRequest
+    );
+
+VOID
+LwCAFreePkcsRequest(
+    PLWCA_PKCS_10_REQ_DATA pPKCSRequest
     );
 
 #ifdef __cplusplus

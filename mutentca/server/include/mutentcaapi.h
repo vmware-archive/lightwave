@@ -132,6 +132,12 @@ LwCAFreeCertificate(
     PLWCA_CERTIFICATE pCertificate
     );
 
+DWORD
+LwCASignX509Cert(
+    X509    *pCert,
+    PCSTR   pcszCAId
+    );
+
 #ifdef __cplusplus
 }
 #endif
