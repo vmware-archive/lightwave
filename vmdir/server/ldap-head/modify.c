@@ -132,7 +132,8 @@ VmDirPerformModify(
 
           for (iCnt = 0; iCnt < size; iCnt++)
           {
-              PCSTR pszLogValue = (0 == VmDirStringCompareA( pMod->attr.type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+              PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val) ||
+                                   (pMod->attr.pATDesc && pMod->attr.pATDesc->bBlobType)) ?
                                     "XXX" : pLberBerv[iCnt].bv_val;
 
               if (iCnt < MAX_NUM_CONTENT_LOG)

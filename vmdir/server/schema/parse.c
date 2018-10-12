@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+BOOLEAN
+_VmDirSchemaAttrIsBLOBType(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    );
+
 DWORD
 VmDirSchemaATDescCreate(
     PVDIR_LDAP_ATTRIBUTE_TYPE   pLdapAt,
@@ -54,6 +60,8 @@ VmDirSchemaATDescCreate(
             VdirOrderingMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
     pATDesc->pSubStringMR =
             VdirSubstrMRLookupBySyntaxOid(pATDesc->pszSyntaxOid);
+
+    pATDesc->bBlobType = _VmDirSchemaAttrIsBLOBType(pATDesc);
 
     *ppATDesc = pATDesc;
 
@@ -588,4 +596,26 @@ error:
         *ppCr = NULL;
     }
     goto cleanup;
+}
+
+static
+BOOLEAN
+_VmDirSchemaAttrIsBLOBType(
+    PVDIR_SCHEMA_AT_DESC    pATDesc
+    )
+{
+    BOOLEAN bRtn = FALSE;
+
+    assert(pATDesc && pATDesc->pSyntax && pATDesc->pSyntax->pszOid);
+
+    if (VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_BINARY, FALSE) == 0 ||
+        VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_BIT_STRING, FALSE) == 0 ||
+        VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OCTET_STRING, FALSE) == 0 ||
+        VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_OBJECT_DN_BINARY, FALSE) == 0 ||
+        VmDirStringCompareA(pATDesc->pSyntax->pszOid, VDIR_OID_STRING_NT_SEC_DESC, FALSE) == 0)
+    {
+        bRtn = TRUE;
+    }
+
+    return bRtn;
 }
