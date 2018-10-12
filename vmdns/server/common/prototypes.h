@@ -813,7 +813,8 @@ VmDnsProcessRequest(
     PBYTE   *ppDnsResponse,
     PDWORD  pdwDnsResponseSize,
     PUCHAR  pRCode,
-    PBOOL   pbQueryInZone
+    PBOOL   pbQueryInZone,
+    PBOOL   pbUpdateInZone
     );
 
 // securityutils.c
