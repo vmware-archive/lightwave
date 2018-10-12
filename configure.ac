@@ -37,9 +37,22 @@ CXXFLAGS="$CXXFLAGS -frtti"
 AM_CPPFLAGS="$AM_CPPFLAGS -I${top_srcdir}/include"
 AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing"
 
+#flag overrides to allow per module compile flags.
+#warning ignore flags are here (temporarily) so that modules
+#can start fixing code by overriding in respective Makefile.am
+#to check a module, do AM_CFLAGS=$(CFLAGS_DESIRED) in Makefile.am
+CFLAGS_ORIGINAL="$AM_CFLAGS"
+CFLAGS_COMPAT="-Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
+CFLAGS_DESIRED="$CFLAGS_ORIGINAL -fno-strict-aliasing -Wformat -Wformat-security -Werror=format-security -fstack-protector-all"
+#reset cflags to not break existing
+AM_CFLAGS="$AM_CFLAGS $CFLAGS_COMPAT"
+
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_CXXFLAGS)
+AC_SUBST(CFLAGS_ORIGINAL)
+AC_SUBST(CFLAGS_COMPAT)
+AC_SUBST(CFLAGS_DESIRED)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(pthread.h errno.h sys/types.h sys/stat.h stdio.h string.h strings.h)
