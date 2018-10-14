@@ -18,7 +18,7 @@ targets:
     watches:
       - support/toolchain/docker/photon2
     build: support/toolchain/docker/photon2
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
     cache: false
 
   toolchain-[osver:photon1,photon2]:
@@ -44,7 +44,7 @@ targets:
       - '**/**/*.ac'
     cmds:
       - ./support/scripts/bootstrap.sh
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   build-lightwave-photon1:
     description: build Lightwave source code for linux
@@ -72,7 +72,7 @@ targets:
       - '**/**/*.java'
     cmds:
       - ./support/scripts/build.sh
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   build-[osver:photon1,photon2]:
     description: build source code
@@ -87,7 +87,7 @@ targets:
   build-ui-photon2:
     cmds:
       - ./support/scripts/build-ui.sh
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   pack-photon1:
     description: Create RPM Package
@@ -103,7 +103,7 @@ targets:
       - build-photon2
     cmds:
       - ./support/scripts/pack.sh
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   pack:
     description: Create RPM Package
@@ -118,7 +118,7 @@ targets:
   docker-lightwave-base-photon2:
     description: build lightwave-base docker image
     build: ./support/docker/base/photon2
-    image: 'vmware/lightwave-base-photon2:1.0.2'
+    image: 'vmware/lightwave-base-photon2:1.0.3'
 
   docker-lightwave-pre-photon1:
     description: Prepare for container build
@@ -139,14 +139,14 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 server
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-client-pre-photon2:
     description: Prepare for container build
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 client
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-photon1:
     description: build lightwave docker image
@@ -189,7 +189,7 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 ui
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-ui-photon2:
     description: build lightwave UI docker image
@@ -205,7 +205,7 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 sample
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-sample-photon2:
     description: build lightwave Sample docker image
@@ -221,7 +221,7 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 post
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-post-photon2:
     description: build lightwave POST docker image
@@ -237,7 +237,7 @@ targets:
     cmds:
       - ./support/scripts/prep-container-build.sh photon2 post-ui
     always: true
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   docker-lightwave-post-ui-photon2:
     description: build lightwave POST UI docker image
@@ -260,7 +260,7 @@ targets:
     always: true
     cmds:
       - ./support/scripts/clean.sh
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   clean:
     description: Cleanup
@@ -277,7 +277,7 @@ commands:
       - PROJECT_ROOT=$(pwd)
       - cd $PROJECT_ROOT/vmidentity
       - mvn $@ -Dmaven.repo.local="$PROJECT_ROOT/build/vmidentity/repo/"
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
   vmidentity-mvn-cmd-photon1:
     description: run mvn command for vmidentity
@@ -306,7 +306,7 @@ commands:
     always: true
     cmds:
       - './support/scripts/test-vmidentity.sh $@'
-    image: 'vmware/lightwave-toolchain-photon2:1.0.2'
+    image: 'vmware/lightwave-toolchain-photon2:1.0.3'
 
 settings:
   default-targets:

@@ -14,6 +14,7 @@ RUN tdnf update -qy  tdnf  && \
         apache-tomcat-8.5.29 \
         autoconf-2.69 \
         automake-1.15 \
+        aws-sdk-kms-1.4.33 \
         binutils-2.29.1 \
         boost-devel-1.63.0 \
         c-rest-engine-devel-1.2 \
