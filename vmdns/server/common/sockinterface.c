@@ -1097,7 +1097,7 @@ VmDnsOnTcpRequestDataRead(
                             &pDnsMessage
                             );
 
-        if (rCode && !bUpdateInZone && !bQueryInZone)
+        if (rCode && pDnsMessage && !bUpdateInZone && !bQueryInZone)
         {
             dwError = VmDnsCacheFindZoneByQName(
                             gpSrvContext->pCacheContext,
@@ -1267,7 +1267,7 @@ VmDnsOnUdpRequestDataRead(
                         &bUpdateInZone,
                         &pDnsMessage
                         );
-    if (rCode && !bUpdateInZone && !bQueryInZone)
+    if (rCode && pDnsMessage && !bUpdateInZone && !bQueryInZone)
     {
         dwError = VmDnsCacheFindZoneByQName(
                         gpSrvContext->pCacheContext,
