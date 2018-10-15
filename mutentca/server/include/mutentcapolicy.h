@@ -225,6 +225,64 @@ LwCAPolicyFreeCtx(
     PLWCA_POLICY_CONTEXT                pPolicyCtx          // IN
     );
 
+
+/*
+ * Util function prototypes for the structures defined above
+ * Implemented in policy/util.c
+ */
+
+DWORD
+LwCAPolicyCfgObjInit(
+    LWCA_POLICY_CFG_TYPE            type,
+    LWCA_POLICY_CFG_MATCH           match,
+    PCSTR                           pcszValue,
+    PLWCA_POLICY_CFG_OBJ            *ppObj
+    );
+
+DWORD
+LwCAPolicyCfgObjArrayInit(
+    PLWCA_POLICY_CFG_OBJ            *ppObj,
+    DWORD                           dwCount,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      *ppObjArray
+    );
+
+DWORD
+LwCAPoliciesInit(
+    BOOLEAN                         bMultiSANEnabled,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      pSNs,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      pSANs,
+    DWORD                           dwKeyUsage,
+    DWORD                           dwCertDuration,
+    PLWCA_POLICIES                  *ppPolicies
+    );
+
+DWORD
+LwCAPolicyCfgObjCopy(
+    PLWCA_POLICY_CFG_OBJ            pObjIn,
+    PLWCA_POLICY_CFG_OBJ            *ppObjOut
+    );
+
+DWORD
+LwCAPolicyCfgObjArrayCopy(
+    PLWCA_POLICY_CFG_OBJ_ARRAY      pObjArrayIn,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      *ppObjArrayOut
+    );
+
+VOID
+LwCAPolicyCfgObjFree(
+    PLWCA_POLICY_CFG_OBJ            pObj
+    );
+
+VOID
+LwCAPolicyCfgObjArrayFree(
+    PLWCA_POLICY_CFG_OBJ_ARRAY      pObjArray
+    );
+
+VOID
+LwCAPoliciesFree(
+    PLWCA_POLICIES                  pPolicies
+    );
+
 #ifdef __cplusplus
 }
 #endif

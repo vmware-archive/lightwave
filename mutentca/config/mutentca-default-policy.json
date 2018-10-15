@@ -18,7 +18,7 @@
             ]
         },
         "SANPolicy": {
-            "multiSAN": true,
+            "multiSAN": false,
             "AllowedSANs": [
                 {
                     "type": "ip",
@@ -65,7 +65,7 @@
             ]
         },
         "SANPolicy": {
-            "multiSAN": true,
+            "multiSAN": false,
             "AllowedSANs": [
                 {
                     "type": "ip",

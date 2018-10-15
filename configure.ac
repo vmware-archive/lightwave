@@ -1940,6 +1940,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/db/Makefile
                  mutentca/server/plugin/Makefile
+                 mutentca/server/policy/Makefile
                  mutentca/server/rest-head/Makefile
                  mutentca/server/mutentca/Makefile
                  mutentca/tests/Makefile
@@ -1955,6 +1956,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
+                 mutentca/tests/unit-tests/server/policy/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/sample/setenv.sh
