@@ -47,6 +47,17 @@ enum _LWCA_KEY_USAGE {
     LWCA_DECIPHER_ONLY          = 8
 };
 
+#define LWCA_KEY_USAGE_FLAG_DIGITAL_SIGNATURE 0x00000001
+#define LWCA_KEY_USAGE_FLAG_NON_REPUDIATION   0x00000002
+#define LWCA_KEY_USAGE_FLAG_KEY_ENCIPHERMENT  0x00000004
+#define LWCA_KEY_USAGE_FLAG_DATA_ENCIPHERMENT 0x00000008
+#define LWCA_KEY_USAGE_FLAG_KEY_AGREEMENT     0x00000010
+#define LWCA_KEY_USAGE_FLAG_KEY_CERT_SIGN     0x00000020
+#define LWCA_KEY_USAGE_FLAG_KEY_CRL_SIGN      0x00000040
+#define LWCA_KEY_USAGE_FLAG_ENCIPER_ONLY      0x00000080
+#define LWCA_KEY_USAGE_FLAG_DECIPHER_ONLY     0x00000100
+
+
 DWORD
 LwCAPEMToX509(
     PCSTR       pCertificate,
@@ -112,9 +123,15 @@ LwCAX509GetIssuerName(
     );
 
 DWORD
+LwCAX509GetOrganizations(
+    X509                *pCert,
+    PLWCA_STRING_ARRAY  *ppOrgList
+    );
+
+DWORD
 LwCACreateCertificateSignRequest(
     PLWCA_PKCS_10_REQ_DATA  pCertRequest,
-    EVP_PKEY                *pPublicKey,
+    PCSTR                   pcszPublicKey,
     X509_REQ                **ppReq
     );
 
@@ -170,7 +187,7 @@ LwCACreatePKCSRequest(
     );
 
 VOID
-LwCAFreePkcsRequest(
+LwCAFreePKCSRequest(
     PLWCA_PKCS_10_REQ_DATA pPKCSRequest
     );
 

@@ -33,6 +33,22 @@ _LwCASignX509Certificate(
     PCSTR   pcszCAId
     );
 
+static
+DWORD
+_LwCAGetCurrentCACertificate(
+    PCSTR               pcszCAId,
+    PLWCA_CERTIFICATE   *ppCACert
+    );
+
+static
+DWORD
+_LwCAStoreIntermediateCA(
+    X509        *pCert,
+    PCSTR       pcszCAId,
+    PCSTR       pcszParentCAId,
+    PLWCA_KEY   pEncryptedKey
+    );
+
 DWORD
 LwCACreateRootCA(
     PLWCA_REQ_CONTEXT       pReqCtx,
@@ -165,7 +181,6 @@ LwCAGetSignedCertificate(
     X509_REQ *pRequest = NULL;
     X509 *pX509Cert = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
-    PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
     PLWCA_CERTIFICATE pCert = NULL;
     BOOLEAN bIsCA = FALSE;
 
@@ -186,16 +201,8 @@ LwCAGetSignedCertificate(
     dwError = _LwCACheckCAExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbGetCACertificates(pcszCAId, &pCACerts);
+    dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
     BAIL_ON_LWCA_ERROR(dwError);
-
-    if (pCACerts->dwCount != 1)
-    {
-        dwError = LWCA_INVALID_CA_DATA;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    pCACert = pCACerts->ppCertificates[0];
 
     dwError = LwCAGenerateX509Certificate(pRequest, pValidity, pCACert, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -219,12 +226,8 @@ LwCAGetSignedCertificate(
     *ppCertifcate = pCert;
 
 cleanup:
-    if (pX509Cert)
-    {
-        X509_free(pX509Cert);
-    }
+    LwCAX509Free(pX509Cert);
     LwCAX509ReqFree(pRequest);
-    LwCAFreeCertificates(pCACerts);
     return dwError;
 
 error:
@@ -232,6 +235,167 @@ error:
     if (ppCertifcate)
     {
         *ppCertifcate = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCACreateIntermediateCA(
+    PLWCA_REQ_CONTEXT               pReqCtx,
+    PCSTR                           pcszCAId,
+    PCSTR                           pcszParentCAId,
+    PLWCA_INT_CA_REQ_DATA           pCARequest,
+    PLWCA_CERT_VALIDITY             pValidity,
+    PLWCA_CERTIFICATE_ARRAY         *ppCACerts
+    )
+{
+    DWORD                       dwError = 0;
+    DWORD                       dwKeyUsageConstraints = 0;
+    time_t                      tmNotBefore;
+    time_t                      tmNotAfter;
+    struct tm                   *tm = NULL;
+    BOOLEAN                     bIsCA = FALSE;
+    PSTR                        pszPublicKey = NULL;
+    PLWCA_KEY                   pEncryptedKey = NULL;
+    PLWCA_STRING_ARRAY          pOrganizationList = NULL;
+    X509                        *pX509CACert = NULL;
+    X509                        *pX509ParentCACert = NULL;
+    X509_REQ                    *pRequest = NULL;
+    PLWCA_PKCS_10_REQ_DATA      pPKCSReq = NULL;
+    PLWCA_CERTIFICATE           pParentCACert = NULL;
+    PLWCA_CERTIFICATE           pCACert =  NULL;
+    PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
+    PLWCA_CERT_VALIDITY         pTempValidity = NULL;
+
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts ||
+        !pCARequest || IsNullOrEmptyString(pcszParentCAId)
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCACheckCANotExist(pcszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCACheckCAExist(pcszParentCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetCurrentCACertificate(pcszParentCAId, &pParentCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAPEMToX509(pParentCACert, &pX509ParentCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetOrganizations(pX509ParentCACert, &pOrganizationList);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwKeyUsageConstraints = (LWCA_KEY_USAGE_FLAG_KEY_CERT_SIGN |
+                                LWCA_KEY_USAGE_FLAG_KEY_CRL_SIGN);
+
+    dwError = LwCACreatePKCSRequest(pcszCAId,
+                            NULL,
+                            pCARequest->pCountryList,
+                            pCARequest->pLocalityList,
+                            pCARequest->pStateList,
+                            pOrganizationList,
+                            pCARequest->pOUList,
+                            NULL,
+                            NULL,
+                            NULL,
+                            NULL,
+                            dwKeyUsageConstraints,
+                            &pPKCSReq
+                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAKmCreateKeyPair(pcszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAKmGetPublickey(pcszCAId, &pszPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAKmSignX509Request(pRequest, pcszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pValidity)
+    {
+        dwError = LwCACreateCertValidity(pValidity->tmNotBefore,
+                                        pValidity->tmNotAfter,
+                                        &pTempValidity
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        tmNotBefore = time(NULL);
+        tm = localtime(&tmNotBefore);
+        //TODO: Get CA Cert duration from policy engine
+        tm->tm_yday += LWCA_MAX_INT_CA_CERT_DURATION;
+        tmNotAfter = mktime(tm);
+
+        dwError = LwCACreateCertValidity(tmNotBefore,
+                                        tmNotAfter,
+                                        &pTempValidity
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError =  LwCAGenerateX509Certificate(pRequest, pTempValidity, pParentCACert, &pX509CACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509CheckIfCACert(pX509CACert, &bIsCA);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bIsCA)
+    {
+        dwError = LWCA_UNKNOWN_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAKmSignX509Cert(pX509CACert, pcszParentCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAKmGetEncryptedKey(pcszCAId, &pEncryptedKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509ToPEM(pX509CACert, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateCertArray((PSTR*)&pCACert, 1 , &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAStoreIntermediateCA(
+                                    pX509CACert,
+                                    pcszCAId,
+                                    pcszParentCAId,
+                                    pEncryptedKey
+                                    );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCACerts = pCACerts;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszPublicKey);
+    LwCAFreeStringArray(pOrganizationList);
+    LwCAFreePKCSRequest(pPKCSReq);
+    LwCAX509ReqFree(pRequest);
+    LwCAX509Free(pX509CACert);
+    LwCAX509Free(pX509ParentCACert);
+    LwCAFreeCertificate(pParentCACert);
+    LwCAFreeCertificate(pCACert);
+    LwCAFreeCertValidity(pTempValidity);
+
+    return dwError;
+
+error:
+    LwCAFreeCertificates(pCACerts);
+    if (ppCACerts)
+    {
+        *ppCACerts = NULL;
     }
     goto cleanup;
 }
@@ -282,6 +446,45 @@ error:
 
 static
 DWORD
+_LwCAGetCurrentCACertificate(
+    PCSTR               pcszCAId,
+    PLWCA_CERTIFICATE   *ppCACert
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
+    PLWCA_CERTIFICATE pCACert = NULL;
+
+    dwError = LwCADbGetCACertificates(pcszCAId, &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pCACerts->dwCount != 1)
+    {
+        dwError = LWCA_INVALID_CA_DATA;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCACreateCertificate(pCACerts->ppCertificates[0], &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCACert = pCACert;
+
+cleanup:
+    LwCAFreeCertificates(pCACerts);
+    return dwError;
+
+error:
+    LwCAFreeCertificate(pCACert);
+    if (ppCACert)
+    {
+        *ppCACert = NULL;
+    }
+
+    goto cleanup;
+}
+
+static
+DWORD
 _LwCASignX509Certificate(
     X509    *pCert,
     PCSTR   pcszCAId
@@ -313,6 +516,61 @@ _LwCASignX509Certificate(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszPrivateKey);
+    LwCADbFreeCAData(pCAData);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAStoreIntermediateCA(
+    X509        *pCert,
+    PCSTR       pcszCAId,
+    PCSTR       pcszParentCAId,
+    PLWCA_KEY   pEncryptedKey
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_CERTIFICATE       pCertificate = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertificates = NULL;
+    PLWCA_DB_CA_DATA        pCAData = NULL;
+    PSTR                    pszSubject = NULL;
+    PSTR                    pszIssuer = NULL;
+
+    dwError = LwCAX509ToPEM(pCert, &pCertificate);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetIssuerName(pCert, &pszIssuer);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertificates);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbCreateCAData(pszIssuer,
+                                pszSubject,
+                                pCertificates,
+                                pEncryptedKey,
+                                NULL,
+                                NULL,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData
+                                );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbAddCA(pcszCAId, pCAData, pcszParentCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LwCAFreeCertificate(pCertificate);
+    LwCAFreeCertificates(pCertificates);
+    LWCA_SAFE_FREE_STRINGA(pszIssuer);
+    LWCA_SAFE_FREE_STRINGA(pszSubject);
     LwCADbFreeCAData(pCAData);
     return dwError;
 

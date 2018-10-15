@@ -67,7 +67,8 @@ LwCACreateIntermediateCA(
     PCSTR                   pcszCAId,
     PCSTR                   pcszParentCAId,
     PLWCA_INT_CA_REQ_DATA   pIntCARequest,
-    PLWCA_CERT_VALIDITY     pValidity
+    PLWCA_CERT_VALIDITY     pValidity,
+    PLWCA_CERTIFICATE_ARRAY *ppCACerts
     );
 
 DWORD

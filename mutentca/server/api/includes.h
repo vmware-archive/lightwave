@@ -36,5 +36,6 @@
 #include <mutentcasrvcommon.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>
+#include <mutentcapkcs.h>
 
 #endif /* _LWCA_SERVICE_API_INCLUDES_H_ */

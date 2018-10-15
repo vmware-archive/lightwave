@@ -82,6 +82,8 @@ typedef DWORD LWCA_FUNC_LEVEL;
 
 #define SQL_BUFFER_SIZE          1024
 
+#define LWCA_MAX_INT_CA_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
+
 #define LWCA_SAFE_FREE_HZN_PSTR(PTR)    \
     do {                                \
         if ((PTR)) {                    \
@@ -335,6 +337,39 @@ VOID
 LwCASrvCleanupGlobalState(
     VOID
     );
+
+// Added secure key manager api definitions temporarily.
+// It will be removed once secure key manager is integrated.
+
+DWORD
+LwCAKmCreateKeyPair(
+    PCSTR pcszKeyId
+    );
+
+DWORD
+LwCAKmGetPublickey(
+    PCSTR pcszKeyId,
+    PSTR  *ppszPublicKey
+    );
+
+DWORD
+LwCAKmGetEncryptedKey(
+    PCSTR       pcszId,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCAKmSignX509Cert(
+    X509 *pCert,
+    PCSTR pcszKeyId
+    );
+
+DWORD
+LwCAKmSignX509Request(
+    X509_REQ *pReq,
+    PCSTR    pcszKeyId
+    );
+
 #ifdef __cplusplus
 }
 #endif
