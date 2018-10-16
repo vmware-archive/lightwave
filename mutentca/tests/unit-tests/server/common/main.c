@@ -20,111 +20,62 @@ int main(VOID)
 
     const struct CMUnitTest LwCASrvJSONUtils_Tests[] =
     {
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonLoadObjectFromFile_ValidInput,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonLoadObjectFromFile_InvalidInput,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetObjectFromKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetObjectFromKey_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetStringFromKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetStringFromKey_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetStringArrayFromKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetStringArrayFromKey_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetTimeFromKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAJsonGetTimeFromKey_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateCertificate_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateCertificate_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateCertArray_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateCertArray_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACreateKey_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACopyCertArray_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACopyCertArray_Invalid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACopyKey_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                Test_LwCACopyKey_Invalid,
-                NULL,
-                NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonLoadObjectFromFile_ValidInput, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonLoadObjectFromFile_InvalidInput, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetObjectFromKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetObjectFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetStringFromKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetStringFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetStringArrayFromKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetStringArrayFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetTimeFromKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetTimeFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetIntegerFromKey_PositiveValid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetIntegerFromKey_NegativeValid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetIntegerFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetUnsignedIntegerFromKey_PositiveValid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetUnsignedIntegerFromKey_NegativeValid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetUnsignedIntegerFromKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetBooleanFromKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAJsonGetBooleanFromKey_Invalid, NULL, NULL),
+    };
+
+    const struct CMUnitTest LwCASrvCAAPIs_Tests[] =
+    {
+        cmocka_unit_test_setup_teardown(Test_LwCACreateCertificate_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACreateCertificate_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACreateCertArray_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACreateCertArray_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACreateKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACreateKey_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACopyCertArray_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACopyCertArray_Invalid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACopyKey_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCACopyKey_Invalid, NULL, NULL),
     };
 
     const struct CMUnitTest LwCAAuthToken_Tests[] =
     {
-        cmocka_unit_test_setup_teardown(
-                LwCAAuthTokenGetHOTK_Valid,
-                NULL,
-                NULL),
-        cmocka_unit_test_setup_teardown(
-                LwCAAuthTokenGetHOTK_InvalidInput,
-                NULL,
-                NULL),
+        cmocka_unit_test_setup_teardown(LwCAAuthTokenGetHOTK_Valid, NULL, NULL),
+        cmocka_unit_test_setup_teardown(LwCAAuthTokenGetHOTK_InvalidInput, NULL, NULL),
     };
 
-    ret = cmocka_run_group_tests_name("MutentCA JSON Utils Tests", LwCASrvJSONUtils_Tests, NULL, NULL);
+    ret = cmocka_run_group_tests_name("MutentCA server common JSON Util Tests", LwCASrvJSONUtils_Tests, NULL, NULL);
     if (ret)
     {
-        fail_msg("%s", "MutentCA server JSON utils failed");
+        fail_msg("%s", "MutentCA server common JSON util tests failed");
     }
 
-    ret = cmocka_run_group_tests_name("MutentCA Auth Token Tests",
-        LwCAAuthToken_Tests, NULL, NULL);
+    ret = cmocka_run_group_tests_name("MutentCA server common CA API Tests", LwCASrvCAAPIs_Tests, NULL, NULL);
     if (ret)
     {
-        fail_msg("%s", "MutentCA Auth Token Tests Failed");
+        fail_msg("%s", "MutentCA server common CA API tests failed");
+    }
+
+    ret = cmocka_run_group_tests_name("MutentCA server common Auth Token Tests", LwCAAuthToken_Tests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA server common Auth Token tests failed");
     }
 
     return 0;

@@ -897,6 +897,30 @@ LwCAJsonGetTimeFromKey(
     time_t                  *ptValue
     );
 
+DWORD
+LwCAJsonGetIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    int                     *piValue
+    );
+
+DWORD
+LwCAJsonGetUnsignedIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    DWORD                   *pdwValue
+    );
+
+DWORD
+LwCAJsonGetBooleanFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    BOOLEAN                 *pbValue
+    );
+
 VOID
 LwCAJsonCleanupObject(
     PLWCA_JSON_OBJECT       pJson

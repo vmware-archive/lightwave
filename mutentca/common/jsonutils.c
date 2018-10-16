@@ -318,6 +318,155 @@ error:
     goto cleanup;
 }
 
+/*
+ * This function sets the int value (in piValue) corresponding to the given the key of json object
+ * bOptional is equivalent to searching for an optional key in the json object
+ * If key does not exist and bOptional is set, this will return success with NULL value
+ */
+DWORD
+LwCAJsonGetIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    int                     *piValue
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_JSON_OBJECT       pJsonValue = NULL;
+    int                     iValue = 0;
+
+    if (!pJson || IsNullOrEmptyString(pcszKey) || !piValue)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonGetObjectFromKey(pJson, bOptional, pcszKey, &pJsonValue);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!pJsonValue && bOptional)
+    {
+        dwError = 0;
+        *piValue = 0;
+        goto cleanup;
+    }
+
+    iValue = json_integer_value(pJsonValue);
+
+    *piValue = iValue;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (piValue)
+    {
+        *piValue = 0;
+    }
+
+    goto cleanup;
+}
+
+/*
+ * This function sets the uint32_t value (in pdwValue) corresponding to the given the key of json object
+ * bOptional is equivalent to searching for an optional key in the json object
+ * If key does not exist and bOptional is set, this will return success with NULL value
+ */
+DWORD
+LwCAJsonGetUnsignedIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    DWORD                   *pdwValue
+    )
+{
+    DWORD                   dwError = 0;
+    int                     iValue = 0;
+
+    if (!pJson || IsNullOrEmptyString(pcszKey) || !pdwValue)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonGetIntegerFromKey(pJson, bOptional, pcszKey, &iValue);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (iValue < 0)
+    {
+        dwError = LWCA_JSON_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *pdwValue = (DWORD) iValue;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pdwValue)
+    {
+        *pdwValue = 0;
+    }
+
+    goto cleanup;
+}
+
+/*
+ * This function sets the boolean value (in pbValue) corresponding to the given the key of json object
+ * bOptional is equivalent to searching for an optional key in the json object
+ * If key does not exist and bOptional is set, this will return success with NULL value
+ */
+DWORD
+LwCAJsonGetBooleanFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    BOOLEAN                 *pbValue
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_JSON_OBJECT       pJsonValue = NULL;
+    BOOLEAN                 bValue = FALSE;
+
+    if (!pJson || IsNullOrEmptyString(pcszKey) || !pbValue)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonGetObjectFromKey(pJson, bOptional, pcszKey, &pJsonValue);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!pJsonValue && bOptional)
+    {
+        dwError = 0;
+        *pbValue = FALSE;
+        goto cleanup;
+    }
+
+    bValue = json_boolean_value(pJsonValue);
+
+    *pbValue = bValue;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pbValue)
+    {
+        *pbValue = FALSE;
+    }
+
+    goto cleanup;
+}
+
 VOID
 LwCAJsonCleanupObject(
     PLWCA_JSON_OBJECT       pJson
