@@ -911,6 +911,49 @@ error:
 }
 
 DWORD
+LwCAX509ReqSignRequest(
+    X509_REQ    *pReq,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    )
+{
+    DWORD dwError = 0;
+    RSA *pRsa = NULL;
+    EVP_PKEY *pKey = NULL;
+
+    if (!pReq || IsNullOrEmptyString(pcszPrivateKey))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAPEMToPrivateKey(pcszPrivateKey, pcszPassPhrase, &pRsa);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pKey = EVP_PKEY_new();
+    if (pKey == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    EVP_PKEY_assign_RSA(pKey, pRsa);
+
+    dwError = X509_REQ_sign(pReq, pKey, EVP_sha256());
+    BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_REQ_SIGN_ERR);
+
+cleanup:
+    if(pKey)
+    {
+        EVP_PKEY_free(pKey); // will free RSA too
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 LwCAX509ValidateCertificate(
     X509        *pCert,
     PCSTR       pcszPrivateKey,

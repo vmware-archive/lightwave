@@ -151,6 +151,13 @@ LwCAX509SignCertificate(
     );
 
 DWORD
+LwCAX509ReqSignRequest(
+    X509_REQ    *pReq,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    );
+
+DWORD
 LwCAX509ValidateCertificate(
     X509        *pCert,
     PCSTR       pcszPrivateKey,

@@ -448,6 +448,52 @@ LwCAFreeStringArrayA(
 }
 
 DWORD
+LwCACreateStringArray(
+    PSTR                *ppszSrc,
+    DWORD               dwSrcLen,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIdx = 0;
+    PLWCA_STRING_ARRAY pStrTempArray = NULL;
+
+    if (!ppszSrc || dwSrcLen == 0 || !ppStrOutputArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_STRING_ARRAY), (PVOID*)&pStrTempArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * dwSrcLen, (PVOID*)&pStrTempArray->ppData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for(; dwIdx < dwSrcLen; ++dwIdx)
+    {
+        dwError = LwCAAllocateStringA(ppszSrc[dwIdx], &pStrTempArray->ppData[dwIdx]);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        pStrTempArray->dwCount++;
+    }
+
+    *ppStrOutputArray = pStrTempArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pStrTempArray);
+    if (ppStrOutputArray)
+    {
+        *ppStrOutputArray = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCACopyStringArray(
     PLWCA_STRING_ARRAY  pStrInputArray,
     PLWCA_STRING_ARRAY* ppStrOutputArray
@@ -537,4 +583,3 @@ LwCAToggleBit(unsigned long flag, int bit)
 {
     flag ^= (1 << bit);
 }
-

@@ -348,9 +348,48 @@
         "D6q7gp0OBmrquLH79YRukb2MWJHXaDamrH0UG8b4P/a0ScY4R5SzbJmdzbSfeJkh\n" \
         "T1LtZafdHfraueXAWDkB+U/2mMS0hrh7AA==\n" \
         "-----END CERTIFICATE REQUEST-----"
+#define TEST_INTERMEDIATE_CA_ID "Intermediate CA"
+#define TEST_INTERMEDIATE_CA_PUBLIC_KEY "-----BEGIN PUBLIC KEY-----\n" \
+        "MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEAyKKleR7E/pD9U3edvj6s\n" \
+        "DTStacElF8+ELBq1qOYjJBSzRfL/C4B8sHgfI2z4iM+DUDZWf7i8lLcjuU86Hi5X\n" \
+        "Oz39QDDtYo+UfYuCpvwLZxcc0EOTa4WaXlqMTgeIW6gVmXv842HNKNxQiW+buLmL\n" \
+        "vnMtIPQdTKIxPt3p6UCoeRinUpMOPL3Wge/Pcg1Tixq0cFO2XUQ+vpbS18itTmQ1\n" \
+        "FBxBFe5Kj4qbJmEcqbbxAOJMhb74GUwy0QdAMo3XM7buVArskrSzXDwgl/1oy7Bx\n" \
+        "Fc5u9/wy7cEcWaDM7MparEfQe4Cdsv8mDyCMpxrU0r8Y4SOIZiP1sjt+FohGUcne\n" \
+        "FQIDAQAB\n" \
+        "-----END PUBLIC KEY-----"
+#define TEST_INTERMEDIATE_CA_PRIVATE_KEY "-----BEGIN RSA PRIVATE KEY-----\n" \
+        "MIIEowIBAAKCAQEAyKKleR7E/pD9U3edvj6sDTStacElF8+ELBq1qOYjJBSzRfL/\n" \
+        "C4B8sHgfI2z4iM+DUDZWf7i8lLcjuU86Hi5XOz39QDDtYo+UfYuCpvwLZxcc0EOT\n" \
+        "a4WaXlqMTgeIW6gVmXv842HNKNxQiW+buLmLvnMtIPQdTKIxPt3p6UCoeRinUpMO\n" \
+        "PL3Wge/Pcg1Tixq0cFO2XUQ+vpbS18itTmQ1FBxBFe5Kj4qbJmEcqbbxAOJMhb74\n" \
+        "GUwy0QdAMo3XM7buVArskrSzXDwgl/1oy7BxFc5u9/wy7cEcWaDM7MparEfQe4Cd\n" \
+        "sv8mDyCMpxrU0r8Y4SOIZiP1sjt+FohGUcneFQIDAQABAoIBAB6MvXt61u4YL6qU\n" \
+        "7Rz5uALuwXT35ukAPRTmIEEOgc1NpZqCDJm4v8OzFrKzNgjG6Cy/iV47R+OxGyxt\n" \
+        "RuEvlzK7FqO+j3bRe/+9zXAVsrrIxydjEsBtgHrbeL+s3/Ns3ZUYTwJkcvPE0DKN\n" \
+        "Hv36qq+eJAH/ibKQg8UZzzMoGD8P3+gefE6yNHm5ypxC09Fm1uLgO1ik2Yh/ie25\n" \
+        "S+c5NG80isNtyfHGHDmUb2O5Rv0Wk08t/LQ0oghmCofu3i6Qsk0Vu1hHDGe3mF6i\n" \
+        "35zyCmXVlBLOQ5jG36kFZl5P5I8jhQ2+Izv/gs5prEGnu2/jKK7PpmkXEPBc2Jhu\n" \
+        "0b5+J4ECgYEA6ICG62r5LYKaJuHXNneiCLkEXu2dj68a+LSz1LKieXB31YcXkfUA\n" \
+        "FnmmbvZTrNKb58nzCss7YAgKs610s954oI+C+LmW9wXvuMgIDxGjuG//AgRqpV/u\n" \
+        "t7swJea7/wElAJ1xAsLe6EhSWFrBUoL3xeEgcMSLLHAEyGFV74oZzCECgYEA3Omj\n" \
+        "j1SkIGr/P2GPuHSoMzOTAsGB8WR5JcIG7PbZ1Kq5LMifbWxja/pd1oMQfRjqnpBO\n" \
+        "QGsmCHPDMEt+uXLGK40RCSqOnvGbZD2SN7BPYws/DEcdVKCC7oltkGDw6SYXzTFU\n" \
+        "GgYXmdmsqFKBwfFoi0+iFt5IGp8pyAR7bB21M3UCgYAUyglGW5ZUP21RNLhtolzW\n" \
+        "stR1OIHyKxIaUu4RgreMbEYKzb2Jy4JqgA4ltdjdhydxnlkhCfMRLybl0gixXJ8k\n" \
+        "nDB11QJurBU3TIuL7WPaRgljQMnYZ6+Mtiwj93Gv54ZLe8hzGsGbu3vBcrv+iL9m\n" \
+        "7i5cZvaazple4XUxqgOMgQKBgFn6+Fn7OdbSfiEM1gNl0NT6HtkyhIEUUZwlibif\n" \
+        "W16aI06wcO+bBGwI0Iv9Wov5yCbJ1HW8rwMmU8yqE3Xp3/oBPX0kTm9DLe4IfjQc\n" \
+        "pllLTWTs2m+L6YjLhUsXkUkF8Q/tFbp73MUXupHc+WlLsS99QiJaa7gcOGJ2IOeK\n" \
+        "ujG5AoGBAOXHNcQmoEr+pqXn6KCkf0yAGxSqLwOA6Zg5UFbSBeeXrxTyIFz+TWpp\n" \
+        "9ftIRwcy4tj2d1KMZ2lO49YgqZg0z6HBdYZgLL6R80GPk2TcEEBfgm2lQE2IIDJb\n" \
+        "kscq5zBLIDLH7qAhtCJX8NlHmvNSgb77e+8fxG1Mdp5WwrywqO8w\n" \
+        "-----END RSA PRIVATE KEY-----"
 
 // defines output value of __wrap_LwCADbCheckCA
-BOOLEAN bCAExists = FALSE;
+PBOOLEAN pbExistsMockArray =  NULL;
+DWORD iIndex = 0;
+DWORD dwMockArrayLimit = 0;
 
 PLWCA_REQ_CONTEXT pReqCtx = NULL;
 
@@ -393,6 +432,17 @@ __wrap_LwCADbAddCA(
     return mock();
 }
 
+VOID
+_Initialize_Output_LwCADbCheckCA(
+    PBOOLEAN pbOutList,
+    DWORD    dwLimit
+    )
+{
+    pbExistsMockArray = pbOutList;
+    iIndex = 0;
+    dwMockArrayLimit = dwLimit;
+}
+
 DWORD
 __wrap_LwCADbCheckCA(
     PCSTR                   pcszCAId,
@@ -401,7 +451,10 @@ __wrap_LwCADbCheckCA(
 {
     assert_non_null(pcszCAId);
     assert_non_null(pbExists);
-    *pbExists = bCAExists;
+    if (iIndex < dwMockArrayLimit)
+    {
+        *pbExists = pbExistsMockArray[iIndex++];
+    }
     return mock();
 }
 
@@ -499,6 +552,87 @@ __wrap_LwCADbGetCA(
     return mock();
 }
 
+DWORD
+__wrap_LwCAKmCreateKeyPair(
+    PCSTR pcszKeyId
+    )
+{
+    return mock();
+}
+
+DWORD
+__wrap_LwCAKmGetPublickey(
+    PCSTR pcszKeyId,
+    PSTR  *ppszPublicKey
+    )
+{
+    DWORD dwError = 0;
+
+    if (LwCAStringCompareA(pcszKeyId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAAllocateStringA(TEST_INTERMEDIATE_CA_PUBLIC_KEY, ppszPublicKey);
+        assert_int_equal(dwError, 0);
+    }
+    return mock();
+}
+
+DWORD
+__wrap_LwCAKmGetEncryptedKey(
+    PCSTR       pcszId,
+    PLWCA_KEY   *ppKey
+    )
+{
+    DWORD dwError = 0;
+    BYTE testKey[20] = "dummyKey";
+
+    dwError = LwCACreateKey(testKey, 20, ppKey);
+    assert_int_equal(dwError, 0);
+    return mock();
+}
+
+DWORD
+__wrap_LwCAKmSignX509Cert(
+    X509 *pCert,
+    PCSTR pcszKeyId
+    )
+{
+    DWORD dwError = 0;
+
+    if (LwCAStringCompareA(pcszKeyId, TEST_ROOT_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509SignCertificate(pCert, TEST_ROOT_CA_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+    else if (LwCAStringCompareA(pcszKeyId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509SignCertificate(pCert, TEST_INTERMEDIATE_CA_PRIVATE_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+    return mock();
+}
+
+DWORD
+__wrap_LwCAKmSignX509Request(
+    X509_REQ *pReq,
+    PCSTR    pcszKeyId
+    )
+{
+    DWORD dwError = 0;
+
+    if (LwCAStringCompareA(pcszKeyId, TEST_ROOT_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509ReqSignRequest(pReq, TEST_ROOT_CA_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+    else if (LwCAStringCompareA(pcszKeyId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509ReqSignRequest(pReq, TEST_INTERMEDIATE_CA_PRIVATE_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+
+    return mock();
+}
+
 VOID
 Test_LwCACreateRootCA_Valid(
     VOID **state
@@ -507,21 +641,19 @@ Test_LwCACreateRootCA_Valid(
     DWORD dwError = 0;
     PLWCA_CERTIFICATE pCertificate1 = NULL;
     PLWCA_CERTIFICATE pCertificate2 = NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
 
-    will_return(__wrap_LwCADbAddCA, 0);
-    bCAExists = FALSE;
-    will_return(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbAddCA, 0);
+    will_return_always(__wrap_LwCADbCheckCA, 0);
 
     dwError = LwCACreateCertificate(TEST_ROOT_CA_CERTIFICATE, &pCertificate1);
     assert_int_equal(dwError, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate1, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, 0);
 
-    will_return(__wrap_LwCADbAddCA, 0);
-    bCAExists = FALSE;
-    will_return(__wrap_LwCADbCheckCA, 0);
-
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCACreateCertificate(TEST_ROOT_CA_CERTIFICATE, &pCertificate2);
     assert_int_equal(dwError, 0);
 
@@ -540,36 +672,38 @@ Test_LwCACreateRootCA_Invalid(
     DWORD dwError = 0;
     PLWCA_CERTIFICATE pCertificate1 = NULL;
     PLWCA_CERTIFICATE pCertificate2 = NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
+    BOOLEAN bCheckCAMockValues2[] = {TRUE};
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
 
     // Testcase 1: Certificate is not a CA cert
-    bCAExists = FALSE;
-    will_return(__wrap_LwCADbCheckCA, 0);
 
     dwError = LwCACreateCertificate(TEST_INVALID_ROOT_CA_CERTIFICATE_2, &pCertificate1);
     assert_int_equal(dwError, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID_2, pCertificate1, TEST_ROOT_CA_KEY_2, TEST_ROOT_CA_PASSPHRASE_2);
     assert_int_equal(dwError, LWCA_NOT_CA_CERT);
 
-
     // Testcase 2: Certificate/Key pair mismatch
-    will_return(__wrap_LwCADbCheckCA, 0);
 
     dwError = LwCACreateCertificate(TEST_DUMMY_CERTIFICATE, &pCertificate2);
     assert_int_equal(dwError, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, LWCA_CERT_PRIVATE_KEY_MISMATCH);
 
 
     // Testcase 3: Invalid inputs
+
     dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, NULL, NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
     // Testcase 4: CA exists already
-    bCAExists = TRUE;
-    will_return(__wrap_LwCADbCheckCA, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues2, 1);
     dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, LWCA_CA_ALREADY_EXISTS);
 
@@ -584,11 +718,12 @@ Test_LwCAGetCACertificates_Valid(
 {
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertificates = NULL;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
 
+    will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
-    bCAExists = TRUE;
-    will_return(__wrap_LwCADbCheckCA, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, 0);
     assert_non_null(pCertificates);
@@ -606,16 +741,19 @@ Test_LwCAGetCACertificates_Invalid(
 {
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertificates = NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
 
     // Testcase 1: Invalid input
+
     dwError = LwCAGetCACertificates(pReqCtx, NULL, &pCertificates);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertificates);
 
     // Testcase 2: CA does not exist
-    bCAExists = FALSE;
-    will_return(__wrap_LwCADbCheckCA, 0);
 
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, LWCA_CA_MISSING);
     assert_null(pCertificates);
@@ -638,6 +776,7 @@ Test_LwCAGetSignedCertificate_Valid(
     time_t tmNotBefore;
     time_t tmNotAfter;
     struct tm *tm = NULL;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
@@ -649,26 +788,21 @@ Test_LwCAGetSignedCertificate_Valid(
 
     signAlgorithm = LWCA_SHA_256;
 
-    will_return(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCADbGetCA, 0);
+
     dwError = LwCADbGetCACertificates(TEST_ROOT_CA_ID, &pCACerts);
     assert_int_equal(dwError, 0);
 
-    will_return(__wrap_LwCADbGetCACertificates, 0);
-    bCAExists = TRUE;
-    will_return(__wrap_LwCADbCheckCA, 0);
-    will_return(__wrap_LwCADbGetCA, 0);
-
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetSignedCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CSR, pValidity, signAlgorithm, &pCertificate1);
     assert_int_equal(dwError, 0);
 
     dwError = LwCAVerifyCertificate(pCACerts, pCertificate1);
     assert_int_equal(dwError, 0);
 
-    will_return(__wrap_LwCADbGetCACertificates, 0);
-    bCAExists = TRUE;
-    will_return(__wrap_LwCADbCheckCA, 0);
-    will_return(__wrap_LwCADbGetCA, 0);
-
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetSignedCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CSR_2, pValidity, signAlgorithm, &pCertificate2);
     assert_int_equal(dwError, 0);
 
@@ -693,6 +827,7 @@ Test_LwCAGetSignedCertificate_Invalid(
     time_t tmNotBefore;
     time_t tmNotAfter;
     struct tm *tm = NULL;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
@@ -703,6 +838,9 @@ Test_LwCAGetSignedCertificate_Invalid(
     assert_int_equal(dwError, 0);
 
     signAlgorithm = LWCA_SHA_256;
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
 
     dwError = LwCAGetSignedCertificate(pReqCtx, NULL, TEST_CLIENT_CSR, pValidity, signAlgorithm, &pCertificate);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
@@ -716,14 +854,189 @@ Test_LwCAGetSignedCertificate_Invalid(
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertificate);
 
-    bCAExists = TRUE;
-    will_return(__wrap_LwCADbCheckCA, 0);
-    will_return(__wrap_LwCADbGetCACertificates, 0);
-
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetSignedCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CSR, pValidity, signAlgorithm, &pCertificate);
     assert_int_equal(dwError, LWCA_INVALID_TIME_SPECIFIED);
     assert_null(pCertificate);
 
     LwCAFreeCertValidity(pValidity);
     LwCAFreeCertificate(pCertificate);
+}
+
+VOID
+Test_LwCACreateIntermediateCA_Valid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_INT_CA_REQ_DATA pCARequest = NULL;
+    PLWCA_CERT_VALIDITY pValidity = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCACerts =  NULL;
+    PLWCA_CERTIFICATE_ARRAY pParentCACerts =  NULL;
+    PSTR pOUs[] = {"VMware Inc"};
+    PSTR pCountries[] = {"US"};
+    PSTR pStates[] = {"WA", "CA"};
+    PSTR pLocalities[] = {"Bellevue"};
+    PLWCA_STRING_ARRAY pCountryList = NULL;
+    PLWCA_STRING_ARRAY pStateList = NULL;
+    PLWCA_STRING_ARRAY pLocalityList = NULL;
+    PLWCA_STRING_ARRAY pOUList = NULL;
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+    struct tm *tm = NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE, TRUE};
+
+    tmNotBefore = time(NULL);
+    tm = localtime(&tmNotBefore);
+    tm->tm_mday += 1;
+    tmNotAfter = mktime(tm);
+
+    dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateStringArray(pOUs, 1, &pOUList);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateStringArray(pCountries, 1, &pCountryList);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateStringArray(pStates, 2, &pStateList);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateStringArray(pLocalities, 1, &pLocalityList);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateIntCARequest(pCountryList, pStateList, pLocalityList, pOUList, NULL, &pCARequest);
+    assert_int_equal(dwError, 0);
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCADbAddCA, 0);
+    will_return_always(__wrap_LwCAKmGetPublickey, 0);
+    will_return_always(__wrap_LwCAKmGetEncryptedKey, 0);
+    will_return_always(__wrap_LwCAKmCreateKeyPair, 0);
+    will_return_always(__wrap_LwCAKmSignX509Cert, 0);
+    will_return_always(__wrap_LwCAKmSignX509Request, 0);
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
+    dwError = LwCACreateIntermediateCA(
+                            pReqCtx,
+                            TEST_INTERMEDIATE_CA_ID,
+                            TEST_ROOT_CA_ID,
+                            pCARequest,
+                            pValidity,
+                            &pCACerts
+                            );
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbGetCACertificates(TEST_ROOT_CA_ID, &pParentCACerts);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCACerts);
+    assert_non_null(pCACerts->ppCertificates);
+    assert_int_equal(pCACerts->dwCount, 1);
+
+    dwError = LwCAVerifyCertificate(pParentCACerts, pCACerts->ppCertificates[0]);
+    assert_int_equal(dwError, 0);
+
+    LwCAFreeCertValidity(pValidity);
+    LwCAFreeIntCARequest(pCARequest);
+    LwCAFreeCertificates(pCACerts);
+    LwCAFreeCertificates(pParentCACerts);
+    LwCAFreeStringArray(pOUList);
+    LwCAFreeStringArray(pCountryList);
+    LwCAFreeStringArray(pStateList);
+    LwCAFreeStringArray(pLocalityList);
+}
+
+VOID
+Test_LwCACreateIntermediateCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_INT_CA_REQ_DATA pCARequest = NULL;
+    PLWCA_CERT_VALIDITY pValidity = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCACerts =  NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE, TRUE};
+    BOOLEAN bCheckCAMockValues2[] = {FALSE, FALSE};
+    BOOLEAN bCheckCAMockValues3[] = {TRUE, FALSE};
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+    struct tm *tm = NULL;
+
+    tmNotBefore = time(NULL);
+    tm = localtime(&tmNotBefore);
+    tm->tm_mday -= 1;
+    tmNotAfter = mktime(tm);
+
+    dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateIntCARequest(NULL, NULL, NULL, NULL, NULL, &pCARequest);
+    assert_int_equal(dwError, 0);
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCAKmCreateKeyPair, 0);
+    will_return_always(__wrap_LwCAKmGetPublickey, 0);
+    will_return_always(__wrap_LwCAKmSignX509Request, 0);
+
+    // Testcase 1: Invalid input
+
+    dwError = LwCACreateIntermediateCA(
+                            pReqCtx,
+                            TEST_INTERMEDIATE_CA_ID,
+                            TEST_ROOT_CA_ID,
+                            NULL,
+                            NULL,
+                            &pCACerts
+                            );
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    assert_null(pCACerts);
+
+    // Testcase 2: Invalid Validity period
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
+    dwError = LwCACreateIntermediateCA(
+                            pReqCtx,
+                            TEST_INTERMEDIATE_CA_ID,
+                            TEST_ROOT_CA_ID,
+                            pCARequest,
+                            pValidity,
+                            &pCACerts
+                            );
+    assert_int_equal(dwError, LWCA_INVALID_TIME_SPECIFIED);
+    assert_null(pCACerts);
+
+    // Testcase 3: Parent CA does not exist
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues2, 2);
+    dwError = LwCACreateIntermediateCA(
+                            pReqCtx,
+                            TEST_INTERMEDIATE_CA_ID,
+                            TEST_ROOT_CA_ID,
+                            pCARequest,
+                            pValidity,
+                            &pCACerts
+                            );
+    assert_int_equal(dwError, LWCA_CA_MISSING);
+    assert_null(pCACerts);
+
+    // Testcase 4: CA exists already
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues3, 2);
+    dwError = LwCACreateIntermediateCA(
+                            pReqCtx,
+                            TEST_INTERMEDIATE_CA_ID,
+                            TEST_ROOT_CA_ID,
+                            pCARequest,
+                            pValidity,
+                            &pCACerts
+                            );
+    assert_int_equal(dwError, LWCA_CA_ALREADY_EXISTS);
+    assert_null(pCACerts);
+
+    LwCAFreeCertValidity(pValidity);
+    LwCAFreeIntCARequest(pCARequest);
+    LwCAFreeCertificates(pCACerts);
 }

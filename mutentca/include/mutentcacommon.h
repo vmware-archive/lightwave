@@ -437,6 +437,13 @@ LwCAFreeStringW(
     );
 
 DWORD
+LwCACreateStringArray(
+    PSTR                *ppszSrc,
+    DWORD               dwSrcLen,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
+    );
+
+DWORD
 LwCACopyStringArrayA(
     PSTR            **pppszDst,
     DWORD           dwDstLen,
