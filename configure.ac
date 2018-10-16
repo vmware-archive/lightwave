@@ -219,7 +219,7 @@ AM_CONDITIONAL(LIGHTWAVE_BUILD, [$LIGHTWAVE_BUILD])
 #--------------------------------------------------------------------
 # replication v2 flag
 
-REPLICATION_V2=false
+REPLICATION_V2=true
 AC_ARG_ENABLE([replicationv2],
     [AC_HELP_STRING([--enable-replication-v2],
                     [enable replication v2 (default: disabled)])],
