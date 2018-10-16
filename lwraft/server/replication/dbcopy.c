@@ -105,7 +105,7 @@ VmDirCopyRemoteDB(
      * does not have a log db.
      */
     retVal = _VmDirCopyPartnerDB(hServer, LOG1_DB_DIR);
-    if (retVal == VMDIR_ERROR_NO_SUCH_DB)
+    if (retVal == VMDIR_LDAP_ERROR_NO_SUCH_DB)
     {
         retVal = 0;
         VMDIR_LOG_INFO(
@@ -362,7 +362,7 @@ _VmDirGetRemoteDBUsingRPC(
     */
     if (VmDirStringCompareA(localDir, pszSrcDir, FALSE))
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_NO_SUCH_DB);
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_LDAP_ERROR_NO_SUCH_DB);
     }
 
     retVal = _VmDirGetRemoteDBFileUsingRPC(

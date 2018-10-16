@@ -107,7 +107,7 @@ VdcSchemaConnOpen(
     BAIL_ON_VMDIR_ERROR(dwError);
     if (!pszLeader)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_LEADER);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_LDAP_ERROR_NO_LEADER);
     }
 
     // always connect to leader

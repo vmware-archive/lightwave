@@ -107,7 +107,7 @@ error:
             retCode = 25;
             pszErrorMsg = "Authorization failed.";
             break;
-        case VMDIR_ERROR_NO_LEADER:
+        case VMDIR_LDAP_ERROR_NO_LEADER:
             retCode = 26;
             pszErrorMsg = "No raft leader.";
             break;

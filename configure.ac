@@ -1690,6 +1690,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/server/replication/Makefile
                  lwraft/server/saslvmdirdb/Makefile
                  lwraft/server/vmdir/Makefile
+                 lwraft/server/watchnotify/Makefile
                  lwraft/client/Makefile
                  lwraft/config/post.reg
                  lwraft/testing/Makefile

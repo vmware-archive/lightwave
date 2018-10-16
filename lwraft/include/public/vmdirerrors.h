@@ -33,7 +33,7 @@
 #define VMDIR_SYSTEM_ERROR_BASE           0
 #define VMDIR_GENERIC_ERROR_BASE          100
 #define VMDIR_CUSTOMIZED_LDAP_ERROR_BASE  300
-#define VMDIR_RAFT_ERROR_BASE             500
+#define VMDIR_WATCH_ERROR_BASE            400
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
 #define VMDIR_REST_PROXY_ERROR_BASE       800
@@ -155,17 +155,19 @@
 #define IS_CUSTOMIZED_VMDIR_LDAP_ERROR_SPACE(n) \
     VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 99) )
 
-#define VMDIR_LDAP_ERROR_PRE_CONDITION                (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 0) // 9300
+#define VMDIR_LDAP_ERROR_PRE_CONDITION                (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 0)     // 9300
+#define VMDIR_LDAP_ERROR_NO_LEADER                    (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 1 )    // 9301
+#define VMDIR_LDAP_ERROR_INVALID_ROLE                 (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 2 )    // 9302
+#define VMDIR_LDAP_ERROR_NO_SUCH_DB                   (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 3 )    // 9303
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// raft error (range 9500 - 9599)
+// post watchnotify error (range 9400 - 9500)
 //////////////////////////////////////////////////////////////////////////////////////////////////
-#define IS_VMDIR_RAFT_ERROR_SPACE(n) \
-    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 99) )
+#define IS_VMDIR_WATCH_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 99) )
 
-#define VMDIR_ERROR_NO_LEADER                         (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 0 )   // 9500
-#define VMDIR_ERROR_INVALID_ROLE                      (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 1 )   // 9501
-#define VMDIR_ERROR_NO_SUCH_DB                        (VMDIR_ERROR_BASE + VMDIR_RAFT_ERROR_BASE + 2 )   // 9502
+#define VMDIR_ERROR_WATCH_ENDOFLIST                   (VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE + 0 )   // 9400
+#define VMDIR_ERROR_WATCH_INVALID_REFCOUNT            (VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE + 1 )   // 9401
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

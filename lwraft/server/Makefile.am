@@ -25,4 +25,5 @@ SUBDIRS = \
     saslvmdirdb \
     schema \
     acl \
+    watchnotify \
     vmdir

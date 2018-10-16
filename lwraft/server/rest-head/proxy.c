@@ -162,7 +162,7 @@ VmDirRESTProxyForwardRequest(
         }
         else
         {
-            dwError = VMDIR_ERROR_NO_LEADER;
+            dwError = VMDIR_LDAP_ERROR_NO_LEADER;
         }
 
         VmDirSleep(VMDIR_REST_RETRY_INTERVAL_MS);
@@ -279,7 +279,7 @@ VmDirRESTProxyGetHttpError(
     {
         dwHttpStatus = _VmDirRESTCurlToHttpCode(pProxyResult->dwCurlError);
     }
-    else if(pProxyResult->dwError == VMDIR_ERROR_NO_LEADER)
+    else if(pProxyResult->dwError == VMDIR_LDAP_ERROR_NO_LEADER)
     {
         dwHttpStatus = HTTP_SERVICE_UNAVAILABLE;
     }

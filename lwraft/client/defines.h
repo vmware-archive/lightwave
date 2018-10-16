@@ -322,9 +322,9 @@ the buffer size will always be adequate.
         "Invalid ACE"}, \
     {VMDIR_ERROR_ACE_NOT_FOUND, \
         "ACE not found"}, \
-    {VMDIR_ERROR_NO_LEADER, \
+    {VMDIR_LDAP_ERROR_NO_LEADER, \
         "No leader"}, \
-    {VMDIR_ERROR_INVALID_ROLE, \
+    {VMDIR_LDAP_ERROR_INVALID_ROLE, \
         "Invalid role of node"}, \
     {VMDIR_ERROR_BACKEND_INSTANCE_NOT_FOUND, \
         "Backend instance not found"}, \

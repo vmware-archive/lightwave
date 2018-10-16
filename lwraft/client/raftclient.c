@@ -118,7 +118,7 @@ VmDirRaftLeader(
 
     if (dwError == LDAP_NO_SUCH_ATTRIBUTE)
     {
-        dwError = VMDIR_ERROR_NO_LEADER;
+        dwError = VMDIR_LDAP_ERROR_NO_LEADER;
     }
 
     return dwError;
@@ -575,7 +575,7 @@ _VmDirConnectToRaftLeader(
     ppBerValues = ldap_get_values_len(pLd, pEntry, ppszAttrs[0]);
     if (!ppBerValues || !ppBerValues[0]->bv_val)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_LEADER);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_LDAP_ERROR_NO_LEADER);
     }
 
     if (VmDirStringCompareA(pszServerName, ppBerValues[0]->bv_val, FALSE) != 0)

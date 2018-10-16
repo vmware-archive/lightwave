@@ -441,7 +441,7 @@ _VmDirSetMdbStateInLock(
     */
     if (!pDB)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_DB);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_LDAP_ERROR_NO_SUCH_DB);
     }
 
     if (op == MDB_STATE_READONLY || op == MDB_STATE_KEEPXLOGS)

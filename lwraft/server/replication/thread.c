@@ -374,7 +374,7 @@ VmDirRaftStartVoteSrv(VOID)
     // valid only if I am a leader
     if (gRaftState.role != VDIR_RAFT_ROLE_LEADER)
     {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_ROLE);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_LDAP_ERROR_INVALID_ROLE);
     }
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
