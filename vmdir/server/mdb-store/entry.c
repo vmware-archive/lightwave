@@ -427,7 +427,7 @@ VmDirMDBAddEntry(
 
 cleanup:
 
-    VMDIR_SAFE_FREE_MEMORY( encodedEntry.lberbv.bv_val );
+    VmDirFreeBervalContent(&encodedEntry);
 
     return dwError;
 
