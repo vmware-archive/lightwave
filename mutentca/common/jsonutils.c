@@ -216,12 +216,8 @@ LwCAJsonGetStringArrayFromKey(
 
     for (dwIdx = 0; dwIdx < dwArraySize; ++dwIdx)
     {
-        pJsonArrayValue = json_array_get(pJsonValue, dwIdx);
-        if(!pJsonArrayValue)
-        {
-            dwError = LWCA_JSON_PARSE_ERROR;
-            BAIL_ON_LWCA_ERROR(dwError);
-        }
+        dwError = LwCAJsonArrayGetBorrowedRef(pJsonValue, dwIdx, &pJsonArrayValue);
+        BAIL_ON_LWCA_ERROR(dwError);
 
         pcszArrayValue = json_string_value(pJsonArrayValue);
         if (IsNullOrEmptyString(pcszArrayValue))
@@ -465,6 +461,49 @@ error:
     }
 
     goto cleanup;
+}
+
+BOOLEAN
+LwCAJsonIsArray(
+    PLWCA_JSON_OBJECT       pJson
+    )
+{
+    return json_is_array(pJson);
+}
+
+SIZE_T
+LwCAJsonArraySize(
+    PLWCA_JSON_OBJECT       pJson
+    )
+{
+    return json_array_size(pJson);
+}
+
+DWORD
+LwCAJsonArrayGetBorrowedRef(
+    PLWCA_JSON_OBJECT       pJsonIn,
+    SIZE_T                  idx,
+    PLWCA_JSON_OBJECT       *ppJsonOut // Borrowed reference, do not free
+    )
+{
+    DWORD dwError = 0;
+
+    if (!pJsonIn || !ppJsonOut)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!LwCAJsonIsArray(pJsonIn) || (idx > (LwCAJsonArraySize(pJsonIn) - 1)))
+    {
+        dwError = LWCA_JSON_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppJsonOut = json_array_get(pJsonIn, idx);
+
+error:
+    return dwError;
 }
 
 VOID

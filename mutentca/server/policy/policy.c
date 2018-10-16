@@ -34,20 +34,22 @@ LwCAPolicyInitCtx(
     dwError = LwCAAllocateMemory(sizeof(LWCA_POLICY_CONTEXT), (PVOID*)&pPolicyCtx);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAJsonGetObjectFromKey(pJson, TRUE, "CAPolicy", &pCAPolicyJson);
-    BAIL_ON_LWCA_ERROR(dwError);
+    dwError = LwCAJsonGetObjectFromKey(pJson, TRUE, LWCA_CA_POLICY_KEY, &pCAPolicyJson);
+    BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, "Failed to get CAPolicies from policy config");
 
-    if (!pCAPolicyJson)
+    if (pCAPolicyJson)
     {
-        // TODO: Call config parser to get pCAPolicyJson contents into pPolicyCtx
+        dwError = LwCAPolicyParseCfgPolicies(pCAPolicyJson, &pPolicyCtx->pCAPoliciesAllowed);
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAJsonGetObjectFromKey(pJson, TRUE, "CertificatePolicy", &pCertPolicyJson);
-    BAIL_ON_LWCA_ERROR(dwError);
+    dwError = LwCAJsonGetObjectFromKey(pJson, TRUE, LWCA_CERT_POLICY_KEY, &pCertPolicyJson);
+    BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, "Failed to get CertificatePolicies from policy config");
 
-    if (!pCertPolicyJson)
+    if (pCertPolicyJson)
     {
-        // TODO: Call config parser to get pCertPolicyJson contents into pPolicyCtx
+        dwError = LwCAPolicyParseCfgPolicies(pCertPolicyJson, &pPolicyCtx->pCertPoliciesAllowed);
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     *ppPolicyCtx = pPolicyCtx;

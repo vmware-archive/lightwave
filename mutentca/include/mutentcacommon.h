@@ -254,6 +254,24 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
         goto error;                                                         \
     }
 
+#define BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg)                     \
+    if (dwError)                                                            \
+    {                                                                       \
+        LWCA_LOG_ERROR("[%s:%d] %s. error: %d",                             \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            pszErrMsg,                                      \
+                            dwError);                                       \
+        goto error;                                                         \
+    }
+
+#define BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, pszErrMsg)          \
+    if (dwError)                                                            \
+    {                                                                       \
+        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;                           \
+        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg)                     \
+    }
+
 #define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
     if (dwError == 0)                                                       \
     {                                                                       \
@@ -919,6 +937,23 @@ LwCAJsonGetBooleanFromKey(
     BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     BOOLEAN                 *pbValue
+    );
+
+BOOLEAN
+LwCAJsonIsArray(
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+SIZE_T
+LwCAJsonArraySize(
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+DWORD
+LwCAJsonArrayGetBorrowedRef(
+    PLWCA_JSON_OBJECT       pJsonIn,
+    SIZE_T                  idx,
+    PLWCA_JSON_OBJECT       *ppJsonOut // Borrowed reference, do not free
     );
 
 VOID

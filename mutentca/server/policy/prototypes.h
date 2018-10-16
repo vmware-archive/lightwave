@@ -12,35 +12,18 @@
  * under the License.
  */
 
-#ifndef _LWCA_POLICY_INCLUDES_H_
-#define _LWCA_POLICY_INCLUDES_H_
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <config.h>
-#include <mutentcasys.h>
+// parse.c
 
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#include <openssl/x509v3.h>
-#endif
-
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaerror.h>
-#include <mutentcapolicy.h>
-
-#include <jansson.h>
-
-#include "defines.h"
-#include "prototypes.h"
+DWORD
+LwCAPolicyParseCfgPolicies(
+    PLWCA_JSON_OBJECT           pJson,
+    PLWCA_POLICIES              *ppPolicies
+    );
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _LWCA_POLICY_INCLUDES_H_ */

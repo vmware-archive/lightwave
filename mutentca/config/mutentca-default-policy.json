@@ -42,7 +42,7 @@
         "KeyUsagePolicy": {
             "AllowedKeyUsages": 255
         },
-        "DurationPolicy": {
+        "CertDurationPolicy": {
             "MaxAllowedDays" : 3650
         }
     },
@@ -89,7 +89,7 @@
         "KeyUsagePolicy": {
             "AllowedKeyUsages": 255
         },
-        "DurationPolicy": {
+        "CertDurationPolicy": {
             "MaxAllowedDays" : 365
         }
     }

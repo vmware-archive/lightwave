@@ -86,7 +86,7 @@ typedef struct _LWCA_ERRNO_MAP
 
 // Policy Error Codes (80200 - 80299)
 #define LWCA_POLICY_VALIDATION_ERROR        (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
-#define LWCA_POLICY_CONFIG_ERROR            (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
+#define LWCA_POLICY_CONFIG_PARSE_ERROR      (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
 
 // SSL (CA) Error Codes (80300 - 80499)
 #define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
@@ -313,7 +313,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_FILE_LOAD_ERROR         ,   "LWCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
     { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
     { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
-    { LWCA_POLICY_CONFIG_ERROR          ,   "LWCA_POLICY_CONFIG_ERROR"          ,   "Invalid content in policy config file" }, \
+    { LWCA_POLICY_CONFIG_PARSE_ERROR    ,   "LWCA_POLICY_CONFIG_PARSE_ERROR"    ,   "Invalid content in policy config file" }, \
     { LWCA_DB_NOT_INITIALIZED           ,   "LWCA_DB_NOT_INITIALIZED"           ,   "Db context is not initialized" }, \
     { LWCA_DB_ALREADY_INITIALIZED       ,   "LWCA_DB_ALREADY_INITIALIZED"       ,   "Db context is already initialized" }, \
     { LWCA_DB_INVALID_PLUGIN            ,   "LWCA_DB_INVALID_PLUGIN"            ,   "Db plugin is not valid" }, \
