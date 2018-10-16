@@ -186,6 +186,18 @@ Requires: lightwave-client >= %{_version}
 %description samples
 Lightwave Samples
 
+%package casecurity-aws-kms
+Summary: Lightwave CA security plugin using Aws KMS
+Requires: aws-kms-libs >= 1.4.33
+Requires: lightwave-client >= %{_version}
+BuildRequires: aws-sdk-kms >= 1.4.33
+%description casecurity-aws-kms
+Security plugin implementing Aws KMS based envelope
+encryption for private keys. This implementation
+encapsulates encryption and allows key creation, sign
+and verify while hiding plain text private keys from
+users.
+
 %debug_package
 %build
 %install
@@ -1523,6 +1535,11 @@ Lightwave Samples
 %{_servicedir}/vmware-sampled.service
 %{_stssampleconfdir}/*
 %{_stssamplebindir}/*
+
+%files casecurity-aws-kms
+%defattr(-,root,root)
+%{_lib64dir}/liblwca_security_aws_kms.so
+%{_datadir}/config/casecurity-aws-kms.json
 
 # %doc ChangeLog README COPYING
 

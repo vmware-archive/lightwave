@@ -305,6 +305,14 @@ AC_ARG_ENABLE([security_aws_kms],
         then
             ENABLE_SECURITY_AWS_KMS=true
             AC_DEFINE(ENABLE_SECURITY_AWS_KMS, 1, [Build security plugin for aws kms?])
+            security_aws_kms_libdir=$prefix/lib64
+            AC_SUBST(security_aws_kms_libdir)
+            AS_AC_EXPAND(SECURITY_AWS_KMS_LIB_DIR, $security_aws_kms_libdir)
+            AC_DEFINE_UNQUOTED(SECURITY_AWS_KMS_LIB_DIR, "$SECURITY_AWS_KMS_LIB_DIR", [Lib directory])
+            security_aws_kms_confdir="$datadir/config"
+            AC_SUBST(security_aws_kms_confdir)
+            AS_AC_EXPAND(SECURITY_AWS_KMS_CONFIG_DIR, $security_aws_kms_confidr)
+            AC_DEFINE_UNQUOTED(SECURITY_AWS_KMS_CONFIG_DIR, "$SECURITY_AWS_KMS_CONFIG_DIR", [Config directory])
         fi
     ]
 ])
@@ -1708,6 +1716,8 @@ AC_CONFIG_FILES([Makefile
                  vmcommon/testing/Makefile
                  plugins/Makefile
                  plugins/lwca_security_aws_kms/Makefile
+                 plugins/lwca_security_aws_kms/src/Makefile
+                 plugins/lwca_security_aws_kms/config/Makefile
                  plugins/unit-tests/Makefile
                  plugins/unit-tests/security/Makefile
                  plugins/unit-tests/security_aws_kms/Makefile
