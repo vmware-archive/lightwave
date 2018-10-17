@@ -31,11 +31,10 @@ int main(VOID)
                 Security_Aws_Kms_Tests_Validate_Interface,
                 Security_Aws_Kms_Tests_Load_Interface,
                 Security_Aws_Kms_Tests_Unload_Interface),
-        /* create key pair */
-        cmocka_unit_test_setup_teardown(
-                Security_Aws_Kms_Tests_Create_Key_Pair,
-                Security_Aws_Kms_Tests_Create_Key_Pair_Setup,
-                Security_Aws_Kms_Tests_Unload_Interface)
+        /*
+         * TODO: add more tests. Need support for granular tests
+         * in implementation
+        */
     };
 
     ret = cmocka_run_group_tests(

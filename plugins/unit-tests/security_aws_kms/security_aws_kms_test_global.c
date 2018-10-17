@@ -16,6 +16,8 @@
 
 SECURITY_AWS_KMS_TEST_STATE _this_state = {0};
 
+#define LIB_LWCA_SECURITY_AWS_KMS_SO "../../lwca_security_aws_kms/src/.libs/liblwca_security_aws_kms.so"
+
 int
 Security_Aws_Kms_Tests_Load (
     VOID **state
@@ -23,7 +25,7 @@ Security_Aws_Kms_Tests_Load (
 {
     int error = 0;
 
-    _this_state.module = dlopen("../../lwca_security_aws_kms/.libs/lwca_security_aws_kms.so", RTLD_NOW);
+    _this_state.module = dlopen(LIB_LWCA_SECURITY_AWS_KMS_SO, RTLD_NOW);
 
     if (!_this_state.module)
     {
