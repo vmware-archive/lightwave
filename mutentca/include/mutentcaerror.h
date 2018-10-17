@@ -52,7 +52,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_STORAGE_ERROR_BASE             600
 #define LWCA_REST_ERROR_BASE                700
 #define LWCA_ERRNO_BASE                     800
-#define LWCA_MISC_ERROR_BASE                1000
+#define LWCA_SECURITY_ERROR_BASE            1000
+#define LWCA_MISC_ERROR_BASE                1100
 
 // System Error Codes (80000 - 80099)
 #define LWCA_ERROR_INVALID_PARAMETER        (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  1)
@@ -200,7 +201,12 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 2)
 #define LWCA_DB_INVALID_PLUGIN              (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 3)
 
-// Misc. Error Codes (8100 - 8999)
+// Security error Codes (81000 - 81099)
+#define LWCA_SECURITY_NOT_INITIALIZED       (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 1)
+#define LWCA_SECURITY_ALREADY_INITIALIZED   (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 2)
+#define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
+
+// Misc. Error Codes (81100 - 81999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
 #define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
 #define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
@@ -361,6 +367,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
     { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
     { LWCA_OIDC_RESPONSE_ERROR          ,   "LWCA_OIDC_RESPONSE_ERROR"          ,   "Error in the response from OIDC" }, \
+    { LWCA_SECURITY_NOT_INITIALIZED     ,   "LWCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin" }, \
+    { LWCA_SECURITY_ALREADY_INITIALIZED ,   "LWCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized" }, \
+    { LWCA_SECURITY_INVALID_PLUGIN      ,   "LWCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
 };
 
 #endif //__LWCA_ERROR_H__

@@ -366,6 +366,17 @@ LwCAKmSignX509Request(
     PCSTR    pcszKeyId
     );
 
+/* security */
+DWORD
+LwCASecurityInitCtx(
+    PLWCA_JSON_OBJECT pConfig
+    );
+
+VOID
+LwCASecurityFreeCtx(
+   VOID
+   );
+
 #ifdef __cplusplus
 }
 #endif
