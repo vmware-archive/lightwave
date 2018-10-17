@@ -2538,11 +2538,14 @@ DirCliExecPasswordRequest(
 {
     DWORD dwError = 0;
     DWORD idx = 0;
+    BOOL bForceReset = FALSE;
     PSTR pszAccount = NULL;
     PSTR pszLogin = NULL;
     PSTR pszPassword = NULL;
     PSTR pszPasswordNew = NULL;
     PSTR pszPasswordGenerated = NULL;
+    PBYTE pLocalByte = NULL;
+    DWORD dwByteSize = 0;
 
     typedef enum
     {
@@ -2724,6 +2727,12 @@ DirCliExecPasswordRequest(
                         {
                             submode = PARSE_SUB_MODE_NEW_PASSWORD;
                         }
+                        else if (!VmAfdStringCompareA(pszArg, "--force", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_OPEN;
+                            bForceReset = TRUE;
+                        }
+
                         else
                         {
                             dwError = ERROR_INVALID_PARAMETER;
@@ -2803,18 +2812,33 @@ DirCliExecPasswordRequest(
             break;
 
         case DIR_COMMAND_PASSWORD_RESET:
+            if (bForceReset)
+            {
+                dwError = VmDirForceResetPassword(pszAccount, &pLocalByte, &dwByteSize);
+                BAIL_ON_VMAFD_ERROR(dwError);
 
-            dwError = DirCliResetPassword(
-                            pszAccount,
-                            pszPasswordNew,
-                            pszLogin,
-                            pszPassword);
-            BAIL_ON_VMAFD_ERROR(dwError);
+                DWORD dwCnt = 0;
+                printf("Password was reset successfully to: \n");
+                for (dwCnt=0; dwCnt<dwByteSize; dwCnt++)
+                {
+                    printf("%c", pLocalByte[dwCnt]);
+                }
+                printf("\n");
+            }
+            else
+            {
+                dwError = DirCliResetPassword(
+                                pszAccount,
+                                pszPasswordNew,
+                                pszLogin,
+                                pszPassword);
+                BAIL_ON_VMAFD_ERROR(dwError);
 
-            fprintf(
-                stdout,
-                "Password was reset successfully for [%s]\n",
-                VMAFD_SAFE_STRING(pszAccount));
+                fprintf(
+                    stdout,
+                    "Password was reset successfully for [%s]\n",
+                    VMAFD_SAFE_STRING(pszAccount));
+            }
 
             break;
 
@@ -2828,6 +2852,7 @@ DirCliExecPasswordRequest(
 cleanup:
 
     VMAFD_SAFE_FREE_MEMORY(pszPasswordGenerated);
+    VMAFD_SAFE_FREE_MEMORY(pLocalByte);
 
     return dwError;
 
