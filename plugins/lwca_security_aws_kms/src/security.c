@@ -41,22 +41,33 @@ LwCASecurityGetVersion(
 
 DWORD
 LwSecurityAwsKmsInitialize(
+    PCSTR pszConfigFile,
     PLWCA_SECURITY_HANDLE *ppHandle
     )
 {
     DWORD dwError = 0;
-
     PLWCA_SECURITY_HANDLE pHandle = NULL;
+    PLWCA_SECURITY_CONFIG pConfig = NULL;
+
+    if (IsNullOrEmptyString(pszConfigFile) || !ppHandle)
+    {
+        dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
     dwError = VmAllocateMemory(sizeof(*pHandle), (PVOID *)&pHandle);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwAwsKmsInitialize(&pHandle->pContext);
+    dwError = LwCASecurityReadConfigFile(pszConfigFile, &pConfig);
+    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+
+    dwError = LwAwsKmsInitialize(pConfig, &pHandle->pContext);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
     *ppHandle = pHandle;
 
 cleanup:
+    LwAwsKmsFreeConfig(pConfig);
     return dwError;
 
 error:
@@ -358,6 +369,17 @@ error:
     return dwError;
 }
 
+DWORD
+LwSecurityAwsKmsGetErrorString(
+    DWORD dwErrorCode,
+    PSTR *ppszError
+    )
+{
+    DWORD dwError = 0;
+
+    return dwError;
+}
+
 VOID
 LwSecurityAwsKmsCloseHandle(
     PLWCA_SECURITY_HANDLE pHandle
@@ -404,6 +426,7 @@ LwCASecurityLoadInterface(
     _interface.pFnCreateKeyPair = LwSecurityAwsKmsCreateKeyPair;
     _interface.pFnSignCertificate = LwSecurityAwsKmsSignCertificate;
     _interface.pFnVerifyCertificate = LwSecurityAwsKmsVerifyCertificate;
+    _interface.pFnGetErrorString = LwSecurityAwsKmsGetErrorString;
     _interface.pFnCloseHandle = LwSecurityAwsKmsCloseHandle;
     _interface.pFnFreeMemory = LwSecurityAwsKmsFreeMemory;
 
@@ -428,6 +451,7 @@ LwCASecurityUnloadInterface(
         pInterface->pFnCreateKeyPair = NULL;
         pInterface->pFnSignCertificate = NULL;
         pInterface->pFnVerifyCertificate = NULL;
+        pInterface->pFnGetErrorString = NULL;
         pInterface->pFnCloseHandle = NULL;
         pInterface->pFnFreeMemory = NULL;
     }

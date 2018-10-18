@@ -120,27 +120,3 @@ Security_Aws_Kms_Tests_Load_Interface(
 error:
     return error;
 }
-
-int
-Security_Aws_Kms_Tests_Initialize(
-    void **state
-    )
-{
-    int error = 0;
-    PSECURITY_AWS_KMS_TEST_STATE pState = *state;
-
-    if (Security_Aws_Kms_Tests_Load_Interface(state))
-    {
-        goto error;
-    }
-
-    error = pState->pInterface->pFnInitialize(&pState->pHandle);
-    if (error)
-    {
-        fail_msg("initialize failed\n");
-        goto error;
-    }
-
-error:
-    return error;
-}

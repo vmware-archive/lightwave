@@ -152,6 +152,7 @@ typedef PCSTR
 */
 typedef DWORD
 (*PFN_LWCA_SECURITY_INITIALIZE)(
+    PCSTR pszConfigFile,
     PLWCA_SECURITY_HANDLE *pHandle
     );
 

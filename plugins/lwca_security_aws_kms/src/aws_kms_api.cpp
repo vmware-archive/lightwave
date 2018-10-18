@@ -15,16 +15,24 @@
 #include "includes.h"
 #include "aws_kms_includes.h"
 
+
+DWORD
+_TranslateKeySpec(
+    DATAKEYSPEC keySpec,
+    Aws::KMS::Model::DataKeySpec *pKeySpec
+    );
+
 extern "C"
 DWORD
 LwAwsKmsInitialize(
+    PLWCA_SECURITY_CONFIG pConfig,
     PAWS_KMS_API_CONTEXT *ppContext
     )
 {
     DWORD dwError = 0;
     PAWS_KMS_API_CONTEXT pContext = NULL;
 
-    if (!ppContext)
+    if (!pConfig || !ppContext)
     {
         dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
@@ -37,9 +45,10 @@ LwAwsKmsInitialize(
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
 
-    /* TODO: read this in from config */
-    /* pContext->cmkId = CMK_ID; */
-    pContext->keySpec = Aws::KMS::Model::DataKeySpec::AES_256;
+    pContext->cmkId = pConfig->pszCMKId;
+
+    dwError = _TranslateKeySpec(pConfig->keySpec, &pContext->keySpec);
+    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
     Aws::InitAPI(pContext->sdkOptions);
 
@@ -371,4 +380,24 @@ LwAwsKmsShutdown(
         delete pContext;
         pContext = NULL;
     }
+}
+
+DWORD
+_TranslateKeySpec(
+    DATAKEYSPEC keySpec,
+    Aws::KMS::Model::DataKeySpec *pKeySpec
+    )
+{
+    DWORD dwError = 0;
+
+    if (keySpec != DATAKEYSPEC_AES_256)
+    {
+        dwError = LWCA_SECURITY_AWS_KMS_KEY_SPEC_NOT_SUPPORTED;
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
+
+    *pKeySpec = Aws::KMS::Model::DataKeySpec::AES_256;
+
+error:
+    return dwError;
 }

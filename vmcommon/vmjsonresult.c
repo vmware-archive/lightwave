@@ -14,6 +14,48 @@
 
 #include "includes.h"
 
+DWORD
+VmJsonResultLoadFromFile(
+    PCSTR pszFile,
+    PVM_JSON_RESULT pResult
+    )
+{
+    DWORD dwError = 0;
+    json_t *pJsonRoot = NULL;
+    json_error_t jsonError = {0};
+
+    if (IsNullOrEmptyString(pszFile) || !pResult)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    pJsonRoot = json_load_file(pszFile, 0, &jsonError);
+    if (!pJsonRoot)
+    {
+        pResult->nJsonErrorLine = jsonError.line;
+
+        dwError = VmAllocateStringPrintf(
+                      &pResult->pszJsonErrorText,
+                      jsonError.text);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = VM_COMMON_ERROR_JSON_LOAD_FAILURE;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    pResult->pJsonRoot = pJsonRoot;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pJsonRoot)
+    {
+        json_decref(pJsonRoot);
+    }
+    goto cleanup;
+}
 
 DWORD
 VmJsonResultLoadString(

@@ -30,6 +30,11 @@ Security_Aws_Kms_Tests_Validate_Interface(
     VOID **state
     );
 
+VOID
+Security_Aws_Kms_Tests_Validate_Interface_Cleared(
+    VOID **state
+    );
+
 /* global */
 int
 Security_Aws_Kms_Tests_Load (
@@ -51,11 +56,6 @@ Security_Aws_Kms_Tests_Load_Interface(
     void **state
     );
 
-int
-Security_Aws_Kms_Tests_Initialize(
-    void **state
-    );
-
 /* get version */
 int
 Security_Aws_Kms_Tests_Get_Version (
@@ -64,6 +64,27 @@ Security_Aws_Kms_Tests_Get_Version (
 
 VOID
 Security_Aws_Kms_Tests_Check_Version (
+    void **state
+    );
+
+/* config parse */
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Good(
+    void **state
+    );
+
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Bad_No_Root(
+    void **state
+    );
+
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Bad_No_CMKId(
+    void **state
+    );
+
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Bad_No_KeySpec(
     void **state
     );
 

@@ -25,4 +25,6 @@
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif
 
+#define AES_256_STR "AES_256"
+
 #endif /* _LWCA_SECURITY_AWS_KMS_DEFINES_H_ */

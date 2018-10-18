@@ -22,6 +22,7 @@ extern "C" {
 /* aws_kms_api.cpp */
 DWORD
 LwAwsKmsInitialize(
+    PLWCA_SECURITY_CONFIG pConfig,
     PAWS_KMS_API_CONTEXT *ppContext
     );
 
@@ -81,6 +82,18 @@ LwX509Sign(
     X509 *pX509,
     PLWCA_BINARY_DATA pKeyData,
     LWCA_SECURITY_MESSAGE_DIGEST md
+    );
+
+/* security_config.c */
+DWORD
+LwCASecurityReadConfigFile(
+    PCSTR pszConfigFile,
+    PLWCA_SECURITY_CONFIG *ppConfig
+    );
+
+VOID
+LwAwsKmsFreeConfig(
+    PLWCA_SECURITY_CONFIG pConfig
     );
 
 #ifdef __cplusplus

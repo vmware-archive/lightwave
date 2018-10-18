@@ -75,7 +75,7 @@ Security_Aws_Kms_Tests_Create_Key_Pair_Setup(
         goto error;
     }
 
-    dwError = pState->pInterface->pFnInitialize(&pState->pHandle);
+    dwError = pState->pInterface->pFnInitialize(NULL, &pState->pHandle);
     if (dwError)
     {
         goto error;

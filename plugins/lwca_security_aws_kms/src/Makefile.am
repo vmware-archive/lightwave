@@ -9,6 +9,7 @@ liblwca_security_aws_kms_la_SOURCES = \
     aws_kms_api.cpp \
     aws_kms_crypto_helper.cpp \
     security.c \
+    security_config.c \
     security_pkcs.c
 
 liblwca_security_aws_kms_la_LIBADD = \

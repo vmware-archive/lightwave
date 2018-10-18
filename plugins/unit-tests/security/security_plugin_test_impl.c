@@ -28,6 +28,7 @@ LwCASecurityGetVersion(
 
 DWORD
 Security_Test_Impl_Initialize(
+    PCSTR pszConfigFile,
     PLWCA_SECURITY_HANDLE *ppHandle
     )
 {

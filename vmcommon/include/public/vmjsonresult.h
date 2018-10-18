@@ -67,6 +67,13 @@ VmJsonResultInit(
     PVM_JSON_RESULT *ppResult
     );
 
+/* parse and load json from file. if error, returns error details in result */
+DWORD
+VmJsonResultLoadFromFile(
+    PCSTR pszFile,
+    PVM_JSON_RESULT pResult
+    );
+
 /* parse and load json string. if error, returns error details in result */
 DWORD
 VmJsonResultLoadString(
