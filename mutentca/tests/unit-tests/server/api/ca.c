@@ -385,7 +385,7 @@ DWORD
 __wrap_LwCADbAddCA(
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData,
-    PCSTR                   pcszParentCA
+    PCSTR                   pcszParentCAId
     )
 {
     assert_non_null(pcszCAId);
@@ -480,11 +480,8 @@ __wrap_LwCADbGetCA(
 
     dwError = LwCADbCreateCAData(
                     "C=US, ST=WA, L=Bellevue, O=VMware Inc, OU=VMware Inc, CN=Test CA",
-                    "C=US, ST=WA, L=Bellevue, O=VMware Inc, OU=VMware Inc, CN=Test CA",
                     pCertArray,
                     pKey,
-                    NULL,
-                    NULL,
                     NULL,
                     LWCA_CA_STATUS_ACTIVE,
                     &pCAData

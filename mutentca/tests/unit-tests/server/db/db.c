@@ -18,7 +18,7 @@
 #define TEST_CA_ID "testId"
 #define TEST_PARENT_CA_ID "testParentId"
 
-VOID
+int
 Test_LwCADbInitCtx(
     VOID **state
     )
@@ -31,6 +31,24 @@ Test_LwCADbInitCtx(
 
     dwError = LwCADbInitCtx(pJson);
     assert_int_equal(dwError, 0);
+
+    LwCAJsonCleanupObject(pJson);
+    return 0;
+}
+
+VOID
+Test_LwCADbInitCtx_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_JSON_OBJECT pJson =  NULL;
+
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_DB_CONFIG, &pJson);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbInitCtx(pJson);
+    assert_int_equal(dwError, LWCA_DB_ALREADY_INITIALIZED);
 
     LwCAJsonCleanupObject(pJson);
 }
@@ -56,6 +74,29 @@ Test_LwCADbAddCA(
 }
 
 VOID
+Test_LwCADbAddCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pCAData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, NULL, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCA(NULL, pCAData, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData, NULL);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_MEMORY(pCAData);
+}
+
+VOID
 Test_LwCADbAddCertData(
     VOID **state
     )
@@ -73,6 +114,26 @@ Test_LwCADbAddCertData(
 }
 
 VOID
+Test_LwCADbAddCertData_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA pCertData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbAddCertData(NULL, pCertData);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCertData(TEST_CA_ID, pCertData);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_MEMORY(pCertData);
+}
+
+VOID
 Test_LwCADbCheckCA(
     VOID **state
     )
@@ -85,6 +146,48 @@ Test_LwCADbCheckCA(
 }
 
 VOID
+Test_LwCADbCheckCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCAExists = FALSE;
+
+    dwError = LwCADbCheckCA(NULL, &bCAExists);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbCheckCA(TEST_CA_ID, &bCAExists);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+VOID
+Test_LwCADbCheckCertData(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bExists = FALSE;
+
+    dwError = LwCADbCheckCertData(TEST_CA_ID, "1234", &bExists);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbCheckCertData_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bExists = FALSE;
+
+    dwError = LwCADbCheckCertData(NULL, NULL, &bExists);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbCheckCertData(TEST_CA_ID, "1234", &bExists);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+VOID
 Test_LwCADbGetCA(
     VOID **state
     )
@@ -94,6 +197,23 @@ Test_LwCADbGetCA(
 
     dwError = LwCADbGetCA(TEST_CA_ID, &pDbCAData);
     assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_MEMORY(pDbCAData);
+}
+
+VOID
+Test_LwCADbGetCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pDbCAData = NULL;
+
+    dwError = LwCADbGetCA(NULL, &pDbCAData);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCA(TEST_CA_ID, &pDbCAData);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 
     LWCA_SAFE_FREE_MEMORY(pDbCAData);
 }
@@ -113,6 +233,23 @@ Test_LwCADbGetCACertificates(
 }
 
 VOID
+Test_LwCADbGetCACertificates_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+
+    dwError = LwCADbGetCACertificates(NULL, &pCertArray);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCACertificates(TEST_CA_ID, &pCertArray);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LwCAFreeCertificates(pCertArray);
+}
+
+VOID
 Test_LwCADbGetCertData(
     VOID **state
     )
@@ -124,6 +261,85 @@ Test_LwCADbGetCertData(
     assert_int_equal(dwError, 0);
 
     LwCADbFreeCertDataArray(pCertDataArray);
+}
+
+VOID
+Test_LwCADbGetCertData_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray = NULL;
+
+    dwError = LwCADbGetCertData(NULL, &pCertDataArray);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCertData(TEST_CA_ID, &pCertDataArray);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LwCADbFreeCertDataArray(pCertDataArray);
+}
+
+VOID
+Test_LwCADbGetCACRLNumber(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszCRLNumber = NULL;
+
+    dwError = LwCADbGetCACRLNumber(TEST_CA_ID, &pszCRLNumber);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
+}
+
+VOID
+Test_LwCADbGetCACRLNumber_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszCRLNumber = NULL;
+
+    dwError = LwCADbGetCACRLNumber(NULL, &pszCRLNumber);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCACRLNumber(TEST_CA_ID, &pszCRLNumber);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
+}
+
+VOID
+Test_LwCADbGetParentCAId(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszParentCAId = NULL;
+
+    dwError = LwCADbGetParentCAId(TEST_CA_ID, &pszParentCAId);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
+}
+
+VOID
+Test_LwCADbGetParentCAId_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszParentCAId = NULL;
+
+    dwError = LwCADbGetParentCAId(NULL, &pszParentCAId);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetParentCAId(TEST_CA_ID, &pszParentCAId);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
 }
 
 VOID
@@ -144,6 +360,26 @@ Test_LwCADbUpdateCA(
 }
 
 VOID
+Test_LwCADbUpdateCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pDbCAData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pDbCAData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbUpdateCA(NULL, pDbCAData);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUpdateCA(TEST_CA_ID, pDbCAData);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_MEMORY(pDbCAData);
+}
+
+VOID
 Test_LwCADbUpdateCAStatus(
     VOID **state
     )
@@ -152,6 +388,20 @@ Test_LwCADbUpdateCAStatus(
 
     dwError = LwCADbUpdateCAStatus(TEST_CA_ID, LWCA_CA_STATUS_INACTIVE);
     assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbUpdateCAStatus_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = LwCADbUpdateCAStatus(NULL, LWCA_CA_STATUS_INACTIVE);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUpdateCAStatus(TEST_CA_ID, LWCA_CA_STATUS_INACTIVE);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 }
 
 VOID
@@ -172,11 +422,57 @@ Test_LwCADbUpdateCertData(
 }
 
 VOID
+Test_LwCADbUpdateCertData_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA pCertData = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbUpdateCertData(NULL, pCertData);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUpdateCertData(TEST_CA_ID, pCertData);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_MEMORY(pCertData);
+}
+
+VOID
+Test_LwCADbUpdateCACRLNumber(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = LwCADbUpdateCACRLNumber(TEST_CA_ID, "1234");
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbUpdateCACRLNumber_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = LwCADbUpdateCACRLNumber(NULL, "1234");
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUpdateCACRLNumber(TEST_CA_ID, "1234");
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+int
 Test_LwCADbFreeCtx(
     VOID **state
     )
 {
     LwCADbFreeCtx();
+    return 0;
 }
 
 /*
@@ -218,35 +514,25 @@ Test_LwCADbCAData(
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
     PLWCA_KEY pEncryptedPrivateKey = NULL;
-    PLWCA_KEY pEncryptedEncryptionKey = NULL;
     BYTE testKey1[20] = "testKey1";
-    BYTE testKey2[20] = "testKey2";
 
     dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCACreateKey(testKey2, 20, &pEncryptedEncryptionKey);
     assert_int_equal(dwError, 0);
 
     TestCreateCertificates(&pCertArray);
     assert_non_null(pCertArray);
     assert_non_null(pEncryptedPrivateKey);
-    assert_non_null(pEncryptedEncryptionKey);
 
     dwError = LwCADbCreateCAData("cn=CA",
-                                "cn=CA",
                                 pCertArray,
                                 pEncryptedPrivateKey,
-                                pEncryptedEncryptionKey,
-                                "-1",
-                                "-1",
+                                NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
 
     assert_non_null(pCAData);
-    assert_string_equal(pCAData->pszIssuer, "cn=CA");
-    assert_string_equal(pCAData->pszSubject, "cn=CA");
+    assert_string_equal(pCAData->pszSubjectName, "cn=CA");
 
     assert_non_null(pCAData->pCertificates);
     assert_int_equal(pCAData->pCertificates->dwCount, 2);
@@ -256,16 +542,10 @@ Test_LwCADbCAData(
 
     assert_non_null(pCAData->pEncryptedPrivateKey);
     assert_memory_equal(pCAData->pEncryptedPrivateKey->pData, testKey1, 20);
-    assert_non_null(pCAData->pEncryptedEncryptionKey);
-    assert_memory_equal(pCAData->pEncryptedEncryptionKey->pData, testKey2, 20);
-
-    assert_string_equal(pCAData->pszTimeValidFrom, "-1");
-    assert_string_equal(pCAData->pszTimeValidTo, "-1");
 
     assert_int_equal(pCAData->status, LWCA_CA_STATUS_ACTIVE);
 
     LwCAFreeKey(pEncryptedPrivateKey);
-    LwCAFreeKey(pEncryptedEncryptionKey);
     LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
 }
@@ -279,26 +559,26 @@ Test_LwCADbCAData_Invalid(
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
     PLWCA_KEY pEncryptedPrivateKey = NULL;
-    PLWCA_KEY pEncryptedEncryptionKey = NULL;
     BYTE testKey1[20] = "testKey1";
-    BYTE testKey2[20] = "testKey2";
 
     dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCACreateKey(testKey2, 20, &pEncryptedEncryptionKey);
     assert_int_equal(dwError, 0);
 
     TestCreateCertificates(&pCertArray);
     assert_non_null(pCertArray);
     assert_non_null(pEncryptedPrivateKey);
-    assert_non_null(pEncryptedEncryptionKey);
 
     dwError = LwCADbCreateCAData(NULL,
-                                NULL,
                                 pCertArray,
                                 pEncryptedPrivateKey,
-                                pEncryptedEncryptionKey,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    assert_null(pCAData);
+
+    dwError = LwCADbCreateCAData("cn=CA",
+                                NULL,
                                 NULL,
                                 NULL,
                                 LWCA_CA_STATUS_ACTIVE,
@@ -307,23 +587,8 @@ Test_LwCADbCAData_Invalid(
     assert_null(pCAData);
 
     dwError = LwCADbCreateCAData("cn=CA",
-                                "cn=CA",
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL,
-                                NULL,
-                                LWCA_CA_STATUS_ACTIVE,
-                                &pCAData);
-    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-    assert_null(pCAData);
-
-    dwError = LwCADbCreateCAData("cn=CA",
-                                "cn=CA",
                                 NULL,
                                 pEncryptedPrivateKey,
-                                pEncryptedEncryptionKey,
-                                NULL,
                                 NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
@@ -331,7 +596,6 @@ Test_LwCADbCAData_Invalid(
     assert_null(pCAData);
 
     LwCAFreeKey(pEncryptedPrivateKey);
-    LwCAFreeKey(pEncryptedEncryptionKey);
     LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
 }
@@ -346,22 +610,20 @@ Test_LwCADbCertData(
     PLWCA_DB_CERT_DATA pCertData = NULL;
 
     dwError = LwCADbCreateCertData("dummySerial",
-                                    "cn=CA",
                                     "-1",
                                     "-1",
-                                    "dummyReason",
-                                    "dummyDate",
+                                    1,
+                                    "-1",
                                     LWCA_CERT_STATUS_ACTIVE,
                                     &pCertData);
     assert_int_equal(dwError, 0);
 
     assert_non_null(pCertData);
     assert_string_equal(pCertData->pszSerialNumber, "dummySerial");
-    assert_string_equal(pCertData->pszIssuer, "cn=CA");
     assert_string_equal(pCertData->pszTimeValidFrom, "-1");
     assert_string_equal(pCertData->pszTimeValidTo, "-1");
-    assert_string_equal(pCertData->pszRevokedReason, "dummyReason");
-    assert_string_equal(pCertData->pszRevokedDate, "dummyDate");
+    assert_int_equal(pCertData->revokedReason, 1);
+    assert_string_equal(pCertData->pszRevokedDate, "-1");
     assert_int_equal(pCertData->status, LWCA_CERT_STATUS_ACTIVE);
 
     LwCADbFreeCertData(pCertData);
@@ -376,22 +638,10 @@ Test_LwCADbCertData_Invalid(
     PLWCA_DB_CERT_DATA pCertData = NULL;
 
     dwError = LwCADbCreateCertData(NULL,
-                                    "cn=CA",
-                                    NULL,
-                                    NULL,
-                                    "dummyReason",
-                                    "dummyDate",
-                                    LWCA_CERT_STATUS_ACTIVE,
-                                    &pCertData);
-    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-    assert_null(pCertData);
-
-    dwError = LwCADbCreateCertData("dummySerial",
-                                    NULL,
                                     "-1",
                                     "-1",
-                                    NULL,
-                                    NULL,
+                                    0,
+                                    "-1",
                                     LWCA_CERT_STATUS_ACTIVE,
                                     &pCertData);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);

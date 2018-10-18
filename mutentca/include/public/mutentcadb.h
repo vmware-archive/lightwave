@@ -24,13 +24,10 @@ extern "C" {
  */
 typedef struct _LWCA_DB_CA_DATA
 {
-    PSTR                            pszIssuer;
-    PSTR                            pszSubject;
+    PSTR                            pszSubjectName;
     PLWCA_CERTIFICATE_ARRAY         pCertificates;
     PLWCA_KEY                       pEncryptedPrivateKey;
-    PLWCA_KEY                       pEncryptedEncryptionKey;
-    PSTR                            pszTimeValidFrom;
-    PSTR                            pszTimeValidTo;
+    PSTR                            pszCRLNumber;
     LWCA_CA_STATUS                  status;
 } LWCA_DB_CA_DATA, *PLWCA_DB_CA_DATA;
 
@@ -40,10 +37,12 @@ typedef struct _LWCA_DB_CA_DATA
 typedef struct _LWCA_DB_CERT_DATA
 {
     PSTR                    pszSerialNumber;
-    PSTR                    pszIssuer;
-    PSTR                    pszRevokedReason;
+    DWORD                   revokedReason;
+    // ASN1 TIME Format
     PSTR                    pszRevokedDate;
+    // ASN1 TIME Format
     PSTR                    pszTimeValidFrom;
+    // ASN1 TIME Format
     PSTR                    pszTimeValidTo;
     LWCA_CERT_STATUS        status;
 } LWCA_DB_CERT_DATA, *PLWCA_DB_CERT_DATA;
@@ -84,10 +83,10 @@ typedef DWORD
  */
 typedef DWORD
 (*PFN_LWCA_DB_ADD_CA)(
-    PLWCA_DB_HANDLE        pHandle,      //IN
-    PCSTR                  pcszCAId,     //IN
-    PLWCA_DB_CA_DATA       pCAData,      //IN
-    PCSTR                  pcszParentCA  //IN (OPTIONAL)
+    PLWCA_DB_HANDLE        pHandle,       //IN
+    PCSTR                  pcszCAId,      //IN
+    PLWCA_DB_CA_DATA       pCAData,       //IN
+    PCSTR                  pcszParentCAId //IN (OPTIONAL)
     );
 
 /*
@@ -111,13 +110,24 @@ typedef DWORD
     );
 
 /*
+ * Check whether certdata exists or not
+ */
+typedef DWORD
+(*PFN_LWCA_DB_CHECK_CERT_DATA)(
+    PLWCA_DB_HANDLE        pHandle,             //IN
+    PCSTR                  pcszCAId,            //IN
+    PCSTR                  pcszSerialNumber,    //IN
+    PBOOLEAN               pbExists             //OUT
+    );
+
+/*
  * Get CA data
  */
 typedef DWORD
 (*PFN_LWCA_DB_GET_CA)(
-    PLWCA_DB_HANDLE          pHandle,    //IN
-    PCSTR                    pcszCAId,   //IN
-    PLWCA_DB_CA_DATA         *ppCAData   //OUT
+    PLWCA_DB_HANDLE          pHandle,        //IN
+    PCSTR                    pcszCAId,       //IN
+    PLWCA_DB_CA_DATA         *ppCAData       //OUT
     );
 
 /*
@@ -138,6 +148,26 @@ typedef DWORD
     PLWCA_DB_HANDLE             pHandle,         //IN
     PCSTR                       pcszCAId,        //IN
     PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray //OUT
+    );
+
+/*
+ * Get Cert store id
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_CA_CRL_NUMBER)(
+    PLWCA_DB_HANDLE             pHandle,         //IN
+    PCSTR                       pcszCAId,        //IN
+    PSTR                        *ppszCRLNumber     //OUT
+    );
+
+/*
+ * Get Parent CA info
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_PARENT_CA_ID)(
+    PLWCA_DB_HANDLE          pHandle,        //IN
+    PCSTR                    pcszCAId,       //IN
+    PSTR                     *ppszParentCAId //OUT
     );
 
 /*
@@ -171,6 +201,16 @@ typedef DWORD
     );
 
 /*
+ * Update Cert store id
+ */
+typedef DWORD
+(*PFN_LWCA_DB_UPDATE_CA_CRL_NUMBER)(
+    PLWCA_DB_HANDLE             pHandle,         //IN
+    PCSTR                       pcszCAId,        //IN
+    PCSTR                       pcszCRLNumber      //IN
+    );
+
+/*
  * Free memory allocated to plugin CA data
  */
 typedef VOID
@@ -195,6 +235,14 @@ typedef VOID
     );
 
 /*
+ * Free memory allocated to string
+ */
+typedef VOID
+(*PFN_LWCA_DB_FREE_STRING)(
+    PSTR  pszString   //IN
+    );
+
+/*
  * Free memory allocated to plugin handle
  */
 typedef VOID
@@ -211,15 +259,20 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_ADD_CA                  pFnAddCA;
     PFN_LWCA_DB_ADD_CERT_DATA           pFnAddCertData;
     PFN_LWCA_DB_CHECK_CA                pFnCheckCA;
+    PFN_LWCA_DB_CHECK_CERT_DATA         pFnCheckCertData;
     PFN_LWCA_DB_GET_CA                  pFnGetCA;
     PFN_LWCA_DB_GET_CA_CERTIFICATES     pFnGetCACertificates;
     PFN_LWCA_DB_GET_CERT_DATA           pFnGetCertData;
+    PFN_LWCA_DB_GET_CA_CRL_NUMBER       pFnGetCACRLNumber;
+    PFN_LWCA_DB_GET_PARENT_CA_ID        pFnGetParentCAId;
     PFN_LWCA_DB_UPDATE_CA               pFnUpdateCA;
     PFN_LWCA_DB_UPDATE_CA_STATUS        pFnUpdateCAStatus;
     PFN_LWCA_DB_UPDATE_CERT_DATA        pFnUpdateCertData;
+    PFN_LWCA_DB_UPDATE_CA_CRL_NUMBER    pFnUpdateCACRLNumber;
     PFN_LWCA_DB_FREE_CA_DATA            pFnFreeCAData;
     PFN_LWCA_DB_FREE_CERT_DATA_ARRAY    pFnFreeCertDataArray;
     PFN_LWCA_DB_FREE_CERTIFICATE_ARRAY  pFnFreeCertArray;
+    PFN_LWCA_DB_FREE_STRING             pFnFreeString;
     PFN_LWCA_DB_FREE_HANDLE             pFnFreeHandle;
 } LWCA_DB_FUNCTION_TABLE, *PLWCA_DB_FUNCTION_TABLE;
 

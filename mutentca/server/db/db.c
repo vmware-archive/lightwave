@@ -38,15 +38,20 @@ IsValidFunctionTable(
             && pFt->pFnAddCA
             && pFt->pFnAddCertData
             && pFt->pFnCheckCA
+            && pFt->pFnCheckCertData
             && pFt->pFnGetCACertificates
             && pFt->pFnGetCA
             && pFt->pFnGetCertData
+            && pFt->pFnGetCACRLNumber
+            && pFt->pFnGetParentCAId
             && pFt->pFnUpdateCA
             && pFt->pFnUpdateCAStatus
+            && pFt->pFnUpdateCACRLNumber
             && pFt->pFnFreeCAData
             && pFt->pFnUpdateCertData
             && pFt->pFnFreeCertDataArray
             && pFt->pFnFreeCertArray
+            && pFt->pFnFreeString
             );
 }
 
@@ -117,6 +122,7 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
     if (dwError != LWCA_DB_ALREADY_INITIALIZED)
     {
         LwCADbFreeCtx();
@@ -128,7 +134,7 @@ DWORD
 LwCADbAddCA(
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData,
-    PCSTR                   pcszParentCA
+    PCSTR                   pcszParentCAId
     )
 {
     DWORD dwError = 0;
@@ -145,7 +151,7 @@ LwCADbAddCA(
     dwError = LwCADbValidateContext();
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = gDbCtx.pFt->pFnAddCA(gDbCtx.pDbHandle, pcszCAId, pCAData, pcszParentCA);
+    dwError = gDbCtx.pFt->pFnAddCA(gDbCtx.pDbHandle, pcszCAId, pCAData, pcszParentCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -218,6 +224,51 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbCheckCertData(
+    PCSTR                   pcszCAId,
+    PCSTR                   pcszSerialNumber,
+    PBOOLEAN                pbExists
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bExists = FALSE;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId)
+        || IsNullOrEmptyString(pcszSerialNumber) || !pbExists)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnCheckCertData(
+                                gDbCtx.pDbHandle,
+                                pcszCAId,
+                                pcszSerialNumber,
+                                &bExists
+                                );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *pbExists = bExists;
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    if (pbExists)
+    {
+        *pbExists = FALSE;
+    }
     goto cleanup;
 }
 
@@ -376,6 +427,110 @@ error:
 }
 
 DWORD
+LwCADbGetCACRLNumber(
+    PCSTR   pcszCAId,
+    PSTR    *ppszCRLNumber
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszCRLNumber = NULL;
+    PSTR pszTempCRLNumber = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppszCRLNumber)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetCACRLNumber(gDbCtx.pDbHandle, pcszCAId, &pszTempCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pszTempCRLNumber)
+    {
+        dwError = LwCAAllocateStringA(pszTempCRLNumber, &pszCRLNumber);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppszCRLNumber = pszCRLNumber;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeString(pszTempCRLNumber);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
+    if (ppszCRLNumber)
+    {
+        *ppszCRLNumber = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCADbGetParentCAId(
+    PCSTR   pcszCAId,
+    PSTR    *ppszParentCAId
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszParentCAId = NULL;
+    PSTR pszTempParentCAId = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppszParentCAId)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetParentCAId(gDbCtx.pDbHandle, pcszCAId, &pszTempParentCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pszTempParentCAId)
+    {
+        dwError = LwCAAllocateStringA(pszTempParentCAId, &pszParentCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppszParentCAId = pszParentCAId;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeString(pszTempParentCAId);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
+    if (ppszParentCAId)
+    {
+        *ppszParentCAId = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCADbUpdateCA(
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData
@@ -468,6 +623,37 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCADbUpdateCACRLNumber(
+    PCSTR   pcszCAId,
+    PCSTR   pcszCRLNumber
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || IsNullOrEmptyString(pcszCRLNumber))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUpdateCACRLNumber(gDbCtx.pDbHandle, pcszCAId, pcszCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 VOID
 LwCADbFreeFunctionTable(
     PLWCA_DB_FUNCTION_TABLE pFt
@@ -524,13 +710,10 @@ _LwCADbCopyCAData(
     }
 
     dwError = LwCADbCreateCAData(
-                    pCAData->pszIssuer,
-                    pCAData->pszSubject,
+                    pCAData->pszSubjectName,
                     pCAData->pCertificates,
                     pCAData->pEncryptedPrivateKey,
-                    pCAData->pEncryptedEncryptionKey,
-                    pCAData->pszTimeValidFrom,
-                    pCAData->pszTimeValidTo,
+                    pCAData->pszCRLNumber,
                     pCAData->status,
                     &pTempCAData
                 );

@@ -12,8 +12,13 @@
  * under the License.
  */
 
-VOID
+int
 Test_LwCADbInitCtx(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbInitCtx_Invalid(
     VOID **state
     );
 
@@ -23,7 +28,17 @@ Test_LwCADbAddCA(
     );
 
 VOID
+Test_LwCADbAddCA_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbAddCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbAddCertData_Invalid(
     VOID **state
     );
 
@@ -33,7 +48,27 @@ Test_LwCADbCheckCA(
     );
 
 VOID
+Test_LwCADbCheckCA_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbCheckCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbCheckCertData_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbGetCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCA_Invalid(
     VOID **state
     );
 
@@ -43,7 +78,37 @@ Test_LwCADbGetCACertificates(
     );
 
 VOID
+Test_LwCADbGetCACertificates_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbGetCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCertData_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCACRLNumber(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCACRLNumber_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetParentCAId(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetParentCAId_Invalid(
     VOID **state
     );
 
@@ -53,7 +118,17 @@ Test_LwCADbUpdateCA(
     );
 
 VOID
+Test_LwCADbUpdateCA_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbUpdateCAStatus(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCAStatus_Invalid(
     VOID **state
     );
 
@@ -63,6 +138,21 @@ Test_LwCADbUpdateCertData(
     );
 
 VOID
+Test_LwCADbUpdateCertData_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCACRLNumber(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUpdateCACRLNumber_Invalid(
+    VOID **state
+    );
+
+int
 Test_LwCADbFreeCtx(
     VOID **state
     );

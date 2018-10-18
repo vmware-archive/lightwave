@@ -263,27 +263,23 @@ LwCAFreeKey(
 
 DWORD
 LwCADbCreateCAData(
-    PCSTR                           pcszIssuer,
-    PCSTR                           pcszSubject,
-    PLWCA_CERTIFICATE_ARRAY         pCertificates,
-    PLWCA_KEY                       pEncryptedPrivateKey,
-    PLWCA_KEY                       pEncryptedEncryptionKey,
-    PCSTR                           pcszTimeValidFrom,
-    PCSTR                           pcszTimeValidTo,
-    LWCA_CA_STATUS                  status,
-    PLWCA_DB_CA_DATA                *ppCAData
+    PCSTR                       pcszSubjectName,
+    PLWCA_CERTIFICATE_ARRAY     pCertificates,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszCRLNumber,
+    LWCA_CA_STATUS              status,
+    PLWCA_DB_CA_DATA            *ppCAData
     );
 
 DWORD
 LwCADbCreateCertData(
-    PCSTR               pcszSerialNumber,
-    PCSTR               pcszIssuer,
-    PCSTR               pcszTimeValidFrom,
-    PCSTR               pcszTimeValidTo,
-    PCSTR               pcszRevokedReason,
-    PCSTR               pcszRevokedDate,
-    LWCA_CERT_STATUS    status,
-    PLWCA_DB_CERT_DATA  *ppCertData
+    PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszTimeValidFrom,
+    PCSTR                   pcszTimeValidTo,
+    DWORD                   revokedReason,
+    PCSTR                   pcszRevokedDate,
+    LWCA_CERT_STATUS        status,
+    PLWCA_DB_CERT_DATA      *ppCertData
     );
 
 VOID

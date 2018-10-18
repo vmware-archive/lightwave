@@ -62,7 +62,6 @@ LwCACreateRootCA(
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
     X509 *pCert = NULL;
     PSTR pszSubject = NULL;
-    PSTR pszIssuer = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     BOOLEAN bIsCA = FALSE;
 
@@ -95,19 +94,13 @@ LwCACreateRootCA(
     dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509GetIssuerName(pCert, &pszIssuer);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     //TODO: Secure manager APIs must be called to encrypt and store private key.
 
     dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbCreateCAData(pszIssuer,
-                                pszSubject,
+    dwError = LwCADbCreateCAData(pszSubject,
                                 pCertArray,
-                                NULL,
-                                NULL,
                                 NULL,
                                 NULL,
                                 LWCA_CA_STATUS_ACTIVE,
@@ -122,7 +115,6 @@ cleanup:
     LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
-    LWCA_SAFE_FREE_STRINGA(pszIssuer);
     LwCAX509Free(pCert);
 
     return dwError;
@@ -400,6 +392,17 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCARevokeCertificate(
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszCAId,
+    PLWCA_CERTIFICATE       pCertificate
+    )
+{
+    DWORD dwError = 0;
+    return dwError;
+
+}
 static
 DWORD
 _LwCACheckCAExist(
@@ -537,26 +540,19 @@ _LwCAStoreIntermediateCA(
     PLWCA_CERTIFICATE_ARRAY pCertificates = NULL;
     PLWCA_DB_CA_DATA        pCAData = NULL;
     PSTR                    pszSubject = NULL;
-    PSTR                    pszIssuer = NULL;
-
+    
     dwError = LwCAX509ToPEM(pCert, &pCertificate);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509GetIssuerName(pCert, &pszIssuer);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertificates);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbCreateCAData(pszIssuer,
-                                pszSubject,
+    dwError = LwCADbCreateCAData(pszSubject,
                                 pCertificates,
                                 pEncryptedKey,
-                                NULL,
-                                NULL,
                                 NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
@@ -569,7 +565,6 @@ _LwCAStoreIntermediateCA(
 cleanup:
     LwCAFreeCertificate(pCertificate);
     LwCAFreeCertificates(pCertificates);
-    LWCA_SAFE_FREE_STRINGA(pszIssuer);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
     LwCADbFreeCAData(pCAData);
     return dwError;

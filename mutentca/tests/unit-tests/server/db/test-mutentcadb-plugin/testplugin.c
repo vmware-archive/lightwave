@@ -30,15 +30,20 @@ LwCAPluginLoad(
     pFt->pFnAddCA = &LwCADbTestPluginAddCA;
     pFt->pFnAddCertData = &LwCADbTestPluginAddCertData;
     pFt->pFnCheckCA = &LwCADbTestPluginCheckCA;
+    pFt->pFnCheckCertData = &LwCADbTestPluginCheckCertData;
     pFt->pFnGetCA = &LwCADbTestPluginGetCA;
     pFt->pFnGetCACertificates = &LwCADbTestPluginGetCACertificates;
     pFt->pFnGetCertData = &LwCADbTestPluginGetCertData;
+    pFt->pFnGetCACRLNumber = &LwCADbTestPluginGetCACRLNumber;
+    pFt->pFnGetParentCAId = &LwCADbTestPluginGetParentCAId;
     pFt->pFnUpdateCA = &LwCADbTestPluginUpdateCA;
     pFt->pFnUpdateCAStatus = &LwCADbTestPluginUpdateCAStatus;
     pFt->pFnUpdateCertData = &LwCADbTestPluginUpdateCertData;
+    pFt->pFnUpdateCACRLNumber = &LwCADbTestPluginUpdateCACRLNumber;
     pFt->pFnFreeCAData = &LwCADbTestPluginFreeCAData;
     pFt->pFnFreeCertDataArray = &LwCADbTestPluginFreeCertDataArray;
     pFt->pFnFreeCertArray = &LwCADbTestPluginFreeCertificates;
+    pFt->pFnFreeString = &LwCADbTestPluginFreeString;
     pFt->pFnFreeHandle = &LwCADbTestPluginFreeHandle;
 
 cleanup:
@@ -69,7 +74,7 @@ LwCADbTestPluginAddCA(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData,
-    PCSTR                   pcszParentCA
+    PCSTR                   pcszParentCAId
     )
 {
     return 0;
@@ -90,6 +95,17 @@ LwCADbTestPluginCheckCA(
     PLWCA_DB_HANDLE        pHandle,
     PCSTR                  pcszCAId,
     PBOOLEAN               pbExists
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginCheckCertData(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PCSTR                   pcszSerialNumber,
+    PBOOLEAN                pbExists
     )
 {
     return 0;
@@ -126,6 +142,16 @@ LwCADbTestPluginGetCertData(
 }
 
 DWORD
+LwCADbTestPluginGetCACRLNumber(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszCRLNumber
+    )
+{
+    return 0;
+}
+
+DWORD
 LwCADbTestPluginUpdateCA(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
@@ -156,12 +182,31 @@ LwCADbTestPluginUpdateCertData(
     return 0;
 }
 
+DWORD
+LwCADbTestPluginUpdateCACRLNumber(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PCSTR                       pcszCRLNumber
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginGetParentCAId(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszParentCAId
+    )
+{
+    return 0;
+}
+
 VOID
 LwCADbTestPluginFreeCAData(
     PLWCA_DB_CA_DATA pCAData
     )
 {
-
 }
 
 VOID
@@ -174,6 +219,13 @@ LwCADbTestPluginFreeCertDataArray(
 VOID
 LwCADbTestPluginFreeCertificates(
     PLWCA_CERTIFICATE_ARRAY pCertArray
+    )
+{
+}
+
+VOID
+LwCADbTestPluginFreeString(
+    PSTR  pszString
     )
 {
 }

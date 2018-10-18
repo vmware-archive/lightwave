@@ -436,13 +436,10 @@ LwCAFreeKey(
 
 DWORD
 LwCADbCreateCAData(
-    PCSTR                       pcszIssuer,
-    PCSTR                       pcszSubject,
+    PCSTR                       pcszSubjectName,
     PLWCA_CERTIFICATE_ARRAY     pCertificates,
     PLWCA_KEY                   pEncryptedPrivateKey,
-    PLWCA_KEY                   pEncryptedEncryptionKey,
-    PCSTR                       pcszTimeValidFrom,
-    PCSTR                       pcszTimeValidTo,
+    PCSTR                       pcszCRLNumber,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     )
@@ -450,8 +447,7 @@ LwCADbCreateCAData(
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
 
-    if (!pCertificates || IsNullOrEmptyString(pcszIssuer) ||
-        IsNullOrEmptyString(pcszSubject) || !ppCAData)
+    if (!pCertificates || IsNullOrEmptyString(pcszSubjectName) || !ppCAData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -463,23 +459,8 @@ LwCADbCreateCAData(
     dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateStringA(pcszIssuer, &pCAData->pszIssuer);
+    dwError = LwCAAllocateStringA(pcszSubjectName, &pCAData->pszSubjectName);
     BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszSubject, &pCAData->pszSubject);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pcszTimeValidFrom))
-    {
-        dwError = LwCAAllocateStringA(pcszTimeValidFrom, &pCAData->pszTimeValidFrom);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pcszTimeValidTo))
-    {
-        dwError = LwCAAllocateStringA(pcszTimeValidTo, &pCAData->pszTimeValidTo);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
 
     if (pEncryptedPrivateKey)
     {
@@ -487,9 +468,9 @@ LwCADbCreateCAData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    if (pEncryptedEncryptionKey)
+    if (!IsNullOrEmptyString(pcszCRLNumber))
     {
-        dwError = LwCACopyKey(pEncryptedEncryptionKey, &pCAData->pEncryptedEncryptionKey);
+        dwError = LwCAAllocateStringA(pcszCRLNumber, &pCAData->pszCRLNumber);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -512,10 +493,9 @@ error:
 DWORD
 LwCADbCreateCertData(
     PCSTR                   pcszSerialNumber,
-    PCSTR                   pcszIssuer,
     PCSTR                   pcszTimeValidFrom,
     PCSTR                   pcszTimeValidTo,
-    PCSTR                   pcszRevokedReason,
+    DWORD                   revokedReason,
     PCSTR                   pcszRevokedDate,
     LWCA_CERT_STATUS        status,
     PLWCA_DB_CERT_DATA      *ppCertData
@@ -524,9 +504,7 @@ LwCADbCreateCertData(
     DWORD dwError = 0;
     PLWCA_DB_CERT_DATA pCertData = NULL;
 
-    if (IsNullOrEmptyString(pcszSerialNumber) || IsNullOrEmptyString(pcszRevokedReason) ||
-            IsNullOrEmptyString(pcszRevokedDate) || IsNullOrEmptyString(pcszTimeValidFrom) ||
-            IsNullOrEmptyString(pcszTimeValidTo) || !ppCertData)
+    if (IsNullOrEmptyString(pcszSerialNumber) || !ppCertData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -538,24 +516,24 @@ LwCADbCreateCertData(
     dwError = LwCAAllocateStringA(pcszSerialNumber, &(pCertData->pszSerialNumber));
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (!IsNullOrEmptyString(pcszIssuer))
+    if (!IsNullOrEmptyString(pcszTimeValidFrom))
     {
-        dwError = LwCAAllocateStringA(pcszIssuer, &pCertData->pszIssuer);
+        dwError = LwCAAllocateStringA(pcszTimeValidFrom, &(pCertData->pszTimeValidFrom));
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateStringA(pcszTimeValidFrom, &pCertData->pszTimeValidFrom);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (!IsNullOrEmptyString(pcszTimeValidTo))
+    {
+        dwError = LwCAAllocateStringA(pcszTimeValidTo, &(pCertData->pszTimeValidTo));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
-    dwError = LwCAAllocateStringA(pcszTimeValidTo, &pCertData->pszTimeValidTo);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszRevokedReason, &pCertData->pszRevokedReason);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(pcszRevokedDate, &pCertData->pszRevokedDate);
-    BAIL_ON_LWCA_ERROR(dwError);
-
+    if (!IsNullOrEmptyString(pcszRevokedDate))
+    {
+        dwError = LwCAAllocateStringA(pcszRevokedDate, &(pCertData->pszRevokedDate));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    pCertData->revokedReason = revokedReason;
     pCertData->status = status;
 
     *ppCertData = pCertData;
@@ -596,35 +574,25 @@ LwCADbCopyCertData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    if (!IsNullOrEmptyString(pCertData->pszIssuer))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszIssuer, &pTempCertData->pszIssuer);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pCertData->pszRevokedReason))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszRevokedReason, &pTempCertData->pszRevokedReason);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pCertData->pszRevokedDate))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszRevokedDate, &pTempCertData->pszRevokedDate);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
     if (!IsNullOrEmptyString(pCertData->pszTimeValidFrom))
     {
-        dwError = LwCAAllocateStringA(pCertData->pszTimeValidFrom, &pTempCertData->pszTimeValidFrom);
+        dwError = LwCAAllocateStringA(pCertData->pszTimeValidFrom, &(pTempCertData->pszTimeValidFrom));
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     if (!IsNullOrEmptyString(pCertData->pszTimeValidTo))
     {
-        dwError = LwCAAllocateStringA(pCertData->pszTimeValidTo, &pTempCertData->pszTimeValidTo);
+        dwError = LwCAAllocateStringA(pCertData->pszTimeValidTo, &(pTempCertData->pszTimeValidTo));
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    if (!IsNullOrEmptyString(pCertData->pszRevokedDate))
+    {
+        dwError = LwCAAllocateStringA(pCertData->pszRevokedDate, &(pTempCertData->pszRevokedDate));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pTempCertData->revokedReason = pCertData->revokedReason;
 
     *ppCertData = pTempCertData;
 
@@ -693,13 +661,10 @@ LwCADbFreeCAData(
 {
     if (pCAData)
     {
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszIssuer);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszSubject);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszSubjectName);
         LwCAFreeCertificates(pCAData->pCertificates);
         LwCAFreeKey(pCAData->pEncryptedPrivateKey);
-        LwCAFreeKey(pCAData->pEncryptedEncryptionKey);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidFrom);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszTimeValidTo);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszCRLNumber);
         LWCA_SAFE_FREE_MEMORY(pCAData);
     }
 }
@@ -712,11 +677,9 @@ LwCADbFreeCertData(
     if (pCertData != NULL)
     {
         LWCA_SAFE_FREE_STRINGA(pCertData->pszSerialNumber);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszIssuer);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedReason);
-        LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedDate);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidFrom);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidTo);
+        LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedDate);
         LWCA_SAFE_FREE_MEMORY(pCertData);
     }
 }
