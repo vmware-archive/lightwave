@@ -1,5 +1,8 @@
 noinst_PROGRAMS = vmcommon_test
 
+check_PROGRAMS = vmcommon_test
+TESTS = $(check_PROGRAMS)
+
 vmcommon_test_SOURCES = \
     countertest.c \
     gaugetest.c \
