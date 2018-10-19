@@ -12,47 +12,22 @@
  * under the License.
  */
 
-#ifndef _MUTENTCA_RESTHEAD_INCLUDES_H_
-#define _MUTENTCA_RESTHEAD_INCLUDES_H_
-
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <config.h>
-#include <lw/hash.h>
-
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
-
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcaerror.h>
-#include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaapi.h>
-#include <mutentcaoidc.h>
-#include <mutentcaresthead.h>
-
-#include <vmutil.h>
-
-#ifdef REST_ENABLED
-
-#include <copenapi/copenapi.h>
-#include <jansson.h>
-#include <vmrest.h>
-
-#include "defines.h"
-#include "structs.h"
-#include "apidefs.h"
-#include "prototypes.h"
-#include "externs.h"
-
-#endif
+DWORD
+LwCAOIDCTokenAuthenticate(
+    PCSTR                   pcszReqAuthHdr,
+    PCSTR                   pcszReqMethod,
+    PCSTR                   pcszReqContentType,
+    PCSTR                   pcszReqDate,
+    PCSTR                   pcszReqBody,
+    PCSTR                   pcszReqURI,
+    PBOOLEAN                pbAuthenticated,
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    );
 
 #ifdef __cplusplus
 }
 #endif
-
-#endif /* _MUTENTCA_RESTHEAD_INCLUDES_H_ */

@@ -16,6 +16,15 @@
 extern "C" {
 #endif
 
+// auth.c
+
+DWORD
+LwCARestAuth(
+    PLWCA_REST_OPERATION    pRestOp,
+    PLWCA_REQ_CONTEXT       *ppReqCtx,
+    PBOOLEAN                pbAuthenticated
+    );
+
 // handler.c
 DWORD
 LwCARestApiRequestHandler(

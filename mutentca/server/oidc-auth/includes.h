@@ -12,15 +12,23 @@
  * under the License.
  */
 
-#ifndef _MUTENTCA_RESTHEAD_INCLUDES_H_
-#define _MUTENTCA_RESTHEAD_INCLUDES_H_
+#ifndef _MUTENTCA_OIDC_INCLUDES_H_
+#define _MUTENTCA_OIDC_INCLUDES_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
 #include <config.h>
-#include <lw/hash.h>
+#include <mutentcasys.h>
+
+#include <openssl/crypto.h>
+#include <openssl/ssl.h>
+#include <openssl/err.h>
+#include <openssl/conf.h>
+#include <openssl/x509v3.h>
+#include <openssl/pem.h>
+#include <openssl/bio.h>
 
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
@@ -31,28 +39,21 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
-#include <mutentcaapi.h>
-#include <mutentcaoidc.h>
-#include <mutentcaresthead.h>
 
-#include <vmutil.h>
+#include <vmhttpclient.h>
 
-#ifdef REST_ENABLED
-
-#include <copenapi/copenapi.h>
-#include <jansson.h>
-#include <vmrest.h>
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "defines.h"
 #include "structs.h"
-#include "apidefs.h"
 #include "prototypes.h"
-#include "externs.h"
-
-#endif
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _MUTENTCA_RESTHEAD_INCLUDES_H_ */
+#endif /* _MUTENTCA_OIDC_INCLUDES_H_ */

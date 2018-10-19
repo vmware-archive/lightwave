@@ -14,7 +14,7 @@ libcommon_la_SOURCES = \
     thread.c \
     token_util.c \
     utils.c \
-    vecs.c
+    vmafd.c
 
 libcommon_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \

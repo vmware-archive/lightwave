@@ -52,8 +52,10 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_STORAGE_ERROR_BASE             600
 #define LWCA_REST_ERROR_BASE                700
 #define LWCA_ERRNO_BASE                     800
+#define LWCA_OIDC_ERROR_BASE                900
 #define LWCA_SECURITY_ERROR_BASE            1000
-#define LWCA_MISC_ERROR_BASE                1100
+#define LWCA_CURL_ERROR_BASE                1100
+#define LWCA_MISC_ERROR_BASE                2000
 
 // System Error Codes (80000 - 80099)
 #define LWCA_ERROR_INVALID_PARAMETER        (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  1)
@@ -195,18 +197,32 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_INVALID_METHOD           (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 3)
 #define LWCA_ERROR_INVALID_REQUEST          (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 4)
 #define LWCA_ERROR_UNAVAILABLE              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 5)
+#define LWCA_ERROR_REST_UNAUTHENTICATED     (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 6)
 
 // Storage Error codes (80600 - 80699)
 #define LWCA_DB_NOT_INITIALIZED             (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 1)
 #define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 2)
 #define LWCA_DB_INVALID_PLUGIN              (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 3)
 
+// OIDC Error codes (80900 - 80999)
+#define LWCA_ERROR_OIDC_UNAVAILABLE         (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 1)
+#define LWCA_ERROR_OIDC_BAD_AUTH_DATA       (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 2)
+#define LWCA_ERROR_OIDC_UNKNOWN_TOKEN       (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 3)
+#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 4)
+#define LWCA_ERROR_OIDC_INVALID_POP         (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 5)
+
 // Security error Codes (81000 - 81099)
 #define LWCA_SECURITY_NOT_INITIALIZED       (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 1)
 #define LWCA_SECURITY_ALREADY_INITIALIZED   (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 2)
 #define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
 
-// Misc. Error Codes (81100 - 81999)
+// CURL Error codes (81100 - 81199)
+#define LWCA_ERROR_CURL_FAILED_INIT                  (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
+#define LWCA_ERROR_CURL_SEND_ERROR                   (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 2)
+#define LWCA_ERROR_CURL_RECV_ERROR                   (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 3)
+#define LWCA_ERROR_CURL_GENERIC_ERROR                (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 4)
+
+// Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
 #define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
 #define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
@@ -214,7 +230,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 5)
 #define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
 #define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
-#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 8)
+#define LWCA_ERROR_VMAFD_UNAVAILABLE        (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 9)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -314,6 +330,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_AUTH_BAD_DATA          ,   "LWCA_ERROR_AUTH_BAD_DATA"          ,   "Bad auth data presented" }, \
     { LWCA_ERROR_INVALID_REQUEST        ,   "LWCA_ERROR_INVALID_REQUEST"        ,   "Bad request caused by client error"}, \
     { LWCA_ERROR_UNAVAILABLE            ,   "LWCA_ERROR_UNAVAILABLE"            ,   "Server is unavailable/shutdown"}, \
+    { LWCA_ERROR_REST_UNAUTHENTICATED   ,   "LWCA_ERROR_REST_UNAUTHENTICATED"   ,   "Unauthenticated HTTP request"}, \
     { LWCA_ERROR_DLL_SYMBOL_NOTFOUND    ,   "LWCA_ERROR_DLL_SYMBOL_NOTFOUND"    ,   "Unable to find symbol in library" }, \
     { LWCA_ERROR_EVP_DIGEST             ,   "LWCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
     { LWCA_JSON_FILE_LOAD_ERROR         ,   "LWCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
@@ -366,10 +383,19 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_ERROR                   ,   "LWCA_JSON_ERROR"                   ,   "Error from jansson api" }, \
     { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
     { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
+    { LWCA_ERROR_OIDC_UNAVAILABLE       ,   "LWCA_ERROR_OIDC_UNAVAILABLE"       ,   "OIDC authentication is not available" }, \
+    { LWCA_ERROR_OIDC_BAD_AUTH_DATA     ,   "LWCA_ERROR_OIDC_BAD_AUTH_DATA"     ,   "Bad data presented for OIDC auth" }, \
+    { LWCA_ERROR_OIDC_UNKNOWN_TOKEN     ,   "LWCA_ERROR_OIDC_UNKNOWN_TOKEN"     ,   "Unsupported OIDC token type presented" }, \
+    { LWCA_ERROR_OIDC_INVALID_POP       ,   "LWCA_ERROR_OIDC_INVALID_POP"       ,   "Failed to verify HTTP request POP" }, \
     { LWCA_OIDC_RESPONSE_ERROR          ,   "LWCA_OIDC_RESPONSE_ERROR"          ,   "Error in the response from OIDC" }, \
     { LWCA_SECURITY_NOT_INITIALIZED     ,   "LWCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin" }, \
     { LWCA_SECURITY_ALREADY_INITIALIZED ,   "LWCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized" }, \
     { LWCA_SECURITY_INVALID_PLUGIN      ,   "LWCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
+    { LWCA_ERROR_CURL_FAILED_INIT       ,   "LWCA_ERROR_CURL_FAILED_INIT"       ,   "CURL Init Failed" } , \
+    { LWCA_ERROR_CURL_SEND_ERROR        ,   "LWCA_ERROR_CURL_SEND_ERROR"        ,   "CURL failed to send request" } , \
+    { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
+    { LWCA_ERROR_CURL_GENERIC_ERROR     ,   "LWCA_ERROR_CURL_GENERIC_ERROR"     ,   "CURL generic failure" } , \
+    { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
 };
 
 #endif //__LWCA_ERROR_H__

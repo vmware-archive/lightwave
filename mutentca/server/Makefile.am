@@ -1,6 +1,7 @@
 SUBDIRS = \
     common \
     config \
+    oidc-auth \
     plugin \
     security \
     plugins \

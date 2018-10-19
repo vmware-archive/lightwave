@@ -1949,6 +1949,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/security/Makefile
                  mutentca/server/db/Makefile
+                 mutentca/server/oidc-auth/Makefile
                  mutentca/server/plugin/Makefile
                  mutentca/server/plugins/Makefile
                  mutentca/server/plugins/post/Makefile

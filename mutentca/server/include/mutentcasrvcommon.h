@@ -92,18 +92,6 @@ typedef DWORD LWCA_FUNC_LEVEL;
         }                               \
     } while(0)
 
-#define BAIL_ON_LWCA_INVALID_POINTER(p, errCode)    \
-    if (p == NULL) {                                \
-        errCode = LWCA_ERROR_INVALID_PARAMETER;     \
-        BAIL_ON_LWCA_ERROR(errCode);                \
-    }
-
-#define BAIL_ON_LWCA_INVALID_PARAMETER(input, dwError)  \
-    if (input == NULL)                                  \
-    {                                                   \
-        dwError = LWCA_ERROR_INVALID_PARAMETER;         \
-    }
-
 #define LWCA_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
     if (! (bLocked) ) \
     { \
@@ -142,7 +130,8 @@ typedef struct _LWCA_DIR_SYNC_PARAMS
 
 typedef struct _LWCA_REQ_CONTEXT
 {
-    PSTR            pszAuthPrincipal;
+    PSTR                    pszBindUPN;
+    PLWCA_STRING_ARRAY      pBindUPNGroups;
 } LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
 
 typedef enum
@@ -212,6 +201,18 @@ LwCAUtilIsValueInWhitelist(
     PCSTR                           pszAuthUPN,
     PCSTR                           pcszRegValue,
     PBOOLEAN                        pbInWhitelist
+    );
+
+DWORD
+LwCARequestContextCreate(
+    PSTR                    pszBindUPN,
+    PLWCA_STRING_ARRAY      pBindUPNGroups,
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    );
+
+VOID
+LwCARequestContextFree(
+    PLWCA_REQ_CONTEXT       pReqCtx
     );
 
 DWORD

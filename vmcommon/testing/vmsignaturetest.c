@@ -71,7 +71,7 @@
 
 static
 DWORD
-_VmHttpClientRequestPOPSignatureTest(
+_VmHttpClientSignRequest(
     PSTR pTestMsg,
     PSTR pRequestBody,
     PSTR pExpectedSignature
@@ -89,7 +89,7 @@ _VmHttpClientRequestPOPSignatureTest(
     pszPEM = PEM_VALUE;
     pszRequestTime = REQUEST_TIMESTAMP;
 
-    dwError = VmHttpClientRequestPOPSignature(
+    dwError = VmHttpClientSignRequest(
         vmHttpMethod,
         pszRequestURI,
         pRequestBody,
@@ -128,26 +128,11 @@ VmSignatureTest(
 {
     DWORD   dwError = 0;
 
-    dwError = _VmHttpClientRequestPOPSignatureTest("Empty Body",
-                                                   EMPTY_REQUEST_BODY,
-                                                   EMPTY_BODY_SIGNATURE
-                                                   );
-
-    dwError = _VmHttpClientRequestPOPSignatureTest("Empty Whitespace Body",
-                                                   EMPTY_WHITESPACE_REQUEST_BODY,
-                                                   EMPTY_BODY_SIGNATURE
-                                                   );
-    dwError += _VmHttpClientRequestPOPSignatureTest("Non Empty Body",
-                                                    NON_EMPTY_REQUEST_BODY,
-                                                    NON_EMPTY_BODY_SIGNATURE
-                                                    );
-    dwError += _VmHttpClientRequestPOPSignatureTest("Non Empty Whitespace Body",
-                                                    NON_EMPTY_WHITESPACE_REQUEST_BODY,
-                                                    NON_EMPTY_BODY_SIGNATURE
-                                                    );
-    dwError += _VmHttpClientRequestPOPSignatureTest("Null Body Request",
-                                                    NULL,
-                                                    EMPTY_BODY_SIGNATURE);
+    dwError =  _VmHttpClientSignRequest("Empty Body", EMPTY_REQUEST_BODY, EMPTY_BODY_SIGNATURE);
+    dwError =  _VmHttpClientSignRequest("Empty Whitespace Body", EMPTY_WHITESPACE_REQUEST_BODY, EMPTY_BODY_SIGNATURE);
+    dwError += _VmHttpClientSignRequest("Non Empty Body", NON_EMPTY_REQUEST_BODY, NON_EMPTY_BODY_SIGNATURE);
+    dwError += _VmHttpClientSignRequest("Non Empty Whitespace Body", NON_EMPTY_WHITESPACE_REQUEST_BODY, NON_EMPTY_BODY_SIGNATURE);
+    dwError += _VmHttpClientSignRequest("Null Body Request", NULL, EMPTY_BODY_SIGNATURE);
 
     return dwError;
 }

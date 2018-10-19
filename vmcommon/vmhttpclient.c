@@ -17,7 +17,7 @@
 
 static
 DWORD
-_BuildStringToSign(
+_VmHttpBuildStringToSign(
     PCSTR    pcszRequestMethod,
     PCSTR    pcszRequestBody,
     PCSTR    pcszContentType,
@@ -636,7 +636,7 @@ error:
 }
 
 DWORD
-VmHttpClientRequestPOPSignature(
+VmHttpClientSignRequest(
     VM_HTTP_METHOD  httpMethod,
     PCSTR           pcszRequestURI,
     PCSTR           pcszRequestBody,
@@ -658,16 +658,10 @@ VmHttpClientRequestPOPSignature(
     size_t          rsaRawLen = 0;
     PSTR            pszSignature = NULL;
 
-
-    if (IsNullOrEmptyString(pcszRequestURI) ||
-        IsNullOrEmptyString(pcszPEM) ||
-        IsNullOrEmptyString(pcszRequestTime) ||
-        !ppszSignature
-        )
-    {
-        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VM_COMMON_ERROR(dwError);
-    }
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszRequestURI, dwError);
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszPEM, dwError);
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszRequestTime, dwError);
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(ppszSignature, dwError);
 
     dwError = VmHttpGetRequestMethodInString(httpMethod, &pszMethod);
     BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -696,7 +690,7 @@ VmHttpClientRequestPOPSignature(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = _BuildStringToSign(pszMethod,
+    dwError = _VmHttpBuildStringToSign(pszMethod,
                                  pszHashedBodyHex,
                                  VM_COMMON_HTTP_CONTENT_TYPE_JSON,
                                  pcszRequestTime,
@@ -738,6 +732,131 @@ error:
 
     goto cleanup;
 
+}
+
+DWORD
+VmHttpClientVerifySignedRequest(
+    PCSTR               pcszReqMethod,
+    PCSTR               pcszReqBody,
+    PCSTR               pcszReqContentType,
+    PCSTR               pcszReqDate,
+    PCSTR               pcszReqURI,
+    PCSTR               pcszReqHexPOP,
+    PCSTR               pcszReqHOTKPEM,
+    PBOOLEAN            pbVerified
+    )
+{
+    DWORD               dwError = 0;
+    unsigned char       *pSignature = NULL;
+    unsigned char       *pSHA256Body = NULL;
+    size_t              szSignatureSize = 0;
+    size_t              szSHA256BodySize = 0;
+    size_t              szStringToSign = 0;
+    PSTR                pszSHA256BodyHex = NULL;
+    PSTR                pszStringToSign = NULL;
+    PSTR                pszReqSanitizedBody = NULL;
+    BOOLEAN             bVerified = FALSE;
+
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(pbVerified, dwError);
+
+    if (IsNullOrEmptyString(pcszReqHOTKPEM) ||
+        IsNullOrEmptyString(pcszReqHexPOP))
+    {
+        // HOTK tokens must:
+        //     * Have the requestor's public key as a claim
+        //     * Have a proof of possession signature in the authz header after the token
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_BAD_AUTH_DATA,
+                "Request is missing POP signature or HOTK PEM");
+    }
+
+    // Decode the hex-encoded POP to binary
+    dwError = VmSignatureDecodeHex(pcszReqHexPOP, &pSignature, &szSignatureSize);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pcszReqContentType) ||
+        IsNullOrEmptyString(pcszReqDate))
+    {
+        // HTTP request must contain content-type and date headers for HOTK POP
+        // signature validation
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_BAD_AUTH_DATA,
+                "Request is missing Content-Type or Date HTTP headers");
+    }
+
+    if (!IsNullOrEmptyString(pcszReqBody))
+    {
+        // Sanitize body
+        dwError = VmAllocateStringA(pcszReqBody, &pszReqSanitizedBody);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        VmStringTrimSpace(pszReqSanitizedBody);
+
+        dwError = VmSignatureComputeMessageDigest(
+                            VMSIGN_DIGEST_METHOD_SHA256,
+                            pszReqSanitizedBody,
+                            VmStringLenA(pszReqSanitizedBody),
+                            &pSHA256Body,
+                            &szSHA256BodySize);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        // Hex encode digest of body - lower case
+        dwError = VmSignatureEncodeHex(
+                            pSHA256Body,
+                            szSHA256BodySize,
+                            &pszSHA256BodyHex);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    // Create plaintext string to verify POP against
+    dwError = _VmHttpBuildStringToSign(
+                        pcszReqMethod,
+                        pszSHA256BodyHex,
+                        pcszReqContentType,
+                        pcszReqDate,
+                        pcszReqURI,
+                        &pszStringToSign,
+                        &szStringToSign);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    // Verify request POP
+    dwError = VmSignatureVerifyRSASignature(
+                    VMSIGN_DIGEST_METHOD_SHA256,
+                    pszStringToSign,
+                    szStringToSign,
+                    pcszReqHOTKPEM,
+                    pSignature,
+                    szSignatureSize,
+                    &bVerified);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (!bVerified)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_BAD_AUTH_DATA,
+                "Request POP validation failed!");
+    }
+
+    *pbVerified = bVerified;
+
+
+cleanup:
+
+    VM_COMMON_SAFE_FREE_MEMORY(pSignature);
+    VM_COMMON_SAFE_FREE_MEMORY(pSHA256Body);
+    VM_COMMON_SAFE_FREE_STRINGA(pszSHA256BodyHex);
+    VM_COMMON_SAFE_FREE_STRINGA(pszStringToSign);
+
+    return dwError;
+
+error:
+
+    if (pbVerified)
+    {
+        *pbVerified = FALSE;
+    }
+
+    goto cleanup;
 }
 
 static
@@ -825,7 +944,7 @@ error:
 
 static
 DWORD
-_BuildStringToSign(
+_VmHttpBuildStringToSign(
     PCSTR   pcszRequestMethod,
     PCSTR   pcszRequestBody,
     PCSTR   pcszContentType,

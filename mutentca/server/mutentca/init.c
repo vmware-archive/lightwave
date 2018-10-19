@@ -46,9 +46,12 @@ LwCAInitialize(
     dwError = InitializeLog(FALSE, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // Don't bail on Error , this just sets up the current state
+    // TODO: When final implementation is in place, don't bail on Error , this
+    // just sets up the current state
     dwError = LwCASrvInitCA();
+    BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = OidcClientGlobalInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
 #ifdef REST_ENABLED
@@ -66,6 +69,9 @@ LwCAShutdown(
     VOID
     )
 {
+
+    OidcClientGlobalCleanup();
+
 #ifdef REST_ENABLED
     if (LwCARestServerStop() == 0)
     {

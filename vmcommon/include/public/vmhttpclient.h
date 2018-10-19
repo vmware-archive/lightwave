@@ -86,13 +86,25 @@ VmHttpGetRequestMethodInString(
     );
 
 DWORD
-VmHttpClientRequestPOPSignature(
+VmHttpClientSignRequest(
     VM_HTTP_METHOD  httpMethod,
     PCSTR           pcszRequestURI,
     PCSTR           pcszRequestBody,
     PCSTR           pcszPEM,
     PCSTR           pcszRequestTime,
     PSTR            *ppszSignature
+    );
+
+DWORD
+VmHttpClientVerifySignedRequest(
+    PCSTR               pcszReqMethod,
+    PCSTR               pcszReqBody,
+    PCSTR               pcszReqContentType,
+    PCSTR               pcszReqDate,
+    PCSTR               pcszReqURI,
+    PCSTR               pcszReqHexPOP,
+    PCSTR               pcszReqHOTKPEM,
+    PBOOLEAN            pbVerified
     );
 
 DWORD

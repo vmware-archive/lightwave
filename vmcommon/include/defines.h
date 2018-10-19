@@ -40,10 +40,26 @@
         }                                      \
     } while(0)
 
-#define BAIL_ON_VM_COMMON_ERROR(dwError)      \
+#define BAIL_ON_VM_COMMON_ERROR(dwError)       \
     if (dwError)                               \
     {                                          \
         goto error;                            \
+    }
+
+#define BAIL_WITH_VM_COMMON_ERROR(dwError, ERROR_CODE)  \
+    dwError = ERROR_CODE;                               \
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+#define BAIL_ON_VM_COMMON_INVALID_PARAMETER(ptr, dwError)                           \
+    if ((ptr) == NULL)                                                              \
+    {                                                                               \
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_INVALID_PARAMETER);      \
+    }
+
+#define BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(ptr, dwError)                       \
+    if (IsNullOrEmptyString((ptr)))                                                 \
+    {                                                                               \
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_INVALID_PARAMETER);      \
     }
 
 #define VM_COMMON_SAFE_FREE_STRINGA(PTR)    \

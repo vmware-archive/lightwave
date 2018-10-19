@@ -7,6 +7,7 @@ if REST_ENABLED
 
 libmutentcaresthead_la_SOURCES += \
     apiutil.c \
+    auth.c \
     certificatesapi.c \
     crlapi.c \
     globals.c \
@@ -34,7 +35,12 @@ libmutentcaresthead_la_CPPFLAGS = \
     @CRESTENGINE_INCLUDES@
 
 libmutentcaresthead_la_LIBADD = \
-    $(top_builddir)/vmcommon/libvmcommon.la
+    $(top_builddir)/vmcommon/libvmcommon.la \
+    $(top_builddir)/mutentca/common/libcommon.la \
+    $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
+    $(top_builddir)/mutentca/server/oidc-auth/libmutentcaoidc.la \
+    @OPENSSL_LIBS@ \
+    @DL_LIBS@
 
 libmutentcaresthead_la_LDFLAGS = \
     -static

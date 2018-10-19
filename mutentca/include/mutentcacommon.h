@@ -254,22 +254,40 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
         goto error;                                                         \
     }
 
+#define BAIL_WITH_LWCA_ERROR(dwError, ERROR_CODE)                           \
+    dwError = ERROR_CODE;                                                   \
+    BAIL_ON_LWCA_ERROR(dwError);
+
+
 #define BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg)                     \
     if (dwError)                                                            \
     {                                                                       \
         LWCA_LOG_ERROR("[%s:%d] %s. error: %d",                             \
-                            __FUNCTION__,                                   \
-                            __LINE__,                                       \
-                            pszErrMsg,                                      \
-                            dwError);                                       \
-        goto error;                                                         \
+                       __FUNCTION__,                                        \
+                       __LINE__,                                            \
+                       pszErrMsg,                                           \
+                       dwError);                                            \
+        BAIL_ON_LWCA_ERROR(dwError);                                        \
     }
 
 #define BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, pszErrMsg)          \
     if (dwError)                                                            \
     {                                                                       \
         dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;                           \
-        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg)                     \
+        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg);                    \
+    }
+
+#define BAIL_ON_LWCA_INVALID_POINTER(p, errCode)                            \
+    if (p == NULL) {                                                        \
+        errCode = LWCA_ERROR_INVALID_PARAMETER;                             \
+        BAIL_ON_LWCA_ERROR(errCode);                                        \
+    }
+
+#define BAIL_ON_LWCA_INVALID_STR_PARAMETER(input, dwError)                  \
+    if (IsNullOrEmptyString((input)))                                       \
+    {                                                                       \
+        dwError = LWCA_ERROR_INVALID_PARAMETER;                             \
+        BAIL_ON_LWCA_ERROR(dwError);                                        \
     }
 
 #define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
@@ -845,7 +863,7 @@ LwCAFreeThread(
     PLWCA_THREAD pThread
     );
 
-// vecs.c
+// vmafd.c
 
 DWORD
 LwCAGetVecsMachineCert(
@@ -862,6 +880,16 @@ LwCAGetVecsMutentCACert(
 DWORD
 LwCAOpenVmAfdClientLib(
     LWCA_LIB_HANDLE*   pplibHandle
+    );
+
+DWORD
+LwCAGetDCName(
+    PSTR        *ppszDCName
+    );
+
+DWORD
+LwCAGetDomainName(
+    PSTR        *ppszDomainName
     );
 
 // ldap.c
