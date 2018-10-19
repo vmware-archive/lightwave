@@ -323,7 +323,14 @@ _VmDirReplAttrConflictCheck(
              pSupplierMetaData->pszOrigInvoId,
              pConsumerMetaData->pszOrigInvoId,
              VMDIR_GUID_STR_LEN,
-             FALSE) > 0))
+             FALSE) > 0) ||
+        (pSupplierMetaData->version == pConsumerMetaData->version &&
+         VmDirStringNCompareA(
+             pSupplierMetaData->pszOrigInvoId,
+             pConsumerMetaData->pszOrigInvoId,
+             VMDIR_GUID_STR_LEN,
+             FALSE) == 0 &&
+         pSupplierMetaData->origUsn > pConsumerMetaData->origUsn))
     {
         bSupplierWon = TRUE;
     }
