@@ -381,6 +381,7 @@ typedef VOID (*PFN_BACKEND_INDEX_ITERATOR_FREE)(
  */
 typedef DWORD (*PFN_BACKEND_PARENT_ID_INDEX_ITERATOR_INIT)(
                     ENTRYID                                 parentId,
+                    ENTRYID                                 childId,
                     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
                     );
 /*

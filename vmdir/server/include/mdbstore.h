@@ -341,6 +341,7 @@ VmDirMDBIndexIteratorFree(
 DWORD
 VmDirMDBParentIdIndexIteratorInit(
     ENTRYID                                 parentId,
+    ENTRYID                                 childId,
     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
     );
 

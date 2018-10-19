@@ -313,7 +313,7 @@ newParentIdIndexIterator:
         goto newParentIdIndexIterator;
     }
 
-    dwError = pBE->pfnBEParentIdIndexIteratorInit(pEntry->eId, &pIterator);
+    dwError = pBE->pfnBEParentIdIndexIteratorInit(pEntry->eId, eId, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     while (pIterator->bHasNext)
@@ -355,14 +355,21 @@ newParentIdIndexIterator:
 
             // Must shorten the read-only transaction so that
             // MDB can free the allocated blocks from the expired entries.
-            pBE->pfnBEParentIdIndexIteratorFree(pIterator);
-            pIterator = NULL;
-            expiredInBatch = 0;
+            if (pIterator->bHasNext)
+            {   // get eId for next iterator positioning
+                pBE->pfnBEParentIdIndexIterate(pIterator, &eId);
+                pBE->pfnBEParentIdIndexIteratorFree(pIterator);
+                pIterator = NULL;
+                expiredInBatch = 0;
+            }
 
             _VmDirReapEntryInBatch(pStrList);
             VmDirStringListFreeContent(pStrList);
 
-            goto newParentIdIndexIterator;
+            if (!pIterator)
+            {
+                goto newParentIdIndexIterator;
+            }
         }
     }
 
