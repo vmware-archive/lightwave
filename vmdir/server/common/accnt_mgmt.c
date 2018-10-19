@@ -468,9 +468,9 @@ VmDirSrvSetupComputerAccount(
 
     for (dwRetries=0; dwRetries < VMDIR_MAX_PASSWORD_RETRIES; dwRetries++)
     {
-        dwError = VmDirGenerateRandomPasswordByDefaultPolicy(
-                                         &pByteAccountPasswd
-                                         );
+        dwError = VmDirGenerateRandomInternalPassword(
+            pszDomainName,
+            &pByteAccountPasswd);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         modv_passwd[0] = pByteAccountPasswd;
@@ -682,9 +682,9 @@ VmDirSrvSetupServiceAccount(
 
     while( TRUE )
     {
-        dwError = VmDirGenerateRandomPasswordByDefaultPolicy(
-                                        (PSTR*)&pByteMSAPasswd
-                                        );
+        dwError = VmDirGenerateRandomInternalPassword(
+            pszDomainName,
+            (PSTR*)&pByteMSAPasswd);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         modv_passwd[0] = pByteMSAPasswd;

@@ -650,7 +650,6 @@ VmKdcGenerateRandomPassword(
     DWORD i = 0;
     DWORD j = 0;
     CHAR c = '\0';
-    CHAR cPrev = '\0';
 
 
     dwError = VmDirAllocateMemory(sizeof(CHAR) * pwdLen + 1,
@@ -669,12 +668,7 @@ VmKdcGenerateRandomPassword(
         c = pRandPwd[j] & 0x7f;
         if (isprint((int) c))
         {
-            /* Prevent random passwords with consecutive duplicate characters */
-            if (cPrev != c)
-            {
-                pRandPwdStr[i++] = c;
-                cPrev = c;
-            }
+            pRandPwdStr[i++] = c;
         }
     }
     pRandPwdStr[i] = '\0';

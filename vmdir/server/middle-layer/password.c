@@ -171,6 +171,15 @@ PasswordSchemeCodeToScheme(
     PVDIR_PASSWORD_HASH_SCHEME*     ppScheme
     );
 
+DWORD
+static
+_VmDirComposeValidPassword(
+    PSTR    pszBuf,
+    DWORD   dwBufSize,
+    DWORD   dwMatchSize,
+    PVDIR_PASSWD_LOCKOUT_POLICY pPolicy
+    );
+
 /*
  * static initialize gpVdirPasswdSchemeGlobals
  */
@@ -257,14 +266,6 @@ VmDirPasswordSchemeFree(
 }
 
 DWORD
-VmDirGenerateRandomPasswordByDefaultPolicy(
-    PSTR *ppRandPwd
-    )
-{
-    return VmDirGenerateRandomInternalPassword(NULL, ppRandPwd);
-}
-
-DWORD
 VmDirGenerateRandomInternalPassword(
     PCSTR   pszDomain,
     PSTR*   ppszRandPwd
@@ -273,6 +274,7 @@ VmDirGenerateRandomInternalPassword(
     DWORD   dwError = 0;
     int     iCnt = 0;
     DWORD   pwdLen = VMDIR_KDC_RANDOM_PWD_LEN;
+    DWORD   pwdPreferredLen = VMDIR_KDC_RANDOM_PWD_LEN;
     VDIR_BERVALUE pwdBerv = VDIR_BERVALUE_INIT;
     VDIR_PASSWD_LOCKOUT_POLICY  policy = {0};
     PSTR    pszRandPwd = NULL;
@@ -300,13 +302,14 @@ VmDirGenerateRandomInternalPassword(
 
     if (VMDIR_KDC_RANDOM_PWD_LEN > policy.iMaxLen)
     {
-        pwdLen = policy.iMaxLen;
+        pwdPreferredLen = pwdLen = policy.iMaxLen;
     }
     else if (VMDIR_KDC_RANDOM_PWD_LEN < policy.iMinLen)
     {
-        pwdLen = policy.iMaxLen;
+        pwdPreferredLen = pwdLen = policy.iMinLen;
     }
 
+    pwdLen = pwdLen * 10;
     do
     {
         VMDIR_SAFE_FREE_MEMORY(pszRandPwd);
@@ -314,9 +317,17 @@ VmDirGenerateRandomInternalPassword(
         dwError = VmKdcGenerateRandomPassword(pwdLen, &pszRandPwd);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pwdBerv.lberbv.bv_val = pszRandPwd;
-        pwdBerv.lberbv.bv_len = VmDirStringLenA(pwdBerv.lberbv.bv_val);
-        dwError = PasswordStrengthCheck(&pwdBerv, &policy);
+        dwError = _VmDirComposeValidPassword(pszRandPwd, pwdLen, pwdPreferredLen, &policy);
+        if (!dwError)
+        {
+            pwdBerv.lberbv.bv_val = pszRandPwd;
+            pwdBerv.lberbv.bv_len = VmDirStringLenA(pwdBerv.lberbv.bv_val);
+            dwError = PasswordStrengthCheck(&pwdBerv, &policy);
+            if (dwError)
+            {
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "%s: _VmDirComposeValidPassword generate non-compliance output", __func__);
+            }
+        }
     }
     while ( dwError == VMDIR_ERROR_PASSWORD_POLICY_VIOLATION && iCnt++ < VMKDC_RANDPWD_MAX_RETRY);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1489,4 +1500,148 @@ error:
     *ppScheme = NULL;
 
     goto cleanup;
+}
+
+DWORD
+static
+_VmDirComposeValidPassword(
+    PSTR    pszBuf,
+    DWORD   dwBufSize,
+    DWORD   dwMatchSize,
+    PVDIR_PASSWD_LOCKOUT_POLICY pPolicy
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    DWORD   dwMatch = 0;
+    DWORD   dwSameCharCnt = 0;
+    DWORD   dwPriorSameCharCnt = 0;
+    BOOLEAN bHasSpecialChar = pPolicy->specialChars[0] != '\0';
+    VDIR_PASSWD_LOCKOUT_POLICY localPolicy = {0};
+    CHAR    lastChar = '\0';
+
+    if (dwBufSize <= dwMatchSize)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    for (dwCnt = 0; dwCnt < dwBufSize && dwMatch < dwMatchSize; dwCnt++)
+    {
+        assert(!(pszBuf[dwCnt] & 0x80)); // assert printable char in VmKdcGenerateRandomPassword
+
+        if (dwCnt > 0)
+        {
+            if (pszBuf[dwCnt] == lastChar)
+            {
+                dwSameCharCnt++;
+                if (dwSameCharCnt >= pPolicy->iMaxSameAdjacentCharCnt)
+                {
+                    continue;
+                }
+            }
+            else
+            {
+                dwPriorSameCharCnt = dwSameCharCnt;
+                dwSameCharCnt = 0;
+            }
+        }
+
+        if (VMDIR_ASCII_LOWER(pszBuf[dwCnt]))
+        {
+            if ((localPolicy.iMinAlphaCnt     < pPolicy->iMinAlphaCnt ||
+                 localPolicy.iMinLowerCaseCnt < pPolicy->iMinLowerCaseCnt))
+            {
+                localPolicy.iMinAlphaCnt++;
+                localPolicy.iMinLowerCaseCnt++;
+                lastChar = pszBuf[dwCnt];
+                pszBuf[dwCnt] |= 0x80;
+                dwMatch++;
+
+                continue;
+            }
+        }
+
+        if (VMDIR_ASCII_UPPER(pszBuf[dwCnt]))
+        {
+            if ((localPolicy.iMinAlphaCnt     < pPolicy->iMinAlphaCnt ||
+                 localPolicy.iMinUpperCaseCnt < pPolicy->iMinUpperCaseCnt))
+            {
+                localPolicy.iMinAlphaCnt++;
+                localPolicy.iMinUpperCaseCnt++;
+                lastChar = pszBuf[dwCnt];
+                pszBuf[dwCnt] |= 0x80;
+                dwMatch++;
+
+                continue;
+            }
+        }
+
+        if (VMDIR_ASCII_DIGIT(pszBuf[dwCnt]))
+        {
+            if ((localPolicy.iMinNumericCnt < pPolicy->iMinNumericCnt))
+            {
+                localPolicy.iMinNumericCnt++;
+                lastChar = pszBuf[dwCnt];
+                pszBuf[dwCnt] |= 0x80;
+                dwMatch++;
+
+                continue;
+            }
+        }
+
+        if ((bHasSpecialChar &&
+             VmDirStringChrA(pPolicy->specialChars, pszBuf[dwCnt]) != NULL)
+            ||
+            VMDIR_PASSWD_SP_CHAR(pszBuf[dwCnt]))
+        {
+            if (VMDIR_PASSWD_EXCLUDE_SP_CHAR(pszBuf[dwCnt]))
+            {
+                dwSameCharCnt = dwPriorSameCharCnt;  // skip char, restore prior same char count
+                continue;
+            }
+
+            if ((localPolicy.iMinSpecialCharCnt < pPolicy->iMinSpecialCharCnt))
+            {
+                localPolicy.iMinSpecialCharCnt++;
+                lastChar = pszBuf[dwCnt];
+                pszBuf[dwCnt] |= 0x80;
+                dwMatch++;
+
+                continue;
+            }
+        }
+
+        if (localPolicy.iMinSpecialCharCnt  >= pPolicy->iMinSpecialCharCnt  &&
+            localPolicy.iMinNumericCnt      >= pPolicy->iMinNumericCnt      &&
+            localPolicy.iMinUpperCaseCnt    >= pPolicy->iMinUpperCaseCnt    &&
+            localPolicy.iMinAlphaCnt        >= pPolicy->iMinAlphaCnt        &&
+            localPolicy.iMinLowerCaseCnt    >= pPolicy->iMinLowerCaseCnt)
+        {
+            lastChar = pszBuf[dwCnt];
+            pszBuf[dwCnt] |= 0x80;
+            dwMatch++;
+        }
+        else
+        {
+            dwSameCharCnt = dwPriorSameCharCnt;  // skip char, restore prior same char count
+        }
+    }
+
+    if (dwMatch < dwMatchSize)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_POLICY_VIOLATION);
+    }
+
+    for (dwCnt = 0, dwMatch = 0; dwMatch < dwMatchSize; dwCnt++)
+    {
+        if (pszBuf[dwCnt] & 0x80)
+        {
+            pszBuf[dwMatch++] = pszBuf[dwCnt] & 0x7f;
+        }
+    }
+
+    pszBuf[dwMatch] = '\0';
+
+error:
+    return dwError;
 }
