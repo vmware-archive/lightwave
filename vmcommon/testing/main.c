@@ -29,6 +29,7 @@ int main(int argc, char *argv[])
     dwError += VmHttpClientTest();
     dwError += VmSignatureTest();
     dwError += VmJsonResultTest();
+    dwError += VmJsonResultObjectMapTest();
 
     if (dwError == 0)
     {

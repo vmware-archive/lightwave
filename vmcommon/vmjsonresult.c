@@ -57,6 +57,14 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmJsonObjectPopulateSimpleCB(
+    PVOID pUserData,
+    PCSTR pszKey,
+    PVM_JSON_RESULT_VALUE pValue
+    );
+
 DWORD
 VmJsonResultLoadString(
     PCSTR pszJson,
@@ -292,6 +300,124 @@ error:
     goto cleanup;
 }
 
+/*
+ * Map simple result objects from json
+ * pszJson is a valid json string.eg: {"greeting":"hello","recipient":"world"}
+ * PSTR pszGreeting = NULL;
+ * PSTR pszRecipient = NULL;
+ * pMap is an array of struct entries of type VM_JSON_OBJECT_MAP. eg:
+ * VM_JSON_OBJECT_MAP map[] =
+ * {
+ *     {"greeting",  JSON_RESULT_STRING, {&pszGreeting}},
+ *     {"recipient", JSON_RESULT_STRING, {&pszRecipient}}
+ * };
+ *
+*/
+DWORD
+VmJsonResultMapObject(
+    PCSTR pszJson,
+    PVM_JSON_OBJECT_MAP pMap
+    )
+{
+    DWORD dwError = 0;
+    PVM_JSON_RESULT pResult = NULL;
+    PVM_JSON_POSITION pPositionRoot = NULL;
+
+    if (IsNullOrEmptyString(pszJson) || !pMap)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmJsonResultInit(&pResult);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmJsonResultLoadString(pszJson, pResult);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmJsonResultGetRootPosition(pResult, &pPositionRoot);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmJsonResultIterateObjectAt(
+                  pPositionRoot,
+                  pMap,
+                  _VmJsonObjectPopulateSimpleCB);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+error:
+    VmJsonResultFreeHandle(pResult);
+    return dwError;
+}
+
+static
+DWORD
+_VmJsonObjectPopulateSimpleCB(
+    PVOID pUserData,
+    PCSTR pszKey,
+    PVM_JSON_RESULT_VALUE pValue
+    )
+{
+    DWORD dwError = 0;
+    PVM_JSON_OBJECT_MAP pObjMap = NULL;
+    PSTR pszValue = NULL;
+
+    if (!pUserData || !pszKey || !pValue)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    for (pObjMap = (PVM_JSON_OBJECT_MAP)pUserData;
+         pObjMap->pszName;
+         ++pObjMap)
+    {
+        if (VmStringCompareA(pObjMap->pszName, pszKey, TRUE) != 0)
+        {
+            continue;
+        }
+        if (pValue->nType != pObjMap->type)
+        {
+            dwError = VM_COMMON_ERROR_JSON_MAP_BAD_TYPE;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+        switch(pObjMap->type)
+        {
+            case JSON_RESULT_BOOLEAN:
+                *pObjMap->value.pbValue = pValue->value.bValue;
+            break;
+            case JSON_RESULT_STRING:
+            {
+                dwError = VmAllocateStringA(
+                              pValue->value.pszValue,
+                              &pszValue);
+                BAIL_ON_VM_COMMON_ERROR(dwError);
+                *pObjMap->value.ppszValue = pszValue;
+            }
+            break;
+            case JSON_RESULT_INTEGER:
+                *pObjMap->value.pnValue = pValue->value.nValue;
+            break;
+            case JSON_RESULT_REAL:
+                *pObjMap->value.pdValue = pValue->value.dValue;
+            break;
+            case JSON_RESULT_OBJECT:
+                dwError = VmJsonResultIterateObjectAt(
+                              pValue->value.pObject,
+                              pObjMap->value.pObjectValue,
+                              _VmJsonObjectPopulateSimpleCB);
+                BAIL_ON_VM_COMMON_ERROR(dwError);
+            break;
+            default:
+            break;
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VmFreeMemory(pszValue);
+    goto cleanup;
+}
 
 VOID
 VmJsonResultFreeHandle(

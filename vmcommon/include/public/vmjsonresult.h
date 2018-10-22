@@ -47,6 +47,20 @@ typedef struct _VM_JSON_RESULT_VALUE
     VM_JSON_RESULT_TYPE nType;
 }VM_JSON_RESULT_VALUE, *PVM_JSON_RESULT_VALUE;
 
+typedef struct _VM_JSON_OBJECT_MAP_
+{
+    PSTR pszName;
+    VM_JSON_RESULT_TYPE type;
+    union
+    {
+        PBOOLEAN pbValue;
+        PSTR *ppszValue;
+        int *pnValue;
+        double *pdValue;
+        struct _VM_JSON_OBJECT_MAP_ *pObjectValue;
+    }value;
+}VM_JSON_OBJECT_MAP, *PVM_JSON_OBJECT_MAP;
+
 /* callback for arrays */
 typedef DWORD (*PFN_JSON_RESULT_ARRAY_CB)(
                   PVOID pUserData,
