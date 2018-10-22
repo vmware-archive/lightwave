@@ -49,7 +49,7 @@
 #define VM_COMMON_SAFE_FREE_STRINGA(PTR)    \
     do {                                    \
         if ((PTR)) {                        \
-            VmCommonFreeStringA(PTR);       \
+            VmFreeStringA(PTR);             \
             (PTR) = NULL;                   \
         }                                   \
     } while(0)

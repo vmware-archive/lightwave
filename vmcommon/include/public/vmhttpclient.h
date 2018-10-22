@@ -80,7 +80,7 @@ VmHttpClientGetResult(
     );
 
 DWORD
-GetRequestMethodInString(
+VmHttpGetRequestMethodInString(
     VM_HTTP_METHOD  httpMethod,
     PCSTR           *ppcszHttpMethod
     );
@@ -94,6 +94,33 @@ VmHttpClientRequestPOPSignature(
     PCSTR           pcszRequestTime,
     PSTR            *ppszSignature
     );
+
+DWORD
+VmHttpClientGetStatusCode(
+    PVM_HTTP_CLIENT     pClient,
+    long                *pStatusCode
+    );
+
+DWORD
+VmHttpUrlEncodeString(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszString,
+    PSTR                *ppszEncodedString
+    );
+
+DWORD
+VmHttpClientSetHeader(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszKey,
+    PCSTR               pcszValue
+    );
+
+DWORD
+VmHttpClientSetBody(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszBody
+    );
+
 /*
  * Free handle
  */

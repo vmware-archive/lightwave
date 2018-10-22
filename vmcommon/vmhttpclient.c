@@ -168,9 +168,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_VmHttpUrlEncodeString(
+VmHttpUrlEncodeString(
     PVM_HTTP_CLIENT pClient,
     PCSTR pszString,
     PSTR *ppszEncodedString
@@ -229,10 +228,10 @@ VmHttpClientSetQueryParam(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = _VmHttpUrlEncodeString(pClient, pszKey, &pszEncodedKey);
+    dwError = VmHttpUrlEncodeString(pClient, pszKey, &pszEncodedKey);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = _VmHttpUrlEncodeString(pClient, pszValue, &pszEncodedValue);
+    dwError = VmHttpUrlEncodeString(pClient, pszValue, &pszEncodedValue);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = LwRtlHashMapInsert(
@@ -475,6 +474,81 @@ error:
 }
 
 DWORD
+VmHttpClientSetHeader(
+    PVM_HTTP_CLIENT pClient,
+    PCSTR           pcszKey,
+    PCSTR           pcszValue
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszHeader = NULL;
+
+    dwError = VmAllocateStringPrintf(&pszHeader,
+                                     "%s: %s",
+                                     pcszKey,
+                                     pcszValue
+                                     );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pClient->pHeaders = curl_slist_append(pClient->pHeaders, pszHeader);
+    if (!pClient->pHeaders)
+    {
+        dwError = VM_COMMON_ERROR_CURL_FAILURE;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pszHeader);
+
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientSetBody(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszBody
+    )
+{
+    DWORD       dwError = 0;
+
+    dwError = VmAllocateStringA(pcszBody, &(pClient->pszBody));
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pClient->pszBody);
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientGetStatusCode(
+    PVM_HTTP_CLIENT pClient,
+    long    *pStatusCode
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pClient || !pStatusCode)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    *pStatusCode = pClient->nStatus;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmHttpClientSetToken(
     PVM_HTTP_CLIENT pClient,
     VM_HTTP_TOKEN_TYPE tokenType,
@@ -595,7 +669,7 @@ VmHttpClientRequestPOPSignature(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = GetRequestMethodInString(httpMethod, &pszMethod);
+    dwError = VmHttpGetRequestMethodInString(httpMethod, &pszMethod);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = VmAllocateStringA(VM_COMMON_SAFE_STRING(pcszRequestBody),
@@ -708,7 +782,7 @@ VmHttpClientFreeHandle(
 }
 
 DWORD
-GetRequestMethodInString(
+VmHttpGetRequestMethodInString(
     VM_HTTP_METHOD  httpMethod,
     PCSTR           *ppcszHttpMethod
     )
