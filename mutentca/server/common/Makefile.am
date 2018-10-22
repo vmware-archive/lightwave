@@ -2,8 +2,6 @@ noinst_LTLIBRARIES = libmutentcasrvcommon.la
 
 libmutentcasrvcommon_la_SOURCES = \
     api.c \
-    jsonutils.c \
-    token_util.c \
     util.c
 
 libmutentcasrvcommon_la_CPPFLAGS = \
@@ -19,7 +17,6 @@ libmutentcasrvcommon_la_CPPFLAGS = \
 
 libmutentcasrvcommon_la_LIBADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
-    $(top_builddir)/mutentca/pkcs/libmutentcapkcs.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     @JANSSON_LIBS@
 

@@ -16,6 +16,7 @@
 
 #define LWCA_SERVER "lightwave.ip"
 #define LWCA_DOMAIN "lightwave.local"
+#define LWCA_POST_OIDC_SCOPE "openid id_groups at_groups rs_post"
 
 VOID
 LwCAAuthTokenGetHOTK_Valid(
@@ -32,6 +33,7 @@ LwCAAuthTokenGetHOTK_Valid(
     dwError = LwCAGetAccessToken(
         LWCA_SERVER,
         LWCA_DOMAIN,
+        LWCA_POST_OIDC_SCOPE,
         &pszToken
         );
 
@@ -53,6 +55,7 @@ LwCAAuthTokenGetHOTK_InvalidInput(
     dwError = LwCAGetAccessToken(
         "",
         NULL,
+        LWCA_POST_OIDC_SCOPE,
         &pszToken
         );
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);

@@ -150,6 +150,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SSL_STORE_ADD_CERT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 59)
 #define LWCA_SSL_STORE_CTX_INIT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 60)
 #define LWCA_SSL_CERT_VERIFY_ERR            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 61)
+#define LWCA_SSL_INVALID_NID                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 62)
 
 // ERRNO to LwCA Codes (80800 - 80899)
 #define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
@@ -298,6 +299,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SSL_STORE_ADD_CERT_FAIL      ,   "LWCA_SSL_STORE_ADD_CERT_FAIL"      ,   "Adding certificate to SSL store failed" }, \
     { LWCA_SSL_STORE_CTX_INIT_FAIL      ,   "LWCA_SSL_STORE_CTX_INIT_FAIL"      ,   "Init SSL store context failed" }, \
     { LWCA_SSL_CERT_VERIFY_ERR          ,   "LWCA_SSL_CERT_VERIFY_ERR"          ,   "Unable to verify certficate" }, \
+    { LWCA_SSL_INVALID_NID              ,   "LWCA_SSL_INVALID_NID"              ,   "NID doesn't correspond to a valid OID" }, \
     { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
     { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \
     { LWCA_ERROR_INVALID_METHOD         ,   "LWCA_ERROR_INVALID_METHOD"         ,   "Invalid HTTP method" }, \

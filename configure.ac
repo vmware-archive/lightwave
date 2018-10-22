@@ -1943,7 +1943,6 @@ AC_CONFIG_FILES([Makefile
                  mutentca/config/Makefile
                  mutentca/config/mutentca.reg
                  mutentca/common/Makefile
-                 mutentca/pkcs/Makefile
                  mutentca/server/Makefile
                  mutentca/server/api/Makefile
                  mutentca/server/common/Makefile

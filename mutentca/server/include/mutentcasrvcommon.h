@@ -181,54 +181,6 @@ LwCASrvGetMachineAccountInfoA(
     PSTR* ppszPassword
     );
 
-/* ../common/jsonutils.c */
-
-typedef struct json_t   _LWCA_JSON_OBJECT;
-typedef _LWCA_JSON_OBJECT   *PLWCA_JSON_OBJECT;
-
-DWORD
-LwCAJsonLoadObjectFromFile(
-    PCSTR                   pcszFilePath,
-    PLWCA_JSON_OBJECT       *ppJsonConfig
-    );
-
-DWORD
-LwCAJsonGetObjectFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PLWCA_JSON_OBJECT       *ppJsonValue
-    );
-
-DWORD
-LwCAJsonGetStringFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PSTR                    *ppszValue
-    );
-
-DWORD
-LwCAJsonGetStringArrayFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PLWCA_STRING_ARRAY      *ppStrArrValue
-    );
-
-DWORD
-LwCAJsonGetTimeFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    time_t                  *ptValue
-    );
-
-VOID
-LwCAJsonCleanupObject(
-    PLWCA_JSON_OBJECT       pJson
-    );
-
 /* ../common/util.c */
 
 BOOLEAN

@@ -220,7 +220,7 @@ LwCAGetCommonNameFromSubject(
 
     dwError = _LwCAOpenSSLGetValuesFromSubjectName(
         pCert,
-        LWCA_OPENSSL_NID_CN,
+        NID_commonName,
         &pszCommonNames
         );
     BAIL_ON_LWCA_ERROR(dwError);
@@ -302,7 +302,7 @@ LwCAPEMToCSR(
     BIO *pBioMem = NULL;
     X509_REQ *pReq = NULL;
 
-    if (pcszCSR)
+    if (IsNullOrEmptyString(pcszCSR))
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -1197,29 +1197,21 @@ _LwCAOpenSSLGetNIDIndex(
     DWORD       dwError = 0;
     int         iPosOut = 0;
 
-    switch (dwNIDType)
+    iPosOut = X509_NAME_get_index_by_NID(pszSubjName, dwNIDType, iPosIn);
+
+    if (iPosOut == -2)
     {
-        case LWCA_OPENSSL_NID_O:
-            iPosOut = X509_NAME_get_index_by_NID(
-                pszSubjName,
-                NID_organizationName,
-                iPosIn);
-            break;
-
-        case LWCA_OPENSSL_NID_CN:
-            iPosOut = X509_NAME_get_index_by_NID(
-                pszSubjName,
-                NID_commonName,
-                iPosIn);
-            break;
-
-        default:
-            iPosOut = -1;
+        dwError = LWCA_SSL_INVALID_NID;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     *pIPosOut = iPosOut;
 
+cleanup:
     return dwError;
+
+error:
+    goto cleanup;
 }
 
 static

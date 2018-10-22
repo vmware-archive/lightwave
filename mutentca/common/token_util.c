@@ -17,8 +17,9 @@
 
 DWORD
 LwCAGetAccessToken(
-    PCSTR   pszServer,
-    PCSTR   pszDomain,
+    PCSTR   pcszServer,
+    PCSTR   pcszDomain,
+    PCSTR   pcszOidcScope,
     PSTR    *ppszToken
     )
 {
@@ -32,8 +33,9 @@ LwCAGetAccessToken(
     POIDC_TOKEN_SUCCESS_RESPONSE    pTokenSuccess = NULL;
     POIDC_ERROR_RESPONSE            pTokenError = NULL;
 
-    if (IsNullOrEmptyString(pszServer) ||
-        IsNullOrEmptyString(pszDomain) ||
+    if (IsNullOrEmptyString(pcszServer) ||
+        IsNullOrEmptyString(pcszDomain) ||
+        IsNullOrEmptyString(pcszOidcScope) ||
         !ppszToken)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
@@ -51,9 +53,9 @@ LwCAGetAccessToken(
 
     dwError = OidcClientBuild(
         &pOidcClient,
-        pszServer,
+        pcszServer,
         LWCA_OIDC_PORT,
-        pszDomain,
+        pcszDomain,
         NULL,
         NULL
         );
@@ -63,7 +65,7 @@ LwCAGetAccessToken(
         pOidcClient,
         pszCommonName,
         pszKey,
-        LWCA_OIDC_SCOPE,
+        pcszOidcScope,
         &pTokenSuccess,
         &pTokenError
         );
