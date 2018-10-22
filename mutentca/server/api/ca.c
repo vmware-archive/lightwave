@@ -62,6 +62,7 @@ LwCACreateRootCA(
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
     X509 *pCert = NULL;
     PSTR pszSubject = NULL;
+    PSTR pszCRLNumber = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     BOOLEAN bIsCA = FALSE;
 
@@ -99,10 +100,13 @@ LwCACreateRootCA(
     dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAGenerateCRLNumber(&pszCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCADbCreateCAData(pszSubject,
                                 pCertArray,
                                 NULL,
-                                NULL,
+                                pszCRLNumber,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
                                 );
@@ -115,6 +119,7 @@ cleanup:
     LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
     LwCAX509Free(pCert);
 
     return dwError;
@@ -400,9 +405,100 @@ LwCARevokeCertificate(
     )
 {
     DWORD dwError = 0;
+    X509 *pCert = NULL;
+    PSTR pszSerialNumber = NULL;
+    PSTR pszCRLNumber = NULL;
+    PSTR pszNextCRLNumber = NULL;
+    PLWCA_DB_CERT_DATA pCertData = NULL;
+    BOOLEAN bExists = FALSE;
+    PSTR pszTimeValidTo = NULL;
+    PSTR pszTimeValidFrom = NULL;
+    PSTR pszRevokedDate = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
+
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pCertificate)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCACheckCAExist(pcszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbGetCACertificates(pcszCAId, &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAVerifyCertificate(pCACerts, pCertificate);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAPEMToX509(pCertificate, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetSerialNumber(pCert, &pszSerialNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbCheckCertData(pcszCAId, pszSerialNumber, &bExists);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (bExists)
+    {
+        dwError = LWCA_CRL_CERT_ALREADY_REVOKED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCADbGetCACRLNumber(pcszCAId, &pszCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetTimeValidFrom(pCert, &pszTimeValidFrom);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetTimeValidTo(pCert, &pszTimeValidTo);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGenerateCertRevokedDate(&pszRevokedDate);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    //TODO: User revoked reason needs to be mapped to CRL reason
+    dwError = LwCADbCreateCertData(
+                        pszSerialNumber,
+                        pszTimeValidFrom,
+                        pszTimeValidTo,
+                        CRL_REASON_UNSPECIFIED,
+                        pszRevokedDate,
+                        LWCA_CERT_STATUS_INACTIVE,
+                        &pCertData
+                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+
+    dwError = LwCAGetNextCrlNumber(pszCRLNumber, &pszNextCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbUpdateCACRLNumber(pcszCAId, pszNextCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbAddCertData(pcszCAId, pCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszSerialNumber);
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
+    LWCA_SAFE_FREE_STRINGA(pszNextCRLNumber);
+    LWCA_SAFE_FREE_STRINGA(pszTimeValidFrom);
+    LWCA_SAFE_FREE_STRINGA(pszTimeValidTo);
+    LWCA_SAFE_FREE_STRINGA(pszRevokedDate);
+    LwCADbFreeCertData(pCertData);
+    if (pCert)
+    {
+        X509_free(pCert);
+    }
     return dwError;
 
+error:
+    goto cleanup;
 }
+
+
 static
 DWORD
 _LwCACheckCAExist(
@@ -540,7 +636,8 @@ _LwCAStoreIntermediateCA(
     PLWCA_CERTIFICATE_ARRAY pCertificates = NULL;
     PLWCA_DB_CA_DATA        pCAData = NULL;
     PSTR                    pszSubject = NULL;
-    
+    PSTR                    pszCRLNumber = NULL;
+
     dwError = LwCAX509ToPEM(pCert, &pCertificate);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -550,10 +647,13 @@ _LwCAStoreIntermediateCA(
     dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertificates);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAGenerateCRLNumber(&pszCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCADbCreateCAData(pszSubject,
                                 pCertificates,
                                 pEncryptedKey,
-                                NULL,
+                                pszCRLNumber,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
                                 );
@@ -566,6 +666,7 @@ cleanup:
     LwCAFreeCertificate(pCertificate);
     LwCAFreeCertificates(pCertificates);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
     LwCADbFreeCAData(pCAData);
     return dwError;
 

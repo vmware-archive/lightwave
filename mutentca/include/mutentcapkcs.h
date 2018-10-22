@@ -129,6 +129,34 @@ LwCAX509GetOrganizations(
     );
 
 DWORD
+LwCAX509GetSerialNumber(
+    X509    *pCert,
+    PSTR    *ppszSerialNumber
+    );
+
+DWORD
+LwCAX509GetTimeValidFrom(
+    X509 *pCert,
+    PSTR *ppszTimeValidFrom
+    );
+
+DWORD
+LwCAX509GetTimeValidTo(
+    X509 *pCert,
+    PSTR *ppszTimeValidTo
+    );
+
+DWORD
+LwCAGenerateCertRevokedDate(
+    PSTR    *ppszRevokedDate
+    );
+
+DWORD
+LwCAGenerateCRLNumber(
+    PSTR *ppszCRlNumber
+    );
+
+DWORD
 LwCACreateCertificateSignRequest(
     PLWCA_PKCS_10_REQ_DATA  pCertRequest,
     PCSTR                   pcszPublicKey,
@@ -174,6 +202,12 @@ DWORD
 LwCAX509CheckIfCACert(
     X509     *pCert,
     PBOOLEAN pbIsCA
+    );
+
+DWORD
+LwCAGetNextCrlNumber(
+    PCSTR   pcszCRLNumber,
+    PSTR    *ppszNextCRLNumber
     );
 
 DWORD

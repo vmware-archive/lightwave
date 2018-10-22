@@ -385,6 +385,31 @@
         "9ftIRwcy4tj2d1KMZ2lO49YgqZg0z6HBdYZgLL6R80GPk2TcEEBfgm2lQE2IIDJb\n" \
         "kscq5zBLIDLH7qAhtCJX8NlHmvNSgb77e+8fxG1Mdp5WwrywqO8w\n" \
         "-----END RSA PRIVATE KEY-----"
+#define TEST_CLIENT_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
+        "MIIEQTCCAikCAhACMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMQswCQYD\n" \
+        "VQQIDAJXQTERMA8GA1UEBwwIQmVsbGV2dWUxEzARBgNVBAoMClZNd2FyZSBJbmMx\n" \
+        "EzARBgNVBAsMClZNd2FyZSBJbmMxEDAOBgNVBAMMB1Rlc3QgQ0EwHhcNMTgxMDE1\n" \
+        "MDYzMDExWhcNMTkxMDI1MDYzMDExWjBjMQswCQYDVQQGEwJVUzELMAkGA1UECAwC\n" \
+        "V0ExEzARBgNVBAoMClZNd2FyZSBJbmMxEzARBgNVBAsMClZNd2FyZSBJbmMxHTAb\n" \
+        "BgNVBAMMFFRlc3QgSW50ZXJtZWRpYXRlIENBMIIBIjANBgkqhkiG9w0BAQEFAAOC\n" \
+        "AQ8AMIIBCgKCAQEAxl2Ws9gmHJk9hofaimzsz29Aaypx2G42cHQyA2AgxuU2ScH1\n" \
+        "l+l8/DLYryv5qzJTZgqIn6H7uzOj5yEFG3f0jyiNYY/w5exF6RakNMRjAT7jql7N\n" \
+        "RKSKMfVGvsDUFLUo+gYklHZD4e54Ur4BVYxYzZXfjuUdBoqeySC4AS6dIfc7kkbj\n" \
+        "D0q9vtZ4QlFv7+9lq/XPWviEYAt7Caw38qAdjx78twc2SLInfCglAvRgi4NVaXvL\n" \
+        "hQX3rax9M6LMg9iuHgGcmBPAghJ2cleaYAmftFtLbz6nLVlt/JLjirG43edfTk7w\n" \
+        "e4ARLAE6xvqgFIdeLUkZgyJtTOE3/+onANDpuQIDAQABMA0GCSqGSIb3DQEBCwUA\n" \
+        "A4ICAQBrMuqo3Suf/qphltjraxWKX2l4O0EzFqxR9EhpUUm9hmjWSPyh6KENSIQl\n" \
+        "Pq3ib4rsXe5or3TA9EpZzNBM55DrsGHxmT0RWyKlve0cPm1I4gN2h6l+PngbeMUY\n" \
+        "oQDcVMnhsbOdwlpGxF7XANaKM5iFRylY3Ugm35RsQqVqkl20SHdRq+gIcbtqK/Es\n" \
+        "ClT/wvcnY8EeTzePeaQudBlgcgQmSjUh+eWRuT5DfsM8zMhahwrWClzU0LbZWQwJ\n" \
+        "/tdIKfhHDim/jF/GPHogYRFwFC5cgb05g8enJ2pOJPcJIH+3oUrpbqYmthnnSpiH\n" \
+        "LTIYcm7lRD63SFBe6XinwNet5wbu4UqPR1UMrX3Ouz9BoUnTAWWrWeGbIsvZn/mI\n" \
+        "e2kO7W8qrh9t7fyjOkxoJ4UAzL4Soz4ipmBq0xd7ZktFcg9q7N4dxiJVM1usVM0p\n" \
+        "vlKvpqrg3wDaetrWUR+yIXhacB/MN0o7y2YsWf7oNu+RziPdWZ5frBBWMwiaP+EW\n" \
+        "oWm4YDkN2dx2b710Izr17ADTc/KL0PryKn2xQRXHCQaIw8OKfUQRi7nnIsPvBKTC\n" \
+        "PZ+Uzvj4jH6ZK37iKEH0FtvO/zuyyH5pQS7WYrseK8In4CYGvM2h4k6qm4ngLp1Y\n" \
+        "4WjsK+nBWQ8mdipk2eOEc5hcHR1NoA/OAcAV+T/mP7dzQe4uVw==\n" \
+        "-----END CERTIFICATE-----"
 
 // defines output value of __wrap_LwCADbCheckCA
 PBOOLEAN pbExistsMockArray =  NULL;
@@ -548,6 +573,64 @@ __wrap_LwCADbGetCA(
     LWCA_SAFE_FREE_STRINGA(pszKey);
     LwCAFreeCertificates(pCertArray);
     LwCAFreeKey(pKey);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbCheckCertData(
+    PCSTR                   pcszCAId,
+    PCSTR                   pcszSerialNumber,
+    PBOOLEAN                pbExists
+    )
+{
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_non_null(pcszSerialNumber);
+    assert_non_null(pbExists);
+    *pbExists = FALSE;
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetCACRLNumber(
+    PCSTR   pcszCAId,
+    PSTR    *ppszCRLNumber
+    )
+{
+    DWORD dwError = 0;
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    dwError = LwCAAllocateStringA("110000", ppszCRLNumber);
+    assert_int_equal(dwError, 0);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbUpdateCACRLNumber(
+    PCSTR   pcszCAId,
+    PCSTR   pcszCRLNumber
+    )
+{
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_string_equal(pcszCRLNumber, "110001");
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbAddCertData(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_non_null(pCertData);
+    assert_non_null(pCertData->pszSerialNumber);
+    assert_non_null(pCertData->pszRevokedDate);
+    assert_non_null(pCertData->pszTimeValidFrom);
+    assert_non_null(pCertData->pszTimeValidTo);
 
     return mock();
 }
@@ -1039,4 +1122,46 @@ Test_LwCACreateIntermediateCA_Invalid(
     LwCAFreeCertValidity(pValidity);
     LwCAFreeIntCARequest(pCARequest);
     LwCAFreeCertificates(pCACerts);
+}
+
+VOID
+Test_LwCARevokeCertificate_Valid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
+
+    will_return(__wrap_LwCADbCheckCA, 0);
+    will_return(__wrap_LwCADbCheckCertData, 0);
+    will_return(__wrap_LwCADbGetCACRLNumber, 0);
+    will_return(__wrap_LwCADbUpdateCACRLNumber, 0);
+    will_return(__wrap_LwCADbAddCertData, 0);
+    will_return(__wrap_LwCADbGetCACertificates, 0);
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCARevokeCertificate_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return(__wrap_LwCADbGetCACertificates, 0);
+
+    // Testcase1: Invalid input
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    // Testcase2: Certificate not issued by requested CA
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
+    assert_int_equal(dwError, LWCA_SSL_CERT_VERIFY_ERR);
 }
