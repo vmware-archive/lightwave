@@ -48,40 +48,67 @@ enum _LWCA_KEY_USAGE {
 };
 
 DWORD
-LwCAGetCommonNameFromSubject(
-    PLWCA_CERTIFICATE   pCert,
-    PSTR                *ppszCommonName
-    );
-
-DWORD
 LwCAPEMToX509(
     PCSTR       pCertificate,
     X509        **ppX509Cert
     );
 
 DWORD
-LwCAPEMToCSR(
+LwCAPEMToX509Req(
     PCSTR       pcszCSR,
-    X509_REQ    **ppReq
+    X509_REQ    **ppX509CertReq
     );
 
 DWORD
-LwCAValidateCertificate(
-    X509    *pCert,
-    PCSTR   pcszPrivateKey,
-    PCSTR   pcszPassPhrase
+LwCAX509ToPEM(
+    X509*       pCert,
+    PSTR*       ppszCertificate
     );
 
 DWORD
-LwCAGetCertSubjectName(
-    X509 *pCert,
-    PSTR *ppszSubjectName
+LwCAX509ReqToPEM(
+    X509_REQ    *pReq,
+    PSTR        *ppszRequest
+    );
+
+VOID
+LwCAX509Free(
+    X509        *pX509
+    );
+
+VOID
+LwCAX509ReqFree(
+    X509_REQ    *pX509Req
     );
 
 DWORD
-LwCAGetCertIssuerName(
-    X509 *pCert,
-    PSTR *ppszIssuerName
+LwCAX509GetSubjectName(
+    X509        *pCert,
+    PSTR        *ppszSubjectName
+    );
+
+DWORD
+LwCAX509ReqGetSubjectName(
+    X509_REQ    *pReq,
+    PSTR        *ppszSubjectName
+    );
+
+DWORD
+LwCAX509GetCommonName(
+    X509        *pCert,
+    PSTR        *ppszCommonName
+    );
+
+DWORD
+LwCAX509ReqGetCommonName(
+    X509_REQ    *pReq,
+    PSTR        *ppszCommonName
+    );
+
+DWORD
+LwCAX509GetIssuerName(
+    X509        *pCert,
+    PSTR        *ppszIssuerName
     );
 
 DWORD
@@ -93,34 +120,22 @@ LwCACreateCertificateSignRequest(
 
 DWORD
 LwCAGenerateX509Certificate(
-    PLWCA_CERT_REQUEST      pCertRequest,
+    X509_REQ*               pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
     PLWCA_CERTIFICATE       pCACert,
     X509                    **ppCert
     );
 
 DWORD
-LwCAX509ToPEM(
-    X509* pX509,
-    PSTR* ppCertificate
-    );
-
-DWORD
-LwCACSRToPEM(
-    X509_REQ           *pX509Req,
-    PLWCA_CERT_REQUEST *ppCertReq
-    );
-
-DWORD
-LwCASignX509Req(
-    X509_REQ    *pReq,
+LwCAX509SignCertificate(
+    X509        *pX509,
     PCSTR       pcszPrivateKey,
     PCSTR       pcszPassPhrase
     );
 
 DWORD
-LwCASignX509Certificate(
-    X509        *pX509,
+LwCAX509ValidateCertificate(
+    X509        *pCert,
     PCSTR       pcszPrivateKey,
     PCSTR       pcszPassPhrase
     );
@@ -132,7 +147,7 @@ LwCAVerifyCertificate(
     );
 
 DWORD
-LwCACheckIfCACert(
+LwCAX509CheckIfCACert(
     X509     *pCert,
     PBOOLEAN pbIsCA
     );

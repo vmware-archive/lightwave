@@ -132,6 +132,9 @@
     "\"access_token\": \"" DUMMY_ACCESS_TOKEN "\"" \
     "}"
 
+#define DUMMY_CERT_SUBJECT_DN \
+    "CN=mutentca-post-66-i-0f90d09589f124f86.lw-testdom.com-service"
+
 DWORD
 __wrap_LwCAGetVecsMutentCACert(
     PLWCA_CERTIFICATE   *ppszCert,
@@ -182,6 +185,8 @@ __wrap_OidcClientAcquireTokensBySolutionUserCredentials(
     SSOERROR                        dwError = 0;
     POIDC_TOKEN_SUCCESS_RESPONSE    pSuccess = NULL;
     DWORD                           mock_val = 0;
+
+    assert_string_equal(pszCertificateSubjectDN, DUMMY_CERT_SUBJECT_DN);
 
     mock_val = mock();
     if (mock_val)

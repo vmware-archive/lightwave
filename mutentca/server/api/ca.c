@@ -64,10 +64,10 @@ LwCACreateRootCA(
     dwError = LwCAPEMToX509(pCertificate, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAValidateCertificate(pCert, pcszPrivateKey, pcszPassPhrase);
+    dwError = LwCAX509ValidateCertificate(pCert, pcszPrivateKey, pcszPassPhrase);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACheckIfCACert(pCert, &bIsCA);
+    dwError = LwCAX509CheckIfCACert(pCert, &bIsCA);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (!bIsCA)
@@ -76,10 +76,10 @@ LwCACreateRootCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAGetCertSubjectName(pCert, &pszSubject);
+    dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCertIssuerName(pCert, &pszIssuer);
+    dwError = LwCAX509GetIssuerName(pCert, &pszIssuer);
     BAIL_ON_LWCA_ERROR(dwError);
 
     //TODO: Secure manager APIs must be called to encrypt and store private key.
@@ -107,10 +107,7 @@ cleanup:
     LwCADbFreeCAData(pCAData);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
     LWCA_SAFE_FREE_STRINGA(pszIssuer);
-    if (pCert)
-    {
-        X509_free(pCert);
-    }
+    LwCAX509Free(pCert);
 
     return dwError;
 
@@ -165,6 +162,7 @@ LwCAGetSignedCertificate(
     )
 {
     DWORD dwError = 0;
+    X509_REQ *pRequest = NULL;
     X509 *pX509Cert = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
@@ -177,6 +175,9 @@ LwCAGetSignedCertificate(
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    dwError = LwCAPEMToX509Req(pCertRequest, &pRequest);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     //TODO: Policy plugin must verify subjectname does not have wildcardstring
     //TODO: Policy plugin must verify subjectaltname does not have wildcardstring
@@ -196,10 +197,10 @@ LwCAGetSignedCertificate(
 
     pCACert = pCACerts->ppCertificates[0];
 
-    dwError = LwCAGenerateX509Certificate(pCertRequest, pValidity, pCACert, &pX509Cert);
+    dwError = LwCAGenerateX509Certificate(pRequest, pValidity, pCACert, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACheckIfCACert(pX509Cert, &bIsCA);
+    dwError = LwCAX509CheckIfCACert(pX509Cert, &bIsCA);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (bIsCA)
@@ -222,6 +223,7 @@ cleanup:
     {
         X509_free(pX509Cert);
     }
+    LwCAX509ReqFree(pRequest);
     LwCAFreeCertificates(pCACerts);
     return dwError;
 
@@ -302,7 +304,7 @@ _LwCASignX509Certificate(
                         );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCASignX509Certificate(
+    dwError = LwCAX509SignCertificate(
                         pCert,
                         pszPrivateKey,
                         NULL

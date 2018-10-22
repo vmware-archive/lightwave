@@ -15,6 +15,13 @@
 
 #include "includes.h"
 
+static
+DWORD
+_LwCAGetCertCommonName(
+    PSTR    pszCertificate,
+    PSTR    *ppszCN
+    );
+
 DWORD
 LwCAGetAccessToken(
     PCSTR   pcszServer,
@@ -45,10 +52,7 @@ LwCAGetAccessToken(
     dwError = LwCAGetVecsMutentCACert(&pszCertificate, &pszKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCommonNameFromSubject(
-        pszCertificate,
-        &pszCommonName
-        );
+    dwError = _LwCAGetCertCommonName(pszCertificate, &pszCommonName);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = OidcClientBuild(
@@ -110,5 +114,44 @@ error:
     {
         *ppszToken = NULL;
     }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetCertCommonName(
+    PSTR    pszCertificate,
+    PSTR    *ppszCN
+    )
+{
+    DWORD dwError = 0;
+    X509 *pCert = NULL;
+    PSTR pszCommonName = NULL;
+    PSTR pszCommonNameFull = NULL;
+
+    dwError = LwCAPEMToX509(pszCertificate, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetCommonName(pCert, &pszCommonName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+        &pszCommonNameFull,
+        "%s=%s",
+        SN_commonName,
+        pszCommonName
+        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszCN = pszCommonNameFull;
+
+cleanup:
+    LwCAX509Free(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszCommonName);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCommonNameFull);
+    *ppszCN = NULL;
     goto cleanup;
 }
