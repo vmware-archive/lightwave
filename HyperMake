@@ -32,7 +32,7 @@ targets:
       - '**/**/*.am'
       - '**/**/*.ac'
     cmds:
-      - ./support/scripts/bootstrap.sh
+      - ./support/scripts/bootstrap_photon1.sh
     image: 'vmware/lightwave-toolchain-photon:2.0.4'
 
   bootstrap-lightwave-photon2:
