@@ -52,6 +52,7 @@ IsValidFunctionTable(
             && pFt->pFnFreeCertDataArray
             && pFt->pFnFreeCertArray
             && pFt->pFnFreeString
+            && pFt->pFnFreeHandle
             );
 }
 
@@ -66,7 +67,8 @@ _LwCADbCopyCAData(
  * To initialize db context, the Mutent CA config file must provide db plugin with absolute path
  * Example:
  * {
-      "dbPlugin": "/usr/lib/libdbplugin.so"
+      "dbPlugin": "/usr/lib/libdbplugin.so",
+      "dbPluginConfigPath": "/usr/lib/pluginconfig.json"
  * }
  */
 DWORD
@@ -76,6 +78,7 @@ LwCADbInitCtx(
 {
     DWORD dwError = 0;
     PSTR pszPlugin = NULL;
+    PSTR pszPluginConfigPath = NULL;
     BOOLEAN bLocked = FALSE;
 
     if (!pConfig)
@@ -104,7 +107,10 @@ LwCADbInitCtx(
     dwError = LwCAPluginInitialize(pszPlugin, gDbCtx.pFt, &gDbCtx.pPluginHandle);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = gDbCtx.pFt->pFnInit(&gDbCtx.pDbHandle);
+    dwError = LwCAJsonGetStringFromKey(pConfig, FALSE, CONFIG_DB_PLUGIN_PATH, &pszPluginConfigPath);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnInit(pszPluginConfigPath, &gDbCtx.pDbHandle);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (!IsValidFunctionTable(gDbCtx.pFt))
@@ -119,6 +125,7 @@ cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
 
     LWCA_SAFE_FREE_STRINGA(pszPlugin);
+    LWCA_SAFE_FREE_STRINGA(pszPluginConfigPath);
     return dwError;
 
 error:

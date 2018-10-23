@@ -176,3 +176,13 @@ VOID
 Test_LwCADbCertData_Invalid(
     VOID **state
     );
+
+VOID
+Test_LwCAPostDbInitCtx(
+    VOID    **state
+    );
+
+VOID
+Test_LwCAPostDbFreeCtx(
+    VOID    **state
+    );

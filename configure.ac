@@ -1950,6 +1950,8 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/security/Makefile
                  mutentca/server/db/Makefile
                  mutentca/server/plugin/Makefile
+                 mutentca/server/plugins/Makefile
+                 mutentca/server/plugins/post/Makefile
                  mutentca/server/policy/Makefile
                  mutentca/server/rest-head/Makefile
                  mutentca/server/mutentca/Makefile

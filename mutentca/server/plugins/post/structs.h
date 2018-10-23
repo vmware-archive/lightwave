@@ -12,5 +12,19 @@
  * under the License.
  */
 
-#define CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
-#define CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
+typedef struct _LWCA_POST_HANDLE
+{
+    /** the Lightwave server IP */
+    PSTR                pszLwServer;
+    /** the Post server IP */
+    PSTR                pszPostServer;
+    /** the domain used by POST */
+    PSTR                pszDomain;
+    /** the access token for communicating with POST's rest-head */
+    PSTR                pszAccessToken;
+    /** parsed Access token into an object */
+    POIDC_ACCESS_TOKEN  pOidcToken;
+    /** mutex to check validity and make changes to the access token */
+    pthread_mutex_t     accessTokenMutex;
+
+} LWCA_POST_HANDLE, *PLWCA_POST_HANDLE;

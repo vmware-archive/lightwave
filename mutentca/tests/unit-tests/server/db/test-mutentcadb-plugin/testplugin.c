@@ -63,7 +63,8 @@ LwCAPluginUnload(
 
 DWORD
 LwCADbTestPluginInitialize(
-    PLWCA_DB_HANDLE  *ppHandle
+    PCSTR           pcszPluginConfigPath,
+    PLWCA_DB_HANDLE *ppHandle
     )
 {
     return 0;

@@ -66,5 +66,17 @@ int main(VOID)
         fail_msg("%s", "MutentCA DB tests failed");
     }
 
+    const struct CMUnitTest postTests[] = {
+        cmocka_unit_test_setup_teardown(Test_LwCAPostDbInitCtx, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCAPostDbFreeCtx, NULL, NULL),
+
+    };
+
+    ret = cmocka_run_group_tests(postTests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA POST DB tests failed");
+    }
+
     return ret;
 }

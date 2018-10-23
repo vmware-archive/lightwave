@@ -1,3 +1,4 @@
 {
-  "dbPlugin": "./test-mutentcadb-plugin/.libs/mutentcadbtestplugin.so"
+  "dbPlugin": "./test-mutentcadb-plugin/.libs/mutentcadbtestplugin.so",
+  "dbPluginConfigPath": "./test-mutentcadb-config/test-mutentcadb-config.json"
 }

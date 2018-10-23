@@ -3,6 +3,7 @@ SUBDIRS = \
     config \
     plugin \
     security \
+    plugins \
     db \
     policy \
     api \

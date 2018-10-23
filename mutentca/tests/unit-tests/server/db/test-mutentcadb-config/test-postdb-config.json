@@ -1,0 +1,4 @@
+{
+  "dbPlugin": "../../../../server/plugins/post/.libs/libmutentcasrvpluginpost.so",
+  "dbPluginConfigPath": "./test-mutentcadb-config/test-postplugin-config.json"
+}

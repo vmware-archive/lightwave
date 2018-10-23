@@ -75,7 +75,8 @@ typedef PCSTR
  */
 typedef DWORD
 (*PFN_LWCA_DB_INITIALIZE)(
-    PLWCA_DB_HANDLE *ppHandle //OUT
+    PCSTR           pcszPluginConfigPath,   //IN
+    PLWCA_DB_HANDLE *ppHandle               //OUT
     );
 
 /*
