@@ -19,6 +19,8 @@ LwCAPolicyCfgObjInit(
     LWCA_POLICY_CFG_TYPE            type,
     LWCA_POLICY_CFG_MATCH           match,
     PCSTR                           pcszValue,
+    PCSTR                           pcszPrefix,
+    PCSTR                           pcszSuffix,
     PLWCA_POLICY_CFG_OBJ            *ppObj
     )
 {
@@ -37,10 +39,24 @@ LwCAPolicyCfgObjInit(
     pObj->type = type;
     pObj->match = match;
     pObj->pszValue = NULL;
+    pObj->pszPrefix = NULL;
+    pObj->pszSuffix = NULL;
 
     if (!IsNullOrEmptyString(pcszValue))
     {
         dwError = LwCAAllocateStringA(pcszValue, &pObj->pszValue);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszPrefix))
+    {
+        dwError = LwCAAllocateStringA(pcszPrefix, &pObj->pszPrefix);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszSuffix))
+    {
+        dwError = LwCAAllocateStringA(pcszSuffix, &pObj->pszSuffix);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -177,7 +193,13 @@ LwCAPolicyCfgObjCopy(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAPolicyCfgObjInit(pObjIn->type, pObjIn->match, pObjIn->pszValue, &pObj);
+    dwError = LwCAPolicyCfgObjInit(
+                pObjIn->type,
+                pObjIn->match,
+                pObjIn->pszValue,
+                pObjIn->pszPrefix,
+                pObjIn->pszSuffix,
+                &pObj);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppObjOut = pObj;
@@ -236,6 +258,8 @@ LwCAPolicyCfgObjFree(
     if (pObj)
     {
         LWCA_SAFE_FREE_STRINGA(pObj->pszValue);
+        LWCA_SAFE_FREE_STRINGA(pObj->pszPrefix);
+        LWCA_SAFE_FREE_STRINGA(pObj->pszSuffix);
         LWCA_SAFE_FREE_MEMORY(pObj);
     }
 }

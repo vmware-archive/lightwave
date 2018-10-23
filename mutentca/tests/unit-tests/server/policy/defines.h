@@ -29,20 +29,20 @@
                         "{\"type\":\"ip\", \"match\":\"regex\", \"value\":\".*\"}," \
                         "{\"type\":\"ip\", \"match\":\"private\"}," \
                         "{\"type\":\"ip\", \"match\":\"public\"}," \
-                        "{\"type\":\"ip\", \"match\":\"fqdn\"}," \
+                        "{\"type\":\"ip\", \"match\":\"inzone\"}," \
                         "{\"type\":\"name\", \"match\":\"constant\", \"value\":\"test\"}," \
                         "{\"type\":\"name\", \"match\":\"any\"}," \
                         "{\"type\":\"name\", \"match\":\"regex\", \"value\":\".*\"}," \
-                        "{\"type\":\"name\", \"match\":\"hostname\"}," \
-                        "{\"type\":\"name\", \"match\":\"const.hostname\", \"value\":\"test-\"}," \
-                        "{\"type\":\"name\", \"match\":\"hostname.const\", \"value\":\"-test\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\", \"prefix\":\"test-\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\", \"suffix\":\"-test\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"constant\", \"value\":\"lw.test.com\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"any\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"regex\", \"value\":\".*\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"inzone\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"hostname.const\", \"value\":\".test.com\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"hostname.inzone\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"const.inzone\", \"value\":\"test.\"}" \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\"}," \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\", \"prefix\":\"test.\"}," \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\", \"suffix\":\".test\"}" \
                     "]" \
                 "}," \
                 "\"KeyUsagePolicy\":{" \
@@ -60,20 +60,20 @@
                         "{\"type\":\"ip\", \"match\":\"regex\", \"value\":\".*\"}," \
                         "{\"type\":\"ip\", \"match\":\"private\"}," \
                         "{\"type\":\"ip\", \"match\":\"public\"}," \
-                        "{\"type\":\"ip\", \"match\":\"fqdn\"}," \
+                        "{\"type\":\"ip\", \"match\":\"inzone\"}," \
                         "{\"type\":\"name\", \"match\":\"constant\", \"value\":\"test\"}," \
                         "{\"type\":\"name\", \"match\":\"any\"}," \
                         "{\"type\":\"name\", \"match\":\"regex\", \"value\":\".*\"}," \
-                        "{\"type\":\"name\", \"match\":\"hostname\"}," \
-                        "{\"type\":\"name\", \"match\":\"const.hostname\", \"value\":\"test-\"}," \
-                        "{\"type\":\"name\", \"match\":\"hostname.const\", \"value\":\"-test\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\", \"prefix\":\"test-\"}," \
+                        "{\"type\":\"name\", \"match\":\"req.hostname\", \"suffix\":\"-test\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"constant\", \"value\":\"lw.test.com\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"any\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"regex\", \"value\":\".*\"}," \
                         "{\"type\":\"fqdn\", \"match\":\"inzone\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"hostname.const\", \"value\":\".test.com\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"hostname.inzone\"}," \
-                        "{\"type\":\"fqdn\", \"match\":\"const.inzone\", \"value\":\"test.\"}" \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\"}," \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\", \"prefix\":\"test.\"}," \
+                        "{\"type\":\"fqdn\", \"match\":\"req.fqdn\", \"suffix\":\".test\"}" \
                     "]" \
                 "}," \
                 "\"SANPolicy\":{" \
@@ -105,28 +105,31 @@
 
 // Invalid type-match combinations
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO1 \
-            "{\"CertificatePolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"ip\", \"match\":\"hostanme\"}]}}}"
+            "{\"CertificatePolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"ip\", \"match\":\"req.hostanme\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO2 \
-            "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"ip\", \"match\":\"inzone\"}]}}}"
+            "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"ip\", \"match\":\"req.fqdn\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO3 \
             "{\"CAPolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"name\", \"match\":\"private\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO4 \
-            "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"name\", \"match\":\"fqdn\"}]}}}"
+            "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"name\", \"match\":\"public\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO5 \
             "{\"CertificatePolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"name\", \"match\":\"inzone\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO6 \
-            "{\"CAPolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"fqdn\", \"match\":\"public\"}]}}}"
+            "{\"CertificatePolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"name\", \"match\":\"req.fqdn\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO7 \
-            "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"fqdn\"}]}}}"
+            "{\"CAPolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"fqdn\", \"match\":\"private\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO8 \
-            "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"hostname\"}]}}}"
+            "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"public\"}]}}}"
+
+#define TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO9 \
+            "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"req.hostname\"}]}}}"
 
 // Missing type or match keys
 #define TEST_POLICY_JSON_INVALID_MISSING_TYPE \
@@ -149,22 +152,10 @@
             "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"name\", \"match\":\"regex\"}]}}}"
 
 #define TEST_POLICY_JSON_INVALID_MISSING_VALUE5 \
-            "{\"CertificatePolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"name\", \"match\":\"const.hostname\"}]}}}"
-
-#define TEST_POLICY_JSON_INVALID_MISSING_VALUE6 \
-            "{\"CAPolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"name\", \"match\":\"hostname.const\"}]}}}"
-
-#define TEST_POLICY_JSON_INVALID_MISSING_VALUE7 \
             "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"constant\"}]}}}"
 
-#define TEST_POLICY_JSON_INVALID_MISSING_VALUE8 \
+#define TEST_POLICY_JSON_INVALID_MISSING_VALUE6 \
             "{\"CAPolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"regex\"}]}}}"
-
-#define TEST_POLICY_JSON_INVALID_MISSING_VALUE9 \
-            "{\"CertificatePolicy\":{\"SANPolicy\":{\"AllowedSANs\":[{\"type\":\"fqdn\", \"match\":\"hostname.const\"}]}}}"
-
-#define TEST_POLICY_JSON_INVALID_MISSING_VALUE10 \
-            "{\"CAPolicy\":{\"SNPolicy\":{\"AllowedCNs\":[{\"type\":\"fqdn\", \"match\":\"const.inzone\"}]}}}"
 
 // Invalid key usage values (max 8 bit allowed)
 #define TEST_POLICY_JSON_INVALID_KEYUSAGE1 \

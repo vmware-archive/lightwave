@@ -9,7 +9,7 @@
                 },
                 {
                     "type": "name",
-                    "match": "hostname"
+                    "match": "req.hostname"
                 },
                 {
                     "type": "fqdn",
@@ -22,7 +22,7 @@
             "AllowedSANs": [
                 {
                     "type": "ip",
-                    "match": "fqdn"
+                    "match": "inzone"
                 },
                 {
                     "type": "name",
@@ -31,7 +31,7 @@
                 },
                 {
                     "type": "name",
-                    "match": "hostname"
+                    "match": "req.hostname"
                 },
                 {
                     "type": "fqdn",
@@ -56,7 +56,7 @@
                 },
                 {
                     "type": "name",
-                    "match": "hostname"
+                    "match": "req.hostname"
                 },
                 {
                     "type": "fqdn",
@@ -69,7 +69,7 @@
             "AllowedSANs": [
                 {
                     "type": "ip",
-                    "match": "fqdn"
+                    "match": "inzone"
                 },
                 {
                     "type": "name",
@@ -78,7 +78,7 @@
                 },
                 {
                     "type": "name",
-                    "match": "hostname"
+                    "match": "req.hostname"
                 },
                 {
                     "type": "fqdn",

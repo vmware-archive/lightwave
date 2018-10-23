@@ -16,6 +16,8 @@
 LWCA_POLICY_CFG_TYPE type1 = LWCA_POLICY_CFG_TYPE_IP;
 LWCA_POLICY_CFG_MATCH match1 = LWCA_POLICY_CFG_MATCH_CONSTANT;
 #define TEST_VALUE "TestValue"
+#define TEST_PREFIX "TestPrefix"
+#define TEST_SUFFIX "TestSuffix"
 
 LWCA_POLICY_CFG_TYPE type2 = LWCA_POLICY_CFG_TYPE_NAME;
 LWCA_POLICY_CFG_MATCH match2 = LWCA_POLICY_CFG_MATCH_ANY;
@@ -32,7 +34,7 @@ Test_LwCAPolicyCfgObjInit(
     DWORD dwError = 0;
     PLWCA_POLICY_CFG_OBJ pObj = NULL;
 
-    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, &pObj);
+    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, TEST_PREFIX, TEST_SUFFIX, &pObj);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj);
 
@@ -48,7 +50,7 @@ Test_LwCAPolicyCfgObjArrayInit(
     PLWCA_POLICY_CFG_OBJ pObj = NULL;
     PLWCA_POLICY_CFG_OBJ_ARRAY pObjArray = NULL;
 
-    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, &pObj);
+    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, NULL, NULL, &pObj);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj);
 
@@ -71,7 +73,7 @@ Test_LwCAPoliciesInit(
     PLWCA_POLICY_CFG_OBJ_ARRAY pSANs = NULL;
     PLWCA_POLICIES pPolicies = NULL;
 
-    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, &pObj1);
+    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, NULL, NULL, &pObj1);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj1);
 
@@ -79,7 +81,7 @@ Test_LwCAPoliciesInit(
     assert_int_equal(dwError, 0);
     assert_non_null(pSNs);
 
-    dwError = LwCAPolicyCfgObjInit(type2, match2, NULL, &pObj2);
+    dwError = LwCAPolicyCfgObjInit(type2, match2, NULL, NULL, NULL, &pObj2);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj2);
 
@@ -118,7 +120,7 @@ Test_LwCAPolicyCfgObjCopy(
     PLWCA_POLICY_CFG_OBJ pObj = NULL;
     PLWCA_POLICY_CFG_OBJ pObjCopy = NULL;
 
-    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, &pObj);
+    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, NULL, NULL, &pObj);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj);
 
@@ -143,7 +145,7 @@ Test_LwCAPolicyCfgObjArrayCopy(
     PLWCA_POLICY_CFG_OBJ_ARRAY pObjArray = NULL;
     PLWCA_POLICY_CFG_OBJ_ARRAY pObjArrayCopy = NULL;
 
-    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, &pObj);
+    dwError = LwCAPolicyCfgObjInit(type1, match1, TEST_VALUE, NULL, NULL, &pObj);
     assert_int_equal(dwError, 0);
     assert_non_null(pObj);
 

@@ -21,14 +21,14 @@ extern "C" {
 
 /*
  * Available policy types:
- * - LWCA_POLICY_TYPE_INTETERMEDIATE_CA:
+ * - LWCA_POLICY_TYPE_CA:
  *     Validate CA policies before creating new intermediate CA
  * - LWCA_POLICY_TYPE_CERTIFICATE:
  *     Validate cert policies before signing a certificate
  */
 typedef enum _LWCA_POLICY_TYPE
 {
-    LWCA_POLICY_TYPE_INTERMEDIATE_CA  = 0,
+    LWCA_POLICY_TYPE_CA,
     LWCA_POLICY_TYPE_CERTIFICATE
 } LWCA_POLICY_TYPE, *PLWCA_POLICY_TYPE;
 
@@ -43,12 +43,10 @@ typedef enum _LWCA_POLICY_CHECKS
     LWCA_POLICY_CHECK_SAN             = 0x2,
     LWCA_POLICY_CHECK_KEY_USAGE       = 0x4,
     LWCA_POLICY_CHECK_DURATION        = 0x8,
-    LWCA_POLICY_CHECK_EXT_POLICY      = 0x16,
     LWCA_POLICY_CHECK_ALL             = LWCA_POLICY_CHECK_SN | \
                                         LWCA_POLICY_CHECK_SAN | \
                                         LWCA_POLICY_CHECK_KEY_USAGE | \
-                                        LWCA_POLICY_CHECK_DURATION | \
-                                        LWCA_POLICY_CHECK_EXT_POLICY
+                                        LWCA_POLICY_CHECK_DURATION
 } LWCA_POLICY_CHECKS, *PLWCA_POLICY_CHECKS;
 
 /*
@@ -75,9 +73,8 @@ typedef enum _LWCA_POLICY_CFG_TYPE
  *                          type: any
  *                          value: string required
  *
- * - "any":             Allows any CN/SAN value of given type
+ * - "any":             Allows any CN/SAN of given type
  *                          type: any
- *                          value: empty
  *
  * - "regex":           Checks if CN/SAN matches the given regex of given type
  *                          type: any
@@ -85,43 +82,24 @@ typedef enum _LWCA_POLICY_CFG_TYPE
  *
  * - "private":         Checks if CN/SAN is a private IP
  *                          type: ip only
- *                          value: empty
  *
  * - "public":          Checks if CN/SAN is a private IP
  *                          type: ip only
- *                          value: empty
  *
- * - "fqdn":            Checks if CN/SAN IP is the requestor's IP with a reverse DNS lookup
- *                          type: ip only
- *                          value: empty
+ * - "inzone":          Checks if CN/SAN ip/fqdn is in lw dns records with forward/reverse dns lookup
+ *                          type: ip or fqdn
  *
- * - "hostname":        Checks if CN/SAN hostname is requestor's machine account in lw
+ * - "req.hostname":    Checks if CN/SAN name is requestor's machine account hostname in lw
+ *                      Also checks prefix/suffix if they are provided
  *                          type: name only
- *                          value: empty
+ *                          prefix: optional
+ *                          suffix: optional
  *
- * - "inzone":          Checks if CN/SAN FQDN is in lw zone
+ * - "req.fqdn":        Checks if CN/SAN fqdn is requestor's machine account fqdn in lw
+ *                      Also checks prefix/sufix if they are provided
  *                          type: fqdn only
- *                          value: empty
- *
- * - "const.hostname":  Checks if CN/SAN name starts with the given constant value and rest
- *                      of it matches requestor's machine account in lw
- *                          type: name only
- *                          value: string required (the constant part of the name)
- *
- * - "hostname.const":  Checks if CN/SAN ends with the given constant value and rest of it
- *                      matches requestor's machine account in lw
- *                          type: name or fqdn
- *                          value: string required (constant part of the name/fqdn)
- *
- * - "hostname.inzone": Checks if CN/SAN FQDN contains hostname that matches requestor's machine
- *                      account in lightwave and DN matches the lw zone
- *                          type: fqdn only
- *                          value: empty
- *
- * - "const.inzone":    Checks if CN/SAN FQDN contains hostname that matches the given constant
- *                      value and DN matches the lw zone
- *                          type: fqdn only
- *                          value: string value required = constant part (hostname) of FQDN
+ *                          prefix: optional
+ *                          suffix: optional
  */
 typedef enum _LWCA_POLICY_CFG_MATCH
 {
@@ -130,13 +108,9 @@ typedef enum _LWCA_POLICY_CFG_MATCH
     LWCA_POLICY_CFG_MATCH_REGEX,
     LWCA_POLICY_CFG_MATCH_PRIVATE,
     LWCA_POLICY_CFG_MATCH_PUBLIC,
-    LWCA_POLICY_CFG_MATCH_FQDN,
-    LWCA_POLICY_CFG_MATCH_HOSTNAME,
     LWCA_POLICY_CFG_MATCH_INZONE,
-    LWCA_POLICY_CFG_MATCH_CONST_HOSTNAME,
-    LWCA_POLICY_CFG_MATCH_HOSTNAME_CONST,
-    LWCA_POLICY_CFG_MATCH_HOSTNAME_INZONE,
-    LWCA_POLICY_CFG_MATCH_CONST_INZONE
+    LWCA_POLICY_CFG_MATCH_REQ_HOSTNAME,
+    LWCA_POLICY_CFG_MATCH_REQ_FQDN,
 } LWCA_POLICY_CFG_MATCH, *PLWCA_POLICY_CFG_MATCH;
 
 /*
@@ -145,12 +119,16 @@ typedef enum _LWCA_POLICY_CFG_MATCH
  * - "type":            Required
  * - "match":           Required
  * - "value":           Optional
+ * - "prefix":          Optional
+ * - "suffix":          Optional
  */
 typedef struct _LWCA_POLICY_CFG_OBJ
 {
     LWCA_POLICY_CFG_TYPE                type;
     LWCA_POLICY_CFG_MATCH               match;
     PSTR                                pszValue;
+    PSTR                                pszPrefix;
+    PSTR                                pszSuffix;
 } LWCA_POLICY_CFG_OBJ, *PLWCA_POLICY_CFG_OBJ;
 
 /*
@@ -231,6 +209,8 @@ LwCAPolicyCfgObjInit(
     LWCA_POLICY_CFG_TYPE            type,
     LWCA_POLICY_CFG_MATCH           match,
     PCSTR                           pcszValue,
+    PCSTR                           pcszPrefix,
+    PCSTR                           pcszSuffix,
     PLWCA_POLICY_CFG_OBJ            *ppObj
     );
 

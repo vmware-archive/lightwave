@@ -117,6 +117,7 @@ Test_LwCAPolicyInitCtx_Invalid_TypeMatchCombo(
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO6 );
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO7 );
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO8 );
+    _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_TYPE_MATCH_COMBO9 );
 }
 
 VOID
@@ -137,10 +138,6 @@ Test_LwCAPolicyInitCtx_Invalid_MissingValueForTypeMatchCombo(
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE4 );
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE5 );
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE6 );
-    _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE7 );
-    _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE8 );
-    _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE9 );
-    _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_MISSING_VALUE10 );
 }
 
 VOID

@@ -47,26 +47,9 @@ _LwCAPolicyVerifyAndGetCfgObjEnums(
 
 static
 DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForIP(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
-    );
-
-static
-DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForName(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
-    );
-
-static
-DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForFQDN(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
+_LwCAPolicyGetTypeEnum(
+    PCSTR                       pcszType,
+    PLWCA_POLICY_CFG_TYPE       pType
     );
 
 static
@@ -262,6 +245,8 @@ _LwCAPolicyGetCfgObjectsFromJson(
     PSTR pszType = NULL;
     PSTR pszMatch = NULL;
     PSTR pszValue = NULL;
+    PSTR pszPrefix = NULL;
+    PSTR pszSuffix = NULL;
     PLWCA_JSON_OBJECT pJsonValue = NULL;
     LWCA_POLICY_CFG_TYPE type = 0;
     LWCA_POLICY_CFG_MATCH match = 0;
@@ -289,15 +274,23 @@ _LwCAPolicyGetCfgObjectsFromJson(
         dwError = LwCAJsonGetStringFromKey(pJsonValue, TRUE, LWCA_CFG_OBJ_VALUE_KEY, &pszValue);
         BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, "Failed to get value of key='value' from policy config object");
 
+        dwError = LwCAJsonGetStringFromKey(pJsonValue, TRUE, LWCA_CFG_OBJ_PREFIX_KEY, &pszPrefix);
+        BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, "Failed to get value of key='prefix' from policy config object");
+
+        dwError = LwCAJsonGetStringFromKey(pJsonValue, TRUE, LWCA_CFG_OBJ_SUFFIX_KEY, &pszSuffix);
+        BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, "Failed to get value of key='suffix' from policy config object");
+
         dwError = _LwCAPolicyVerifyAndGetCfgObjEnums(pszType, pszMatch, pszValue, &type, &match);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        dwError = LwCAPolicyCfgObjInit(type, match, pszValue, &ppObjs[dwIdx]);
+        dwError = LwCAPolicyCfgObjInit(type, match, pszValue, pszPrefix, pszSuffix, &ppObjs[dwIdx]);
         BAIL_ON_LWCA_ERROR(dwError);
 
         LWCA_SAFE_FREE_STRINGA(pszType);
         LWCA_SAFE_FREE_STRINGA(pszMatch);
         LWCA_SAFE_FREE_STRINGA(pszValue);
+        LWCA_SAFE_FREE_STRINGA(pszPrefix);
+        LWCA_SAFE_FREE_STRINGA(pszSuffix);
         pJsonValue = NULL;
     }
 
@@ -313,6 +306,8 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszType);
     LWCA_SAFE_FREE_STRINGA(pszMatch);
     LWCA_SAFE_FREE_STRINGA(pszValue);
+    LWCA_SAFE_FREE_STRINGA(pszPrefix);
+    LWCA_SAFE_FREE_STRINGA(pszSuffix);
     if (ppObjs)
     {
         for ( dwIdx = 0 ; dwIdx < dwArraySize ; ++ dwIdx )
@@ -347,26 +342,132 @@ _LwCAPolicyVerifyAndGetCfgObjEnums(
     LWCA_POLICY_CFG_TYPE type = 0;
     LWCA_POLICY_CFG_MATCH match = 0;
 
+    if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONSTANT, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_CONSTANT;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_ANY, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_ANY;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REGEX, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_REGEX;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_PRIVATE, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_PRIVATE;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (type != LWCA_POLICY_CFG_TYPE_IP)
+        {
+            dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid type-match combo in policy config. match=private only valid for type=ip");
+        }
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_PUBLIC, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_PUBLIC;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (type != LWCA_POLICY_CFG_TYPE_IP)
+        {
+            dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid type-match combo in policy config. match=public only valid for type=ip");
+        }
+  }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_INZONE, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_INZONE;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (type == LWCA_POLICY_CFG_TYPE_NAME)
+        {
+            dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid type-match combo in policy config. match=inzone, type=name not allowed");
+        }
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REQ_HOSTNAME, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_REQ_HOSTNAME;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (type != LWCA_POLICY_CFG_TYPE_NAME)
+        {
+            dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid type-match combo in policy config. match=req.hostname only valid for type=name");
+        }
+    }
+    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REQ_FQDN, TRUE) == 0)
+    {
+        match = LWCA_POLICY_CFG_MATCH_REQ_FQDN;
+
+        dwError = _LwCAPolicyGetTypeEnum(pcszType, &type);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (type != LWCA_POLICY_CFG_TYPE_FQDN)
+        {
+            dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid type-match combo in policy config. match=req.fqdn only valid for type=fqdn");
+        }
+    }
+    else
+    {
+        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid value for key 'match' in policy config");
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAPolicyGetTypeEnum(
+    PCSTR                       pcszType,
+    PLWCA_POLICY_CFG_TYPE       pType
+    )
+{
+    DWORD dwError = 0;
+    LWCA_POLICY_CFG_TYPE type = 0;
+
     if (LwCAStringCompareA(pcszType, LWCA_TYPE_VALUE_IP, TRUE) == 0)
     {
         type = LWCA_POLICY_CFG_TYPE_IP;
-
-        dwError = _LwCAPolicyVerifyAndGetMatchEnumForIP(pcszMatch, pcszValue, &match);
-        BAIL_ON_LWCA_ERROR(dwError);
     }
     else if (LwCAStringCompareA(pcszType, LWCA_TYPE_VALUE_NAME, TRUE) == 0)
     {
         type = LWCA_POLICY_CFG_TYPE_NAME;
-
-        dwError = _LwCAPolicyVerifyAndGetMatchEnumForName(pcszMatch, pcszValue, &match);
-        BAIL_ON_LWCA_ERROR(dwError);
     }
     else if (LwCAStringCompareA(pcszType, LWCA_TYPE_VALUE_FQDN, TRUE) == 0)
     {
         type = LWCA_POLICY_CFG_TYPE_FQDN;
-
-        dwError = _LwCAPolicyVerifyAndGetMatchEnumForFQDN(pcszMatch, pcszValue, &match);
-        BAIL_ON_LWCA_ERROR(dwError);
     }
     else
     {
@@ -375,191 +476,6 @@ _LwCAPolicyVerifyAndGetCfgObjEnums(
     }
 
     *pType = type;
-    *pMatch = match;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForIP(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
-    )
-{
-    DWORD dwError = 0;
-    LWCA_POLICY_CFG_MATCH match = 0;
-
-    if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONSTANT, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_CONSTANT;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_ANY, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_ANY;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REGEX, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_REGEX;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_PRIVATE, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_PRIVATE;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_PUBLIC, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_PUBLIC;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_FQDN, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_FQDN;
-    }
-    else
-    {
-        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
-        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid value for key 'match' in policy config for type=ip");
-    }
-
-    *pMatch = match;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForName(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
-    )
-{
-    DWORD dwError = 0;
-    LWCA_POLICY_CFG_MATCH match = 0;
-
-    if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONSTANT, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_CONSTANT;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_ANY, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_ANY;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REGEX, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_REGEX;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_HOSTNAME, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_HOSTNAME;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONST_HOSTNAME, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_CONST_HOSTNAME;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_HOSTNAME_CONST, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_HOSTNAME_CONST;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else
-    {
-        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
-        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid value for key 'match' in policy config for type=name");
-    }
-
-    *pMatch = match;
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCAPolicyVerifyAndGetMatchEnumForFQDN(
-    PCSTR                       pcszMatch,
-    PCSTR                       pcszValue,
-    PLWCA_POLICY_CFG_MATCH      pMatch
-    )
-{
-    DWORD dwError = 0;
-    LWCA_POLICY_CFG_MATCH match = 0;
-
-    if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONSTANT, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_CONSTANT;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_ANY, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_ANY;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_REGEX, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_REGEX;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_INZONE, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_INZONE;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_HOSTNAME_CONST, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_HOSTNAME_CONST;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_HOSTNAME_INZONE, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_HOSTNAME_INZONE;
-    }
-    else if (LwCAStringCompareA(pcszMatch, LWCA_MATCH_VALUE_CONST_INZONE, TRUE) == 0)
-    {
-        match = LWCA_POLICY_CFG_MATCH_CONST_INZONE;
-
-        dwError = _LwCAPolicyVerifyValidStringValue(pcszMatch, pcszValue);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else
-    {
-        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
-        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid value for key 'match' in policy config for type=fqdn");
-    }
-
-    *pMatch = match;
 
 cleanup:
     return dwError;
