@@ -176,31 +176,23 @@ LwCASrvGetMachineAccountInfoA(
 
 BOOLEAN
 LwCAUtilIsValueIPAddr(
-    PCSTR           pszValue
+    PCSTR           pcszValue
     );
 
 BOOLEAN
 LwCAUtilIsValuePrivateOrLocalIPAddr(
-    PSTR            pszValue
+    PCSTR           pcszValue
     );
 
 DWORD
 LwCAUtilIsValueFQDN(
-    PCSTR           pszValue,
+    PCSTR           pcszValue,
     PBOOLEAN        pbIsValid
     );
 
 BOOLEAN
 LwCAUtilDoesValueHaveWildcards(
-    PCSTR            pszValue
-    );
-
-DWORD
-LwCAUtilIsValueInWhitelist(
-    PCSTR                           pszValue,
-    PCSTR                           pszAuthUPN,
-    PCSTR                           pcszRegValue,
-    PBOOLEAN                        pbInWhitelist
+    PCSTR            pcszValue
     );
 
 DWORD

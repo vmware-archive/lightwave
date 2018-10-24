@@ -17,6 +17,7 @@
 
 #include <pthread.h>
 #include <dlfcn.h>
+#include <regex.h>
 
 #if !defined(NO_LIKEWISE)
 #include <lw/types.h>
@@ -693,6 +694,27 @@ LwCAGetLogDirectory(
     );
 
 
+// regexutil.c
+
+typedef regex_t REGEX, *PREGEX;
+
+DWORD
+LwCARegexInit(
+    PCSTR       pcszPattern,
+    PREGEX      *ppRegex
+    );
+
+DWORD
+LwCARegexValidate(
+    PCSTR       pcszValue,
+    PREGEX      pRegex,
+    PBOOLEAN    pbIsValid
+    );
+
+VOID
+LwCARegexFree(
+    PREGEX      pRegex
+    );
 
 /////////////////////////////Actual LwCA Common Functions///////////////////
 

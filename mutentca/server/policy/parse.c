@@ -127,11 +127,6 @@ LwCAPolicyParseCfgPolicies(
     *ppPolicies = pPolicies;
 
 cleanup:
-    LwCAJsonCleanupObject(pSNPolicyJson);
-    LwCAJsonCleanupObject(pSANPolicyJson);
-    LwCAJsonCleanupObject(pKeyUsagePolicyJson);
-    LwCAJsonCleanupObject(pCertDurationPolicyJson);
-
     return dwError;
 
 error:
@@ -439,6 +434,9 @@ _LwCAPolicyVerifyAndGetCfgObjEnums(
         dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
         BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid value for key 'match' in policy config");
     }
+
+    *pType = type;
+    *pMatch = match;
 
 cleanup:
     return dwError;

@@ -14,6 +14,16 @@
 
 #include "includes.h"
 
+static
+DWORD
+_LwCAPolicyValidateInternal(
+    PLWCA_POLICIES              pPoliciesAllowed,
+    PLWCA_REQ_CONTEXT           pReqContext,
+    X509_REQ                    *pRequest,
+    LWCA_POLICY_CHECKS          policyChecks,
+    BOOLEAN                     *pbIsValid
+    );
+
 DWORD
 LwCAPolicyInitCtx(
     PLWCA_JSON_OBJECT           pJson,
@@ -73,7 +83,7 @@ DWORD
 LwCAPolicyValidate(
     PLWCA_POLICY_CONTEXT        pPolicyCtx,
     PLWCA_REQ_CONTEXT           pReqContext,
-    PSTR                        pszPKCS10Request,
+    X509_REQ                    *pRequest,
     LWCA_POLICY_TYPE            policyType,
     LWCA_POLICY_CHECKS          policyChecks,
     BOOLEAN                     *pbIsValid
@@ -82,13 +92,54 @@ LwCAPolicyValidate(
     DWORD dwError = 0;
     BOOLEAN bIsValid = FALSE;
 
-    if (!pPolicyCtx || !pReqContext || !pszPKCS10Request || !pbIsValid)
+    if (!pPolicyCtx || !pReqContext || !pRequest || !pbIsValid)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    // TODO: Call individual validate functions (in subsequent commits)
+    switch (policyType)
+    {
+    case LWCA_POLICY_TYPE_CA:
+        if (pPolicyCtx->pCAPoliciesAllowed)
+        {
+            dwError = _LwCAPolicyValidateInternal(
+                        pPolicyCtx->pCAPoliciesAllowed,
+                        pReqContext,
+                        pRequest,
+                        policyChecks,
+                        &bIsValid);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else
+        {
+            LWCA_LOG_ERROR("Policy Violation: No CA Policies defined in policy config");
+        }
+
+        break;
+
+    case LWCA_POLICY_TYPE_CERTIFICATE:
+        if (pPolicyCtx->pCertPoliciesAllowed)
+        {
+            dwError = _LwCAPolicyValidateInternal(
+                        pPolicyCtx->pCertPoliciesAllowed,
+                        pReqContext,
+                        pRequest,
+                        policyChecks,
+                        &bIsValid);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else
+        {
+            LWCA_LOG_ERROR("Policy Violation: No Certificate Policies defined in policy config");
+        }
+
+        break;
+
+    default:
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     *pbIsValid = bIsValid;
 
@@ -115,4 +166,62 @@ LwCAPolicyFreeCtx(
         LwCAPoliciesFree(pPolicyCtx->pCertPoliciesAllowed);
         LWCA_SAFE_FREE_MEMORY(pPolicyCtx);
     }
+}
+
+static
+DWORD
+_LwCAPolicyValidateInternal(
+    PLWCA_POLICIES              pPoliciesAllowed,
+    PLWCA_REQ_CONTEXT           pReqContext,
+    X509_REQ                    *pRequest,
+    LWCA_POLICY_CHECKS          policyChecks,
+    BOOLEAN                     *pbIsValid
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bIsValid = FALSE;
+
+    // TODO: Check expiration date
+
+    if ( policyChecks == LWCA_POLICY_CHECK_NONE )
+    {
+        bIsValid = TRUE;
+    }
+
+    if ( (policyChecks & LWCA_POLICY_CHECK_SN) )
+    {
+        if (pPoliciesAllowed->pSNs)
+        {
+            dwError = LwCAPolicyValidateSNPolicy(pPoliciesAllowed->pSNs, pReqContext, pRequest, &bIsValid);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else
+        {
+            LWCA_LOG_ERROR("Policy Violation: No SN policies defined in policy config");
+        }
+    }
+
+    if ( (policyChecks & LWCA_POLICY_CHECK_SAN) )
+    {
+        // TODO: Validate SANPolicy
+    }
+
+    if ( (policyChecks & LWCA_POLICY_CHECK_KEY_USAGE) )
+    {
+        // TODO: Validate KeyUsagePolicy
+    }
+
+    if ( (policyChecks & LWCA_POLICY_CHECK_DURATION) )
+    {
+        // TODO: Validate CertDurationPolicy
+    }
+
+    *pbIsValid = bIsValid;
+
+cleanup:
+    return dwError;
+
+error:
+    *pbIsValid = FALSE;
+    goto cleanup;
 }

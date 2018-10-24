@@ -10,6 +10,7 @@ libcommon_la_SOURCES = \
     misc.c \
     opensslctx.c \
     pkcs.c \
+    regexutil.c \
     string.c \
     thread.c \
     token_util.c \

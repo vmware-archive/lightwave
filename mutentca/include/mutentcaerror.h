@@ -55,6 +55,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_OIDC_ERROR_BASE                900
 #define LWCA_SECURITY_ERROR_BASE            1000
 #define LWCA_CURL_ERROR_BASE                1100
+#define LWCA_REGEX_ERROR_BASE               1200
 #define LWCA_MISC_ERROR_BASE                2000
 
 // System Error Codes (80000 - 80099)
@@ -217,10 +218,26 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
 
 // CURL Error codes (81100 - 81199)
-#define LWCA_ERROR_CURL_FAILED_INIT                  (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
-#define LWCA_ERROR_CURL_SEND_ERROR                   (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 2)
-#define LWCA_ERROR_CURL_RECV_ERROR                   (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 3)
-#define LWCA_ERROR_CURL_GENERIC_ERROR                (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 4)
+#define LWCA_ERROR_CURL_FAILED_INIT         (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
+#define LWCA_ERROR_CURL_SEND_ERROR          (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 2)
+#define LWCA_ERROR_CURL_RECV_ERROR          (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 3)
+#define LWCA_ERROR_CURL_GENERIC_ERROR       (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 4)
+
+// Regex Error Codes (81200 - 81299)
+#define LWCA_REGEX_ERROR_NOMATCH            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 1)
+#define LWCA_REGEX_ERROR_BADPAT             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 2)
+#define LWCA_REGEX_ERROR_ECOLLATE           (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 3)
+#define LWCA_REGEX_ERROR_ECTYPE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 4)
+#define LWCA_REGEX_ERROR_EESCAPE            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 5)
+#define LWCA_REGEX_ERROR_ESUBREG            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 6)
+#define LWCA_REGEX_ERROR_EBRACK             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 7)
+#define LWCA_REGEX_ERROR_EPAREN             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 8)
+#define LWCA_REGEX_ERROR_EBRACE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 9)
+#define LWCA_REGEX_ERROR_BADBR              (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 10)
+#define LWCA_REGEX_ERROR_ERANGE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 11)
+#define LWCA_REGEX_ERROR_ESPACE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 12)
+#define LWCA_REGEX_ERROR_BADRPT             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 13)
+#define LWCA_REGEX_ERROR_UNKNOWN            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 14)
 
 // Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
@@ -396,6 +413,20 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
     { LWCA_ERROR_CURL_GENERIC_ERROR     ,   "LWCA_ERROR_CURL_GENERIC_ERROR"     ,   "CURL generic failure" } , \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
+    { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
+    { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \
+    { LWCA_REGEX_ERROR_ECOLLATE         ,   "LWCA_REGEX_ERROR_ECOLLATE"         ,   "Invalid collating element referenced" }, \
+    { LWCA_REGEX_ERROR_ECTYPE           ,   "LWCA_REGEX_ERROR_ECTYPE"           ,   "Invalid character class type referenced" }, \
+    { LWCA_REGEX_ERROR_EESCAPE          ,   "LWCA_REGEX_ERROR_EESCAPE"          ,   "Trailing '\\' in pattern" }, \
+    { LWCA_REGEX_ERROR_ESUBREG          ,   "LWCA_REGEX_ERROR_ESUBREG"          ,   "Number in '\\digit' invalid or in error" }, \
+    { LWCA_REGEX_ERROR_EBRACK           ,   "LWCA_REGEX_ERROR_EBRACK"           ,   "'[]' imbalance" }, \
+    { LWCA_REGEX_ERROR_EPAREN           ,   "LWCA_REGEX_ERROR_EPAREN"           ,   "'\\(\\)' or '()' imbalance" }, \
+    { LWCA_REGEX_ERROR_EBRACE           ,   "LWCA_REGEX_ERROR_EBRACE"           ,   "'\\{\\}' imbalance" }, \
+    { LWCA_REGEX_ERROR_BADBR            ,   "LWCA_REGEX_ERROR_BADBR"            ,   "Content of '\\{\\}' invalid: not a number, number too large, more than two numbers, first larger than second" }, \
+    { LWCA_REGEX_ERROR_ERANGE           ,   "LWCA_REGEX_ERROR_ERANGE"           ,   "Invalid endpoint in range expression" }, \
+    { LWCA_REGEX_ERROR_ESPACE           ,   "LWCA_REGEX_ERROR_ESPACE"           ,   "Out of memory" }, \
+    { LWCA_REGEX_ERROR_BADRPT           ,   "LWCA_REGEX_ERROR_BADRPT"           ,   "'?', '*', or '+' not preceded by valid regular expression" }, \
+    { LWCA_REGEX_ERROR_UNKNWON          ,   "LWCA_REGEX_ERROR_UNKNOWN"          ,   "Unknwown regex error" }, \
 };
 
 #endif //__LWCA_ERROR_H__

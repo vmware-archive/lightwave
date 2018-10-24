@@ -24,6 +24,16 @@ LwCAPolicyParseCfgPolicies(
     PLWCA_POLICIES              *ppPolicies
     );
 
+// validate.c
+
+DWORD
+LwCAPolicyValidateSNPolicy(
+    PLWCA_POLICY_CFG_OBJ_ARRAY  pSNsAllowed,
+    PLWCA_REQ_CONTEXT           pReqContext,
+    X509_REQ                    *pRequest,
+    BOOLEAN                     *pbIsValid
+    );
+
 #ifdef __cplusplus
 }
 #endif

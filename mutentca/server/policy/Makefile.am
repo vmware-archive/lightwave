@@ -3,7 +3,8 @@ noinst_LTLIBRARIES = libmutentcapolicy.la
 libmutentcapolicy_la_SOURCES = \
     parse.c \
     policy.c \
-    util.c
+    util.c \
+    validate.c
 
 libmutentcapolicy_la_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \

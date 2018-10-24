@@ -129,6 +129,7 @@ typedef struct _LWCA_POLICY_CFG_OBJ
     PSTR                                pszValue;
     PSTR                                pszPrefix;
     PSTR                                pszSuffix;
+    PREGEX                              pRegex;
 } LWCA_POLICY_CFG_OBJ, *PLWCA_POLICY_CFG_OBJ;
 
 /*
@@ -184,7 +185,7 @@ DWORD
 LWCAPolicyValidate(
     PLWCA_POLICY_CONTEXT                pPolicyCtx,         // IN
     PLWCA_REQ_CONTEXT                   pReqContext,        // IN
-    PSTR                                pszPKCS10Request,   // IN
+    X509_REQ                            *pRequest,          // IN
     LWCA_POLICY_TYPE                    policyType,         // IN
     LWCA_POLICY_CHECKS                  policyChecks,       // IN
     BOOLEAN                             *pbIsValid          // OUT

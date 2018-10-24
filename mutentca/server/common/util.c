@@ -16,35 +16,35 @@
 
 BOOLEAN
 LwCAUtilIsValueIPAddr(
-    PCSTR           pszValue
+    PCSTR           pcszValue
     )
 {
     BOOLEAN         bIsIP = FALSE;
 
-    if (!IsNullOrEmptyString(pszValue))
+    if (!IsNullOrEmptyString(pcszValue))
     {
         unsigned char buf[sizeof(struct in_addr)];
 
-        bIsIP = (inet_pton(AF_INET, pszValue, &buf[0]) == 1);
+        bIsIP = (inet_pton(AF_INET, pcszValue, &buf[0]) == 1);
     }
 
     return bIsIP;
 }
 
 /*
- * The IP Address in pszValue can be in either dot-decimal notation
+ * The IP Address in pcszValue can be in either dot-decimal notation
  * or hexadecimal notation
  */
 BOOLEAN
 LwCAUtilIsValuePrivateOrLocalIPAddr(
-    PSTR            pszValue
+    PCSTR           pcszValue
     )
 {
     uint32_t        unIp = 0x0;
 
-    if (!IsNullOrEmptyString(pszValue))
+    if (!IsNullOrEmptyString(pcszValue))
     {
-        unIp = inet_network(pszValue);
+        unIp = inet_network(pcszValue);
 
         if (LWCA_IS_IP_IN_PRIVATE_NETWORK(unIp))
         {
@@ -65,7 +65,7 @@ LwCAUtilIsValuePrivateOrLocalIPAddr(
 
 DWORD
 LwCAUtilIsValueFQDN(
-    PCSTR           pszValue,
+    PCSTR           pcszValue,
     PBOOLEAN        pbIsValid
     )
 {
@@ -79,14 +79,14 @@ LwCAUtilIsValueFQDN(
     char            cTemp = 0;
     size_t          szLabelLen = 0;
 
-    if (IsNullOrEmptyString(pszValue))
+    if (IsNullOrEmptyString(pcszValue))
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = LwCAStringCountSubstring(
-                        pszValue,
+                        pcszValue,
                         ".",
                         &count);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -96,7 +96,7 @@ LwCAUtilIsValueFQDN(
         goto ret;
     }
 
-    if (LwCAStringLenA(pszValue) > 255)
+    if (LwCAStringLenA(pcszValue) > 255)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -104,7 +104,7 @@ LwCAUtilIsValueFQDN(
 
     dwError = LwCAAllocateStringPrintfA(
                             &pszTempVal,
-                            pszValue);
+                            pcszValue);
     BAIL_ON_LWCA_ERROR(dwError);
 
     pszLabel = LwCAStringTokA(pszTempVal, ".", &pszNextTok);
@@ -167,19 +167,19 @@ error:
 
 BOOLEAN
 LwCAUtilDoesValueHaveWildcards(
-    PCSTR            pszValue
+    PCSTR            pcszValue
     )
 {
     DWORD           dwError = 0;
     int             count = 0;
 
-    if (IsNullOrEmptyString(pszValue))
+    if (IsNullOrEmptyString(pcszValue))
     {
         return FALSE;
     }
 
     dwError = LwCAStringCountSubstring(
-                        pszValue,
+                        pcszValue,
                         "*",
                         &count);
     if (count != 0)

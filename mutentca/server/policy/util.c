@@ -38,9 +38,6 @@ LwCAPolicyCfgObjInit(
 
     pObj->type = type;
     pObj->match = match;
-    pObj->pszValue = NULL;
-    pObj->pszPrefix = NULL;
-    pObj->pszSuffix = NULL;
 
     if (!IsNullOrEmptyString(pcszValue))
     {
@@ -57,6 +54,12 @@ LwCAPolicyCfgObjInit(
     if (!IsNullOrEmptyString(pcszSuffix))
     {
         dwError = LwCAAllocateStringA(pcszSuffix, &pObj->pszSuffix);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (match == LWCA_POLICY_CFG_MATCH_REGEX)
+    {
+        dwError = LwCARegexInit(pcszValue, &pObj->pRegex);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -260,6 +263,7 @@ LwCAPolicyCfgObjFree(
         LWCA_SAFE_FREE_STRINGA(pObj->pszValue);
         LWCA_SAFE_FREE_STRINGA(pObj->pszPrefix);
         LWCA_SAFE_FREE_STRINGA(pObj->pszSuffix);
+        LwCARegexFree(pObj->pRegex);
         LWCA_SAFE_FREE_MEMORY(pObj);
     }
 }
