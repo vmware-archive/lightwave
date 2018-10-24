@@ -2042,6 +2042,12 @@ AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])
 AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postplugin-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postplugin-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postdb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postdb-config.json
+                ])
+AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-config.json:mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-config.json
                 ])
 AC_CONFIG_LINKS([
