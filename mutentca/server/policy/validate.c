@@ -71,12 +71,6 @@ LwCAPolicyValidateSNPolicy(
     dwError = LwCAX509ReqGetCommonName(pRequest, &pszCN);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (LwCAUtilDoesValueHaveWildcards(pszCN))
-    {
-        LWCA_LOG_ERROR("Policy Violation: CN contains wildcard characters");
-        goto error;
-    }
-
     dwError = LwCAUtilIsValueFQDN(pszCN, &bIsFQDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -93,11 +87,99 @@ LwCAPolicyValidateSNPolicy(
         bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_NAME, pSNsAllowed);
     }
 
+    if (!bIsValid)
+    {
+        LWCA_LOG_ERROR("Policy Violation: CN %s does not match allowed CN values", pszCN);
+    }
+
     *pbIsValid = bIsValid;
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszCN);
+    return dwError;
 
+error:
+    if (pbIsValid)
+    {
+        *pbIsValid = FALSE;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCAPolicyValidateSANPolicy(
+    PLWCA_POLICY_CFG_OBJ_ARRAY  pSANsAllowed,
+    BOOLEAN                     bMultiSANEnabled,
+    PLWCA_REQ_CONTEXT           pReqContext,
+    X509_REQ                    *pRequest,
+    BOOLEAN                     *pbIsValid
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIdx = 0;
+    PLWCA_STRING_ARRAY pSANArray = NULL;
+    BOOLEAN bIsFQDN = FALSE;
+    BOOLEAN bIsValid = FALSE;
+
+    if (!pSANsAllowed || !pReqContext || !pRequest || !pbIsValid)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAX509ReqGetSubjectAltNames(pRequest, &pSANArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bMultiSANEnabled && pSANArray->dwCount > 1)
+    {
+        LWCA_LOG_ERROR("Policy Violation: Multiple SANs are not allowed");
+        goto error;
+    }
+
+    for ( ; dwIdx < pSANArray->dwCount ; ++dwIdx )
+    {
+        dwError = LwCAUtilIsValueFQDN(pSANArray->ppData[dwIdx], &bIsFQDN);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (bIsFQDN)
+        {
+            bIsValid = _LwCAPolicyValidateEntry(
+                        pSANArray->ppData[dwIdx],
+                        pReqContext,
+                        LWCA_POLICY_CFG_TYPE_FQDN,
+                        pSANsAllowed);
+        }
+        else if (LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]))
+        {
+            bIsValid = _LwCAPolicyValidateEntry(
+                        pSANArray->ppData[dwIdx],
+                        pReqContext,
+                        LWCA_POLICY_CFG_TYPE_IP,
+                        pSANsAllowed);
+        }
+        else
+        {
+            bIsValid = _LwCAPolicyValidateEntry(
+                        pSANArray->ppData[dwIdx],
+                        pReqContext,
+                        LWCA_POLICY_CFG_TYPE_NAME,
+                        pSANsAllowed);
+        }
+
+        if (!bIsValid)
+        {
+            LWCA_LOG_ERROR(
+                "Policy Violation: SAN %s does not match allowed SAN values",
+                pSANArray->ppData[dwIdx]);
+            break;
+        }
+    }
+
+    *pbIsValid = bIsValid;
+
+cleanup:
+    LwCAFreeStringArray(pSANArray);
     return dwError;
 
 error:

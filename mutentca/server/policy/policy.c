@@ -198,12 +198,27 @@ _LwCAPolicyValidateInternal(
         else
         {
             LWCA_LOG_ERROR("Policy Violation: No SN policies defined in policy config");
+            goto error;
         }
     }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_SAN) )
     {
-        // TODO: Validate SANPolicy
+        if (pPoliciesAllowed->pSANs)
+        {
+            dwError = LwCAPolicyValidateSANPolicy(
+                        pPoliciesAllowed->pSANs,
+                        pPoliciesAllowed->bMultiSANEnabled,
+                        pReqContext,
+                        pRequest,
+                        &bIsValid);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else
+        {
+            LWCA_LOG_ERROR("Policy Violation: No SAN policies defined in policy config");
+            goto error;
+        }
     }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_KEY_USAGE) )

@@ -34,6 +34,15 @@ LwCAPolicyValidateSNPolicy(
     BOOLEAN                     *pbIsValid
     );
 
+DWORD
+LwCAPolicyValidateSANPolicy(
+    PLWCA_POLICY_CFG_OBJ_ARRAY  pSANsAllowed,
+    BOOLEAN                     bMultiSANEnabled,
+    PLWCA_REQ_CONTEXT           pReqContext,
+    X509_REQ                    *pRequest,
+    BOOLEAN                     *pbIsValid
+    );
+
 #ifdef __cplusplus
 }
 #endif

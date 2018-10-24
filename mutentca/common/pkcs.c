@@ -898,6 +898,133 @@ error:
 }
 
 DWORD
+LwCAX509ReqGetSubjectAltNames(
+    X509_REQ            *pReq,
+    PLWCA_STRING_ARRAY  *ppSANArray
+    )
+{
+    DWORD                       dwError = 0;
+    DWORD                       dwIdx = 0;
+    DWORD                       dwIdx2 = 0;
+    STACK_OF(X509_EXTENSION)    *pExts = NULL;
+    GENERAL_NAMES               *pSANNames = NULL;
+    const GENERAL_NAME          *pCurrentName = NULL;
+    size_t                      currentNameLen = 0;
+    PSTR                        pszSANName = NULL;
+    DWORD                       dwNumSANEntries = 0;
+    PSTR                        *ppszSANEntries = NULL;
+    PLWCA_STRING_ARRAY          pSANArray = NULL;
+
+    if (!pReq || !ppSANArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pExts = X509_REQ_get_extensions(pReq);
+    if (pExts == NULL)
+    {
+        dwError = 0;
+        goto error;
+    }
+
+    pSANNames = X509V3_get_d2i(pExts, NID_subject_alt_name, NULL, NULL);
+    if (pSANNames == NULL)
+    {
+        dwError = 0;
+        goto error;
+    }
+
+    dwNumSANEntries = sk_GENERAL_NAME_num(pSANNames);
+    if (dwNumSANEntries == 0)
+    {
+        dwError = 0;
+        goto error;
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * dwNumSANEntries, (PVOID*)&ppszSANEntries);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for ( ; dwIdx < dwNumSANEntries ; ++dwIdx )
+    {
+        pCurrentName = sk_GENERAL_NAME_value(pSANNames, dwIdx);
+
+        if (pCurrentName->type == GEN_DNS)
+        {
+            currentNameLen = ASN1_STRING_to_UTF8(
+                                (unsigned char **)&pszSANName,
+                                (ASN1_IA5STRING *)pCurrentName->d.ptr);
+
+            if (!pszSANName || currentNameLen != LwCAStringLenA(pszSANName))
+            {
+                dwError = LWCA_CERT_DECODE_FAILURE;
+                BAIL_ON_LWCA_ERROR(dwError);
+            }
+
+            dwError = LwCAAllocateStringA(pszSANName, &ppszSANEntries[dwIdx2++]);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else if (pCurrentName->type == GEN_IPADD)
+        {
+            if (((ASN1_OCTET_STRING *)pCurrentName->d.ptr)->length != 4)
+            {
+                dwError = LWCA_ERROR_SAN_IPADDR_INVALID;
+                BAIL_ON_LWCA_ERROR(dwError);
+            }
+
+            dwError = LwCAAllocateStringPrintfA(
+                        &pszSANName,
+                        "%u.%u.%u.%u",
+                        ((ASN1_OCTET_STRING *)pCurrentName->d.ptr)->data[0],
+                        ((ASN1_OCTET_STRING *)pCurrentName->d.ptr)->data[1],
+                        ((ASN1_OCTET_STRING *)pCurrentName->d.ptr)->data[2],
+                        ((ASN1_OCTET_STRING *)pCurrentName->d.ptr)->data[3]);
+            BAIL_ON_LWCA_ERROR(dwError);
+
+            dwError = LwCAAllocateStringA(pszSANName, &ppszSANEntries[dwIdx2++]);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+
+        if (pszSANName)
+        {
+            OPENSSL_free(pszSANName);
+            pszSANName = NULL;
+        }
+    }
+
+    dwError = LwCACreateStringArray(ppszSANEntries, dwIdx2, &pSANArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppSANArray = pSANArray;
+
+cleanup:
+    if (pszSANName)
+    {
+        OPENSSL_free(pszSANName);
+    }
+    if (pSANNames)
+    {
+        sk_GENERAL_NAME_pop_free(pSANNames, GENERAL_NAME_free);
+    }
+    if (pExts)
+    {
+        sk_X509_EXTENSION_pop_free(pExts, X509_EXTENSION_free);
+    }
+    LwCAFreeStringArrayA(ppszSANEntries, dwNumSANEntries);
+
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pSANArray);
+    if (ppSANArray)
+    {
+        *ppSANArray = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCACreateCertificateSignRequest(
     PLWCA_PKCS_10_REQ_DATA  pCertRequest,
     PCSTR                   pcszPublicKey,

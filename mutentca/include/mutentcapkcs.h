@@ -129,6 +129,12 @@ LwCAX509GetOrganizations(
     );
 
 DWORD
+LwCAX509ReqGetSubjectAltNames(
+    X509_REQ            *pReq,
+    PLWCA_STRING_ARRAY  *ppSANArray
+    );
+
+DWORD
 LwCAX509GetSerialNumber(
     X509    *pCert,
     PSTR    *ppszSerialNumber
