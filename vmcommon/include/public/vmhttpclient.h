@@ -133,6 +133,21 @@ VmHttpClientSetBody(
     PCSTR               pcszBody
     );
 
+DWORD
+VmHttpClientSetupHOTK(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszAccessToken,
+    PCSTR               pcszSignature,
+    PCSTR               pcszReqTime,
+    PCSTR               pcszReqBody
+    );
+
+
+DWORD
+VmHttpClientGetCurrentTime(
+    PSTR    *ppszReqTime
+    );
+
 /*
  * Free handle
  */

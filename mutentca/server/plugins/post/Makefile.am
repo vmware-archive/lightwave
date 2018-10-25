@@ -1,7 +1,8 @@
 pkglib_LTLIBRARIES = libmutentcasrvpluginpost.la
 
 libmutentcasrvpluginpost_la_SOURCES = \
-    post.c
+    post.c \
+    serializer.c
 
 libmutentcasrvpluginpost_la_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \

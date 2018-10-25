@@ -507,6 +507,63 @@ error:
 }
 
 DWORD
+VmHttpClientSetupHOTK(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszAccessToken,
+    PCSTR               pcszSignature,
+    PCSTR               pcszReqTime,
+    PCSTR               pcszReqBody
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszAuthzValue = NULL;
+
+    if (IsNullOrEmptyString(pcszAccessToken) ||
+        IsNullOrEmptyString(pcszSignature) ||
+        IsNullOrEmptyString(pcszReqTime) ||
+        !pClient
+        )
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+    dwError = VmAllocateStringPrintf(&pszAuthzValue,
+                                     "%s:%s",
+                                     pcszAccessToken,
+                                     pcszSignature
+                                     );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetToken(pClient,
+                                   VMHTTP_TOKEN_TYPE_HOTK_PK,
+                                   pszAuthzValue
+                                   );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetHeader(pClient, VM_COMMON_HTTP_DATE, pcszReqTime);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetHeader(pClient,
+                                    VM_COMMON_HTTP_CONTENT_TYPE_KEY,
+                                    VM_COMMON_HTTP_CONTENT_TYPE_JSON
+                                    );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pcszReqBody))
+    {
+        dwError = VmHttpClientSetBody(pClient, (PSTR)pcszReqBody);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszAuthzValue);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmHttpClientSetBody(
     PVM_HTTP_CLIENT     pClient,
     PCSTR               pcszBody
@@ -856,6 +913,54 @@ error:
         *pbVerified = FALSE;
     }
 
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientGetCurrentTime(
+    PSTR    *ppszReqTime
+    )
+{
+    DWORD       dwError = 0;
+    char        timeBuf[VM_COMMON_MAX_TIME_BYTES] = {0};
+    PSTR        pszReqTime = NULL;
+    time_t      t = 0;
+    struct tm   *pTm = NULL;
+
+    t = time(NULL);
+    if (t == (time_t) - 1)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_TIME;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    pTm = gmtime(&t);
+    dwError = strftime(timeBuf,
+                       sizeof(timeBuf),
+                       VM_COMMON_TIME_FORMAT_RFC_1233,
+                       pTm
+    );
+    if (!dwError)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_TIME;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+    dwError = 0;
+
+    dwError = VmAllocateStringA(timeBuf, &pszReqTime);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    *ppszReqTime = pszReqTime;
+
+    cleanup:
+    return dwError;
+
+    error:
+    VM_COMMON_SAFE_FREE_STRINGA(pszReqTime);
+    if (ppszReqTime)
+    {
+        *ppszReqTime = NULL;
+    }
     goto cleanup;
 }
 

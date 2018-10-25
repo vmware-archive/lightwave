@@ -12,6 +12,7 @@
  * under the License.
  */
 
+// post.c
 DWORD
 LwCADbPostPluginInitialize(
     PCSTR               pcszConfigPath,
@@ -134,4 +135,22 @@ LwCADbPostPluginFreeString(
 VOID
 LwCADbPostPluginFreeHandle(
     PLWCA_DB_HANDLE pDbHandle
+    );
+
+
+// serializer.c
+DWORD
+LwCASerializeCAToJSON(
+    PCSTR               pcszCAId,
+    PLWCA_DB_CA_DATA    pCAData,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszDomain,
+    PSTR                *ppszReqBody
+    );
+
+DWORD
+LwCASerializeConfigCAToJSON(
+    PCSTR       pcszCAId,
+    PCSTR       pcszDomain,
+    PSTR        *ppszReqBody
     );

@@ -186,3 +186,33 @@ VOID
 Test_LwCAPostDbFreeCtx(
     VOID    **state
     );
+
+int
+PreTest_LwCAPostPlugin(
+    VOID    **state
+    );
+
+int
+PostTest_LwCAPostPlugin(
+    VOID    **state
+    );
+
+VOID
+Test_LwCAPostDbAddCA(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeRootCAToJson(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeIntermediateCAToJson(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeConfigRootCAToJson(
+    VOID    **state
+    );

@@ -11,37 +11,31 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-#ifndef _TEST_LWCA_SERVICE_DB_INCLUDES_H_
-#define _TEST_LWCA_SERVICE_DB_INCLUDES_H_
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+typedef struct _LWCA_TEST_STATE
+{
+    PLWCA_DB_FUNCTION_TABLE pFunctionTable;
+    PLWCA_PLUGIN_HANDLE     pPluginHandle;
+    PLWCA_DB_HANDLE         pDbHandle;
+} LWCA_TEST_STATE, *PLWCA_TEST_STATE;
 
-#include <config.h>
-#include <mutentcasys.h>
+typedef DWORD (*PLUGIN_ADD_CA)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PLWCA_DB_CA_DATA,
+    PCSTR
+    );
 
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
+typedef DWORD (*SERIALIZE_CA_JSON)(
+    PCSTR,
+    PLWCA_DB_CA_DATA,
+    PCSTR,
+    PCSTR,
+    PSTR *
+    );
 
-#include <lwrpcrt/lwrpcrt.h>
-
-#include <cmocka.h>
-
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaerror.h>
-#include <mutentcadbapi.h>
-#include <mutentcaplugin.h>
-
-#include "prototypes.h"
-#include "structs.h"
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _TEST_LWCA_SERVICE_DB_INCLUDES_H_ */
+typedef DWORD (*SERIALIZE_CONFIG_CA_JSON)(
+    PCSTR,
+    PCSTR,
+    PSTR *
+    );

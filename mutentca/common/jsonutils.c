@@ -53,12 +53,95 @@ cleanup:
 
 error:
 
-    LwCAJsonCleanupObject(pJsonConfig);
+    LWCA_SAFE_JSON_DECREF(pJsonConfig);
     if (ppJsonConfig)
     {
         *ppJsonConfig = NULL;
     }
 
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonLoadObjectFromString(
+    PCSTR               pcszJsonStr,
+    PLWCA_JSON_OBJECT   *ppJsonConfig
+    )
+{
+    DWORD               dwError = 0;
+    json_error_t        jsonError = {0};
+    PLWCA_JSON_OBJECT   pJsonConfig = NULL;
+    size_t              szJsonFlags = JSON_DECODE_ANY;
+
+    if (IsNullOrEmptyString(pcszJsonStr) || !ppJsonConfig)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pJsonConfig = json_loads(pcszJsonStr, szJsonFlags, &jsonError);
+    if (!pJsonConfig)
+    {
+        LWCA_LOG_ERROR(
+            "[%s, %d] Failed to load json string (%s). Error: %s: %d",
+            __FUNCTION__,
+            __LINE__,
+            pcszJsonStr,
+            jsonError.text,
+            jsonError.line
+            );
+        dwError = LWCA_JSON_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppJsonConfig = pJsonConfig;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_JSON_DECREF(pJsonConfig);
+    if (ppJsonConfig)
+    {
+        *ppJsonConfig = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonDumps(
+    PLWCA_JSON_OBJECT   pJson,
+    size_t              flags,
+    PSTR                *ppszDest
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszDest = NULL;
+
+    if (!pJson || !ppszDest)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pszDest = json_dumps(pJson, flags);
+    if (!pszDest)
+    {
+        dwError = LWCA_JSON_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppszDest = pszDest;
+
+cleanup:
+    return dwError;
+
+error:
+    if (ppszDest)
+    {
+        *ppszDest = NULL;
+    }
+    LWCA_SAFE_FREE_STRINGA(pszDest);
     goto cleanup;
 }
 
@@ -515,4 +598,193 @@ LwCAJsonCleanupObject(
     {
         json_decref(pJson);
     }
+}
+
+DWORD
+LwCAJsonObjectCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pJson = NULL;
+
+    if (!ppJson)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    pJson = json_object();
+    if (!pJson)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppJson = pJson;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_JSON_DECREF(pJson);
+    if (ppJson)
+    {
+        *ppJson = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonArrayCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pJson = NULL;
+
+    if (!ppJson)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    pJson = json_array();
+    if (!pJson)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppJson = pJson;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_JSON_DECREF(pJson);
+    if (ppJson)
+    {
+        *ppJson = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonSetStringToObject(
+    PLWCA_JSON_OBJECT   pObj,
+    PCSTR               pcszKey,
+    PCSTR               pcszValue
+    )
+{
+    DWORD               dwError = 0;
+    int                 jsonError = 0;
+
+    if (!pObj ||
+        IsNullOrEmptyString(pcszKey) ||
+        IsNullOrEmptyString(pcszValue)
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    jsonError = json_object_set_new(pObj, pcszKey, json_string(pcszValue));
+    if (jsonError)
+    {
+        dwError = LWCA_JSON_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonSetJsonToObject(
+    PLWCA_JSON_OBJECT       pObj,
+    PCSTR                   pcszKey,
+    PLWCA_JSON_OBJECT       pJson
+    )
+{
+    DWORD   dwError = 0;
+    int     jsonError = 0;
+
+    if (!pJson || IsNullOrEmptyString(pcszKey) || !pObj)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    jsonError = json_object_set(pObj, pcszKey, pJson);
+    if (jsonError)
+    {
+        dwError = LWCA_JSON_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonAppendStringToArray(
+    PLWCA_JSON_OBJECT   pArray,
+    PCSTR               pcszValue
+    )
+{
+    DWORD               dwError = 0;
+    int                 jsonError = 0;
+
+    if (!pArray || IsNullOrEmptyString(pcszValue))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    jsonError = json_array_append_new(pArray, json_string(pcszValue));
+    if (jsonError)
+    {
+        dwError = LWCA_JSON_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCAJsonAppendJsonToArray(
+    PLWCA_JSON_OBJECT       pArray,
+    PLWCA_JSON_OBJECT       pJson
+    )
+{
+    DWORD   dwError = 0;
+    int     jsonError = 0;
+
+    if (!pJson || !pArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    jsonError = json_array_append(pArray, pJson);
+    if (jsonError)
+    {
+        dwError = LWCA_JSON_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }

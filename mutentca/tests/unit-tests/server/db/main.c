@@ -69,7 +69,18 @@ int main(VOID)
     const struct CMUnitTest postTests[] = {
         cmocka_unit_test_setup_teardown(Test_LwCAPostDbInitCtx, NULL, NULL),
         cmocka_unit_test_setup_teardown(Test_LwCAPostDbFreeCtx, NULL, NULL),
-
+        cmocka_unit_test_setup_teardown(Test_LwCAPostDbAddCA,
+                                        PreTest_LwCAPostPlugin,
+                                        PostTest_LwCAPostPlugin),
+        cmocka_unit_test_setup_teardown(Test_LwCASerializeRootCAToJson,
+                                        PreTest_LwCAPostPlugin,
+                                        PostTest_LwCAPostPlugin),
+        cmocka_unit_test_setup_teardown(Test_LwCASerializeIntermediateCAToJson,
+                                        PreTest_LwCAPostPlugin,
+                                        PostTest_LwCAPostPlugin),
+        cmocka_unit_test_setup_teardown(Test_LwCASerializeConfigRootCAToJson,
+                                        PreTest_LwCAPostPlugin,
+                                        PostTest_LwCAPostPlugin),
     };
 
     ret = cmocka_run_group_tests(postTests, NULL, NULL);

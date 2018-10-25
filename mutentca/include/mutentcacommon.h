@@ -171,6 +171,14 @@ typedef struct _LWCA_STRING_ARRAY
         }                                   \
     } while (0)
 
+#define LWCA_SAFE_JSON_DECREF(PTR)      \
+    do {                                \
+        if ((PTR)) {                    \
+            LwCAJsonCleanupObject(PTR); \
+            (PTR) = NULL;               \
+        }                               \
+    } while(0)
+
 typedef enum
 {
     LWCA_LOG_TYPE_CONSOLE = 0,

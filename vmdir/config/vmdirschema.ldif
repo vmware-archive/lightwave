@@ -21060,8 +21060,8 @@ attributeTypes: (
 
 attributeTypes: (
     VMWare.CA.attribute.2
-    NAME 'cAEncryptedEncryptionKey'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    NAME 'cAParentId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
 
@@ -21072,6 +21072,12 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributeTypes: (
+    VMWare.CA.attribute.4
+    NAME 'cACRLNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
 objectClasses: (
     VMWare.CA.objectclass.1
     NAME 'vmwCertificationAuthority'
@@ -21080,8 +21086,9 @@ objectClasses: (
     MUST ( cn
          )
     MAY  ( cACertificateDN
+         $ cACRLNumber
+         $ cAParentId
          $ cAEncryptedPrivateKey
-         $ cAEncryptedEncryptionKey
          $ cAStatus
          )
     )

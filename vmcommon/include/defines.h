@@ -20,6 +20,7 @@
 #define VM_COMMON_TIME_FORMAT_RFC_1233      "%a, %d %b %Y %H:%M:%S GMT"
 #define VM_COMMON_HTTP_CONTENT_TYPE_KEY     "Content-Type"
 #define VM_COMMON_HTTP_CONTENT_TYPE_JSON    "application/json"
+#define VM_COMMON_HTTP_DATE                 "Date"
 
 #define HEADER_BEARER_AUTH "Authorization: Bearer %s"
 #define HEADER_HOTK_PK_AUTH "Authorization: hotk-pk %s"
