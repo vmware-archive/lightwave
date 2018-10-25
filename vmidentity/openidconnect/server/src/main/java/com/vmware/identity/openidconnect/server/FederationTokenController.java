@@ -32,6 +32,7 @@ import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.diagnostics.MetricUtils;
 import com.vmware.identity.idm.IDPConfig;
 import com.vmware.identity.idm.OidcConfig;
 import com.vmware.identity.idm.client.CasIdmClient;

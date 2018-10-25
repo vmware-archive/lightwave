@@ -19,6 +19,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 
+import com.vmware.identity.diagnostics.MetricUtils;
 import org.apache.commons.lang3.Validate;
 
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
@@ -90,6 +91,7 @@ public class FederatedIdentityProvider {
                 issuer,
                 userId.getUPN());
 
+        MetricUtils.recordUser(this.tenant, userId.getName());
         logger.info("JIT user {} successfully added to tenant {}.", userId.getUPN(), this.tenant);
         return internalUserId;
     }
