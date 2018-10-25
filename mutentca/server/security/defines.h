@@ -15,6 +15,7 @@
 #ifndef _LWCA_MUTENTCA_SECURITY_DEFINES_H_
 #define _LWCA_MUTENTCA_SECURITY_DEFINES_H_
 
+#define MUTENTCA_SECURITY_PLUGIN_SECTION     "security"
 #define MUTENTCA_SECURITY_PLUGIN_NAME        "securityPlugin"
 #define MUTENTCA_SECURITY_PLUGIN_CONFIG      "securityPluginConfig"
 

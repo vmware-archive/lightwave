@@ -101,6 +101,7 @@ LwCASrvInitCA(
 {
     DWORD dwError = 0;
     PLWCA_JSON_OBJECT pJsonConfig = NULL;
+    PLWCA_JSON_OBJECT pSecurityConfig = NULL;
 
     dwError = LwCAConfigLoadFile(LWCA_CONFIG_FILE_PATH, &pJsonConfig);
     if (dwError == LWCA_JSON_FILE_LOAD_ERROR)
@@ -113,7 +114,15 @@ LwCASrvInitCA(
     }
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCASecurityInitCtx(pJsonConfig);
+    /* get the security config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  MUTENTCA_SECURITY_PLUGIN_KEY,
+                  &pSecurityConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASecurityInitCtx(pSecurityConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:

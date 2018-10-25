@@ -1,4 +1,7 @@
 {
-  "securityPlugin": "./test-mutentcasecurity-plugin/.libs/mutentcasecuritytestplugin.so",
-  "securityPluginConfig": "./test-mutentcasecurity-config/test-mutentcasecurity-data.json"
+  "security":
+  {
+    "securityPlugin": "./test-mutentcasecurity-plugin/.libs/mutentcasecuritytestplugin.so",
+    "securityPluginConfig": "./test-mutentcasecurity-config/test-mutentcasecurity-data.json"
+  }
 }

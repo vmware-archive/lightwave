@@ -15,6 +15,7 @@
 #include "includes.h"
 
 #define LWCA_SECURITY_CONFIG "./test-mutentcasecurity-config/test-mutentcasecurity-config.json"
+#define LWCA_SECURITY_KEY    "security"
 
 VOID
 Test_LwCASecurityInitCtx(
@@ -23,11 +24,19 @@ Test_LwCASecurityInitCtx(
 {
     DWORD dwError = 0;
     PLWCA_JSON_OBJECT pJson =  NULL;
+    PLWCA_JSON_OBJECT pSecurityConfig =  NULL;
 
     dwError = LwCAJsonLoadObjectFromFile(LWCA_SECURITY_CONFIG, &pJson);
     assert_int_equal(dwError, 0);
 
-    dwError = LwCASecurityInitCtx(pJson);
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJson,
+                  FALSE,
+                  LWCA_SECURITY_KEY,
+                  &pSecurityConfig);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCASecurityInitCtx(pSecurityConfig);
     assert_int_equal(dwError, 0);
 
     LwCAJsonCleanupObject(pJson);
