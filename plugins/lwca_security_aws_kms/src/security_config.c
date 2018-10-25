@@ -101,7 +101,7 @@ error:
 
 /*
  * Handles a callback for elements in "kms" object
- * we are interested in {"cmk_id":"arn","keyspec":"keyspec"}
+ * we are interested in {"cmk_id":"arn","key_spec":"keyspec"}
 */
 static
 DWORD
@@ -114,7 +114,7 @@ _LwCASecurityConfigKeysCB(
     DWORD dwError = 0;
     PLWCA_SECURITY_CONFIG pConfig = pUserData;
 
-    if (!VmStringCompareA("cmk_id", pszKey, TRUE))
+    if (!VmStringCompareA(KEY_CMK_ID, pszKey, TRUE))
     {
         if (IsNullOrEmptyString(pValue->value.pszValue))
         {
@@ -126,7 +126,7 @@ _LwCASecurityConfigKeysCB(
                       &pConfig->pszCMKId);
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
-    else if (!VmStringCompareA("keyspec", pszKey, TRUE))
+    else if (!VmStringCompareA(KEY_KEY_SPEC, pszKey, TRUE))
     {
         if (IsNullOrEmptyString(pValue->value.pszValue))
         {

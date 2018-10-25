@@ -106,12 +106,14 @@ LwCASrvInitCA(
     if (dwError == LWCA_JSON_FILE_LOAD_ERROR)
     {
         LWCA_LOG_INFO(
-                "[%s,%d] Failed to open LwCA config file (%s). Service starting without it...",
+                "[%s,%d] Failed to open LwCA config file (%s). Service cannot start without config...",
                 __FUNCTION__,
                 __LINE__,
                 LWCA_CONFIG_FILE_PATH);
-        dwError = 0;
     }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASecurityInitCtx(pJsonConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:

@@ -17,7 +17,7 @@
 #define MAX_PATH 256
 
 #define SECURITY_AWS_KMS_CONFIG_GOOD \
-"{\"kms\":{\"cmk_id\":\"test_cmk_id_good\",\"keyspec\":\"AES_256\"}}"
+"{\"kms\":{\"cmk_id\":\"test_cmk_id_good\",\"key_spec\":\"AES_256\"}}"
 
 #define SECURITY_AWS_KMS_CONFIG_BAD_NO_ROOT \
 "{\"kms_no_root\":{\"cmk_id\":\"test_cmk_id_bad\"}}"
@@ -26,7 +26,7 @@
 "{\"kms\":{\"cmk_id_bad\":\"test_cmk_id_bad\"}}"
 
 #define SECURITY_AWS_KMS_CONFIG_BAD_NO_KEYSPEC \
-"{\"kms\":{\"cmk_id\":\"test_cmk_id\",\"keyspec_bad\":\"keyspec_bad\"}}"
+"{\"kms\":{\"cmk_id\":\"test_cmk_id\",\"key_spec_bad\":\"keyspec_bad\"}}"
 
 char _tmpfilename[MAX_PATH];
 
