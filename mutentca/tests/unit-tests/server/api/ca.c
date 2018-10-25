@@ -385,6 +385,35 @@
         "9ftIRwcy4tj2d1KMZ2lO49YgqZg0z6HBdYZgLL6R80GPk2TcEEBfgm2lQE2IIDJb\n" \
         "kscq5zBLIDLH7qAhtCJX8NlHmvNSgb77e+8fxG1Mdp5WwrywqO8w\n" \
         "-----END RSA PRIVATE KEY-----"
+#define TEST_INTERMEDIATE_CA_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
+        "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\n" \
+        "-----END CERTIFICATE-----\n"
 #define TEST_CLIENT_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
         "MIIEQTCCAikCAhACMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMQswCQYD\n" \
         "VQQIDAJXQTERMA8GA1UEBwwIQmVsbGV2dWUxEzARBgNVBAoMClZNd2FyZSBJbmMx\n" \
@@ -514,6 +543,11 @@ __wrap_LwCADbGetCACertificates(
         dwError = LwCAAllocateStringA(TEST_ROOT_CA_CERTIFICATE, &ppCertificates[0]);
         assert_int_equal(dwError, 0);
     }
+    else if (LwCAStringCompareA(pcszCAId, "Intermediate CA", TRUE) == 0)
+    {
+        dwError = LwCAAllocateStringA(TEST_INTERMEDIATE_CA_CERTIFICATE, &ppCertificates[0]);
+        assert_int_equal(dwError, 0);
+    }
     else
     {
         dwError = LwCAAllocateStringA("dummyCert", &ppCertificates[0]);
@@ -634,6 +668,16 @@ __wrap_LwCADbUpdateCA(
 }
 
 DWORD
+__wrap_LwCADbUpdateCAStatus(
+    PCSTR                pcszCAId,
+    LWCA_CA_STATUS       status
+    )
+{
+    assert_non_null(pcszCAId);
+    return mock();
+}
+
+DWORD
 __wrap_LwCADbAddCertData(
     PCSTR                   pcszCAId,
     PLWCA_DB_CERT_DATA      pCertData
@@ -658,6 +702,26 @@ __wrap_LwCADbGetCertData(
     assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
     assert_non_null(ppCertDataArray);
     *ppCertDataArray = pLwCADbGetCertDataArray;
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetParentCAId(
+    PCSTR   pcszCAId,
+    PSTR    *ppszParentCAId
+    )
+{
+    DWORD dwError = 0;
+
+    assert_non_null(ppszParentCAId);
+    assert_non_null(pcszCAId);
+
+    if (LwCAStringCompareA(pcszCAId, "Intermediate CA", TRUE) == 0)
+    {
+        dwError = LwCAAllocateStringA(TEST_ROOT_CA_ID, ppszParentCAId);
+        assert_int_equal(dwError, 0);
+    }
 
     return mock();
 }
@@ -1212,6 +1276,48 @@ Test_LwCARevokeCertificate_Invalid(
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
     assert_int_equal(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+}
+
+VOID
+Test_LwCARevokeIntermediateCA_Valid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {TRUE, TRUE};
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return(__wrap_LwCADbCheckCertData, 0);
+    will_return(__wrap_LwCADbGetCACRLNumber, 0);
+    will_return(__wrap_LwCADbUpdateCA, 0);
+    will_return(__wrap_LwCADbAddCertData, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
+    will_return(__wrap_LwCADbGetParentCAId, 0);
+    will_return(__wrap_LwCADbUpdateCAStatus, 0);
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
+    dwError = LwCARevokeIntermediateCA(pReqCtx, TEST_INTERMEDIATE_CA_ID);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCARevokeIntermediateCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
+
+    will_return(__wrap_LwCADbCheckCA, 0);
+
+    // Testcase1: Invalid input
+    dwError = LwCARevokeIntermediateCA(pReqCtx, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    // Testcase2: CA does not exist
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCARevokeIntermediateCA(pReqCtx, TEST_INTERMEDIATE_CA_ID);
+    assert_int_equal(dwError, LWCA_CA_MISSING);
 }
 
 VOID

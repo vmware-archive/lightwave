@@ -63,6 +63,16 @@ Test_LwCARevokeCertificate_Invalid(
     );
 
 VOID
+Test_LwCARevokeIntermediateCA_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCARevokeIntermediateCA_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCAGetCACrl_Valid(
     VOID **state
     );

@@ -533,6 +533,46 @@ error:
 }
 
 DWORD
+LwCARevokeIntermediateCA(
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszCAId
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszParentCAId = NULL;
+    PLWCA_CERTIFICATE pCACert = NULL;
+
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCACheckCAExist(pcszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbGetParentCAId(pcszCAId, &pszParentCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARevokeCertificate(pReqCtx, pszParentCAId, pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbUpdateCAStatus(pcszCAId, LWCA_CA_STATUS_INACTIVE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
+    LwCAFreeCertificate(pCACert);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 LwCAGetCACrl(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,
