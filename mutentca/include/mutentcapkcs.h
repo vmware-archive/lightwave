@@ -82,6 +82,12 @@ LwCAX509ReqToPEM(
     PSTR        *ppszRequest
     );
 
+DWORD
+LwCAX509CrlToPEM(
+    X509_CRL    *pCrl,
+    PSTR        *ppszCrl
+    );
+
 VOID
 LwCAX509Free(
     X509        *pX509
@@ -90,6 +96,11 @@ LwCAX509Free(
 VOID
 LwCAX509ReqFree(
     X509_REQ    *pX509Req
+    );
+
+VOID
+LwCAX509CrlFree(
+    X509_CRL    *pX509Crl
     );
 
 DWORD
@@ -178,6 +189,16 @@ LwCAGenerateX509Certificate(
     );
 
 DWORD
+LwCAGenerateX509Crl(
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray,
+    X509                        *pCACert,
+    X509_CRL                    **ppCrl
+    );
+
+DWORD
 LwCAX509SignCertificate(
     X509        *pX509,
     PCSTR       pcszPrivateKey,
@@ -187,6 +208,13 @@ LwCAX509SignCertificate(
 DWORD
 LwCAX509ReqSignRequest(
     X509_REQ    *pReq,
+    PCSTR       pcszPrivateKey,
+    PCSTR       pcszPassPhrase
+    );
+
+DWORD
+LwCAX509CrlSign(
+    X509_CRL    *pCrl,
     PCSTR       pcszPrivateKey,
     PCSTR       pcszPassPhrase
     );
@@ -214,6 +242,13 @@ DWORD
 LwCAGetNextCrlNumber(
     PCSTR   pcszCRLNumber,
     PSTR    *ppszNextCRLNumber
+    );
+
+DWORD
+LwCAGenerateCrlTimestamps(
+    time_t  tmCrlValidity,
+    PSTR    *ppszLastCRLUpdate,
+    PSTR    *ppszNextCRLUpdate
     );
 
 DWORD

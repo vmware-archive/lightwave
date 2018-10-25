@@ -497,6 +497,8 @@ LwCADbCreateCAData(
     PLWCA_CERTIFICATE_ARRAY     pCertificates,
     PLWCA_KEY                   pEncryptedPrivateKey,
     PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     )
@@ -504,7 +506,7 @@ LwCADbCreateCAData(
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
 
-    if (!pCertificates || IsNullOrEmptyString(pcszSubjectName) || !ppCAData)
+    if (!ppCAData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -513,11 +515,17 @@ LwCADbCreateCAData(
     dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (pCertificates)
+    {
+        dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
-    dwError = LwCAAllocateStringA(pcszSubjectName, &pCAData->pszSubjectName);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (!IsNullOrEmptyString(pcszSubjectName))
+    {
+        dwError = LwCAAllocateStringA(pcszSubjectName, &pCAData->pszSubjectName);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     if (pEncryptedPrivateKey)
     {
@@ -528,6 +536,18 @@ LwCADbCreateCAData(
     if (!IsNullOrEmptyString(pcszCRLNumber))
     {
         dwError = LwCAAllocateStringA(pcszCRLNumber, &pCAData->pszCRLNumber);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszLastCRLUpdate))
+    {
+        dwError = LwCAAllocateStringA(pcszLastCRLUpdate, &pCAData->pszLastCRLUpdate);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszNextCRLUpdate))
+    {
+        dwError = LwCAAllocateStringA(pcszNextCRLUpdate, &pCAData->pszNextCRLUpdate);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -722,6 +742,8 @@ LwCADbFreeCAData(
         LwCAFreeCertificates(pCAData->pCertificates);
         LwCAFreeKey(pCAData->pEncryptedPrivateKey);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszCRLNumber);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszLastCRLUpdate);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszNextCRLUpdate);
         LWCA_SAFE_FREE_MEMORY(pCAData);
     }
 }
@@ -800,6 +822,15 @@ LwCAKmSignX509Cert(
 DWORD
 LwCAKmSignX509Request(
     X509_REQ *pReq,
+    PCSTR    pcszKeyId
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCAKmSignX509Crl(
+    X509_CRL *pCrl,
     PCSTR    pcszKeyId
     )
 {

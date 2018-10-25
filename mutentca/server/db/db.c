@@ -147,7 +147,9 @@ LwCADbAddCA(
     DWORD dwError = 0;
     BOOLEAN bLocked = FALSE;
 
-    if (IsNullOrEmptyString(pcszCAId) || !pCAData)
+    if (IsNullOrEmptyString(pcszCAId) || !pCAData
+        || IsNullOrEmptyString(pCAData->pszSubjectName) || !pCAData->pCertificates
+        || pCAData->pCertificates->dwCount == 0)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -721,6 +723,8 @@ _LwCADbCopyCAData(
                     pCAData->pCertificates,
                     pCAData->pEncryptedPrivateKey,
                     pCAData->pszCRLNumber,
+                    pCAData->pszLastCRLUpdate,
+                    pCAData->pszNextCRLUpdate,
                     pCAData->status,
                     &pTempCAData
                 );

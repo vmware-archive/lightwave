@@ -28,6 +28,8 @@ int main(VOID)
         cmocka_unit_test(Test_LwCACreateIntermediateCA_Invalid),
         cmocka_unit_test(Test_LwCARevokeCertificate_Valid),
         cmocka_unit_test(Test_LwCARevokeCertificate_Invalid),
+        cmocka_unit_test(Test_LwCAGetCACrl_Valid),
+        cmocka_unit_test(Test_LwCAGetCACrl_Invalid),
     };
 
     ret = cmocka_run_group_tests(tests, TestLwCACreateRequestContext, TestLwCAFreeRequestContext);

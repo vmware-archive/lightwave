@@ -416,7 +416,16 @@ PBOOLEAN pbExistsMockArray =  NULL;
 DWORD iIndex = 0;
 DWORD dwMockArrayLimit = 0;
 
+// defines output value of __wrap_LwCADbGetCertData
+PLWCA_DB_CERT_DATA_ARRAY pLwCADbGetCertDataArray = NULL;
+
 PLWCA_REQ_CONTEXT pReqCtx = NULL;
+
+static
+VOID
+_CreateCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    );
 
 int
 TestLwCACreateRequestContext(
@@ -560,7 +569,9 @@ __wrap_LwCADbGetCA(
                     "C=US, ST=WA, L=Bellevue, O=VMware Inc, OU=VMware Inc, CN=Test CA",
                     pCertArray,
                     pKey,
-                    NULL,
+                    "110000",
+                    "20181025201010.542",
+                    "20191025201010.542",
                     LWCA_CA_STATUS_ACTIVE,
                     &pCAData
                 );
@@ -608,13 +619,16 @@ __wrap_LwCADbGetCACRLNumber(
 }
 
 DWORD
-__wrap_LwCADbUpdateCACRLNumber(
-    PCSTR   pcszCAId,
-    PCSTR   pcszCRLNumber
+__wrap_LwCADbUpdateCA(
+    PCSTR               pcszCAId,
+    PLWCA_DB_CA_DATA    pCAData
     )
 {
     assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
-    assert_string_equal(pcszCRLNumber, "110001");
+    assert_non_null(pCAData);
+    assert_string_equal(pCAData->pszCRLNumber, "110001");
+    assert_non_null(pCAData->pszLastCRLUpdate);
+    assert_non_null(pCAData->pszNextCRLUpdate);
 
     return mock();
 }
@@ -631,6 +645,19 @@ __wrap_LwCADbAddCertData(
     assert_non_null(pCertData->pszRevokedDate);
     assert_non_null(pCertData->pszTimeValidFrom);
     assert_non_null(pCertData->pszTimeValidTo);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetCertData(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    )
+{
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_non_null(ppCertDataArray);
+    *ppCertDataArray = pLwCADbGetCertDataArray;
 
     return mock();
 }
@@ -710,6 +737,27 @@ __wrap_LwCAKmSignX509Request(
     else if (LwCAStringCompareA(pcszKeyId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
     {
         dwError = LwCAX509ReqSignRequest(pReq, TEST_INTERMEDIATE_CA_PRIVATE_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCAKmSignX509Crl(
+    X509_CRL *pCrl,
+    PCSTR    pcszKeyId
+    )
+{
+    DWORD dwError = 0;
+    if (LwCAStringCompareA(pcszKeyId, TEST_ROOT_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509CrlSign(pCrl, TEST_ROOT_CA_KEY, NULL);
+        assert_int_equal(dwError, 0);
+    }
+    else if (LwCAStringCompareA(pcszKeyId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
+    {
+        dwError = LwCAX509CrlSign(pCrl, TEST_INTERMEDIATE_CA_PRIVATE_KEY, NULL);
         assert_int_equal(dwError, 0);
     }
 
@@ -1135,7 +1183,7 @@ Test_LwCARevokeCertificate_Valid(
     will_return(__wrap_LwCADbCheckCA, 0);
     will_return(__wrap_LwCADbCheckCertData, 0);
     will_return(__wrap_LwCADbGetCACRLNumber, 0);
-    will_return(__wrap_LwCADbUpdateCACRLNumber, 0);
+    will_return(__wrap_LwCADbUpdateCA, 0);
     will_return(__wrap_LwCADbAddCertData, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
 
@@ -1164,4 +1212,100 @@ Test_LwCARevokeCertificate_Invalid(
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
     assert_int_equal(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+}
+
+VOID
+Test_LwCAGetCACrl_Valid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {TRUE};
+    PLWCA_CRL pCrl1 = NULL;
+    PLWCA_CRL pCrl2 = NULL;
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCADbGetCA, 0);
+    will_return_always(__wrap_LwCADbGetCertData, 0);
+    will_return_always(__wrap_LwCAKmSignX509Crl, 0);
+
+    // Testcase1: CRL with revoked certificates
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    _CreateCertDataArray(&pLwCADbGetCertDataArray);
+    dwError = LwCAGetCACrl(pReqCtx, TEST_ROOT_CA_ID, &pCrl1);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCrl1);
+
+    // Testcase2: CRL with no revoked certificates
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    pLwCADbGetCertDataArray =  NULL;
+    dwError = LwCAGetCACrl(pReqCtx, TEST_ROOT_CA_ID, &pCrl2);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCrl2);
+
+    LwCAFreeCrl(pCrl1);
+    LwCAFreeCrl(pCrl2);
+}
+
+VOID
+Test_LwCAGetCACrl_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
+    PLWCA_CRL pCrl = NULL;
+
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+
+    // Testcase1: Invalid inputs
+    dwError = LwCAGetCACrl(pReqCtx, NULL, &pCrl);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    assert_null(pCrl);
+
+    // Testcase2: CA does not exist
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCAGetCACrl(pReqCtx, TEST_ROOT_CA_ID, &pCrl);
+    assert_int_equal(dwError, LWCA_CA_MISSING);
+    assert_null(pCrl);
+
+    LwCAFreeCrl(pCrl);
+}
+
+static
+VOID
+_CreateCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA_ARRAY), (PVOID*)&pCertDataArray);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCAAllocateMemory(2 * sizeof(PLWCA_DB_CERT_DATA), (PVOID*)&pCertDataArray->ppCertData);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbCreateCertData("10001",
+                                    "20181023201010.200",
+                                    "20191023201010.100",
+                                    1,
+                                    "20181025201010.800",
+                                    LWCA_CERT_STATUS_INACTIVE,
+                                    &pCertDataArray->ppCertData[0]);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbCreateCertData("10002",
+                                    "20181023201010.200",
+                                    "20191023201010.100",
+                                    1,
+                                    "20181025201010.800",
+                                    LWCA_CERT_STATUS_INACTIVE,
+                                    &pCertDataArray->ppCertData[1]);
+    assert_int_equal(dwError, 0);
+
+    pCertDataArray->dwCount = 2;
+    *ppCertDataArray = pCertDataArray;
 }

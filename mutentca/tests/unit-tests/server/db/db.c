@@ -18,6 +18,12 @@
 #define TEST_CA_ID "testId"
 #define TEST_PARENT_CA_ID "testParentId"
 
+static
+VOID
+_CreateCertificates(
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    );
+
 int
 Test_LwCADbInitCtx(
     VOID **state
@@ -60,8 +66,25 @@ Test_LwCADbAddCA(
 {
     DWORD dwError = 0;
     PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    PLWCA_KEY pEncryptedPrivateKey = NULL;
+    BYTE testKey1[20] = "testKey1";
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
+    assert_int_equal(dwError, 0);
+
+    _CreateCertificates(&pCertArray);
+    assert_non_null(pCertArray);
+    assert_non_null(pEncryptedPrivateKey);
+
+    dwError = LwCADbCreateCAData("cn=CA",
+                                pCertArray,
+                                pEncryptedPrivateKey,
+                                "10001",
+                                "20181025201010.542",
+                                "20191025201010.542",
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData);
     assert_int_equal(dwError, 0);
 
     dwError = LwCADbAddCA(TEST_CA_ID, pCAData, NULL);
@@ -70,7 +93,9 @@ Test_LwCADbAddCA(
     dwError = LwCADbAddCA(TEST_CA_ID, pCAData, TEST_PARENT_CA_ID);
     assert_int_equal(dwError, 0);
 
-    LWCA_SAFE_FREE_MEMORY(pCAData);
+    LwCAFreeKey(pEncryptedPrivateKey);
+    LwCAFreeCertificates(pCertArray);
+    LwCADbFreeCAData(pCAData);
 }
 
 VOID
@@ -79,21 +104,85 @@ Test_LwCADbAddCA_Invalid(
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_DB_CA_DATA pCAData1 = NULL;
+    PLWCA_DB_CA_DATA pCAData2 = NULL;
+    PLWCA_DB_CA_DATA pCAData3 = NULL;
+    PLWCA_DB_CA_DATA pCAData4 = NULL;
+    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    PLWCA_KEY pEncryptedPrivateKey = NULL;
+    BYTE testKey1[20] = "testKey1";
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
+    assert_int_equal(dwError, 0);
+
+    _CreateCertificates(&pCertArray);
+    assert_non_null(pCertArray);
+    assert_non_null(pEncryptedPrivateKey);
+
+    dwError = LwCADbCreateCAData("cn=CA",
+                                pCertArray,
+                                pEncryptedPrivateKey,
+                                NULL,
+                                NULL,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData1);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbCreateCAData(NULL,
+                                pCertArray,
+                                pEncryptedPrivateKey,
+                                NULL,
+                                NULL,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData2);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbCreateCAData("cn=CA",
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData3);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCADbCreateCAData("cn=CA",
+                                NULL,
+                                pEncryptedPrivateKey,
+                                NULL,
+                                NULL,
+                                NULL,
+                                LWCA_CA_STATUS_ACTIVE,
+                                &pCAData4);
     assert_int_equal(dwError, 0);
 
     dwError = LwCADbAddCA(TEST_CA_ID, NULL, NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
-    dwError = LwCADbAddCA(NULL, pCAData, NULL);
+    dwError = LwCADbAddCA(NULL, pCAData1, NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
-    dwError = LwCADbAddCA(TEST_CA_ID, pCAData, NULL);
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData2, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData3, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData4, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbAddCA(TEST_CA_ID, pCAData1, NULL);
     assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 
-    LWCA_SAFE_FREE_MEMORY(pCAData);
+    LwCAFreeKey(pEncryptedPrivateKey);
+    LwCAFreeCertificates(pCertArray);
+    LwCADbFreeCAData(pCAData1);
+    LwCADbFreeCAData(pCAData2);
+    LwCADbFreeCAData(pCAData3);
+    LwCADbFreeCAData(pCAData4);
 }
 
 VOID
@@ -475,36 +564,6 @@ Test_LwCADbFreeCtx(
     return 0;
 }
 
-/*
- * Test helper method which creates db certificate array object with two certificates.
- */
-VOID
-TestCreateCertificates(
-    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
-    )
-{
-    DWORD dwError = 0;
-    PSTR *ppCertificates = NULL;
-
-    dwError = LwCAAllocateMemory(2 * sizeof(PSTR), (PVOID*)&ppCertificates);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCAAllocateStringA("dummyCert1", &ppCertificates[0]);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCAAllocateStringA("dummyCert2", &ppCertificates[1]);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCACreateCertArray(ppCertificates, 2, ppCertArray);
-    assert_int_equal(dwError, 0);
-
-    assert_non_null(ppCertArray);
-
-    LWCA_SAFE_FREE_MEMORY(ppCertificates[1]);
-    LWCA_SAFE_FREE_MEMORY(ppCertificates[0]);
-    LWCA_SAFE_FREE_MEMORY(ppCertificates);
-}
-
 VOID
 Test_LwCADbCAData(
     VOID **state
@@ -519,14 +578,16 @@ Test_LwCADbCAData(
     dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
     assert_int_equal(dwError, 0);
 
-    TestCreateCertificates(&pCertArray);
+    _CreateCertificates(&pCertArray);
     assert_non_null(pCertArray);
     assert_non_null(pEncryptedPrivateKey);
 
     dwError = LwCADbCreateCAData("cn=CA",
                                 pCertArray,
                                 pEncryptedPrivateKey,
-                                NULL,
+                                "10001",
+                                "20181025201010.542",
+                                "20191025201010.542",
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
@@ -543,6 +604,10 @@ Test_LwCADbCAData(
     assert_non_null(pCAData->pEncryptedPrivateKey);
     assert_memory_equal(pCAData->pEncryptedPrivateKey->pData, testKey1, 20);
 
+    assert_string_equal(pCAData->pszCRLNumber, "10001");
+    assert_string_equal(pCAData->pszLastCRLUpdate, "20181025201010.542");
+    assert_string_equal(pCAData->pszNextCRLUpdate, "20191025201010.542");
+
     assert_int_equal(pCAData->status, LWCA_CA_STATUS_ACTIVE);
 
     LwCAFreeKey(pEncryptedPrivateKey);
@@ -556,48 +621,16 @@ Test_LwCADbCAData_Invalid(
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
-    PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
-    PLWCA_KEY pEncryptedPrivateKey = NULL;
-    BYTE testKey1[20] = "testKey1";
-
-    dwError = LwCACreateKey(testKey1, 20, &pEncryptedPrivateKey);
-    assert_int_equal(dwError, 0);
-
-    TestCreateCertificates(&pCertArray);
-    assert_non_null(pCertArray);
-    assert_non_null(pEncryptedPrivateKey);
-
-    dwError = LwCADbCreateCAData(NULL,
-                                pCertArray,
-                                pEncryptedPrivateKey,
-                                NULL,
-                                LWCA_CA_STATUS_ACTIVE,
-                                &pCAData);
-    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-    assert_null(pCAData);
 
     dwError = LwCADbCreateCAData("cn=CA",
                                 NULL,
                                 NULL,
                                 NULL,
-                                LWCA_CA_STATUS_ACTIVE,
-                                &pCAData);
-    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-    assert_null(pCAData);
-
-    dwError = LwCADbCreateCAData("cn=CA",
                                 NULL,
-                                pEncryptedPrivateKey,
                                 NULL,
                                 LWCA_CA_STATUS_ACTIVE,
-                                &pCAData);
+                                NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-    assert_null(pCAData);
-
-    LwCAFreeKey(pEncryptedPrivateKey);
-    LwCAFreeCertificates(pCertArray);
-    LwCADbFreeCAData(pCAData);
 }
 
 
@@ -648,4 +681,35 @@ Test_LwCADbCertData_Invalid(
     assert_null(pCertData);
 
     LwCADbFreeCertData(pCertData);
+}
+
+/*
+ * Helper method which creates db certificate array object with two certificates.
+ */
+static
+VOID
+_CreateCertificates(
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    )
+{
+    DWORD dwError = 0;
+    PSTR *ppCertificates = NULL;
+
+    dwError = LwCAAllocateMemory(2 * sizeof(PSTR), (PVOID*)&ppCertificates);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCAAllocateStringA("dummyCert1", &ppCertificates[0]);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCAAllocateStringA("dummyCert2", &ppCertificates[1]);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCACreateCertArray(ppCertificates, 2, ppCertArray);
+    assert_int_equal(dwError, 0);
+
+    assert_non_null(ppCertArray);
+
+    LWCA_SAFE_FREE_MEMORY(ppCertificates[1]);
+    LWCA_SAFE_FREE_MEMORY(ppCertificates[0]);
+    LWCA_SAFE_FREE_MEMORY(ppCertificates);
 }

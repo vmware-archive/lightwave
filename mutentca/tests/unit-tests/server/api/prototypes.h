@@ -62,6 +62,16 @@ Test_LwCARevokeCertificate_Invalid(
     VOID **state
     );
 
+VOID
+Test_LwCAGetCACrl_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCACrl_Invalid(
+    VOID **state
+    );
+
 int
 TestLwCACreateRequestContext(
     VOID **state

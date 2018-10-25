@@ -260,6 +260,8 @@ LwCADbCreateCAData(
     PLWCA_CERTIFICATE_ARRAY     pCertificates,
     PLWCA_KEY                   pEncryptedPrivateKey,
     PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     );
@@ -356,6 +358,12 @@ LwCAKmSignX509Cert(
 DWORD
 LwCAKmSignX509Request(
     X509_REQ *pReq,
+    PCSTR    pcszKeyId
+    );
+
+DWORD
+LwCAKmSignX509Crl(
+    X509_CRL *pCrl,
     PCSTR    pcszKeyId
     );
 

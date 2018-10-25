@@ -28,6 +28,10 @@ typedef struct _LWCA_DB_CA_DATA
     PLWCA_CERTIFICATE_ARRAY         pCertificates;
     PLWCA_KEY                       pEncryptedPrivateKey;
     PSTR                            pszCRLNumber;
+    // ASN1 TIME Format
+    PSTR                            pszLastCRLUpdate;
+    // ASN1 TIME Format
+    PSTR                            pszNextCRLUpdate;
     LWCA_CA_STATUS                  status;
 } LWCA_DB_CA_DATA, *PLWCA_DB_CA_DATA;
 

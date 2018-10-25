@@ -43,6 +43,7 @@
 #include <jansson.h>
 
 #include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcaerror.h>
 #include <mutentcapkcs.h>
