@@ -1,2 +1,2 @@
 vmwincludedir=$(includedir)
-vmwinclude_HEADERS=mutentca.h mutentcadb.h
+vmwinclude_HEADERS=mutentca.h mutentcadb.h mutentcaauthz.h

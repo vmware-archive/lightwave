@@ -559,6 +559,67 @@ LwCAFreeStringArray(
     }
 }
 
+DWORD
+LwCARequestContextCreate(
+    PSTR                    pszBindUPN,
+    PSTR                    pszBindUPNTenant,
+    PLWCA_STRING_ARRAY      pBindUPNGroups,
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
+
+    if (IsNullOrEmptyString(pszBindUPN) || IsNullOrEmptyString(pszBindUPNTenant) ||
+        !pBindUPNGroups || !ppReqCtx)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_REQ_CONTEXT), (PVOID *)&pReqCtx);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pszBindUPN, &pReqCtx->pszBindUPN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pszBindUPNTenant, &pReqCtx->pszBindUPNTenant);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACopyStringArray(pBindUPNGroups, &pReqCtx->pBindUPNGroups);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppReqCtx = pReqCtx;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    LwCARequestContextFree(pReqCtx);
+    if (ppReqCtx)
+    {
+        *ppReqCtx = NULL;
+    }
+
+    goto cleanup;
+}
+
+VOID
+LwCARequestContextFree(
+    PLWCA_REQ_CONTEXT       pReqCtx
+    )
+{
+    if (pReqCtx)
+    {
+        LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPN);
+        LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNTenant);
+        LwCAFreeStringArray(pReqCtx->pBindUPNGroups);
+        LWCA_SAFE_FREE_MEMORY(pReqCtx);
+    }
+}
+
 void
 LwCASetBit(unsigned long *flag, int bit)
 {

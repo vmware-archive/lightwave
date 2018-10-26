@@ -1475,6 +1475,7 @@ users.
 %{_includedir}/vmutil.h
 %{_includedir}/mutentca.h
 %{_includedir}/mutentcadb.h
+%{_includedir}/mutentcaauthz.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la

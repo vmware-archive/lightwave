@@ -112,6 +112,7 @@ LwCAOIDCTokenAuthenticate(
 
     dwError = LwCARequestContextCreate(
                         pOIDCToken->pszReqBindUPN,
+                        pOIDCToken->pszReqBindUPNTenant,
                         pOIDCToken->pReqBindUPNGroups,
                         &pReqCtx);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -213,6 +214,7 @@ LwCAOIDCTokenFree(
         LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqOIDCToken);
         LwCAOIDCHOTKValuesFree(pOIDCToken->pReqHOTKValues);
         LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqBindUPN);
+        LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqBindUPNTenant);
         LwCAFreeStringArray(pOIDCToken->pReqBindUPNGroups);
         LWCA_SAFE_FREE_MEMORY(pOIDCToken);
     }
@@ -482,6 +484,7 @@ LwCAOIDCTokenValidate(
     PSTR                    pszOIDCSigningCert = NULL;
     PSTR                    pszReqHOTKPEM = NULL;
     PSTR                    pszReqBindUPN = NULL;
+    PSTR                    pszReqBindUPNTenant = NULL;
     const PSTRING           *ppGroups = NULL;
     PLWCA_STRING_ARRAY      pReqBindUPNGroups = NULL;
     POIDC_ACCESS_TOKEN      pOIDCAccessToken = NULL;
@@ -496,6 +499,9 @@ LwCAOIDCTokenValidate(
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateStringA(OidcAccessTokenGetSubject(pOIDCAccessToken), &pszReqBindUPN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(OidcAccessTokenGetTenant(pOIDCAccessToken), &pszReqBindUPNTenant);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateStringA(OidcAccessTokenGetHolderOfKeyPEM(pOIDCAccessToken), &pszReqHOTKPEM);
@@ -527,6 +533,7 @@ LwCAOIDCTokenValidate(
     BAIL_ON_LWCA_ERROR(dwError);
 
     pOIDCToken->pszReqBindUPN = pszReqBindUPN;
+    pOIDCToken->pszReqBindUPN = pszReqBindUPNTenant;
     pOIDCToken->pReqBindUPNGroups = pReqBindUPNGroups;
     if (pOIDCToken->oidcTokenType == LWCA_OIDC_TOKEN_TYPE_HOTK)
     {
@@ -545,6 +552,8 @@ error:
 
     LWCA_SAFE_FREE_STRINGA(pszReqBindUPN);
     pOIDCToken->pszReqBindUPN = NULL;
+    LWCA_SAFE_FREE_STRINGA(pszReqBindUPNTenant);
+    pOIDCToken->pszReqBindUPNTenant = NULL;
     LwCAFreeStringArray(pReqBindUPNGroups);
     pOIDCToken->pReqBindUPNGroups = NULL;
     LWCA_SAFE_FREE_STRINGA(pszReqHOTKPEM);

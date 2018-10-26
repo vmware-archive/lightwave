@@ -60,6 +60,25 @@ typedef PSTR PLWCA_CERTIFICATE;
 #endif /* LWCA_CERTIFICATE_DEFINED */
 
 /*
+ * String array and number of elements
+ */
+typedef struct _LWCA_STRING_ARRAY
+{
+    PSTR    *ppData;
+    DWORD   dwCount;
+} LWCA_STRING_ARRAY, *PLWCA_STRING_ARRAY;
+
+/*
+ * Request context containing information about API requestor
+ */
+typedef struct _LWCA_REQ_CONTEXT
+{
+    PSTR                    pszBindUPN;
+    PSTR                    pszBindUPNTenant;
+    PLWCA_STRING_ARRAY      pBindUPNGroups;
+} LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
+
+/*
  * Defines Certificate array
  */
 typedef struct _LWCA_CERTIFICATE_ARRAY

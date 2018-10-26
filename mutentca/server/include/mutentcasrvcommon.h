@@ -128,12 +128,6 @@ typedef struct _LWCA_DIR_SYNC_PARAMS
 
 } LWCA_DIR_SYNC_PARAMS, *PLWCA_DIR_SYNC_PARAMS;
 
-typedef struct _LWCA_REQ_CONTEXT
-{
-    PSTR                    pszBindUPN;
-    PLWCA_STRING_ARRAY      pBindUPNGroups;
-} LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
-
 typedef enum
 {
     LWCAD_STARTUP = 0,
@@ -193,18 +187,6 @@ LwCAUtilIsValueFQDN(
 BOOLEAN
 LwCAUtilDoesValueHaveWildcards(
     PCSTR            pcszValue
-    );
-
-DWORD
-LwCARequestContextCreate(
-    PSTR                    pszBindUPN,
-    PLWCA_STRING_ARRAY      pBindUPNGroups,
-    PLWCA_REQ_CONTEXT       *ppReqCtx
-    );
-
-VOID
-LwCARequestContextFree(
-    PLWCA_REQ_CONTEXT       pReqCtx
     );
 
 DWORD
