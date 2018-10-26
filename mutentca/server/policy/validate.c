@@ -191,6 +191,94 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCAPolicyValidateKeyUsagePolicy(
+    DWORD                       dwAllowedKeys,
+    X509_REQ                    *pRequest,
+    BOOLEAN                     *pbIsValid
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwKeyUsage = 0;
+    BOOLEAN bIsValid = FALSE;
+
+    if (!pRequest || !pbIsValid)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAX509ReqGetKeyUsage(pRequest, &dwKeyUsage);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if ( (dwKeyUsage & dwAllowedKeys) == dwKeyUsage )
+    {
+        bIsValid = TRUE;
+    }
+    else
+    {
+        LWCA_LOG_ERROR("Policy Violation. Some key usages in CSR are not allowed.");
+    }
+
+    *pbIsValid = bIsValid;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pbIsValid)
+    {
+        *pbIsValid = FALSE;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCAPolicyValidateCertDurationPolicy(
+    DWORD                       dwAllowedDuration,
+    PLWCA_CERT_VALIDITY         pValidity,
+    BOOLEAN                     *pbIsValid
+    )
+{
+    DWORD dwError = 0;
+    double duration = 0;
+    BOOLEAN bIsValid = FALSE;
+
+    if (!pValidity || !pbIsValid)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    duration = difftime(pValidity->tmNotAfter, pValidity->tmNotBefore);
+
+    if (duration > 0 && duration <= (double) dwAllowedDuration)
+    {
+        bIsValid = TRUE;
+    }
+    else
+    {
+        LWCA_LOG_ERROR(
+            "Policy Violation: Given cert duration %f is higher than allowed duration %d",
+            duration,
+            dwAllowedDuration);
+    }
+
+    *pbIsValid = bIsValid;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pbIsValid)
+    {
+        *pbIsValid = FALSE;
+    }
+
+    goto cleanup;
+}
+
 static
 BOOLEAN
 _LwCAPolicyValidateEntry(

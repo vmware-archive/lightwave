@@ -20,6 +20,7 @@ _LwCAPolicyValidateInternal(
     PLWCA_POLICIES              pPoliciesAllowed,
     PLWCA_REQ_CONTEXT           pReqContext,
     X509_REQ                    *pRequest,
+    PLWCA_CERT_VALIDITY         pValidity,
     LWCA_POLICY_CHECKS          policyChecks,
     BOOLEAN                     *pbIsValid
     );
@@ -84,6 +85,7 @@ LwCAPolicyValidate(
     PLWCA_POLICY_CONTEXT        pPolicyCtx,
     PLWCA_REQ_CONTEXT           pReqContext,
     X509_REQ                    *pRequest,
+    PLWCA_CERT_VALIDITY         pValidity,
     LWCA_POLICY_TYPE            policyType,
     LWCA_POLICY_CHECKS          policyChecks,
     BOOLEAN                     *pbIsValid
@@ -107,6 +109,7 @@ LwCAPolicyValidate(
                         pPolicyCtx->pCAPoliciesAllowed,
                         pReqContext,
                         pRequest,
+                        pValidity,
                         policyChecks,
                         &bIsValid);
             BAIL_ON_LWCA_ERROR(dwError);
@@ -125,6 +128,7 @@ LwCAPolicyValidate(
                         pPolicyCtx->pCertPoliciesAllowed,
                         pReqContext,
                         pRequest,
+                        pValidity,
                         policyChecks,
                         &bIsValid);
             BAIL_ON_LWCA_ERROR(dwError);
@@ -174,6 +178,7 @@ _LwCAPolicyValidateInternal(
     PLWCA_POLICIES              pPoliciesAllowed,
     PLWCA_REQ_CONTEXT           pReqContext,
     X509_REQ                    *pRequest,
+    PLWCA_CERT_VALIDITY         pValidity,
     LWCA_POLICY_CHECKS          policyChecks,
     BOOLEAN                     *pbIsValid
     )
@@ -223,12 +228,22 @@ _LwCAPolicyValidateInternal(
 
     if ( (policyChecks & LWCA_POLICY_CHECK_KEY_USAGE) )
     {
-        // TODO: Validate KeyUsagePolicy
+        dwError = LwCAPolicyValidateKeyUsagePolicy(pPoliciesAllowed->dwKeyUsage, pRequest, &bIsValid);
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_DURATION) )
     {
-        // TODO: Validate CertDurationPolicy
+        if (pValidity)
+        {
+            dwError = LwCAPolicyValidateCertDurationPolicy(pPoliciesAllowed->dwCertDuration, pValidity, &bIsValid);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+        else
+        {
+            LWCA_LOG_INFO("Validity not provided. Duration will be taken from the policy config.");
+            bIsValid = TRUE;
+        }
     }
 
     *pbIsValid = bIsValid;

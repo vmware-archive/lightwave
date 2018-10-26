@@ -146,6 +146,12 @@ LwCAX509ReqGetSubjectAltNames(
     );
 
 DWORD
+LwCAX509ReqGetKeyUsage(
+    X509_REQ    *pReq,
+    DWORD       *pdwKeyUsage
+    );
+
+DWORD
 LwCAX509GetSerialNumber(
     X509    *pCert,
     PSTR    *ppszSerialNumber

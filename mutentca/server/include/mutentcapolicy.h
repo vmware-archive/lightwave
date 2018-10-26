@@ -186,6 +186,7 @@ LWCAPolicyValidate(
     PLWCA_POLICY_CONTEXT                pPolicyCtx,         // IN
     PLWCA_REQ_CONTEXT                   pReqContext,        // IN
     X509_REQ                            *pRequest,          // IN
+    PLWCA_CERT_VALIDITY                 pValidity,          // IN (Optional)
     LWCA_POLICY_TYPE                    policyType,         // IN
     LWCA_POLICY_CHECKS                  policyChecks,       // IN
     BOOLEAN                             *pbIsValid          // OUT

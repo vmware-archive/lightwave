@@ -43,6 +43,20 @@ LwCAPolicyValidateSANPolicy(
     BOOLEAN                     *pbIsValid
     );
 
+DWORD
+LwCAPolicyValidateKeyUsagePolicy(
+    DWORD                       dwAllowedKeys,
+    X509_REQ                    *pRequest,
+    BOOLEAN                     *pbIsValid
+    );
+
+DWORD
+LwCAPolicyValidateCertDurationPolicy(
+    DWORD                       dwAllowedDuration,
+    PLWCA_CERT_VALIDITY         pValidity,
+    BOOLEAN                     *pbIsValid
+    );
+
 #ifdef __cplusplus
 }
 #endif

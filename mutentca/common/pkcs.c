@@ -1042,22 +1042,22 @@ LwCAX509ReqGetSubjectAltNames(
     pExts = X509_REQ_get_extensions(pReq);
     if (pExts == NULL)
     {
-        dwError = 0;
-        goto error;
+        dwError = LWCA_SSL_NO_EXTENSIONS;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     pSANNames = X509V3_get_d2i(pExts, NID_subject_alt_name, NULL, NULL);
     if (pSANNames == NULL)
     {
-        dwError = 0;
-        goto error;
+        dwError = LWCA_SSL_NO_EXTENSIONS;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwNumSANEntries = sk_GENERAL_NAME_num(pSANNames);
     if (dwNumSANEntries == 0)
     {
-        dwError = 0;
-        goto error;
+        dwError = LWCA_SSL_NO_EXTENSIONS;
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = LwCAAllocateMemory(sizeof(PSTR) * dwNumSANEntries, (PVOID*)&ppszSANEntries);
@@ -1133,6 +1133,10 @@ cleanup:
     return dwError;
 
 error:
+    if (dwError == LWCA_SSL_NO_EXTENSIONS)
+    {
+        dwError = 0;
+    }
     LwCAFreeStringArray(pSANArray);
     if (ppSANArray)
     {
@@ -1141,6 +1145,78 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+LwCAX509ReqGetKeyUsage(
+    X509_REQ    *pReq,
+    DWORD       *pdwKeyUsage
+    )
+{
+    DWORD dwError = 0;
+    int iBytes = 0;
+    STACK_OF(X509_EXTENSION) *pExts = NULL;
+    ASN1_BIT_STRING *pKeyUsageBitString = NULL;
+    PBYTE pKeyUsageBytes = 0;
+    DWORD dwKeyUsage = 0;
+
+    if (!pReq || !pdwKeyUsage)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pExts = X509_REQ_get_extensions(pReq);
+    if (pExts == NULL)
+    {
+        dwError = LWCA_SSL_NO_EXTENSIONS;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pKeyUsageBitString = X509V3_get_d2i(pExts, NID_key_usage, NULL, NULL);
+    if (pKeyUsageBitString == NULL)
+    {
+        dwError = LWCA_SSL_NO_EXTENSIONS;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    iBytes = i2d_ASN1_BIT_STRING(pKeyUsageBitString, &pKeyUsageBytes);
+    if (iBytes < 0)
+    {
+        dwError = LWCA_INVALID_CSR_FIELD;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCABytesToDword(pKeyUsageBytes, &dwKeyUsage);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *pdwKeyUsage = dwKeyUsage;
+
+cleanup:
+    LWCA_SAFE_FREE_MEMORY(pKeyUsageBytes);
+    if (pKeyUsageBitString)
+    {
+        ASN1_BIT_STRING_free(pKeyUsageBitString);
+    }
+    if (pExts)
+    {
+        sk_X509_EXTENSION_pop_free(pExts, X509_EXTENSION_free);
+    }
+
+    return dwError;
+
+error:
+    if (dwError == LWCA_SSL_NO_EXTENSIONS)
+    {
+        dwError = 0;
+    }
+    if (pdwKeyUsage)
+    {
+        *pdwKeyUsage = 0;
+    }
+
+    goto cleanup;
+}
+
 
 DWORD
 LwCACreateCertificateSignRequest(
