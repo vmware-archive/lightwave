@@ -359,12 +359,29 @@ typedef struct _ATTRIBUTE_META_DATA_NODE
 
 #define VDIR_DEFAULT_FORCE_VERSION_GAP  512
 
+/*
+ * MOD_IGNORE_ALL
+ *     Used internally, to skip processing a Delete mod when the attr
+ *     does not exist in the entry
+ * MOD_IGNORE_ATTR_VALUES
+ *     Used internally, in the repl scenario to commit attrMetaData only and ignore
+ *     attr value and attrValueMetaData update.
+ *     1) Attr was added and deleted on the supplier side (only attrMetaData will remain)
+ *     2) In the consumer side, attrMetaData has to be committed even though corresponding
+ *        attr does not exist, to avoid data discrepancy.
+ */
+typedef enum _VDIR_MOD_IGNORE
+{
+    MOD_IGNORE_NONE = 0,
+    MOD_IGNORE_ALL,
+    MOD_IGNORE_ATTR_VALUES
+} VDIR_MOD_IGNORE;
+
 typedef struct _VDIR_MODIFICATION
 {
     VDIR_LDAP_MOD_OP            operation;
     VDIR_ATTRIBUTE              attr;
-    BOOLEAN                     ignore; // Used internally, e.g. to skip processing a Delete modification when the attribute
-                                  // does not exist in the entry
+    VDIR_MOD_IGNORE             modIgnoreType;
     unsigned short              usForceVersionGap;  // to intentionally create gap between attribute version
     struct _VDIR_MODIFICATION * next;
 } VDIR_MODIFICATION, *PVDIR_MODIFICATION;
@@ -375,6 +392,14 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
+typedef struct _VDIR_LDAP_DN
+{
+    // libldap data structure to handle DN parsing
+    LDAPDN                       internalDN;
+    VDIR_BERVALUE                dn;
+    PCSTR                        pszParentNormDN;   // in place into dn.bvnorm_val; otherwise, NULL if no parent.
+} VDIR_LDAP_DN, *PVDIR_LDAP_DN;
+
 typedef struct _VDIR_ENTRY
 {
 
@@ -383,6 +408,7 @@ typedef struct _VDIR_ENTRY
    // Internally constructed Entry (non-persist entry) has eId == 0
    ENTRYID                      eId;     // type must match BDB's db_seq_t
 
+   VDIR_LDAP_DN                 ldapDN; // will replace following dn later.
    // dn.bv_val is heap allocated; dn.bvnorm_bv follows BerValue rule
    VDIR_BERVALUE                dn;
    // pdn.bv_val is in-place into dn.bv_val.  pdn.bvnrom_val follows BerValue rule
@@ -928,6 +954,33 @@ VmDirFreeDCConnContent(
 DWORD
 VmDirInitDCConnThread(
     PVMDIR_DC_CONNECTION pDCConn
+    );
+
+// schema/dn.c
+DWORD
+VmDirDNStrToInternalDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+DWORD
+VmDirNormDN(
+    PVDIR_LDAP_DN       pLdapDN,
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirParentNormDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDNContent(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDN(
+    PVDIR_LDAP_DN   pLdapDN
     );
 
 // vmdir/init.c

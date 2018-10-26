@@ -470,6 +470,11 @@ VmDirIsSearchForIntegrityCheckStatus(
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
     );
 
+BOOLEAN
+VmDirIsSearchForDBCrossCheckStatus(
+    PVDIR_OPERATION                     pOp
+    );
+
 // util.c
 VOID
 VmDirInternalMetricsUpdate(

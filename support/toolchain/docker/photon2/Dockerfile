@@ -14,6 +14,7 @@ RUN tdnf update -qy  tdnf  && \
         apache-tomcat-8.5.29 \
         autoconf-2.69 \
         automake-1.15 \
+        aws-sdk-kms-1.4.33 \
         binutils-2.29.1 \
         boost-devel-1.63.0 \
         c-rest-engine-devel-1.2 \
@@ -50,6 +51,6 @@ RUN tdnf update -qy  tdnf  && \
         sqlite-devel-3.21.0 \
         util-linux-devel-2.29.2 && \
     echo 'ALL ALL=NOPASSWD: ALL' >>/etc/sudoers && \
-    chmod -R o+r /opt/likewise/include
-
-
+    chmod -R o+r /opt/likewise/include && \
+    curl -sSLf https://github.com/go-swagger/go-swagger/releases/download/0.11.0/swagger_linux_amd64 >/usr/local/bin/swagger && \
+    chmod a+rx /usr/local/bin/swagger

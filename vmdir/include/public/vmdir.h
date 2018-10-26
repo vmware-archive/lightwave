@@ -74,6 +74,7 @@ extern "C" {
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 #define INTEGRITY_CHECK_STATUS_DN               "cn=integritycheckstatus"
+#define DB_CROSS_CHECK_STATUS_DN                "cn=dbcrosscheckstatus"
 #define LDAPRPC_PING_DN                         "cn=ping,cn=ldaprpc"
 #define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"

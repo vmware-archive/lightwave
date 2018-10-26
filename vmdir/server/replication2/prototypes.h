@@ -277,6 +277,11 @@ VmDirFreeUTDVectorCache(
     PVMDIR_UTDVECTOR_CACHE  pUTDVector
     );
 
+DWORD
+VmDirUTDVectorUpdateNew(
+    PVMDIR_UTDVECTOR_CACHE    pNewUTDVector
+    );
+
 //valuemetadata.c
 DWORD
 VmDirReplGetAttrValueMetaDataList(

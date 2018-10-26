@@ -219,7 +219,7 @@ AM_CONDITIONAL(LIGHTWAVE_BUILD, [$LIGHTWAVE_BUILD])
 #--------------------------------------------------------------------
 # replication v2 flag
 
-REPLICATION_V2=false
+REPLICATION_V2=true
 AC_ARG_ENABLE([replicationv2],
     [AC_HELP_STRING([--enable-replication-v2],
                     [enable replication v2 (default: disabled)])],
@@ -275,6 +275,48 @@ AC_DEFINE_UNQUOTED(GO_ENABLED, 1, [ Enable go dependencies ])
 fi
 
 AM_CONDITIONAL(GO_ENABLED, [$GO_ENABLED])
+
+#--------------------------------------------------------------------
+# plugins
+
+ENABLE_PLUGINS=false
+AC_ARG_ENABLE([plugins],
+ [AS_HELP_STRING([--enable-plugins],
+                 [enable all plugin builds (default: disabled])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_PLUGINS=true
+            AC_DEFINE(ENABLE_PLUGINS, 1, [Build plugins?])
+        fi
+    ]
+])
+AM_CONDITIONAL(ENABLE_PLUGINS, [$ENABLE_PLUGINS])
+
+#--------------------------------------------------------------------
+# aws kms sdk
+
+ENABLE_SECURITY_AWS_KMS=false
+AC_ARG_ENABLE([security_aws_kms],
+ [AS_HELP_STRING([--enable-security_aws_kms],
+                 [enable security plugin aws kms (default: disabled])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            ENABLE_SECURITY_AWS_KMS=true
+            AC_DEFINE(ENABLE_SECURITY_AWS_KMS, 1, [Build security plugin for aws kms?])
+            security_aws_kms_libdir=$prefix/lib64
+            AC_SUBST(security_aws_kms_libdir)
+            AS_AC_EXPAND(SECURITY_AWS_KMS_LIB_DIR, $security_aws_kms_libdir)
+            AC_DEFINE_UNQUOTED(SECURITY_AWS_KMS_LIB_DIR, "$SECURITY_AWS_KMS_LIB_DIR", [Lib directory])
+            security_aws_kms_confdir="$datadir/config"
+            AC_SUBST(security_aws_kms_confdir)
+            AS_AC_EXPAND(SECURITY_AWS_KMS_CONFIG_DIR, $security_aws_kms_confidr)
+            AC_DEFINE_UNQUOTED(SECURITY_AWS_KMS_CONFIG_DIR, "$SECURITY_AWS_KMS_CONFIG_DIR", [Config directory])
+        fi
+    ]
+])
+AM_CONDITIONAL(ENABLE_SECURITY_AWS_KMS, [$ENABLE_SECURITY_AWS_KMS])
 
 #--------------------------------------------------------------------
 # openssl component
@@ -836,6 +878,17 @@ if test x"$JAVAH" = x"no"; then
 fi
 
 #--------------------------------------------------------------------
+# aws kms sdk
+
+AS_IF([test "x$ENABLE_PLUGINS" != "xfalse"], [
+  AS_IF([test "x$ENABLE_SECURITY_AWS_KMS" != "xfalse"], [
+    PKG_CHECK_MODULES([AWS_SDK_KMS], [aws-cpp-sdk-kms], [have_aws_sdk_kms=yes], [have_aws_sdk_kms=no])
+    if test "$have_aws_sdk_kms" = "no"; then
+      AC_MSG_ERROR([--enable-security-aws-kms specified, but not available])
+    fi
+  ])
+])
+
 
 AC_CHECK_LIB([dl],
     [dlopen],
@@ -1661,6 +1714,13 @@ AC_CONFIG_FILES([Makefile
                  vmcommon/include/public/Makefile
                  vmcommon/config/Makefile
                  vmcommon/testing/Makefile
+                 plugins/Makefile
+                 plugins/lwca_security_aws_kms/Makefile
+                 plugins/lwca_security_aws_kms/src/Makefile
+                 plugins/lwca_security_aws_kms/config/Makefile
+                 plugins/unit-tests/Makefile
+                 plugins/unit-tests/security/Makefile
+                 plugins/unit-tests/security_aws_kms/Makefile
                  vmevent/Makefile
                  vmevent/include/Makefile
                  vmevent/include/public/Makefile
@@ -1878,22 +1938,35 @@ AC_CONFIG_FILES([Makefile
                  vmca/tools/Makefile
                  vmca/tools/lw-certool/Makefile
                  mutentca/Makefile
+                 mutentca/include/Makefile
+                 mutentca/include/public/Makefile
                  mutentca/config/Makefile
                  mutentca/config/mutentca.reg
                  mutentca/common/Makefile
+                 mutentca/pkcs/Makefile
                  mutentca/server/Makefile
+                 mutentca/server/api/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
+                 mutentca/server/db/Makefile
                  mutentca/server/plugin/Makefile
+                 mutentca/server/policy/Makefile
+                 mutentca/server/rest-head/Makefile
                  mutentca/server/mutentca/Makefile
-                 mutentca/unit-tests/Makefile
-                 mutentca/unit-tests/server/Makefile
-                 mutentca/unit-tests/server/common/Makefile
-                 mutentca/unit-tests/server/plugin/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
-                 mutentca/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
+                 mutentca/tests/Makefile
+                 mutentca/tests/unit-tests/Makefile
+                 mutentca/tests/unit-tests/server/Makefile
+                 mutentca/tests/unit-tests/server/api/Makefile
+                 mutentca/tests/unit-tests/server/common/Makefile
+                 mutentca/tests/unit-tests/server/db/Makefile
+                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile
+                 mutentca/tests/unit-tests/server/db/test-mutentcadb-plugin/Makefile
+                 mutentca/tests/unit-tests/server/plugin/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-valid/Makefile
+                 mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-noentry/Makefile
+                 mutentca/tests/unit-tests/server/policy/Makefile
                  vmidentity/Makefile
                  vmidentity/config/setenv.sh
                  vmidentity/config/sample/setenv.sh
@@ -1957,6 +2030,10 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_LINKS([
                 vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
+                ])
+
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])
 
 AC_OUTPUT

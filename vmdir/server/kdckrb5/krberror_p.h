@@ -35,6 +35,8 @@ VmKdcMakeKrbError(
 DWORD
 VmKdcBuildKrbErrorEData(
     IN  PVMKDC_KEY pKey,
+    IN PVMKDC_SALT pSalt,      /* OPTIONAL */
+    IN PVMKDC_DATA pS2Kparams, /* OPTIONAL */
     OUT PVMKDC_DATA *ppRetData);
 
 DWORD

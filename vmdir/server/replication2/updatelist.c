@@ -204,6 +204,8 @@ cleanup:
         ldap_msgfree(pSearchRes);
     }
 
+    VmDirFreeCtrlContent(&syncReqCtrl);
+    VMDIR_SAFE_FREE_MEMORY(pszFilter);
     VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
     return retVal;
 

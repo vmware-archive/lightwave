@@ -50,6 +50,11 @@ typedef const char* PCSTR;
 typedef const wchar16_t* PCWSTR;
 #endif /* LWCA_PCWSTR_DEFINED */
 
+#ifndef LWCA_BYTE_DEFINED
+#define LWCA_BYTE_DEFINED 1
+typedef unsigned char BYTE;
+#endif /* LWCA_BYTE_DEFINED */
+
 #ifndef LWCA_VOID_DEFINED
 #define LWCA_VOID_DEFINED 1
 
@@ -80,6 +85,12 @@ typedef UINT8 BOOLEAN, *PBOOLEAN;
 
 typedef struct _LWCA_CFG_CONNECTION* PLWCA_CFG_CONNECTION;
 typedef struct _LWCA_CFG_KEY*        PLWCA_CFG_KEY;
+
+typedef struct _LWCA_STRING_ARRAY
+{
+    PSTR    *ppData;
+    DWORD   dwCount;
+} LWCA_STRING_ARRAY, *PLWCA_STRING_ARRAY;
 
 #define LWCA_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define LWCA_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
@@ -112,6 +123,17 @@ typedef struct _LWCA_CFG_KEY*        PLWCA_CFG_KEY;
             LwCAFreeMemory(PTR);    \
             (PTR) = NULL;           \
         }                           \
+    } while(0)
+
+#define LWCA_SECURE_SAFE_FREE_MEMORY(PTR, n)     \
+    do {                                         \
+        if ((PTR)) {                             \
+            if ((n) > 0) {                       \
+                memset(PTR, 0, n);               \
+            }                                    \
+            LwCAFreeMemory(PTR);                 \
+            (PTR) = NULL;                        \
+        }                                        \
     } while(0)
 
 #define LWCA_LOCK_MUTEX(bInLock, mutex)     \
@@ -233,28 +255,56 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
     }
 
 #define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
-    if ((dwError) == 0)                                                     \
+    if (dwError == 0)                                                       \
     {                                                                       \
-        (dwError) = (ERROR_CODE);                                           \
-        LWCA_LOG_WARNING("error code: %#010x", (dwError));                  \
-        if ((ERROR_CODE) == LWCA_CERT_IO_FAILURE)                           \
+        dwError = ERROR_CODE;                                               \
+        LWCA_LOG_WARNING("error code: %#010x", dwError);                    \
+        if (ERROR_CODE == LWCA_CERT_IO_FAILURE)                             \
         {                                                                   \
-            printf(" Failed at %s %d \n", __FUNCTION__, __LINE__);          \
+            LWCA_LOG_ERROR(" Failed at %s %d \n",                           \
+                            __FUNCTION__,                                   \
+                            __LINE__);                                      \
         }                                                                   \
         goto error;                                                         \
     } else {                                                                \
-        (dwError) = 0;                                                      \
-    }                                                                       \
+        dwError = 0;                                                        \
+    }
 
-#define BAIL_ON_NULL(ptr, dwError , ERROR_CODE)                             \
-    if ((ptr) == NULL)                                                      \
+#define BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, errMsg)                       \
+    if (dwError)                                                            \
     {                                                                       \
-        (dwError) = (ERROR_CODE);                                           \
-        LWCA_LOG_DEBUG("error code: %#010x", (dwError));                    \
+        LWCA_LOG_ERROR("[%s:%d] %s. copenapi error (%d)",                   \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_COAPI_ERROR;                                         \
         goto error;                                                         \
-    } else {                                                                \
-        (dwError) = 0;                                                      \
-    }                                                                       \
+    }
+
+#define BAIL_ON_CREST_ERROR_WITH_MSG(dwError, errMsg)                       \
+    if (dwError)                                                            \
+    {                                                                       \
+        LWCA_LOG_ERROR("[%s:%d] %s. c-rest-engine error (%d)",              \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_CREST_ENGINE_ERROR;                                  \
+        goto error;                                                         \
+    }
+
+#define BAIL_ON_JSON_ERROR_WITH_MSG(dwError, errMsg)                        \
+    if (dwError)                                                            \
+    {                                                                       \
+        LWCA_LOG_ERROR("[%s:%d] %s. jansson api error (%d)",                \
+                            __FUNCTION__,                                   \
+                            __LINE__,                                       \
+                            errMsg,                                         \
+                            dwError);                                       \
+        dwError = LWCA_JSON_ERROR;                                          \
+        goto error;                                                         \
+    }
 
 #define BAIL_ON_JSON_PARSE_ERROR(dwError)       \
     if ((dwError))                              \
@@ -277,6 +327,20 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 // Event logs related constants.
 
 #define LWCA_EVENT_SOURCE   "Lightwave MutentCA Service"
+
+#define LWCA_TIME_SECS_PER_MINUTE           ( 60)
+#define LWCA_TIME_SECS_PER_HOUR             ( 60 * LWCA_TIME_SECS_PER_MINUTE)
+#define LWCA_TIME_SECS_PER_DAY              ( 24 * LWCA_TIME_SECS_PER_HOUR)
+#define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
+#define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
+
+typedef struct _LWCA_CERT_VALIDITY
+{
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+} LWCA_CERT_VALIDITY, *PLWCA_CERT_VALIDITY;
+
+typedef PSTR PLWCA_CERT_REQUEST;
 
 SIZE_T
 LwCAStringLenA(
@@ -362,6 +426,12 @@ LwCACopyStringArrayA(
     DWORD           dwSrcLen
     );
 
+DWORD
+LwCACopyStringArray(
+    PLWCA_STRING_ARRAY  pStrInputArray,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
+    );
+
 VOID
 LwCAFreeStringA(
     PSTR pszString
@@ -371,6 +441,11 @@ VOID
 LwCAFreeStringArrayA(
     PSTR* ppszStrings,
     DWORD dwCount
+    );
+
+VOID
+LwCAFreeStringArray(
+    PLWCA_STRING_ARRAY pStrArray
     );
 
 DWORD
@@ -488,6 +563,11 @@ DWORD
 LwCAStringToLower(
     PSTR pszString,
     PSTR *ppszNewString
+    );
+
+int
+LwCAStringToInt(
+    PCSTR pszStr
     );
 
 VOID
@@ -749,8 +829,29 @@ LwCAGetVecsMachineCert(
     );
 
 DWORD
+LwCAGetVecsMutentCACert(
+    PSTR*   ppszCert,
+    PSTR*   ppszKey
+    );
+
+DWORD
 LwCAOpenVmAfdClientLib(
     LWCA_LIB_HANDLE*   pplibHandle
+    );
+
+// ldap.c
+
+DWORD
+LwCAIsValidDN(
+    PCSTR       pcszDN,
+    PBOOLEAN    pbIsValid
+    );
+
+DWORD
+LwCADNToRDNArray(
+    PCSTR               pcszDN,
+    BOOLEAN             bNotypes,
+    PLWCA_STRING_ARRAY* ppRDNStrArray
     );
 
 #ifdef __cplusplus

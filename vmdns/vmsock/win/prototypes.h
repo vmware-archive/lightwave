@@ -340,3 +340,9 @@ VmDnsSockWinFreeIoBuffer(
     PVM_SOCK_IO_BUFFER  pIoBuffer
     );
 
+VOID
+VmDnsSockWinCreateTimerSocket(
+    DWORD       dwInitialMS,
+    DWORD       dwIntervalMS,
+    PVM_SOCKET* ppSocket
+    );

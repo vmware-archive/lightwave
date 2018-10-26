@@ -97,20 +97,20 @@ interface vmdns
 
     UINT32
     VmDnsRpcAddForwarder(
-        [in]                        handle_t hBinding,
+        [in] handle_t               hBinding,
         [in] PDNS_STRING            pszForwarder
         );
 
     UINT32
     VmDnsRpcDeleteForwarder(
-        [in]                        handle_t hBinding,
+        [in] handle_t               hBinding,
         [in] PDNS_STRING            pszForwarder
         );
 
     UINT32
     VmDnsRpcGetForwarders(
-        [in]                        handle_t hBinding,
-        [out]                       PVMDNS_FORWARDERS* ppDnsForwarders
+        [in] handle_t               hBinding,
+        [out] PVMDNS_FORWARDERS*    ppDnsForwarders
         );
 
     UINT32
@@ -125,5 +125,25 @@ interface vmdns
         [in] PVMDNS_INIT_SITE_INFO   pInitInfo
         );
 
-    }
+    UINT32
+    VmDnsRpcAddZoneForwarder(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszForwarder,
+        [in] PDNS_STRING            pszZone
+        );
 
+    UINT32
+    VmDnsRpcDeleteZoneForwarder(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszForwarder,
+        [in] PDNS_STRING            pszZone
+        );
+
+    UINT32
+    VmDnsRpcGetZoneForwarders(
+        [in] handle_t               hBinding,
+        [in] PDNS_STRING            pszZone,
+        [out] PVMDNS_FORWARDERS*    ppDnsForwarders
+        );
+
+    }

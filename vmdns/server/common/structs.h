@@ -168,6 +168,8 @@ typedef struct _VMDNS_SOCK_CONTEXT
     PVM_SOCKET           pListenerUDP6;
     PVM_SOCKET           pListenerTCP;
     PVM_SOCKET           pListenerTCP6;
+    PVM_SOCKET           pTimerSocket;
+    PVMDNS_FORWARDER_PACKET_LIST   pForwarderPacketList;
 
     PVM_SOCK_EVENT_QUEUE pEventQueue;
 
@@ -245,6 +247,8 @@ typedef struct _VMDNS_ZONE_OBJECT
     PVMDNS_HASH_TABLE   pNameEntries;
     PVMDNS_LRU_LIST     pLruList;
     PVMDNS_RWLOCK       pLock;
+    VMDNS_ZONE_ID       zoneId;
+    PVMDNS_FORWARDER_CONTEXT  pForwarderContext;
 } VMDNS_ZONE_OBJECT;
 
 typedef struct _VMDNS_LRU_LIST
@@ -288,6 +292,20 @@ typedef struct _VMDNS_RECORD_LIST
     DWORD               dwCurrentSize;
     PVMDNS_RECORD_OBJECT *ppRecords;
 } VMDNS_RECORD_LIST;
+
+typedef struct _VMDNS_PROPERTY_OBJECT
+{
+    volatile ULONG      lRefCount;
+    PVMDNS_PROPERTY     pProperty;
+} VMDNS_PROPERTY_OBJECT;
+
+typedef struct _VMDNS_PROPERTY_LIST
+{
+    volatile ULONG      lRefCount;
+    DWORD               dwMaxSize;
+    DWORD               dwCurrentSize;
+    PVMDNS_PROPERTY_OBJECT *ppProperties;
+} VMDNS_PROPERTY_LIST;
 
 typedef struct _VMDNS_CACHE_CONTEXT
 {
@@ -347,8 +365,25 @@ typedef struct _VMDNS_DRIVER_GLOBALS
 
 typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
 {
-    DWORD              dwCurrentIndex;
-    PVM_SOCK_IO_BUFFER pQueryBuffer;
-    PVM_SOCKET         pClientSocket;
-    DWORD              dwRefCount;
+    DWORD                         dwCurrentIndex;
+    PVM_SOCK_IO_BUFFER            pQueryBuffer;
+    PVM_SOCKET                    pClientSocket;
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry;
+    DWORD                         dwRefCount;
 } VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
+
+typedef struct _VMDNS_FORWARDER_PACKET_LIST
+{
+    LIST_ENTRY          ForwarderPacketListHead;
+    DWORD               dwCurrentCount;
+    PVMDNS_MUTEX        pLock;
+} VMDNS_FORWARDER_PACKET_LIST;
+
+typedef struct _VMDNS_FORWARDER_PACKET_ENTRY
+{
+    volatile ULONG                  lRefCount;
+    LIST_ENTRY                      ForwarderPacketList;
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderPacketContext;
+    PVM_SOCKET                      pSocket;
+    UINT64                          uiExpirationTime;
+} VMDNS_FORWARDER_PACKET_ENTRY;

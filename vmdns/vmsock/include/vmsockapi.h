@@ -27,13 +27,15 @@ typedef enum
     VM_SOCK_TYPE_SERVER,
     VM_SOCK_TYPE_LISTENER,
     VM_SOCK_TYPE_FORWARDER,
-    VM_SOCK_TYPE_SIGNAL
+    VM_SOCK_TYPE_SIGNAL,
+    VM_SOCK_TYPE_TIMER
 } VM_SOCK_TYPE;
 
 typedef DWORD (*PFN_OPEN_CLIENT_SOCKET)(
                     PCSTR                pszHost,
                     USHORT               usPort,
                     VM_SOCK_CREATE_FLAGS dwFlags,
+                    DWORD                dwTimeoutMS,
                     PVM_SOCKET*          ppSocket
                     );
 
@@ -164,6 +166,12 @@ typedef VOID(*PFN_RELEASE_IO_BUFFER)(
                     PVM_SOCK_IO_BUFFER      pIoBuffer
                     );
 
+typedef DWORD(*PFN_CREATE_TIMER_SOCKET)(
+                    DWORD                   dwInitialMS,
+                    DWORD                   dwIntervalMS,
+                    PVM_SOCKET*             ppSocket
+                    );
+
 typedef struct _VM_SOCK_PACKAGE
 {
     PFN_OPEN_CLIENT_SOCKET pfnOpenClientSocket;
@@ -191,4 +199,5 @@ typedef struct _VM_SOCK_PACKAGE
     PFN_SET_EVENT_CONTEXT  pfnSetEventContext;
     PFN_GET_EVENT_CONTEXT  pfnGetEventContext;
     PFN_RELEASE_IO_BUFFER  pfnReleaseIoBuffer;
+    PFN_CREATE_TIMER_SOCKET pfnCreateTimerSocket;
 } VM_SOCK_PACKAGE, *PVM_SOCK_PACKAGE;

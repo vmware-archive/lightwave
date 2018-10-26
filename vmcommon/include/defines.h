@@ -15,7 +15,14 @@
 #ifndef __VM_COMMON_DEFINE_H__
 #define __VM_COMMON_DEFINE_H__
 
-#define BUFFER_SIZE 1024
+#define BUFFER_SIZE                     1024
+#define VM_COMMON_MAX_TIME_BYTES        128
+#define VM_COMMON_TIME_FORMAT_RFC_1233      "%a, %d %b %Y %H:%M:%S GMT"
+#define VM_COMMON_HTTP_CONTENT_TYPE_KEY     "Content-Type"
+#define VM_COMMON_HTTP_CONTENT_TYPE_JSON    "application/json"
+
+#define HEADER_BEARER_AUTH "Authorization: Bearer %s"
+#define HEADER_HOTK_PK_AUTH "Authorization: hotk-pk %s"
 
 #define VM_COMMON_SAFE_FREE_MEMORY(PTR)       \
     do {                                       \
@@ -39,7 +46,19 @@
         goto error;                            \
     }
 
+#define VM_COMMON_SAFE_FREE_STRINGA(PTR)    \
+    do {                                    \
+        if ((PTR)) {                        \
+            VmCommonFreeStringA(PTR);       \
+            (PTR) = NULL;                   \
+        }                                   \
+    } while(0)
+
 #define VM_COMMON_SAFE_STRING(str) ((str) ? (str) : "")
+
+
+#define VM_COMMON_ASCII_SPACE(c) \
+    ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
 
 #define BAIL_AND_LOG_ON_VM_COMMON_ERROR(x, str) \
     if ((x) != 0)                                            \

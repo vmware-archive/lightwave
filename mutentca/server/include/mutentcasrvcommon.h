@@ -34,12 +34,6 @@ extern "C" {
 
 #define FILE_CHUNK (64 * 1024)
 
-#define LWCA_TIME_SECS_PER_MINUTE           ( 60)
-#define LWCA_TIME_SECS_PER_HOUR             ( 60 * LWCA_TIME_SECS_PER_MINUTE)
-#define LWCA_TIME_SECS_PER_DAY              ( 24 * LWCA_TIME_SECS_PER_HOUR)
-#define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
-#define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
-
 // States
 
 typedef DWORD LWCA_FUNC_LEVEL;
@@ -172,7 +166,11 @@ typedef struct _LWCA_SERVER_GLOBALS
     PLWCA_THREAD                    pDirSyncThr;
 
     HANDLE                          gpEventLog;
+
+    SSL_CTX*                        pSslCtx;
 } LWCA_SERVER_GLOBALS, *PLWCA_SERVER_GLOBALS;
+
+extern LWCA_SERVER_GLOBALS gLwCAServerGlobals;
 
 /* ../common/config.c */
 
@@ -197,6 +195,7 @@ LwCAJsonLoadObjectFromFile(
 DWORD
 LwCAJsonGetObjectFromKey(
     PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     PLWCA_JSON_OBJECT       *ppJsonValue
     );
@@ -204,32 +203,30 @@ LwCAJsonGetObjectFromKey(
 DWORD
 LwCAJsonGetStringFromKey(
     PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     PSTR                    *ppszValue
+    );
+
+DWORD
+LwCAJsonGetStringArrayFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PLWCA_STRING_ARRAY      *ppStrArrValue
+    );
+
+DWORD
+LwCAJsonGetTimeFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    time_t                  *ptValue
     );
 
 VOID
 LwCAJsonCleanupObject(
     PLWCA_JSON_OBJECT       pJson
-    );
-
-/* ../common/opensslutil.c */
-
-DWORD
-LwCAOpenSSLGetValuesFromSubjectName(
-    PCSTR                           pszPKCS10Request,
-    DWORD                           dwNIDType,
-    PDWORD                          pdwNumValues,
-    PSTR                            **pppszValues
-    );
-
-DWORD
-LwCAOpenSSLGetSANEntries(
-    PCSTR                           pszPKCS10Request,
-    PDWORD                          pdwNumSANDNSEntries,
-    PSTR                            **pppszSANDNSEntires,
-    PDWORD                          pdwNumSANIPEntries,
-    PSTR                            **pppszSANIPEntires
     );
 
 /* ../common/util.c */
@@ -261,6 +258,93 @@ LwCAUtilIsValueInWhitelist(
     PCSTR                           pszAuthUPN,
     PCSTR                           pcszRegValue,
     PBOOLEAN                        pbInWhitelist
+    );
+
+DWORD
+LwCACreateCertificate(
+    PCSTR               pcszCertificate,
+    PLWCA_CERTIFICATE   *ppCertificate
+    );
+
+DWORD
+LwCACreateCertArray(
+    PSTR                     *ppszCertificates,
+    DWORD                    dwCount,
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    );
+
+DWORD
+LwCACopyCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
+DWORD
+LwCACreateKey(
+    PBYTE       pData,
+    DWORD       dwLength,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCACopyKey(
+    PLWCA_KEY pKey,
+    PLWCA_KEY *ppKey
+    );
+
+VOID
+LwCAFreeCertificate(
+    PLWCA_CERTIFICATE pCertificate
+    );
+
+VOID
+LwCAFreeCertificates(
+    PLWCA_CERTIFICATE_ARRAY pCertArray
+    );
+
+VOID
+LwCAFreeKey(
+    PLWCA_KEY pKey
+    );
+
+DWORD
+LwCADbCreateCAData(
+    PCSTR                           pcszIssuer,
+    PCSTR                           pcszSubject,
+    PLWCA_CERTIFICATE_ARRAY         pCertificates,
+    PLWCA_KEY                       pEncryptedPrivateKey,
+    PLWCA_KEY                       pEncryptedEncryptionKey,
+    PCSTR                           pcszTimeValidFrom,
+    PCSTR                           pcszTimeValidTo,
+    LWCA_CA_STATUS                  status,
+    PLWCA_DB_CA_DATA                *ppCAData
+    );
+
+DWORD
+LwCADbCreateCertData(
+    PCSTR               pcszSerialNumber,
+    PCSTR               pcszIssuer,
+    PCSTR               pcszTimeValidFrom,
+    PCSTR               pcszTimeValidTo,
+    PCSTR               pcszRevokedReason,
+    PCSTR               pcszRevokedDate,
+    LWCA_CERT_STATUS    status,
+    PLWCA_DB_CERT_DATA  *ppCertData
+    );
+
+VOID
+LwCADbFreeCAData(
+    PLWCA_DB_CA_DATA pCAData
+    );
+
+VOID
+LwCADbFreeCertData(
+    PLWCA_DB_CERT_DATA pCertData
+    );
+
+VOID
+LwCADbFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
     );
 
 /* ../common/state.c */
@@ -299,7 +383,6 @@ VOID
 LwCASrvCleanupGlobalState(
     VOID
     );
-
 #ifdef __cplusplus
 }
 #endif

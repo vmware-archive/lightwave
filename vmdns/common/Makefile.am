@@ -16,6 +16,7 @@ libcommon_la_SOURCES = \
     globals.c  \
     logging.c \
     memory.c  \
+    property.c \
     record.c  \
     record-a.c  \
     record-aaaa.c  \

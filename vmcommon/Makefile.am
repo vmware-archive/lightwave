@@ -21,6 +21,7 @@ libvmcommon_la_SOURCES = \
     vmjsonresult.c \
     vmmetrics.c \
     vmnetworkutil.c \
+    vmsignature.c \
     vmutil.c
 
 libvmcommon_la_LIBADD = \

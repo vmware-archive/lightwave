@@ -110,3 +110,32 @@ VmStringLenA(
 {
     return strlen(pszStr);
 }
+
+VOID
+VmStringTrimSpace(
+    PSTR pszStr
+    )
+{
+    size_t  len = 0;
+    size_t  start = 0;
+    size_t  end = 0;
+    size_t  i = 0;
+    size_t  j = 0;
+
+    if (pszStr)
+    {
+        len = VmStringLenA(pszStr);
+        if (len > 0)
+        {
+            for (start = 0; start < len && VM_COMMON_ASCII_SPACE(pszStr[start]); start++);
+            for (end = len - 1; end > 0 && VM_COMMON_ASCII_SPACE(pszStr[end]); end--);
+
+            for (i = start; i <= end; i++, j++)
+            {
+                pszStr[j] = pszStr[i];
+            }
+            pszStr[j] = '\0';
+        }
+    }
+
+}

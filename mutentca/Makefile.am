@@ -1,5 +1,7 @@
 SUBDIRS = \
+    include \
     config \
     common \
+    pkcs \
     server \
-    unit-tests
+    tests

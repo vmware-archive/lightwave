@@ -65,7 +65,7 @@ LwCAConfigGetComponent(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAJsonGetObjectFromKey(pJson, pcszComponentName, &pJsonConfig);
+    dwError = LwCAJsonGetObjectFromKey(pJson, FALSE, pcszComponentName, &pJsonConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppJsonConfig = pJsonConfig;
@@ -100,7 +100,7 @@ LwCAConfigGetStringParameter(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAJsonGetStringFromKey(pJson, pcszParameter, &pszParameterValue);
+    dwError = LwCAJsonGetStringFromKey(pJson, FALSE, pcszParameter, &pszParameterValue);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszParameterValue = pszParameterValue;

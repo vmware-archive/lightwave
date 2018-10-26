@@ -46,7 +46,8 @@ VmDirHandleSpecialSearch(
             "Integrity Check Status",
             "Cluster State Ping",
             "Cluster Vote",
-            "Raft State"
+            "Raft State",
+            "DB Cross Check Status",
     };
 
     if ( !pOp || !pLdapResult )
@@ -154,6 +155,25 @@ VmDirHandleSpecialSearch(
                 pEntryArray->iSize = 1;
             }
         }
+    }
+    else if (VmDirIsSearchForDBCrossCheckStatus(pOp))
+    {
+        BOOLEAN bIsMember = FALSE;
+
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_DB_CROSS_CHECK_STATUS;
+        pEntryArray->iSize = 0; // nothing to send back, check vmdir log for result for now.
+
+        // TODO, should change to use gVmdirdSDGlobals.pSDdcAdminGX
+        dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(NULL, &pOp->conn->AccessInfo, &bIsMember);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!bIsMember)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+        }
+
+        dwError = VmDirInitDBCrossChkThread();
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
     else if (VmDirIsSearchForRaftPing(pOp))
     {
@@ -527,6 +547,39 @@ VmDirIsSearchForIntegrityCheckStatus(
     else if (pSearchReq->scope == LDAP_SCOPE_ONELEVEL && pState )
     {
         *pState = INTEGRITY_CHECK_JOB_SHOW_SUMMARY;
+    }
+
+    return bRetVal;
+}
+
+/*
+ * For integrity check status
+ * The search pattern is:
+ * BASE:    cn=dbcrosscheckstatus
+ * FILTER:  (objectclass=*)
+ * SCOPE:   BASE
+ *
+ */
+BOOLEAN
+VmDirIsSearchForDBCrossCheckStatus(
+    PVDIR_OPERATION                     pOp
+    )
+{
+    BOOLEAN         bRetVal = FALSE;
+    SearchReq*      pSearchReq = &(pOp->request.searchReq);
+    PSTR            pszDN = pOp->reqDn.lberbv.bv_val;
+    PVDIR_FILTER    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pSearchReq != NULL                                                  &&
+        pszDN != NULL                                                       &&
+        VmDirStringCompareA(pszDN, DB_CROSS_CHECK_STATUS_DN, FALSE) == 0    &&
+        pFilter != NULL                                                     &&
+        pFilter->choice == LDAP_FILTER_PRESENT                              &&
+        pFilter->filtComp.present.lberbv.bv_len == ATTR_OBJECT_CLASS_LEN    &&
+        pFilter->filtComp.present.lberbv.bv_val != NULL                     &&
+        VmDirStringNCompareA(ATTR_OBJECT_CLASS, pFilter->filtComp.present.lberbv.bv_val, ATTR_OBJECT_CLASS_LEN, FALSE) == 0)
+    {
+        bRetVal = TRUE;
     }
 
     return bRetVal;

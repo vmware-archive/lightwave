@@ -51,6 +51,11 @@ LwCAInitialize(
 
     BAIL_ON_LWCA_ERROR(dwError);
 
+#ifdef REST_ENABLED
+    dwError = LwCARestServerInit();
+    BAIL_ON_LWCA_ERROR(dwError);
+#endif
+
 error:
 
     return dwError;
@@ -61,6 +66,12 @@ LwCAShutdown(
     VOID
     )
 {
+#ifdef REST_ENABLED
+    if (LwCARestServerStop() == 0)
+    {
+        LwCARestServerShutdown();
+    }
+#endif
     //LwCAServiceShutdown();
     LwCATerminateLogging();
     //LwCASrvCleanupGlobalState();

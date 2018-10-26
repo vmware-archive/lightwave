@@ -44,9 +44,19 @@ extern "C" {
 
 #include <jansson.h>
 
+#include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
+#include <mutentcapkcs.h>
+#include <mutentcaapi.h>
+#include <vmafdclient.h>
+#include <vmafdtypes.h>
+#include <vecsclient.h>
+#include <ssotypes.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "defines.h"
 

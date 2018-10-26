@@ -92,56 +92,64 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
 #define LWCA_SSL_SET_PUBKEY_ERR             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 2)
 #define LWCA_ROOT_CA_ALREADY_EXISTS         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 3)
-#define LWCA_INVALID_TIME_SPECIFIED         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 4)
-#define LWCA_KEY_CREATION_FAILURE           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 5)
-#define LWCA_CERT_DECODE_FAILURE            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 6)
-#define LWCA_KEY_IO_FAILURE                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 7)
-#define LWCA_CERT_IO_FAILURE                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 8)
-#define LWCA_NOT_CA_CERT                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 9)
-#define LWCA_INVALID_CSR_FIELD              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 10)
-#define LWCA_SELF_SIGNATURE_FAILED          (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 11)
-#define LWCA_INIT_CA_FAILED                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 12)
-#define LWCA_ERROR_INVALID_KEY_LENGTH       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 13)
-#define LWCA_PKCS12_CREAT_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 14)
-#define LWCA_PKCS12_IO_FAIL                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 15)
-#define LWCA_CRL_ERROR                      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 16)
-#define LWCA_NO_NEW_CRL                     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 17)
-#define LWCA_ERROR_READING_CRL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 18)
-#define LWCA_CRL_LOCAL_ERROR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 19)
-#define LWCA_SSL_ADD_EXTENSION              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 20)
-#define LWCA_SSL_REQ_SIGN_ERR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 21)
-#define LWCA_SSL_RAND_ERR                   (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 22)
-#define LWCA_SSL_CERT_SIGN_ERR              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 23)
-#define LWCA_SSL_TIME_ERROR                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 24)
-#define LWCA_SSL_EXT_ERR                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 25)
-#define LWCA_SSL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 26)
-#define LWCA_SSL_SET_ISSUER_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 27)
-#define LWCA_SSL_SET_START_TIME             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 28)
-#define LWCA_SSL_SET_END_TIME               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 29)
-#define LWCA_SSL_SET_EXT_ERR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 30)
-#define LWCA_CERT_PRIVATE_KEY_MISMATCH      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 31)
-#define LWCA_INVALID_DOMAIN_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 32)
-#define LWCA_CRL_SET_SERIAL_FAIL            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 33)
-#define LWCA_CRL_SET_TIME_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 34)
-#define LWCA_CRL_CERT_ALREADY_REVOKED       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 35)
-#define LWCA_CRLNUMBER_READ_ERROR           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 36)
-#define LWCA_CRL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 37)
-#define LWCA_CRL_REASON_FAIL                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 38)
-#define LWCA_CRL_SORT_FAILED                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 39)
-#define LWCA_CRL_NULL_TIME                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 40)
-#define LWCA_CRL_DECODE_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 41)
-#define LWCA_VPX_RSUTIL_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 42)
-#define LWCA_ERROR_INVALID_SN               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 43)
-#define LWCA_ERROR_INVALID_SAN              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 44)
-#define LWCA_ERROR_INCOMPLETE_CHAIN         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 45)
-#define LWCA_ERROR_INVALID_CHAIN            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 46)
-#define LWCA_ERROR_CANNOT_FORM_REQUEST      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 47)
-#define LWCA_KEY_DECODE_FAILURE             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 48)
-#define LWCA_ERROR_CN_HOSTNAME_MISMATCH     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 49)
-#define LWCA_ERROR_SAN_HOSTNAME_MISMATCH    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 50)
-#define LWCA_ERROR_SAN_IPADDR_INVALID       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 51)
-#define LWCA_ERROR_EVP_DIGEST               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 52)
-#define LWCA_OPENSSL_ERROR                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 53)
+#define LWCA_CA_MISSING                     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 4)
+#define LWCA_CA_ALREADY_EXISTS              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 5)
+#define LWCA_INVALID_CA_DATA                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 6)
+#define LWCA_INVALID_TIME_SPECIFIED         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 7)
+#define LWCA_KEY_CREATION_FAILURE           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 8)
+#define LWCA_CERT_DECODE_FAILURE            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 9)
+#define LWCA_KEY_IO_FAILURE                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 10)
+#define LWCA_CERT_IO_FAILURE                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 11)
+#define LWCA_NOT_CA_CERT                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 12)
+#define LWCA_INVALID_CSR_FIELD              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 13)
+#define LWCA_SELF_SIGNATURE_FAILED          (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 14)
+#define LWCA_INIT_CA_FAILED                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 15)
+#define LWCA_ERROR_INVALID_KEY_LENGTH       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 16)
+#define LWCA_PKCS12_CREAT_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 17)
+#define LWCA_PKCS12_IO_FAIL                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 18)
+#define LWCA_CRL_ERROR                      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 19)
+#define LWCA_NO_NEW_CRL                     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 20)
+#define LWCA_ERROR_READING_CRL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 21)
+#define LWCA_CRL_LOCAL_ERROR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 22)
+#define LWCA_SSL_ADD_EXTENSION              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 23)
+#define LWCA_SSL_REQ_SIGN_ERR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 24)
+#define LWCA_SSL_RAND_ERR                   (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 25)
+#define LWCA_SSL_CERT_SIGN_ERR              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 26)
+#define LWCA_SSL_TIME_ERROR                 (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 27)
+#define LWCA_SSL_EXT_ERR                    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 28)
+#define LWCA_SSL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 29)
+#define LWCA_SSL_SET_ISSUER_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 30)
+#define LWCA_SSL_SET_START_TIME             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 31)
+#define LWCA_SSL_SET_END_TIME               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 32)
+#define LWCA_SSL_SET_EXT_ERR                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 33)
+#define LWCA_CERT_PRIVATE_KEY_MISMATCH      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 34)
+#define LWCA_INVALID_DOMAIN_NAME            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 35)
+#define LWCA_CRL_SET_SERIAL_FAIL            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 36)
+#define LWCA_CRL_SET_TIME_FAIL              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 37)
+#define LWCA_CRL_CERT_ALREADY_REVOKED       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 38)
+#define LWCA_CRLNUMBER_READ_ERROR           (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 39)
+#define LWCA_CRL_SIGN_FAIL                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 40)
+#define LWCA_CRL_REASON_FAIL                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 41)
+#define LWCA_CRL_SORT_FAILED                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 42)
+#define LWCA_CRL_NULL_TIME                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 43)
+#define LWCA_CRL_DECODE_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 44)
+#define LWCA_VPX_RSUTIL_ERROR               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 45)
+#define LWCA_ERROR_INVALID_SN               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 46)
+#define LWCA_ERROR_INVALID_SAN              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 47)
+#define LWCA_ERROR_INVALID_CERTIFICATE      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 48)
+#define LWCA_ERROR_INCOMPLETE_CHAIN         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 49)
+#define LWCA_ERROR_INVALID_CHAIN            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 50)
+#define LWCA_ERROR_CANNOT_FORM_REQUEST      (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 51)
+#define LWCA_KEY_DECODE_FAILURE             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 52)
+#define LWCA_ERROR_CN_HOSTNAME_MISMATCH     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 53)
+#define LWCA_ERROR_SAN_HOSTNAME_MISMATCH    (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 54)
+#define LWCA_ERROR_SAN_IPADDR_INVALID       (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 55)
+#define LWCA_ERROR_EVP_DIGEST               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 56)
+#define LWCA_OPENSSL_ERROR                  (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 57)
+#define LWCA_ERROR_INVALID_DN               (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 58)
+#define LWCA_SSL_STORE_ADD_CERT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 59)
+#define LWCA_SSL_STORE_CTX_INIT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 60)
+#define LWCA_SSL_CERT_VERIFY_ERR            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 61)
 
 // ERRNO to LwCA Codes (80800 - 80899)
 #define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
@@ -186,11 +194,20 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_INVALID_REQUEST          (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 4)
 #define LWCA_ERROR_UNAVAILABLE              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 5)
 
+// Storage Error codes (80600 - 80699)
+#define LWCA_DB_NOT_INITIALIZED             (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 1)
+#define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 2)
+#define LWCA_DB_INVALID_PLUGIN              (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 3)
+
 // Misc. Error Codes (8100 - 8999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
 #define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
 #define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
-#define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 4)
+#define LWCA_JSON_ERROR                     (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 4)
+#define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 5)
+#define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
+#define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
+#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 8)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -200,6 +217,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SUCCESS                      ,   "LWCA_SUCCESS"                      ,   "The request succeded without any errors"}, \
     { LWCA_ROOT_CA_MISSING              ,   "LWCA_ROOT_CA_MISSING"              ,   "The Root CA certificate is missing or failed to Initialize" }, \
     { LWCA_ROOT_CA_ALREADY_EXISTS       ,   "LWCA_ROOT_CA_ALREADY_EXISTS"       ,   "Root CA Certificate is already present, Please use --force if you want to overwrite." }, \
+    { LWCA_CA_MISSING                   ,   "LWCA_CA_MISSING"                   ,   "The CA certificate is missing or failed to Initialize" }, \
+    { LWCA_CA_ALREADY_EXISTS            ,   "LWCA_CA_ALREADY_EXISTS"            ,   "CA Certificate is already present." }, \
+    { LWCA_INVALID_CA_DATA              ,   "LWCA_INVALID_CA_DATA"              ,   "CA data is missing or not initialized." }, \
     { LWCA_INVALID_TIME_SPECIFIED       ,   "LWCA_INVALID_TIME_SPECIFIED"       ,   "Invalid time specified for the Certififcate" }, \
     { LWCA_ERROR_INVALID_PARAMETER      ,   "LWCA_ERROR_INVALID_PARAMETER"      ,   "Invalid parameter presented" }, \
     { LWCA_ERROR_TIME_OUT               ,   "LWCA_ERROR_TIME_OUT"               ,   "Time out occurred before specified Event." }, \
@@ -265,6 +285,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_LDAP_UPN_FAIL                ,   "LWCA_LDAP_UPN_FAIL"                ,   "LDAP call to dn2upn failed." }, \
     { LWCA_ERROR_INVALID_SN             ,   "LWCA_ERROR_INVALID_SN"             ,   "Invalid Subject Name specified" }, \
     { LWCA_ERROR_INVALID_SAN            ,   "LWCA_ERROR_INVALID_SAN"            ,   "Invalid Subject Alternate Name specified." }, \
+    { LWCA_ERROR_INVALID_CERTIFICATE    ,   "LWCA_ERROR_INVALID_CERTIFICATE"    ,   "Certificate is not valid." }, \
     { LWCA_ERROR_INCOMPLETE_CHAIN       ,   "LWCA_ERROR_INCOMPLETE_CERT_CHAIN"  ,   "Certificate Chain is not complete" }, \
     { LWCA_ERROR_INVALID_CHAIN          ,   "LWCA_ERROR_INVALID_CERT_CHAIN"     ,   "Invalid Certificate Chain was gives as input" }, \
     { LWCA_ERROR_CANNOT_FORM_REQUEST    ,   "LWCA_ERROR_CANNOT_FORM_REQUEST"    ,   "Could not create the CSR from the certificate" }, \
@@ -273,6 +294,10 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_SAN_HOSTNAME_MISMATCH  ,   "LWCA_ERROR_SAN_HOSTNAME_MISMATCH"  ,   "CSR SAN does not match to hostname" }, \
     { LWCA_ERROR_SAN_IPADDR_INVALID     ,   "LWCA_ERROR_SAN_IPADDR_INVALID"     ,   "CSR SAN has an invalid ip" }, \
     { LWCA_OPENSSL_ERROR                ,   "LWCA_OPENSSL_ERROR"                ,   "OpenSSL Error" }, \
+    { LWCA_ERROR_INVALID_DN             ,   "LWCA_ERROR_INVALID_DN"             ,   "Invalid DN specified" }, \
+    { LWCA_SSL_STORE_ADD_CERT_FAIL      ,   "LWCA_SSL_STORE_ADD_CERT_FAIL"      ,   "Adding certificate to SSL store failed" }, \
+    { LWCA_SSL_STORE_CTX_INIT_FAIL      ,   "LWCA_SSL_STORE_CTX_INIT_FAIL"      ,   "Init SSL store context failed" }, \
+    { LWCA_SSL_CERT_VERIFY_ERR          ,   "LWCA_SSL_CERT_VERIFY_ERR"          ,   "Unable to verify certficate" }, \
     { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
     { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \
     { LWCA_ERROR_INVALID_METHOD         ,   "LWCA_ERROR_INVALID_METHOD"         ,   "Invalid HTTP method" }, \
@@ -287,6 +312,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
     { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
     { LWCA_POLICY_CONFIG_ERROR          ,   "LWCA_POLICY_CONFIG_ERROR"          ,   "Invalid content in policy config file" }, \
+    { LWCA_DB_NOT_INITIALIZED           ,   "LWCA_DB_NOT_INITIALIZED"           ,   "Db context is not initialized" }, \
+    { LWCA_DB_ALREADY_INITIALIZED       ,   "LWCA_DB_ALREADY_INITIALIZED"       ,   "Db context is already initialized" }, \
+    { LWCA_DB_INVALID_PLUGIN            ,   "LWCA_DB_INVALID_PLUGIN"            ,   "Db plugin is not valid" }, \
     { LWCA_ERROR_ENTRY_NOT_FOUND        ,   "LWCA_ERROR_ENTRY_NOT_FOUND"        ,   "Unable to find requested entry" }, \
     { LWCA_ERROR_INVALID_STATE          ,   "LWCA_ERROR_INVALID_STATE"          ,   "Invalid state of service" }, \
     { LWCA_ERROR_INVALID_ENTRY          ,   "LWCA_ERROR_INVALID_ENTRY"          ,   "Requested entry is invalid" }, \
@@ -327,6 +355,10 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERRNO_EDOM                   ,   "LWCA_ERRNO_EDOM"                   ,   "Math argument out of domain func" }, \
     { LWCA_ERRNO_ERANGE                 ,   "LWCA_ERRNO_ERANGE"                 ,   "Math result not representable" }, \
     { LWCA_UNKNOWN_ERROR                ,   "LWCA_UNKNOWN_ERROR"                ,   "Certificate Server Unknown Error" }, \
+    { LWCA_JSON_ERROR                   ,   "LWCA_JSON_ERROR"                   ,   "Error from jansson api" }, \
+    { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
+    { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
+    { LWCA_OIDC_RESPONSE_ERROR          ,   "LWCA_OIDC_RESPONSE_ERROR"          ,   "Error in the response from OIDC" }, \
 };
 
 #endif //__LWCA_ERROR_H__

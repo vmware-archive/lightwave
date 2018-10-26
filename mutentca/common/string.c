@@ -403,3 +403,10 @@ LwCAStringStartsWith(
     return bStartsWith;
 }
 
+int
+LwCAStringToInt(
+    PCSTR pszStr
+    )
+{
+    return atoi(pszStr);
+}

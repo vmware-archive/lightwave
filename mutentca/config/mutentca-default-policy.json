@@ -1,0 +1,96 @@
+{
+    "CAPolicy": {
+        "SNPolicy": {
+            "AllowedCNs": [
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                }
+            ]
+        },
+        "SANPolicy": {
+            "multiSAN": false,
+            "AllowedSANs": [
+                {
+                    "type": "ip",
+                    "match": "fqdn"
+                },
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                }
+            ]
+        },
+        "KeyUsagePolicy": {
+            "AllowedKeyUsages": 255
+        },
+        "DurationPolicy": {
+            "MaxAllowedDays" : 3650
+        }
+    },
+    "CertificatePolicy": {
+         "SNPolicy": {
+            "AllowedCNs": [
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                }
+            ]
+        },
+        "SANPolicy": {
+            "multiSAN": false,
+            "AllowedSANs": [
+                {
+                    "type": "ip",
+                    "match": "fqdn"
+                },
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                }
+            ]
+        },
+        "KeyUsagePolicy": {
+            "AllowedKeyUsages": 255
+        },
+        "DurationPolicy": {
+            "MaxAllowedDays" : 365
+        }
+    }
+}

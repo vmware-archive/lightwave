@@ -1,5 +1,9 @@
 SUBDIRS = \
     common \
     config \
-    mutentca \
-    plugin
+    plugin \
+    db \
+    policy \
+    api \
+    rest-head \
+    mutentca

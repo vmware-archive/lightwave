@@ -4,6 +4,7 @@ noinst_LTLIBRARIES = libschema.la
 libschema_la_SOURCES = \
     api.c \
     check.c \
+    dn.c \
     globalmutex.c \
     globals.c \
     head.c \

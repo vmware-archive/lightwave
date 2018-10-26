@@ -265,7 +265,6 @@ VmDnsCacheEvictEntryProc(
 
 /* lru.c */
 
-
 DWORD
 VmDnsLruInitialize(
     PVMDNS_ZONE_OBJECT pZoneObject,
@@ -378,6 +377,7 @@ DWORD
 VmDnsZoneCreateFromRecordList(
     PCSTR                   szZoneName,
     PVMDNS_RECORD_LIST      pRecordList,
+    PVMDNS_PROPERTY_LIST    pPropertyList,
     PVMDNS_ZONE_OBJECT      *ppZoneObject
     );
 
@@ -532,6 +532,7 @@ VmDnsGetForwarderAtIndex(
 DWORD
 VmDnsSetForwarders(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
+    PCSTR                       pszZone,
     DWORD                       dwCount,
     PSTR*                       ppszForwarders
     );
@@ -539,13 +540,15 @@ VmDnsSetForwarders(
 DWORD
 VmDnsAddForwarder(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    PCSTR                       pszForwarder
+    PCSTR                       pszForwarder,
+    PCSTR                       pszZone
     );
 
 DWORD
 VmDnsDeleteForwarder(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    PCSTR                       pszForwarder
+    PCSTR                       pszForwarder,
+    PCSTR                       pszZone
     );
 
 DWORD
@@ -565,6 +568,7 @@ VmDnsReleaseForwarderPacketContext(
 
 DWORD
 VmDnsForwardRequest(
+    PVMDNS_FORWARDER_CONTEXT             pForwarderContext,
     PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
     PVM_SOCK_EVENT_QUEUE                 pEventQueue,
     BOOL                                 bUseUDP
@@ -625,12 +629,14 @@ VmDnsLdapGetMemberships(
 
 DWORD
 VmDnsDirLoadForwarders(
+    PCSTR               pszZone,
     PDWORD              pdwCount,
     PSTR*               *pppszForwarders
     );
 
 DWORD
 VmDnsDirSaveForwarders(
+    PCSTR               pszZone,
     DWORD               dwCount,
     PSTR*               ppszForwarders
     );
@@ -668,6 +674,7 @@ VmDnsDirAddZoneRecord(
 
 DWORD
 VmDnsDirCreateZoneRecord(
+    PVMDNS_DIR_CONTEXT  pDirContext,
     PCSTR               pZoneName,
     PVMDNS_RECORD       pRecord
     );
@@ -716,6 +723,13 @@ VmDnsDirSyncNewObjects(
     LPVMDNS_ADD_REMOVE_ZONE_PROC LpSyncZoneProc,
     LPVMDNS_PURGE_RECORD_PROC    LpPurgeRecordProc,
     PVOID                        pData
+    );
+
+DWORD
+VmDnsDirGetRecords(
+    PCSTR               pszZone,
+    PCSTR               pszName,
+    PVMDNS_RECORD_LIST  *ppRecordList
     );
 
 //Store
@@ -776,12 +790,14 @@ VmDnsStoreGetRecords(
 
 DWORD
 VmDnsStoreSaveForwarders(
+    PCSTR               pszZone,
     DWORD               dwCount,
     PSTR*               ppszForwarders
     );
 
 DWORD
 VmDnsStoreGetForwarders(
+    PCSTR               pszZone,
     PDWORD              pdwCount,
     PSTR**              pppszForwarders
     );
@@ -806,6 +822,12 @@ VmDnsStoreSyncNewObjects(
     PVOID                        pData
     );
 
+DWORD
+VmDnsStoreGetProperties(
+    PCSTR                        pszZone,
+    PVMDNS_PROPERTY_LIST         *ppPropertyList
+    );
+
 // dnsprotocol.c
 DWORD
 VmDnsProcessRequest(
@@ -814,7 +836,9 @@ VmDnsProcessRequest(
     PBYTE   *ppDnsResponse,
     PDWORD  pdwDnsResponseSize,
     PUCHAR  pRCode,
-    PBOOL   pbQueryInZone
+    PBOOL   pbQueryInZone,
+    PBOOL   pbUpdateInZone,
+    PVMDNS_MESSAGE *ppDnsMessage
     );
 
 // securityutils.c
@@ -929,6 +953,59 @@ DWORD
 VmDnsRegLoadForwarders(
     PDWORD         pdwCount,
     PSTR**         pppszForwarders
+    );
+
+/* packetlist.c */
+
+DWORD
+VmDnsForwarderPacketEntryCreate(
+    PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderPacketContext,
+    PVM_SOCKET                      pSocket,
+    UINT64                          uiExpirationTime,
+    PVMDNS_FORWARDER_PACKET_ENTRY   *ppForwarderPacketEntry
+    );
+
+PVMDNS_FORWARDER_PACKET_ENTRY
+VmDnsForwarderPacketEntryAcquire(
+    PVMDNS_FORWARDER_PACKET_ENTRY  pForwarderPacketEntry
+    );
+
+VOID
+VmDnsForwarderPacketEntryRelease(
+    PVMDNS_FORWARDER_PACKET_ENTRY   pForwarderPacketEntry
+    );
+
+VOID
+VmDnsForwarderPacketEntryDelete(
+    PVMDNS_FORWARDER_PACKET_ENTRY   pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListInitialize(
+    PVMDNS_FORWARDER_PACKET_LIST* ppForwarderPacketList
+    );
+
+VOID
+VmDnsForwarderPacketListFree(
+    PVMDNS_FORWARDER_PACKET_LIST pForwarderPacketList
+    );
+
+DWORD
+VmDnsForwarderPacketListAddEntry(
+    PVMDNS_FORWARDER_PACKET_LIST  pForwarderPacketList,
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListRemoveEntry(
+    PVMDNS_FORWARDER_PACKET_LIST  pForwarderPacketList,
+    PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry
+    );
+
+DWORD
+VmDnsForwarderPacketListClearEntries(
+    PVMDNS_FORWARDER_PACKET_LIST pForwarderPacketList,
+    DWORD dwCount
     );
 
 // Zone

@@ -40,6 +40,7 @@ typedef struct _VM_SOCK_EVENT_QUEUE
 
     PVM_SOCKET           pSignalReader;
     PVM_SOCKET           pSignalWriter;
+    PVM_SOCKET           pTimerSocket;
 
     VM_SOCK_POSIX_EVENT_STATE state;
 

@@ -124,6 +124,13 @@ VmDirInternalAddEntry(
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN normalization failed - (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
 
+    // Normalize DN with RFC4514
+    pEntry->ldapDN.dn.lberbv_val = pEntry->dn.lberbv_val;
+    pEntry->ldapDN.dn.lberbv_len = pEntry->dn.lberbv_len;
+    retVal = VmDirNormDN(&(pEntry->ldapDN), pEntry->pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DN 4514 normalization failed - (%u)(%s)",
+                                  retVal, VDIR_SAFE_STRING(VmDirSchemaCtxGetErrorMsg(pEntry->pSchemaCtx)) );
+
     // Acquire schema modification mutex
     retVal = VmDirSchemaModMutexAcquire(pOperation);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Failed to lock schema mod mutex", retVal );

@@ -35,7 +35,7 @@ VmDirReplCookieUpdate(
     PVDIR_SCHEMA_CTX                pSchemaCtx,
     USN                             lastUsnProcessed,
     PVMDIR_UTDVECTOR_CACHE          pUtdVector,
-    VMDIR_REPLICATION_AGREEMENT *   replAgr)
+    PVMDIR_REPLICATION_AGREEMENT    pReplAgr)
 {
     int             retVal = LDAP_SUCCESS;
     VDIR_BERVALUE   bvLastLocalUsnProcessed = VDIR_BERVALUE_INIT;
@@ -43,6 +43,14 @@ VmDirReplCookieUpdate(
     PSTR            pszUsn = NULL;
     PSTR            pszUtdVector = NULL;
     PSTR            pszOldUTDVector = NULL;
+
+    if (!pUtdVector || !pReplAgr)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    retVal = VmDirUTDVectorUpdateNew(pUtdVector);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     // Update (both in memory and on disk) lastLocalUsnProcessed in the replication agreement, and the
     // utd vector in the server object.
@@ -59,7 +67,7 @@ VmDirReplCookieUpdate(
     utdVector.lberbv.bv_len = VmDirStringLenA(pszUtdVector);
 
     // if lastLocalUsnProcessed is different
-    if (VmDirStringCompareA(bvLastLocalUsnProcessed.lberbv.bv_val, replAgr->lastLocalUsnProcessed.lberbv.bv_val, TRUE) != 0)
+    if (VmDirStringCompareA(bvLastLocalUsnProcessed.lberbv.bv_val, pReplAgr->lastLocalUsnProcessed.lberbv.bv_val, TRUE) != 0)
     {
         VMDIR_LOG_DEBUG(
                 LDAP_DEBUG_REPL,
@@ -69,7 +77,7 @@ VmDirReplCookieUpdate(
         BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update disk copy of utdVector
-        retVal = _VmDirUpdateServerObject(pSchemaCtx, &utdVector, replAgr);
+        retVal = _VmDirUpdateServerObject(pSchemaCtx, &utdVector, pReplAgr);
         BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of utdVector
@@ -84,12 +92,12 @@ VmDirReplCookieUpdate(
                     pszUtdVector);
 
         // Update disk copy of lastLocalUsnProcessed
-        retVal = _VmDirUpdateReplicationAgreement(pSchemaCtx, replAgr, &bvLastLocalUsnProcessed);
+        retVal = _VmDirUpdateReplicationAgreement(pSchemaCtx, pReplAgr, &bvLastLocalUsnProcessed);
         BAIL_ON_VMDIR_ERROR(retVal);
 
         // Update memory copy of lastLocalUsnProcessed
-        VmDirFreeBervalContent(&replAgr->lastLocalUsnProcessed);
-        if (VmDirBervalContentDup(&bvLastLocalUsnProcessed, &replAgr->lastLocalUsnProcessed) != 0)
+        VmDirFreeBervalContent(&pReplAgr->lastLocalUsnProcessed);
+        if (VmDirBervalContentDup(&bvLastLocalUsnProcessed, &pReplAgr->lastLocalUsnProcessed) != 0)
         {
             VMDIR_LOG_ERROR(
                     VMDIR_LOG_MASK_ALL,
@@ -114,6 +122,7 @@ cleanup:
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s: failed (%u)", __FUNCTION__, retVal);
     goto cleanup;
 }
 

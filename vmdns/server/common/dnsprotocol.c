@@ -30,7 +30,8 @@ VmDnsProcessUpdate(
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage,
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
-    PCHAR pcrCode
+    PCHAR pcrCode,
+    PBOOL pbUpdateInZone
     );
 
 static
@@ -101,18 +102,20 @@ VmDnsProcessRequest(
     PBYTE *ppDnsResponse,
     PDWORD pdwDnsResponseSize,
     PUCHAR pRCode,
-    PBOOL pbQueryInZone
+    PBOOL pbQueryInZone,
+    PBOOL pbUpdateInZone,
+    PVMDNS_MESSAGE *ppDnsMessage
     )
 {
     DWORD dwError = 0;
     PBYTE pDnsResponse = NULL;
     DWORD dwDnsResponseSize = 0;
-    PBYTE pForwarderResponse = NULL;
     PVMDNS_MESSAGE_BUFFER pDnsMessageBuffer = NULL;
     PVMDNS_HEADER pDnsHeader = NULL;
     PVMDNS_MESSAGE pDnsMessage = NULL;
     PVMDNS_UPDATE_MESSAGE pDnsUpdateMessage = NULL;
     BOOL bQueryInZone = FALSE;
+    BOOL bUpdateInZone = FALSE;
     UCHAR rCode = 0;
 
     if (!pDnsRequest || !ppDnsResponse ||
@@ -170,7 +173,8 @@ VmDnsProcessRequest(
                         pDnsUpdateMessage,
                         &pDnsResponse,
                         &dwDnsResponseSize,
-                        &rCode
+                        &rCode,
+                        &bUpdateInZone
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
     }
@@ -183,27 +187,28 @@ cleanup:
     {
         VmDnsFreeBufferStream(pDnsMessageBuffer);
     }
-    if (pDnsMessage)
-    {
-        VmDnsFreeDnsMessage(pDnsMessage);
-    }
     if (pDnsUpdateMessage)
     {
         VmDnsFreeDnsUpdateMessage(pDnsUpdateMessage);
     }
 
-    VMDNS_SAFE_FREE_MEMORY(pForwarderResponse);
     VMDNS_SAFE_FREE_MEMORY(pDnsHeader);
 
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
     *pRCode = rCode;
     *pbQueryInZone = bQueryInZone;
-
+    *pbUpdateInZone = bUpdateInZone;
+    *ppDnsMessage = pDnsMessage;
 
     return dwError;
 
 error:
+    if (pDnsMessage)
+    {
+        VmDnsFreeDnsMessage(pDnsMessage);
+        pDnsMessage = NULL;
+    }
 
     VMDNS_SAFE_FREE_MEMORY(pDnsResponse);
     goto cleanup;
@@ -301,6 +306,14 @@ VmDnsProcessQuery(
             dwError = ERROR_SUCCESS;
             goto response;
         }
+ 
+        if (pZoneObject->zoneId == VMDNS_ZONE_ID_FORWARDER)
+        {
+            bQueryInZone = FALSE;
+            ResponseHeader.codes.RCODE = VM_DNS_RCODE_NAME_ERROR;
+            dwError = ERROR_SUCCESS;
+            goto response;
+        }
 
         bQueryInZone = TRUE;
         dwError = VmDnsSrvQueryRecords(
@@ -339,7 +352,6 @@ VmDnsProcessQuery(
 
         ResponseHeader.codes.RCODE = VM_DNS_RCODE_NOERROR;
     }
-
 
 response:
 
@@ -388,7 +400,8 @@ VmDnsProcessUpdate(
     PVMDNS_UPDATE_MESSAGE   pDnsUpdateMessage,
     PBYTE                   *ppDnsResponse,
     PDWORD                  pdwDnsResponseSize,
-    PCHAR                   pcRCode
+    PCHAR                   pcRCode,
+    PBOOL                   pbUpdateInZone
     )
 {
     DWORD dwError = 0;
@@ -405,6 +418,7 @@ VmDnsProcessUpdate(
     DWORD dwDnsResponseSize = 0;
     UINT64 startTime = 0;
     UINT64 endTime = 0;
+    BOOLEAN bUpdateInZone = FALSE;
 
     startTime = VmDnsGetTimeInMilliSec();
 
@@ -476,6 +490,7 @@ VmDnsProcessUpdate(
             goto response;
         }
     }
+    bUpdateInZone = TRUE;
 
     // Process prerequisite section
     if (dwPRCount > 0 && pDnsUpdateMessage->pPrerequisite)
@@ -561,6 +576,7 @@ response:
 
     *ppDnsResponse = pDnsResponse;
     *pdwDnsResponseSize = dwDnsResponseSize;
+    *pbUpdateInZone = bUpdateInZone;
 
     VmDnsZoneObjectRelease(pZoneObject);
 

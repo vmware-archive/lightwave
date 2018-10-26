@@ -6,6 +6,7 @@ vmcommon_test_SOURCES = \
     histogramtest.c \
     mixedtest.c \
     vmhttpclienttest.c \
+    vmsignaturetest.c \
     vmjsonresulttest.c \
     main.c
 

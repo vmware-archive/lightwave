@@ -40,6 +40,7 @@
 #include <openssl/engine.h>
 #endif
 
+#include <mutentca.h>
 #include <mutentcacommon.h>
 #include <mutentcaerror.h>
 

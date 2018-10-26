@@ -58,6 +58,7 @@ VmDirSetupExtractEventAttributeValueChanges(
     PVDIR_ATTRIBUTE                    pAttr = NULL;
     PVMDIR_REPLICATION_UPDATE          pUpdate = NULL;
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA     pReplMetaData = NULL;
 
     dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pUpdate);
     assert_int_equal(dwError, 0);
@@ -68,6 +69,23 @@ VmDirSetupExtractEventAttributeValueChanges(
     assert_non_null(pUpdate->pEntry);
 
     pUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
+    assert_int_equal(dwError, 0);
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPL_ATTRIBUTE_METADATA), (PVOID*)&pReplMetaData);
+    assert_int_equal(dwError, 0);
+
+    dwError = VmDirAllocateStringA(ATTR_MEMBER, &pReplMetaData->pszAttrType);
+    assert_int_equal(dwError, 0);
+
+    dwError = VmDirMetaDataDeserialize(
+            "100:1:de62357c-e8b1-4532-9c81-91c4f58c3248:20180726170334.296:100",
+            &pReplMetaData->pMetaData);
+    assert_int_equal(dwError, 0);
+
+    dwError = VmDirLinkedListInsertHead(pUpdate->pMetaDataList, (PVOID)pReplMetaData, NULL);
+    assert_int_equal(dwError, 0);
 
     dwError = VmDirLinkedListCreate(&pUpdate->pValueMetaDataList);
     assert_int_equal(dwError, 0);
@@ -188,6 +206,8 @@ VmDirSetupExtractEventPopulateOperationAttributes(
 
     VmDirAllocateAttrAndMetaData(
             ATTR_OBJECT_GUID, "e7f6eae8-9902-4270-91ee-1ab36c898580", 100, 100, 1, pUpdate);
+
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pUpdate);
 
     *state = pUpdate;
 
@@ -442,6 +462,8 @@ VmDirExtractEventPopulateMustAttributes_ValidInput(
     dwError = VmDirLinkedListCreate(&pCombinedUpdate->pMetaDataList);
     assert_int_equal(dwError, 0);
     assert_non_null(pCombinedUpdate->pMetaDataList);
+
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pCombinedUpdate);
 
     pCombinedUpdate->syncState = LDAP_SYNC_ADD;
     pCombinedUpdate->partnerUsn = 100;

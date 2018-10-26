@@ -1,0 +1,3 @@
+# Ignore folders created while running the tests
+bin/
+pkg/

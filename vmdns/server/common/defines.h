@@ -26,6 +26,11 @@ extern "C" {
 
 #define VMW_DNS_DEFAULT_THREAD_COUNT (4)
 
+#define VMW_DNS_FORWARDER_CONNECT_TIMEOUT_MS (2000)
+#define VMW_DNS_FORWARDER_TIMEOUT_MS         (4000)
+#define VMW_DNS_TIMER_EXPIRATION_INITIAL_MS (10000)
+#define VMW_DNS_TIMER_EXPIRATION_INTERVAL_MS (5000)
+
 #define ATTR_KRB_UPN  "userPrincipalName"
 #define ATTR_MEMBEROF "memberOf"
 
@@ -55,11 +60,13 @@ extern "C" {
 #define VMDNS_LDAP_ATTR_FORWARDERS      "vmwDNSForwarders"
 #define VMDNS_LDAP_ATTR_NAME            "name"
 #define VMDNS_LDAP_ATTR_DNS_RECORD      "dnsRecord"
+#define VMDNS_LDAP_ATTR_DNS_PROPERTY    "dnsProperty"
 #define VMDNS_LDAP_ATTR_OBJECTCLASS     "objectclass"
 #define VMDNS_LDAP_ATTR_USNCHANGED      "USNChanged"
 #define VMDNS_LDAP_ATTR_DNSANY          "dns*"
 #define VMDNS_LDAP_ATTR_RUNTIMESTATUS   "vmwServerRunTimeStatus"
 #define VMDNS_LDAP_ATTR_USN             "USN: "
+#define VMDNS_LDAP_ATTR_LAST_KNOWN_DN   "lastKnownDn"
 
 #define VMDNS_LDAP_DELETE_CONTROL       "1.2.840.113556.1.4.417"
 #define VMDNS_LDAP_DELETE_DELIMITER     "#"

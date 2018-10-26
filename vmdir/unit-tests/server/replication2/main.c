@@ -18,6 +18,10 @@ int main(VOID)
 {
     int    retVal = 0;
 
+    retVal = VmDirStringToBervalContent(
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd", &gVmdirServerGlobals.invocationId);
+    assert_int_equal(retVal, 0);
+
     const struct CMUnitTest updatelist_tests[] =
     {
         //updatelist.c
@@ -119,6 +123,7 @@ int main(VOID)
     }
 
 cleanup:
+    VmDirFreeBervalContent(&gVmdirServerGlobals.invocationId);
     return retVal;
 
 error:

@@ -30,6 +30,30 @@ targets:
       - bash run_hmake_sanity.sh
       - bash run_hmake_afd_rest.sh
 
+  # deploy mutentca node on top of basic test env
+  # join the mutentca node to the server
+  # install post and mutentca services on this node
+  deploy_mutentca_test_env:
+    description: deploy mutentca node in existing test env
+    after:
+      - deploy_test_env
+    compose: support/tests/lightwave/docker-compose-mutentca.yml
+
+  # run mutentca tests. use the mutentca test env
+  # gen-mutentca-tests is run to generate the go swagger client
+  test-mutentca:
+    description: run mutentca tests
+    after:
+      - gen-mutentca-tests
+      - deploy_mutentca_test_env
+    always: true
+    image: lightwave_lightwave-client
+    net: lightwave_lightwave
+    env:
+      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
+    cmds:
+      - bash run_hmake_mutentca_tests.sh
+
   deploy_ca_test_env:
     description: deploy infra for ca test
     after:
@@ -47,4 +71,3 @@ targets:
       - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
     cmds:
       - bash run_hmake_ca_tests.sh
-

@@ -34,8 +34,5 @@
 #define LWCA_IS_IP_IN_LOCAL_NETWORK(ip)                                 \
     (LWCA_IS_IP_IN_NETWORK((ip), LWCA_LOCAL_NET, LWCA_NETMASK_8))
 
-typedef enum _LWCA_OPENSSL_NID_TYPES
-{
-    LWCA_OPENSSL_NID_O = 0,
-    LWCA_OPENSSL_NID_CN
-} LWCA_OPENSSL_NID_TYPES;
+#define LWCA_OIDC_PORT 443
+#define LWCA_OIDC_SCOPE "openid offline_access id_groups at_groups rs_post"

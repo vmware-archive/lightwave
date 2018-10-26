@@ -1,0 +1,639 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Lightwave Multi Tenant CA APIs",
+    "description": "List of Lightwave Multi Tenant CA APIs",
+    "version": "v1"
+  },
+  "host": "IPADDRESS_MARKER",
+  "schemes": [
+    "https"
+  ],
+  "basePath": "/v1",
+  "securityDefinitions": {
+    "BearerToken": {
+      "description": "Bearer Token authentication",
+      "type": "apiKey",
+      "name": "authorization",
+      "in": "header"
+    }
+  },
+  "security": [
+    {
+      "BearerToken": []
+    }
+  ],
+  "produces": [
+    "application/json"
+  ],
+  "consumes": [
+    "application/json"
+  ],
+  "tags": [
+    {
+      "name": "rootca"
+    },
+    {
+      "name": "intermediateca"
+    },
+    {
+      "name": "crl"
+    },
+    {
+      "name": "certificates"
+    }
+  ],
+  "paths": {
+    "/mutentca/version": {
+      "get": {
+        "tags": [
+          "rootca"
+        ],
+        "summary": "Certificate authority version",
+        "description": "Returns certificate authority version\n",
+        "operationId": "getCAVersion",
+        "responses": {
+          "200": {
+            "description": "Certificate authority version\n",
+            "schema": {
+              "$ref": "#/definitions/Version"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/root": {
+      "get": {
+        "tags": [
+          "rootca"
+        ],
+        "summary": "Get root ca certificate",
+        "description": "Returns root ca certificate\n",
+        "operationId": "getRootCA",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificate authority details\n",
+            "schema": {
+              "$ref": "#/definitions/CACertificates"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/intermediate": {
+      "post": {
+        "tags": [
+          "intermediateca"
+        ],
+        "summary": "Create intermediate certificate authority",
+        "description": "Creates intermediate certificate authority\n",
+        "operationId": "createIntermediateCA",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IntermediateCACreateSpec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificate authority details\n",
+            "schema": {
+              "$ref": "#/definitions/CACertificates"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/intermediate/{ca-id}": {
+      "get": {
+        "tags": [
+          "intermediateca"
+        ],
+        "summary": "Get intermediate ca certificate",
+        "description": "Returns intermediate ca certificate\n",
+        "operationId": "getIntermediateCA",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Certificate authority details\n",
+            "schema": {
+              "$ref": "#/definitions/CACertificates"
+            }
+          },
+          "404": {
+            "description": "CA not found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "intermediateca"
+        ],
+        "summary": "Revoke intermediate certificate authority ",
+        "description": "Revokes intermediate certificate authority\n",
+        "operationId": "revokeIntermediateCA",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful operation\n"
+          },
+          "404": {
+            "description": "CA not found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/crl": {
+      "get": {
+        "tags": [
+          "crl"
+        ],
+        "summary": "CRL issued by the root certificate authority",
+        "description": "Retrieves CRL issued by the root certificate authority\n",
+        "operationId": "getRootCACRL",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CRL issued by certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/CRL"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/intermediate/{ca-id}/crl": {
+      "get": {
+        "tags": [
+          "crl"
+        ],
+        "summary": "CRL issued by intermediate certificate authority",
+        "description": "Retrieves CRL issued by intermediate certificate authority\n",
+        "operationId": "getIntermediateCACRL",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "CRL issued by certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/CRL"
+            }
+          },
+          "404": {
+            "description": "CA is not found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/certificate": {
+      "post": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Request a signed certificate from root certificate authority",
+        "description": "Returns a signed certificate from root certificate authority\n",
+        "operationId": "addCACertificate",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateSignedCertSpec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed Certificate issued by certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/Certificate"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Revoke certificate issued by the root certificate authority",
+        "description": "Revokes certificate issued by the root certificate authority\n",
+        "operationId": "revokeCACertificate",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Certificate"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Certificate revoked by certificate authority\n"
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/intermediate/{ca-id}/certificate": {
+      "post": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Request a signed certificate from intermediate certificate authority",
+        "description": "Returns a signed certificate from intermediate certificate authority\n",
+        "operationId": "addIntermediateCACertificate",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/CreateSignedCertSpec"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Signed Certificate issued by certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/Certificate"
+            }
+          },
+          "404": {
+            "description": "Certificate authority not found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "certificates"
+        ],
+        "summary": "Revoke certificate issued by the intermediate certificate authority",
+        "description": "Revokes certificate issued by the intermediate certificate authority\n",
+        "operationId": "revokeIntermediateCACertificate",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Certificate"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Certificate revoked by certificate authority\n"
+          },
+          "404": {
+            "description": "Certificate authority is not found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "operation error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "CACertificates": {
+      "type": "object",
+      "properties": {
+        "certs": {
+          "type": "array",
+          "description": "List of CA certificates",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "Certificate": {
+      "type": "object",
+      "properties": {
+        "cert": {
+          "type": "string",
+          "description": "CA signed certificate"
+        }
+      }
+    },
+    "IntermediateCACreateSpec": {
+      "type": "object",
+      "required": [
+        "caId"
+      ],
+      "properties": {
+        "caId": {
+          "type": "string",
+          "description": "Intermediate CA id"
+        },
+        "parentCaId": {
+          "type": "string",
+          "description": "Parent CA id"
+        },
+        "country": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CA Country Names"
+        },
+        "state": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CA State Names"
+        },
+        "locality": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CA Locality Names"
+        },
+        "organizationalUnit": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "description": "CA Organizational Unit Names"
+        },
+        "policy": {
+          "type": "string",
+          "description": "CA Policy"
+        },
+        "validity": {
+          "$ref": "#/definitions/Validity"
+        }
+      },
+      "description": "Certificate Authority Payload"
+    },
+    "CreateSignedCertSpec": {
+      "type": "object",
+      "required": [
+        "csr"
+      ],
+      "properties": {
+        "csr": {
+          "type": "string",
+          "description": "CSR that needs to be signed"
+        },
+        "validity": {
+          "$ref": "#/definitions/Validity"
+        },
+        "signatureAlgorithm": {
+          "type": "string",
+          "enum": ["SHA256"],
+          "description": "Certificate signature algorithm"
+        }
+      }
+    },
+    "Validity": {
+      "type": "object",
+      "properties": {
+        "startTime": {
+          "type": "string",
+          "description": "Beginning time"
+        },
+        "endTime": {
+          "type": "string",
+          "description": "End time"
+        }
+      }
+    },
+    "CRL": {
+      "type": "object",
+      "properties": {
+        "crl": {
+          "type": "string",
+          "description": "Certificate Revocation List"
+        }
+      }
+    },
+    "Version": {
+      "type": "object",
+      "properties": {
+        "version": {
+          "type": "string",
+          "description": "version"
+        }
+      }
+    },
+    "ApiError": {
+      "type": "object",
+      "required": [
+        "errorCode",
+        "message"
+      ],
+      "properties": {
+        "code": {
+          "type": "string",
+          "description": "Deprecated: This property contains a short, one-word textual representation\n of the error. E.g. QuotaError, DiskNotFound, InvalidJson, TooManyRequests,\n etc.\n"
+        },
+        "errorCode": {
+          "type": "integer",
+          "format": "int32",
+          "description": "This property contains the numerical error code.\n"
+        },
+        "message": {
+          "type": "string",
+          "description": "This property provides a terse description of the error.\n"
+        },
+        "requestId": {
+          "type": "string",
+          "description": "This property provides the requestId associated with the error.\n"
+        },
+        "detail": {
+          "type": "string",
+          "description": "This property provides a detailed description of the error.\n"
+        }
+      },
+      "description": "This class captures a single error that occurred while processing\n an API request. The ApiError structure is embedded in a Task and is also the\n entity returned on all 4xx class API errors. In the 4xx case, ApiError is\n the entity returned along with the 4xx response code. The ApiError structure\n also occurs within Task when that task completes with an error. E.g., a Vm\n creation that fails during provisioning. In this case, the VM creation returns\n a 201 created indicating that it has successfully accepted the request. When\n an error occurs after this stage, the error is captured into the task.\n"
+    }
+  }
+}

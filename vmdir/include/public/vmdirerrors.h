@@ -61,6 +61,7 @@
 #define VMDIR_ERROR_FILE_READ                         (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 11 )     // 9011
 #define VMDIR_ERROR_PATH_EXISTS                       (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 12 )     // 9012
 #define VMDIR_ERROR_INVALID_PATH                      (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 13 )     // 9013
+#define VMDIR_ERROR_INVALID_MEMORY                    (VMDIR_ERROR_BASE + VMDIR_SYSTEM_ERROR_BASE + 14 )     // 9014
 
 // generic error 9100~9599
 #define IS_VMDIR_GENERIC_ERROR_SPACE(n) \
@@ -196,6 +197,7 @@
 #define VMDIR_ERROR_SCHEMA_BAD_METADATA               (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 22 )  // 9622
 #define VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE             (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 23 )  // 9623
 #define VMDIR_ERROR_SCHEMA_UPDATE_PASSTHROUGH         (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 24 )  // 9624
+#define VMDIR_ERROR_INVALID_NORMALIZATION             (VMDIR_ERROR_BASE + VMDIR_SCHEMA_ERROR_BASE + 25 )  // 9625
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // generic backend error (range 9700 - 9799)
@@ -213,6 +215,7 @@
 #define VMDIR_ERROR_BACKEND_OPERATIONS                (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 7 )  // 9707
 #define VMDIR_ERROR_BACKEND_ATTR_META_DATA_NOTFOUND   (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 8 )  // 9708
 #define VMDIR_ERROR_BACKEND_INVALID_METADATA          (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 9 )  // 9709
+#define VMDIR_ERROR_BACKEND_RECORD_NOTFOUND           (VMDIR_ERROR_BASE + VMDIR_BACKEND_ERROR_BASE + 10 ) // 9710
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // REST server error (range 9900 - 9999)

@@ -104,6 +104,7 @@ ReplAddEntry(
     retVal = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_ADD, NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    VMDIR_SAFE_FREE_MEMORY(op.request.addReq.pEntry);
     pEntry = op.request.addReq.pEntry = pUpdate->pEntry;
     pUpdate->pEntry = NULL;
 
@@ -941,7 +942,8 @@ _VmDirLogReplEntryContent(
     {
         for (iCnt=0; iCnt < pAttr->numVals; iCnt++)
         {
-            PCSTR pszLogValue = (0 == VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pAttr->type.lberbv.bv_val) ||
+                                 (pAttr->pATDesc && pAttr->pATDesc->bBlobType)) ?
                                   "XXX" : pAttr->vals[iCnt].lberbv_val;
 
             if (iCnt < MAX_NUM_CONTENT_LOG)
@@ -1024,7 +1026,8 @@ _VmDirLogReplModifyModContent(
     {
         for (iCnt=0; iCnt < pMod->attr.numVals; iCnt++)
         {
-            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val)) ?
+            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val) ||
+                                 (pMod->attr.pATDesc && pMod->attr.pATDesc->bBlobType)) ?
                                   "XXX" : pMod->attr.vals[iCnt].lberbv_val;
 
             if (iCnt < MAX_NUM_CONTENT_LOG)

@@ -1,0 +1,18 @@
+---
+format: hypermake.v0
+
+name: lightwave_mutentca_tests
+description: Lightwave Multi Tenant CA Tests
+
+targets:
+  gen-mutentca-tests:
+    description: Generate Go API client for mutentca integration tests
+    after:
+      - toolchain-photon2
+    watches:
+      - $HMAKE_PROJECT_DIR/mutentca/config/mutentca-rest.json
+      - $HMAKE_PROJECT_DIR/support/scripts/codegen.sh
+    cmds:
+      - export GOPATH="$(pwd)/go"
+      - $HMAKE_PROJECT_DIR/support/scripts/codegen.sh client api $HMAKE_PROJECT_DIR/mutentca/config/mutentca-rest.json
+    image: 'vmware/lightwave-toolchain-photon2:1.0.2'

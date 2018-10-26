@@ -26,12 +26,6 @@
 #include "includes.h"
 
 static
-VOID
-_VmDirReplicationUpdateTombStoneEntrySyncState(
-    PVMDIR_REPLICATION_UPDATE   pUpdate
-    );
-
-static
 int
 _VmDirMergeSortCompareINT64Descending(
     const PVOID    pInt1,
@@ -128,8 +122,6 @@ VmDirReplUpdateApply(
         BAIL_ON_SIMPLE_LDAP_ERROR(errVal);
     }
 
-    _VmDirReplicationUpdateTombStoneEntrySyncState(pReplUpdate);
-
     entryState = pReplUpdate->syncState;
 
     if (entryState == LDAP_SYNC_ADD)
@@ -177,12 +169,10 @@ VmDirReplUpdateToUSNList(
     PVDIR_LINKED_LIST*          ppUSNList
     )
 {
-    USN*                               pLocalUSN = NULL;
     DWORD                              dwError = 0;
     PLW_HASHMAP                        pUSNMap = NULL;
     LW_HASHMAP_ITER                    iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR                    pair = {NULL, NULL};
-    LW_HASHMAP_PAIR                    prevPair = {NULL, NULL};
     PVDIR_LINKED_LIST                  pUSNList = NULL;
     PVDIR_LINKED_LIST_NODE             pNode = NULL;
     PVMDIR_REPL_ATTRIBUTE_METADATA     pReplMetaData = NULL;
@@ -195,8 +185,8 @@ VmDirReplUpdateToUSNList(
 
     dwError = LwRtlCreateHashMap(
             &pUSNMap,
-            LwRtlHashDigestPstrCaseless,
-            LwRtlHashEqualPstrCaseless,
+            LwRtlHashDigestPointer,
+            LwRtlHashEqualPointer,
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -214,16 +204,9 @@ VmDirReplUpdateToUSNList(
             continue;
         }
 
-        dwError = VmDirAllocateMemory(sizeof(USN), (PVOID*)&pLocalUSN);
+        dwError = LwRtlHashMapInsert(
+                pUSNMap, (PVOID)(uintptr_t) pReplMetaData->pMetaData->localUsn, NULL, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        *pLocalUSN = pReplMetaData->pMetaData->localUsn;
-
-        dwError = LwRtlHashMapInsert(pUSNMap, (PVOID)pLocalUSN, NULL, &prevPair);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pLocalUSN = NULL;
-
-        VmDirSimpleHashMapPairFreeKeyOnly(&prevPair, NULL);
 
         pNode = pNode->pNext;
     }
@@ -238,16 +221,9 @@ VmDirReplUpdateToUSNList(
     {
         pValueMetaData = (PVMDIR_VALUE_ATTRIBUTE_METADATA) pNode->pElement;
 
-        dwError = VmDirAllocateMemory(sizeof(USN), (PVOID*)&pLocalUSN);
+        dwError = LwRtlHashMapInsert(
+                pUSNMap, (PVOID)(uintptr_t) pValueMetaData->localUsn, NULL, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        *pLocalUSN = pValueMetaData->localUsn;
-
-        dwError = LwRtlHashMapInsert(pUSNMap, (PVOID) pLocalUSN, NULL, &prevPair);
-        BAIL_ON_VMDIR_ERROR(dwError);
-        pLocalUSN = NULL;
-
-        VmDirSimpleHashMapPairFreeKeyOnly(&prevPair, NULL);
 
         pNode = pNode->pNext;
     }
@@ -258,9 +234,7 @@ VmDirReplUpdateToUSNList(
 
     while (LwRtlHashMapIterate(pUSNMap, &iter, &pair))
     {
-        pLocalUSN = (USN*)pair.pKey;
-
-        dwError = VmDirLinkedListInsertHead(pUSNList, (PVOID)*pLocalUSN, NULL);
+        dwError = VmDirLinkedListInsertHead(pUSNList, (PVOID)pair.pKey, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
@@ -274,7 +248,7 @@ cleanup:
     {
         LwRtlHashMapClear(
                 pUSNMap,
-                VmDirSimpleHashMapPairFreeKeyOnly,
+                VmDirNoopHashMapPairFree,
                 NULL);
         LwRtlFreeHashMap(&pUSNMap);
     }
@@ -498,10 +472,10 @@ VmDirReplUpdateExtractEvent(
     dwError = VmDirExtractEventAttributeValueChanges(pCombinedUpdate, usn, pIndividualUpdate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirExtractEventPopulateMustAttributes(pIndividualUpdate, pCombinedUpdate);
+    dwError = VmDirExtractEventPopulateOperationAttributes(pCombinedUpdate, pIndividualUpdate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirExtractEventPopulateOperationAttributes(pCombinedUpdate, pIndividualUpdate);
+    dwError = VmDirExtractEventPopulateMustAttributes(pIndividualUpdate, pCombinedUpdate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppIndividualUpdate = pIndividualUpdate;
@@ -534,63 +508,4 @@ VmDirSortedLinkedListInsertCompareReplUpdate(
     }
 
     return bResult;
-}
-
-static
-VOID
-_VmDirReplicationUpdateTombStoneEntrySyncState(
-    PVMDIR_REPLICATION_UPDATE pUpdate
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszObjectGuid = NULL;
-    PSTR                pszTempString = NULL;
-    PSTR                pszContext = NULL;
-    PSTR                pszDupDn = NULL;
-    VDIR_ENTRY_ARRAY    entryArray = {0};
-    VDIR_BERVALUE       bvParentDn = VDIR_BERVALUE_INIT;
-
-    dwError = VmDirGetParentDN(&pUpdate->pEntry->dn, &bvParentDn);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (VmDirIsDeletedContainer(bvParentDn.lberbv_val) &&
-        pUpdate->syncState == LDAP_SYNC_ADD)
-    {
-        dwError = VmDirAllocateStringOfLenA(pUpdate->pEntry->dn.lberbv_val,
-                                            pUpdate->pEntry->dn.lberbv_len,
-                                            &pszDupDn);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        // Tombstone DN format: cn=<cn value>#objectGUID:<objectguid value>,<DeletedObjectsContainer>
-        pszTempString = VmDirStringStrA(pszDupDn, "#objectGUID:");
-        pszObjectGuid = VmDirStringTokA(pszTempString, ",", &pszContext);
-        pszObjectGuid = pszObjectGuid + VmDirStringLenA("#objectGUID:");
-
-        dwError = VmDirSimpleEqualFilterInternalSearch("", LDAP_SCOPE_SUBTREE, ATTR_OBJECT_GUID, pszObjectGuid, &entryArray);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (entryArray.iSize == 1)
-        {
-            pUpdate->syncState = LDAP_SYNC_DELETE;
-            VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                "%s: (tombstone handling) change sync state to delete: (%s)",
-                __FUNCTION__,
-                pUpdate->pEntry->dn.lberbv_val);
-        }
-    }
-
-cleanup:
-    VmDirFreeBervalContent(&bvParentDn);
-    VMDIR_SAFE_FREE_MEMORY(pszDupDn);
-    VmDirFreeEntryArrayContent(&entryArray);
-    return;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s: error = (%d)",
-            __FUNCTION__,
-            dwError);
-    goto cleanup;
 }

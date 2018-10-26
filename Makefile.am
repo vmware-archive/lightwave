@@ -23,6 +23,10 @@ SUBDIRS = \
         vmidentity \
         config
 
+if ENABLE_PLUGINS
+SUBDIRS+=plugins
+endif
+
 PACKAGES=\
     $(LIGHTWAVE_STAGE_DIR)/$(ARCH)/$(LIGHTWAVE_RPM) \
     $(LIGHTWAVE_STAGE_DIR)/$(ARCH)/$(LIGHTWAVE_CLIENT_RPM)

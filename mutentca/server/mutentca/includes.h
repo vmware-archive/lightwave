@@ -44,6 +44,8 @@ extern "C" {
 
 #include <gssapi/gssapi.h>
 
+#include <mutentca.h>
+#include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaconfig.h>
@@ -52,7 +54,6 @@ extern "C" {
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
-#include "externs.h"
 
 #include <stdio.h>
 #include <stdlib.h>

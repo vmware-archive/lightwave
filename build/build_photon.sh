@@ -10,16 +10,7 @@ else
 fi
 
 if [[ $ARG == "" || $ARG == "--with-ui" ]]; then
-  autoreconf -vif .. \
-  && \
-  ../configure \
-    CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
-    LDFLAGS="-ldl -pie -fPIE" \
-    --prefix=/opt/vmware \
-    --enable-debug=yes \
-    --libdir=/opt/vmware/lib64 \
-    --localstatedir=/var/lib/vmware \
-    --with-config=./config \
+ ./bootstrap.sh \
   && \
  make \
   && \
