@@ -255,7 +255,6 @@ LwCARestOperationProcessRequest(
 {
     DWORD                   dwError = 0;
     BOOLEAN                 bAuthenticated = FALSE;
-    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
 
     if (!pRestOp)
     {
@@ -263,14 +262,13 @@ LwCARestOperationProcessRequest(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCARestAuth(pRestOp, &pReqCtx, &bAuthenticated);
+    dwError = LwCARestAuth(pRestOp, &pRestOp->pReqCtx, &bAuthenticated);
     BAIL_ON_LWCA_ERROR(dwError);
     if (!bAuthenticated)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_REST_UNAUTHENTICATED);
     }
 
-    // TODO: Modify REST APIs to take request context (pReqCtx) as parameter
     if (LwCAStringCompareA(pRestOp->pszMethod, LWCA_HTTP_METHOD_OPTIONS, FALSE) != 0)
     {
         dwError = coapi_find_handler(
@@ -292,8 +290,6 @@ LwCARestOperationProcessRequest(
 
 
 cleanup:
-
-    LwCARequestContextFree(pReqCtx);
 
     return dwError;
 
@@ -438,6 +434,9 @@ LwCAFreeRESTOperation(
         LwRtlHashMapClear(pRestOp->pParamMap, VmSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         LwCAFreeRESTResult(pRestOp->pResult);
+
+        LwCARequestContextFree(pRestOp->pReqCtx);
+
         LWCA_SAFE_FREE_MEMORY(pRestOp);
     }
 }

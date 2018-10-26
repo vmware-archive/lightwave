@@ -54,7 +54,6 @@ LwCARestCreateIntermediateCA(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PLWCA_REST_INT_CA_SPEC  pIntCASpec      = NULL;
-    PSTR                    pszDummyValue   = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
 
     if (!pIn)
@@ -71,13 +70,14 @@ LwCARestCreateIntermediateCA(
     dwError = LwCARestGetIntCAInputSpec(pRestOp->pjBody, &pIntCASpec);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Create Intermediate CA (Implementation) and set the ca cert below
-
-    // Setting dummy data below
-    dwError = LwCAAllocateStringA(LWCA_NOT_IMPLEMENTED_VALUE, &pszDummyValue);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACreateCertArray(&pszDummyValue, 1, &pCACerts);
+    dwError = LwCACreateIntermediateCA(
+                            pRestOp->pReqCtx,
+                            pIntCASpec->pszCAId,
+                            pIntCASpec->pszParentCAId,
+                            pIntCASpec->pIntCAReqData,
+                            pIntCASpec->pCertValidity,
+                            &pCACerts
+                            );
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(
@@ -90,7 +90,6 @@ cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeIntCAInputSpec(pIntCASpec);
-    LWCA_SAFE_FREE_STRINGA(pszDummyValue);
     LwCAFreeCertificates(pCACerts);
 
     return dwError;
@@ -117,7 +116,6 @@ LwCARestGetIntermediateCACert(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PSTR                    pszCAId         = NULL;
-    PSTR                    pszDummyValue   = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
 
     if (!pIn)
@@ -134,13 +132,7 @@ LwCARestGetIntermediateCACert(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Get Intermediate CA Cert (Implementation) and set it in the result below
-
-    // Setting dummy data below
-    dwError = LwCAAllocateStringA(LWCA_NOT_IMPLEMENTED_VALUE, &pszDummyValue);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACreateCertArray(&pszDummyValue, 1, &pCACerts);
+    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(
@@ -153,7 +145,6 @@ cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
-    LWCA_SAFE_FREE_STRINGA(pszDummyValue);
     LwCAFreeCertificates(pCACerts);
 
     return dwError;
@@ -195,7 +186,8 @@ LwCARestRevokeIntermediateCA(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Revoke Intermediate CA Cert (Implementation)
+    dwError = LwCARevokeIntermediateCA(pRestOp->pReqCtx, pszCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);

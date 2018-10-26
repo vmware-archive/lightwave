@@ -93,7 +93,6 @@ LwCARestGetRootCACert(
     DWORD                   dwError         = 0;
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
-    PSTR                    pszDummyValue   = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
 
     if (!pIn)
@@ -107,13 +106,7 @@ LwCARestGetRootCACert(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Get Root CA Cert (Implementation) and set it in the result below
-
-    // Setting dummy data below
-    dwError = LwCAAllocateStringA(LWCA_NOT_IMPLEMENTED_VALUE, &pszDummyValue);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACreateCertArray(&pszDummyValue, 1, &pCACerts);
+    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, LWCA_ROOT_CA_ID, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(
@@ -125,7 +118,6 @@ LwCARestGetRootCACert(
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
-    LWCA_SAFE_FREE_STRINGA(pszDummyValue);
     LwCAFreeCertificates(pCACerts);
 
     return dwError;
