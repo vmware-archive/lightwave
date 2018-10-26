@@ -123,6 +123,24 @@ typedef enum
     LWCA_SECURITY_MESSAGE_DIGEST_SHA512
 }LWCA_SECURITY_MESSAGE_DIGEST;
 
+typedef enum
+{
+    LWCA_SECURITY_SIGN_CERT,
+    LWCA_SECURITY_SIGN_REQ,
+    LWCA_SECURITY_SIGN_CRL
+}LWCA_SECURITY_SIGN_TYPE;
+
+typedef struct _LWCA_SECURITY_SIGN_DATA_
+{
+    union
+    {
+        X509     *pX509Cert;
+        X509_REQ *pX509Req;
+        X509_CRL *pX509Crl;
+    }signData;
+    LWCA_SECURITY_SIGN_TYPE signType;
+}LWCA_SECURITY_SIGN_DATA, *PLWCA_SECURITY_SIGN_DATA;
+
 /* capability helper macros */
 #define LWCA_SECURITY_CAP_HAS_CRYPT(cap) \
         ((cap & LWCA_SECURITY_CAP_CRYPT) == LWCA_SECURITY_CAP_CRYPT)
@@ -199,7 +217,6 @@ typedef DWORD
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,     /* capability overrides can use this for context */
     PCSTR pszKeyId,      /* user supplied id to refer to this key */
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     size_t nKeyLength,   /* key length 1024 to 16384 */
     PSTR *ppszPublicKey  /* out: pem encoded public key */
     );
@@ -212,34 +229,30 @@ typedef DWORD
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,     /* capability overrides can use this for context */
     PCSTR pszKeyId,      /* user supplied id to refer to this key */
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
     PCSTR pszPrivateKey  /* pem encoded private key */
     );
 
 /*
- * Sign certificate with key specified by keyid
+ * Sign X509 cert, request of crl  with key specified by keyid
 */
 typedef DWORD
-(*PFN_LWCA_SECURITY_SIGN_CERTIFICATE)(
+(*PFN_LWCA_SECURITY_SIGN)(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,     /* capability overrides can use this for context */
-    X509 *pX509Certificate,
-    LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
-    PSTR *ppszCertificate
+    PLWCA_SECURITY_SIGN_DATA pSignData,
+    LWCA_SECURITY_MESSAGE_DIGEST md
     );
 
 /*
- * Verify certificate
+ * Verify X509 cert, request of crl  with key specified by keyid
 */
 typedef DWORD
-(*PFN_LWCA_SECURITY_VERIFY_CERTIFICATE)(
+(*PFN_LWCA_SECURITY_VERIFY)(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,     /* capability overrides can use this for context */
-    PCSTR pszCertificate,
-    PCSTR pKeyId,
-    PCSTR pszPassPhrase, /* optional pass phrase to access key */
+    PCSTR pszKeyId,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     BOOLEAN *pbValid
     );
 
@@ -286,15 +299,14 @@ typedef DWORD
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_SIGN)(
     PVOID pUserData,
-    X509 *pX509Certificate,
     PLWCA_BINARY_DATA pKey,
-    PSTR *ppszCertificate
+    PLWCA_SECURITY_SIGN_DATA pSignData
     );
 
 typedef DWORD
 (*PFN_LWCA_SECURITY_CAP_SIGN_VERIFY_VERIFY)(
     PVOID pUserData,
-    PCSTR pszCertificate,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     PLWCA_BINARY_DATA pKey,
     BOOLEAN **ppbValid
     );
@@ -323,8 +335,8 @@ typedef struct _LWCA_SECURITY_INTERFACE_
     PFN_LWCA_SECURITY_CAP_OVERRIDE        pFnCapOverride;
     PFN_LWCA_SECURITY_ADD_KEY_PAIR        pFnAddKeyPair;
     PFN_LWCA_SECURITY_CREATE_KEY_PAIR     pFnCreateKeyPair;
-    PFN_LWCA_SECURITY_SIGN_CERTIFICATE    pFnSignCertificate;
-    PFN_LWCA_SECURITY_VERIFY_CERTIFICATE  pFnVerifyCertificate;
+    PFN_LWCA_SECURITY_SIGN                pFnSign;
+    PFN_LWCA_SECURITY_VERIFY              pFnVerify;
     PFN_LWCA_SECURITY_GET_ERROR_STRING    pFnGetErrorString;
     PFN_LWCA_SECURITY_CLOSE_HANDLE        pFnCloseHandle;
     PFN_LWCA_SECURITY_FREE_MEMORY         pFnFreeMemory;

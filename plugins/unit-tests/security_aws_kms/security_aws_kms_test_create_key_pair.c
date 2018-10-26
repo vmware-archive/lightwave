@@ -102,14 +102,12 @@ Security_Aws_Kms_Tests_Create_Key_Pair (
     PSECURITY_AWS_KMS_TEST_STATE pState = *state;
     PCSTR pszKeyId = "key1";
     PSTR pszPublicKey = NULL;
-    X509 *pX509 = NULL;
-    PSTR pszCertificate = NULL;
+    LWCA_SECURITY_SIGN_DATA stSignData = {0};
 
     dwError = pState->pInterface->pFnCreateKeyPair(
                   pState->pHandle,
                   NULL,
                   pszKeyId,
-                  NULL,
                   2048,
                   &pszPublicKey);
     if (dwError)
@@ -118,15 +116,15 @@ Security_Aws_Kms_Tests_Create_Key_Pair (
         goto error;
     }
 
+    stSignData.signType = LWCA_SECURITY_SIGN_CERT;
+    stSignData.signData.pX509Cert = NULL;
     /* TODO: supply pX509. this will fail validation for pX509 now */
-    dwError = pState->pInterface->pFnSignCertificate(
+    dwError = pState->pInterface->pFnSign(
                   pState->pHandle,
                   NULL,
-                  pX509,
-                  LWCA_SECURITY_MESSAGE_DIGEST_SHA256,
                   pszKeyId,
-                  NULL,
-                  &pszCertificate);
+                  &stSignData,
+                  LWCA_SECURITY_MESSAGE_DIGEST_SHA256);
     if (dwError)
     {
         fail_msg("Error: %d @ %s\n", dwError, __FUNCTION__);

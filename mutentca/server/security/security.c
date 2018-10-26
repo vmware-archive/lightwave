@@ -26,8 +26,8 @@ IsValidInterface(
             pInterface->pFnCapOverride &&
             pInterface->pFnAddKeyPair &&
             pInterface->pFnCreateKeyPair &&
-            pInterface->pFnSignCertificate &&
-            pInterface->pFnVerifyCertificate &&
+            pInterface->pFnSign &&
+            pInterface->pFnVerify &&
             pInterface->pFnGetErrorString &&
             pInterface->pFnCloseHandle &&
             pInterface->pFnFreeMemory);

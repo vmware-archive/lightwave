@@ -28,8 +28,8 @@ Security_Aws_Kms_Tests_Validate_Interface(
     assert_non_null(pState->pInterface->pFnCapOverride);
     assert_non_null(pState->pInterface->pFnAddKeyPair);
     assert_non_null(pState->pInterface->pFnCreateKeyPair);
-    assert_non_null(pState->pInterface->pFnSignCertificate);
-    assert_non_null(pState->pInterface->pFnVerifyCertificate);
+    assert_non_null(pState->pInterface->pFnSign);
+    assert_non_null(pState->pInterface->pFnVerify);
     assert_non_null(pState->pInterface->pFnGetErrorString);
     assert_non_null(pState->pInterface->pFnCloseHandle);
     assert_non_null(pState->pInterface->pFnFreeMemory);
@@ -49,8 +49,8 @@ Security_Aws_Kms_Tests_Validate_Interface_Cleared(
     assert_null(pState->pInterface->pFnCapOverride);
     assert_null(pState->pInterface->pFnAddKeyPair);
     assert_null(pState->pInterface->pFnCreateKeyPair);
-    assert_null(pState->pInterface->pFnSignCertificate);
-    assert_null(pState->pInterface->pFnVerifyCertificate);
+    assert_null(pState->pInterface->pFnSign);
+    assert_null(pState->pInterface->pFnVerify);
     assert_null(pState->pInterface->pFnGetErrorString);
     assert_null(pState->pInterface->pFnCloseHandle);
     assert_null(pState->pInterface->pFnFreeMemory);

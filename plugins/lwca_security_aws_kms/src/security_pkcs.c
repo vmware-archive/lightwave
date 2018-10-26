@@ -237,7 +237,6 @@ error:
 
 DWORD
 LwCreateKeyPair(
-    PCSTR pszPassPhrase, /* optional */
     size_t nKeyLength,
     PSTR *ppszPrivateKey,
     PSTR *ppszPublicKey
@@ -339,7 +338,7 @@ error:
 
 DWORD
 LwX509Sign(
-    X509 *pX509,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     PLWCA_BINARY_DATA pKeyData,
     LWCA_SECURITY_MESSAGE_DIGEST md
     )
@@ -347,6 +346,12 @@ LwX509Sign(
     DWORD dwError = 0;
     EVP_PKEY *pPrivateKey = NULL;
     const EVP_MD *pmd = NULL;
+
+    if (!pSignData || !pKeyData)
+    {
+        dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
     switch(md)
     {
@@ -364,10 +369,32 @@ LwX509Sign(
     dwError = _MakePrivateKeyFromPEM(pKeyData, &pPrivateKey);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    if (!X509_sign(pX509, pPrivateKey, pmd))
+    switch(pSignData->signType)
     {
-        dwError = LWCA_SECURITY_AWS_KMS_SIGN_FAILED;
-        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+        case LWCA_SECURITY_SIGN_CERT:
+            if (!X509_sign(pSignData->signData.pX509Cert, pPrivateKey, pmd))
+            {
+                dwError = LWCA_SECURITY_AWS_KMS_SIGN_FAILED;
+                BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+            }
+            break;
+        case LWCA_SECURITY_SIGN_REQ:
+            if (!X509_REQ_sign(pSignData->signData.pX509Req, pPrivateKey, pmd))
+            {
+                dwError = LWCA_SECURITY_AWS_KMS_SIGN_FAILED;
+                BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+            }
+            break;
+        case LWCA_SECURITY_SIGN_CRL:
+            if (!X509_CRL_sign(pSignData->signData.pX509Crl, pPrivateKey, pmd))
+            {
+                dwError = LWCA_SECURITY_AWS_KMS_SIGN_FAILED;
+                BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+            }
+            break;
+        default:
+            dwError = LWCA_SECURITY_AWS_KMS_INVALID_SIGN_TYPE;
+            BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
 
 error:
@@ -378,46 +405,9 @@ error:
     return dwError;
 }
 
-static
-DWORD
-_MakeX509FromPEM(
-    PCSTR pszCertificate,
-    X509 **ppX509
-    )
-{
-    DWORD dwError = 0;
-    BIO *pBioMem = NULL;
-    X509 *pX509 = NULL;
-
-    pBioMem = BIO_new_mem_buf(pszCertificate, -1);
-    if (pBioMem == NULL)
-    {
-        dwError = LWCA_SECURITY_AWS_KMS_NOMEM;
-        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
-    }
-
-    pX509 = PEM_read_bio_X509(pBioMem, NULL, NULL, NULL);
-    if (pX509 == NULL)
-    {
-        dwError = LWCA_SECURITY_AWS_KMS_READ_PEM_ERROR;
-        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
-    }
-
-    *ppX509 = pX509;
-
-cleanup:
-    if(pBioMem)
-    {
-        BIO_free(pBioMem);
-    }
-    return dwError;
-error:
-    goto cleanup;
-}
-
 DWORD
 LwX509Verify(
-    PCSTR pszCertificate,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     PLWCA_BINARY_DATA pKeyData,
     PBOOLEAN pbValid
     )
@@ -425,15 +415,37 @@ LwX509Verify(
     DWORD dwError = 0;
     int nVerifyResult = -1;
     EVP_PKEY *pPrivateKey = NULL;
-    X509 *pX509 = NULL;
 
-    dwError = _MakeX509FromPEM(pszCertificate, &pX509);
-    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    if (!pSignData || !pKeyData)
+    {
+        dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
     dwError = _MakePrivateKeyFromPEM(pKeyData, &pPrivateKey);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    nVerifyResult = X509_verify(pX509, pPrivateKey);
+    switch(pSignData->signType)
+    {
+        case LWCA_SECURITY_SIGN_CERT:
+            nVerifyResult = X509_verify(
+                                pSignData->signData.pX509Cert,
+                                pPrivateKey);
+            break;
+        case LWCA_SECURITY_SIGN_REQ:
+            nVerifyResult = X509_REQ_verify(
+                                pSignData->signData.pX509Req,
+                                pPrivateKey);
+            break;
+        case LWCA_SECURITY_SIGN_CRL:
+            nVerifyResult = X509_CRL_verify(
+                                pSignData->signData.pX509Crl,
+                                pPrivateKey);
+            break;
+        default:
+            dwError = LWCA_SECURITY_AWS_KMS_INVALID_SIGN_TYPE;
+            BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
     if (nVerifyResult < 0)
     {
         dwError = LWCA_SECURITY_AWS_KMS_VERIFY_FAILED;
@@ -443,10 +455,6 @@ LwX509Verify(
     *pbValid = nVerifyResult ? TRUE : FALSE;
 
 cleanup:
-    if (pX509)
-    {
-        X509_free(pX509);
-    }
     if (pPrivateKey)
     {
         EVP_PKEY_free(pPrivateKey);
