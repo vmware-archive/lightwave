@@ -31,12 +31,11 @@ testmutentcaapi_LDFLAGS = \
     -Wl,--wrap,LwCADbCheckCA \
     -Wl,--wrap,LwCADbGetCACertificates \
     -Wl,--wrap,LwCADbGetCA \
-    -Wl,--wrap,LwCAKmCreateKeyPair \
-    -Wl,--wrap,LwCAKmGetPublickey \
-    -Wl,--wrap,LwCAKmGetEncryptedKey \
-    -Wl,--wrap,LwCAKmSignX509Cert \
-    -Wl,--wrap,LwCAKmSignX509Request \
-    -Wl,--wrap,LwCAKmSignX509Crl \
+    -Wl,--wrap,LwCASecurityCreateKeyPair \
+    -Wl,--wrap,LwCASecurityGetEncryptedKey \
+    -Wl,--wrap,LwCASecuritySignX509Cert \
+    -Wl,--wrap,LwCASecuritySignX509Request \
+    -Wl,--wrap,LwCASecuritySignX509Crl \
     -Wl,--wrap,LwCADbCheckCertData \
     -Wl,--wrap,LwCADbGetCACRLNumber \
     -Wl,--wrap,LwCADbUpdateCA \

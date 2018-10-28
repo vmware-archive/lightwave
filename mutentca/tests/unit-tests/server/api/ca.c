@@ -727,17 +727,9 @@ __wrap_LwCADbGetParentCAId(
 }
 
 DWORD
-__wrap_LwCAKmCreateKeyPair(
-    PCSTR pcszKeyId
-    )
-{
-    return mock();
-}
-
-DWORD
-__wrap_LwCAKmGetPublickey(
+__wrap_LwCASecurityCreateKeyPair(
     PCSTR pcszKeyId,
-    PSTR  *ppszPublicKey
+    PSTR *ppszPublicKey
     )
 {
     DWORD dwError = 0;
@@ -747,11 +739,12 @@ __wrap_LwCAKmGetPublickey(
         dwError = LwCAAllocateStringA(TEST_INTERMEDIATE_CA_PUBLIC_KEY, ppszPublicKey);
         assert_int_equal(dwError, 0);
     }
+
     return mock();
 }
 
 DWORD
-__wrap_LwCAKmGetEncryptedKey(
+__wrap_LwCASecurityGetEncryptedKey(
     PCSTR       pcszId,
     PLWCA_KEY   *ppKey
     )
@@ -765,9 +758,9 @@ __wrap_LwCAKmGetEncryptedKey(
 }
 
 DWORD
-__wrap_LwCAKmSignX509Cert(
-    X509 *pCert,
-    PCSTR pcszKeyId
+__wrap_LwCASecuritySignX509Cert(
+    PCSTR pcszKeyId,
+    X509 *pCert
     )
 {
     DWORD dwError = 0;
@@ -786,9 +779,9 @@ __wrap_LwCAKmSignX509Cert(
 }
 
 DWORD
-__wrap_LwCAKmSignX509Request(
-    X509_REQ *pReq,
-    PCSTR    pcszKeyId
+__wrap_LwCASecuritySignX509Request(
+    PCSTR    pcszKeyId,
+    X509_REQ *pReq
     )
 {
     DWORD dwError = 0;
@@ -808,7 +801,7 @@ __wrap_LwCAKmSignX509Request(
 }
 
 DWORD
-__wrap_LwCAKmSignX509Crl(
+__wrap_LwCASecuritySignX509Crl(
     X509_CRL *pCrl,
     PCSTR    pcszKeyId
     )
@@ -1107,11 +1100,10 @@ Test_LwCACreateIntermediateCA_Valid(
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCADbAddCA, 0);
-    will_return_always(__wrap_LwCAKmGetPublickey, 0);
-    will_return_always(__wrap_LwCAKmGetEncryptedKey, 0);
-    will_return_always(__wrap_LwCAKmCreateKeyPair, 0);
-    will_return_always(__wrap_LwCAKmSignX509Cert, 0);
-    will_return_always(__wrap_LwCAKmSignX509Request, 0);
+    will_return_always(__wrap_LwCASecurityGetEncryptedKey, 0);
+    will_return_always(__wrap_LwCASecurityCreateKeyPair, 0);
+    will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
+    will_return_always(__wrap_LwCASecuritySignX509Request, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
     dwError = LwCACreateIntermediateCA(
@@ -1172,9 +1164,8 @@ Test_LwCACreateIntermediateCA_Invalid(
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
-    will_return_always(__wrap_LwCAKmCreateKeyPair, 0);
-    will_return_always(__wrap_LwCAKmGetPublickey, 0);
-    will_return_always(__wrap_LwCAKmSignX509Request, 0);
+    will_return_always(__wrap_LwCASecurityCreateKeyPair, 0);
+    will_return_always(__wrap_LwCASecuritySignX509Request, 0);
 
     // Testcase 1: Invalid input
 
@@ -1334,7 +1325,7 @@ Test_LwCAGetCACrl_Valid(
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCADbGetCA, 0);
     will_return_always(__wrap_LwCADbGetCertData, 0);
-    will_return_always(__wrap_LwCAKmSignX509Crl, 0);
+    will_return_always(__wrap_LwCASecuritySignX509Crl, 0);
 
     // Testcase1: CRL with revoked certificates
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);

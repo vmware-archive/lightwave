@@ -311,54 +311,58 @@ LwCASrvCleanupGlobalState(
     VOID
     );
 
-// Added secure key manager api definitions temporarily.
-// It will be removed once secure key manager is integrated.
-
-DWORD
-LwCAKmCreateKeyPair(
-    PCSTR pcszKeyId
-    );
-
-DWORD
-LwCAKmGetPublickey(
-    PCSTR pcszKeyId,
-    PSTR  *ppszPublicKey
-    );
-
-DWORD
-LwCAKmGetEncryptedKey(
-    PCSTR       pcszId,
-    PLWCA_KEY   *ppKey
-    );
-
-DWORD
-LwCAKmSignX509Cert(
-    X509 *pCert,
-    PCSTR pcszKeyId
-    );
-
-DWORD
-LwCAKmSignX509Request(
-    X509_REQ *pReq,
-    PCSTR    pcszKeyId
-    );
-
-DWORD
-LwCAKmSignX509Crl(
-    X509_CRL *pCrl,
-    PCSTR    pcszKeyId
-    );
-
-/* security */
+/* security/security.c */
 DWORD
 LwCASecurityInitCtx(
     PLWCA_JSON_OBJECT pConfig
+    );
+
+DWORD
+LwCASecurityCreateKeyPair(
+    PCSTR pszKeyId,
+    PSTR *ppszPublicKey
+    );
+
+DWORD
+LwCASecuritySignX509Cert(
+    PCSTR pcszKeyId,
+    X509 *pCert
+    );
+
+DWORD
+LwCASecuritySignX509Request(
+    PCSTR    pcszKeyId,
+    X509_REQ *pReq
+    );
+
+DWORD
+LwCASecuritySignX509Crl(
+    PCSTR    pcszKeyId,
+    X509_CRL *pCrl
     );
 
 VOID
 LwCASecurityFreeCtx(
    VOID
    );
+
+/* security/storage.c */
+DWORD
+LwCASecurityGetEncryptedKey(
+    PCSTR pszCAId,
+    PLWCA_KEY *ppEncryptedKey
+    );
+
+/*
+ * normally there is no need to call this
+ * but if there was an error during create key pair,
+ * call this at error handling to make sure cache is
+ * cleared
+*/
+DWORD
+LwCASecurityRemoveEncryptedKeyFromCache(
+    PCSTR pszCAId
+    );
 
 #ifdef __cplusplus
 }

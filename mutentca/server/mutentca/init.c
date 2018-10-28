@@ -78,6 +78,7 @@ LwCAShutdown(
         LwCARestServerShutdown();
     }
 #endif
+    LwCASecurityFreeCtx();
     //LwCAServiceShutdown();
     LwCATerminateLogging();
     //LwCASrvCleanupGlobalState();

@@ -12,13 +12,25 @@
  * under the License.
  */
 
-#ifndef _LWCA_MUTENTCA_SECURITY_DEFINES_H_
-#define _LWCA_MUTENTCA_SECURITY_DEFINES_H_
+#ifndef _LWCA_MUTENTCA_SECURITY_PROTOTYPES_H_
+#define _LWCA_MUTENTCA_SECURITY_PROTOTYPES_H_
 
-#define MUTENTCA_SECURITY_PLUGIN_SECTION     "security"
-#define MUTENTCA_SECURITY_PLUGIN_NAME        "securityPlugin"
-#define MUTENTCA_SECURITY_PLUGIN_CONFIG      "securityPluginConfig"
+DWORD
+LwCASecurityStoragePut(
+    PVOID pUserData,
+    PCSTR pszKeyId,
+    PLWCA_BINARY_DATA pEncryptedData
+    );
 
-#define LWCA_MIN_CA_CERT_PRIV_KEY_LENGTH     2048
+DWORD
+LwCASecurityStorageGet(
+    PVOID pUserData,
+    PCSTR pszKeyId,
+    PLWCA_BINARY_DATA *ppEncryptedData
+    );
 
-#endif /* _LWCA_MUTENTCA_SECURITY_DEFINES_H_ */
+VOID
+LwCASecurityFreeBinaryData(
+    PLWCA_BINARY_DATA pBinaryData
+    );
+#endif /* _LWCA_MUTENTCA_SECURITY_PROTOTYPES_H_ */

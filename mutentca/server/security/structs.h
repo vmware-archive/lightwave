@@ -23,6 +23,9 @@ typedef struct _LWCA_SECURITY_CONTEXT
     PLWCA_PLUGIN_HANDLE             pPluginHandle;
     PLWCA_SECURITY_HANDLE           pHandle;
     BOOLEAN                         isInitialized;
+    LWCA_SECURITY_CAP_OVERRIDE      capOverride;
+    pthread_mutex_t                 storageMutex;
+    PLW_HASHMAP                     pStorageMap;
 } LWCA_SECURITY_CONTEXT, *PLWCA_SECURITY_CONTEXT;
 
 #endif /* _LWCA_MUTENTCA_SECURITY_STRUCTS_H_ */

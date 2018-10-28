@@ -318,16 +318,22 @@ LwCACreateIntermediateCA(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmCreateKeyPair(pcszCAId);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAKmGetPublickey(pcszCAId, &pszPublicKey);
+    /*
+     * in the normal security workflow, db layer will be called
+     * from within the CreateKeyPair implementation to store
+     * encrypted key. Since this is during creation, db layer
+     * is not ready to store partial info. therefore, a storage
+     * cache is maintained which caches encrypted key and clears
+     * on GetEncryptedKey call. Fetches are always done from db
+     * layer.
+    */
+    dwError = LwCASecurityCreateKeyPair(pcszCAId, &pszPublicKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmSignX509Request(pRequest, pcszCAId);
+    dwError = LwCASecuritySignX509Request(pcszCAId, pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (pValidity)
@@ -365,10 +371,10 @@ LwCACreateIntermediateCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAKmSignX509Cert(pX509CACert, pcszParentCAId);
+    dwError = LwCASecuritySignX509Cert(pcszParentCAId, pX509CACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmGetEncryptedKey(pcszCAId, &pEncryptedKey);
+    dwError = LwCASecurityGetEncryptedKey(pcszCAId, &pEncryptedKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509ToPEM(pX509CACert, &pCACert);
@@ -618,7 +624,7 @@ LwCAGetCACrl(
                     );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError =  LwCAKmSignX509Crl(pX509Crl, pcszCAId);
+    dwError =  LwCASecuritySignX509Crl(pcszCAId, pX509Crl);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509CrlToPEM(pX509Crl, &pCrl);

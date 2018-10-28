@@ -15,6 +15,12 @@
 #include "includes.h"
 
 static
+DWORD
+_LwCAInitializeStorage(
+    VOID
+    );
+
+static
 BOOLEAN
 IsValidInterface(
     PLWCA_SECURITY_INTERFACE pInterface
@@ -103,6 +109,9 @@ LwCASecurityInitCtx(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
+    dwError = _LwCAInitializeStorage();
+    BAIL_ON_LWCA_ERROR(dwError);
+
     gSecurityCtx.isInitialized = TRUE;
 
 cleanup:
@@ -121,14 +130,258 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCASecurityCreateKeyPair(
+    PCSTR pszKeyId,
+    PSTR *ppszPublicKey
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszPublicKey = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pszKeyId) || !ppszPublicKey)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    if (!gSecurityCtx.isInitialized)
+    {
+        dwError = LWCA_SECURITY_NOT_INITIALIZED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = gSecurityCtx.pInterface->pFnCreateKeyPair(
+                  gSecurityCtx.pHandle,
+                  NULL, /* user data */
+                  pszKeyId,
+                  LWCA_MIN_CA_CERT_PRIV_KEY_LENGTH,
+                  &pszPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszPublicKey = pszPublicKey;
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+    return dwError;
+
+error:
+    VmFreeMemory(pszPublicKey);
+    goto cleanup;
+}
+
+DWORD
+LwCASecuritySignX509Cert(
+    PCSTR pcszKeyId,
+    X509 *pCert
+    )
+{
+    DWORD dwError = 0;
+    LWCA_SECURITY_SIGN_DATA signData = {0};
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszKeyId) || !pCert)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    if (!gSecurityCtx.isInitialized)
+    {
+        dwError = LWCA_SECURITY_NOT_INITIALIZED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    signData.signType = LWCA_SECURITY_SIGN_CERT;
+    signData.signData.pX509Cert = pCert;
+
+    dwError = gSecurityCtx.pInterface->pFnSign(
+                  gSecurityCtx.pHandle,
+                  NULL, /* user data */
+                  pcszKeyId,
+                  &signData,
+                  LWCA_SECURITY_MESSAGE_DIGEST_SHA256);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCASecuritySignX509Request(
+    PCSTR    pcszKeyId,
+    X509_REQ *pReq
+    )
+{
+    DWORD dwError = 0;
+    LWCA_SECURITY_SIGN_DATA signData = {0};
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszKeyId) || !pReq)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    if (!gSecurityCtx.isInitialized)
+    {
+        dwError = LWCA_SECURITY_NOT_INITIALIZED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    signData.signType = LWCA_SECURITY_SIGN_REQ;
+    signData.signData.pX509Req = pReq;
+
+    dwError = gSecurityCtx.pInterface->pFnSign(
+                  gSecurityCtx.pHandle,
+                  NULL, /* user data */
+                  pcszKeyId,
+                  &signData,
+                  LWCA_SECURITY_MESSAGE_DIGEST_SHA256);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCASecuritySignX509Crl(
+    PCSTR    pcszKeyId,
+    X509_CRL *pCrl
+    )
+{
+    DWORD dwError = 0;
+    LWCA_SECURITY_SIGN_DATA signData = {0};
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszKeyId) || !pCrl)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    if (!gSecurityCtx.isInitialized)
+    {
+        dwError = LWCA_SECURITY_NOT_INITIALIZED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    signData.signType = LWCA_SECURITY_SIGN_CRL;
+    signData.signData.pX509Crl = pCrl;
+
+    dwError = gSecurityCtx.pInterface->pFnSign(
+                  gSecurityCtx.pHandle,
+                  NULL, /* user data */
+                  pcszKeyId,
+                  &signData,
+                  LWCA_SECURITY_MESSAGE_DIGEST_SHA256);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+/*
+ * set up cap override for storage
+ * set up cache for caId to encrypted data
+*/
+static
+DWORD
+_LwCAInitializeStorage(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bStorageLocked = FALSE;
+
+    /* plugin implementation requires storage to be provided */
+    gSecurityCtx.capOverride.pFnStoragePut = LwCASecurityStoragePut;
+    gSecurityCtx.capOverride.pFnStorageGet = LwCASecurityStorageGet;
+
+    dwError = gSecurityCtx.pInterface->pFnCapOverride(
+                  gSecurityCtx.pHandle,
+                  &gSecurityCtx.capOverride);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    LWCA_LOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+
+    dwError = LwRtlCreateHashMap(
+                  &gSecurityCtx.pStorageMap,
+                  LwRtlHashDigestPstrCaseless,
+                  LwRtlHashEqualPstrCaseless,
+                  NULL);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+error:
+    LWCA_UNLOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+    return dwError;
+}
+
+static
+VOID
+_LwCASecurityFreeStorageMapPair(
+    PLW_HASHMAP_PAIR pPair,
+    LW_PVOID         pUnused
+    )
+{
+    LwCASecurityFreeBinaryData(pPair->pValue);
+}
+
+VOID
+LwCASecurityFreeBinaryData(
+    PLWCA_BINARY_DATA pBinaryData
+    )
+{
+    if (pBinaryData)
+    {
+        VmFreeMemory(pBinaryData->pData);
+        VmFreeMemory(pBinaryData);
+    }
+}
+
 VOID
 LwCASecurityFreeCtx(
    VOID
    )
 {
     BOOLEAN bLocked = FALSE;
+    BOOLEAN bStorageLocked = FALSE;
 
     LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    LWCA_LOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+
+    if (gSecurityCtx.pStorageMap)
+    {
+        LwRtlHashMapClear(
+            gSecurityCtx.pStorageMap,
+            _LwCASecurityFreeStorageMapPair,
+            NULL);
+        LwRtlFreeHashMap(&gSecurityCtx.pStorageMap);
+    }
+
+    LWCA_UNLOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
 
     if (gSecurityCtx.pHandle)
     {

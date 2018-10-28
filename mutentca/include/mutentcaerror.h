@@ -218,6 +218,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SECURITY_NOT_INITIALIZED       (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 1)
 #define LWCA_SECURITY_ALREADY_INITIALIZED   (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 2)
 #define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
+#define LWCA_SECURITY_KEY_ALREADY_IN_CACHE  (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 4)
+#define LWCA_SECURITY_KEY_NOT_IN_CACHE      (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 5)
 
 // CURL Error codes (81100 - 81199)
 #define LWCA_ERROR_CURL_FAILED_INIT         (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
@@ -414,6 +416,8 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SECURITY_NOT_INITIALIZED     ,   "LWCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin" }, \
     { LWCA_SECURITY_ALREADY_INITIALIZED ,   "LWCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized" }, \
     { LWCA_SECURITY_INVALID_PLUGIN      ,   "LWCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
+    { LWCA_SECURITY_KEY_ALREADY_IN_CACHE,   "LWCA_SECURITY_KEY_ALREADY_IN_CACHE",   "An encrypted key is already present in local cache for this ca id." }, \
+    { LWCA_SECURITY_KEY_NOT_IN_CACHE,       "LWCA_SECURITY_KEY_NOT_IN_CACHE",       "An encrypted key is not present in local cache for this ca id." }, \
     { LWCA_ERROR_CURL_FAILED_INIT       ,   "LWCA_ERROR_CURL_FAILED_INIT"       ,   "CURL Init Failed" } , \
     { LWCA_ERROR_CURL_SEND_ERROR        ,   "LWCA_ERROR_CURL_SEND_ERROR"        ,   "CURL failed to send request" } , \
     { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
