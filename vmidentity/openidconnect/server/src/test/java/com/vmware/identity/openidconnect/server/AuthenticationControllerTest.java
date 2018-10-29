@@ -570,6 +570,34 @@ public class AuthenticationControllerTest {
         Assert.assertTrue("ModelAndView!=null", modelView != null); // local login form
     }
 
+    @Test
+    public void test_extidp_authz_response_null_tenant() throws Exception {
+        Flow flow = Flow.AUTHZ_CODE;
+        Map<String, String> params = authnRequestParameters(flow);
+        params.put("login_hint", EXTERNAL_IDP_ENTITYID);
+
+        CasIdmClient idmClient = idmClientBuilder()
+                .externalIDP(externalIDPConfig())
+                .tenantIssuer(EXTERNAL_IDP_ENTITYID)
+                .build();
+
+        AuthorizationCodeManager authzCodeManager = new AuthorizationCodeManager();
+        SessionManager sessionManager = new SessionManager();
+        MessageSource messageSource = messageSource();
+        FederatedIdentityProcessor fedProcessor = federatedIdentityProcessor(idmClient, sessionManager);
+
+        AuthenticationController authnController = new AuthenticationController(
+                idmClient, authzCodeManager, sessionManager, messageSource, fedProcessor);
+
+        // request with no session and no login string results in login form
+        MockHttpServletRequest request = TestUtil.createGetRequest(params);
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, null);
+        Assert.assertEquals("status", 302, response.getStatus());
+        Assert.assertTrue("ModelAndView==null", modelView == null); // redirect to external idp
+        Assert.assertEquals("redirect target", EXTERNAL_IDP_AUTHORIZE, extractAuthnResponseTarget(response, Flow.AUTHZ_CODE, true, false));
+    }
+
     private static void assertSuccessResponse(
             Flow flow,
             Map<String, String> params) throws Exception {

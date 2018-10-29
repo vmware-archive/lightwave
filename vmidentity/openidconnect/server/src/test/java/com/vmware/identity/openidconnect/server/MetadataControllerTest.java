@@ -62,7 +62,20 @@ public class MetadataControllerTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         metadataController.metadata(request, response, tenant);
 
-        validateSuccessResponse(response);
+        validateSuccessResponse(response, false);
+    }
+
+    @Test
+    public void testMetadataWithDefaultEndpointsSuccess()
+            throws IOException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("GET");
+        request.setParameter(MetadataController.DEFAULT_ENDPOINT_PARAM, "true");
+
+        MockHttpServletResponse response = new MockHttpServletResponse();
+        metadataController.metadata(request, response, null);
+
+        validateSuccessResponse(response, true);
     }
 
     @Test
@@ -74,7 +87,7 @@ public class MetadataControllerTest {
         MockHttpServletResponse response = new MockHttpServletResponse();
         metadataController.metadata(request, response);
 
-        validateSuccessResponse(response);
+        validateSuccessResponse(response, false);
     }
 
     @Test
@@ -92,7 +105,7 @@ public class MetadataControllerTest {
         Assert.assertEquals("non-existent tenant", JSONUtils.parseJSONObject(response.getContentAsString()).get("error_description"));
     }
 
-    private static void validateSuccessResponse(MockHttpServletResponse response)
+    private static void validateSuccessResponse(MockHttpServletResponse response, boolean useDefault)
             throws UnsupportedEncodingException, net.minidev.json.parser.ParseException, com.vmware.identity.openidconnect.common.ParseException {
         JSONParser jsonParser = new JSONParser(JSONParser.DEFAULT_PERMISSIVE_MODE);
         JSONObject jsonObject = (JSONObject) jsonParser.parse(response.getContentAsString());
@@ -109,10 +122,10 @@ public class MetadataControllerTest {
         List<String> actualIDTokenSigningAlgorithmValuesSupported = providerMetadata.getIDTokenSigningAlgorithmValuesSupported();
 
         String expectedIssuer = issuer;
-        String expectedJwksURI = TestContext.JWKS_ENDPOINT_URI.toString();
-        String expectedAuthzEndpoint = TestContext.AUTHZ_ENDPOINT_URI.toString();
-        String expectedTokenEndpoint = TestContext.TOKEN_ENDPOINT_URI.toString();
-        String expectedEndSessionEndpoint = TestContext.LOGOUT_ENDPOINT_URI.toString();
+        String expectedJwksURI = useDefault ? TestContext.DEFAULT_JWKS_ENDPOINT_URI.toString() : TestContext.JWKS_ENDPOINT_URI.toString();
+        String expectedAuthzEndpoint = useDefault ? TestContext.DEFAULT_AUTHZ_ENDPOINT_URI.toString() : TestContext.AUTHZ_ENDPOINT_URI.toString();
+        String expectedTokenEndpoint = useDefault ? TestContext.DEFAULT_TOKEN_ENDPOINT_URI.toString() : TestContext.TOKEN_ENDPOINT_URI.toString();
+        String expectedEndSessionEndpoint = useDefault ? TestContext.DEFAULT_LOGOUT_ENDPOINT_URI.toString() : TestContext.LOGOUT_ENDPOINT_URI.toString();
         List<String> expectedSubjectTypesSupported = Arrays.asList("public");
         List<String> expectedResponseTypesSupported = Arrays.asList("code", "id_token", "token id_token");
         List<String> expectedDTokenSigningAlgorithmValuesSupported = Arrays.asList("RS256");

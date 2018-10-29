@@ -18,6 +18,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -38,6 +39,7 @@ import com.vmware.identity.openidconnect.common.Issuer;
 import com.vmware.identity.openidconnect.common.ParseException;
 import com.vmware.identity.openidconnect.common.ProviderMetadata;
 import com.vmware.identity.openidconnect.common.StatusCode;
+import com.vmware.identity.openidconnect.protocol.HttpRequest;
 import com.vmware.identity.openidconnect.protocol.HttpResponse;
 import com.vmware.identity.openidconnect.protocol.ProviderMetadataMapper;
 import com.vmware.identity.openidconnect.protocol.URIUtils;
@@ -56,6 +58,7 @@ public class MetadataController {
     private static final List<String> SUBJECT_TYPES_SUPPORTED = Arrays.asList("public");
     private static final List<String> ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED = Arrays.asList("RS256");
     private final String metricsResource = "metadata";
+    public static final String DEFAULT_ENDPOINT_PARAM = "default_endpoints";
 
     @Autowired
     private CasIdmClient idmClient;
@@ -88,6 +91,23 @@ public class MetadataController {
         HttpResponse httpResponse = null;
 
         try {
+            HttpRequest httpRequest;
+            try {
+                httpRequest = HttpRequest.from(httpServletRequest);
+            } catch (IllegalArgumentException e) {
+                ErrorObject errorObject = ErrorObject.invalidRequest(e.getMessage());
+                LoggerUtils.logFailedRequest(logger, errorObject, e);
+                httpResponse = HttpResponse.createJsonResponse(errorObject);
+                httpResponse.applyTo(httpServletResponse);
+                return;
+            }
+
+            boolean defaultEndpoints = false;
+            Map<String, String> parameters = httpRequest.getParameters();
+            if (parameters.containsKey(DEFAULT_ENDPOINT_PARAM)) {
+                defaultEndpoints = Boolean.parseBoolean(parameters.get(DEFAULT_ENDPOINT_PARAM));
+            }
+
             TenantInfoRetriever tenantInfoRetriever = new TenantInfoRetriever(this.idmClient);
             if (tenant == null) {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
@@ -97,10 +117,10 @@ public class MetadataController {
             tenant = tenantInfo.getName(); // use tenant name as it appears in directory
             Issuer issuer = tenantInfo.getIssuer();
             ProviderMetadata providerMetadata = new ProviderMetadata.Builder(issuer).
-                        authorizationEndpointURI(endpointURI(issuer, tenant, Endpoints.AUTHENTICATION)).
-                        tokenEndpointURI(endpointURI(issuer, tenant, Endpoints.TOKEN)).
-                        endSessionEndpointURI(endpointURI(issuer, tenant, Endpoints.LOGOUT)).
-                        jwkSetURI(endpointURI(issuer, tenant, Endpoints.JWKS)).
+                        authorizationEndpointURI(endpointURI(issuer, tenant, Endpoints.AUTHENTICATION, defaultEndpoints)).
+                        tokenEndpointURI(endpointURI(issuer, tenant, Endpoints.TOKEN, defaultEndpoints)).
+                        endSessionEndpointURI(endpointURI(issuer, tenant, Endpoints.LOGOUT, defaultEndpoints)).
+                        jwkSetURI(endpointURI(issuer, tenant, Endpoints.JWKS, defaultEndpoints)).
                         responseTypesSupported(RESPONSE_TYPES_SUPPORTED).
                         subjectTypesSupported(SUBJECT_TYPES_SUPPORTED).
                         idTokenSigningAlgorithmValuesSupported(ID_TOKEN_SIGNING_ALGORITHM_VALUES_SUPPORTED).build();
@@ -131,7 +151,10 @@ public class MetadataController {
         httpResponse.applyTo(httpServletResponse);
     }
 
-    private static URI endpointURI(Issuer issuer, String tenant, String endpoint) throws ParseException {
+    private static URI endpointURI(Issuer issuer, String tenant, String endpoint, boolean defaultEndpoints) throws ParseException {
+        if (defaultEndpoints) {
+            return URIUtils.parseURI(replaceLast(issuer.getValue(), "/" + tenant, endpoint));
+        }
         return URIUtils.parseURI(replaceLast(issuer.getValue(), "/" + tenant, endpoint + "/" + tenant));
     }
 

@@ -20,7 +20,7 @@ import java.util.Locale;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import com.vmware.identity.diagnostics.MetricUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.MessageSource;
@@ -101,17 +101,9 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
         IDiagnosticsContextScope context = null;
 
         try {
-            HttpRequest httpRequest;
-            try {
-                httpRequest = HttpRequest.from(request);
-            } catch (IllegalArgumentException e) {
-                ErrorObject errorObject = ErrorObject.invalidRequest(e.getMessage());
-                LoggerUtils.logFailedRequest(logger, errorObject, e);
-                httpResponse = HttpResponse.createJsonResponse(errorObject);
-                httpResponse.applyTo(response);
-                return null;
-            }
-            context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
+            HttpRequest httpRequest = HttpRequest.from(request);
+            context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(),
+                    StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant);
 
             AuthenticationRequestProcessor p = new AuthenticationRequestProcessor(
                     this.idmClient,
@@ -126,6 +118,11 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
             Pair<ModelAndView, HttpResponse> result = p.process();
             page = result.getLeft();
             httpResponse = result.getRight();
+        }  catch (IllegalArgumentException e) {
+            ErrorObject errorObject = ErrorObject.invalidRequest("Invalid request.");
+            LoggerUtils.logFailedRequest(logger, errorObject, e);
+            page = null;
+            httpResponse = HttpResponse.createJsonResponse(errorObject);
         } catch (Exception e) {
             ErrorObject errorObject = ErrorObject.serverError(String.format("unhandled %s: %s", e.getClass().getName(), e.getMessage()));
             LoggerUtils.logFailedRequest(logger, errorObject, e);
@@ -136,8 +133,8 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
                 context.close();
             }
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
-                        metricsResource, metricsOperation);
+                MetricUtils.increaseRequestCount(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
+                        String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
             }
             if (requestTimer != null) {
                 requestTimer.observeDuration();

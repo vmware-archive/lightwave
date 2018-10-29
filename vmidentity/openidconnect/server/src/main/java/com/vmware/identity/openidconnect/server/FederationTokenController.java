@@ -111,11 +111,11 @@ public class FederationTokenController {
                     throw new ServerException(ErrorObject.invalidRequest("Request state is not found."));
                 }
                 tenant = relayState.getTenant();
-                Validate.notEmpty(tenant, "Tenant name in auth request tracker should not be empty.");
             }
 
             // start timer after tenant is available
-            requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+            requestTimer = MetricUtils.startRequestTimer(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
+                    metricsResource, metricsOperation);
 
             final IDPConfig idpConfig = findFederatedIDP(relayState.getIssuer()); // External IDP corresponding to Issuer
             final OidcConfig oidcConfig = idpConfig.getOidcConfig();
@@ -138,8 +138,8 @@ public class FederationTokenController {
             httpResponse = HttpResponse.createJsonResponse(errorObject);
         } finally {
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
-                        metricsResource, metricsOperation);
+                MetricUtils.increaseRequestCount(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
+                        String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
             }
             if (requestTimer != null) {
                 requestTimer.observeDuration();

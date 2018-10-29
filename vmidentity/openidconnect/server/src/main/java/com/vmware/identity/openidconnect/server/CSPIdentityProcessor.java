@@ -155,11 +155,15 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     public HttpResponse processAuthRequestForFederatedIDP(AuthenticationRequest authnRequest, String tenant,
             IDPConfig idpConfig) throws ServerException {
         Validate.notNull(authnRequest, "auth request must not be null.");
-        Validate.notEmpty(tenant, "tenant must not be null.");
         Validate.notNull(idpConfig, "idp config must not be null.");
         FederationRelayState.Builder builder = new FederationRelayState.Builder(idpConfig.getEntityID(),
                 authnRequest.getClientID().getValue(), authnRequest.getRedirectURI().toString());
-        builder.withTenant(tenant);
+        // if tenant name is null, discover default tenant name from external token later
+        String orgLink = null;
+        if (tenant != null) {
+            builder.withTenant(tenant);
+            orgLink = CSP_ORG_LINK + tenant;
+        }
         State state = new State();
         builder.withState(state);
         builder.withNonce(new Nonce());
@@ -172,7 +176,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
         authnRequestTracker.add(state, relayState);
 
-        final String orgLink = CSP_ORG_LINK + tenant;
         return processRequestPreAuth(relayState, orgLink, idpConfig);
   }
 
@@ -188,7 +191,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     Validate.notNull(idpConfig, "idp config must not be null.");
 
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
-    Timer authCodeTimer = MetricUtils.startRequestTimer(relayState.getTenant(), FederationTokenController.metricsResource, "getCSPAuthCode");
+    String tenantName = StringUtils.isEmpty(relayState.getTenant()) ? "defaultTenant" : relayState.getTenant();
+    Timer authCodeTimer = MetricUtils.startRequestTimer(tenantName, FederationTokenController.metricsResource, "getCSPAuthCode");
     try {
         if (orgLink != null && !orgLink.isEmpty()) {
             validateOIDCClient(relayState);
@@ -202,7 +206,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
-    Timer tokenTimer = MetricUtils.startRequestTimer(relayState.getTenant(), FederationTokenController.metricsResource, "getCSPToken");
+    Timer tokenTimer = MetricUtils.startRequestTimer(tenantName, FederationTokenController.metricsResource, "getCSPToken");
     try {
         if (code != null && !code.isEmpty()) {
             return processRequestAuth(request, relayState, code, idpConfig);
@@ -223,7 +227,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
       IDPConfig idpConfig
   ) throws ServerException{
     Validate.notNull(relayState, "relay state must not be null.");
-    Validate.notEmpty(orgLink, "org link must not empty.");
     Validate.notNull(idpConfig, "idp config must not be null.");
     OidcConfig oidcConfig = idpConfig.getOidcConfig();
     URI target= null;
@@ -239,9 +242,10 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
 
     Map<String, String> parameters = new HashMap<String, String>();
-
     parameters.put(QUERY_PARAM_CLIENT_ID, oidcConfig.getClientId());
-    parameters.put(QUERY_PARAM_ORG_LINK, orgLink);
+    if (StringUtils.isNotEmpty(orgLink)) {
+        parameters.put(QUERY_PARAM_ORG_LINK, orgLink);
+    }
     parameters.put(QUERY_PARAM_REDIRECT_URI, oidcConfig.getRedirectURI()); // match URI registered with ClientID
     parameters.put(QUERY_PARAM_STATE, relayState.getState().getValue());
     parameters.put(QUERY_PARAM_NONCE, relayState.getNonce().getValue());
@@ -319,11 +323,18 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         // jira task: CSP-6969
         Validate.isTrue(relayState.getNonce().equals(idToken.getNonce()), "invalid nonce in id token");
     }
-    String tenantName = idToken.getTenant();
-    if (StringUtils.isEmpty(tenantName) || StringUtils.isEmpty(relayState.getTenant())
-            || !StringUtils.equalsIgnoreCase(tenantName, relayState.getTenant())) {
-      ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
-      throw new ServerException(errorObject);
+
+    String tenantName = accessToken.getTenant();
+    if (StringUtils.isEmpty(tenantName)) {
+        ErrorObject errorObject = ErrorObject.serverError("Tenant is not found from the federation token.");
+        throw new ServerException(errorObject);
+    }
+
+    // validate tenant in the token if tenant name is specified in the original auth request
+    if (StringUtils.isNotEmpty(relayState.getTenant())
+            && !StringUtils.equalsIgnoreCase(tenantName, relayState.getTenant())) {
+        ErrorObject errorObject = ErrorObject.invalidRequest("Invalid tenant name");
+        throw new ServerException(errorObject);
     }
 
     TenantInfo tenantInfo = getTenantInfo(tenantName);

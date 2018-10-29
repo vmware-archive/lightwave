@@ -100,6 +100,10 @@ public class TestContext {
     public static final URI TOKEN_ENDPOINT_URI          = URI.create("https://psc.vmware.com/openidconnect/token/" + TENANT_NAME);
     public static final URI LOGOUT_ENDPOINT_URI         = URI.create("https://psc.vmware.com/openidconnect/logout/" + TENANT_NAME);
     public static final URI JWKS_ENDPOINT_URI           = URI.create("https://psc.vmware.com/openidconnect/jwks/" + TENANT_NAME);
+    public static final URI DEFAULT_AUTHZ_ENDPOINT_URI  = URI.create("https://psc.vmware.com/openidconnect/oidc/authorize");
+    public static final URI DEFAULT_TOKEN_ENDPOINT_URI  = URI.create("https://psc.vmware.com/openidconnect/token");
+    public static final URI DEFAULT_LOGOUT_ENDPOINT_URI = URI.create("https://psc.vmware.com/openidconnect/logout");
+    public static final URI DEFAULT_JWKS_ENDPOINT_URI   = URI.create("https://psc.vmware.com/openidconnect/jwks");
     public static final URI REDIRECT_URI                = URI.create("https://vcenter-server.com/relying-party/redirect");
     public static final String REDIRECT_URI_TEMPLATE    = "https://vcenter-server.com/relying-party/redirect/{tenant}";
     public static final URI POST_LOGOUT_REDIRECT_URI    = URI.create("https://vcenter-server.com/relying-party/post-logout-redirect");
