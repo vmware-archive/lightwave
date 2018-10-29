@@ -67,6 +67,7 @@ LwCACreateRootCA(
     PSTR pszNextCRLUpdate = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     BOOLEAN bIsCA = FALSE;
+    PLWCA_KEY pEncryptedKey = NULL;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszRootCAId) ||
         !pCertificate || IsNullOrEmptyString(pcszPrivateKey)
@@ -97,7 +98,8 @@ LwCACreateRootCA(
     dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    //TODO: Secure manager APIs must be called to encrypt and store private key.
+    dwError = LwCASecurityAddKeyPair(pcszRootCAId, pcszPrivateKey);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -111,9 +113,12 @@ LwCACreateRootCA(
                         &pszNextCRLUpdate);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCASecurityGetEncryptedKey(pcszRootCAId, &pEncryptedKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCADbCreateCAData(pszSubject,
                                 pCertArray,
-                                NULL,
+                                pEncryptedKey,
                                 pszCRLNumber,
                                 pszLastCRLUpdate,
                                 pszNextCRLUpdate,
@@ -133,6 +138,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
     LwCAX509Free(pCert);
+    LwCAFreeKey(pEncryptedKey);
 
     return dwError;
 
@@ -403,6 +409,7 @@ cleanup:
     LwCAFreeCertificate(pParentCACert);
     LwCAFreeCertificate(pCACert);
     LwCAFreeCertValidity(pTempValidity);
+    LwCAFreeKey(pEncryptedKey);
 
     return dwError;
 

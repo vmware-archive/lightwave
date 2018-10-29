@@ -131,6 +131,44 @@ error:
 }
 
 DWORD
+LwCASecurityAddKeyPair(
+    PCSTR pszKeyId,
+    PCSTR pszPrivateKey
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pszKeyId) || IsNullOrEmptyString(pszPrivateKey))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gSecurityCtx.securityMutex, bLocked);
+
+    if (!gSecurityCtx.isInitialized)
+    {
+        dwError = LWCA_SECURITY_NOT_INITIALIZED;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = gSecurityCtx.pInterface->pFnAddKeyPair(
+                  gSecurityCtx.pHandle,
+                  NULL, /* user data */
+                  pszKeyId,
+                  pszPrivateKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 LwCASecurityCreateKeyPair(
     PCSTR pszKeyId,
     PSTR *ppszPublicKey

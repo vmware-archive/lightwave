@@ -821,6 +821,15 @@ __wrap_LwCASecuritySignX509Crl(
     return mock();
 }
 
+DWORD
+__wrap_LwCASecurityAddKeyPair(
+    PCSTR pszKeyId,
+    PCSTR pszPrivateKey
+    )
+{
+    return mock();
+}
+
 VOID
 Test_LwCACreateRootCA_Valid(
     VOID **state
@@ -833,6 +842,8 @@ Test_LwCACreateRootCA_Valid(
 
     will_return_always(__wrap_LwCADbAddCA, 0);
     will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCASecurityGetEncryptedKey, 0);
+    will_return_always(__wrap_LwCASecurityAddKeyPair, 0);
 
     dwError = LwCACreateCertificate(TEST_ROOT_CA_CERTIFICATE, &pCertificate1);
     assert_int_equal(dwError, 0);

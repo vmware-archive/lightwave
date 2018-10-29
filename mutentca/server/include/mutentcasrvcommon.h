@@ -318,6 +318,12 @@ LwCASecurityInitCtx(
     );
 
 DWORD
+LwCASecurityAddKeyPair(
+    PCSTR pszKeyId,
+    PCSTR pszPrivateKey
+    );
+
+DWORD
 LwCASecurityCreateKeyPair(
     PCSTR pszKeyId,
     PSTR *ppszPublicKey
