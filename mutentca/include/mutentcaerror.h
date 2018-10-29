@@ -252,6 +252,7 @@ typedef struct _LWCA_ERRNO_MAP
 
 // LDAP Error codes (81300 - 81399)
 #define LWCA_LDAP_ADD_FAILED                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 1)
+#define LWCA_LDAP_GET_FAILED                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 2)
 
 // Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
@@ -434,6 +435,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
     { LWCA_ERROR_CURL_GENERIC_ERROR     ,   "LWCA_ERROR_CURL_GENERIC_ERROR"     ,   "CURL generic failure" } , \
     { LWCA_LDAP_ADD_FAILED              ,   "LWCA_LDAP_ADD_FAILED"              ,   "LDAP add could not be completed"}, \
+    { LWCA_LDAP_GET_FAILED              ,   "LWCA_LDAP_GET_FAILED"              ,   "LDAP search could not be completed"}, \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
     { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
     { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \

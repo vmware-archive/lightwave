@@ -709,6 +709,69 @@ LwCAGetLogDirectory(
     PSTR *ppszLogDir
     );
 
+DWORD
+LwCACreateKey(
+    PBYTE       pData,
+    DWORD       dwLength,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCACopyKey(
+    PLWCA_KEY pKey,
+    PLWCA_KEY *ppKey
+    );
+
+VOID
+LwCAFreeKey(
+    PLWCA_KEY pKey
+    );
+
+DWORD
+LwCADbCreateCAData(
+    PCSTR                       pcszSubjectName,
+    PLWCA_CERTIFICATE_ARRAY     pCertificates,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    LWCA_CA_STATUS              status,
+    PLWCA_DB_CA_DATA            *ppCAData
+    );
+
+VOID
+LwCADbFreeCAData(
+    PLWCA_DB_CA_DATA pCAData
+    );
+
+DWORD
+LwCACreateCertArray(
+    PSTR                     *ppszCertificates,
+    DWORD                    dwCount,
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    );
+
+DWORD
+LwCACopyCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
+VOID
+LwCAFreeCertificates(
+    PLWCA_CERTIFICATE_ARRAY pCertArray
+    );
+
+DWORD
+LwCACreateCertificate(
+    PCSTR               pcszCertificate,
+    PLWCA_CERTIFICATE   *ppCertificate
+    );
+
+VOID
+LwCAFreeCertificate(
+    PLWCA_CERTIFICATE pCertificate
+    );
 
 // regexutil.c
 
@@ -1027,6 +1090,48 @@ LwCAJsonArrayGetBorrowedRef(
     PLWCA_JSON_OBJECT       pJsonIn,
     SIZE_T                  idx,
     PLWCA_JSON_OBJECT       *ppJsonOut // Borrowed reference, do not free
+    );
+
+DWORD
+LwCAJsonObjectCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    );
+
+DWORD
+LwCAJsonArrayCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    );
+
+DWORD
+LwCAJsonArrayStringCopy(
+    PLWCA_JSON_OBJECT   pSrc,
+    PLWCA_JSON_OBJECT   *ppDest
+    );
+
+DWORD
+LwCAJsonSetStringToObject(
+    PLWCA_JSON_OBJECT   pObj,
+    PCSTR               pcszKey,
+    PCSTR               pcszValue
+    );
+
+DWORD
+LwCAJsonSetJsonToObject(
+    PLWCA_JSON_OBJECT       pObj,
+    PCSTR                   pcszKey,
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+DWORD
+LwCAJsonAppendStringToArray(
+    PLWCA_JSON_OBJECT   pArray,
+    PCSTR               pcszValue
+    );
+
+DWORD
+LwCAJsonAppendJsonToArray(
+    PLWCA_JSON_OBJECT       pArray,
+    PLWCA_JSON_OBJECT       pJson
     );
 
 VOID

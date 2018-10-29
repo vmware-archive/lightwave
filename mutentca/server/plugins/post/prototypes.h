@@ -137,6 +137,12 @@ LwCADbPostPluginFreeHandle(
     PLWCA_DB_HANDLE pDbHandle
     );
 
+DWORD
+LwCADbPostCAFilterBuilder(
+    PCSTR   pcszContainer,
+    PCSTR   pcszObjClass,
+    PSTR    *ppszResultCond
+    );
 
 // serializer.c
 DWORD
@@ -153,4 +159,10 @@ LwCASerializeConfigCAToJSON(
     PCSTR       pcszCAId,
     PCSTR       pcszDomain,
     PSTR        *ppszReqBody
+    );
+
+DWORD
+LwCADeserializeJSONToCA(
+    PCSTR               pcszResponse,
+    PLWCA_DB_CA_DATA    *ppCaData
     );

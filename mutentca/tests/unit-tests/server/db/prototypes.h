@@ -216,3 +216,23 @@ VOID
 Test_LwCASerializeConfigRootCAToJson(
     VOID    **state
     );
+
+VOID
+Test_LwCADeserializeJsonToRootCA(
+    VOID    **state
+    );
+
+VOID
+Test_LwCADeserializeJsonToIntrCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostDbCheckCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostDbGetCA(
+    VOID **state
+    );

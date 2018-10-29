@@ -190,65 +190,6 @@ LwCAUtilDoesValueHaveWildcards(
     );
 
 DWORD
-LwCACreateCertificate(
-    PCSTR               pcszCertificate,
-    PLWCA_CERTIFICATE   *ppCertificate
-    );
-
-DWORD
-LwCACreateCertArray(
-    PSTR                     *ppszCertificates,
-    DWORD                    dwCount,
-    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
-    );
-
-DWORD
-LwCACopyCertArray(
-    PLWCA_CERTIFICATE_ARRAY     pCertArray,
-    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
-    );
-
-DWORD
-LwCACreateKey(
-    PBYTE       pData,
-    DWORD       dwLength,
-    PLWCA_KEY   *ppKey
-    );
-
-DWORD
-LwCACopyKey(
-    PLWCA_KEY pKey,
-    PLWCA_KEY *ppKey
-    );
-
-VOID
-LwCAFreeCertificate(
-    PLWCA_CERTIFICATE pCertificate
-    );
-
-VOID
-LwCAFreeCertificates(
-    PLWCA_CERTIFICATE_ARRAY pCertArray
-    );
-
-VOID
-LwCAFreeKey(
-    PLWCA_KEY pKey
-    );
-
-DWORD
-LwCADbCreateCAData(
-    PCSTR                       pcszSubjectName,
-    PLWCA_CERTIFICATE_ARRAY     pCertificates,
-    PLWCA_KEY                   pEncryptedPrivateKey,
-    PCSTR                       pcszCRLNumber,
-    PCSTR                       pcszLastCRLUpdate,
-    PCSTR                       pcszNextCRLUpdate,
-    LWCA_CA_STATUS              status,
-    PLWCA_DB_CA_DATA            *ppCAData
-    );
-
-DWORD
 LwCADbCreateCertData(
     PCSTR                   pcszSerialNumber,
     PCSTR                   pcszTimeValidFrom,
@@ -259,10 +200,6 @@ LwCADbCreateCertData(
     PLWCA_DB_CERT_DATA      *ppCertData
     );
 
-VOID
-LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
-    );
 
 VOID
 LwCADbFreeCertData(

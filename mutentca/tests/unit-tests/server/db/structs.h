@@ -39,3 +39,20 @@ typedef DWORD (*SERIALIZE_CONFIG_CA_JSON)(
     PCSTR,
     PSTR *
     );
+
+typedef DWORD (*DESERIALIZE_JSON_CA)(
+    PCSTR,
+    PLWCA_DB_CA_DATA *
+    );
+
+typedef DWORD (*PLUGIN_CHECK_CA)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PBOOLEAN
+    );
+
+typedef DWORD (*PLUGIN_GET_CA)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PLWCA_DB_CA_DATA *
+    );

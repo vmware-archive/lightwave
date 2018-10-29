@@ -25,6 +25,7 @@
 #define LWCA_POST_CONTAINER             "container"
 #define LWCA_POST_TOP                   "top"
 #define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
+#define LWCA_POST_CA_FILTER             "(&(cn=%s)(objectClass=%s))"
 #define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"
 #define LWCA_POST_CA_SUBJ_NAME          "cACertificateDN"
 #define LWCA_POST_CA_ENCR_PRIV_KEY      "cAEncryptedPrivateKey"
@@ -38,13 +39,20 @@
 #define LWCA_POST_REST_PORT             7578
 #define LWCA_POST_REST_HTTPS            "https"
 #define LWCA_POST_URI_PREFIX            "/v1/post/ldap"
+#define LWCA_RESP_RESULT_COUNT          "result_count"
+#define LWCA_RESP_RESULT                "result"
 #define LWCA_LDAP_DN                    "dn"
 #define LWCA_LDAP_CN                    "cn"
 #define LWCA_LDAP_SCOPE                 "scope"
+#define LWCA_LDAP_SCOPE_SUB             "sub"
 #define LWCA_LDAP_FILTER                "filter"
+#define LWCA_LDAP_ATTR_TYPE             "type"
+#define LWCA_LDAP_ATTR_VALUE            "value"
 
+#define LWCA_PARAM_DELIM(cond)          (cond?"&":"?")
 
 #define LWCA_HTTP_OK                    200
+#define LWCA_HTTP_NOT_FOUND             404
 #define LWCA_HTTP_CONFLICT              409
 #define LWCA_POST_OIDC_SCOPE            "openid id_groups at_groups rs_post"
 

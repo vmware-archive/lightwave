@@ -19,6 +19,9 @@
 #define LWCA_POST_PLUGIN_ADD_CA             "LwCADbPostPluginAddCA"
 #define LWCA_POST_SERIALIZE_CA_TO_JSON      "LwCASerializeCAToJSON"
 #define LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON      "LwCASerializeConfigCAToJSON"
+#define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
+#define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
+#define LWCA_POST_GET_CA                    "LwCADbPostPluginGetCA"
 #define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
@@ -157,6 +160,75 @@
     "            ]\n"   \
     "        }\n"   \
     "    ]\n"   \
+    "}")
+
+#define ROOT_CA_JSON_RESPONSE (\
+    "{\n" \
+    "    \"result\": [{\n" \
+    "        \"dn\": \"cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"attributes\": [{\n" \
+    "            \"type\": \"nTSecurityDescriptor\",\n" \
+    "            \"value\": [\"\\u0001\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAStatus\",\n" \
+    "            \"value\": [\"1\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACertificate\",\n" \
+    "            \"value\": [\"10101010\", \"11110000\", \"01010101\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACRLNumber\",\n" \
+    "            \"value\": [\"1500\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
+    "            \"value\": [\"01000100\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACertificateDN\",\n" \
+    "            \"value\": [\"TEST_SUBJECT\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cn\",\n" \
+    "            \"value\": [\"testParentId\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"objectClass\",\n" \
+    "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
+    "        }]\n" \
+    "    }],\n" \
+    "    \"result_count\": 1\n" \
+    "}")
+
+#define INTR_CA_JSON_RESPONSE (\
+    "{\n" \
+    "    \"result\": [{\n" \
+    "        \"dn\": \"cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"attributes\": [{\n" \
+    "            \"type\": \"nTSecurityDescriptor\",\n" \
+    "            \"value\": [\"\\u0001\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAStatus\",\n" \
+    "            \"value\": [\"1\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACertificate\",\n" \
+    "            \"value\": [\"10101010\", \"11110000\", \"01010101\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAParentCAId\",\n" \
+    "            \"value\": [\"testParentId\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACRLNumber\",\n" \
+    "            \"value\": [\"1500\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
+    "            \"value\": [\"01000100\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cACertificateDN\",\n" \
+    "            \"value\": [\"TEST_SUBJECT\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cn\",\n" \
+    "            \"value\": [\"testId\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"objectClass\",\n" \
+    "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
+    "        }]\n" \
+    "    }],\n" \
+    "    \"result_count\": 1\n" \
     "}")
 
 static
@@ -468,4 +540,113 @@ Test_LwCASerializeConfigRootCAToJson(
 
     LWCA_SAFE_FREE_STRINGA(pszSerializedData);
     LwCADbFreeCAData(pCaData);
+}
+
+VOID
+Test_LwCADeserializeJsonToRootCA(
+    VOID **state
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_DESERIALIZE_JSON_TO_CA;
+    DESERIALIZE_JSON_CA pFnDeserialize = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+    PLWCA_DB_CA_DATA    pCaData = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnDeserialize = (DESERIALIZE_JSON_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnDeserialize);
+
+    dwError = pFnDeserialize(ROOT_CA_JSON_RESPONSE, &pCaData);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCaData);
+
+    assert_string_equal(pCaData->pszSubjectName, TEST_SUBJECT);
+    assert_string_equal(pCaData->pszCRLNumber, TEST_CRL_NUM);
+    assert_int_equal(pCaData->status, TEST_CA_STATUS);
+    assert_int_equal(pCaData->pEncryptedPrivateKey->dwLength, strlen(TEST_PRIV_KEY));
+    assert_string_equal(pCaData->pEncryptedPrivateKey->pData, TEST_PRIV_KEY);
+    assert_int_equal(pCaData->pCertificates->dwCount, 3);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
+}
+
+VOID
+Test_LwCADeserializeJsonToIntrCA(
+    VOID **state
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_DESERIALIZE_JSON_TO_CA;
+    DESERIALIZE_JSON_CA pFnDeserialize = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+    PLWCA_DB_CA_DATA    pCaData = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnDeserialize = (DESERIALIZE_JSON_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnDeserialize);
+
+    // the JSON response contains the Parent ID but the struct doesn't
+    dwError = pFnDeserialize(INTR_CA_JSON_RESPONSE, &pCaData);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCaData);
+
+    assert_string_equal(pCaData->pszSubjectName, TEST_SUBJECT);
+    assert_string_equal(pCaData->pszCRLNumber, TEST_CRL_NUM);
+    assert_int_equal(pCaData->status, TEST_CA_STATUS);
+    assert_int_equal(pCaData->pEncryptedPrivateKey->dwLength, strlen(TEST_PRIV_KEY));
+    assert_string_equal(pCaData->pEncryptedPrivateKey->pData, TEST_PRIV_KEY);
+    assert_int_equal(pCaData->pCertificates->dwCount, 3);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
+    assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
+}
+
+VOID
+Test_LwCAPostDbCheckCA(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_CHECK_CA;
+    PLUGIN_CHECK_CA     pFnCheckCA = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnCheckCA = (PLUGIN_CHECK_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnCheckCA);
+}
+
+VOID
+Test_LwCAPostDbGetCA(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_GET_CA;
+    PLUGIN_GET_CA       pFnGetCA = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnGetCA = (PLUGIN_GET_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnGetCA);
 }

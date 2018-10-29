@@ -952,10 +952,10 @@ VmHttpClientGetCurrentTime(
 
     *ppszReqTime = pszReqTime;
 
-    cleanup:
+cleanup:
     return dwError;
 
-    error:
+error:
     VM_COMMON_SAFE_FREE_STRINGA(pszReqTime);
     if (ppszReqTime)
     {
