@@ -37,6 +37,17 @@ int main(VOID)
         cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_KeyUsage),
     };
 
+    const struct CMUnitTest policyValidateTests[] = {
+        cmocka_unit_test(Test_LwCAPolicyValidate_SN_Valid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_SN_Invalid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_SAN_Valid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_SAN_Invalid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_KeyUsage_Valid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_KeyUsage_Invalid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_CertDuration_Valid),
+        cmocka_unit_test(Test_LwCAPolicyValidate_CertDuration_Invalid),
+    };
+
     ret = cmocka_run_group_tests(policyUtilTests, NULL, NULL);
     if (ret)
     {
@@ -47,6 +58,13 @@ int main(VOID)
     if (ret)
     {
         fail_msg("%s", "MutentCA Policy Init (config parse) tests failed");
+    }
+
+
+    ret = cmocka_run_group_tests(policyValidateTests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA Policy Validation tests failed");
     }
 
     return ret;

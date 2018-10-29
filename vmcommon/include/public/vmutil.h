@@ -12,6 +12,12 @@
  * under the License.
  */
 
+#define VM_BYTE_REVERSE_BITS(in, out) \
+    (out) = (in);                                       \
+    (out) = ((out) & 0xF0) >> 4 | ((out) & 0x0F) << 4;  \
+    (out) = ((out) & 0xCC) >> 2 | ((out) & 0x33) << 2;  \
+    (out) = ((out) & 0xAA) >> 1 | ((out) & 0x55) << 1;
+
 /*
  * when hash map does not own key and value pair.
  */

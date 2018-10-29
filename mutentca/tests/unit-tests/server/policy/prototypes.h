@@ -95,6 +95,48 @@ Test_LwCAPolicyInitCtx_Invalid_MissingTypeMatchValue(
     VOID **state
     );
 
+// validate.c
+
+VOID
+Test_LwCAPolicyValidate_SN_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_SN_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_SAN_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_SAN_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_KeyUsage_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_KeyUsage_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_CertDuration_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyValidate_CertDuration_Invalid(
+    VOID **state
+    );
+
 #ifdef __cplusplus
 }
 #endif

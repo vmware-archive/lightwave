@@ -695,12 +695,6 @@ LwCAHexStringToBytes(
     );
 
 DWORD
-LwCABytesToDword(
-    PBYTE  pBytes,
-    DWORD* pdwOut
-    );
-
-DWORD
 LwCAGetInstallDirectory(
     PSTR *ppszInstallDir
     );

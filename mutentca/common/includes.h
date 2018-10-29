@@ -56,5 +56,7 @@
 #include <oidc_types.h>
 #include <oidc.h>
 
+#include <vmutil.h>
+
 #include "defines.h"
 #include "structs.h"

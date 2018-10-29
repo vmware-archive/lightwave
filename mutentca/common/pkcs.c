@@ -301,6 +301,13 @@ _LwCAConvertTimeToGeneralizedTime(
     PSTR    *ppszGeneralizedTime
     );
 
+static
+DWORD
+_LwCAAsn1BitStringToDword(
+    ASN1_BIT_STRING *pBitString,
+    DWORD           *pdwOut
+    );
+
 DWORD
 LwCAX509GetSerialNumber(
     X509    *pCert,
@@ -1153,10 +1160,8 @@ LwCAX509ReqGetKeyUsage(
     )
 {
     DWORD dwError = 0;
-    int iBytes = 0;
     STACK_OF(X509_EXTENSION) *pExts = NULL;
     ASN1_BIT_STRING *pKeyUsageBitString = NULL;
-    PBYTE pKeyUsageBytes = 0;
     DWORD dwKeyUsage = 0;
 
     if (!pReq || !pdwKeyUsage)
@@ -1179,20 +1184,12 @@ LwCAX509ReqGetKeyUsage(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    iBytes = i2d_ASN1_BIT_STRING(pKeyUsageBitString, &pKeyUsageBytes);
-    if (iBytes < 0)
-    {
-        dwError = LWCA_INVALID_CSR_FIELD;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCABytesToDword(pKeyUsageBytes, &dwKeyUsage);
+    dwError = _LwCAAsn1BitStringToDword(pKeyUsageBitString, &dwKeyUsage);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *pdwKeyUsage = dwKeyUsage;
 
 cleanup:
-    LWCA_SAFE_FREE_MEMORY(pKeyUsageBytes);
     if (pKeyUsageBitString)
     {
         ASN1_BIT_STRING_free(pKeyUsageBitString);
@@ -3727,5 +3724,43 @@ error:
     {
         *ppszGeneralizedTime = NULL;
     }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAAsn1BitStringToDword(
+    ASN1_BIT_STRING *pBitString,
+    DWORD           *pdwOut
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIdx = 0;
+    BYTE temp = 0;
+    DWORD dwTemp = 0;
+    DWORD dwMove = 0;
+    DWORD dwOut = 0;
+
+    if (!pBitString || pBitString->length > 4)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    for ( ; dwIdx < pBitString->length ; ++dwIdx)
+    {
+        VM_BYTE_REVERSE_BITS(pBitString->data[dwIdx], temp);
+        dwTemp = (DWORD) temp;
+
+        dwOut = dwOut | (dwTemp << dwMove);
+        dwMove += 8;
+    }
+
+    *pdwOut = dwOut;
+
+cleanup:
+    return dwError;
+
+error:
     goto cleanup;
 }

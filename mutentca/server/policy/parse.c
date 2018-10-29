@@ -108,10 +108,11 @@ LwCAPolicyParseCfgPolicies(
     if (pKeyUsagePolicyJson)
     {
         dwError = LwCAJsonGetUnsignedIntegerFromKey(pKeyUsagePolicyJson, TRUE, LWCA_ALLOWED_KEY_USAGES_KEY, &pPolicies->dwKeyUsage);
-        if (dwError || pPolicies->dwKeyUsage > 255)
+        // keyUsage can have max 9 bits set. So, the max value with 1st 9 bits set is 511
+        if (dwError || pPolicies->dwKeyUsage > 511)
         {
             dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
-            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid KeyUsagePolicy value in policy config. Expected 0-255");
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid KeyUsagePolicy value in policy config. Expected 0-511 (9 bits)");
         }
     }
 

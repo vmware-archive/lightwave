@@ -59,6 +59,7 @@ LwCAPolicyValidateSNPolicy(
 {
     DWORD dwError = 0;
     PSTR pszCN = NULL;
+    BOOLEAN bIsIP = FALSE;
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
@@ -71,16 +72,18 @@ LwCAPolicyValidateSNPolicy(
     dwError = LwCAX509ReqGetCommonName(pRequest, &pszCN);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    bIsIP = LwCAUtilIsValueIPAddr(pszCN);
+
     dwError = LwCAUtilIsValueFQDN(pszCN, &bIsFQDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (bIsFQDN)
-    {
-        bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_FQDN, pSNsAllowed);
-    }
-    else if (LwCAUtilIsValueIPAddr(pszCN))
+    if (bIsIP)
     {
         bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_IP, pSNsAllowed);
+    }
+    else if (bIsFQDN)
+    {
+        bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_FQDN, pSNsAllowed);
     }
     else
     {
@@ -119,6 +122,7 @@ LwCAPolicyValidateSANPolicy(
     DWORD dwError = 0;
     DWORD dwIdx = 0;
     PLWCA_STRING_ARRAY pSANArray = NULL;
+    BOOLEAN bIsIP = FALSE;
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
@@ -139,23 +143,25 @@ LwCAPolicyValidateSANPolicy(
 
     for ( ; dwIdx < pSANArray->dwCount ; ++dwIdx )
     {
+        bIsIP = LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]);
+
         dwError = LwCAUtilIsValueFQDN(pSANArray->ppData[dwIdx], &bIsFQDN);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        if (bIsFQDN)
-        {
-            bIsValid = _LwCAPolicyValidateEntry(
-                        pSANArray->ppData[dwIdx],
-                        pReqContext,
-                        LWCA_POLICY_CFG_TYPE_FQDN,
-                        pSANsAllowed);
-        }
-        else if (LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]))
+        if (bIsIP)
         {
             bIsValid = _LwCAPolicyValidateEntry(
                         pSANArray->ppData[dwIdx],
                         pReqContext,
                         LWCA_POLICY_CFG_TYPE_IP,
+                        pSANsAllowed);
+        }
+        else if (bIsFQDN)
+        {
+            bIsValid = _LwCAPolicyValidateEntry(
+                        pSANArray->ppData[dwIdx],
+                        pReqContext,
+                        LWCA_POLICY_CFG_TYPE_FQDN,
                         pSANsAllowed);
         }
         else
@@ -243,6 +249,7 @@ LwCAPolicyValidateCertDurationPolicy(
 {
     DWORD dwError = 0;
     double duration = 0;
+    DWORD dwDuration = 0;
     BOOLEAN bIsValid = FALSE;
 
     if (!pValidity || !pbIsValid)
@@ -252,16 +259,23 @@ LwCAPolicyValidateCertDurationPolicy(
     }
 
     duration = difftime(pValidity->tmNotAfter, pValidity->tmNotBefore);
+    if (duration < 0)
+    {
+        LWCA_LOG_ERROR("Policy Violation: Invalid cert duration. tmNotBefore greater than tmNotAfter");
+        goto error;
+    }
 
-    if (duration > 0 && duration <= (double) dwAllowedDuration)
+    dwDuration = (DWORD) duration / LWCA_TIME_SECS_PER_DAY;
+
+    if (dwDuration <= dwAllowedDuration)
     {
         bIsValid = TRUE;
     }
     else
     {
         LWCA_LOG_ERROR(
-            "Policy Violation: Given cert duration %f is higher than allowed duration %d",
-            duration,
+            "Policy Violation: Given cert duration %d is higher than allowed duration %d",
+            dwDuration,
             dwAllowedDuration);
     }
 
@@ -384,11 +398,15 @@ _LwCAPolicyValidateInzone(
     switch (type)
     {
     case LWCA_POLICY_CFG_TYPE_IP:
-        // TODO: Do Reverse DNS lookup (in subsequent commits)
+        // TODO: Do Reverse DNS lookup
+        LWCA_LOG_INFO("Inzone policy validation currently not implemented. Passing");
+        bIsValid = TRUE;
         break;
 
     case LWCA_POLICY_CFG_TYPE_FQDN:
-        // TODO: Do Forward DNS lookup (in subsequent commits)
+        // TODO: Do Forward DNS lookup
+        LWCA_LOG_INFO("Inzone policy validation currently not implemented. Passing");
+        bIsValid = TRUE;
         break;
 
     default:
@@ -437,7 +455,7 @@ _LwCAPolicyValidateWithReqUPN(
         goto error;
     }
 
-    bIsValid = _LwCAPolicyValidateWithValue(pcszEntry, pszHostFQDN, pcszPrefix, pcszSuffix);
+    bIsValid = _LwCAPolicyValidateWithValue(pcszEntry, pszHostname, pcszPrefix, pcszSuffix);
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszTemp);
@@ -465,7 +483,7 @@ _LwCAPolicyValidateWithValue(
                 &pszExpectedEntry,
                 "%s%s%s",
                 LWCA_SAFE_STRING(pcszPrefix),
-                pcszEntry,
+                pcszValue,
                 LWCA_SAFE_STRING(pcszSuffix));
     BAIL_ON_LWCA_ERROR(dwError);
 
