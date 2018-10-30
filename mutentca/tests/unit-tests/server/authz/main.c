@@ -11,6 +11,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 #include "includes.h"
 
 int main(VOID)
@@ -26,6 +27,23 @@ int main(VOID)
     if (ret)
     {
         fail_msg("%s", "MutentCA AuthZ Tests Failed");
+    }
+
+    const struct CMUnitTest LwCAAuthZLWTests[] = {
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCACreate_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCACreate_InValid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCARevoke_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCARevoke_InValid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCSR_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCSR_InValid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCRL_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCRL_InValid),
+    };
+
+    ret = cmocka_run_group_tests(LwCAAuthZLWTests, Test_LwCAAuthZLW_Setup, Test_LwCAAuthZLW_Teardown);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA Lightwave AuthZ Tests Failed");
     }
 
     return ret;

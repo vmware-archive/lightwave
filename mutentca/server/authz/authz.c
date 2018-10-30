@@ -52,6 +52,8 @@ LwCAAuthZInitialize(
     {
         gAuthZCtx.bPluginLoaded = FALSE;
 
+        pFT->pfnAuthZCheckAccess = &LwCAAuthZLWCheckAccess;
+
         LWCA_LOG_INFO("No AuthZ plugin specified... Using default Lightwave rules");
     }
     else
@@ -72,14 +74,13 @@ LwCAAuthZInitialize(
         dwError = LwCAAllocateStringA(pszPluginPath, &gAuthZCtx.pszPluginPath);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        gAuthZCtx.pFT = pFT;
         gAuthZCtx.pPluginHandle = pPluginHandle;
 
         LWCA_LOG_INFO("Loaded %s AuthZ Plugin", gAuthZCtx.pFT->pfnAuthZGetVersion());
     }
 
+    gAuthZCtx.pFT = pFT;
     gAuthZCtx.bInitialized = TRUE;
-
 
 
 cleanup:
@@ -96,7 +97,7 @@ error:
 
     if (dwError != LWCA_ERROR_AUTHZ_INITIALIZED)
     {
-        LWCA_SAFE_FREE_MEMORY(pFT);
+        LwCAAuthZFunctionTableFree(pFT);
         LwCAAuthZDestroy();
     }
 
@@ -108,16 +109,74 @@ error:
 DWORD
 LwCAAuthZCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
+    PCSTR                           pcszCAId,               // IN
     X509_REQ                        *pX509Request,          // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     )
 {
-    DWORD                   dwError = 0;
+    DWORD                           dwError = 0;
+    BOOLEAN                         bLocked = FALSE;
+    BOOLEAN                         bAuthorized = FALSE;
 
-    // TODO: Implement this
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Request || !pbAuthorized)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gAuthZCtx.pMutex, bLocked);
+
+    if (!gAuthZCtx.bInitialized)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNINITIALIZED);
+    }
+
+    dwError = gAuthZCtx.pFT->pfnAuthZCheckAccess(
+                             pReqCtx,
+                             pcszCAId,
+                             pX509Request,
+                             apiPermissions,
+                             &bAuthorized);
+    if (dwError)
+    {
+        if (gAuthZCtx.bPluginLoaded)
+        {
+            LWCA_LOG_ERROR(
+                    "[%s,%d] (%s) AuthZ plugin failed with (%s)",
+                    __FUNCTION__,
+                    __LINE__,
+                    gAuthZCtx.pFT->pfnAuthZGetVersion(),
+                    gAuthZCtx.pFT->pfnAuthZErrorToString(dwError));
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_PLUGIN_FAILURE);
+        }
+        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Lightwave AuthZ failed");
+    }
+
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "Unauthorized Request! UPN (%s) API (%d)",
+                pReqCtx->pszBindUPN,
+                apiPermissions);
+    }
+
+    *pbAuthorized = bAuthorized;
+
+
+cleanup:
+
+    LWCA_LOCK_MUTEX_UNLOCK(&gAuthZCtx.pMutex, bLocked);
 
     return dwError;
+
+error:
+
+    if (pbAuthorized)
+    {
+        *pbAuthorized = FALSE;
+    }
+
+    goto cleanup;
 }
 
 VOID
@@ -132,8 +191,11 @@ LwCAAuthZDestroy(
     gAuthZCtx.bInitialized = FALSE;
     gAuthZCtx.bPluginLoaded = FALSE;
     LWCA_SAFE_FREE_STRINGA(gAuthZCtx.pszPluginPath);
+    gAuthZCtx.pszPluginPath = NULL;
     LwCAAuthZFunctionTableFree(gAuthZCtx.pFT);
+    gAuthZCtx.pFT = NULL;
     LwCAPluginDeinitialize(gAuthZCtx.pPluginHandle);
+    gAuthZCtx.pPluginHandle = NULL;
 
     LWCA_LOCK_MUTEX_UNLOCK(&gAuthZCtx.pMutex, bLocked);
 }

@@ -20,6 +20,9 @@ extern "C" {
 #endif
 
 
+#define     LWCA_CAADMINS_GROUP         "CAAdmins"
+#define     LWCA_CAOPERATORS_GROUP      "CAOperators"
+
 /*
  * Indicates the API which requires an authorization check
  *     - LWCA_AUTHZ_CA_CREATE_PERMISSION:    AuthZ check for CA creation API
@@ -29,8 +32,9 @@ extern "C" {
  */
 typedef enum _LWCA_AUTHZ_API_PERMISSION
 {
-    LWCA_AUTHZ_CA_CREATE_PERMISSION      = 0x0,
-    LWCA_AUTHZ_CA_REVOKE_PERMISSION      = 0x1,
+    LWCA_AUTHZ_ALLOW_PERMISSION          = 0x0,
+    LWCA_AUTHZ_CA_CREATE_PERMISSION      = 0x1,
+    LWCA_AUTHZ_CA_REVOKE_PERMISSION      = 0x2,
     LWCA_AUTHZ_CSR_PERMISSION            = 0x4,
     LWCA_AUTHZ_CRL_PERMISSION            = 0x8
 } LWCA_AUTHZ_API_PERMISSION;
@@ -58,15 +62,12 @@ typedef PCSTR
  *           which converts a plugin error code to a human readable string.
  *
  * @param    dwErrorCode is the plugin error code
- * @param    ppszErrorString is the human readable message of the plugin error
- *           code.
  *
- * @return   DWORD indicating function success/failure
+ * @return   PCSTR representing the human readable error information
  */
-typedef DWORD
+typedef PCSTR
 (*PFN_LWCA_AUTHZ_ERROR_TO_STRING)(
-    DWORD       dwErrorCode,            // IN
-    PSTR        *ppszErrorString        // OUT
+    DWORD       dwErrorCode            // IN
     );
 
 /**
@@ -76,6 +77,7 @@ typedef DWORD
  *           which will determine is a requestor is authorized to run an API.
  *
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
+ * @param    pcszCAId is CA that the request is for.
  * @param    pX509Request is the request represented as the openssl X509_REQ struct.
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
@@ -87,6 +89,7 @@ typedef DWORD
 typedef DWORD
 (*PFN_LWCA_AUTHZ_CHECK_ACCESS)(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
+    PCSTR                           pcszCAId,               // IN
     X509_REQ                        *pX509Request,          // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT

@@ -2,7 +2,8 @@ noinst_LTLIBRARIES = libmutentcaauthz.la
 
 libmutentcaauthz_la_SOURCES = \
     authz.c \
-    globals.c
+    globals.c \
+    lightwave-authz.c
 
 libmutentcaauthz_la_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \

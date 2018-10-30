@@ -21,6 +21,11 @@ extern "C" {
 #include <config.h>
 #include <mutentcasys.h>
 
+#include <openssl/x509.h>
+#include <openssl/conf.h>
+#include <openssl/x509v3.h>
+#include <openssl/pem.h>
+
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
 #endif

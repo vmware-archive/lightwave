@@ -48,6 +48,7 @@ LwCAAuthZInitialize(
  *           appropriate API operation type.
  *
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
+ * @param    pcszCAId is CA that the request is for.
  * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
@@ -59,6 +60,7 @@ LwCAAuthZInitialize(
 DWORD
 LwCAAuthZCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
+    PCSTR                           pcszCAId,               // IN
     X509_REQ                        *pX509Request,          // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT

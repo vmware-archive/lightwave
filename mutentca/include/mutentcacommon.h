@@ -236,6 +236,9 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_LOG_ERROR( Format, ... ) \
     LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_ERROR, (Format), ##__VA_ARGS__ )
 
+#define LWCA_LOG_ALERT( Format, ... ) \
+    LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_ALERT, (Format), ##__VA_ARGS__ )
+
 #define LWCA_LOG_WARNING( Format, ... ) \
     LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_WARNING, (Format), ##__VA_ARGS__ )
 

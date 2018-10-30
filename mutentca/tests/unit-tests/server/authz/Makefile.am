@@ -5,13 +5,15 @@ TESTS = testmutentcaauthz
 
 testmutentcaauthz_SOURCES = \
     authz.c \
+	lightwave-authz.c \
     main.c
 
 testmutentcaauthz_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \
     -I$(top_srcdir)/mutentca/include/public \
     -I$(top_srcdir)/mutentca/server/include \
-    @LW_INCLUDES@
+    @LW_INCLUDES@ \
+    @OPENSSL_INCLUDES@
 
 testmutentcaauthz_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \

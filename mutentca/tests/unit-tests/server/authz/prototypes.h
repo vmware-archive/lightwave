@@ -12,6 +12,8 @@
  * under the License.
  */
 
+/* authz.c */
+
 VOID
 Test_LwCAAuthZInitialize_NoPlugin_Valid(
     VOID        **state
@@ -19,5 +21,57 @@ Test_LwCAAuthZInitialize_NoPlugin_Valid(
 
 VOID
 Test_LwCAAuthZInitialize_PluginPath_Invalid(
+    VOID        **state
+    );
+
+/* lightwave-authz.c */
+
+int
+Test_LwCAAuthZLW_Setup(
+    VOID        **state
+    );
+
+int
+Test_LwCAAuthZLW_Teardown(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCACreate_Valid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCACreate_InValid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCARevoke_Valid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCARevoke_InValid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCSR_Valid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCSR_InValid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCRL_Valid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckCRL_InValid(
     VOID        **state
     );
