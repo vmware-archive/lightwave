@@ -80,6 +80,7 @@ LwCAShutdown(
 #endif
     LwCAAuthZDestroy();
     LwCASecurityFreeCtx();
+    LwCAPolicyFreeCtx(gpPolicyCtx);
     //LwCAServiceShutdown();
     LwCATerminateLogging();
     //LwCASrvCleanupGlobalState();
@@ -105,6 +106,9 @@ LwCASrvInitCA(
     PLWCA_JSON_OBJECT pJsonConfig = NULL;
     PLWCA_JSON_OBJECT pAuthZConfig = NULL;
     PLWCA_JSON_OBJECT pSecurityConfig = NULL;
+    PLWCA_JSON_OBJECT pPolicyConfig = NULL;
+    PCSTR pcszPolicyConfigPath = NULL;
+    PLWCA_JSON_OBJECT pPolicyConfigContent = NULL;
 
     dwError = LwCAConfigLoadFile(LWCA_CONFIG_FILE_PATH, &pJsonConfig);
     if (dwError == LWCA_JSON_FILE_LOAD_ERROR)
@@ -132,11 +136,33 @@ LwCASrvInitCA(
     dwError = LwCAJsonGetObjectFromKey(
                   pJsonConfig,
                   FALSE,
-                  MUTENTCA_SECURITY_PLUGIN_KEY,
+                  MUTENTCA_CONFIG_SECURITY_PLUGIN_KEY,
                   &pSecurityConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCASecurityInitCtx(pSecurityConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* get the policy config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  MUTENTCA_CONFIG_POLICY_KEY,
+                  &pPolicyConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetConstStringFromKey(
+                  pPolicyConfig,
+                  FALSE,
+                  MUTENCA_CONFIG_POLICY_CONFIG_PATH_KEY,
+                  &pcszPolicyConfigPath);
+
+    dwError = LwCAJsonLoadObjectFromFile(
+                  pcszPolicyConfigPath,
+                  &pPolicyConfigContent);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAPolicyInitCtx(pPolicyConfigContent, &gpPolicyCtx);
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:

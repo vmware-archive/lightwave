@@ -2,6 +2,7 @@ noinst_LTLIBRARIES = libmutentcasrvcommon.la
 
 libmutentcasrvcommon_la_SOURCES = \
     api.c \
+    globals.c \
     util.c
 
 libmutentcasrvcommon_la_CPPFLAGS = \

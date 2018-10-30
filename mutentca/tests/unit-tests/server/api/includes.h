@@ -36,6 +36,7 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>
+#include <mutentcapolicy.h>
 
 #include "prototypes.h"
 

@@ -4,43 +4,16 @@
             "AllowedCNs": [
                 {
                     "type": "name",
-                    "match": "constant",
-                    "value": "localhost"
-                },
-                {
-                    "type": "name",
-                    "match": "req.hostname"
-                },
-                {
-                    "type": "fqdn",
-                    "match": "inzone"
+                    "match": "any"
                 }
             ]
         },
         "SANPolicy": {
             "multiSAN": false,
-            "AllowedSANs": [
-                {
-                    "type": "ip",
-                    "match": "inzone"
-                },
-                {
-                    "type": "name",
-                    "match": "constant",
-                    "value": "localhost"
-                },
-                {
-                    "type": "name",
-                    "match": "req.hostname"
-                },
-                {
-                    "type": "fqdn",
-                    "match": "inzone"
-                }
-            ]
+            "AllowedSANs": []
         },
         "KeyUsagePolicy": {
-            "AllowedKeyUsages": 255
+            "AllowedKeyUsages": 96
         },
         "CertDurationPolicy": {
             "MaxAllowedDays" : 3650
@@ -83,6 +56,10 @@
                 {
                     "type": "fqdn",
                     "match": "inzone"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "req.fqdn"
                 }
             ]
         },

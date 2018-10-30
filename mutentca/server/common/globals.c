@@ -12,31 +12,6 @@
  * under the License.
  */
 
-#ifndef _LWCA_SERVICE_API_INCLUDES_H_
-#define _LWCA_SERVICE_API_INCLUDES_H_
+#include "includes.h"
 
-#include <config.h>
-#include <mutentcasys.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/conf.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/bio.h>
-
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
-
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcacommon.h>
-#include <mutentcaerror.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcadbapi.h>
-#include <mutentcaapi.h>
-#include <mutentcapkcs.h>
-#include <mutentcapolicy.h>
-
-#endif /* _LWCA_SERVICE_API_INCLUDES_H_ */
+PLWCA_POLICY_CONTEXT gpPolicyCtx = NULL;

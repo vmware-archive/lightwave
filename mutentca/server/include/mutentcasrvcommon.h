@@ -82,7 +82,7 @@ typedef DWORD LWCA_FUNC_LEVEL;
 
 #define SQL_BUFFER_SIZE          1024
 
-#define LWCA_MAX_INT_CA_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
+#define LWCA_DEFAULT_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
 
 #define LWCA_SAFE_FREE_HZN_PSTR(PTR)    \
     do {                                \

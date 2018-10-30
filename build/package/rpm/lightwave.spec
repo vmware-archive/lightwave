@@ -1443,6 +1443,8 @@ users.
 %{_sbindir}/mutentcad
 
 %{_datadir}/config/mutentca.reg
+%{_datadir}/config/mutentcaconfig.json
+%{_datadir}/config/mutentca-policy.json
 %{_datadir}/config/mutentca-rest.json
 %{_datadir}/config/mutentca-schema.ldif
 %{_datadir}/config/mutentcad-syslog-ng.conf

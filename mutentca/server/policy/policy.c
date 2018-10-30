@@ -159,6 +159,52 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCAPolicyGetCertDuration(
+    PLWCA_POLICY_CONTEXT                pPolicyCtx,
+    LWCA_POLICY_TYPE                    policyType,
+    DWORD                               *pdwDuration
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwDuration = 0;
+
+    if (!pPolicyCtx || !pdwDuration)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    switch (policyType)
+    {
+    case LWCA_POLICY_TYPE_CA:
+        if (pPolicyCtx->pCAPoliciesAllowed)
+        {
+            dwDuration = pPolicyCtx->pCAPoliciesAllowed->dwCertDuration;
+        }
+        break;
+
+    case LWCA_POLICY_TYPE_CERTIFICATE:
+        if (pPolicyCtx->pCertPoliciesAllowed)
+        {
+            dwDuration = pPolicyCtx->pCertPoliciesAllowed->dwCertDuration;
+        }
+        break;
+
+    default:
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *pdwDuration = dwDuration;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 VOID
 LwCAPolicyFreeCtx(
     PLWCA_POLICY_CONTEXT        pPolicyCtx

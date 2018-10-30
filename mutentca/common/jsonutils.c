@@ -191,6 +191,61 @@ error:
 }
 
 /*
+ * This function sets the string value (in ppcszValue) corresponding to the given the key of json object
+ * bOptional is equivalent to searching for an optional key in the json object
+ * If key does not exist and bOptional is set, this will return success with NULL value
+ */
+DWORD
+LwCAJsonGetConstStringFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PCSTR                   *ppcszValue
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_JSON_OBJECT       pJsonValue = NULL;
+    PCSTR                   pcszValue = NULL;
+
+    if (!pJson || IsNullOrEmptyString(pcszKey) || !ppcszValue)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonGetObjectFromKey(pJson, bOptional, pcszKey, &pJsonValue);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!pJsonValue && bOptional)
+    {
+        *ppcszValue = NULL;
+        goto cleanup;
+    }
+
+    pcszValue = json_string_value(pJsonValue);
+    if (IsNullOrEmptyString(pcszValue))
+    {
+        dwError = LWCA_JSON_PARSE_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppcszValue = pcszValue;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (ppcszValue)
+    {
+        *ppcszValue = NULL;
+    }
+
+    goto cleanup;
+}
+
+/*
  * This function sets the string value (in ppszValue) corresponding to the given the key of json object
  * bOptional is equivalent to searching for an optional key in the json object
  * If key does not exist and bOptional is set, this will return success with NULL value
@@ -204,8 +259,8 @@ LwCAJsonGetStringFromKey(
     )
 {
     DWORD                   dwError = 0;
-    PLWCA_JSON_OBJECT       pJsonValue = NULL;
     PCSTR                   pcszValue = NULL;
+    PSTR                    pszValue = NULL;
 
     if (!pJson || IsNullOrEmptyString(pcszKey) || !ppszValue)
     {
@@ -213,25 +268,13 @@ LwCAJsonGetStringFromKey(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAJsonGetObjectFromKey(pJson, bOptional, pcszKey, &pJsonValue);
+    dwError = LwCAJsonGetConstStringFromKey(pJson, bOptional, pcszKey, &pcszValue);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (!pJsonValue && bOptional)
-    {
-        dwError = 0;
-        *ppszValue = NULL;
-        goto cleanup;
-    }
-
-    pcszValue = json_string_value(pJsonValue);
-    if (IsNullOrEmptyString(pcszValue))
-    {
-        dwError = LWCA_JSON_PARSE_ERROR;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCAAllocateStringA(pcszValue, ppszValue);
+    dwError = LwCAAllocateStringA(pcszValue, &pszValue);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszValue = pszValue;
 
 cleanup:
 
@@ -239,6 +282,7 @@ cleanup:
 
 error:
 
+    LWCA_SAFE_FREE_STRINGA(pszValue);
     if (ppszValue)
     {
         *ppszValue = NULL;
@@ -279,7 +323,6 @@ LwCAJsonGetStringArrayFromKey(
 
     if (!pJsonValue && bOptional)
     {
-        dwError = 0;
         *ppStrArrValue = NULL;
         goto cleanup;
     }
@@ -361,7 +404,6 @@ LwCAJsonGetTimeFromKey(
 
     if (!pJsonValue && bOptional)
     {
-        dwError = 0;
         *ptValue = 0;
         goto cleanup;
     }
@@ -425,7 +467,6 @@ LwCAJsonGetIntegerFromKey(
 
     if (!pJsonValue && bOptional)
     {
-        dwError = 0;
         *piValue = 0;
         goto cleanup;
     }
@@ -523,7 +564,6 @@ LwCAJsonGetBooleanFromKey(
 
     if (!pJsonValue && bOptional)
     {
-        dwError = 0;
         *pbValue = FALSE;
         goto cleanup;
     }

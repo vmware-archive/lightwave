@@ -17,6 +17,7 @@ testmutentcaapi_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/db/libmutentcadb.la \
+    $(top_builddir)/mutentca/server/policy/libmutentcapolicy.la \
     $(top_builddir)/mutentca/server/api/libmutentcaapi.la \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
@@ -43,4 +44,6 @@ testmutentcaapi_LDFLAGS = \
     -Wl,--wrap,LwCADbAddCertData \
     -Wl,--wrap,LwCADbGetCertData \
     -Wl,--wrap,LwCADbGetParentCAId \
-    -Wl,--wrap,LwCADbUpdateCAStatus
+    -Wl,--wrap,LwCADbUpdateCAStatus \
+    -Wl,--wrap,LwCAPolicyValidate \
+    -Wl,--wrap,LwCAPolicyGetCertDuration

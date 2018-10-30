@@ -28,6 +28,7 @@ mutentcad_LDADD = \
     $(top_builddir)/mutentca/server/config/libmutentcasrvconfig.la \
     $(top_builddir)/mutentca/server/authz/libmutentcaauthz.la \
     $(top_builddir)/mutentca/server/security/libmutentcasecurity.la \
+    $(top_builddir)/mutentca/server/policy/libmutentcapolicy.la \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
     @LWIO_LIBS@ \

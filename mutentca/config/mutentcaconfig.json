@@ -1,0 +1,5 @@
+{
+    "policy":{
+        "policyConfig":"/opt/vmware/share/config/mutentca-policy.json"
+    }
+}

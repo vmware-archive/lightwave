@@ -51,6 +51,7 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcapkcs.h>
 #include <mutentcaapi.h>
+#include <mutentcapolicy.h>
 #include <vmafdclient.h>
 #include <vmafdtypes.h>
 #include <vecsclient.h>

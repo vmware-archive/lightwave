@@ -190,10 +190,15 @@ LwCAGetSignedCertificate(
     X509 *pX509Cert = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_CERTIFICATE pCert = NULL;
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+    PLWCA_CERT_VALIDITY pTempValidity = NULL;
+    DWORD dwDuration = 0;
+    BOOLEAN bIsValid = FALSE;
     BOOLEAN bIsCA = FALSE;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) ||
-        !pCertRequest || !pValidity || !ppCertifcate)
+        !pCertRequest || !ppCertifcate)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -202,9 +207,48 @@ LwCAGetSignedCertificate(
     dwError = LwCAPEMToX509Req(pCertRequest, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    //TODO: Policy plugin must verify subjectname does not have wildcardstring
-    //TODO: Policy plugin must verify subjectaltname does not have wildcardstring
-    //TODO: Policy plugin must verify multiple SANs are not allowed
+    dwError = LwCAPolicyValidate(
+                gpPolicyCtx,
+                pReqCtx,
+                pRequest,
+                pValidity,
+                LWCA_POLICY_TYPE_CERTIFICATE,
+                LWCA_POLICY_CHECK_ALL,
+                &bIsValid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bIsValid)
+    {
+        dwError = LWCA_POLICY_VALIDATION_ERROR;
+        BAIL_ON_LWCA_ERROR_WITH_MSG(
+            dwError,
+            "Failed to sign certificate due to policy violation");
+    }
+
+    if (pValidity)
+    {
+        dwError = LwCACreateCertValidity(pValidity->tmNotBefore,
+                                        pValidity->tmNotAfter,
+                                        &pTempValidity
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAPolicyGetCertDuration(gpPolicyCtx, LWCA_POLICY_TYPE_CERTIFICATE,  &dwDuration);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (dwDuration == 0)
+        {
+            dwDuration = LWCA_DEFAULT_CERT_DURATION;
+        }
+
+        tmNotBefore = time(NULL);
+        tmNotAfter = tmNotBefore + dwDuration;
+
+        dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     dwError = _LwCACheckCAExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -212,7 +256,7 @@ LwCAGetSignedCertificate(
     dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGenerateX509Certificate(pRequest, pValidity, pCACert, &pX509Cert);
+    dwError = LwCAGenerateX509Certificate(pRequest, pTempValidity, pCACert, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509CheckIfCACert(pX509Cert, &bIsCA);
@@ -259,9 +303,9 @@ LwCACreateIntermediateCA(
 {
     DWORD                       dwError = 0;
     DWORD                       dwKeyUsageConstraints = 0;
+    DWORD                       dwDuration = 0;
     time_t                      tmNotBefore;
     time_t                      tmNotAfter;
-    struct tm                   *tm = NULL;
     BOOLEAN                     bIsCA = FALSE;
     PSTR                        pszPublicKey = NULL;
     PLWCA_KEY                   pEncryptedKey = NULL;
@@ -274,6 +318,7 @@ LwCACreateIntermediateCA(
     PLWCA_CERTIFICATE           pCACert =  NULL;
     PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
     PLWCA_CERT_VALIDITY         pTempValidity = NULL;
+    BOOLEAN                     bIsValid = FALSE;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts ||
         !pCARequest || IsNullOrEmptyString(pcszParentCAId)
@@ -332,6 +377,24 @@ LwCACreateIntermediateCA(
     dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAPolicyValidate(
+                gpPolicyCtx,
+                pReqCtx,
+                pRequest,
+                pValidity,
+                LWCA_POLICY_TYPE_CA,
+                LWCA_POLICY_CHECK_ALL,
+                &bIsValid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bIsValid)
+    {
+        dwError = LWCA_POLICY_VALIDATION_ERROR;
+        BAIL_ON_LWCA_ERROR_WITH_MSG(
+            dwError,
+            "Failed to create intermediate CA due to policy violation");
+    }
+
     dwError = LwCASecuritySignX509Request(pcszCAId, pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -345,16 +408,18 @@ LwCACreateIntermediateCA(
     }
     else
     {
-        tmNotBefore = time(NULL);
-        tm = localtime(&tmNotBefore);
-        //TODO: Get CA Cert duration from policy engine
-        tm->tm_yday += LWCA_MAX_INT_CA_CERT_DURATION;
-        tmNotAfter = mktime(tm);
+        dwError = LwCAPolicyGetCertDuration(gpPolicyCtx, LWCA_POLICY_TYPE_CA, &dwDuration);
+        BAIL_ON_LWCA_ERROR(dwError);
 
-        dwError = LwCACreateCertValidity(tmNotBefore,
-                                        tmNotAfter,
-                                        &pTempValidity
-                                        );
+        if (dwDuration == 0)
+        {
+            dwDuration = LWCA_DEFAULT_CERT_DURATION;
+        }
+
+        tmNotBefore = time(NULL);
+        tmNotAfter = tmNotBefore + dwDuration;
+
+        dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 

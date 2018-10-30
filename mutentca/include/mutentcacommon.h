@@ -1040,6 +1040,14 @@ LwCAJsonGetObjectFromKey(
     );
 
 DWORD
+LwCAJsonGetConstStringFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PCSTR                   *ppcszValue
+    );
+
+DWORD
 LwCAJsonGetStringFromKey(
     PLWCA_JSON_OBJECT       pJson,
     BOOLEAN                 bOptional,
