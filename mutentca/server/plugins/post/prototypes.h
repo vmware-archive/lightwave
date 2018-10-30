@@ -166,3 +166,9 @@ LwCADeserializeJSONToCA(
     PCSTR               pcszResponse,
     PLWCA_DB_CA_DATA    *ppCaData
     );
+
+DWORD
+LwCAGenerateCAPatchRequestBody(
+    PLWCA_DB_CA_DATA    pCaData,
+    PSTR                *ppszBody
+    );

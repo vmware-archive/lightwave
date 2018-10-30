@@ -56,3 +56,14 @@ typedef DWORD (*PLUGIN_GET_CA)(
     PCSTR,
     PLWCA_DB_CA_DATA *
     );
+
+typedef DWORD (*PLUGIN_UPDATE_CA)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PLWCA_DB_CA_DATA
+    );
+
+typedef DWORD (*PLUGIN_UPDATE_CA_REQ_BODY)(
+    PLWCA_DB_CA_DATA,
+    PSTR *
+    );

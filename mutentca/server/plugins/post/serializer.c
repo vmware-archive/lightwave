@@ -80,6 +80,46 @@ _LwCAGetBytes(
 
 static
 DWORD
+_LwCAJsonReplaceString(
+    PCSTR               pcszType,
+    PCSTR               pcszValue,
+    PLWCA_JSON_OBJECT   pJson
+    );
+
+static
+DWORD
+_LwCAJsonReplaceStringArray(
+    PCSTR               pcszType,
+    PLWCA_STRING_ARRAY  pValue,
+    PLWCA_JSON_OBJECT   pJson
+    );
+
+static
+DWORD
+_LwCAJsonReplaceCertArray(
+    PCSTR                   pcszType,
+    PLWCA_CERTIFICATE_ARRAY pValue,
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+static
+DWORD
+_LwCAJsonReplaceBytes(
+    PCSTR               pcszType,
+    PLWCA_KEY           pValue,
+    PLWCA_JSON_OBJECT   pJson
+    );
+
+static
+DWORD
+_LwCAJsonReplaceInteger(
+    PCSTR               pcszType,
+    int                 value,
+    PLWCA_JSON_OBJECT   pJson
+    );
+
+static
+DWORD
 _LwCATransformAttrJsonToKV(
     PLWCA_JSON_OBJECT   pOrigAttr,
     PLWCA_JSON_OBJECT   *ppAttr
@@ -408,6 +448,86 @@ error:
     if (ppCaData)
     {
         *ppCaData = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAGenerateCAPatchRequestBody(
+    PLWCA_DB_CA_DATA    pCaData,
+    PSTR                *ppszBody
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pJsonBody = NULL;
+    PSTR                pszBody = NULL;
+
+    if (!pCaData || !ppszBody)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonArrayCreate(&pJsonBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pCaData->pszSubjectName))
+    {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CA_SUBJ_NAME,
+                                         pCaData->pszSubjectName,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pCaData->pCertificates)
+    {
+        dwError = _LwCAJsonReplaceCertArray(LWCA_POST_CA_CERTIFICATES,
+                                            pCaData->pCertificates,
+                                            pJsonBody
+                                            );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pCaData->pEncryptedPrivateKey)
+    {
+        dwError = _LwCAJsonReplaceBytes(LWCA_POST_CA_ENCR_PRIV_KEY,
+                                        pCaData->pEncryptedPrivateKey,
+                                        pJsonBody
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCaData->pszCRLNumber))
+    {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CA_CRL_NUM,
+                                         pCaData->pszCRLNumber,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    // status is not a pointer, hence it will always be updated
+    dwError = _LwCAJsonReplaceInteger(LWCA_POST_CA_STATUS,
+                                      pCaData->status,
+                                      pJsonBody
+                                      );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonDumps(pJsonBody, JSON_DECODE_ANY, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszBody = pszBody;
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pJsonBody);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+    if (ppszBody)
+    {
+        *ppszBody = pszBody;
     }
     goto cleanup;
 }
@@ -881,5 +1001,212 @@ error:
     {
         *ppValue = NULL;
     }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAJsonReplaceString(
+    PCSTR               pcszType,
+    PCSTR               pcszValue,
+    PLWCA_JSON_OBJECT   pJson
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pElem = NULL;
+    PLWCA_JSON_OBJECT   pObj = NULL;
+    PLWCA_JSON_OBJECT   pValueArr = NULL;
+
+    if (IsNullOrEmptyString(pcszType) ||
+        IsNullOrEmptyString(pcszValue) ||
+        !pJson
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonObjectCreate(&pElem);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetStringToObject(pElem, LWCA_LDAP_ATTR_TYPE, pcszType);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonArrayCreate(&pValueArr);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonAppendStringToArray(pValueArr, pcszValue);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetJsonToObject(pElem, LWCA_LDAP_ATTR_VALUE, pValueArr);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonObjectCreate(&pObj);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetStringToObject(pObj,
+                                        LWCA_LDAP_OPERATION,
+                                        LWCA_LDAP_REPLACE
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetJsonToObject(pObj, LWCA_LDAP_UPDATE_ATTR, pElem);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonAppendJsonToArray(pJson, pObj);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pValueArr);
+    LWCA_SAFE_JSON_DECREF(pElem);
+    LWCA_SAFE_JSON_DECREF(pObj);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAJsonReplaceCertArray(
+    PCSTR                   pcszType,
+    PLWCA_CERTIFICATE_ARRAY pValue,
+    PLWCA_JSON_OBJECT       pJson
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_STRING_ARRAY  pStrArray = NULL;
+
+    if (IsNullOrEmptyString(pcszType) || !pValue || !pJson)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCACreateStringArrayFromCertArray(pValue, &pStrArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAJsonReplaceStringArray(pcszType, pStrArray, pJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LwCAFreeStringArray(pStrArray);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAJsonReplaceStringArray(
+    PCSTR               pcszType,
+    PLWCA_STRING_ARRAY  pValue,
+    PLWCA_JSON_OBJECT   pJson
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pElem = NULL;
+    PLWCA_JSON_OBJECT   pObj = NULL;
+    PLWCA_JSON_OBJECT   pValueArr = NULL;
+    int                 i = 0;
+
+    if (IsNullOrEmptyString(pcszType) || !pValue || !pJson)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonObjectCreate(&pElem);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetStringToObject(pElem, LWCA_LDAP_ATTR_TYPE, pcszType);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonArrayCreate(&pValueArr);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (i = 0; i < pValue->dwCount; ++i)
+    {
+        dwError = LwCAJsonAppendStringToArray(pValueArr, pValue->ppData[i]);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonSetJsonToObject(pElem, LWCA_LDAP_ATTR_VALUE, pValueArr);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonObjectCreate(&pObj);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetStringToObject(pObj,
+                                        LWCA_LDAP_OPERATION,
+                                        LWCA_LDAP_REPLACE
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonSetJsonToObject(pObj, LWCA_LDAP_UPDATE_ATTR, pElem);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonAppendJsonToArray(pJson, pObj);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pElem);
+    LWCA_SAFE_JSON_DECREF(pValueArr);
+    LWCA_SAFE_JSON_DECREF(pObj);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAJsonReplaceBytes(
+    PCSTR               pcszType,
+    PLWCA_KEY           pValue,
+    PLWCA_JSON_OBJECT   pJson
+    )
+{
+    DWORD               dwError = 0;
+
+    if (IsNullOrEmptyString(pcszType) || !pValue || !pJson)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAJsonReplaceString(pcszType, (PSTR)pValue->pData, pJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAJsonReplaceInteger(
+    PCSTR               pcszType,
+    int                 value,
+    PLWCA_JSON_OBJECT   pJson
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszValue = NULL;
+
+    dwError = LwCAAllocateStringPrintfA(&pszValue, "%d", value);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAJsonReplaceString(pcszType, pszValue, pJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszValue);
+    return dwError;
+
+error:
     goto cleanup;
 }

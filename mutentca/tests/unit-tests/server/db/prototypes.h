@@ -236,3 +236,13 @@ VOID
 Test_LwCAPostDbGetCA(
     VOID **state
     );
+
+VOID
+Test_LwCAPostDbUpdateCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAUpdateRootCARequestBody(
+    VOID **state
+    );

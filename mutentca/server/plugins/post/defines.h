@@ -48,6 +48,9 @@
 #define LWCA_LDAP_FILTER                "filter"
 #define LWCA_LDAP_ATTR_TYPE             "type"
 #define LWCA_LDAP_ATTR_VALUE            "value"
+#define LWCA_LDAP_REPLACE               "replace"
+#define LWCA_LDAP_OPERATION             "operation"
+#define LWCA_LDAP_UPDATE_ATTR           "attribute"
 
 #define LWCA_PARAM_DELIM(cond)          (cond?"&":"?")
 

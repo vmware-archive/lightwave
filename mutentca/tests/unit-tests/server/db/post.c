@@ -22,6 +22,8 @@
 #define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
 #define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
 #define LWCA_POST_GET_CA                    "LwCADbPostPluginGetCA"
+#define LWCA_POST_UPDATE_CA                 "LwCADbPostPluginUpdateCA"
+#define LWCA_UPDATE_CA_REQUEST_BODY         "LwCAGenerateCAPatchRequestBody"
 #define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
@@ -230,6 +232,57 @@
     "    }],\n" \
     "    \"result_count\": 1\n" \
     "}")
+
+#define CA_GENERATED_PATCH (\
+    "[\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cACertificateDN\",\n" \
+    "            \"value\": [\n" \
+    "                \"TEST_SUBJECT\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cACertificate\",\n" \
+    "            \"value\": [\n" \
+    "                \"10101010\",\n" \
+    "                \"11110000\",\n" \
+    "                \"01010101\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
+    "            \"value\": [\n" \
+    "                \"01000100\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cACRLNumber\",\n" \
+    "            \"value\": [\n" \
+    "                \"1500\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cAStatus\",\n" \
+    "            \"value\": [\n" \
+    "                \"1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    }\n" \
+    "]")
 
 static
 DWORD
@@ -649,4 +702,57 @@ Test_LwCAPostDbGetCA(
 
     pFnGetCA = (PLUGIN_GET_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
     assert_non_null(pFnGetCA);
+}
+
+VOID
+Test_LwCAPostDbUpdateCA(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_UPDATE_CA;
+    PLUGIN_UPDATE_CA    pFnUpdateCA = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnUpdateCA = (PLUGIN_UPDATE_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnUpdateCA);
+}
+
+VOID
+Test_LwCAUpdateRootCARequestBody(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE            pState = NULL;
+    PSTR                        pszFunc = LWCA_UPDATE_CA_REQUEST_BODY;
+    PLUGIN_UPDATE_CA_REQ_BODY   pFnUpdateCAReqBody = NULL;
+    PLWCA_PLUGIN_HANDLE         pPluginHandle = NULL;
+    PLWCA_DB_CA_DATA            pCaData = NULL;
+    PSTR                        pszReqBody = NULL;
+    DWORD                       dwError = 0;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnUpdateCAReqBody = (PLUGIN_UPDATE_CA_REQ_BODY)LwCAGetLibSym(pPluginHandle,
+                                                                  pszFunc
+                                                                  );
+    assert_non_null(pFnUpdateCAReqBody);
+    dwError = _LwCALoadCAData(&pCaData);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCaData);
+
+    dwError = pFnUpdateCAReqBody(pCaData, &pszReqBody);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszReqBody);
+    assert_string_equal(pszReqBody, CA_GENERATED_PATCH);
+
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
 }

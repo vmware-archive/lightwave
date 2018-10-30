@@ -71,9 +71,10 @@ _IsPutResponseValid(
 
 static
 DWORD
-_IsGetResponseValid(
-    PSTR    pszResponse,
-    long    statusCode
+_IsHttpResponseValid(
+    PSTR            pszResponse,
+    long            statusCode,
+    VM_HTTP_METHOD  httpMethod
     );
 
 static
@@ -82,6 +83,13 @@ _LwCADbPostPluginGetCAImpl(
     PLWCA_DB_HANDLE     pHandle,
     PCSTR               pcszCAId,
     PSTR                *ppszResponse
+    );
+
+static
+DWORD
+_LwCADbPostGetDN(
+    PCSTR               pcszResponse,
+    PSTR                *ppszDN
     );
 
 static
@@ -112,6 +120,16 @@ _LwCARestExecuteGet(
     PLWCA_POST_HANDLE   pHandle,
     PCSTR               pcszDN,
     PCSTR               pcszFilter,
+    PSTR                *ppszResponse,
+    long                *pStatusCode
+    );
+
+static
+DWORD
+_LwCARestExecutePatch(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PCSTR               pcszReqBody,
     PSTR                *ppszResponse,
     long                *pStatusCode
     );
@@ -415,7 +433,40 @@ LwCADbPostPluginUpdateCA(
     PLWCA_DB_CA_DATA        pCAData
     )
 {
-    return LWCA_NOT_IMPLEMENTED;
+    DWORD               dwError = 0;
+    PSTR                pszResponse = NULL;
+    PSTR                pszDN = NULL;
+    PSTR                pszBody = NULL;
+    long                statusCode = 0;
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
+                                         pcszCAId,
+                                         &pszResponse
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCADbPostGetDN(pszResponse, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGenerateCAPatchRequestBody(pCAData, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePatch((PLWCA_POST_HANDLE)pHandle,
+                                    pszDN,
+                                    pszBody,
+                                    &pszResponse,
+                                    &statusCode
+                                    );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 
@@ -800,7 +851,9 @@ _LwCAUriBuilder(
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (!IsNullOrEmptyString(pcszDN) &&
-        (httpMethod == VMHTTP_METHOD_GET || httpMethod == VMHTTP_METHOD_DELETE)
+        (httpMethod == VMHTTP_METHOD_GET ||
+         httpMethod == VMHTTP_METHOD_DELETE ||
+         httpMethod == VMHTTP_METHOD_PATCH)
         )
     {
         pszTmp = pszUri;
@@ -968,7 +1021,7 @@ _LwCARestExecuteGet(
                                );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _IsGetResponseValid(pszResponse, statusCode);
+    dwError = _IsHttpResponseValid(pszResponse, statusCode, VMHTTP_METHOD_GET);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszResponse = pszResponse;
@@ -992,12 +1045,14 @@ error:
 
 static
 DWORD
-_IsGetResponseValid(
-    PSTR    pszResponse,
-    long    statusCode
+_IsHttpResponseValid(
+    PSTR            pszResponse,
+    long            statusCode,
+    VM_HTTP_METHOD  httpMethod
     )
 {
     DWORD       dwError = 0;
+    PCSTR       pcszMethod = NULL;
 
     if (statusCode == LWCA_HTTP_NOT_FOUND)
     {
@@ -1006,13 +1061,30 @@ _IsGetResponseValid(
     }
     else if (statusCode != LWCA_HTTP_OK)
     {
-        LWCA_LOG_ERROR("%s:%d - Status Code: %ld, Response: %s",
+        dwError = VmHttpGetRequestMethodInString(httpMethod, &pcszMethod);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        LWCA_LOG_ERROR("%s:%d - Method: %s, Status Code: %ld, Response: %s",
                        __FUNCTION__,
                        __LINE__,
+                       pcszMethod,
                        statusCode,
                        pszResponse
                        );
-        dwError = LWCA_LDAP_GET_FAILED;
+        switch (httpMethod)
+        {
+            case VMHTTP_METHOD_GET:
+                dwError = LWCA_LDAP_GET_FAILED;
+                break;
+
+            case VMHTTP_METHOD_PATCH:
+                dwError = LWCA_LDAP_PATCH_FAILED;
+                break;
+
+            default:
+                dwError = LWCA_LDAP_UNKNOWN_OP;
+                break;
+        }
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -1226,6 +1298,59 @@ error:
 
 static
 DWORD
+_LwCARestExecutePatch(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PCSTR               pcszReqBody,
+    PSTR                *ppszResponse,
+    long                *pStatusCode
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszResponse = NULL;
+    long    statusCode = 0;
+
+    if (!pHandle ||
+        IsNullOrEmptyString(pcszDN) ||
+        !ppszResponse ||
+        !pStatusCode
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCARestExecute(pHandle,
+                               VMHTTP_METHOD_PATCH,
+                               pcszDN,
+                               NULL,
+                               NULL,
+                               pcszReqBody,
+                               &pszResponse,
+                               &statusCode
+                               );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _IsHttpResponseValid(pszResponse, statusCode, VMHTTP_METHOD_PATCH);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszResponse = pszResponse;
+    *pStatusCode = statusCode;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    if (!ppszResponse)
+    {
+        *ppszResponse = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
 _LwCADbPostPluginGetCAImpl(
     PLWCA_DB_HANDLE     pHandle,
     PCSTR               pcszCAId,
@@ -1281,5 +1406,44 @@ error:
         *ppszResponse = NULL;
     }
     goto cleanup;
+}
 
+static
+DWORD
+_LwCADbPostGetDN(
+    PCSTR               pcszResponse,
+    PSTR                *ppszDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszDN = NULL;
+    PLWCA_JSON_OBJECT   pJson = NULL;
+    PLWCA_JSON_OBJECT   pResult = NULL;
+    PLWCA_JSON_OBJECT   pResultElem = NULL;
+
+    dwError = LwCAJsonLoadObjectFromString(pcszResponse, &pJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetObjectFromKey(pJson, FALSE, LWCA_RESP_RESULT, &pResult);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonArrayGetBorrowedRef(pResult, 0, &pResultElem);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(pResultElem, FALSE, LWCA_LDAP_DN, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszDN = pszDN;
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pJson);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    if (ppszDN)
+    {
+        *ppszDN = NULL;
+    }
+    goto cleanup;
 }

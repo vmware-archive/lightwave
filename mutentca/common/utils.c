@@ -237,6 +237,89 @@ LwCADbFreeCAData(
 }
 
 DWORD
+LwCACreateStringFromCertificate(
+    PLWCA_CERTIFICATE   pCertificate,
+    PSTR                *ppszStr
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszStr = NULL;
+
+    if (!pCertificate || !ppszStr)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    dwError = LwCAAllocateStringA(pCertificate, &pszStr);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszStr = pszStr;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszStr);
+    if (ppszStr)
+    {
+        *ppszStr = NULL;
+    }
+    goto cleanup;
+
+}
+
+DWORD
+LwCACreateStringArrayFromCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_STRING_ARRAY          *ppStrArray
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_STRING_ARRAY      pStrArray = NULL;
+    DWORD                   dwEntry = 0;
+
+    if (!pCertArray || !ppStrArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_STRING_ARRAY),
+                                 (PVOID*)&pStrArray
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pStrArray->dwCount = pCertArray->dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * pStrArray->dwCount,
+                                 (PVOID*)&pStrArray->ppData
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (; dwEntry < pCertArray->dwCount; ++dwEntry)
+    {
+        dwError = LwCACreateStringFromCertificate(
+            pCertArray->ppCertificates[dwEntry],
+            &pStrArray->ppData[dwEntry]
+            );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppStrArray = pStrArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pStrArray);
+    if (ppStrArray)
+    {
+        *ppStrArray = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
 LwCACreateCertArray(
     PSTR                        *ppszCertificates,
     DWORD                       dwCount,
