@@ -1945,6 +1945,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/common/Makefile
                  mutentca/server/Makefile
                  mutentca/server/api/Makefile
+                 mutentca/server/authz/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/security/Makefile
@@ -1960,6 +1961,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/api/Makefile
+                 mutentca/tests/unit-tests/server/authz/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile
                  mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile

@@ -19,6 +19,9 @@
 extern "C" {
 #endif
 
+#define LWCA_CONFIG_AUTHZ_KEY           "authorization"
+#define LWCA_AUTHZ_PLUGIN_PATH_KEY      "pluginPath"
+
 
 /**
  * @brief    Initialize Authorization Context
@@ -45,7 +48,7 @@ LwCAAuthZInitialize(
  *           appropriate API operation type.
  *
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
- * @param    pszPKCS10Request is the PKCS10 request blob
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
  * @param    pbAuthorized will be filled with true/false notifying the caller if
@@ -55,10 +58,10 @@ LwCAAuthZInitialize(
  */
 DWORD
 LwCAAuthZCheckAccess(
-    PLWCA_REQ_CONTEXT               pReqCtx             // IN
-    PSTR                            pszPKCS10Request    // IN
-    LWCA_AUTHZ_API_PERMISSION       apiPermissions      // IN
-    PBOOLEAN                        pbAuthorized        // OUT
+    PLWCA_REQ_CONTEXT               pReqCtx,                // IN
+    X509_REQ                        *pX509Request,          // IN
+    LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
+    PBOOLEAN                        pbAuthorized            // OUT
     );
 
 /**

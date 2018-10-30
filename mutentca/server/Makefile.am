@@ -3,6 +3,7 @@ SUBDIRS = \
     config \
     oidc-auth \
     plugin \
+    authz \
     security \
     plugins \
     db \

@@ -11,62 +11,39 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
-#ifndef _LWCA_SERVICE_INCLUDES_H__
-#define _LWCA_SERVICE_INCLUDES_H__
+#ifndef _TEST_LWCA_SERVICE_AUTHZ_INCLUDES_H_
+#define _TEST_LWCA_SERVICE_AUTHZ_INCLUDES_H_
 
 #ifdef __cplusplus
 extern "C" {
 #endif
 
-#include <sys/prctl.h>
-
 #include <config.h>
 #include <mutentcasys.h>
-#include <vmafdclient.h>
-#include <vmafdtypes.h>
-
-#include <lw/types.h>
-#include <lw/base.h>
-#include <lwerror.h>
-#include <reg/lwreg.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/conf.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/bio.h>
 
 #ifndef OPENSSL_NO_ENGINE
 #include <openssl/engine.h>
 #endif
 
-#include <gssapi/gssapi.h>
+#include <lwrpcrt/lwrpcrt.h>
+
+#include <cmocka.h>
 
 #include <mutentca.h>
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaconfig.h>
 #include <mutentcaerror.h>
+#include <mutentcasrvcommon.h>
+#include <mutentcaplugin.h>
 #include <mutentcaauthz.h>
 #include <mutentcasrvauthz.h>
 
-#include "defines.h"
-#include "structs.h"
+#include <jansson.h>
+
 #include "prototypes.h"
-
-#include <stdio.h>
-#include <stdlib.h>
-#include <malloc.h>
-#include <errno.h>
-#include <assert.h>
-
-#include <lwrpcrt/lwrpcrt.h>
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif // _LWCA_SERVICE_INCLUDES_H__
+#endif /* _TEST_LWCA_SERVICE_AUTHZ_INCLUDES_H_ */

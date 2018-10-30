@@ -1,4 +1,5 @@
 SUBDIRS = \
+    authz \
     common \
     plugin \
     db \

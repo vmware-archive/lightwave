@@ -25,15 +25,15 @@ extern "C" {
  *               - Must be a member of either CAAdmins or CAOperators
  *
  * @param    pReqCtx holds information about the requestor
- * @param    pszPKCS10Request is the PEM blob as a string
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure
  */
 DWORD
 LwCAAuthzLWCheckCACreate(
-    PLWCA_REQ_CONTEXT,      pReqCtx                 // IN
-    PSTR                    pszPKCS10Request,       // IN
+    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
+    X509_REQ                *pX509Request,          // IN
     PBOOLEAN                pbAuthorized            // OUT
     );
 
@@ -45,15 +45,15 @@ LwCAAuthzLWCheckCACreate(
  *               - Must be a member of CAAdmins group
  *
  * @param    pReqCtx holds information about the requestor
- * @param    pszPKCS10Request is the PEM blob as a string
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure
  */
 DWORD
 LwCAAuthzLWCheckCARevoke(
-    PLWCA_REQ_CONTEXT,      pReqCtx                 // IN
-    PSTR                    pszPKCS10Request,       // IN
+    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
+    X509_REQ                *pX509Request,          // IN
     PBOOLEAN                pbAuthorized            // OUT
     );
 
@@ -65,15 +65,15 @@ LwCAAuthzLWCheckCARevoke(
  *               - Any Lightwave user in the same tenant as requested in the request
  *
  * @param    pReqCtx holds information about the requestor
- * @param    pszPKCS10Request is the PEM blob as a string
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure*
  */
 DWORD
 LwCAAuthzLWCheckCSR(
-    PLWCA_REQ_CONTEXT,      pReqCtx                 // IN
-    PSTR                    pszPKCS10Request,       // IN
+    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
+    X509_REQ                *pX509Request,          // IN
     PBOOLEAN                pbAuthorized            // OUT
     );
 
@@ -85,15 +85,15 @@ LwCAAuthzLWCheckCSR(
  *               - Must be a member of CAAdmins
  *
  * @param    pReqCtx holds information about the requestor
- * @param    pszPKCS10Request is the PEM blob as a string
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure*
  */
 DWORD
 LwCAAuthzLWCheckCRL(
-    PLWCA_REQ_CONTEXT,      pReqCtx                 // IN
-    PSTR                    pszPKCS10Request,       // IN
+    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
+    X509_REQ                *pX509Request,          // IN
     PBOOLEAN                pbAuthorized            // OUT
     );
 

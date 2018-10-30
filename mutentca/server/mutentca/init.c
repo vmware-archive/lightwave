@@ -78,6 +78,7 @@ LwCAShutdown(
         LwCARestServerShutdown();
     }
 #endif
+    LwCAAuthZDestroy();
     LwCASecurityFreeCtx();
     //LwCAServiceShutdown();
     LwCATerminateLogging();
@@ -102,6 +103,7 @@ LwCASrvInitCA(
 {
     DWORD dwError = 0;
     PLWCA_JSON_OBJECT pJsonConfig = NULL;
+    PLWCA_JSON_OBJECT pAuthZConfig = NULL;
     PLWCA_JSON_OBJECT pSecurityConfig = NULL;
 
     dwError = LwCAConfigLoadFile(LWCA_CONFIG_FILE_PATH, &pJsonConfig);
@@ -113,6 +115,17 @@ LwCASrvInitCA(
                 __LINE__,
                 LWCA_CONFIG_FILE_PATH);
     }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* get the authorization config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  TRUE,
+                  LWCA_CONFIG_AUTHZ_KEY,
+                  &pAuthZConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAuthZInitialize(pAuthZConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
     /* get the security config section */

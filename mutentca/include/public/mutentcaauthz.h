@@ -12,8 +12,8 @@
  * under the License.
  */
 
-#ifndef __MUTENTCA_AUTHZ_H_
-#define __MUTENTCA_AUTHZ_H_
+#ifndef _MUTENTCA_AUTHZ_H_
+#define _MUTENTCA_AUTHZ_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -65,8 +65,8 @@ typedef PCSTR
  */
 typedef DWORD
 (*PFN_LWCA_AUTHZ_ERROR_TO_STRING)(
-    DWORD       dwErrorCode,
-    PSTR        *ppszErrorString
+    DWORD       dwErrorCode,            // IN
+    PSTR        *ppszErrorString        // OUT
     );
 
 /**
@@ -76,7 +76,7 @@ typedef DWORD
  *           which will determine is a requestor is authorized to run an API.
  *
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
- * @param    pszPKCS10Request is the PKCS10 request blob
+ * @param    pX509Request is the request represented as the openssl X509_REQ struct.
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
  * @param    pbAuthorized will be filled with true/false notifying the caller if
@@ -86,17 +86,17 @@ typedef DWORD
  */
 typedef DWORD
 (*PFN_LWCA_AUTHZ_CHECK_ACCESS)(
-    PLWCA_REQ_CONTEXT               pReqCtx             // IN
-    PSTR                            pszPKCS10Request    // IN
-    LWCA_AUTHZ_API_PERMISSION       apiPermissions      // IN
-    PBOOLEAN                        pbAuthorized        // OUT
+    PLWCA_REQ_CONTEXT               pReqCtx,                // IN
+    X509_REQ                        *pX509Request,          // IN
+    LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
+    PBOOLEAN                        pbAuthorized            // OUT
     );
 
 typedef struct _LWCA_AUTHZ_FUNCTION_TABLE
 {
-    PFN_LWCA_AUTHZ_GET_VERSION          pfnAuthzGetVersion;
-    PFN_LWCA_AUTHZ_ERROR_TO_STRING      pfnAuthzErrorToString;
-    PFN_LWCA_AUTHZ_CHECK_ACCESS         pfnAuthzCheckAccess;
+    PFN_LWCA_AUTHZ_GET_VERSION          pfnAuthZGetVersion;
+    PFN_LWCA_AUTHZ_ERROR_TO_STRING      pfnAuthZErrorToString;
+    PFN_LWCA_AUTHZ_CHECK_ACCESS         pfnAuthZCheckAccess;
 } LWCA_AUTHZ_FUNCTION_TABLE, *PLWCA_AUTHZ_FUNCTION_TABLE;
 
 
@@ -104,4 +104,4 @@ typedef struct _LWCA_AUTHZ_FUNCTION_TABLE
 }
 #endif
 
-#endif /* __MUTENTCA_AUTHZ_H_ */
+#endif /* _MUTENTCA_AUTHZ_H_ */
