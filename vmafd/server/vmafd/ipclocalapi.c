@@ -4455,6 +4455,8 @@ VmAfdIpcLeaveVmDir(
     PUINT32 pdwLeaveFlags = NULL;
     VMW_TYPE_SPEC input_spec[] = LEAVE_VMDIR_INPUT_PARAMS;
     VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+    BOOL bIsAllowed = FALSE;
+    PSTR pszSecurity = NULL;
 
     VmAfdLog (VMAFD_DEBUG_DEBUG, "Entering %s", __FUNCTION__);
 
@@ -4486,7 +4488,24 @@ VmAfdIpcLeaveVmDir(
     pwszMachineName = input_spec[3].data.pWString;
     pdwLeaveFlags   = input_spec[4].data.pUint32;
 
-    if (!VmAfdIsRootSecurityContext(pConnectionContext))
+    bIsAllowed = VmAfdIsRootSecurityContext(pConnectionContext);
+#ifndef _WIN32
+    if (!bIsAllowed)
+    {
+        dwError = VmAfSrvGetRegKeySecurity(
+                    VMAFD_VMDIR_CONFIG_KEY_PATH,
+                    &pszSecurity);
+        BAIL_ON_VMAFD_ERROR (dwError);
+
+        dwError = VmAfdCheckAclContext(
+                    pConnectionContext,
+                    pszSecurity,
+                    &bIsAllowed);
+        BAIL_ON_VMAFD_ERROR (dwError);
+    }
+#endif
+
+    if (!bIsAllowed)
     {
         VmAfdLog (VMAFD_DEBUG_ANY, "%s: Access Denied", __FUNCTION__);
         dwError = ERROR_ACCESS_DENIED;
@@ -4521,6 +4540,7 @@ cleanup:
 
     VmAfdFreeTypeSpecContent (input_spec, noOfArgsIn);
     VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    VMAFD_SAFE_FREE_MEMORY(pszSecurity);
     return dwError;
 
 error:
@@ -4665,6 +4685,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszOutPassword);
     VmAfdFreeTypeSpecContent (input_spec, noOfArgsIn);
     VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    VMAFD_SAFE_FREE_MEMORY(pszSecurity);
     return dwError;
 
 error:
@@ -4794,6 +4815,7 @@ cleanup:
 
     VmAfdFreeTypeSpecContent(input_spec, noOfArgsIn);
     VmAfdLog(VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    VMAFD_SAFE_FREE_MEMORY(pszSecurity);
 
     return dwError;
 
@@ -5706,6 +5728,7 @@ cleanup:
     *pdwResponseSize = dwResponseSize;
 
     VmAfdLog (VMAFD_DEBUG_DEBUG, "End of %s", __FUNCTION__);
+    VMAFD_SAFE_FREE_MEMORY(pszSecurity);
     return dwError;
 
 error:
