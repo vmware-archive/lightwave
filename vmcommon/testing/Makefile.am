@@ -1,5 +1,8 @@
 noinst_PROGRAMS = vmcommon_test
 
+check_PROGRAMS = vmcommon_test
+TESTS = $(check_PROGRAMS)
+
 vmcommon_test_SOURCES = \
     countertest.c \
     gaugetest.c \
@@ -8,6 +11,7 @@ vmcommon_test_SOURCES = \
     vmhttpclienttest.c \
     vmsignaturetest.c \
     vmjsonresulttest.c \
+    vmjsonresultobjectmaptest.c \
     main.c
 
 vmcommon_test_CPPFLAGS = \

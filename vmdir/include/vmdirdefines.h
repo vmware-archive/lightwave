@@ -813,6 +813,17 @@ extern "C" {
                                   (c) == '?' ||   \
                                   (c) == '/' )
 
+// exclude special char in auto generated password
+#define VMDIR_PASSWD_EXCLUDE_SP_CHAR(c) (  \
+                                  (c) == '!' ||   \
+                                  (c) == '$' ||   \
+                                  (c) == '%' ||   \
+                                  (c) == '&' ||   \
+                                  (c) == '\\' ||  \
+                                  (c) == '"' ||   \
+                                  (c) == '\'' ||  \
+                                  (c) == '`' )
+
 #define VMDIR_ASCII_SPACE(c) \
     ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )
 

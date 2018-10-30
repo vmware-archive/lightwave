@@ -14,6 +14,8 @@
 
 #include "includes.h"
 
+VOID
+test_success_empty(VOID **pState);
 
 int main(VOID)
 {
@@ -21,23 +23,35 @@ int main(VOID)
 
     const struct CMUnitTest Security_Aws_Kms_Tests[] =
     {
-        /* get and check version */
-        cmocka_unit_test_setup_teardown(
+        /* get and check version - this does not require load interface */
+        cmocka_unit_test_setup(
                 Security_Aws_Kms_Tests_Check_Version,
-                Security_Aws_Kms_Tests_Get_Version,
-                NULL),
-        /* load and validate interface */
-        cmocka_unit_test_setup_teardown(
+                Security_Aws_Kms_Tests_Get_Version),
+
+        /* load and validate interface - this interface is used in all tests */
+        cmocka_unit_test_setup(
                 Security_Aws_Kms_Tests_Validate_Interface,
-                Security_Aws_Kms_Tests_Load_Interface,
+                Security_Aws_Kms_Tests_Load_Interface),
+
+        /* validate config file parsing */
+        cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Good),
+        cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_Root),
+        cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_CMKId),
+        cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_KeySpec),
+
+        /* unload interface */
+        cmocka_unit_test_teardown(
+                test_success_empty,
                 Security_Aws_Kms_Tests_Unload_Interface),
-        /* create key pair */
-        cmocka_unit_test_setup_teardown(
-                Security_Aws_Kms_Tests_Create_Key_Pair,
-                Security_Aws_Kms_Tests_Create_Key_Pair_Setup,
-                Security_Aws_Kms_Tests_Unload_Interface)
+
+        /* ensure interface is cleared after unload */
+        cmocka_unit_test(Security_Aws_Kms_Tests_Validate_Interface_Cleared),
     };
 
+    /*
+     * before running tests, load implementation library
+     * unload library after tests
+    */
     ret = cmocka_run_group_tests(
               Security_Aws_Kms_Tests,
               Security_Aws_Kms_Tests_Load,
@@ -48,4 +62,9 @@ int main(VOID)
     }
 
     return ret;
+}
+
+VOID
+test_success_empty(VOID **pState)
+{
 }

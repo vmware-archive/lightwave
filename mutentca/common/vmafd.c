@@ -22,17 +22,22 @@
         goto vecs_error;                                            \
     }
 
-#define FN_VECS_OPEN_CERT_STORE_A           "VecsOpenCertStoreA"
-#define FN_VECS_GET_ENTRY_BY_ALIAS_A        "VecsGetEntryByAliasA"
-#define FN_VECS_GET_KEY_BY_ALIAS_A          "VecsGetKeyByAliasA"
-#define FN_VECS_CLOSE_CERT_STORE            "VecsCloseCertStore"
-#define FN_VECS_FREE_ENTRY_A                "VecsFreeCertEntryA"
+#define FN_VECS_OPEN_CERT_STORE_A                   "VecsOpenCertStoreA"
+#define FN_VECS_GET_ENTRY_BY_ALIAS_A                "VecsGetEntryByAliasA"
+#define FN_VECS_GET_KEY_BY_ALIAS_A                  "VecsGetKeyByAliasA"
+#define FN_VECS_CLOSE_CERT_STORE                    "VecsCloseCertStore"
+#define FN_VECS_FREE_ENTRY_A                        "VecsFreeCertEntryA"
+#define FN_VMAFD_GET_DC_NAME_A                      "VmAfdGetDCNameA"
+#define FN_VMAFD_GET_DOMAIN_NAME_A                  "VmAfdGetDomainNameA"
 
-typedef DWORD   (*fpVecsOpenCertStoreA)     ( PCSTR,PCSTR, PCSTR, PVECS_STORE* );
-typedef DWORD   (*fpVecsGetEntryByAliasA)   ( PVECS_STORE, PCSTR, ENTRY_INFO_LEVEL, PVECS_CERT_ENTRY_A* );
-typedef DWORD   (*fpVecsGetKeyByAliasA)     ( PVECS_STORE, PCSTR, PCSTR, PSTR* );
-typedef DWORD   (*fpVecsCloseCertStore)     ( PVECS_STORE );
-typedef VOID    (*fpVecsFreeCertEntryA)     ( PVECS_CERT_ENTRY_A );
+typedef DWORD   (*fpVecsOpenCertStoreA)             ( PCSTR,PCSTR, PCSTR, PVECS_STORE* );
+typedef DWORD   (*fpVecsGetEntryByAliasA)           ( PVECS_STORE, PCSTR, ENTRY_INFO_LEVEL, PVECS_CERT_ENTRY_A* );
+typedef DWORD   (*fpVecsGetKeyByAliasA)             ( PVECS_STORE, PCSTR, PCSTR, PSTR* );
+typedef DWORD   (*fpVecsCloseCertStore)             ( PVECS_STORE );
+typedef VOID    (*fpVecsFreeCertEntryA)             ( PVECS_CERT_ENTRY_A );
+typedef DWORD   (*fpVmAfdGetDCNameA)                ( PCSTR, PSTR* );
+typedef DWORD   (*fpVmAfdGetDomainNameA)            ( PCSTR, PSTR* );
+
 
 static
 DWORD
@@ -52,6 +57,19 @@ _LwCAGetVecsCert(
     PSTR                pszVecsStore,
     PSTR                pszVecsAlias
     );
+
+static
+DWORD
+_LwCAGetVmAfdDCName(
+    PSTR        *ppszDCName
+    );
+
+static
+DWORD
+_LwCAGetVmAfdDomainName(
+    PSTR        *ppszDomainName
+    );
+
 
 DWORD
 LwCAGetVecsMachineCert(
@@ -194,6 +212,76 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+LwCAGetDCName(
+    PSTR        *ppszDCName
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszDCName = NULL;
+
+    if (!ppszDCName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAGetVmAfdDCName(&pszDCName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszDCName = pszDCName;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszDCName);
+    if (ppszDCName)
+    {
+        *ppszDCName = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCAGetDomainName(
+    PSTR        *ppszDomainName
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszDomainName = NULL;
+
+    if (!ppszDomainName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAGetVmAfdDomainName(&pszDomainName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszDomainName = pszDomainName;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszDomainName);
+    if (ppszDomainName)
+    {
+        *ppszDomainName = NULL;
+    }
+
     goto cleanup;
 }
 
@@ -354,3 +442,134 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_LwCAGetVmAfdDCName(
+    PSTR                *ppszDCName
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwVmAfdError = 0;
+    LWCA_LIB_HANDLE     pVmAfdLibHandle = NULL;
+    fpVmAfdGetDCNameA   fpGetDCName = NULL;
+    PSTR                pszDCName = NULL;
+
+    if (!ppszDCName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAOpenVmAfdClientLib(&pVmAfdLibHandle);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    fpGetDCName = (fpVmAfdGetDCNameA)LwCAGetLibSym(pVmAfdLibHandle, FN_VMAFD_GET_DC_NAME_A);
+    if (!fpGetDCName)
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] Failed to lookup libvmafdclient symbol (%s) with (%s)",
+                __FUNCTION__,
+                __LINE__,
+                FN_VMAFD_GET_DC_NAME_A,
+                LWCA_SAFE_STRING(dlerror()));
+
+        dwError = LWCA_ERROR_DLL_SYMBOL_NOTFOUND;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwVmAfdError = fpGetDCName(NULL, &pszDCName);
+    if (dwVmAfdError)
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] Failed to get DC Name from libvmafdclient (%d)",
+                __FUNCTION__,
+                __LINE__,
+                dwVmAfdError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_VMAFD_UNAVAILABLE);
+    }
+
+    *ppszDCName = pszDCName;
+
+
+cleanup:
+
+    LwCACloseLibrary(pVmAfdLibHandle);
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszDCName);
+    if (ppszDCName)
+    {
+        *ppszDCName = NULL;
+    }
+
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetVmAfdDomainName(
+    PSTR        *ppszDomainName
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwVmAfdError = 0;
+    LWCA_LIB_HANDLE     pVmAfdLibHandle = NULL;
+    fpVmAfdGetDCNameA   fpGetDomainName = NULL;
+    PSTR                pszDomainName = NULL;
+
+    if (!ppszDomainName)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAOpenVmAfdClientLib(&pVmAfdLibHandle);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    fpGetDomainName = (fpVmAfdGetDomainNameA)LwCAGetLibSym(pVmAfdLibHandle, FN_VMAFD_GET_DOMAIN_NAME_A);
+    if (!fpGetDomainName)
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] Failed to lookup libvmafdclient symbol (%s) with (%s)",
+                __FUNCTION__,
+                __LINE__,
+                FN_VMAFD_GET_DOMAIN_NAME_A,
+                LWCA_SAFE_STRING(dlerror()));
+
+        dwError = LWCA_ERROR_DLL_SYMBOL_NOTFOUND;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwVmAfdError = fpGetDomainName(NULL, &pszDomainName);
+    if (dwVmAfdError)
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] Failed to get Domain Name from libvmafdclient (%d)",
+                __FUNCTION__,
+                __LINE__,
+                dwVmAfdError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_VMAFD_UNAVAILABLE);
+    }
+
+    *ppszDomainName = pszDomainName;
+
+
+cleanup:
+
+    LwCACloseLibrary(pVmAfdLibHandle);
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszDomainName);
+    if (ppszDomainName)
+    {
+        *ppszDomainName = NULL;
+    }
+
+    goto cleanup;
+}

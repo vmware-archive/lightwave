@@ -5,13 +5,15 @@ TESTS = testmutentcapolicy
 
 testmutentcapolicy_SOURCES = \
     main.c \
+    parse.c \
     util.c
 
 testmutentcapolicy_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \
     -I$(top_srcdir)/mutentca/include/public \
     -I$(top_srcdir)/mutentca/server/include \
-    @LW_INCLUDES@
+    @LW_INCLUDES@ \
+    @JANSSON_INCLUDES@
 
 testmutentcapolicy_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \

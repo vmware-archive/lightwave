@@ -28,6 +28,20 @@ LwCAPluginInitialize(
     PVOID                   *ppPluginHandle
     );
 
+DWORD
+LwCAPluginInitializeCustom(
+    PCSTR                   pcszPluginPath,
+    PCSTR                   pcszLoadFnName,
+    PVOID                   pPluginVTable,
+    PVOID                   *ppPluginHandle
+    );
+
+VOID
+LwCAPluginDeinitializeCustom(
+    PLWCA_PLUGIN_HANDLE     pPluginHandle,
+    PCSTR                   pcszUnloadFnName
+    );
+
 VOID
 LwCAPluginDeinitialize(
     PLWCA_PLUGIN_HANDLE     pPluginHandle

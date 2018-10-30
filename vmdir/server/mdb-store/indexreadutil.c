@@ -1115,7 +1115,8 @@ VmDirEntryIdToBV(
         value.mv_size);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBV->lberbv_len = value.mv_size;
+    pBV->bvnorm_len = pBV->lberbv_len = value.mv_size;
+    pBV->bvnorm_val = pBV->lberbv_val;
 
 error:
     return dwError;

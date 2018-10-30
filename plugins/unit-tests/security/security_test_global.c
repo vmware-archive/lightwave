@@ -125,7 +125,8 @@ Security_Tests_Initialize(
         goto error;
     }
 
-    error = pState->pInterface->pFnInitialize(&pState->pHandle);
+    /* passing in NULL for test config */
+    error = pState->pInterface->pFnInitialize(NULL, &pState->pHandle);
     if (error)
     {
         fail_msg("initialize failed\n");

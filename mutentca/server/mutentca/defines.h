@@ -12,8 +12,11 @@
  * under the License.
  */
 
+#pragma once
+
 #define LWCA_OPTION_LOGGING_LEVEL 'l'
 #define LWCA_OPTION_LOG_FILE_NAME 'L'
 #define LWCA_OPTION_ENABLE_SYSLOG 's'
 #define LWCA_OPTION_CONSOLE_LOGGING 'c'
 #define LWCA_OPTIONS_VALID "f:l:L:p:sc"
+#define MUTENTCA_SECURITY_PLUGIN_KEY "security"

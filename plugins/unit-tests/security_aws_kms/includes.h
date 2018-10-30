@@ -29,6 +29,8 @@
 #include <execinfo.h>
 
 #include <lwca_security.h>
+#include <security_aws_kms_errors.h>
+
 #include "structs.h"
 #include "prototypes.h"
 

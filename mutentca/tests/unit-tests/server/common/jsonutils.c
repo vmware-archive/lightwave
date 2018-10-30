@@ -15,18 +15,33 @@
 #include "includes.h"
 
 #define LWCA_TEMPFILE_NAME_TEMPLATE "/tmp/tempjsonXXXXXX"
-#define LWCA_VALID_JSON "{\"obj1\":{\"key1\":\"val1\",\"key2\":\"val2\"},\"obj2\":{\"key1\":[\"val11\",\"val12\"],\"key2\":[\"val21\",\"val22\"]},\"obj3\":{\"key1\":\"1514764800\"}}"
+#define LWCA_VALID_JSON "{\"obj1\":{\"key1\":\"val1\",\"key2\":\"val2\"}, \
+                          \"obj2\":{\"key1\":[\"val11\",\"val12\"],\"key2\":[\"val21\",\"val22\"]}, \
+                          \"obj3\":{\"key1\":\"1514764800\"}, \
+                          \"obj4\":{\"key1\":10,\"key2\":-10}, \
+                          \"obj5\":{\"key1\":true}}"
 #define LWCA_INVALID_JSON "i am not a JSON object"
+
+#define LWCA_JSON_KEY1 "key1"
+#define LWCA_JSON_KEY2 "key2"
+
 #define LWCA_JSON_OBJ1_KEY "obj1"
 #define LWCA_JSON_OBJ1_VAL "{\"key1\":\"val1\",\"key2\":\"val2\"}"
-#define LWCA_JSON_KEY1 "key1"
 #define LWCA_JSON_OBJ1_KEY1_VAL "val1"
+
 #define LWCA_JSON_OBJ2_VAL "{\"key1\":[\"val11\",\"val12\"],\"key2\":[\"val21\",\"val22\"]}"
 #define LWCA_JSON_OBJ2_KEY1_VAL_SIZE 2
 #define LWCA_JSON_OBJ2_KEY1_VAL1 "val11"
 #define LWCA_JSON_OBJ2_KEY1_VAL2 "val12"
+
 #define LWCA_JSON_OBJ3_VAL "{\"key1\":\"1514764800\"}"
 #define LWCA_JSON_OBJ3_KEY1_VAL 1514764800
+
+#define LWCA_JSON_OBJ4_VAL "{\"key1\":10,\"key2\":-10}"
+#define LWCA_JSON_OBJ4_KEY1_VAL 10
+#define LWCA_JSON_OBJ4_KEY2_VAL -10
+
+#define LWCA_JSON_OBJ5_VAL "{\"key1\":true}"
 
 static
 DWORD
@@ -333,6 +348,215 @@ LwCAJsonGetTimeFromKey_Invalid(
 
     LwCAJsonCleanupObject(pJson);
 }
+
+VOID
+LwCAJsonGetIntegerFromKey_PositiveValid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    int                     iValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, FALSE, LWCA_JSON_KEY1, &iValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(iValue, LWCA_JSON_OBJ4_KEY1_VAL);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, TRUE, LWCA_JSON_KEY1, &iValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(iValue, LWCA_JSON_OBJ4_KEY1_VAL);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetIntegerFromKey_NegativeValid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    int                     iValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, FALSE, LWCA_JSON_KEY2, &iValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(iValue, LWCA_JSON_OBJ4_KEY2_VAL);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, TRUE, LWCA_JSON_KEY2, &iValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(iValue, LWCA_JSON_OBJ4_KEY2_VAL);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetIntegerFromKey_Invalid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    int                     iValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, FALSE, "NotAKey", &iValue);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_int_equal(iValue, 0);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetIntegerFromKey(pJson, TRUE, "NotAKey", &iValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(iValue, 0);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_PositiveValid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    DWORD                   dwValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, FALSE, LWCA_JSON_KEY1, &dwValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(dwValue, LWCA_JSON_OBJ4_KEY1_VAL);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, TRUE, LWCA_JSON_KEY1, &dwValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(dwValue, LWCA_JSON_OBJ4_KEY1_VAL);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_NegativeValid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    DWORD                   dwValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, FALSE, LWCA_JSON_KEY2, &dwValue);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_int_equal(dwValue, 0);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, TRUE, LWCA_JSON_KEY2, &dwValue);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_int_equal(dwValue, 0);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_Invalid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    DWORD                   dwValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ4_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, FALSE, "NotAKey", &dwValue);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_int_equal(dwValue, 0);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pJson, TRUE, "NotAKey", &dwValue);
+    assert_int_equal(dwError, 0);
+    assert_int_equal(dwValue, 0);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetBooleanFromKey_Valid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    BOOLEAN                 bValue = 0;
+
+    pJson = json_loads(LWCA_JSON_OBJ5_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetBooleanFromKey(pJson, FALSE, LWCA_JSON_KEY1, &bValue);
+    assert_int_equal(dwError, 0);
+    assert_true(bValue);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetBooleanFromKey(pJson, TRUE, LWCA_JSON_KEY1, &bValue);
+    assert_int_equal(dwError, 0);
+    assert_true(bValue);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
+LwCAJsonGetBooleanFromKey_Invalid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    json_error_t            jsonError = {0};
+    PLWCA_JSON_OBJECT       pJson = NULL;
+    BOOLEAN                 bValue = FALSE;
+
+    pJson = json_loads(LWCA_JSON_OBJ5_VAL, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJson);
+
+    // Test with bOptional not set
+    dwError = LwCAJsonGetBooleanFromKey(pJson, FALSE, "NotAKey", &bValue);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_false(bValue);
+
+    // Test with bOptional set
+    dwError = LwCAJsonGetBooleanFromKey(pJson, TRUE, "NotAKey", &bValue);
+    assert_int_equal(dwError, 0);
+    assert_false(bValue);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
 static
 DWORD
 _LwCAJsonCreateTempFile(

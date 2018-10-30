@@ -182,6 +182,27 @@ VmDirMdbApplyIndicesNewMR(
     VOID
     );
 
+DWORD
+VmDirMDBBackendTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PCSTR                   pszTableName,
+    PVDIR_BERVALUE          pBVKey,     // normalize key
+    PVDIR_BERVALUE          pBVValue,   // existing value (update/delete)
+    PVDIR_BERVALUE          pNewBVValue // new value (create/update)
+    );
+
+DWORD
+VmDirMDBIndexTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PVDIR_BERVALUE          pBVDN,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVCurrentKey,  // current normalize key
+    PVDIR_BERVALUE          pBVNewKey,      // new normalize key
+    PVDIR_BERVALUE          pBVEID          // entry id
+    );
+
 // txn.c
 DWORD
 VmDirMDBTxnBegin(
@@ -320,6 +341,7 @@ VmDirMDBIndexIteratorFree(
 DWORD
 VmDirMDBParentIdIndexIteratorInit(
     ENTRYID                                 parentId,
+    ENTRYID                                 childId,
     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
     );
 

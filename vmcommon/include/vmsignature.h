@@ -32,10 +32,28 @@ VmSignatureComputeRSASignature(
     );
 
 DWORD
+VmSignatureVerifyRSASignature(
+    VMSIGN_DIGEST_METHOD    digestMethod,
+    const unsigned char     *pData,
+    size_t                  szDataSize,
+    PCSTR                   pcszRSAPublicKeyPEM,
+    unsigned char           *pRSASignature,
+    size_t                  RSASignatureSize,
+    PBOOLEAN                pbVerified
+    );
+
+DWORD
 VmSignatureEncodeHex(
     const unsigned char     data[],
     const size_t            length,
     PSTR                    *ppHex
+    );
+
+DWORD
+VmSignatureDecodeHex(
+    PCSTR               pcszHexStr,
+    unsigned char       **ppData,
+    size_t              *pLength
     );
 
 DWORD

@@ -67,6 +67,46 @@ LwCAJsonGetTimeFromKey_Invalid(
     VOID            **state
     );
 
+VOID
+LwCAJsonGetIntegerFromKey_PositiveValid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetIntegerFromKey_NegativeValid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetIntegerFromKey_Invalid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_PositiveValid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_NegativeValid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetUnsignedIntegerFromKey_Invalid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetBooleanFromKey_Valid(
+    VOID            **state
+    );
+
+VOID
+LwCAJsonGetBooleanFromKey_Invalid(
+    VOID            **state
+    );
+
 // structs.c
 
 VOID

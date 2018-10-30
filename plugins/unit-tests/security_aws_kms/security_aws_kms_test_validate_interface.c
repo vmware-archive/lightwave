@@ -16,30 +16,42 @@
 
 VOID
 Security_Aws_Kms_Tests_Validate_Interface(
-    void **state
+    VOID **state
     )
 {
     PSECURITY_AWS_KMS_TEST_STATE pState = *state;
 
-    if (!pState->pInterface)
-    {
-        fail_msg("Aws Kms Tests Interface not loaded. pInterface = NULL\n");
-        goto error;
-    }
+    assert_non_null(pState && pState->pInterface);
 
-    if (!pState->pInterface->pFnInitialize ||
-        !pState->pInterface->pFnGetCaps ||
-        !pState->pInterface->pFnCapOverride ||
-        !pState->pInterface->pFnAddKeyPair ||
-        !pState->pInterface->pFnCreateKeyPair ||
-        !pState->pInterface->pFnSignCertificate ||
-        !pState->pInterface->pFnVerifyCertificate ||
-        !pState->pInterface->pFnCloseHandle ||
-        !pState->pInterface->pFnFreeMemory)
-    {
-        fail_msg("Aws Kms Tests Interface table is not valid. missing entries\n");
-    }
+    assert_non_null(pState->pInterface->pFnInitialize);
+    assert_non_null(pState->pInterface->pFnGetCaps);
+    assert_non_null(pState->pInterface->pFnCapOverride);
+    assert_non_null(pState->pInterface->pFnAddKeyPair);
+    assert_non_null(pState->pInterface->pFnCreateKeyPair);
+    assert_non_null(pState->pInterface->pFnSign);
+    assert_non_null(pState->pInterface->pFnVerify);
+    assert_non_null(pState->pInterface->pFnGetErrorString);
+    assert_non_null(pState->pInterface->pFnCloseHandle);
+    assert_non_null(pState->pInterface->pFnFreeMemory);
+}
 
-error:
-    return;
+VOID
+Security_Aws_Kms_Tests_Validate_Interface_Cleared(
+    VOID **state
+    )
+{
+    PSECURITY_AWS_KMS_TEST_STATE pState = *state;
+
+    assert_non_null(pState && pState->pInterface);
+
+    assert_null(pState->pInterface->pFnInitialize);
+    assert_null(pState->pInterface->pFnGetCaps);
+    assert_null(pState->pInterface->pFnCapOverride);
+    assert_null(pState->pInterface->pFnAddKeyPair);
+    assert_null(pState->pInterface->pFnCreateKeyPair);
+    assert_null(pState->pInterface->pFnSign);
+    assert_null(pState->pInterface->pFnVerify);
+    assert_null(pState->pInterface->pFnGetErrorString);
+    assert_null(pState->pInterface->pFnCloseHandle);
+    assert_null(pState->pInterface->pFnFreeMemory);
 }

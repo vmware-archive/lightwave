@@ -18,28 +18,64 @@ int main(VOID)
     int ret = 0;
 
     const struct CMUnitTest tests[] = {
-        cmocka_unit_test_setup_teardown(Test_LwCADbInitCtx, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbCAData, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbCAData_Invalid, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbCertData, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbCertData_Invalid, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbAddCA, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbAddCertData, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbCheckCA, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbGetCA, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbGetCACertificates, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbGetCertData, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCA, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCAStatus, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbUpdateCertData, NULL, NULL),
-        cmocka_unit_test_setup_teardown(Test_LwCADbFreeCtx, NULL, NULL),
+        cmocka_unit_test(Test_LwCADbAddCA),
+        cmocka_unit_test(Test_LwCADbAddCertData),
+        cmocka_unit_test(Test_LwCADbCheckCA),
+        cmocka_unit_test(Test_LwCADbCheckCertData),
+        cmocka_unit_test(Test_LwCADbGetCA),
+        cmocka_unit_test(Test_LwCADbGetCACertificates),
+        cmocka_unit_test(Test_LwCADbGetCertData),
+        cmocka_unit_test(Test_LwCADbGetCACRLNumber),
+        cmocka_unit_test(Test_LwCADbGetParentCAId),
+        cmocka_unit_test(Test_LwCADbUpdateCA),
+        cmocka_unit_test(Test_LwCADbUpdateCAStatus),
+        cmocka_unit_test(Test_LwCADbUpdateCertData),
+        cmocka_unit_test(Test_LwCADbUpdateCACRLNumber),
     };
 
-    ret = cmocka_run_group_tests(tests, NULL, NULL);
-
+    ret = cmocka_run_group_tests(tests, Test_LwCADbInitCtx, Test_LwCADbFreeCtx);
     if (ret)
     {
         fail_msg("%s", "MutentCA DB tests failed");
+    }
+
+    const struct CMUnitTest tests1[] = {
+        cmocka_unit_test(Test_LwCADbCAData),
+        cmocka_unit_test(Test_LwCADbCAData_Invalid),
+        cmocka_unit_test(Test_LwCADbCertData),
+        cmocka_unit_test(Test_LwCADbCertData_Invalid),
+        cmocka_unit_test_setup_teardown(Test_LwCADbInitCtx_Invalid, Test_LwCADbInitCtx, Test_LwCADbFreeCtx),
+        cmocka_unit_test(Test_LwCADbAddCA_Invalid),
+        cmocka_unit_test(Test_LwCADbAddCertData_Invalid),
+        cmocka_unit_test(Test_LwCADbCheckCA_Invalid),
+        cmocka_unit_test(Test_LwCADbCheckCertData_Invalid),
+        cmocka_unit_test(Test_LwCADbGetCA_Invalid),
+        cmocka_unit_test(Test_LwCADbGetCACertificates_Invalid),
+        cmocka_unit_test(Test_LwCADbGetCertData_Invalid),
+        cmocka_unit_test(Test_LwCADbGetCACRLNumber_Invalid),
+        cmocka_unit_test(Test_LwCADbGetParentCAId_Invalid),
+        cmocka_unit_test(Test_LwCADbUpdateCA_Invalid),
+        cmocka_unit_test(Test_LwCADbUpdateCAStatus_Invalid),
+        cmocka_unit_test(Test_LwCADbUpdateCertData_Invalid),
+        cmocka_unit_test(Test_LwCADbUpdateCACRLNumber_Invalid),
+    };
+
+    ret = cmocka_run_group_tests(tests1, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA DB tests failed");
+    }
+
+    const struct CMUnitTest postTests[] = {
+        cmocka_unit_test_setup_teardown(Test_LwCAPostDbInitCtx, NULL, NULL),
+        cmocka_unit_test_setup_teardown(Test_LwCAPostDbFreeCtx, NULL, NULL),
+
+    };
+
+    ret = cmocka_run_group_tests(postTests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA POST DB tests failed");
     }
 
     return ret;

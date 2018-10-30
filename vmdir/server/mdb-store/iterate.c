@@ -222,6 +222,7 @@ VmDirMDBIndexIteratorFree(
 DWORD
 VmDirMDBParentIdIndexIteratorInit(
     ENTRYID                                 parentId,
+    ENTRYID                                 childId,
     PVDIR_BACKEND_PARENT_ID_INDEX_ITERATOR* ppIterator
     )
 {
@@ -236,6 +237,7 @@ VmDirMDBParentIdIndexIteratorInit(
     PVDIR_MDB_PARENT_ID_INDEX_ITERATOR      pMdbIterator = NULL;
 
     unsigned char   parentEIdBytes[sizeof( ENTRYID )] = {0};
+    unsigned char   childEIdBytes[sizeof( ENTRYID )] = {0};
 
     if (!ppIterator)
     {
@@ -274,7 +276,16 @@ VmDirMDBParentIdIndexIteratorInit(
     key.mv_data = &parentEIdBytes[0];
     MDBEntryIdToDBT(parentId, &key);
 
-    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
+    if (childId == 0)
+    {
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
+    }
+    else
+    {
+        value.mv_data = &childEIdBytes[0];
+        MDBEntryIdToDBT(childId, &value);
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_GET_BOTH_RANGE);
+    }
     MDBDBTToEntryId(&key, &pMdbIterator->parentId);
     MDBDBTToEntryId(&value, &pMdbIterator->entryId);
 

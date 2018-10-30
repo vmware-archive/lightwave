@@ -23,6 +23,13 @@ _VmSignatureGetEvpMethod(
 
 static
 DWORD
+_VmSignatureConvertPEMToPublicKey(
+    PCSTR           pcszPEM,
+    EVP_PKEY        **ppPubKey
+    );
+
+static
+DWORD
 _VmSignatureConvertPEMKeyToPrivateKey(
     PCSTR       pszPEMKey,
     EVP_PKEY    **ppPrivateKey
@@ -125,6 +132,62 @@ error:
     if (ppHex)
     {
         *ppHex = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmSignatureDecodeHex(
+    PCSTR               pcszHexStr,
+    unsigned char       **ppData,
+    size_t              *pLength
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwIdx = 0;
+    size_t              hexlen = 0;
+    size_t              datalen = 0;
+    unsigned char       *pData = NULL;
+    unsigned char       twoHexChars[3];
+
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszHexStr, dwError);
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(ppData, dwError)
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(pLength, dwError)
+
+    hexlen = VmStringLenA(pcszHexStr);
+    if (hexlen % 2)
+    {
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_INVALID_PARAMETER);
+    }
+
+    datalen = hexlen / 2;
+    dwError = VmAllocateMemory(datalen, (PVOID*)&pData);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    for (dwIdx = 0; dwIdx < datalen; ++dwIdx)
+    {
+        strncpy(twoHexChars, &pcszHexStr[dwIdx * 2], 2);
+        twoHexChars[2] = '\0';
+        pData[dwIdx] = (unsigned char)strtoul(twoHexChars, NULL, 16);
+    }
+
+    *ppData = pData;
+    *pLength = datalen;
+
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pData);
+    if (ppData)
+    {
+        *ppData = NULL;
+    }
+    if (pLength)
+    {
+        *pLength = 0;
     }
 
     goto cleanup;
@@ -239,6 +302,116 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmSignatureVerifyRSASignature(
+    VMSIGN_DIGEST_METHOD    digestMethod,
+    const unsigned char     *pData,
+    size_t                  szDataSize,
+    PCSTR                   pcszRSAPublicKeyPEM,
+    unsigned char           *pRSASignature,
+    size_t                  RSASignatureSize,
+    PBOOLEAN                pbVerified
+    )
+{
+    DWORD                       dwError = 0;
+    int                         retVal = 0;
+    unsigned char               *pMd = NULL;
+    size_t                      mdSize = 0;
+    const EVP_MD                *pDigestMethod = NULL;
+    EVP_PKEY                    *pPubKey = NULL;
+    EVP_PKEY_CTX                *pPubKeyCtx = NULL;
+    BOOLEAN                     bVerified = FALSE;
+
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(pData, dwError);
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszRSAPublicKeyPEM, dwError);
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(pRSASignature, dwError);
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(pbVerified, dwError);
+
+    dwError = VmSignatureComputeMessageDigest(
+                        digestMethod,
+                        pData,
+                        szDataSize,
+                        &pMd,
+                        &mdSize);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = _VmSignatureConvertPEMToPublicKey(pcszRSAPublicKeyPEM, &pPubKey);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+
+    pPubKeyCtx = EVP_PKEY_CTX_new(pPubKey, NULL);
+    if (!pPubKeyCtx)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_CTX_new returned NULL");
+    }
+
+    retVal = EVP_PKEY_verify_init(pPubKeyCtx);
+    if (retVal <= 0)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_verify_init failed");
+    }
+
+    retVal = EVP_PKEY_CTX_set_rsa_padding(pPubKeyCtx, RSA_PKCS1_PADDING);
+    if (retVal <= 0)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_CTX_set_rsa_padding failed");
+    }
+
+    dwError = _VmSignatureGetEvpMethod(digestMethod, &pDigestMethod);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    retVal = EVP_PKEY_CTX_set_signature_md(pPubKeyCtx, pDigestMethod);
+    if (retVal <= 0)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_CTX_set_signature_md failed");
+    }
+
+    retVal = EVP_PKEY_verify(pPubKeyCtx, pRSASignature, RSASignatureSize, pMd, mdSize);
+    if (retVal == 1)
+    {
+        bVerified = TRUE;
+    }
+    else if (retVal == 0)
+    {
+        bVerified  = FALSE;
+    }
+    else
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_verify failed");
+    }
+
+    *pbVerified = bVerified;
+
+
+cleanup:
+
+    VM_COMMON_SAFE_FREE_MEMORY(pMd);
+    EVP_PKEY_CTX_free(pPubKeyCtx);
+    EVP_PKEY_free(pPubKey);
+
+    return dwError;
+
+error:
+
+    if (pbVerified)
+    {
+        *pbVerified = FALSE;
+    }
+
+    goto cleanup;
+}
+
+
 static
 DWORD
 _VmSignatureGetEvpMethod(
@@ -323,6 +496,83 @@ error:
     if (ppPrivateKey)
     {
         *ppPrivateKey = NULL;
+    }
+
+    goto cleanup;
+}
+
+static
+DWORD
+_VmSignatureConvertPEMToPublicKey(
+    PCSTR           pcszPEM,
+    EVP_PKEY        **ppPubKey
+    )
+{
+    DWORD           dwError = 0;
+    int             retVal = 0;
+    BIO*            bio = NULL;
+    RSA*            rsa = NULL;
+    EVP_PKEY        *pPubKey = NULL;
+
+    BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszPEM, dwError);
+    BAIL_ON_VM_COMMON_INVALID_PARAMETER(ppPubKey, dwError);
+
+    bio = BIO_new(BIO_s_mem());
+    if (!bio)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_NO_MEMORY,
+                "BIO_new returned NULL");
+    }
+
+    retVal = BIO_puts(bio, pcszPEM);
+    if (retVal <= 0)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "BIO_puts failed");
+    }
+
+    PEM_read_bio_RSA_PUBKEY(bio, &rsa, NULL, NULL);
+    if (!rsa)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "PEM_read_RSA_PUBKEY returned NULL");
+    }
+
+    pPubKey = EVP_PKEY_new();
+    if (!pPubKey)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_new returned NULL");
+    }
+
+    retVal = EVP_PKEY_assign_RSA(pPubKey, rsa);
+    if (retVal != 1)
+    {
+        BAIL_AND_LOG_ON_VM_COMMON_ERROR(
+                VM_COMMON_ERROR_OPENSSL_FAILURE,
+                "EVP_PKEY_assign_RSA failed");
+    }
+
+    *ppPubKey = pPubKey;
+
+
+cleanup:
+
+    BIO_free(bio);
+
+    return dwError;
+
+error:
+
+    RSA_free(rsa);
+    EVP_PKEY_free(pPubKey);
+    if (ppPubKey)
+    {
+        *ppPubKey = NULL;
     }
 
     goto cleanup;

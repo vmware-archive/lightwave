@@ -34,8 +34,10 @@
 
 #include <lwca_security.h>
 #include <vmmemory.h>
+#include <vmjsonresult.h>
+#include <vmhttpclient.h>
 
-#include "errorcodes.h"
+#include "security_aws_kms_errors.h"
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"

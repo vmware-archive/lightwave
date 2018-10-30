@@ -1943,13 +1943,16 @@ AC_CONFIG_FILES([Makefile
                  mutentca/config/Makefile
                  mutentca/config/mutentca.reg
                  mutentca/common/Makefile
-                 mutentca/pkcs/Makefile
                  mutentca/server/Makefile
                  mutentca/server/api/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
+                 mutentca/server/security/Makefile
                  mutentca/server/db/Makefile
+                 mutentca/server/oidc-auth/Makefile
                  mutentca/server/plugin/Makefile
+                 mutentca/server/plugins/Makefile
+                 mutentca/server/plugins/post/Makefile
                  mutentca/server/policy/Makefile
                  mutentca/server/rest-head/Makefile
                  mutentca/server/mutentca/Makefile
@@ -1961,6 +1964,9 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/server/db/Makefile
                  mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile
                  mutentca/tests/unit-tests/server/db/test-mutentcadb-plugin/Makefile
+                 mutentca/tests/unit-tests/server/security/Makefile
+                 mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/Makefile
+                 mutentca/tests/unit-tests/server/security/test-mutentcasecurity-plugin/Makefile
                  mutentca/tests/unit-tests/server/plugin/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/Makefile
                  mutentca/tests/unit-tests/server/plugin/test-plugins/testplugin-invalidvtable/Makefile
@@ -2035,5 +2041,16 @@ AC_CONFIG_LINKS([
 AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])
-
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postplugin-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postplugin-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postdb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-postdb-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-config.json:mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-data.json:mutentca/tests/unit-tests/server/security/test-mutentcasecurity-config/test-mutentcasecurity-data.json
+                ])
 AC_OUTPUT

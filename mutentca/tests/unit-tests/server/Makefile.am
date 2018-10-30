@@ -3,4 +3,5 @@ SUBDIRS = \
     plugin \
     db \
     policy \
+    security \
     api

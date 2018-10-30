@@ -17,6 +17,7 @@
 
 #include <pthread.h>
 #include <dlfcn.h>
+#include <regex.h>
 
 #if !defined(NO_LIKEWISE)
 #include <lw/types.h>
@@ -254,6 +255,42 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
         goto error;                                                         \
     }
 
+#define BAIL_WITH_LWCA_ERROR(dwError, ERROR_CODE)                           \
+    dwError = ERROR_CODE;                                                   \
+    BAIL_ON_LWCA_ERROR(dwError);
+
+
+#define BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg)                     \
+    if (dwError)                                                            \
+    {                                                                       \
+        LWCA_LOG_ERROR("[%s:%d] %s. error: %d",                             \
+                       __FUNCTION__,                                        \
+                       __LINE__,                                            \
+                       pszErrMsg,                                           \
+                       dwError);                                            \
+        BAIL_ON_LWCA_ERROR(dwError);                                        \
+    }
+
+#define BAIL_ON_LWCA_POLICY_CFG_ERROR_WITH_MSG(dwError, pszErrMsg)          \
+    if (dwError)                                                            \
+    {                                                                       \
+        dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;                           \
+        BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, pszErrMsg);                    \
+    }
+
+#define BAIL_ON_LWCA_INVALID_POINTER(p, errCode)                            \
+    if (p == NULL) {                                                        \
+        errCode = LWCA_ERROR_INVALID_PARAMETER;                             \
+        BAIL_ON_LWCA_ERROR(errCode);                                        \
+    }
+
+#define BAIL_ON_LWCA_INVALID_STR_PARAMETER(input, dwError)                  \
+    if (IsNullOrEmptyString((input)))                                       \
+    {                                                                       \
+        dwError = LWCA_ERROR_INVALID_PARAMETER;                             \
+        BAIL_ON_LWCA_ERROR(dwError);                                        \
+    }
+
 #define BAIL_ON_SSL_ERROR(dwError, ERROR_CODE)                              \
     if (dwError == 0)                                                       \
     {                                                                       \
@@ -416,6 +453,13 @@ LwCAFreeStringA(
 VOID
 LwCAFreeStringW(
     PWSTR pszString
+    );
+
+DWORD
+LwCACreateStringArray(
+    PSTR                *ppszSrc,
+    DWORD               dwSrcLen,
+    PLWCA_STRING_ARRAY* ppStrOutputArray
     );
 
 DWORD
@@ -635,6 +679,12 @@ LwCAHexStringToBytes(
     );
 
 DWORD
+LwCABytesToDword(
+    PBYTE  pBytes,
+    DWORD* pdwOut
+    );
+
+DWORD
 LwCAGetInstallDirectory(
     PSTR *ppszInstallDir
     );
@@ -650,6 +700,27 @@ LwCAGetLogDirectory(
     );
 
 
+// regexutil.c
+
+typedef regex_t REGEX, *PREGEX;
+
+DWORD
+LwCARegexInit(
+    PCSTR       pcszPattern,
+    PREGEX      *ppRegex
+    );
+
+DWORD
+LwCARegexValidate(
+    PCSTR       pcszValue,
+    PREGEX      pRegex,
+    PBOOLEAN    pbIsValid
+    );
+
+VOID
+LwCARegexFree(
+    PREGEX      pRegex
+    );
 
 /////////////////////////////Actual LwCA Common Functions///////////////////
 
@@ -820,7 +891,7 @@ LwCAFreeThread(
     PLWCA_THREAD pThread
     );
 
-// vecs.c
+// vmafd.c
 
 DWORD
 LwCAGetVecsMachineCert(
@@ -839,6 +910,16 @@ LwCAOpenVmAfdClientLib(
     LWCA_LIB_HANDLE*   pplibHandle
     );
 
+DWORD
+LwCAGetDCName(
+    PSTR        *ppszDCName
+    );
+
+DWORD
+LwCAGetDomainName(
+    PSTR        *ppszDomainName
+    );
+
 // ldap.c
 
 DWORD
@@ -852,6 +933,105 @@ LwCADNToRDNArray(
     PCSTR               pcszDN,
     BOOLEAN             bNotypes,
     PLWCA_STRING_ARRAY* ppRDNStrArray
+    );
+
+// jsonutils.c
+
+typedef struct json_t   _LWCA_JSON_OBJECT;
+typedef _LWCA_JSON_OBJECT   *PLWCA_JSON_OBJECT;
+
+DWORD
+LwCAJsonLoadObjectFromFile(
+    PCSTR                   pcszFilePath,
+    PLWCA_JSON_OBJECT       *ppJsonConfig
+    );
+
+DWORD
+LwCAJsonGetObjectFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PLWCA_JSON_OBJECT       *ppJsonValue
+    );
+
+DWORD
+LwCAJsonGetStringFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PSTR                    *ppszValue
+    );
+
+DWORD
+LwCAJsonGetStringArrayFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PLWCA_STRING_ARRAY      *ppStrArrValue
+    );
+
+DWORD
+LwCAJsonGetTimeFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    time_t                  *ptValue
+    );
+
+DWORD
+LwCAJsonGetIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    int                     *piValue
+    );
+
+DWORD
+LwCAJsonGetUnsignedIntegerFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    DWORD                   *pdwValue
+    );
+
+DWORD
+LwCAJsonGetBooleanFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    BOOLEAN                 *pbValue
+    );
+
+BOOLEAN
+LwCAJsonIsArray(
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+SIZE_T
+LwCAJsonArraySize(
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+DWORD
+LwCAJsonArrayGetBorrowedRef(
+    PLWCA_JSON_OBJECT       pJsonIn,
+    SIZE_T                  idx,
+    PLWCA_JSON_OBJECT       *ppJsonOut // Borrowed reference, do not free
+    );
+
+VOID
+LwCAJsonCleanupObject(
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+// token_util.c
+
+DWORD
+LwCAGetAccessToken(
+    PCSTR   pcszServer,
+    PCSTR   pcszDomain,
+    PCSTR   pcszOidcScope,
+    PSTR    *ppszToken
     );
 
 #ifdef __cplusplus

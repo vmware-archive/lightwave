@@ -48,6 +48,53 @@ Test_LwCAPolicyCfgObjArrayCopy(
     VOID **state
     );
 
+// parse.c
+
+VOID
+Test_LwCAPolicyInitCtx_Valid_AllCombinations(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Valid_OnlyCertPolicy(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Valid_OnlyCAPolicy(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_Type(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_Match(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_TypeMatchCombo(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_MissingValueForTypeMatchCombo(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_KeyUsage(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPolicyInitCtx_Invalid_MissingTypeMatchValue(
+    VOID **state
+    );
+
 #ifdef __cplusplus
 }
 #endif

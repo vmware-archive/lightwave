@@ -485,3 +485,32 @@ error:
     LWCA_SAFE_FREE_MEMORY(pData);
     goto cleanup;
 }
+
+DWORD
+LwCABytesToDword(
+    PBYTE  pBytes,
+    DWORD* pdwOut
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwOut = 0;
+
+    if (!pBytes || !pdwOut)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwOut |= pBytes[0] << 24;
+    dwOut |= pBytes[1] << 16;
+    dwOut |= pBytes[2] << 8;
+    dwOut |= pBytes[3];
+
+    *pdwOut = dwOut;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

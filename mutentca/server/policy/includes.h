@@ -34,6 +34,11 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcapolicy.h>
 
+#include <jansson.h>
+
+#include "defines.h"
+#include "prototypes.h"
+
 #ifdef __cplusplus
 }
 #endif

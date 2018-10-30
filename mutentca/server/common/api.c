@@ -27,13 +27,13 @@ LwCACreateIntCARequest(
     DWORD dwError = 0;
     PLWCA_INT_CA_REQ_DATA pIntCARequest = NULL;
 
-    if (!ppIntCARequest || (!pCountryList && !pStateList && !pLocalityList && !pOUList && !pcszPolicy))
+    if (!ppIntCARequest)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_INT_CA_REQ_DATA), (PVOID*)&ppIntCARequest);
+    dwError = LwCAAllocateMemory(sizeof(LWCA_INT_CA_REQ_DATA), (PVOID*)&pIntCARequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (pCountryList)

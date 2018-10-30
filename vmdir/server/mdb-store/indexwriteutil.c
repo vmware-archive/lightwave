@@ -23,6 +23,22 @@ _VmDirDeleteOldValueMetaData(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
     );
 
+static
+DWORD
+_VmDirMDBWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    PVDIR_DB                pMdbDBi,
+    PVDIR_BERVALUE          pBVKey,     // normalize key
+    PVDIR_BERVALUE          pBVValue,   // existing value (update/delete)
+    PVDIR_BERVALUE          pNewBVValue // new value (create/update)
+    );
+
+static
+PVDIR_DB
+_VmDirMDBNameToDBi(
+    PCSTR   pszDBName
+    );
+
 /*
  * MDBUpdateKeyValue(). If it is a unique index, just delete the key, otherwise using cursor, go to the desired
  * entryId value for the key, and delete that particular key-value pair.
@@ -1116,6 +1132,196 @@ cleanup:
 
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed: error=%d,eid=%ld", dwError, entryId);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirMDBWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    PVDIR_DB                pMdbDBi,
+    PVDIR_BERVALUE          pBVKey,     // normalize key
+    PVDIR_BERVALUE          pBVValue,   // existing value (update/delete)
+    PVDIR_BERVALUE          pNewBVValue // new value (create/update)
+    )
+{
+    DWORD           dwError = 0;
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB_DBT     current = {0};
+    VDIR_DB_DBT     value = {0};
+    PVDIR_DB_TXN    pTxn = (PVDIR_DB_TXN)pBECtx->pBEPrivate;
+
+    assert(pMdbDBi && pBVKey && pBVKey->bvnorm_val);
+
+    key.mv_data = pBVKey->bvnorm_val;
+    key.mv_size = pBVKey->bvnorm_len;
+    current.mv_data = pBVValue? pBVValue->bvnorm_val : NULL;
+    current.mv_size = pBVValue? pBVValue->bvnorm_len : 0;
+    value.mv_data   = pNewBVValue ? pNewBVValue->bvnorm_val : NULL;
+    value.mv_size   = pNewBVValue ? pNewBVValue->bvnorm_len : 0;
+
+    if (current.mv_data)
+    {   // delete
+        dwError = mdb_del(pTxn, *pMdbDBi, &key, &current);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (value.mv_data)
+    {   // create
+        dwError = mdb_put(pTxn, *pMdbDBi, &key, &value, BE_DB_FLAGS_ZERO);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+/*
+ * support BLOB table for now.  can extend to other tables later.
+ */
+static
+PVDIR_DB
+_VmDirMDBNameToDBi(
+    PCSTR   pszDBName
+    )
+{
+    PVDIR_DB pMdbDBi = NULL;
+
+    if (VmDirStringCompareA(pszDBName, ATTR_EID_SEQUENCE_NUMBER, FALSE) == 0)
+    {   // BLOB table
+        pMdbDBi = &gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+    }
+
+    return pMdbDBi;
+}
+
+/*
+ * Function to create/update/delete record in a backend table.
+ *
+ */
+DWORD
+VmDirMDBBackendTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PCSTR                   pszTableName,
+    PVDIR_BERVALUE          pBVKey,     // normalize key
+    PVDIR_BERVALUE          pBVValue,   // existing value (update/delete)
+    PVDIR_BERVALUE          pNewBVValue // new value (create/update)
+    )
+{
+    DWORD           dwError = 0;
+    PVDIR_DB        pMdbDBi = NULL;
+
+    if (!pBECtx ||
+        !pBECtx->pBEPrivate ||
+        !pszTableName ||
+        !pBVKey ||
+        !pBVKey->bvnorm_val)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (((opType == VDIR_BACKEND_RECORD_WRITE_CREATE || opType == VDIR_BACKEND_RECORD_WRITE_UPDATE) &&
+         (!pNewBVValue || !pNewBVValue->bvnorm_val))     ||
+        ((opType == VDIR_BACKEND_RECORD_WRITE_DELETE || opType == VDIR_BACKEND_RECORD_WRITE_UPDATE) &&
+         (!pBVValue || !pBVValue->bvnorm_val)))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pMdbDBi = _VmDirMDBNameToDBi(pszTableName);
+    if (pMdbDBi)
+    {
+        dwError = _VmDirMDBWriteRecord(pBECtx, pMdbDBi, pBVKey, pBVValue, pNewBVValue);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+/*
+ * Function to create/update/delete record in a index table.
+ *
+ */
+DWORD
+VmDirMDBIndexTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PVDIR_BERVALUE          pBVDN,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVCurrentKey,  // current normalize key
+    PVDIR_BERVALUE          pBVNewKey,      // new normalize key
+    PVDIR_BERVALUE          pBVEID          // entry id
+    )
+{
+    DWORD           dwError = 0;
+    VDIR_BERVALUE   bvAttrType = {0};
+    ENTRYID         entryId = 0;
+
+    if (!pBECtx ||
+        !pBECtx->pBEPrivate ||
+        !pszIndexName ||
+        !pBVEID ||
+        !pBVEID->bvnorm_val ||
+        !pBVDN || !pBVDN->bvnorm_val)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (((opType == VDIR_BACKEND_RECORD_WRITE_CREATE || opType == VDIR_BACKEND_RECORD_WRITE_UPDATE) &&
+         (!pBVNewKey || !pBVNewKey->bvnorm_val))     ||
+        ((opType == VDIR_BACKEND_RECORD_WRITE_DELETE || opType == VDIR_BACKEND_RECORD_WRITE_UPDATE) &&
+         (!pBVCurrentKey || !pBVCurrentKey->bvnorm_val)))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirBVToEntryId(pBVEID, &entryId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bvAttrType.lberbv_val = (PSTR)pszIndexName;
+    bvAttrType.lberbv_len = VmDirStringLenA(pszIndexName);
+
+    if (pBVCurrentKey && pBVCurrentKey->bvnorm_val)
+    {
+        dwError = MdbUpdateIndicesForAttr(
+            (PVDIR_DB_TXN)pBECtx->pBEPrivate,
+            pBVDN,
+            &bvAttrType,
+            pBVCurrentKey,
+            1,
+            entryId,
+            BE_INDEX_OP_TYPE_DELETE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pBVNewKey && pBVNewKey->bvnorm_val)
+    {
+        dwError = MdbUpdateIndicesForAttr(
+            (PVDIR_DB_TXN)pBECtx->pBEPrivate,
+            pBVDN,
+            &bvAttrType,
+            pBVNewKey,
+            1,
+            entryId,
+            BE_INDEX_OP_TYPE_CREATE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 

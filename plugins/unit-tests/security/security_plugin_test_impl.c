@@ -28,6 +28,7 @@ LwCASecurityGetVersion(
 
 DWORD
 Security_Test_Impl_Initialize(
+    PCSTR pszConfigFile,
     PLWCA_SECURITY_HANDLE *ppHandle
     )
 {
@@ -69,7 +70,6 @@ Security_Test_Impl_AddKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
     PCSTR pszPrivateKey
     )
 {
@@ -83,7 +83,6 @@ Security_Test_Impl_CreateKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
     size_t nKeyLength,
     PSTR *ppszPublicKey
     )
@@ -94,14 +93,12 @@ Security_Test_Impl_CreateKeyPair(
 }
 
 DWORD
-Security_Test_Impl_SignCertificate(
+Security_Test_Impl_Sign(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
-    X509 *pX509Certificate,
-    LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
-    PSTR *ppszCertificate
+    PLWCA_SECURITY_SIGN_DATA pSignData,
+    LWCA_SECURITY_MESSAGE_DIGEST md
     )
 {
     DWORD dwError = 0;
@@ -110,12 +107,11 @@ Security_Test_Impl_SignCertificate(
 }
 
 DWORD
-Security_Test_Impl_VerifyCertificate(
+Security_Test_Impl_Verify(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
-    PCSTR pszCertificate,
-    PCSTR pKeyId,
-    PCSTR pszPassPhrase,
+    PCSTR pcszKeyId,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     BOOLEAN *pbValid
     )
 {
@@ -157,8 +153,8 @@ LwCASecurityLoadInterface(
     _interface.pFnCapOverride = Security_Test_Impl_CapOverride;
     _interface.pFnAddKeyPair = Security_Test_Impl_AddKeyPair;
     _interface.pFnCreateKeyPair = Security_Test_Impl_CreateKeyPair;
-    _interface.pFnSignCertificate = Security_Test_Impl_SignCertificate;
-    _interface.pFnVerifyCertificate = Security_Test_Impl_VerifyCertificate;
+    _interface.pFnSign = Security_Test_Impl_Sign;
+    _interface.pFnVerify = Security_Test_Impl_Verify;
     _interface.pFnCloseHandle = Security_Test_Impl_CloseHandle;
     _interface.pFnFreeMemory = Security_Test_Impl_FreeMemory;
 
@@ -181,8 +177,8 @@ LwCASecurityUnloadInterface(
         pInterface->pFnCapOverride = NULL;
         pInterface->pFnAddKeyPair = NULL;
         pInterface->pFnCreateKeyPair = NULL;
-        pInterface->pFnSignCertificate = NULL;
-        pInterface->pFnVerifyCertificate = NULL;
+        pInterface->pFnSign = NULL;
+        pInterface->pFnVerify = NULL;
         pInterface->pFnCloseHandle = NULL;
         pInterface->pFnFreeMemory = NULL;
     }

@@ -35,6 +35,8 @@ typedef enum _LWCA_SIGNING_ALGORITHM
     LWCA_SHA_256 = 0
 } LWCA_SIGNING_ALGORITHM, *PLWCA_SIGNING_ALGORITHM;
 
+#define LWCA_CRL_DEFAULT_CRL_VALIDITY (30 * LWCA_TIME_SECS_PER_DAY)
+
 DWORD
 LwCACreateIntCARequest(
     PLWCA_STRING_ARRAY      pCountryList,
@@ -67,7 +69,8 @@ LwCACreateIntermediateCA(
     PCSTR                   pcszCAId,
     PCSTR                   pcszParentCAId,
     PLWCA_INT_CA_REQ_DATA   pIntCARequest,
-    PLWCA_CERT_VALIDITY     pValidity
+    PLWCA_CERT_VALIDITY     pValidity,
+    PLWCA_CERTIFICATE_ARRAY *ppCACerts
     );
 
 DWORD

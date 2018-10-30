@@ -52,7 +52,11 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_STORAGE_ERROR_BASE             600
 #define LWCA_REST_ERROR_BASE                700
 #define LWCA_ERRNO_BASE                     800
-#define LWCA_MISC_ERROR_BASE                1000
+#define LWCA_OIDC_ERROR_BASE                900
+#define LWCA_SECURITY_ERROR_BASE            1000
+#define LWCA_CURL_ERROR_BASE                1100
+#define LWCA_REGEX_ERROR_BASE               1200
+#define LWCA_MISC_ERROR_BASE                2000
 
 // System Error Codes (80000 - 80099)
 #define LWCA_ERROR_INVALID_PARAMETER        (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  1)
@@ -86,7 +90,7 @@ typedef struct _LWCA_ERRNO_MAP
 
 // Policy Error Codes (80200 - 80299)
 #define LWCA_POLICY_VALIDATION_ERROR        (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
-#define LWCA_POLICY_CONFIG_ERROR            (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
+#define LWCA_POLICY_CONFIG_PARSE_ERROR      (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
 
 // SSL (CA) Error Codes (80300 - 80499)
 #define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
@@ -150,6 +154,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SSL_STORE_ADD_CERT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 59)
 #define LWCA_SSL_STORE_CTX_INIT_FAIL        (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 60)
 #define LWCA_SSL_CERT_VERIFY_ERR            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 61)
+#define LWCA_SSL_INVALID_NID                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 62)
+#define LWCA_SSL_NO_EXTENSIONS              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 63)
 
 // ERRNO to LwCA Codes (80800 - 80899)
 #define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
@@ -193,13 +199,48 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_INVALID_METHOD           (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 3)
 #define LWCA_ERROR_INVALID_REQUEST          (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 4)
 #define LWCA_ERROR_UNAVAILABLE              (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 5)
+#define LWCA_ERROR_REST_UNAUTHENTICATED     (LWCA_ERROR_BASE + LWCA_REST_ERROR_BASE + 6)
 
 // Storage Error codes (80600 - 80699)
 #define LWCA_DB_NOT_INITIALIZED             (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 1)
 #define LWCA_DB_ALREADY_INITIALIZED         (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 2)
 #define LWCA_DB_INVALID_PLUGIN              (LWCA_ERROR_BASE + LWCA_STORAGE_ERROR_BASE + 3)
 
-// Misc. Error Codes (8100 - 8999)
+// OIDC Error codes (80900 - 80999)
+#define LWCA_ERROR_OIDC_UNAVAILABLE         (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 1)
+#define LWCA_ERROR_OIDC_BAD_AUTH_DATA       (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 2)
+#define LWCA_ERROR_OIDC_UNKNOWN_TOKEN       (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 3)
+#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 4)
+#define LWCA_ERROR_OIDC_INVALID_POP         (LWCA_ERROR_BASE + LWCA_OIDC_ERROR_BASE + 5)
+
+// Security error Codes (81000 - 81099)
+#define LWCA_SECURITY_NOT_INITIALIZED       (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 1)
+#define LWCA_SECURITY_ALREADY_INITIALIZED   (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 2)
+#define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
+
+// CURL Error codes (81100 - 81199)
+#define LWCA_ERROR_CURL_FAILED_INIT         (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
+#define LWCA_ERROR_CURL_SEND_ERROR          (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 2)
+#define LWCA_ERROR_CURL_RECV_ERROR          (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 3)
+#define LWCA_ERROR_CURL_GENERIC_ERROR       (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 4)
+
+// Regex Error Codes (81200 - 81299)
+#define LWCA_REGEX_ERROR_NOMATCH            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 1)
+#define LWCA_REGEX_ERROR_BADPAT             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 2)
+#define LWCA_REGEX_ERROR_ECOLLATE           (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 3)
+#define LWCA_REGEX_ERROR_ECTYPE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 4)
+#define LWCA_REGEX_ERROR_EESCAPE            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 5)
+#define LWCA_REGEX_ERROR_ESUBREG            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 6)
+#define LWCA_REGEX_ERROR_EBRACK             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 7)
+#define LWCA_REGEX_ERROR_EPAREN             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 8)
+#define LWCA_REGEX_ERROR_EBRACE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 9)
+#define LWCA_REGEX_ERROR_BADBR              (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 10)
+#define LWCA_REGEX_ERROR_ERANGE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 11)
+#define LWCA_REGEX_ERROR_ESPACE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 12)
+#define LWCA_REGEX_ERROR_BADRPT             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 13)
+#define LWCA_REGEX_ERROR_UNKNOWN            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 14)
+
+// Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
 #define LWCA_JSON_FILE_LOAD_ERROR           (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 2)
 #define LWCA_JSON_PARSE_ERROR               (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 3)
@@ -207,7 +248,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_PLUGIN_FAILURE                 (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 5)
 #define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
 #define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
-#define LWCA_OIDC_RESPONSE_ERROR            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 8)
+#define LWCA_ERROR_VMAFD_UNAVAILABLE        (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 9)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -298,6 +339,8 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SSL_STORE_ADD_CERT_FAIL      ,   "LWCA_SSL_STORE_ADD_CERT_FAIL"      ,   "Adding certificate to SSL store failed" }, \
     { LWCA_SSL_STORE_CTX_INIT_FAIL      ,   "LWCA_SSL_STORE_CTX_INIT_FAIL"      ,   "Init SSL store context failed" }, \
     { LWCA_SSL_CERT_VERIFY_ERR          ,   "LWCA_SSL_CERT_VERIFY_ERR"          ,   "Unable to verify certficate" }, \
+    { LWCA_SSL_INVALID_NID              ,   "LWCA_SSL_INVALID_NID"              ,   "NID doesn't correspond to a valid OID" }, \
+    { LWCA_SSL_NO_EXTENSIONS            ,   "LWCA_SSL_NO_EXTENSIONS"            ,   "Could not get any extensions" }, \
     { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
     { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \
     { LWCA_ERROR_INVALID_METHOD         ,   "LWCA_ERROR_INVALID_METHOD"         ,   "Invalid HTTP method" }, \
@@ -306,12 +349,13 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_AUTH_BAD_DATA          ,   "LWCA_ERROR_AUTH_BAD_DATA"          ,   "Bad auth data presented" }, \
     { LWCA_ERROR_INVALID_REQUEST        ,   "LWCA_ERROR_INVALID_REQUEST"        ,   "Bad request caused by client error"}, \
     { LWCA_ERROR_UNAVAILABLE            ,   "LWCA_ERROR_UNAVAILABLE"            ,   "Server is unavailable/shutdown"}, \
+    { LWCA_ERROR_REST_UNAUTHENTICATED   ,   "LWCA_ERROR_REST_UNAUTHENTICATED"   ,   "Unauthenticated HTTP request"}, \
     { LWCA_ERROR_DLL_SYMBOL_NOTFOUND    ,   "LWCA_ERROR_DLL_SYMBOL_NOTFOUND"    ,   "Unable to find symbol in library" }, \
     { LWCA_ERROR_EVP_DIGEST             ,   "LWCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
     { LWCA_JSON_FILE_LOAD_ERROR         ,   "LWCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
     { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
     { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
-    { LWCA_POLICY_CONFIG_ERROR          ,   "LWCA_POLICY_CONFIG_ERROR"          ,   "Invalid content in policy config file" }, \
+    { LWCA_POLICY_CONFIG_PARSE_ERROR    ,   "LWCA_POLICY_CONFIG_PARSE_ERROR"    ,   "Invalid content in policy config file" }, \
     { LWCA_DB_NOT_INITIALIZED           ,   "LWCA_DB_NOT_INITIALIZED"           ,   "Db context is not initialized" }, \
     { LWCA_DB_ALREADY_INITIALIZED       ,   "LWCA_DB_ALREADY_INITIALIZED"       ,   "Db context is already initialized" }, \
     { LWCA_DB_INVALID_PLUGIN            ,   "LWCA_DB_INVALID_PLUGIN"            ,   "Db plugin is not valid" }, \
@@ -358,7 +402,33 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_JSON_ERROR                   ,   "LWCA_JSON_ERROR"                   ,   "Error from jansson api" }, \
     { LWCA_COAPI_ERROR                  ,   "LWCA_COAPI_ERROR"                  ,   "Error from copenapi" }, \
     { LWCA_CREST_ENGINE_ERROR           ,   "LWCA_CREST_ENGINE_ERROR"           ,   "Error from c-rest-engine" }, \
+    { LWCA_ERROR_OIDC_UNAVAILABLE       ,   "LWCA_ERROR_OIDC_UNAVAILABLE"       ,   "OIDC authentication is not available" }, \
+    { LWCA_ERROR_OIDC_BAD_AUTH_DATA     ,   "LWCA_ERROR_OIDC_BAD_AUTH_DATA"     ,   "Bad data presented for OIDC auth" }, \
+    { LWCA_ERROR_OIDC_UNKNOWN_TOKEN     ,   "LWCA_ERROR_OIDC_UNKNOWN_TOKEN"     ,   "Unsupported OIDC token type presented" }, \
+    { LWCA_ERROR_OIDC_INVALID_POP       ,   "LWCA_ERROR_OIDC_INVALID_POP"       ,   "Failed to verify HTTP request POP" }, \
     { LWCA_OIDC_RESPONSE_ERROR          ,   "LWCA_OIDC_RESPONSE_ERROR"          ,   "Error in the response from OIDC" }, \
+    { LWCA_SECURITY_NOT_INITIALIZED     ,   "LWCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin" }, \
+    { LWCA_SECURITY_ALREADY_INITIALIZED ,   "LWCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized" }, \
+    { LWCA_SECURITY_INVALID_PLUGIN      ,   "LWCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
+    { LWCA_ERROR_CURL_FAILED_INIT       ,   "LWCA_ERROR_CURL_FAILED_INIT"       ,   "CURL Init Failed" } , \
+    { LWCA_ERROR_CURL_SEND_ERROR        ,   "LWCA_ERROR_CURL_SEND_ERROR"        ,   "CURL failed to send request" } , \
+    { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
+    { LWCA_ERROR_CURL_GENERIC_ERROR     ,   "LWCA_ERROR_CURL_GENERIC_ERROR"     ,   "CURL generic failure" } , \
+    { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
+    { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
+    { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \
+    { LWCA_REGEX_ERROR_ECOLLATE         ,   "LWCA_REGEX_ERROR_ECOLLATE"         ,   "Invalid collating element referenced" }, \
+    { LWCA_REGEX_ERROR_ECTYPE           ,   "LWCA_REGEX_ERROR_ECTYPE"           ,   "Invalid character class type referenced" }, \
+    { LWCA_REGEX_ERROR_EESCAPE          ,   "LWCA_REGEX_ERROR_EESCAPE"          ,   "Trailing '\\' in pattern" }, \
+    { LWCA_REGEX_ERROR_ESUBREG          ,   "LWCA_REGEX_ERROR_ESUBREG"          ,   "Number in '\\digit' invalid or in error" }, \
+    { LWCA_REGEX_ERROR_EBRACK           ,   "LWCA_REGEX_ERROR_EBRACK"           ,   "'[]' imbalance" }, \
+    { LWCA_REGEX_ERROR_EPAREN           ,   "LWCA_REGEX_ERROR_EPAREN"           ,   "'\\(\\)' or '()' imbalance" }, \
+    { LWCA_REGEX_ERROR_EBRACE           ,   "LWCA_REGEX_ERROR_EBRACE"           ,   "'\\{\\}' imbalance" }, \
+    { LWCA_REGEX_ERROR_BADBR            ,   "LWCA_REGEX_ERROR_BADBR"            ,   "Content of '\\{\\}' invalid: not a number, number too large, more than two numbers, first larger than second" }, \
+    { LWCA_REGEX_ERROR_ERANGE           ,   "LWCA_REGEX_ERROR_ERANGE"           ,   "Invalid endpoint in range expression" }, \
+    { LWCA_REGEX_ERROR_ESPACE           ,   "LWCA_REGEX_ERROR_ESPACE"           ,   "Out of memory" }, \
+    { LWCA_REGEX_ERROR_BADRPT           ,   "LWCA_REGEX_ERROR_BADRPT"           ,   "'?', '*', or '+' not preceded by valid regular expression" }, \
+    { LWCA_REGEX_ERROR_UNKNWON          ,   "LWCA_REGEX_ERROR_UNKNOWN"          ,   "Unknwown regex error" }, \
 };
 
 #endif //__LWCA_ERROR_H__

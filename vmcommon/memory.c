@@ -232,7 +232,7 @@ VmFreeMemory(
 }
 
 VOID
-VmCommonFreeStringA(
+VmFreeStringA(
     PSTR pszString
     )
 {

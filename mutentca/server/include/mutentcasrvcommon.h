@@ -82,6 +82,8 @@ typedef DWORD LWCA_FUNC_LEVEL;
 
 #define SQL_BUFFER_SIZE          1024
 
+#define LWCA_MAX_INT_CA_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
+
 #define LWCA_SAFE_FREE_HZN_PSTR(PTR)    \
     do {                                \
         if ((PTR)) {                    \
@@ -89,18 +91,6 @@ typedef DWORD LWCA_FUNC_LEVEL;
             (PTR) = NULL;               \
         }                               \
     } while(0)
-
-#define BAIL_ON_LWCA_INVALID_POINTER(p, errCode)    \
-    if (p == NULL) {                                \
-        errCode = LWCA_ERROR_INVALID_PARAMETER;     \
-        BAIL_ON_LWCA_ERROR(errCode);                \
-    }
-
-#define BAIL_ON_LWCA_INVALID_PARAMETER(input, dwError)  \
-    if (input == NULL)                                  \
-    {                                                   \
-        dwError = LWCA_ERROR_INVALID_PARAMETER;         \
-    }
 
 #define LWCA_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
     if (! (bLocked) ) \
@@ -140,7 +130,8 @@ typedef struct _LWCA_DIR_SYNC_PARAMS
 
 typedef struct _LWCA_REQ_CONTEXT
 {
-    PSTR            pszAuthPrincipal;
+    PSTR                    pszBindUPN;
+    PLWCA_STRING_ARRAY      pBindUPNGroups;
 } LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
 
 typedef enum
@@ -181,83 +172,39 @@ LwCASrvGetMachineAccountInfoA(
     PSTR* ppszPassword
     );
 
-/* ../common/jsonutils.c */
-
-typedef struct json_t   _LWCA_JSON_OBJECT;
-typedef _LWCA_JSON_OBJECT   *PLWCA_JSON_OBJECT;
-
-DWORD
-LwCAJsonLoadObjectFromFile(
-    PCSTR                   pcszFilePath,
-    PLWCA_JSON_OBJECT       *ppJsonConfig
-    );
-
-DWORD
-LwCAJsonGetObjectFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PLWCA_JSON_OBJECT       *ppJsonValue
-    );
-
-DWORD
-LwCAJsonGetStringFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PSTR                    *ppszValue
-    );
-
-DWORD
-LwCAJsonGetStringArrayFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    PLWCA_STRING_ARRAY      *ppStrArrValue
-    );
-
-DWORD
-LwCAJsonGetTimeFromKey(
-    PLWCA_JSON_OBJECT       pJson,
-    BOOLEAN                 bOptional,
-    PCSTR                   pcszKey,
-    time_t                  *ptValue
-    );
-
-VOID
-LwCAJsonCleanupObject(
-    PLWCA_JSON_OBJECT       pJson
-    );
-
 /* ../common/util.c */
 
 BOOLEAN
 LwCAUtilIsValueIPAddr(
-    PCSTR           pszValue
+    PCSTR           pcszValue
     );
 
 BOOLEAN
 LwCAUtilIsValuePrivateOrLocalIPAddr(
-    PSTR            pszValue
+    PCSTR           pcszValue
     );
 
 DWORD
 LwCAUtilIsValueFQDN(
-    PCSTR           pszValue,
+    PCSTR           pcszValue,
     PBOOLEAN        pbIsValid
     );
 
 BOOLEAN
 LwCAUtilDoesValueHaveWildcards(
-    PCSTR            pszValue
+    PCSTR            pcszValue
     );
 
 DWORD
-LwCAUtilIsValueInWhitelist(
-    PCSTR                           pszValue,
-    PCSTR                           pszAuthUPN,
-    PCSTR                           pcszRegValue,
-    PBOOLEAN                        pbInWhitelist
+LwCARequestContextCreate(
+    PSTR                    pszBindUPN,
+    PLWCA_STRING_ARRAY      pBindUPNGroups,
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    );
+
+VOID
+LwCARequestContextFree(
+    PLWCA_REQ_CONTEXT       pReqCtx
     );
 
 DWORD
@@ -309,27 +256,25 @@ LwCAFreeKey(
 
 DWORD
 LwCADbCreateCAData(
-    PCSTR                           pcszIssuer,
-    PCSTR                           pcszSubject,
-    PLWCA_CERTIFICATE_ARRAY         pCertificates,
-    PLWCA_KEY                       pEncryptedPrivateKey,
-    PLWCA_KEY                       pEncryptedEncryptionKey,
-    PCSTR                           pcszTimeValidFrom,
-    PCSTR                           pcszTimeValidTo,
-    LWCA_CA_STATUS                  status,
-    PLWCA_DB_CA_DATA                *ppCAData
+    PCSTR                       pcszSubjectName,
+    PLWCA_CERTIFICATE_ARRAY     pCertificates,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    LWCA_CA_STATUS              status,
+    PLWCA_DB_CA_DATA            *ppCAData
     );
 
 DWORD
 LwCADbCreateCertData(
-    PCSTR               pcszSerialNumber,
-    PCSTR               pcszIssuer,
-    PCSTR               pcszTimeValidFrom,
-    PCSTR               pcszTimeValidTo,
-    PCSTR               pcszRevokedReason,
-    PCSTR               pcszRevokedDate,
-    LWCA_CERT_STATUS    status,
-    PLWCA_DB_CERT_DATA  *ppCertData
+    PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszTimeValidFrom,
+    PCSTR                   pcszTimeValidTo,
+    DWORD                   revokedReason,
+    PCSTR                   pcszRevokedDate,
+    LWCA_CERT_STATUS        status,
+    PLWCA_DB_CERT_DATA      *ppCertData
     );
 
 VOID
@@ -383,6 +328,56 @@ VOID
 LwCASrvCleanupGlobalState(
     VOID
     );
+
+// Added secure key manager api definitions temporarily.
+// It will be removed once secure key manager is integrated.
+
+DWORD
+LwCAKmCreateKeyPair(
+    PCSTR pcszKeyId
+    );
+
+DWORD
+LwCAKmGetPublickey(
+    PCSTR pcszKeyId,
+    PSTR  *ppszPublicKey
+    );
+
+DWORD
+LwCAKmGetEncryptedKey(
+    PCSTR       pcszId,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCAKmSignX509Cert(
+    X509 *pCert,
+    PCSTR pcszKeyId
+    );
+
+DWORD
+LwCAKmSignX509Request(
+    X509_REQ *pReq,
+    PCSTR    pcszKeyId
+    );
+
+DWORD
+LwCAKmSignX509Crl(
+    X509_CRL *pCrl,
+    PCSTR    pcszKeyId
+    );
+
+/* security */
+DWORD
+LwCASecurityInitCtx(
+    PLWCA_JSON_OBJECT pConfig
+    );
+
+VOID
+LwCASecurityFreeCtx(
+   VOID
+   );
+
 #ifdef __cplusplus
 }
 #endif

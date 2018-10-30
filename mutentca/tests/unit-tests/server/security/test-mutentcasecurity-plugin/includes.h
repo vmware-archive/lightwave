@@ -11,39 +11,7 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-
-#ifndef _LWCA_MUTENTCA_PKCS_INCLUDES_H_
-#define _LWCA_MUTENTCA_PKCS_INCLUDES_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-#include <config.h>
-#include <mutentcasys.h>
-
-#include <openssl/ssl.h>
-#include <openssl/err.h>
-#include <openssl/conf.h>
-#include <openssl/x509v3.h>
-#include <openssl/pem.h>
-#include <openssl/bio.h>
-#include <openssl/objects.h>
-
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#endif
-
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcacommon.h>
-#include <mutentcaerror.h>
-#include <mutentcapkcs.h>
+#include <stdint.h>
+#include <lwca_security.h>
 
 #include "defines.h"
-
-#ifdef __cplusplus
-}
-#endif
-
-#endif /* _LWCA_MUTENTCA_PKCS_INCLUDES_H_ */

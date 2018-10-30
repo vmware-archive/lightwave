@@ -26,11 +26,27 @@ int main(VOID)
         cmocka_unit_test(Test_LwCAPolicyCfgObjArrayCopy),
     };
 
-    ret = cmocka_run_group_tests(policyUtilTests, NULL, NULL);
+    const struct CMUnitTest policyInitTests[] = {
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Valid_AllCombinations),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Valid_OnlyCertPolicy),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Valid_OnlyCAPolicy),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_Type),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_Match),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_TypeMatchCombo),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_MissingValueForTypeMatchCombo),
+        cmocka_unit_test(Test_LwCAPolicyInitCtx_Invalid_KeyUsage),
+    };
 
+    ret = cmocka_run_group_tests(policyUtilTests, NULL, NULL);
     if (ret)
     {
         fail_msg("%s", "MutentCA Policy Util tests failed");
+    }
+
+    ret = cmocka_run_group_tests(policyInitTests, NULL, NULL);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA Policy Init (config parse) tests failed");
     }
 
     return ret;

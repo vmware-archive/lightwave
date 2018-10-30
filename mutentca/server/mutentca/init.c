@@ -46,9 +46,12 @@ LwCAInitialize(
     dwError = InitializeLog(FALSE, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // Don't bail on Error , this just sets up the current state
+    // TODO: When final implementation is in place, don't bail on Error , this
+    // just sets up the current state
     dwError = LwCASrvInitCA();
+    BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = OidcClientGlobalInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
 #ifdef REST_ENABLED
@@ -66,6 +69,9 @@ LwCAShutdown(
     VOID
     )
 {
+
+    OidcClientGlobalCleanup();
+
 #ifdef REST_ENABLED
     if (LwCARestServerStop() == 0)
     {
@@ -95,17 +101,28 @@ LwCASrvInitCA(
 {
     DWORD dwError = 0;
     PLWCA_JSON_OBJECT pJsonConfig = NULL;
+    PLWCA_JSON_OBJECT pSecurityConfig = NULL;
 
     dwError = LwCAConfigLoadFile(LWCA_CONFIG_FILE_PATH, &pJsonConfig);
     if (dwError == LWCA_JSON_FILE_LOAD_ERROR)
     {
         LWCA_LOG_INFO(
-                "[%s,%d] Failed to open LwCA config file (%s). Service starting without it...",
+                "[%s,%d] Failed to open LwCA config file (%s). Service cannot start without config...",
                 __FUNCTION__,
                 __LINE__,
                 LWCA_CONFIG_FILE_PATH);
-        dwError = 0;
     }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* get the security config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  MUTENTCA_SECURITY_PLUGIN_KEY,
+                  &pSecurityConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASecurityInitCtx(pSecurityConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:

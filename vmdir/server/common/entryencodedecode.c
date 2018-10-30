@@ -165,6 +165,7 @@ VmDirEncodeEntry(
 
     dwError = VmDirAllocateMemory( pEncodedBerval->lberbv.bv_len, (PVOID *)&pEncodedBerval->lberbv.bv_val );
     BAIL_ON_VMDIR_ERROR( dwError );
+    pEncodedBerval->bOwnBvVal = TRUE;
     writer = (unsigned char *)pEncodedBerval->lberbv.bv_val;
 
     // Put number of attributes and number of attribute values in front, speeds up (e.g. memory allocation) decoding.

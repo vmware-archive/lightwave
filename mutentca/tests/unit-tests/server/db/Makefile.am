@@ -9,6 +9,7 @@ SUBDIRS = \
 
 testmutentcadb_SOURCES = \
     db.c \
+    post.c \
     main.c
 
 testmutentcadb_CPPFLAGS = \

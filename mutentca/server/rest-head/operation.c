@@ -253,7 +253,9 @@ LwCARestOperationProcessRequest(
     PLWCA_REST_OPERATION    pRestOp
     )
 {
-    DWORD   dwError = 0;
+    DWORD                   dwError = 0;
+    BOOLEAN                 bAuthenticated = FALSE;
+    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
 
     if (!pRestOp)
     {
@@ -261,10 +263,14 @@ LwCARestOperationProcessRequest(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    // TODO: This will be done by Authz plugin in a future commit
-    //dwError = LwCARestAuth(pRestOp);
-    //BAIL_ON_LWCA_ERROR(dwError);
+    dwError = LwCARestAuth(pRestOp, &pReqCtx, &bAuthenticated);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthenticated)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_REST_UNAUTHENTICATED);
+    }
 
+    // TODO: Modify REST APIs to take request context (pReqCtx) as parameter
     if (LwCAStringCompareA(pRestOp->pszMethod, LWCA_HTTP_METHOD_OPTIONS, FALSE) != 0)
     {
         dwError = coapi_find_handler(
@@ -284,10 +290,15 @@ LwCARestOperationProcessRequest(
             LWCA_SAFE_STRING(pRestOp->pszMethod),
             LWCA_SAFE_STRING(pRestOp->pszPath));
 
+
 cleanup:
+
+    LwCARequestContextFree(pReqCtx);
+
     return dwError;
 
 error:
+
     LWCA_LOG_ERROR(
             "%s failed, error (%d) for client: %s",
             __FUNCTION__,

@@ -28,7 +28,7 @@ DWORD
 LwCADbAddCA(
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData,
-    PCSTR                   pcszParentCA
+    PCSTR                   pcszParentCAId
     );
 
 DWORD
@@ -40,6 +40,13 @@ LwCADbAddCertData(
 DWORD
 LwCADbCheckCA(
     PCSTR                   pcszCAId,
+    PBOOLEAN                pbExists
+    );
+
+DWORD
+LwCADbCheckCertData(
+    PCSTR                   pcszCAId,
+    PCSTR                   pcszSerialNumber,
     PBOOLEAN                pbExists
     );
 
@@ -62,6 +69,18 @@ LwCADbGetCertData(
     );
 
 DWORD
+LwCADbGetCACRLNumber(
+    PCSTR   pcszCAId,
+    PSTR    *ppszCRLNumber
+    );
+
+DWORD
+LwCADbGetParentCAId(
+    PCSTR   pcszCAId,
+    PSTR    *ppszParentCAId
+    );
+
+DWORD
 LwCADbUpdateCA(
     PCSTR                   pcszCAId,
     PLWCA_DB_CA_DATA        pCAData
@@ -77,6 +96,12 @@ DWORD
 LwCADbUpdateCertData(
     PCSTR                   pcszCAId,
     PLWCA_DB_CERT_DATA      pCertData
+    );
+
+DWORD
+LwCADbUpdateCACRLNumber(
+    PCSTR   pcszCAId,
+    PCSTR   pcszCRLNumber
     );
 
 VOID

@@ -16,6 +16,8 @@
 
 SECURITY_AWS_KMS_TEST_STATE _this_state = {0};
 
+#define LIB_LWCA_SECURITY_AWS_KMS_SO "../../lwca_security_aws_kms/src/.libs/liblwca_security_aws_kms.so"
+
 int
 Security_Aws_Kms_Tests_Load (
     VOID **state
@@ -23,7 +25,7 @@ Security_Aws_Kms_Tests_Load (
 {
     int error = 0;
 
-    _this_state.module = dlopen("../../lwca_security_aws_kms/.libs/lwca_security_aws_kms.so", RTLD_NOW);
+    _this_state.module = dlopen(LIB_LWCA_SECURITY_AWS_KMS_SO, RTLD_NOW);
 
     if (!_this_state.module)
     {
@@ -112,30 +114,6 @@ Security_Aws_Kms_Tests_Load_Interface(
     if (error)
     {
         fail_msg("LoadInterface call failed\n");
-        goto error;
-    }
-
-error:
-    return error;
-}
-
-int
-Security_Aws_Kms_Tests_Initialize(
-    void **state
-    )
-{
-    int error = 0;
-    PSECURITY_AWS_KMS_TEST_STATE pState = *state;
-
-    if (Security_Aws_Kms_Tests_Load_Interface(state))
-    {
-        goto error;
-    }
-
-    error = pState->pInterface->pFnInitialize(&pState->pHandle);
-    if (error)
-    {
-        fail_msg("initialize failed\n");
         goto error;
     }
 

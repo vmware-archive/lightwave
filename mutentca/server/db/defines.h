@@ -12,4 +12,5 @@
  * under the License.
  */
 
-#define CONFIG_DB_PLUGIN_KEY_NAME "dbPlugin"
+#define CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
+#define CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"

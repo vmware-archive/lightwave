@@ -42,6 +42,46 @@ Test_LwCAGetSignedCertificate_Invalid(
     VOID **state
     );
 
+VOID
+Test_LwCACreateIntermediateCA_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCACreateIntermediateCA_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCARevokeCertificate_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCARevokeCertificate_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCARevokeIntermediateCA_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCARevokeIntermediateCA_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCACrl_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCACrl_Invalid(
+    VOID **state
+    );
+
 int
 TestLwCACreateRequestContext(
     VOID **state

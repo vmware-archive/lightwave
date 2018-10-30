@@ -41,22 +41,33 @@ LwCASecurityGetVersion(
 
 DWORD
 LwSecurityAwsKmsInitialize(
+    PCSTR pszConfigFile,
     PLWCA_SECURITY_HANDLE *ppHandle
     )
 {
     DWORD dwError = 0;
-
     PLWCA_SECURITY_HANDLE pHandle = NULL;
+    PLWCA_SECURITY_CONFIG pConfig = NULL;
+
+    if (IsNullOrEmptyString(pszConfigFile) || !ppHandle)
+    {
+        dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
     dwError = VmAllocateMemory(sizeof(*pHandle), (PVOID *)&pHandle);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwAwsKmsInitialize(&pHandle->pContext);
+    dwError = LwCASecurityReadConfigFile(pszConfigFile, &pConfig);
+    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+
+    dwError = LwAwsKmsInitialize(pConfig, &pHandle->pContext);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
     *ppHandle = pHandle;
 
 cleanup:
+    LwAwsKmsFreeConfig(pConfig);
     return dwError;
 
 error:
@@ -142,7 +153,6 @@ LwSecurityAwsKmsAddKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
     PCSTR pszPrivateKey
     )
 {
@@ -192,7 +202,6 @@ LwSecurityAwsKmsCreateKeyPair(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
     size_t nKeyLength,
     PSTR *ppszPublicKey
     )
@@ -218,7 +227,6 @@ LwSecurityAwsKmsCreateKeyPair(
 
     /* create key pair */
     dwError = LwCreateKeyPair(
-                  pszPassPhrase,
                   nKeyLength,
                   &pszPrivateKey,
                   &pszPublicKey);
@@ -252,14 +260,12 @@ error:
 }
 
 DWORD
-LwSecurityAwsKmsSignCertificate(
+LwSecurityAwsKmsSign(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
-    X509 *pX509,
-    LWCA_SECURITY_MESSAGE_DIGEST md,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
-    PSTR *ppszCertificate
+    LWCA_SECURITY_SIGN_DATA *pSignData,
+    LWCA_SECURITY_MESSAGE_DIGEST md
     )
 {
     DWORD dwError = 0;
@@ -268,18 +274,10 @@ LwSecurityAwsKmsSignCertificate(
 
     if (!pHandle ||
         !pHandle->pCapOverride ||
-        !pX509 ||
         IsNullOrEmptyString(pszKeyId) ||
-        !ppszCertificate)
+        !pSignData)
     {
         dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
-        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
-    }
-
-    if (md != LWCA_SECURITY_MESSAGE_DIGEST_SHA256 &&
-        md != LWCA_SECURITY_MESSAGE_DIGEST_SHA512)
-    {
-        dwError = LWCA_SECURITY_AWS_KMS_INVALID_MESSAGE_DIGEST;
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
 
@@ -298,7 +296,7 @@ LwSecurityAwsKmsSignCertificate(
                   &pDecryptedData);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwX509Sign(pX509, pDecryptedData, md);
+    dwError = LwX509Sign(pSignData, pDecryptedData, md);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
 error:
@@ -308,12 +306,11 @@ error:
 }
 
 DWORD
-LwSecurityAwsKmsVerifyCertificate(
+LwSecurityAwsKmsVerify(
     PLWCA_SECURITY_HANDLE pHandle,
     PVOID pUserData,
-    PCSTR pszCertificate,
     PCSTR pszKeyId,
-    PCSTR pszPassPhrase,
+    PLWCA_SECURITY_SIGN_DATA pSignData,
     BOOLEAN *pbValid
     )
 {
@@ -324,8 +321,8 @@ LwSecurityAwsKmsVerifyCertificate(
 
     if (!pHandle ||
         !pHandle->pCapOverride ||
-        IsNullOrEmptyString(pszCertificate) ||
         IsNullOrEmptyString(pszKeyId) ||
+        !pSignData ||
         !pbValid)
     {
         dwError = LWCA_SECURITY_AWS_KMS_INVALID_PARAM;
@@ -347,7 +344,7 @@ LwSecurityAwsKmsVerifyCertificate(
                   &pDecryptedData);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwX509Verify(pszCertificate, pDecryptedData, &bValid);
+    dwError = LwX509Verify(pSignData, pDecryptedData, &bValid);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
     *pbValid = bValid;
@@ -355,6 +352,17 @@ LwSecurityAwsKmsVerifyCertificate(
 error:
     /* TODO: properly free pEncryptedData as it is allocated by cap override */
     LwAwsKmsFreeBinaryData(pDecryptedData);
+    return dwError;
+}
+
+DWORD
+LwSecurityAwsKmsGetErrorString(
+    DWORD dwErrorCode,
+    PSTR *ppszError
+    )
+{
+    DWORD dwError = 0;
+
     return dwError;
 }
 
@@ -402,8 +410,9 @@ LwCASecurityLoadInterface(
     _interface.pFnCapOverride = LwSecurityAwsKmsCapOverride;
     _interface.pFnAddKeyPair = LwSecurityAwsKmsAddKeyPair;
     _interface.pFnCreateKeyPair = LwSecurityAwsKmsCreateKeyPair;
-    _interface.pFnSignCertificate = LwSecurityAwsKmsSignCertificate;
-    _interface.pFnVerifyCertificate = LwSecurityAwsKmsVerifyCertificate;
+    _interface.pFnSign = LwSecurityAwsKmsSign;
+    _interface.pFnVerify = LwSecurityAwsKmsVerify;
+    _interface.pFnGetErrorString = LwSecurityAwsKmsGetErrorString;
     _interface.pFnCloseHandle = LwSecurityAwsKmsCloseHandle;
     _interface.pFnFreeMemory = LwSecurityAwsKmsFreeMemory;
 
@@ -426,8 +435,9 @@ LwCASecurityUnloadInterface(
         pInterface->pFnCapOverride = NULL;
         pInterface->pFnAddKeyPair = NULL;
         pInterface->pFnCreateKeyPair = NULL;
-        pInterface->pFnSignCertificate = NULL;
-        pInterface->pFnVerifyCertificate = NULL;
+        pInterface->pFnSign = NULL;
+        pInterface->pFnVerify = NULL;
+        pInterface->pFnGetErrorString = NULL;
         pInterface->pFnCloseHandle = NULL;
         pInterface->pFnFreeMemory = NULL;
     }

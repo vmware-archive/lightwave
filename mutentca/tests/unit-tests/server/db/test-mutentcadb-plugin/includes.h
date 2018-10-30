@@ -12,6 +12,7 @@
  * under the License.
  */
 #include <stdint.h>
+#include <stdlib.h>
 #include <mutentca.h>
 #include <mutentcadb.h>
 

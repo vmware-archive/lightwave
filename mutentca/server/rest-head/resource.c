@@ -128,6 +128,12 @@ LwCARestUnknownGetHttpError(
         httpStatus = HTTP_BAD_REQUEST;
         break;
 
+    case LWCA_ERROR_OIDC_BAD_AUTH_DATA:
+    case LWCA_ERROR_OIDC_INVALID_POP:
+    case LWCA_ERROR_REST_UNAUTHENTICATED:
+        httpStatus = HTTP_FORBIDDEN;
+        break;
+
     default:
         httpStatus = HTTP_INTERNAL_SERVER_ERROR;
         break;

@@ -32,8 +32,8 @@ Security_Tests_Validate_Interface(
         !pState->pInterface->pFnCapOverride ||
         !pState->pInterface->pFnAddKeyPair ||
         !pState->pInterface->pFnCreateKeyPair ||
-        !pState->pInterface->pFnSignCertificate ||
-        !pState->pInterface->pFnVerifyCertificate ||
+        !pState->pInterface->pFnSign ||
+        !pState->pInterface->pFnVerify ||
         !pState->pInterface->pFnCloseHandle ||
         !pState->pInterface->pFnFreeMemory)
     {

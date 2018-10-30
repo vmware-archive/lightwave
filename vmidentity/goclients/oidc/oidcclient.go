@@ -29,7 +29,7 @@ func NewOidcClient(issuer string, config ClientConfig, logger Logger, requestID 
 func ParseAndValidateAccessToken(
 	token string, issuer string, audience string, signers IssuerSigners, logger Logger) (AccessToken, error) {
 
-	return parseAccessToken(token, issuer, audience, signers, logger)
+	return parseToken(token, issuer, audience, "", signers, AccessTokenClass, logger)
 }
 
 // ParseAndValidateIDToken parses the given access token as a string, checks the signature, and validates the claims
@@ -38,7 +38,7 @@ func ParseAndValidateAccessToken(
 func ParseAndValidateIDToken(
 	token string, issuer string, audience string, nonce string, signers IssuerSigners, logger Logger) (IDToken, error) {
 
-	return parseIDToken(token, issuer, audience, nonce, signers, logger)
+	return parseToken(token, issuer, audience, nonce, signers, IDTokenClass, logger)
 }
 
 // ParseTenantInToken parses a token string and returns the tenant claim.

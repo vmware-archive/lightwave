@@ -32,6 +32,7 @@ extern "C" {
 #include <mutentcacommon.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaapi.h>
+#include <mutentcaoidc.h>
 #include <mutentcaresthead.h>
 
 #include <vmutil.h>
