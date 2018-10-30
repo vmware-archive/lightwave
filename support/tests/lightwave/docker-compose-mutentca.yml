@@ -15,6 +15,7 @@ services:
     environment:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
         - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
+        - AWS_KMS_URN=${AWS_KMS_URN}
     tty: true
 networks:
   lightwave:
