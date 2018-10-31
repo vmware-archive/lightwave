@@ -386,10 +386,10 @@
         "kscq5zBLIDLH7qAhtCJX8NlHmvNSgb77e+8fxG1Mdp5WwrywqO8w\n" \
         "-----END RSA PRIVATE KEY-----"
 #define TEST_INTERMEDIATE_CA_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
-        "MIIFCzCCAvOgAwIBAgIJAMk0hJ8mbuGvMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNV\n" \
+        "MIIFCzCCAvOgAwIBAgIJAMmcjFUde9BuMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNV\n" \
         "BAYTAlVTMQswCQYDVQQIDAJXQTERMA8GA1UEBwwIQmVsbGV2dWUxEzARBgNVBAoM\n" \
         "ClZNd2FyZSBJbmMxEzARBgNVBAsMClZNd2FyZSBJbmMxEDAOBgNVBAMMB1Rlc3Qg\n" \
-        "Q0EwHhcNMTgxMDI1MjM0NDE5WhcNMTgxMDI2MjM0NDE5WjB+MRgwFgYDVQQDDA9J\n" \
+        "Q0EwHhcNMTgxMDMxMDc0MTI2WhcNMjgxMDMxMDc0MTI2WjB+MRgwFgYDVQQDDA9J\n" \
         "bnRlcm1lZGlhdGUgQ0ExCzAJBgNVBAYTAlVTMQswCQYDVQQIDAJXQTELMAkGA1UE\n" \
         "CAwCQ0ExETAPBgNVBAcMCEJlbGxldnVlMRMwEQYDVQQKDApWTXdhcmUgSW5jMRMw\n" \
         "EQYDVQQLDApWTXdhcmUgSW5jMIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKC\n" \
@@ -402,18 +402,18 @@
         "DgYDVR0PAQH/BAQDAgEGMB0GA1UdDgQWBBQwPAfcxf3gj5ltUH1Ps9cKLi8SgTAf\n" \
         "BgNVHSMEGDAWgBREKZC+m685Vi6GkiMm0Oa3X+VrHTA6BggrBgEFBQcBAQQuMCww\n" \
         "KgYIKwYBBQUHMAKGHmh0dHBzOi8vbG9jYWxob3N0L2FmZC92ZWNzL3NzbDANBgkq\n" \
-        "hkiG9w0BAQsFAAOCAgEAuPB1/B6Xtb7o03GjGrWyANJxTXX+0wdsgrHOJx+VSpPZ\n" \
-        "4KobUgN2Js6RyYK+S04D3+5Y16dkLWXiNYxRPOq2ohtiWqyj8Ttxot7CoyKd0EmO\n" \
-        "m17AXE1+jS6YtCXYl7nqfp+45Y1/ALPc9mserP6OQtC/yYtbiLGXZmK9keRWJb5H\n" \
-        "nV+6ypAyDmW824UM0e50Hw5wCH7VqRFM6iZ1LLP87eOnr7BO5FWpAv9+c11ozdOj\n" \
-        "oXjfEVfrWIjrTCZTh8lDPnOPmIoYGrfTyzckJyiFV2PnT/VEUBfCOhWBBBeA5K0/\n" \
-        "f9b6UzVgeWPukBl/1AP5mvtfRD4t3n9+PeI4Jo0C8AXi8Bi3/9x67Fr0VR0AHizg\n" \
-        "NXgMgwaZDymH8WbMbfLzBe+R4PtNzBnHRT1BnvAlQg1g3VddwvTGECB8SEfWmTlc\n" \
-        "Etb2h4YBqqGPNlc0r+4haNwAE3UtcOn4QsIqRbRC8EZsO8FmRSjUhnwG/GEe6ZML\n" \
-        "u4R72Ji8q5gra/pslrdVKd7W00BNYceloQIv9/4V8dlELAQKMLsA+FFM0IayoscK\n" \
-        "1rdNQg6vIkgTvfB27qBtKaIbvVzojcPMct00uIHaZBwFxPqGeq0T34wjVH3DQylv\n" \
-        "8GwP9FM0MBK84kaND34hk+1choUFr7SIOX/eKUJ0XjaWfhx4JSL5BHbmfh1+4ts=\n" \
-        "-----END CERTIFICATE-----\n"
+        "hkiG9w0BAQsFAAOCAgEAptLG3Ol6Zchbt1FzskTuSytQP1r3Dp3tjl14+GTjLQlm\n" \
+        "PRPotuUStbJX1uCi6dO+p0Ot63JoIJcvPhmVe4QtFal1tk3/1Zjpa5w2QUgp3Fuf\n" \
+        "Hut1jZivQyCQAZQTHwRnQzcdTXOMOULxB20kIZdNP3gx9L8JHpHTDskASF5xlVkS\n" \
+        "0GZNls+QD3P0QkHFLewIh/GpHd2DDbtMcRWk2Y9PgSAlEHfzS8PHxXDz5lCdJn25\n" \
+        "zMiWxCZzRBZmJfidta9qF1/f+YQfHySQmm63x4/3jakaf/7ONWlB5A1CWDGCJCiG\n" \
+        "XBc/d5Qvq+QVndyCwyQtc5R446Cm0poLcgdGhad0P2s5iWHufYRmJjQK6Lc/UqSU\n" \
+        "nk0BgMbxg+h0wndUBY/5g7GfvNaBmDo4/FcTipaGiRms0qLPzOWxrYBf+ZGz/QQK\n" \
+        "ariNXmxiryHRcfwIG5Ssfx2+bGYQ1XpsVeqaquqr3IHeVFiOl7nD6DxReiXRqKAi\n" \
+        "+FFKh30Cqux2VAYAmof7P1zYNdJT86rbmZ6x8Scak+wrIPekf0YHHCZEFXTXPcVu\n" \
+        "LBCZt81If1QtXtcWz4nfdiw6MU9MdZTTCrMTLMB1gt5MlhkDd982zxXAj+6T4X8m\n" \
+        "jtKdEUmWwbWWMQa8IjyCWlmsZDy9dy2Q6i7PLEhc0AqnXCfv7/YSr3pxjwUGnJs=\n" \
+        "-----END CERTIFICATE-----"
 #define TEST_CLIENT_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
         "MIIEQTCCAikCAhACMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNVBAYTAlVTMQswCQYD\n" \
         "VQQIDAJXQTERMA8GA1UEBwwIQmVsbGV2dWUxEzARBgNVBAoMClZNd2FyZSBJbmMx\n" \
@@ -979,7 +979,7 @@ Test_LwCAGetSignedCertificate_Valid(
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
-    tm->tm_mday += 1;
+    tm->tm_year += 1;
     tmNotAfter = mktime(tm);
 
     dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);
@@ -989,7 +989,7 @@ Test_LwCAGetSignedCertificate_Valid(
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
-    will_return_always(__wrap_LwCADbGetCA, 0);
+    will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
 
     dwError = LwCADbGetCACertificates(TEST_ROOT_CA_ID, &pCACerts);
     assert_int_equal(dwError, 0);
@@ -1030,7 +1030,7 @@ Test_LwCAGetSignedCertificate_Invalid(
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
-    tm->tm_mday -= 1;
+    tm->tm_year -= 1;
     tmNotAfter = mktime(tm);
 
     dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);
@@ -1087,7 +1087,7 @@ Test_LwCACreateIntermediateCA_Valid(
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
-    tm->tm_mday += 1;
+    tm->tm_year += 1;
     tmNotAfter = mktime(tm);
 
     dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);
@@ -1164,7 +1164,7 @@ Test_LwCACreateIntermediateCA_Invalid(
 
     tmNotBefore = time(NULL);
     tm = localtime(&tmNotBefore);
-    tm->tm_mday -= 1;
+    tm->tm_year -= 1;
     tmNotAfter = mktime(tm);
 
     dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pValidity);

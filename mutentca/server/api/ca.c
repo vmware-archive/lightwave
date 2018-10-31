@@ -28,13 +28,6 @@ _LwCACheckCANotExist(
 
 static
 DWORD
-_LwCASignX509Certificate(
-    X509    *pCert,
-    PCSTR   pcszCAId
-    );
-
-static
-DWORD
 _LwCAGetCurrentCACertificate(
     PCSTR               pcszCAId,
     PLWCA_CERTIFICATE   *ppCACert
@@ -232,7 +225,7 @@ LwCAGetSignedCertificate(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCASignX509Certificate(pX509Cert, pcszCAId);
+    dwError = LwCASecuritySignX509Cert(pcszCAId, pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509ToPEM(pX509Cert, &pCert);
@@ -736,46 +729,6 @@ error:
         *ppCACert = NULL;
     }
 
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCASignX509Certificate(
-    X509    *pCert,
-    PCSTR   pcszCAId
-    )
-{
-    DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
-    PSTR pszPrivateKey = NULL;
-
-    //TODO: This method will be re-implemented
-    // after secure manager is integrated.
-
-    dwError = LwCADbGetCA(pcszCAId, &pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringWithLengthA(
-                        pCAData->pEncryptedPrivateKey->pData,
-                        pCAData->pEncryptedPrivateKey->dwLength,
-                        &pszPrivateKey
-                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAX509SignCertificate(
-                        pCert,
-                        pszPrivateKey,
-                        NULL
-                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszPrivateKey);
-    LwCADbFreeCAData(pCAData);
-    return dwError;
-
-error:
     goto cleanup;
 }
 
