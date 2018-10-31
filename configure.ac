@@ -1265,6 +1265,38 @@ fi
 
 AM_CONDITIONAL(NOTIFY_VMDIR_PROVIDER, [$NOTIFY_VMDIR_PROVIDER])
 
+AC_ARG_WITH([grpc],
+    [AC_HELP_STRING([--with-grpc=yes|no],
+                    [build gRPC server and client library (default=no)])],
+    [
+        if test x"$withval" = x"yes"
+        then
+            GRPC_ENABLED="yes"
+            GRPC_CPP_PLUGIN_PATH=`which grpc_cpp_plugin`
+            if test x"$GRPC_CPP_PLUGIN_PATH" = x""
+            then
+                AC_MSG_ERROR([protoc plugin missing: grpc_cpp_plugin])
+            fi
+
+            grpc_libs=`pkg-config --libs protobuf grpc++ grpc`
+            if test x"$grpc_libs" = x""
+            then
+                AC_MSG_ERROR([grpc dev libraries missing.])
+            else
+                GRPC_LIBS=$grpc_libs
+            fi
+        fi
+    ],
+    [])
+
+AM_CONDITIONAL(BUILD_GRPC, [test x"$GRPC_ENABLED" = x"yes"])
+if test x"$GRPC_ENABLED" = x"yes"
+then
+    AC_DEFINE_UNQUOTED(BUILD_GRPC, 1, [ Enable GRPC ])
+fi
+AC_SUBST(GRPC_LIBS)
+AC_SUBST(GRPC_CPP_PLUGIN_PATH)
+
 #--------------------------------------------------------------------
 # ESX Platform
 
@@ -1685,6 +1717,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/server/middle-layer/Makefile
                  lwraft/server/schema/Makefile
                  lwraft/server/acl/Makefile
+                 lwraft/server/grpc-head/Makefile
                  lwraft/server/ldap-head/Makefile
                  lwraft/server/rest-head/Makefile
                  lwraft/server/replication/Makefile

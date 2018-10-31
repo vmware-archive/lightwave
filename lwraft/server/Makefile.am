@@ -27,3 +27,7 @@ SUBDIRS = \
     acl \
     watchnotify \
     vmdir
+
+if BUILD_GRPC
+    SUBDIRS += grpc-head
+endif

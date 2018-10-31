@@ -156,6 +156,10 @@
 #include "vmdirsuperlog_h.h"
 #include "prototypes.h"
 
+#ifdef BUILD_GRPC
+#include "domath_server_c.h" // gRPC server C wrapper
+#endif
+
 #include "externs.h"
 
 #include "banned.h"

@@ -25,6 +25,7 @@ krb5keys_test_LDADD = \
     @CRYPT_LIBS@ \
     @LWBASE_LIBS@ \
     @LWRSUTILS_LIBS@ \
+    @LWREG_LIBS@ \
     @PTHREAD_LIBS@
 
 krb5keys_test_LDFLAGS = \

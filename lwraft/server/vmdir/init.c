@@ -421,6 +421,11 @@ VmDirInit(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+#ifdef BUILD_GRPC
+    dwError = VmDirGrpcServerInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
+#endif
+
     //Wait only if there is not a vdcprome pending.
     dwError = VmDirSyncCounterWaitEvent(gVmdirGlobals.pPortListenSyncCounter, &bWaitTimeOut);
     BAIL_ON_VMDIR_ERROR(dwError);

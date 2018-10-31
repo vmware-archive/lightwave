@@ -79,6 +79,7 @@ postd_LDADD = \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     $(top_builddir)/vmcommon/libvmcommon.la \
+    $(top_builddir)/lwraft/server/grpc-head/libdomath-grpc.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
@@ -93,6 +94,7 @@ postd_LDADD = \
     @LBER_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
+    @GRPC_LIBS@ \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @COPENAPI_LIBS@ \
@@ -105,7 +107,8 @@ postd_LDFLAGS = \
     @LW_LDFLAGS@ \
     @JANSSON_LDFLAGS@ \
     @COPENAPI_LDFLAGS@ \
-    @CRESTENGINE_LDFLAGS@
+    @CRESTENGINE_LDFLAGS@ \
+    $(GRPC_LIBS)
 
 CLEANFILES = \
     vmdir_h.h \
