@@ -5,15 +5,36 @@
                 {
                     "type": "name",
                     "match": "any"
+                },
+                {
+                    "type": "ip",
+                    "match": "any"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "any"
                 }
             ]
         },
         "SANPolicy": {
-            "multiSAN": false,
-            "AllowedSANs": []
+            "multiSAN": true,
+            "AllowedSANs": [
+                {
+                    "type": "name",
+                    "match": "any"
+                },
+                {
+                    "type": "ip",
+                    "match": "any"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "any"
+                }
+            ]
         },
         "KeyUsagePolicy": {
-            "AllowedKeyUsages": 96
+            "AllowedKeyUsages": 511
         },
         "CertDurationPolicy": {
             "MaxAllowedDays" : 3650
@@ -24,42 +45,32 @@
             "AllowedCNs": [
                 {
                     "type": "name",
-                    "match": "constant",
-                    "value": "localhost"
+                    "match": "any"
                 },
                 {
-                    "type": "name",
-                    "match": "req.hostname"
+                    "type": "ip",
+                    "match": "any"
                 },
                 {
                     "type": "fqdn",
-                    "match": "inzone"
+                    "match": "any"
                 }
             ]
         },
         "SANPolicy": {
-            "multiSAN": false,
+            "multiSAN": true,
             "AllowedSANs": [
                 {
+                    "type": "name",
+                    "match": "any"
+                },
+                {
                     "type": "ip",
-                    "match": "inzone"
-                },
-                {
-                    "type": "name",
-                    "match": "constant",
-                    "value": "localhost"
-                },
-                {
-                    "type": "name",
-                    "match": "req.hostname"
+                    "match": "any"
                 },
                 {
                     "type": "fqdn",
-                    "match": "inzone"
-                },
-                {
-                    "type": "fqdn",
-                    "match": "req.fqdn"
+                    "match": "any"
                 }
             ]
         },

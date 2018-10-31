@@ -1,4 +1,8 @@
 {
+    "security":{
+        "securityPlugin":"/opt/vmware/lib64/liblwca_security_aws_kms.so",
+        "securityPluginConfig":"/opt/vmware/share/config/casecurity-aws-kms.json"
+    },
     "policy":{
         "policyConfig":"/opt/vmware/share/config/mutentca-policy.json"
     }

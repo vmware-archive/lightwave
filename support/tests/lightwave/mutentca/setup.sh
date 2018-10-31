@@ -35,20 +35,17 @@ done
 #verify
 /opt/vmware/bin/dir-cli nodes list --login Administrator@$LIGHTWAVE_DOMAIN --password $LIGHTWAVE_PASS --server-name $primary
 #
+
 #modify ca security config
 sed -i 's/@@KEYSPEC@@/AES_256/' /opt/vmware/share/config/casecurity-aws-kms.json
 sed -i 's|@@ARN@@|$AWS_KMS_ARN|' /opt/vmware/share/config/casecurity-aws-kms.json
 #
-cat > /opt/vmware/share/config/mutentcaconfig.json << EOF
-{
-  "security":
-  {
-    "securityPlugin": "/opt/vmware/lib64/liblwca_security_aws_kms.so",
-    "securityPluginConfig": "/opt/vmware/share/config/casecurity-aws-kms.json"
-  }
-}
-EOF
 
+#modify policy config
+#using allow all config for rest api integration tests
+cp scrips/mutentca-policy-allowall.json /opt/vmware/share/config/mutentca-policy-allowall.json
+sed -i 's/mutentca-policy.json/mutentca-policy-allowall.json/g' /opt/vmware/share/config/mutentcaconfig.json
+#
 
 #restart post and mutentca
 /opt/likewise/bin/lwsm stop mutentca
