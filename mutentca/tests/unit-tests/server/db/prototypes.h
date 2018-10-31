@@ -246,3 +246,8 @@ VOID
 Test_LwCAUpdateRootCARequestBody(
     VOID **state
     );
+
+VOID
+Test_LwCAPostGetParentCAId(
+    VOID **state
+    );

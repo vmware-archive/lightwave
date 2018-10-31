@@ -316,10 +316,7 @@ LwCADbPostPluginCheckCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         &pszResponse
-                                         );
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle, pcszCAId, &pszResponse);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *pbExists = TRUE;
@@ -361,10 +358,7 @@ LwCADbPostPluginGetCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         &pszResponse
-                                         );
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle, pcszCAId, &pszResponse);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCADeserializeJSONToCA(pszResponse, &pCAData);
@@ -377,7 +371,7 @@ cleanup:
     return dwError;
 
 error:
-    LWCA_SAFE_FREE_MEMORY(pCAData);
+    LwCADbFreeCAData(pCAData);
     if (ppCAData)
     {
         *ppCAData = NULL;
@@ -423,7 +417,38 @@ LwCADbPostPluginGetParentCAId(
     PSTR                *ppszParentCAId
     )
 {
-    return LWCA_NOT_IMPLEMENTED;
+    DWORD               dwError = 0;
+    PSTR                pszParentCAId = NULL;
+    PSTR                pszResponse = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszParentCAId)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle, pcszCAId, &pszResponse);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetStringAttrFromResponse(pszResponse,
+                                            LWCA_POST_CA_PARENT,
+                                            &pszParentCAId
+                                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszParentCAId = pszParentCAId;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
+    if (ppszParentCAId)
+    {
+        *ppszParentCAId = pszParentCAId;
+    }
+    goto cleanup;
 }
 
 DWORD

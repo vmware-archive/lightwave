@@ -99,6 +99,9 @@ int main(VOID)
         cmocka_unit_test_setup_teardown(Test_LwCAUpdateRootCARequestBody,
                                         PreTest_LwCAPostPlugin,
                                         PostTest_LwCAPostPlugin),
+        cmocka_unit_test_setup_teardown(Test_LwCAPostGetParentCAId,
+                                        PreTest_LwCAPostPlugin,
+                                        PostTest_LwCAPostPlugin),
     };
 
     ret = cmocka_run_group_tests(postTests, NULL, NULL);

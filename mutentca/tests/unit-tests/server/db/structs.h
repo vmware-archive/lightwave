@@ -67,3 +67,15 @@ typedef DWORD (*PLUGIN_UPDATE_CA_REQ_BODY)(
     PLWCA_DB_CA_DATA,
     PSTR *
     );
+
+typedef DWORD (*PLUGIN_GET_PARENT_CA)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PSTR *
+    );
+
+typedef DWORD (*JSON_GET_STRING_ATTR)(
+    PCSTR,
+    PCSTR,
+    PSTR *
+    );

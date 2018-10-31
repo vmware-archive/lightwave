@@ -24,6 +24,8 @@
 #define LWCA_POST_GET_CA                    "LwCADbPostPluginGetCA"
 #define LWCA_POST_UPDATE_CA                 "LwCADbPostPluginUpdateCA"
 #define LWCA_UPDATE_CA_REQUEST_BODY         "LwCAGenerateCAPatchRequestBody"
+#define LWCA_POST_GET_PARENT_CA_ID          "LwCADbPostPluginGetParentCAId"
+#define LWCA_GET_STRING_FROM_RESPONSE       "LwCAGetStringAttrFromResponse"
 #define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
@@ -755,4 +757,50 @@ Test_LwCAUpdateRootCARequestBody(
     assert_string_equal(pszReqBody, CA_GENERATED_PATCH);
 
     LWCA_SAFE_FREE_STRINGA(pszReqBody);
+}
+
+VOID
+Test_LwCAPostGetParentCAId(
+    VOID **state
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_TEST_STATE        pState = NULL;
+    PSTR                    pszFunc = LWCA_POST_GET_PARENT_CA_ID;
+    PLUGIN_GET_PARENT_CA    pFnGetParentCA = NULL;
+    PSTR                    pszJsonFunc = LWCA_GET_STRING_FROM_RESPONSE;
+    JSON_GET_STRING_ATTR    pFnJsonGetStringAttr = NULL;
+    PLWCA_PLUGIN_HANDLE     pPluginHandle = NULL;
+    PSTR                    pszParentCAID = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnGetParentCA = (PLUGIN_GET_PARENT_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnGetParentCA);
+
+    pFnJsonGetStringAttr = (JSON_GET_STRING_ATTR)LwCAGetLibSym(pPluginHandle,
+                                                               pszJsonFunc
+                                                               );
+    assert_non_null(pFnJsonGetStringAttr);
+
+    dwError = pFnJsonGetStringAttr(ROOT_CA_JSON_RESPONSE,
+                                   "cAParentCAId",
+                                   &pszParentCAID
+                                   );
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_null(pszParentCAID);
+
+    dwError = pFnJsonGetStringAttr(INTR_CA_JSON_RESPONSE,
+                                   "cAParentCAId",
+                                   &pszParentCAID
+                                   );
+
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszParentCAID);
+    assert_string_equal(pszParentCAID, TEST_PARENT_CA_ID);
+
+    LWCA_SAFE_FREE_STRINGA(pszParentCAID);
 }

@@ -172,3 +172,10 @@ LwCAGenerateCAPatchRequestBody(
     PLWCA_DB_CA_DATA    pCaData,
     PSTR                *ppszBody
     );
+
+DWORD
+LwCAGetStringAttrFromResponse(
+    PCSTR       pcszResponse,
+    PCSTR       pcszKey,
+    PSTR        *ppszAttrValue
+    );
