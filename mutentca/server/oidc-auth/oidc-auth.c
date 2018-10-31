@@ -533,7 +533,7 @@ LwCAOIDCTokenValidate(
     BAIL_ON_LWCA_ERROR(dwError);
 
     pOIDCToken->pszReqBindUPN = pszReqBindUPN;
-    pOIDCToken->pszReqBindUPN = pszReqBindUPNTenant;
+    pOIDCToken->pszReqBindUPNTenant = pszReqBindUPNTenant;
     pOIDCToken->pReqBindUPNGroups = pReqBindUPNGroups;
     if (pOIDCToken->oidcTokenType == LWCA_OIDC_TOKEN_TYPE_HOTK)
     {
