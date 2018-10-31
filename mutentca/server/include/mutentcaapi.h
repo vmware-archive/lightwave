@@ -36,7 +36,6 @@ typedef enum _LWCA_SIGNING_ALGORITHM
 } LWCA_SIGNING_ALGORITHM, *PLWCA_SIGNING_ALGORITHM;
 
 #define LWCA_CRL_DEFAULT_CRL_VALIDITY (30 * LWCA_TIME_SECS_PER_DAY)
-#define LWCA_ROOT_CA_ID "LightwaveCA"
 
 DWORD
 LwCACreateIntCARequest(
@@ -56,9 +55,24 @@ LwCACreateCertValidity(
     );
 
 DWORD
+LwCAInitCA(
+    PLWCA_JSON_OBJECT pConfig
+    );
+
+DWORD
+LwCAGetRootCAId(
+    PSTR *ppszRootCAId
+    );
+
+VOID
+LwCAFreeCACtx(
+    );
+
+DWORD
 LwCACreateRootCA(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszRootCAId,
+    PLWCA_PKCS_10_REQ_DATA  pCARequest,
     PLWCA_CERTIFICATE       pCertificate,
     PCSTR                   pcszPrivateKey,
     PCSTR                   pcszPassPhrase

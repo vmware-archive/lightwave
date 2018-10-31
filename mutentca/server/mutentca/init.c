@@ -46,12 +46,12 @@ LwCAInitialize(
     dwError = InitializeLog(FALSE, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_LWCA_ERROR(dwError);
+
     // TODO: When final implementation is in place, don't bail on Error , this
     // just sets up the current state
     dwError = LwCASrvInitCA();
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = OidcClientGlobalInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
 #ifdef REST_ENABLED
@@ -81,6 +81,8 @@ LwCAShutdown(
     LwCAAuthZDestroy();
     LwCASecurityFreeCtx();
     LwCAPolicyFreeCtx(gpPolicyCtx);
+    LwCADbFreeCtx();
+    LwCAFreeCACtx();
     //LwCAServiceShutdown();
     LwCATerminateLogging();
     //LwCASrvCleanupGlobalState();
@@ -109,6 +111,8 @@ LwCASrvInitCA(
     PLWCA_JSON_OBJECT pPolicyConfig = NULL;
     PCSTR pcszPolicyConfigPath = NULL;
     PLWCA_JSON_OBJECT pPolicyConfigContent = NULL;
+    PLWCA_JSON_OBJECT pCAConfig = NULL;
+    PLWCA_JSON_OBJECT pDbConfig = NULL;
 
     dwError = LwCAConfigLoadFile(LWCA_CONFIG_FILE_PATH, &pJsonConfig);
     if (dwError == LWCA_JSON_FILE_LOAD_ERROR)
@@ -136,7 +140,7 @@ LwCASrvInitCA(
     dwError = LwCAJsonGetObjectFromKey(
                   pJsonConfig,
                   FALSE,
-                  MUTENTCA_CONFIG_SECURITY_PLUGIN_KEY,
+                  LWCA_SECURITY_PLUGIN_KEY,
                   &pSecurityConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -147,14 +151,14 @@ LwCASrvInitCA(
     dwError = LwCAJsonGetObjectFromKey(
                   pJsonConfig,
                   FALSE,
-                  MUTENTCA_CONFIG_POLICY_KEY,
+                  LWCA_CONFIG_POLICY_KEY,
                   &pPolicyConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetConstStringFromKey(
                   pPolicyConfig,
                   FALSE,
-                  MUTENCA_CONFIG_POLICY_CONFIG_PATH_KEY,
+                  LWCA_CONFIG_POLICY_CONFIG_PATH_KEY,
                   &pcszPolicyConfigPath);
 
     dwError = LwCAJsonLoadObjectFromFile(
@@ -164,6 +168,28 @@ LwCASrvInitCA(
 
     dwError = LwCAPolicyInitCtx(pPolicyConfigContent, &gpPolicyCtx);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    /* get the db config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  LWCA_DB_CONFIG_KEY,
+                  &pDbConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADbInitCtx(pDbConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* get the root CA config section */
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  LWCA_CA_CONFIG_KEY,
+                  &pCAConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    //dwError = LwCAInitCA(pCAConfig);
+    //BAIL_ON_LWCA_ERROR(dwError);
 
 error:
 

@@ -1,0 +1,5 @@
+{
+  "name": "LightwaveCA",
+  "certificateFile": "./test-mutentca-config/test-certificate.pem",
+  "privateKeyFile": "./test-mutentca-config/test-privatekey.pem"
+}

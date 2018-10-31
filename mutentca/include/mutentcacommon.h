@@ -661,6 +661,12 @@ LwCACopyFile(
     PCSTR pszDest
     );
 
+DWORD
+LwCAReadFileToString(
+    PCSTR   pcszFilePath,
+    PSTR    *ppszData
+    );
+
 // misc.c
 
 typedef VOID*       LWCA_LIB_HANDLE;

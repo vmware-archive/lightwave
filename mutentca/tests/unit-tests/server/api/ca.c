@@ -13,7 +13,7 @@
  */
 #include "includes.h"
 
-#define TEST_ROOT_CA_ID "RootCA"
+#define TEST_ROOT_CA_ID "LightwaveCA"
 #define TEST_ROOT_CA_CERTIFICATE "-----BEGIN CERTIFICATE-----\n" \
         "MIIFuDCCA6CgAwIBAgIJAOWo3VzruSCjMA0GCSqGSIb3DQEBCwUAMGkxCzAJBgNV\n" \
         "BAYTAlVTMQswCQYDVQQIDAJXQTERMA8GA1UEBwwIQmVsbGV2dWUxEzARBgNVBAoM\n" \
@@ -440,6 +440,10 @@
         "4WjsK+nBWQ8mdipk2eOEc5hcHR1NoA/OAcAV+T/mP7dzQe4uVw==\n" \
         "-----END CERTIFICATE-----"
 
+#define LWCA_CA_CONFIG "./test-mutentca-config/test-mutentca-config.json"
+#define LWCA_CA_CONFIG2 "./test-mutentca-config/test-mutentca-config2.json"
+#define LWCA_CA_CONFIG_INVALID "./test-mutentca-config/test-mutentca-config-invalid.json"
+
 // defines output value of __wrap_LwCADbCheckCA
 PBOOLEAN pbExistsMockArray =  NULL;
 DWORD iIndex = 0;
@@ -533,17 +537,17 @@ __wrap_LwCADbGetCACertificates(
     dwError = LwCAAllocateMemory(1 * sizeof(PSTR), (PVOID*)&ppCertificates);
     assert_int_equal(dwError, 0);
 
-    if (LwCAStringCompareA(pcszCAId, "RootCA_2", TRUE) == 0)
+    if (LwCAStringCompareA(pcszCAId, TEST_ROOT_CA_ID_2, TRUE) == 0)
     {
         dwError = LwCAAllocateStringA(TEST_ROOT_CA_CERTIFICATE_2, &ppCertificates[0]);
         assert_int_equal(dwError, 0);
     }
-    else if (LwCAStringCompareA(pcszCAId, "RootCA", TRUE) == 0)
+    else if (LwCAStringCompareA(pcszCAId, TEST_ROOT_CA_ID, TRUE) == 0)
     {
         dwError = LwCAAllocateStringA(TEST_ROOT_CA_CERTIFICATE, &ppCertificates[0]);
         assert_int_equal(dwError, 0);
     }
-    else if (LwCAStringCompareA(pcszCAId, "Intermediate CA", TRUE) == 0)
+    else if (LwCAStringCompareA(pcszCAId, TEST_INTERMEDIATE_CA_ID, TRUE) == 0)
     {
         dwError = LwCAAllocateStringA(TEST_INTERMEDIATE_CA_CERTIFICATE, &ppCertificates[0]);
         assert_int_equal(dwError, 0);
@@ -865,6 +869,59 @@ __wrap_LwCAPolicyGetCertDuration(
 }
 
 VOID
+Test_LwCAInitCA_Valid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_JSON_OBJECT pJson1 =  NULL;
+    PLWCA_JSON_OBJECT pJson2 =  NULL;
+    BOOLEAN bCheckCAMockValues[] = {FALSE};
+
+    will_return_always(__wrap_LwCADbAddCA, 0);
+    will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCASecurityGetEncryptedKey, 0);
+    will_return_always(__wrap_LwCASecurityAddKeyPair, 0);
+
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_CA_CONFIG, &pJson1);
+    assert_int_equal(dwError, 0);
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCAInitCA(pJson1);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_CA_CONFIG2, &pJson2);
+    assert_int_equal(dwError, 0);
+
+    _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
+    dwError = LwCAInitCA(pJson2);
+    assert_int_equal(dwError, 0);
+
+    LwCAJsonCleanupObject(pJson1);
+    LwCAJsonCleanupObject(pJson2);
+}
+
+VOID
+Test_LwCAInitCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_JSON_OBJECT pJson =  NULL;
+
+    dwError = LwCAInitCA(NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_CA_CONFIG_INVALID, &pJson);
+    assert_int_equal(dwError, 0);
+
+    dwError = LwCAInitCA(pJson);
+    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+
+    LwCAJsonCleanupObject(pJson);
+}
+
+VOID
 Test_LwCACreateRootCA_Valid(
     VOID **state
     )
@@ -883,14 +940,14 @@ Test_LwCACreateRootCA_Valid(
     assert_int_equal(dwError, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate1, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, pCertificate1, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCACreateCertificate(TEST_ROOT_CA_CERTIFICATE, &pCertificate2);
     assert_int_equal(dwError, 0);
 
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, 0);
 
     LwCAFreeCertificate(pCertificate1);
@@ -916,7 +973,7 @@ Test_LwCACreateRootCA_Invalid(
     assert_int_equal(dwError, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID_2, pCertificate1, TEST_ROOT_CA_KEY_2, TEST_ROOT_CA_PASSPHRASE_2);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID_2, NULL, pCertificate1, TEST_ROOT_CA_KEY_2, TEST_ROOT_CA_PASSPHRASE_2);
     assert_int_equal(dwError, LWCA_NOT_CA_CERT);
 
     // Testcase 2: Certificate/Key pair mismatch
@@ -925,19 +982,19 @@ Test_LwCACreateRootCA_Invalid(
     assert_int_equal(dwError, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, LWCA_CERT_PRIVATE_KEY_MISMATCH);
 
 
     // Testcase 3: Invalid inputs
 
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, NULL, NULL);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, NULL, NULL, NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
     // Testcase 4: CA exists already
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues2, 1);
-    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
+    dwError = LwCACreateRootCA(pReqCtx, TEST_ROOT_CA_ID, NULL, pCertificate2, TEST_ROOT_CA_KEY, TEST_ROOT_CA_PASSPHRASE);
     assert_int_equal(dwError, LWCA_CA_ALREADY_EXISTS);
 
     LwCAFreeCertificate(pCertificate1);

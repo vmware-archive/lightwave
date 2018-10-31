@@ -1,6 +1,7 @@
 noinst_LTLIBRARIES = libmutentcaapi.la
 
 libmutentcaapi_la_SOURCES = \
+    globals.c \
     ca.c
 
 libmutentcaapi_la_CPPFLAGS = \

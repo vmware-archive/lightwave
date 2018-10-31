@@ -12,6 +12,16 @@
  * under the License.
  */
 
+ VOID
+ Test_LwCAInitCA_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAInitCA_Invalid(
+    VOID **state
+    );
+
 VOID
 Test_LwCACreateRootCA_Valid(
     VOID **state

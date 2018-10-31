@@ -94,6 +94,7 @@ LwCARestGetRootCACert(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
+    PSTR                    pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -106,7 +107,10 @@ LwCARestGetRootCACert(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, LWCA_ROOT_CA_ID, &pCACerts);
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszRootCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(
@@ -119,6 +123,7 @@ cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCertificates(pCACerts);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 

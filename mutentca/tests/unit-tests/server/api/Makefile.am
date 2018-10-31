@@ -3,6 +3,9 @@ bin_PROGRAMS = testmutentcaapi
 check_PROGRAMS = testmutentcaapi
 TESTS = testmutentcaapi
 
+SUBDIRS = \
+    test-mutentca-config
+
 testmutentcaapi_SOURCES = \
     ca.c \
     main.c

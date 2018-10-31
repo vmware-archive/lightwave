@@ -18,6 +18,8 @@ int main(VOID)
     int ret = 0;
 
     const struct CMUnitTest tests[] = {
+        cmocka_unit_test(Test_LwCAInitCA_Valid),
+        cmocka_unit_test(Test_LwCAInitCA_Invalid),
         cmocka_unit_test(Test_LwCACreateRootCA_Valid),
         cmocka_unit_test(Test_LwCACreateRootCA_Invalid),
         cmocka_unit_test(Test_LwCAGetCACertificates_Valid),

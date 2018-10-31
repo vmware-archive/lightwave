@@ -1961,6 +1961,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/api/Makefile
+                 mutentca/tests/unit-tests/server/api/test-mutentca-config/Makefile
                  mutentca/tests/unit-tests/server/authz/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile
@@ -2039,7 +2040,21 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_LINKS([
                 vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
                 ])
-
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config2.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config2.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config-invalid.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config-invalid.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-certificate.pem:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-certificate.pem
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-privatekey.pem:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-privatekey.pem
+                ])
 AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])

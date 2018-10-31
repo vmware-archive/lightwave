@@ -55,6 +55,7 @@ LwCARestGetRootCASignedCert(
     PSTR                        pszRequestId    = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
     PLWCA_CERTIFICATE           pCert           = NULL;
+    PSTR                        pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -70,9 +71,12 @@ LwCARestGetRootCASignedCert(
     dwError = LwCARestGetSignCertInputSpec(pRestOp->pjBody, &pSignCertSpec);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCAGetSignedCertificate(
                             pRestOp->pReqCtx,
-                            LWCA_ROOT_CA_ID,
+                            pszRootCAId,
                             pSignCertSpec->pszCSR,
                             pSignCertSpec->pCertValidity,
                             pSignCertSpec->signAlgorithm,
@@ -91,6 +95,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     LwCAFreeCertificate(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 
@@ -116,6 +121,7 @@ LwCARestRevokeRootCASignedCert(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PLWCA_CERTIFICATE       pCert           = NULL;
+    PSTR                    pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -131,13 +137,17 @@ LwCARestRevokeRootCASignedCert(
     dwError = LwCARestGetCertificateInput(pRestOp->pjBody, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, LWCA_ROOT_CA_ID, pCert);
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszRootCAId, pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCertificate(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 
