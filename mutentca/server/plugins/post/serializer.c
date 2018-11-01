@@ -219,7 +219,7 @@ LwCASerializeCAToJSON(
     PSTR                pszDN = NULL;
     PSTR                pszReqBody = NULL;
     PBYTE               pszPtr = NULL;
-
+    PLWCA_STRING_ARRAY  pStrArray = NULL;
 
     if (IsNullOrEmptyString(pcszCAId) ||
         IsNullOrEmptyString(pcszDomain) ||
@@ -313,10 +313,34 @@ LwCASerializeCAToJSON(
 
     if (pCAData->pCertificates)
     {
+        dwError = LwCACreateStringArrayFromCertArray(pCAData->pCertificates,
+                                                     &pStrArray
+                                                     );
+        BAIL_ON_LWCA_ERROR(dwError);
         dwError = _JsonAttrStringArrayCreate(pAttr,
                                              LWCA_POST_CA_CERTIFICATES,
-                                             (PLWCA_STRING_ARRAY)pCAData->pCertificates
+                                             pStrArray
                                              );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCAData->pszLastCRLUpdate))
+    {
+        dwError = _JsonAttrStringCreate(pAttr,
+                                        LWCA_POST_CA_LAST_CRL_UPDATE,
+                                        pCAData->pszLastCRLUpdate,
+                                        NULL
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCAData->pszNextCRLUpdate))
+    {
+        dwError = _JsonAttrStringCreate(pAttr,
+                                        LWCA_POST_CA_NEXT_CRL_UPDATE,
+                                        pCAData->pszNextCRLUpdate,
+                                        NULL
+                                        );
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -337,6 +361,7 @@ LwCASerializeCAToJSON(
     *ppszReqBody = pszReqBody;
 
 cleanup:
+    LwCAFreeStringArray(pStrArray);
     LWCA_SAFE_FREE_STRINGA(pszDN);
     LWCA_SAFE_JSON_DECREF(pRoot);
     LWCA_SAFE_JSON_DECREF(pAttr);
@@ -404,6 +429,8 @@ LwCADeserializeJSONToCA(
     PLWCA_STRING_ARRAY          pszCertArray = NULL;
     PLWCA_CERTIFICATE_ARRAY     pCertArray = NULL;
     PSTR                        pszCRLNumber = NULL;
+    PSTR                        pszLastCRLUpdate = NULL;
+    PSTR                        pszNextCRLUpdate = NULL;
     int                         caStatus = 0;
     PLWCA_KEY                   pEncryptedPrivateKey = NULL;
     PLWCA_DB_CA_DATA            pCaData = NULL;
@@ -453,13 +480,24 @@ LwCADeserializeJSONToCA(
                                          );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO pszLastCRLUpdate and pszNextCRLUpdate will be added separately
+    dwError = _LwCAGetStringFromAttribute(pAttrJson,
+                                          LWCA_POST_CA_NEXT_CRL_UPDATE,
+                                          &pszNextCRLUpdate
+                                          );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetStringFromAttribute(pAttrJson,
+                                          LWCA_POST_CA_LAST_CRL_UPDATE,
+                                          &pszLastCRLUpdate
+                                          );
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCADbCreateCAData(pszSubjectName,
                                  pCertArray,
                                  pEncryptedPrivateKey,
                                  pszCRLNumber,
-                                 NULL,
-                                 NULL,
+                                 pszLastCRLUpdate,
+                                 pszNextCRLUpdate,
                                  caStatus,
                                  &pCaData
                                  );
@@ -469,6 +507,8 @@ LwCADeserializeJSONToCA(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszSubjectName);
+    LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
+    LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
     LwCAFreeStringArray(pszCertArray);
     LwCAFreeCertificates(pCertArray);
     LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
@@ -531,10 +571,25 @@ LwCAGenerateCAPatchRequestBody(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    if (!IsNullOrEmptyString(pCaData->pszCRLNumber))
-    {
+    if (!IsNullOrEmptyString(pCaData->pszCRLNumber)) {
         dwError = _LwCAJsonReplaceString(LWCA_POST_CA_CRL_NUM,
                                          pCaData->pszCRLNumber,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCaData->pszLastCRLUpdate)) {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CA_LAST_CRL_UPDATE,
+                                         pCaData->pszLastCRLUpdate,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCaData->pszNextCRLUpdate)) {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CA_NEXT_CRL_UPDATE,
+                                         pCaData->pszNextCRLUpdate,
                                          pJsonBody
                                          );
         BAIL_ON_LWCA_ERROR(dwError);

@@ -34,6 +34,8 @@
 #define TEST_CERT_2                 "11110000"
 #define TEST_CERT_3                 "01010101"
 #define TEST_CRL_NUM                "1500"
+#define TEST_LAST_CRL_UPDATE        "20181031223344.0Z"
+#define TEST_NEXT_CRL_UPDATE        "20181101223344.0Z"
 #define TEST_CA_STATUS              1
 #define TEST_CA_ID                  "testId"
 #define TEST_PARENT_CA_ID           "testParentId"
@@ -79,6 +81,18 @@
     "                \"10101010\",\n" \
     "                \"11110000\",\n" \
     "                \"01010101\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cALastCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181031223344.0Z\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cANextCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181101223344.0Z\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -139,6 +153,18 @@
     "            ]\n" \
     "        },\n" \
     "        {\n" \
+    "            \"type\": \"cALastCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181031223344.0Z\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cANextCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181101223344.0Z\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
     "            \"type\": \"cAStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
@@ -192,6 +218,12 @@
     "            \"type\": \"cn\",\n" \
     "            \"value\": [\"testParentId\"]\n" \
     "        }, {\n" \
+    "            \"type\": \"cALastCRLUpdate\",\n" \
+    "            \"value\": [\"20181031223344.0Z\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cANextCRLUpdate\",\n" \
+    "            \"value\": [\"20181101223344.0Z\"]\n" \
+    "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
     "        }]\n" \
@@ -227,6 +259,12 @@
     "        }, {\n" \
     "            \"type\": \"cn\",\n" \
     "            \"value\": [\"testId\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cALastCRLUpdate\",\n" \
+    "            \"value\": [\"20181031223344.0Z\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cANextCRLUpdate\",\n" \
+    "            \"value\": [\"20181101223344.0Z\"]\n" \
     "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
@@ -272,6 +310,24 @@
     "            \"type\": \"cACRLNumber\",\n" \
     "            \"value\": [\n" \
     "                \"1500\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cALastCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181031223344.0Z\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cANextCRLUpdate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181101223344.0Z\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -346,6 +402,16 @@ _LwCALoadCAData(
     dwError = LwCACreateCertArray(pszCertificates,
                                   certCount,
                                   &pCaData->pCertificates
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_LAST_CRL_UPDATE,
+                                  &pCaData->pszLastCRLUpdate
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_NEXT_CRL_UPDATE,
+                                  &pCaData->pszNextCRLUpdate
                                   );
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -630,6 +696,8 @@ Test_LwCADeserializeJsonToRootCA(
     assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
     assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
     assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
+    assert_string_equal(pCaData->pszLastCRLUpdate, TEST_LAST_CRL_UPDATE);
+    assert_string_equal(pCaData->pszNextCRLUpdate, TEST_NEXT_CRL_UPDATE);
 }
 
 VOID
@@ -666,6 +734,8 @@ Test_LwCADeserializeJsonToIntrCA(
     assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
     assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
     assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
+    assert_string_equal(pCaData->pszLastCRLUpdate, TEST_LAST_CRL_UPDATE);
+    assert_string_equal(pCaData->pszNextCRLUpdate, TEST_NEXT_CRL_UPDATE);
 }
 
 VOID

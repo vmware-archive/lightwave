@@ -33,6 +33,8 @@
 #define LWCA_POST_CA_CRL_NUM            "cACRLNumber"
 #define LWCA_POST_CA_PARENT             "cAParentCAId"
 #define LWCA_POST_CA_CERTIFICATES       "cACertificate"
+#define LWCA_POST_CA_LAST_CRL_UPDATE    "cALastCRLUpdate"
+#define LWCA_POST_CA_NEXT_CRL_UPDATE    "cANextCRLUpdate"
 #define LWCA_POST_JSON_ATTR             "attributes"
 
 #define LWCA_EXPIRATION_BUFFER_TIME     (3 * 60)

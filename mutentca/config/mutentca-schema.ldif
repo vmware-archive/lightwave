@@ -78,6 +78,20 @@ attributeTypes: (
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
     )
 
+attributeTypes: (
+    VMWare.CA.attribute.5
+    NAME 'cALastCRLUpdate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.CA.attribute.6
+    NAME 'cANextCRLUpdate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.CA.objectclass.1
     NAME 'vmwCertificationAuthority'
@@ -90,6 +104,8 @@ objectClasses: (
         $ cAParentCAId
         $ cAEncryptedPrivateKey
         $ cAStatus
+        $ cALastCRLUpdate
+        $ cANextCRLUpdate
         )
     )
 
