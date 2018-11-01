@@ -5,9 +5,9 @@ if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
   echo "Please set LIGHTWAVE_DOMAIN and LIGHTWAVE_PASS in .env file"
   exit 1
 fi
-#warn on missing aws kms params for ca security
-if [ -z "$AWS_KMS_ARN" ]; then
-  echo "Missing AWS_KMS_ARN in .env file. ca security plugin tests will fail."
+#warn on missing aws kms creds for ca security
+if [ -z "$AWS_ACCESS_KEY_ID" -o -z "$AWS_SECRET_ACCESS_KEY" ]; then
+  echo "Missing AWS_ACCESS_KEY_ID or AWS_SECRET_ACCESS_KEY in .env file. ca security plugin tests will fail."
 fi
 
 #prepare by installing rpms built in this build
@@ -43,7 +43,7 @@ sed -i 's|@@ARN@@|$AWS_KMS_ARN|' /opt/vmware/share/config/casecurity-aws-kms.jso
 
 #modify policy config
 #using allow all config for rest api integration tests
-cp scrips/mutentca-policy-allowall.json /opt/vmware/share/config/mutentca-policy-allowall.json
+cp scripts/mutentca-policy-allowall.json /opt/vmware/share/config/mutentca-policy-allowall.json
 sed -i 's/mutentca-policy.json/mutentca-policy-allowall.json/g' /opt/vmware/share/config/mutentcaconfig.json
 #
 
