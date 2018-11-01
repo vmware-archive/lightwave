@@ -1,4 +1,4 @@
-pkglib_LTLIBRARIES = libmutentcasrvpluginpost.la
+lib_LTLIBRARIES = libmutentcasrvpluginpost.la
 
 libmutentcasrvpluginpost_la_SOURCES = \
     post.c \
