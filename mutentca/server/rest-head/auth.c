@@ -25,7 +25,7 @@ LwCARestAuth(
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthenticated = FALSE;
 
-    if (!pRestOp || !pRestOp->pszAuth || !ppReqCtx || !pbAuthenticated)
+    if (!pRestOp || !ppReqCtx || !pbAuthenticated)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }

@@ -87,9 +87,14 @@ LwCAOIDCTokenAuthenticate(
     BOOLEAN                 bAuthenticated = FALSE;
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
 
-    if (IsNullOrEmptyString(pcszReqAuthHdr) || !pbAuthenticated || !ppReqCtx)
+    if (!pbAuthenticated || !ppReqCtx)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pcszReqAuthHdr))
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwError = LwCAOIDCTokenAllocate(&pOIDCToken);
@@ -489,9 +494,14 @@ LwCAOIDCTokenValidate(
     PLWCA_STRING_ARRAY      pReqBindUPNGroups = NULL;
     POIDC_ACCESS_TOKEN      pOIDCAccessToken = NULL;
 
-    if (!pOIDCToken || !pOIDCToken->pszReqOIDCToken)
+    if (!pOIDCToken)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pOIDCToken->pszReqOIDCToken))
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwOIDCError = OidcAccessTokenParse(&pOIDCAccessToken, pOIDCToken->pszReqOIDCToken);
@@ -510,6 +520,16 @@ LwCAOIDCTokenValidate(
     dwError = LwCAOIDCGetSigningCertPEM(&pszOIDCSigningCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (IsNullOrEmptyString(pszReqBindUPN) ||
+        IsNullOrEmptyString(pszReqBindUPNTenant))
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] OIDC token does not have subject claim or tenant claim",
+                __FUNCTION__,
+                __LINE__);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
+    }
+
     dwOIDCError = OidcAccessTokenValidate(
                             pOIDCAccessToken,
                             pszOIDCSigningCert,
@@ -522,8 +542,11 @@ LwCAOIDCTokenValidate(
     OidcAccessTokenGetGroups(pOIDCAccessToken, &ppGroups, &szReqNumBindUPNGroups);
     if (!ppGroups || szReqNumBindUPNGroups == 0)
     {
-        dwError = LWCA_ERROR_OIDC_BAD_AUTH_DATA;
-        BAIL_ON_LWCA_ERROR(dwError);
+        LWCA_LOG_ERROR(
+                "[%s,%d] OIDC token does not have user groups",
+                __FUNCTION__,
+                __LINE__);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwError = LwCACreateStringArray(
