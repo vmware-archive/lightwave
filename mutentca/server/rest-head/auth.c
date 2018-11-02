@@ -43,28 +43,42 @@ LwCARestAuth(
         goto ret;
     }
 
+    dwError = LwCARequestContextCreate(&pReqCtx);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pReqCtx->pszCAId, FALSE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pReqCtx->pszRequestId, FALSE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCAOIDCTokenAuthenticate(
+                        pReqCtx,
                         pRestOp->pszAuth,
                         pRestOp->pszMethod,
                         pRestOp->pszContentType,
                         pRestOp->pszDate,
                         pRestOp->pszBody,
                         pRestOp->pszURI,
-                        &bAuthenticated,
-                        &pReqCtx);
+                        &bAuthenticated);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (!bAuthenticated)
     {
-        LWCA_LOG_ERROR("[%s:%d] Failed to authenticate HTTP request!", __FUNCTION__, __LINE__);
+        LWCA_LOG_ALERT(
+                "[%s:%d] Failed to authenticate HTTP request! ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
     }
     else
     {
         LWCA_LOG_INFO(
-                "[%s:%d] Authenticated HTTP request. UPN (%s)",
+                "[%s:%d] Authenticated HTTP request. UPN (%s) ReqID (%s)",
                 __FUNCTION__,
                 __LINE__,
-                pReqCtx->pszBindUPN);
+                pReqCtx->pszBindUPN,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
     }
 
 

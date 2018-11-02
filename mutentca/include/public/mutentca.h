@@ -76,6 +76,8 @@ typedef struct _LWCA_REQ_CONTEXT
     PSTR                    pszBindUPN;
     PSTR                    pszBindUPNTenant;
     PLWCA_STRING_ARRAY      pBindUPNGroups;
+    PSTR                    pszCAId;
+    PSTR                    pszRequestId;
 } LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
 
 /*

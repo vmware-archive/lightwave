@@ -500,9 +500,6 @@ LwCAFreeStringArray(
 
 DWORD
 LwCARequestContextCreate(
-    PSTR                    pszBindUPN,
-    PSTR                    pszBindUPNTenant,
-    PLWCA_STRING_ARRAY      pBindUPNGroups,
     PLWCA_REQ_CONTEXT       *ppReqCtx
     );
 

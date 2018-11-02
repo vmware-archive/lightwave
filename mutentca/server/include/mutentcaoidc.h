@@ -18,14 +18,14 @@ extern "C" {
 
 DWORD
 LwCAOIDCTokenAuthenticate(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszReqAuthHdr,
     PCSTR                   pcszReqMethod,
     PCSTR                   pcszReqContentType,
     PCSTR                   pcszReqDate,
     PCSTR                   pcszReqBody,
     PCSTR                   pcszReqURI,
-    PBOOLEAN                pbAuthenticated,
-    PLWCA_REQ_CONTEXT       *ppReqCtx
+    PBOOLEAN                pbAuthenticated
     );
 
 #ifdef __cplusplus
