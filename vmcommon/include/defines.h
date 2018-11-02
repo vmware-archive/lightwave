@@ -95,4 +95,6 @@
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif
 
+#define VM_COMMON_GET_BASE64_ENCODE_LEN(x) ((x / 3 + 1) * 4 + 1)
+
 #endif /* __VM_COMMON_DEFINE_H__ */

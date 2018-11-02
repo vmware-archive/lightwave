@@ -755,12 +755,6 @@ LwCACreateCertArray(
     );
 
 DWORD
-LwCACreateStringFromCertificate(
-    PLWCA_CERTIFICATE   pCertificate,
-    PSTR                *ppszStr
-    );
-
-DWORD
 LwCACreateStringArrayFromCertArray(
     PLWCA_CERTIFICATE_ARRAY     pCertArray,
     PLWCA_STRING_ARRAY          *ppStrArray

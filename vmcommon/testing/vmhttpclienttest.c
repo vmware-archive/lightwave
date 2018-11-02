@@ -47,6 +47,10 @@ static
 DWORD
 _VmHttpClientSetupHOTKTest();
 
+static
+DWORD
+_VmHttpBase64Test();
+
 DWORD
 VmHttpClientTest()
 {
@@ -60,6 +64,7 @@ VmHttpClientTest()
     dwError += _VmHttpClientHeaderTest();
     dwError += _VmHttpClientSetBodyTest();
     dwError += _VmHttpClientSetupHOTKTest();
+    dwError += _VmHttpBase64Test();
 
     return dwError;
 }
@@ -391,6 +396,56 @@ cleanup:
     VmHttpClientFreeHandle(pClient);
     return dwError;
 
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpBase64Test()
+{
+    DWORD       dwError = 0;
+    DWORD       dwLen = 0;
+    PCSTR       pcszExpectedDecodedString = "Hello World";
+    PCSTR       pcszExpectedEncodedString = "SGVsbG8gV29ybGQ=";
+    PSTR        pszActualEncodedString = NULL;
+    PSTR        pszActualDecodedString = NULL;
+
+    dwError = VmEncodeToBase64((PBYTE)pcszExpectedDecodedString,
+                               VmStringLenA(pcszExpectedDecodedString),
+                               (PBYTE *)&pszActualEncodedString,
+                               &dwLen
+                               );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+    if (VmStringCompareA(pcszExpectedEncodedString, pszActualEncodedString, TRUE))
+    {
+        fprintf(stderr, "FAIL: Base64 Encode Test: Expected '%s' Found '%s'\n",
+                pcszExpectedEncodedString, pszActualEncodedString);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmDecodeToBase64((PBYTE)pszActualEncodedString,
+                               dwLen,
+                               (PBYTE *)&pszActualDecodedString,
+                               &dwLen
+                               );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+    if (VmStringCompareA(pcszExpectedDecodedString, pszActualDecodedString, TRUE))
+    {
+        fprintf(stderr, "FAIL: Base64 Decode Test: Expected '%s' Found '%s'\n",
+            pcszExpectedDecodedString, pszActualDecodedString);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: Base64 Encode-Decode Test\n");
+
+cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszActualDecodedString);
+    VM_COMMON_SAFE_FREE_STRINGA(pszActualEncodedString);
+
+    return dwError;
 error:
     goto cleanup;
 }

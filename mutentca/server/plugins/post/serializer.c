@@ -132,6 +132,20 @@ _LwCATransformAttrJsonToKV(
     PLWCA_JSON_OBJECT   *ppAttr
     );
 
+static
+DWORD
+_LwCAGetEncodedStringArrayFromCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_STRING_ARRAY          *ppEncodedStrArray
+    );
+
+static
+DWORD
+_LwCAGetCertArrayFromEncodedStringArray(
+    PLWCA_STRING_ARRAY          pEncodedStrArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
 DWORD
 LwCASerializeConfigCAToJSON(
     PCSTR       pcszCAId,
@@ -218,7 +232,8 @@ LwCASerializeCAToJSON(
     PLWCA_JSON_OBJECT   pAttr = NULL;
     PSTR                pszDN = NULL;
     PSTR                pszReqBody = NULL;
-    PBYTE               pszPtr = NULL;
+    PBYTE               pEncoded = NULL;
+    DWORD               dwLen = 0;
     PLWCA_STRING_ARRAY  pStrArray = NULL;
 
     if (IsNullOrEmptyString(pcszCAId) ||
@@ -282,10 +297,17 @@ LwCASerializeCAToJSON(
 
     if (pCAData->pEncryptedPrivateKey)
     {
-        pszPtr = pCAData->pEncryptedPrivateKey->pData;
+        pEncoded = pCAData->pEncryptedPrivateKey->pData;
+        dwError = VmEncodeToBase64(pCAData->pEncryptedPrivateKey->pData,
+                                   pCAData->pEncryptedPrivateKey->dwLength,
+                                   &pEncoded,
+                                   &dwLen
+                                   );
+        BAIL_ON_LWCA_ERROR(dwError);
+
         dwError = _JsonAttrStringCreate(pAttr,
                                         LWCA_POST_CA_ENCR_PRIV_KEY,
-                                        pszPtr,
+                                        pEncoded,
                                         NULL
                                         );
         BAIL_ON_LWCA_ERROR(dwError);
@@ -313,10 +335,11 @@ LwCASerializeCAToJSON(
 
     if (pCAData->pCertificates)
     {
-        dwError = LwCACreateStringArrayFromCertArray(pCAData->pCertificates,
-                                                     &pStrArray
-                                                     );
+        dwError = _LwCAGetEncodedStringArrayFromCertArray(pCAData->pCertificates,
+                                                          &pStrArray
+                                                          );
         BAIL_ON_LWCA_ERROR(dwError);
+
         dwError = _JsonAttrStringArrayCreate(pAttr,
                                              LWCA_POST_CA_CERTIFICATES,
                                              pStrArray
@@ -363,6 +386,7 @@ LwCASerializeCAToJSON(
 cleanup:
     LwCAFreeStringArray(pStrArray);
     LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_MEMORY(pEncoded);
     LWCA_SAFE_JSON_DECREF(pRoot);
     LWCA_SAFE_JSON_DECREF(pAttr);
     return dwError;
@@ -456,10 +480,7 @@ LwCADeserializeJSONToCA(
                                                );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACreateCertArray(pszCertArray->ppData,
-                                  pszCertArray->dwCount,
-                                  &pCertArray
-                                  );
+    dwError = _LwCAGetCertArrayFromEncodedStringArray(pszCertArray, &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAGetStringFromAttribute(pAttrJson,
@@ -1062,7 +1083,10 @@ _LwCAGetBytesFromAttribute(
     )
 {
     DWORD               dwError = 0;
-    PBYTE               pJsonStr = NULL;
+    PSTR                pszJsonStr = NULL;
+    DWORD               dwLen = 0;
+    PBYTE               pDecoded = NULL;
+    DWORD               decodedLen = 0;
     PLWCA_KEY           pValue = NULL;
 
     if (!pJson || IsNullOrEmptyString(pcszKey) || !ppValue)
@@ -1071,16 +1095,21 @@ _LwCAGetBytesFromAttribute(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCAGetStringFromAttribute(pJson, pcszKey, (PSTR *)&pJsonStr);
+    dwError = _LwCAGetStringFromAttribute(pJson, pcszKey, &pszJsonStr);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACreateKey(pJsonStr, LwCAStringLenA(pJsonStr), &pValue);
+    dwLen = LwCAStringLenA(pszJsonStr);
+    dwError = VmDecodeToBase64(pszJsonStr, dwLen, &pDecoded, &decodedLen);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateKey(pDecoded, decodedLen, &pValue);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppValue = pValue;
 
 cleanup:
-    LWCA_SAFE_FREE_STRINGA(pJsonStr);
+    LWCA_SAFE_FREE_STRINGA(pszJsonStr);
+    LWCA_SAFE_FREE_MEMORY(pDecoded);
     return dwError;
 
 error:
@@ -1171,7 +1200,7 @@ _LwCAJsonReplaceCertArray(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCACreateStringArrayFromCertArray(pValue, &pStrArray);
+    dwError = _LwCAGetEncodedStringArrayFromCertArray(pValue, &pStrArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAJsonReplaceStringArray(pcszType, pStrArray, pJson);
@@ -1257,6 +1286,8 @@ _LwCAJsonReplaceBytes(
     )
 {
     DWORD               dwError = 0;
+    DWORD               dwLen = 0;
+    PBYTE               pEncoded = NULL;
 
     if (IsNullOrEmptyString(pcszType) || !pValue || !pJson)
     {
@@ -1264,10 +1295,18 @@ _LwCAJsonReplaceBytes(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCAJsonReplaceString(pcszType, (PSTR)pValue->pData, pJson);
+    dwError = VmEncodeToBase64(pValue->pData,
+                               pValue->dwLength,
+                               &pEncoded,
+                               &dwLen
+                               );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAJsonReplaceString(pcszType, (PSTR)pEncoded, pJson);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
+    LWCA_SAFE_FREE_MEMORY(pEncoded);
     return dwError;
 
 error:
@@ -1357,3 +1396,118 @@ error:
 
 }
 
+static
+DWORD
+_LwCAGetEncodedStringArrayFromCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_STRING_ARRAY          *ppEncodedStrArray
+    )
+{
+    DWORD                   dwError = 0;
+    DWORD                   dwEntry = 0;
+    DWORD                   dwLen = 0;
+    DWORD                   dwCertLen = 0;
+    PLWCA_STRING_ARRAY      pEncodedStrArray = NULL;
+    PBYTE                   pInput = NULL;
+    PBYTE                   *ppEncodedOutput = NULL;
+
+    if (!pCertArray || !ppEncodedStrArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_STRING_ARRAY),
+                                 (PVOID*)&pEncodedStrArray
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pEncodedStrArray->dwCount = pCertArray->dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * pEncodedStrArray->dwCount,
+                                 (PVOID *)&pEncodedStrArray->ppData
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for(; dwEntry < pEncodedStrArray->dwCount; ++dwEntry)
+    {
+        dwCertLen = LwCAStringLenA(pCertArray->ppCertificates[dwEntry]);
+
+        pInput = (PBYTE)pCertArray->ppCertificates[dwEntry];
+        ppEncodedOutput = (PBYTE *)&pEncodedStrArray->ppData[dwEntry];
+
+        dwError = VmEncodeToBase64(pInput, dwCertLen, ppEncodedOutput, &dwLen);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppEncodedStrArray = pEncodedStrArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pEncodedStrArray);
+    if (ppEncodedStrArray)
+    {
+        *ppEncodedStrArray = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetCertArrayFromEncodedStringArray(
+    PLWCA_STRING_ARRAY          pEncodedStrArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    )
+{
+    DWORD                       dwError = 0;
+    DWORD                       dwEntry = 0;
+    DWORD                       dwLen = 0;
+    DWORD                       dwCertLen = 0;
+    PLWCA_CERTIFICATE_ARRAY     pCertArray = NULL;
+    PBYTE                       pInput = NULL;
+    PBYTE                       *ppDecodedOutput = NULL;
+
+    if (!pEncodedStrArray || !ppCertArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_CERTIFICATE_ARRAY),
+                                 (PVOID*)&pCertArray
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pCertArray->dwCount = pEncodedStrArray->dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PSTR) * pCertArray->dwCount,
+                                 (PVOID *)&pCertArray->ppCertificates
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (; dwEntry < pEncodedStrArray->dwCount; ++dwEntry)
+    {
+        dwLen = LwCAStringLenA(pEncodedStrArray->ppData[dwEntry]);
+
+        pInput = (PBYTE)pEncodedStrArray->ppData[dwEntry];
+        ppDecodedOutput = (PBYTE *)&pCertArray->ppCertificates[dwEntry];
+
+        dwError = VmDecodeToBase64(pInput, dwLen, ppDecodedOutput, &dwCertLen);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCertArray = pCertArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAFreeCertificates(pCertArray);
+    if (ppCertArray)
+    {
+        *ppCertArray = NULL;
+    }
+    goto cleanup;
+}

@@ -22,6 +22,8 @@
 
 #include <lw/types.h>
 #include <lw/hash.h>
+#include <sasl/sasl.h>
+#include <sasl/saslutil.h>
 
 #include <curl/curl.h>
 #include <jansson.h>

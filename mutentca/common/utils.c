@@ -237,38 +237,6 @@ LwCADbFreeCAData(
 }
 
 DWORD
-LwCACreateStringFromCertificate(
-    PLWCA_CERTIFICATE   pCertificate,
-    PSTR                *ppszStr
-    )
-{
-    DWORD       dwError = 0;
-    PSTR        pszStr = NULL;
-
-    if (!pCertificate || !ppszStr)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    dwError = LwCAAllocateStringA(pCertificate, &pszStr);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppszStr = pszStr;
-
-cleanup:
-    return dwError;
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszStr);
-    if (ppszStr)
-    {
-        *ppszStr = NULL;
-    }
-    goto cleanup;
-
-}
-
-DWORD
 LwCACreateStringArrayFromCertArray(
     PLWCA_CERTIFICATE_ARRAY     pCertArray,
     PLWCA_STRING_ARRAY          *ppStrArray
@@ -298,10 +266,9 @@ LwCACreateStringArrayFromCertArray(
 
     for (; dwEntry < pCertArray->dwCount; ++dwEntry)
     {
-        dwError = LwCACreateStringFromCertificate(
-            pCertArray->ppCertificates[dwEntry],
-            &pStrArray->ppData[dwEntry]
-            );
+        dwError = LwCAAllocateStringA(pCertArray->ppCertificates[dwEntry],
+                                      &pStrArray->ppData[dwEntry]
+                                      );
         BAIL_ON_LWCA_ERROR(dwError);
     }
 

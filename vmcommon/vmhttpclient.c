@@ -964,6 +964,7 @@ error:
     goto cleanup;
 }
 
+
 static
 VOID
 _VmCommonFreeStringMapPair(

@@ -30,9 +30,13 @@
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
 #define TEST_PRIV_KEY               "01000100"
+#define TEST_PRIV_KEY_ENCODED       "MDEwMDAxMDA="
 #define TEST_CERT_1                 "10101010"
+#define TEST_CERT_1_ENCODED         "MTAxMDEwMTA="
 #define TEST_CERT_2                 "11110000"
+#define TEST_CERT_2_ENCODED         "MTExMTAwMDA="
 #define TEST_CERT_3                 "01010101"
+#define TEST_CERT_3_ENCODED         "MDEwMTAxMDE="
 #define TEST_CRL_NUM                "1500"
 #define TEST_LAST_CRL_UPDATE        "20181031223344.0Z"
 #define TEST_NEXT_CRL_UPDATE        "20181101223344.0Z"
@@ -42,7 +46,7 @@
 #define DUMMY_DOMAIN                "dc=lw-testdom,dc=com"
 
 #define SERIALIZED_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "    \"attributes\": [\n" \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
@@ -54,45 +58,45 @@
     "        {\n" \
     "            \"type\": \"cn\",\n" \
     "            \"value\": [\n" \
-    "                \"testParentId\"\n" \
+    "                \""TEST_PARENT_CA_ID"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACertificateDN\",\n" \
     "            \"value\": [\n" \
-    "                \"TEST_SUBJECT\"\n" \
+    "                \""TEST_SUBJECT"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cAEncryptedPrivateKey\",\n" \
     "            \"value\": [\n" \
-    "                \"01000100\"\n" \
+    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACRLNumber\",\n" \
     "            \"value\": [\n" \
-    "                \"1500\"\n" \
+    "                \""TEST_CRL_NUM"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACertificate\",\n" \
     "            \"value\": [\n" \
-    "                \"10101010\",\n" \
-    "                \"11110000\",\n" \
-    "                \"01010101\"\n" \
+    "                \""TEST_CERT_1_ENCODED"\",\n" \
+    "                \""TEST_CERT_2_ENCODED"\",\n" \
+    "                \""TEST_CERT_3_ENCODED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cALastCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181031223344.0Z\"\n" \
+    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181101223344.0Z\"\n" \
+    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -105,7 +109,7 @@
     "}")
 
 #define SERIALIZED_INTERMEDIATE_CA_JSON ("{\n" \
-    "    \"dn\": \"cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "    \"dn\": \"cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "    \"attributes\": [\n" \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
@@ -117,51 +121,51 @@
     "        {\n" \
     "            \"type\": \"cn\",\n" \
     "            \"value\": [\n" \
-    "                \"testId\"\n" \
+    "                \""TEST_CA_ID"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACertificateDN\",\n" \
     "            \"value\": [\n" \
-    "                \"TEST_SUBJECT\"\n" \
+    "                \""TEST_SUBJECT"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cAEncryptedPrivateKey\",\n" \
     "            \"value\": [\n" \
-    "                \"01000100\"\n" \
+    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACRLNumber\",\n" \
     "            \"value\": [\n" \
-    "                \"1500\"\n" \
+    "                \""TEST_CRL_NUM"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cAParentCAId\",\n" \
     "            \"value\": [\n" \
-    "                \"testParentId\"\n" \
+    "                \""TEST_PARENT_CA_ID"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cACertificate\",\n" \
     "            \"value\": [\n" \
-    "                \"10101010\",\n" \
-    "                \"11110000\",\n" \
-    "                \"01010101\"\n" \
+    "                \""TEST_CERT_1_ENCODED"\",\n" \
+    "                \""TEST_CERT_2_ENCODED"\",\n" \
+    "                \""TEST_CERT_3_ENCODED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cALastCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181031223344.0Z\"\n" \
+    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181101223344.0Z\"\n" \
+    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -174,7 +178,7 @@
     "}")
 
 #define SERIALIZED_CONFIG_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn=testParentId,cn=Configuration,dc=lw-testdom,dc=com\",\n"  \
+    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Configuration,dc=lw-testdom,dc=com\",\n"  \
     "    \"attributes\": [\n"   \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
@@ -186,7 +190,7 @@
     "        {\n"   \
     "            \"type\": \"cn\",\n"   \
     "            \"value\": [\n"    \
-    "                \"testParentId\"\n"    \
+    "                \""TEST_PARENT_CA_ID"\"\n"    \
     "            ]\n"   \
     "        }\n"   \
     "    ]\n"   \
@@ -195,7 +199,7 @@
 #define ROOT_CA_JSON_RESPONSE (\
     "{\n" \
     "    \"result\": [{\n" \
-    "        \"dn\": \"cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -204,25 +208,25 @@
     "            \"value\": [\"1\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\"10101010\", \"11110000\", \"01010101\"]\n" \
+    "            \"value\": [\""TEST_CERT_1_ENCODED"\", \""TEST_CERT_2_ENCODED"\", \""TEST_CERT_3_ENCODED"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\"1500\"]\n" \
+    "            \"value\": [\""TEST_CRL_NUM"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\"01000100\"]\n" \
+    "            \"value\": [\""TEST_PRIV_KEY_ENCODED"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\"TEST_SUBJECT\"]\n" \
+    "            \"value\": [\""TEST_SUBJECT"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cn\",\n" \
-    "            \"value\": [\"testParentId\"]\n" \
+    "            \"value\": [\""TEST_PARENT_CA_ID"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\"20181031223344.0Z\"]\n" \
+    "            \"value\": [\""TEST_LAST_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\"20181101223344.0Z\"]\n" \
+    "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
@@ -234,7 +238,7 @@
 #define INTR_CA_JSON_RESPONSE (\
     "{\n" \
     "    \"result\": [{\n" \
-    "        \"dn\": \"cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -243,28 +247,28 @@
     "            \"value\": [\"1\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\"10101010\", \"11110000\", \"01010101\"]\n" \
+    "            \"value\": [\""TEST_CERT_1_ENCODED"\", \""TEST_CERT_2_ENCODED"\", \""TEST_CERT_3_ENCODED"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cAParentCAId\",\n" \
-    "            \"value\": [\"testParentId\"]\n" \
+    "            \"value\": [\""TEST_PARENT_CA_ID"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\"1500\"]\n" \
+    "            \"value\": [\""TEST_CRL_NUM"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\"01000100\"]\n" \
+    "            \"value\": [\""TEST_PRIV_KEY_ENCODED"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\"TEST_SUBJECT\"]\n" \
+    "            \"value\": [\""TEST_SUBJECT"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cn\",\n" \
-    "            \"value\": [\"testId\"]\n" \
+    "            \"value\": [\""TEST_CA_ID"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\"20181031223344.0Z\"]\n" \
+    "            \"value\": [\""TEST_LAST_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\"20181101223344.0Z\"]\n" \
+    "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
@@ -280,7 +284,7 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cACertificateDN\",\n" \
     "            \"value\": [\n" \
-    "                \"TEST_SUBJECT\"\n" \
+    "                \""TEST_SUBJECT"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -289,9 +293,9 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cACertificate\",\n" \
     "            \"value\": [\n" \
-    "                \"10101010\",\n" \
-    "                \"11110000\",\n" \
-    "                \"01010101\"\n" \
+    "                \""TEST_CERT_1_ENCODED"\",\n" \
+    "                \""TEST_CERT_2_ENCODED"\",\n" \
+    "                \""TEST_CERT_3_ENCODED"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -300,7 +304,7 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cAEncryptedPrivateKey\",\n" \
     "            \"value\": [\n" \
-    "                \"01000100\"\n" \
+    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -309,7 +313,7 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cACRLNumber\",\n" \
     "            \"value\": [\n" \
-    "                \"1500\"\n" \
+    "                \""TEST_CRL_NUM"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -318,7 +322,7 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cALastCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181031223344.0Z\"\n" \
+    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \
@@ -327,7 +331,7 @@
     "        \"attribute\": {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
-    "                \"20181101223344.0Z\"\n" \
+    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \

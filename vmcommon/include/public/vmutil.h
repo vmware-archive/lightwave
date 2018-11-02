@@ -53,3 +53,39 @@ VmSimpleHashMapPairFreeValOnly(
     PLW_HASHMAP_PAIR    pPair,
     PVOID               pUnused
     );
+
+DWORD
+VmSignatureEncodeHex(
+    const unsigned char     data[],
+    const size_t            length,
+    PSTR                    *ppHex
+    );
+
+DWORD
+VmSignatureDecodeHex(
+    PCSTR               pcszHexStr,
+    unsigned char       **ppData,
+    size_t              *pLength
+    );
+
+/*
+ * encode a string into Base 64
+ */
+DWORD
+VmEncodeToBase64(
+    PBYTE       pInput,
+    DWORD       inputLen,
+    PBYTE       *ppBase64Encoded,
+    DWORD       *pEncodedLen
+    );
+
+/*
+ * decode a Base 64 to string
+ */
+DWORD
+VmDecodeToBase64(
+    PBYTE       pEncodedInput,
+    DWORD       encodedLen,
+    PBYTE       *ppBase64Decoded,
+    DWORD       *pDecodedLen
+    );
