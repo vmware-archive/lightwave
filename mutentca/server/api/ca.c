@@ -640,6 +640,7 @@ LwCACreateIntermediateCA(
     time_t                      tmNotAfter;
     BOOLEAN                     bIsCA = FALSE;
     PSTR                        pszPublicKey = NULL;
+    PSTR                        pszParentCAId = NULL;
     PLWCA_KEY                   pEncryptedKey = NULL;
     PLWCA_STRING_ARRAY          pOrganizationList = NULL;
     X509                        *pX509CACert = NULL;
@@ -652,21 +653,30 @@ LwCACreateIntermediateCA(
     PLWCA_CERT_VALIDITY         pTempValidity = NULL;
     BOOLEAN                     bIsValid = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts ||
-        !pCARequest || IsNullOrEmptyString(pcszParentCAId)
-        )
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts || !pCARequest)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszParentCAId))
+    {
+        dwError =  LwCAAllocateStringA(pcszParentCAId, &pszParentCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAGetRootCAId(&pszParentCAId);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = _LwCACheckCANotExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCACheckCAExist(pcszParentCAId);
+    dwError = _LwCACheckCAExist(pszParentCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCAGetCurrentCACertificate(pcszParentCAId, &pParentCACert);
+    dwError = _LwCAGetCurrentCACertificate(pszParentCAId, &pParentCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAPEMToX509(pParentCACert, &pX509ParentCACert);
@@ -767,7 +777,7 @@ LwCACreateIntermediateCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCASecuritySignX509Cert(pcszParentCAId, pX509CACert);
+    dwError = LwCASecuritySignX509Cert(pszParentCAId, pX509CACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCASecurityGetEncryptedKey(pcszCAId, &pEncryptedKey);
@@ -782,7 +792,7 @@ LwCACreateIntermediateCA(
     dwError = _LwCAStoreIntermediateCA(
                                     pX509CACert,
                                     pcszCAId,
-                                    pcszParentCAId,
+                                    pszParentCAId,
                                     pEncryptedKey
                                     );
     BAIL_ON_LWCA_ERROR(dwError);
@@ -791,6 +801,7 @@ LwCACreateIntermediateCA(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszPublicKey);
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
     LwCAFreeStringArray(pOrganizationList);
     LwCAFreePKCSRequest(pPKCSReq);
     LwCAX509ReqFree(pRequest);

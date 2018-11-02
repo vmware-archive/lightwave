@@ -112,11 +112,8 @@ LwCARestGetIntCAInputSpec(
     dwError = LwCAJsonGetStringFromKey(pJsonBody, TRUE, LWCA_JSON_KEY_POLICY, &pszPolicy);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (pCountryList || pStateList || pLocalityList || pOUList || pszPolicy)
-    {
-        dwError = LwCACreateIntCARequest(pCountryList, pStateList, pLocalityList, pOUList, pszPolicy, &pIntCASpec->pIntCAReqData);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
+    dwError = LwCACreateIntCARequest(pCountryList, pStateList, pLocalityList, pOUList, pszPolicy, &pIntCASpec->pIntCAReqData);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetObjectFromKey(pJsonBody, TRUE, LWCA_JSON_KEY_VALIDITY, &pJsonValue);
     BAIL_ON_LWCA_ERROR(dwError);
