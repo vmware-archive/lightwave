@@ -22,11 +22,11 @@
 static REST_MODULE _rest_module[] =
 {
     {
-        "/v1/mutentca/certificates",
+        "/v1/mutentca/certificate",
         {NULL, NULL, LwCARestGetRootCASignedCert, LwCARestRevokeRootCASignedCert, NULL}
     },
     {
-        "/v1/mutentca/intermediate/*/certificates",
+        "/v1/mutentca/intermediate/*/certificate",
         {NULL, NULL, LwCARestGetIntermediateCASignedCert, LwCARestRevokeIntermediateCASignedCert, NULL}
     },
     {0}
@@ -78,6 +78,7 @@ LwCARestGetRootCASignedCert(
                             pSignCertSpec->signAlgorithm,
                             &pCert
                             );
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
@@ -190,6 +191,7 @@ LwCARestGetIntermediateCASignedCert(
                             pSignCertSpec->signAlgorithm,
                             &pCert
                             );
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,

@@ -135,6 +135,13 @@ LwCAPolicyValidateSANPolicy(
     dwError = LwCAX509ReqGetSubjectAltNames(pRequest, &pSANArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (!pSANArray)
+    {
+        // CSR does not contain any SANs. Passing validation
+        bIsValid = TRUE;
+        goto ret;
+    }
+
     if (!bMultiSANEnabled && pSANArray->dwCount > 1)
     {
         LWCA_LOG_ERROR("Policy Violation: Multiple SANs are not allowed");
@@ -182,6 +189,7 @@ LwCAPolicyValidateSANPolicy(
         }
     }
 
+ret:
     *pbIsValid = bIsValid;
 
 cleanup:
