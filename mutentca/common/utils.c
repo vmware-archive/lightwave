@@ -157,7 +157,7 @@ LwCADbCreateCAData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-   dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (pCertificates)

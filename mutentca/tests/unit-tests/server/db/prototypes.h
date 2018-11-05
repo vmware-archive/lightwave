@@ -251,3 +251,13 @@ VOID
 Test_LwCAPostGetParentCAId(
     VOID **state
     );
+
+VOID
+Test_LwCAAddCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCASerializeCertDataToJson(
+    VOID **state
+    );

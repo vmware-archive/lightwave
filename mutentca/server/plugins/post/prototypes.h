@@ -179,3 +179,18 @@ LwCAGetStringAttrFromResponse(
     PCSTR       pcszKey,
     PSTR        *ppszAttrValue
     );
+
+DWORD
+LwCAGetIntAttrFromResponse(
+    PCSTR       pcszResponse,
+    PCSTR       pcszKey,
+    int         *pValue
+    );
+
+DWORD
+LwCASerializeCertDataToJSON(
+    PCSTR               pcszCAId,
+    PLWCA_DB_CERT_DATA  pCertData,
+    PCSTR               pcszCADN,
+    PSTR                *ppszResponse
+    );

@@ -17,7 +17,9 @@
 #define LWCA_DB_CONFIG "./test-mutentcadb-config/test-postdb-config.json"
 
 #define LWCA_POST_PLUGIN_ADD_CA             "LwCADbPostPluginAddCA"
+#define LWCA_POST_PLUGIN_ADD_CERT           "LwCADbPostPluginAddCertData"
 #define LWCA_POST_SERIALIZE_CA_TO_JSON      "LwCASerializeCAToJSON"
+#define LWCA_POST_SERIALIZE_CERT_DATA_TO_JSON   "LwCASerializeCertDataToJSON"
 #define LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON      "LwCASerializeConfigCAToJSON"
 #define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
 #define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
@@ -44,6 +46,14 @@
 #define TEST_CA_ID                  "testId"
 #define TEST_PARENT_CA_ID           "testParentId"
 #define DUMMY_DOMAIN                "dc=lw-testdom,dc=com"
+
+#define TEST_SERIAL_NUMBER          "1500"
+#define TEST_REVOKED_REASON         1
+#define TEST_REVOKED_DATE           "20181102223344.0Z"
+#define TEST_TIME_VALID_FROM        "20181103223344.0Z"
+#define TEST_TIME_VALID_TO          "20181104223344.0Z"
+#define TEST_LWCA_CERT_STATUS       1
+#define TEST_INTR_CA_DN             ("cn=" TEST_CA_ID ",cn=" TEST_PARENT_CA_ID ",cn=Certificate-Authority," DUMMY_DOMAIN)
 
 #define SERIALIZED_ROOT_CA_JSON ("{\n" \
     "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
@@ -346,10 +356,76 @@
     "    }\n" \
     "]")
 
+#define SERIALIZED_CERT_DATA_JSON ("{\n" \
+    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "    \"attributes\": [\n" \
+    "        {\n" \
+    "            \"type\": \"objectClass\",\n" \
+    "            \"value\": [\n" \
+    "                \"vmwCerts\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cn\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_SERIAL_NUMBER"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certSerialNumber\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_SERIAL_NUMBER"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certIssuer\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_CA_ID"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certRevokedReason\",\n" \
+    "            \"value\": [\n" \
+    "                \"1\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certRevokedDate\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_REVOKED_DATE"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certTimeValidFrom\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_TIME_VALID_FROM"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certTimeValidTo\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_TIME_VALID_TO"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"certStatus\",\n" \
+    "            \"value\": [\n" \
+    "                \"1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    ]\n" \
+    "}")
+
 static
 DWORD
 _LwCALoadCAData(
     PLWCA_DB_CA_DATA    *ppCaData
+    );
+
+static
+DWORD
+_LwCALoadCertData(
+    PLWCA_DB_CERT_DATA  *ppCert
     );
 
 VOID
@@ -373,62 +449,6 @@ Test_LwCAPostDbFreeCtx(
     )
 {
     LwCADbFreeCtx();
-}
-
-static
-DWORD
-_LwCALoadCAData(
-    PLWCA_DB_CA_DATA    *ppCaData
-    )
-{
-    DWORD                       dwError = 0;
-    PLWCA_DB_CA_DATA            pCaData = NULL;
-    int                         certCount = 3;
-    PSTR                        pszCertificates[3] = {TEST_CERT_1,
-                                                      TEST_CERT_2,
-                                                      TEST_CERT_3};
-
-    dwError = LwCAAllocateMemory(sizeof(*pCaData), (PVOID *)&pCaData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(TEST_SUBJECT, &pCaData->pszSubjectName);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(TEST_CRL_NUM, &pCaData->pszCRLNumber);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACreateKey(TEST_PRIV_KEY,
-                            strlen(TEST_PRIV_KEY),
-                            &pCaData->pEncryptedPrivateKey
-                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCACreateCertArray(pszCertificates,
-                                  certCount,
-                                  &pCaData->pCertificates
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(TEST_LAST_CRL_UPDATE,
-                                  &pCaData->pszLastCRLUpdate
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringA(TEST_NEXT_CRL_UPDATE,
-                                  &pCaData->pszNextCRLUpdate
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    pCaData->status = TEST_CA_STATUS;
-
-    *ppCaData = pCaData;
-
-cleanup:
-    return dwError;
-
-error:
-    LwCADbFreeCAData(pCaData);
-    goto cleanup;
 }
 
 int
@@ -668,6 +688,59 @@ Test_LwCASerializeConfigRootCAToJson(
 }
 
 VOID
+Test_LwCAAddCertData(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE            pState = NULL;
+    PSTR                        pszFunc = LWCA_POST_PLUGIN_ADD_CERT;
+    PLUGIN_ADD_CERT             pFnAddCert = NULL;
+    PLWCA_PLUGIN_HANDLE         pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnAddCert = (PLUGIN_ADD_CERT)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnAddCert);
+}
+
+VOID
+Test_LwCASerializeCertDataToJson(
+    VOID **state
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_TEST_STATE            pState = NULL;
+    PSTR                        pszFunc = LWCA_POST_SERIALIZE_CERT_DATA_TO_JSON;
+    SERIALIZE_CERT_DATA_JSON    pFnSerialize = NULL;
+    PLWCA_DB_CERT_DATA          pCert = NULL;
+    PSTR                        pszSerializedData = NULL;
+    PLWCA_PLUGIN_HANDLE         pPluginHandle = NULL;
+    PCSTR                       pcszDN = TEST_INTR_CA_DN;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnSerialize = (SERIALIZE_CERT_DATA_JSON)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnSerialize);
+
+    dwError = _LwCALoadCertData(&pCert);
+    assert_int_equal(dwError, 0);
+
+    dwError = pFnSerialize(TEST_CA_ID, pCert, pcszDN, &pszSerializedData);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszSerializedData);
+    assert_string_equal(pszSerializedData, SERIALIZED_CERT_DATA_JSON);
+
+    LWCA_SAFE_FREE_STRINGA(pszSerializedData);
+    LwCADbFreeCertData(pCert);
+}
+
+VOID
 Test_LwCADeserializeJsonToRootCA(
     VOID **state
     )
@@ -877,4 +950,89 @@ Test_LwCAPostGetParentCAId(
     assert_string_equal(pszParentCAID, TEST_PARENT_CA_ID);
 
     LWCA_SAFE_FREE_STRINGA(pszParentCAID);
+}
+
+static
+DWORD
+_LwCALoadCAData(
+    PLWCA_DB_CA_DATA    *ppCaData
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_DB_CA_DATA            pCaData = NULL;
+    int                         certCount = 3;
+    PSTR                        pszCertificates[3] = {TEST_CERT_1,
+                                                      TEST_CERT_2,
+                                                      TEST_CERT_3};
+
+    dwError = LwCAAllocateMemory(sizeof(*pCaData), (PVOID *)&pCaData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_SUBJECT, &pCaData->pszSubjectName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_CRL_NUM, &pCaData->pszCRLNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateKey(TEST_PRIV_KEY,
+                            strlen(TEST_PRIV_KEY),
+                            &pCaData->pEncryptedPrivateKey
+                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateCertArray(pszCertificates,
+                                  certCount,
+                                  &pCaData->pCertificates
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_LAST_CRL_UPDATE,
+                                  &pCaData->pszLastCRLUpdate
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_NEXT_CRL_UPDATE,
+                                  &pCaData->pszNextCRLUpdate
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pCaData->status = TEST_CA_STATUS;
+
+    *ppCaData = pCaData;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pCaData);
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCALoadCertData(
+    PLWCA_DB_CERT_DATA  *ppCert
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_DB_CERT_DATA  pCert = NULL;
+
+    dwError = LwCADbCreateCertData(TEST_SERIAL_NUMBER,
+                                   TEST_TIME_VALID_FROM,
+                                   TEST_TIME_VALID_TO,
+                                   1,
+                                   TEST_REVOKED_DATE,
+                                   1,
+                                   &pCert
+                                   );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCert = pCert;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeCertData(pCert);
+    goto cleanup;
 }

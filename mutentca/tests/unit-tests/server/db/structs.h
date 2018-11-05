@@ -79,3 +79,16 @@ typedef DWORD (*JSON_GET_STRING_ATTR)(
     PCSTR,
     PSTR *
     );
+
+typedef DWORD (*SERIALIZE_CERT_DATA_JSON)(
+    PCSTR,
+    PLWCA_DB_CERT_DATA,
+    PCSTR,
+    PSTR *
+    );
+
+typedef DWORD (*PLUGIN_ADD_CERT)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PLWCA_DB_CERT_DATA
+    );

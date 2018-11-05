@@ -16,14 +16,16 @@
 #define LWCA_DB_POST_SERVER         "dbPostServer"
 #define LWCA_DB_DOMAIN              "dbDomain"
 
+#define LWCA_POST_OBJ_CLASS             "objectClass"
+#define LWCA_POST_CONTAINER             "container"
+#define LWCA_POST_TOP                   "top"
+
+// Certificate Authority LDAP Metadata
 #define LWCA_POST_CONFIG_DN             "cn=Configuration,%s"
 #define LWCA_POST_CA_CONFIG_DN          "cn=%s," LWCA_POST_CONFIG_DN
 #define LWCA_POST_CA_DN                 "cn=Certificate-Authority,%s"
 #define LWCA_POST_ROOT_CA_DN_ENTRY      "cn=%s," LWCA_POST_CA_DN
 #define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,cn=%s," LWCA_POST_CA_DN
-#define LWCA_POST_OBJ_CLASS             "objectClass"
-#define LWCA_POST_CONTAINER             "container"
-#define LWCA_POST_TOP                   "top"
 #define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
 #define LWCA_POST_CA_FILTER             "(&(cn=%s)(objectClass=%s))"
 #define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"
@@ -35,6 +37,18 @@
 #define LWCA_POST_CA_CERTIFICATES       "cACertificate"
 #define LWCA_POST_CA_LAST_CRL_UPDATE    "cALastCRLUpdate"
 #define LWCA_POST_CA_NEXT_CRL_UPDATE    "cANextCRLUpdate"
+
+// Certificate Data LDAP Metadata
+#define LWCA_POST_CERT_DN               "cn=%s,%s"
+#define LWCA_POST_CERT_OBJ_CLASS        "vmwCerts"
+#define LWCA_POST_CERT_SERIAL_NUM       "certSerialNumber"
+#define LWCA_POST_CERT_ISSUER           "certIssuer"
+#define LWCA_POST_CERT_REVOKED_REASON   "certRevokedReason"
+#define LWCA_POST_CERT_REVOKED_DATE     "certRevokedDate"
+#define LWCA_POST_CERT_TIME_VALID_FROM  "certTimeValidFrom"
+#define LWCA_POST_CERT_TIME_VALID_TO    "certTimeValidTo"
+#define LWCA_POST_CERT_STATUS           "certStatus"
+
 #define LWCA_POST_JSON_ATTR             "attributes"
 
 #define LWCA_EXPIRATION_BUFFER_TIME     (3 * 60)
@@ -46,6 +60,7 @@
 #define LWCA_LDAP_DN                    "dn"
 #define LWCA_LDAP_CN                    "cn"
 #define LWCA_LDAP_SCOPE                 "scope"
+#define LWCA_LDAP_ATTRS                 "attrs"
 #define LWCA_LDAP_SCOPE_SUB             "sub"
 #define LWCA_LDAP_FILTER                "filter"
 #define LWCA_LDAP_ATTR_TYPE             "type"
