@@ -14,6 +14,13 @@
 
 #include "includes.h"
 
+static
+BOOLEAN
+LwCARestAuthIsOpenAPI(
+    PCSTR           pcszURI
+    );
+
+
 DWORD
 LwCARestAuth(
     PLWCA_REST_OPERATION    pRestOp,
@@ -28,6 +35,12 @@ LwCARestAuth(
     if (!pRestOp || !ppReqCtx || !pbAuthenticated)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (LwCARestAuthIsOpenAPI(pRestOp->pszURI))
+    {
+        bAuthenticated = TRUE;
+        goto ret;
     }
 
     dwError = LwCAOIDCTokenAuthenticate(
@@ -54,9 +67,11 @@ LwCARestAuth(
                 pReqCtx->pszBindUPN);
     }
 
+
+ret:
+
     *pbAuthenticated = bAuthenticated;
     *ppReqCtx = pReqCtx;
-
 
 cleanup:
 
@@ -75,4 +90,14 @@ error:
     }
 
     goto cleanup;
+}
+
+
+static
+BOOLEAN
+LwCARestAuthIsOpenAPI(
+    PCSTR           pcszURI
+    )
+{
+    return (!LwCAStringCompareA(LWCA_REST_OPENAPI_VERSION, pcszURI, FALSE));
 }
