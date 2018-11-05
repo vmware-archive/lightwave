@@ -70,11 +70,23 @@ typedef struct _VMW_IC_SETUP_PARAMS
     BOOLEAN bGenMachineSSL;
     BOOLEAN bAtomicJoin;
     BOOLEAN bInsecure;
+    BOOLEAN bMultiTenantedCAEnabled;
 
     PSTR pszParentDomainName;
     PSTR pszParentDC;
     PSTR pszParentUserName;
     PSTR pszParentPassword;
+
+    /*
+     * Lightwave supports an optional multi-tenanted CA server.
+     * Because its optional (at least now), clients looking to
+     * take advantage of this, must specify the following params
+     * at join time.
+     * 1. CA Server (dns name / ip address of the multi-tenanted CA Server)
+     * 2. CA Id (identifier of intermediate CA this client wants to use)
+    */
+    PSTR pszCAServer;
+    PSTR pszCAId;
 
     DWORD dwLeaveFlags;
 

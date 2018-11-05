@@ -365,6 +365,14 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszSubjectAltName);
     }
+    if (pParams->pszCAServer)
+    {
+        VmwDeployFreeMemory(pParams->pszCAServer);
+    }
+    if (pParams->pszCAId)
+    {
+        VmwDeployFreeMemory(pParams->pszCAId);
+    }
     VmwDeployFreeMemory(pParams);
 }
 
@@ -1016,7 +1024,7 @@ VmwDeploySetupClientWithDC(
 
     /*
      * prejoin flag is assuming no ldap connection
-     * from client to server. prejoin uses rest interface
+     * from client to server. prejoin uses rest interface.
      * before prejoin process starts, afd will acquire
      * a token with supplied credentials.
     */
@@ -1092,6 +1100,10 @@ VmwDeploySetupClientWithDC(
     if (pParams->bAtomicJoin)
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_ATOMIC_JOIN;
+    }
+    if (pParams->bMultiTenantedCAEnabled)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_MULTI_TENANTED_CA;
     }
 
     do
