@@ -43,12 +43,20 @@ static
 DWORD
 _LwCAGetAttributes(
     PLWCA_JSON_OBJECT   pJson,
+    SIZE_T              idx,
     PLWCA_JSON_OBJECT   *ppAttr
     );
 
 static
 DWORD
 _LwCAGetAttributesFromResponse(
+    PCSTR               pcszResponse,
+    PLWCA_JSON_OBJECT   *ppAttr
+    );
+
+static
+DWORD
+_LwCAGetArrayAttributesFromResponse(
     PCSTR               pcszResponse,
     PLWCA_JSON_OBJECT   *ppAttr
     );
@@ -624,6 +632,116 @@ error:
 }
 
 DWORD
+LwCADeserializeJSONToCertData(
+    PCSTR                       pcszResponse,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray = NULL;
+    PLWCA_JSON_OBJECT           pAttrArray = NULL;
+    PLWCA_JSON_OBJECT           pJson = NULL;
+    PSTR                        pszSerialNumber = NULL;
+    DWORD                       dwRevokedReason = 0;
+    PSTR                        pszRevokedDate = NULL;
+    PSTR                        pszTimeValidFrom = NULL;
+    PSTR                        pszTimeValidTo = NULL;
+    int                         status = 0;
+    DWORD                       idx = 0;
+    SIZE_T                      arrLen = 0;
+
+    dwError = _LwCAGetArrayAttributesFromResponse(pcszResponse, &pAttrArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    arrLen = LwCAJsonArraySize(pAttrArray);
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA_ARRAY),
+                                 (PVOID *)&pCertDataArray
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pCertDataArray->dwCount = arrLen;
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_DB_CERT_DATA) * pCertDataArray->dwCount,
+                                 (PVOID*)&pCertDataArray->ppCertData
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    json_array_foreach(pAttrArray, idx, pJson)
+    {
+        dwError = _LwCAGetStringFromAttribute(pJson,
+                                              LWCA_POST_CERT_SERIAL_NUM,
+                                              &pszSerialNumber
+                                              );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAGetIntegerFromAttribute(pJson,
+                                               LWCA_POST_CERT_REVOKED_REASON,
+                                               &dwRevokedReason
+                                               );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAGetStringFromAttribute(pJson,
+                                              LWCA_POST_CERT_REVOKED_DATE,
+                                              &pszRevokedDate
+                                              );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAGetStringFromAttribute(pJson,
+                                              LWCA_POST_CERT_TIME_VALID_FROM,
+                                              &pszTimeValidFrom
+                                              );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAGetStringFromAttribute(pJson,
+                                              LWCA_POST_CERT_TIME_VALID_TO,
+                                              &pszTimeValidTo
+                                              );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCAGetIntegerFromAttribute(pJson,
+                                               LWCA_POST_CERT_STATUS,
+                                               &status
+                                               );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCADbCreateCertData(pszSerialNumber,
+                                       pszTimeValidFrom,
+                                       pszTimeValidTo,
+                                       dwRevokedReason,
+                                       pszRevokedDate,
+                                       status,
+                                       &pCertDataArray->ppCertData[idx]
+                                       );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        LWCA_SAFE_FREE_STRINGA(pszSerialNumber);
+        LWCA_SAFE_FREE_STRINGA(pszRevokedDate);
+        LWCA_SAFE_FREE_STRINGA(pszTimeValidFrom);
+        LWCA_SAFE_FREE_STRINGA(pszTimeValidTo);
+    }
+
+    *ppCertDataArray = pCertDataArray;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszSerialNumber);
+    LWCA_SAFE_FREE_STRINGA(pszRevokedDate);
+    LWCA_SAFE_FREE_STRINGA(pszTimeValidFrom);
+    LWCA_SAFE_FREE_STRINGA(pszTimeValidTo);
+    LWCA_SAFE_JSON_DECREF(pAttrArray);
+    LWCA_SAFE_JSON_DECREF(pJson);
+
+    return dwError;
+
+error:
+    LwCADbFreeCertDataArray(pCertDataArray);
+    if (ppCertDataArray)
+    {
+        *ppCertDataArray = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
 LwCADeserializeJSONToCA(
     PCSTR               pcszResponse,
     PLWCA_DB_CA_DATA    *ppCaData
@@ -1055,6 +1173,7 @@ static
 DWORD
 _LwCAGetAttributes(
     PLWCA_JSON_OBJECT   pJson,
+    SIZE_T              idx,
     PLWCA_JSON_OBJECT   *ppAttr
     )
 {
@@ -1078,7 +1197,7 @@ _LwCAGetAttributes(
                                        );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAJsonArrayGetBorrowedRef(pResult, 0, &pResultElem);
+    dwError = LwCAJsonArrayGetBorrowedRef(pResult, idx, &pResultElem);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetObjectFromKey(pResultElem,
@@ -1522,6 +1641,66 @@ error:
 
 static
 DWORD
+_LwCAGetArrayAttributesFromResponse(
+    PCSTR               pcszResponse,
+    PLWCA_JSON_OBJECT   *ppAttr
+    )
+{
+    DWORD               dwError = 0;
+    DWORD               dwCount = 0;
+    PLWCA_JSON_OBJECT   pRespJson = NULL;
+    PLWCA_JSON_OBJECT   pAttrJson = NULL;
+    PLWCA_JSON_OBJECT   pAttrEntry = NULL;
+    SIZE_T              idx = 0;
+
+    if (IsNullOrEmptyString(pcszResponse) || !ppAttr)
+    {
+        dwError =  LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonLoadObjectFromString(pcszResponse, &pRespJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetUnsignedIntegerFromKey(pRespJson,
+                                                FALSE,
+                                                LWCA_RESP_RESULT_COUNT,
+                                                &dwCount
+                                                );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonArrayCreate(&pAttrJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (idx = 0; idx < dwCount; ++idx)
+    {
+        dwError = _LwCAGetAttributes(pRespJson, idx, &pAttrEntry);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCAJsonAppendJsonToArray(pAttrJson, pAttrEntry);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        LWCA_SAFE_JSON_DECREF(pAttrEntry);
+    }
+
+    *ppAttr = pAttrJson;
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pAttrEntry);
+    LWCA_SAFE_JSON_DECREF(pRespJson);
+    return dwError;
+
+error:
+    LWCA_SAFE_JSON_DECREF(pAttrJson);
+    if (ppAttr)
+    {
+        *ppAttr = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
 _LwCAGetAttributesFromResponse(
     PCSTR               pcszResponse,
     PLWCA_JSON_OBJECT   *ppAttr
@@ -1559,7 +1738,7 @@ _LwCAGetAttributesFromResponse(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCAGetAttributes(pRespJson, &pAttrJson);
+    dwError = _LwCAGetAttributes(pRespJson, 0, &pAttrJson);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppAttr = pAttrJson;

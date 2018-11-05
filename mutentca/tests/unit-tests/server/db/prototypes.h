@@ -258,6 +258,16 @@ Test_LwCAAddCertData(
     );
 
 VOID
+Test_LwCAGetCertData(
+    VOID **state
+    );
+
+VOID
 Test_LwCASerializeCertDataToJson(
+    VOID **state
+    );
+
+VOID
+Test_LwCADeserializeCertData(
     VOID **state
     );

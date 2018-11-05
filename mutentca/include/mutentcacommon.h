@@ -785,6 +785,27 @@ LwCAFreeCertificate(
     PLWCA_CERTIFICATE pCertificate
     );
 
+DWORD
+LwCADbCreateCertData(
+    PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszTimeValidFrom,
+    PCSTR                   pcszTimeValidTo,
+    DWORD                   revokedReason,
+    PCSTR                   pcszRevokedDate,
+    LWCA_CERT_STATUS        status,
+    PLWCA_DB_CERT_DATA      *ppCertData
+    );
+
+VOID
+LwCADbFreeCertData(
+    PLWCA_DB_CERT_DATA pCertData
+    );
+
+VOID
+LwCADbFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
+    );
+
 // regexutil.c
 
 typedef regex_t REGEX, *PREGEX;

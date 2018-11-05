@@ -37,6 +37,7 @@ extern "C" {
 #include <mutentcadbapi.h>
 #include <mutentcaplugin.h>
 
+#include "defines.h"
 #include "prototypes.h"
 #include "structs.h"
 

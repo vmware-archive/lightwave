@@ -92,3 +92,14 @@ typedef DWORD (*PLUGIN_ADD_CERT)(
     PCSTR,
     PLWCA_DB_CERT_DATA
     );
+
+typedef DWORD (*PLUGIN_GET_CERT)(
+    PLWCA_DB_HANDLE,
+    PCSTR,
+    PLWCA_DB_CERT_DATA_ARRAY *
+    );
+
+typedef DWORD (*DESERIALIZE_JSON_CERT_DATA)(
+    PCSTR,
+    PLWCA_DB_CERT_DATA_ARRAY *
+    );

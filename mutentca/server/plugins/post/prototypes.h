@@ -138,7 +138,7 @@ LwCADbPostPluginFreeHandle(
     );
 
 DWORD
-LwCADbPostCAFilterBuilder(
+LwCADbPostCNFilterBuilder(
     PCSTR   pcszContainer,
     PCSTR   pcszObjClass,
     PSTR    *ppszResultCond
@@ -193,4 +193,10 @@ LwCASerializeCertDataToJSON(
     PLWCA_DB_CERT_DATA  pCertData,
     PCSTR               pcszCADN,
     PSTR                *ppszResponse
+    );
+
+DWORD
+LwCADeserializeJSONToCertData(
+    PCSTR                       pcszResponse,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
     );

@@ -27,7 +27,7 @@
 #define LWCA_POST_ROOT_CA_DN_ENTRY      "cn=%s," LWCA_POST_CA_DN
 #define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,cn=%s," LWCA_POST_CA_DN
 #define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
-#define LWCA_POST_CA_FILTER             "(&(cn=%s)(objectClass=%s))"
+#define LWCA_POST_CN_FILTER             "(&(cn=%s)(objectClass=%s))"
 #define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"
 #define LWCA_POST_CA_SUBJ_NAME          "cACertificateDN"
 #define LWCA_POST_CA_ENCR_PRIV_KEY      "cAEncryptedPrivateKey"
@@ -48,6 +48,7 @@
 #define LWCA_POST_CERT_TIME_VALID_FROM  "certTimeValidFrom"
 #define LWCA_POST_CERT_TIME_VALID_TO    "certTimeValidTo"
 #define LWCA_POST_CERT_STATUS           "certStatus"
+#define LWCA_POST_CERT_OBJ_FILTER       "(objectClass="LWCA_POST_CERT_OBJ_CLASS")"
 
 #define LWCA_POST_JSON_ATTR             "attributes"
 

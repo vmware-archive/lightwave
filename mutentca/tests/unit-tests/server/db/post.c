@@ -14,408 +14,6 @@
 
 #include "includes.h"
 
-#define LWCA_DB_CONFIG "./test-mutentcadb-config/test-postdb-config.json"
-
-#define LWCA_POST_PLUGIN_ADD_CA             "LwCADbPostPluginAddCA"
-#define LWCA_POST_PLUGIN_ADD_CERT           "LwCADbPostPluginAddCertData"
-#define LWCA_POST_SERIALIZE_CA_TO_JSON      "LwCASerializeCAToJSON"
-#define LWCA_POST_SERIALIZE_CERT_DATA_TO_JSON   "LwCASerializeCertDataToJSON"
-#define LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON      "LwCASerializeConfigCAToJSON"
-#define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
-#define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
-#define LWCA_POST_GET_CA                    "LwCADbPostPluginGetCA"
-#define LWCA_POST_UPDATE_CA                 "LwCADbPostPluginUpdateCA"
-#define LWCA_UPDATE_CA_REQUEST_BODY         "LwCAGenerateCAPatchRequestBody"
-#define LWCA_POST_GET_PARENT_CA_ID          "LwCADbPostPluginGetParentCAId"
-#define LWCA_GET_STRING_FROM_RESPONSE       "LwCAGetStringAttrFromResponse"
-#define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
-#define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
-#define TEST_SUBJECT                "TEST_SUBJECT"
-#define TEST_PRIV_KEY               "01000100"
-#define TEST_PRIV_KEY_ENCODED       "MDEwMDAxMDA="
-#define TEST_CERT_1                 "10101010"
-#define TEST_CERT_1_ENCODED         "MTAxMDEwMTA="
-#define TEST_CERT_2                 "11110000"
-#define TEST_CERT_2_ENCODED         "MTExMTAwMDA="
-#define TEST_CERT_3                 "01010101"
-#define TEST_CERT_3_ENCODED         "MDEwMTAxMDE="
-#define TEST_CRL_NUM                "1500"
-#define TEST_LAST_CRL_UPDATE        "20181031223344.0Z"
-#define TEST_NEXT_CRL_UPDATE        "20181101223344.0Z"
-#define TEST_CA_STATUS              1
-#define TEST_CA_ID                  "testId"
-#define TEST_PARENT_CA_ID           "testParentId"
-#define DUMMY_DOMAIN                "dc=lw-testdom,dc=com"
-
-#define TEST_SERIAL_NUMBER          "1500"
-#define TEST_REVOKED_REASON         1
-#define TEST_REVOKED_DATE           "20181102223344.0Z"
-#define TEST_TIME_VALID_FROM        "20181103223344.0Z"
-#define TEST_TIME_VALID_TO          "20181104223344.0Z"
-#define TEST_LWCA_CERT_STATUS       1
-#define TEST_INTR_CA_DN             ("cn=" TEST_CA_ID ",cn=" TEST_PARENT_CA_ID ",cn=Certificate-Authority," DUMMY_DOMAIN)
-
-#define SERIALIZED_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
-    "    \"attributes\": [\n" \
-    "        {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\n" \
-    "                \"vmwCertificationAuthority\",\n" \
-    "                \"pkiCA\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cn\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_PARENT_CA_ID"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_SUBJECT"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CRL_NUM"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CERT_1_ENCODED"\",\n" \
-    "                \""TEST_CERT_2_ENCODED"\",\n" \
-    "                \""TEST_CERT_3_ENCODED"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cAStatus\",\n" \
-    "            \"value\": [\n" \
-    "                \"1\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    ]\n" \
-    "}")
-
-#define SERIALIZED_INTERMEDIATE_CA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
-    "    \"attributes\": [\n" \
-    "        {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\n" \
-    "                \"vmwCertificationAuthority\",\n" \
-    "                \"pkiCA\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cn\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CA_ID"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_SUBJECT"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CRL_NUM"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cAParentCAId\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_PARENT_CA_ID"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CERT_1_ENCODED"\",\n" \
-    "                \""TEST_CERT_2_ENCODED"\",\n" \
-    "                \""TEST_CERT_3_ENCODED"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cAStatus\",\n" \
-    "            \"value\": [\n" \
-    "                \"1\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    ]\n" \
-    "}")
-
-#define SERIALIZED_CONFIG_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Configuration,dc=lw-testdom,dc=com\",\n"  \
-    "    \"attributes\": [\n"   \
-    "        {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\n" \
-    "                \"container\",\n" \
-    "                \"top\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n"   \
-    "            \"type\": \"cn\",\n"   \
-    "            \"value\": [\n"    \
-    "                \""TEST_PARENT_CA_ID"\"\n"    \
-    "            ]\n"   \
-    "        }\n"   \
-    "    ]\n"   \
-    "}")
-
-#define ROOT_CA_JSON_RESPONSE (\
-    "{\n" \
-    "    \"result\": [{\n" \
-    "        \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
-    "        \"attributes\": [{\n" \
-    "            \"type\": \"nTSecurityDescriptor\",\n" \
-    "            \"value\": [\"\\u0001\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cAStatus\",\n" \
-    "            \"value\": [\"1\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\""TEST_CERT_1_ENCODED"\", \""TEST_CERT_2_ENCODED"\", \""TEST_CERT_3_ENCODED"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\""TEST_CRL_NUM"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\""TEST_PRIV_KEY_ENCODED"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\""TEST_SUBJECT"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cn\",\n" \
-    "            \"value\": [\""TEST_PARENT_CA_ID"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\""TEST_LAST_CRL_UPDATE"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
-    "        }]\n" \
-    "    }],\n" \
-    "    \"result_count\": 1\n" \
-    "}")
-
-#define INTR_CA_JSON_RESPONSE (\
-    "{\n" \
-    "    \"result\": [{\n" \
-    "        \"dn\": \"cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
-    "        \"attributes\": [{\n" \
-    "            \"type\": \"nTSecurityDescriptor\",\n" \
-    "            \"value\": [\"\\u0001\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cAStatus\",\n" \
-    "            \"value\": [\"1\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\""TEST_CERT_1_ENCODED"\", \""TEST_CERT_2_ENCODED"\", \""TEST_CERT_3_ENCODED"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cAParentCAId\",\n" \
-    "            \"value\": [\""TEST_PARENT_CA_ID"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\""TEST_CRL_NUM"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\""TEST_PRIV_KEY_ENCODED"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\""TEST_SUBJECT"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cn\",\n" \
-    "            \"value\": [\""TEST_CA_ID"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\""TEST_LAST_CRL_UPDATE"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
-    "        }, {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
-    "        }]\n" \
-    "    }],\n" \
-    "    \"result_count\": 1\n" \
-    "}")
-
-#define CA_GENERATED_PATCH (\
-    "[\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cACertificateDN\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_SUBJECT"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cACertificate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CERT_1_ENCODED"\",\n" \
-    "                \""TEST_CERT_2_ENCODED"\",\n" \
-    "                \""TEST_CERT_3_ENCODED"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cAEncryptedPrivateKey\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_PRIV_KEY_ENCODED"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cACRLNumber\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CRL_NUM"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cALastCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_LAST_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cANextCRLUpdate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    },\n" \
-    "    {\n" \
-    "        \"operation\": \"replace\",\n" \
-    "        \"attribute\": {\n" \
-    "            \"type\": \"cAStatus\",\n" \
-    "            \"value\": [\n" \
-    "                \"1\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    }\n" \
-    "]")
-
-#define SERIALIZED_CERT_DATA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
-    "    \"attributes\": [\n" \
-    "        {\n" \
-    "            \"type\": \"objectClass\",\n" \
-    "            \"value\": [\n" \
-    "                \"vmwCerts\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"cn\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_SERIAL_NUMBER"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certSerialNumber\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_SERIAL_NUMBER"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certIssuer\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_CA_ID"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certRevokedReason\",\n" \
-    "            \"value\": [\n" \
-    "                \"1\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certRevokedDate\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_REVOKED_DATE"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certTimeValidFrom\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_TIME_VALID_FROM"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certTimeValidTo\",\n" \
-    "            \"value\": [\n" \
-    "                \""TEST_TIME_VALID_TO"\"\n" \
-    "            ]\n" \
-    "        },\n" \
-    "        {\n" \
-    "            \"type\": \"certStatus\",\n" \
-    "            \"value\": [\n" \
-    "                \"1\"\n" \
-    "            ]\n" \
-    "        }\n" \
-    "    ]\n" \
-    "}")
-
 static
 DWORD
 _LwCALoadCAData(
@@ -436,7 +34,7 @@ Test_LwCAPostDbInitCtx(
     DWORD               dwError = 0;
     PLWCA_JSON_OBJECT   pJson = NULL;
 
-    dwError = LwCAJsonLoadObjectFromFile(LWCA_DB_CONFIG, &pJson);
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_POST_DB_CONFIG, &pJson);
     assert_int_equal(dwError, 0);
 
     dwError = LwCADbInitCtx(pJson);
@@ -474,7 +72,7 @@ PreTest_LwCAPostPlugin(
     dwError = LwCAAllocateMemory(sizeof(*pState), (PVOID *)&pState);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAJsonLoadObjectFromFile(LWCA_DB_CONFIG, &pJson);
+    dwError = LwCAJsonLoadObjectFromFile(LWCA_POST_DB_CONFIG, &pJson);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetStringFromKey(pJson,
@@ -851,6 +449,68 @@ Test_LwCAPostDbGetCA(
 
     pFnGetCA = (PLUGIN_GET_CA)LwCAGetLibSym(pPluginHandle, pszFunc);
     assert_non_null(pFnGetCA);
+}
+
+VOID
+Test_LwCAGetCertData(
+    VOID **state
+    )
+{
+    PLWCA_TEST_STATE    pState = NULL;
+    PSTR                pszFunc = LWCA_POST_GET_CERT;
+    PLUGIN_GET_CERT     pFnGetCert = NULL;
+    PLWCA_PLUGIN_HANDLE pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnGetCert = (PLUGIN_GET_CERT)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnGetCert);
+}
+
+VOID
+Test_LwCADeserializeCertData(
+    VOID **state
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_TEST_STATE            pState = NULL;
+    PSTR                        pszFunc = LWCA_POST_DESERIALIZE_JSON_TO_CERT_DATA;
+    DESERIALIZE_JSON_CERT_DATA  pFnDeserializeCertData = NULL;
+    PLWCA_PLUGIN_HANDLE         pPluginHandle = NULL;
+    PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray = NULL;
+    PLWCA_DB_CERT_DATA          pCertData = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnDeserializeCertData = (DESERIALIZE_JSON_CERT_DATA)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnDeserializeCertData);
+
+    dwError = pFnDeserializeCertData(CERT_DATA_JSON_RESPONSE, &pCertDataArray);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCertDataArray);
+    assert_int_equal(pCertDataArray->dwCount, 2);
+
+    pCertData = pCertDataArray->ppCertData[0];
+    assert_string_equal(pCertData->pszSerialNumber, "2000");
+    assert_int_equal(pCertData->revokedReason, TEST_REVOKED_REASON);
+    assert_string_equal(pCertData->pszRevokedDate, TEST_REVOKED_DATE);
+    assert_string_equal(pCertData->pszTimeValidFrom, TEST_TIME_VALID_FROM);
+    assert_string_equal(pCertData->pszTimeValidTo, TEST_TIME_VALID_TO);
+    assert_int_equal(pCertData->status, TEST_LWCA_CERT_STATUS);
+
+    pCertData = pCertDataArray->ppCertData[1];
+    assert_string_equal(pCertData->pszSerialNumber, TEST_SERIAL_NUMBER);
+    assert_int_equal(pCertData->revokedReason, TEST_REVOKED_REASON);
+    assert_string_equal(pCertData->pszRevokedDate, TEST_REVOKED_DATE);
+    assert_string_equal(pCertData->pszTimeValidFrom, TEST_TIME_VALID_FROM);
+    assert_string_equal(pCertData->pszTimeValidTo, TEST_TIME_VALID_TO);
+    assert_int_equal(pCertData->status, TEST_LWCA_CERT_STATUS);
 }
 
 VOID
