@@ -34,6 +34,7 @@
 #define VMDIR_GENERIC_ERROR_BASE          100
 #define VMDIR_CUSTOMIZED_LDAP_ERROR_BASE  300
 #define VMDIR_WATCH_ERROR_BASE            400
+#define VMDIR_QUEUE_ERROR_BASE            450
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
 #define VMDIR_REST_PROXY_ERROR_BASE       800
@@ -161,13 +162,21 @@
 #define VMDIR_LDAP_ERROR_NO_SUCH_DB                   (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 3 )    // 9303
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
-// post watchnotify error (range 9400 - 9500)
+// post watchnotify error (range 9400 - 9449)
 //////////////////////////////////////////////////////////////////////////////////////////////////
 #define IS_VMDIR_WATCH_ERROR_SPACE(n) \
-    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_REST_PROXY_ERROR_BASE + 99) )
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE + 49) )
 
 #define VMDIR_ERROR_WATCH_ENDOFLIST                   (VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE + 0 )   // 9400
 #define VMDIR_ERROR_WATCH_INVALID_REFCOUNT            (VMDIR_ERROR_BASE + VMDIR_WATCH_ERROR_BASE + 1 )   // 9401
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// post queue error (range 9450 - 9499)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define IS_VMDIR_QUEUE_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE + 49) )
+
+#define VMDIR_ERROR_QUEUE_EMPTY                       (VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE + 0 )   // 9450
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

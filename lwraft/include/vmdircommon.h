@@ -89,6 +89,7 @@ typedef unsigned char uuid_t[16];  // typedef dce_uuid_t uuid_t;
 /* mutexes/threads/conditions */
 typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
+typedef struct _VMDIR_COND* PVMDIR_COND;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
 typedef VOID* PVDIR_TXN_HANDLE;
@@ -130,6 +131,23 @@ typedef struct _VDIR_LINKED_LIST
     size_t                  iSize;
 
 } VDIR_LINKED_LIST, *PVDIR_LINKED_LIST;
+
+// QUEUE
+
+typedef struct _VDIR_QUEUE_NODE
+{
+    PVOID                       pElement;
+    struct _VDIR_QUEUE_NODE*    pNext;
+} VDIR_QUEUE_NODE, *PVDIR_QUEUE_NODE;
+
+typedef struct _VDIR_QUEUE
+{
+    PVDIR_QUEUE_NODE    pHead;
+    PVDIR_QUEUE_NODE    pTail;
+    PVMDIR_MUTEX        pMutex;
+    PVMDIR_COND         pCond;
+    size_t              iSize;
+} VDIR_QUEUE, *PVDIR_QUEUE;
 
 typedef struct _VMDIR_TSSTACK
 {
@@ -807,21 +825,6 @@ VmDirMDBGetHomeDir(
     );
 #endif
 
-
-#if !defined(_WIN32) || defined(HAVE_PTHREADS_WIN32)
-typedef struct _VMDIR_COND* PVMDIR_COND;
-#else
-#ifdef WIN2008
-typedef struct _VMDIR_COND_2008  VMDIR_COND;
-typedef VMDIR_COND *PVMDIR_COND_2008;
-typedef VMDIR_COND *PVMDIR_COND;
-#else
-typedef struct _VMDIR_COND_2003 VMDIR_COND;
-typedef VMDIR_COND *PVMDIR_COND_2003;
-typedef VMDIR_COND *PVMDIR_COND;
-#endif
-#endif
-
 #if !defined(_WIN32) || defined(HAVE_PTHREADS_WIN32)
 #include <pthread.h>
 #define PTHREAD_SELF() ((size_t) pthread_self().p)
@@ -1373,6 +1376,33 @@ VmDirLinkedListIsEmpty(
 VOID
 VmDirFreeLinkedList(
     PVDIR_LINKED_LIST   pLinkedList
+    );
+
+// queue.c
+
+DWORD
+VmDirQueueInit(
+    PVDIR_QUEUE*    ppQueue
+    );
+
+DWORD
+VmDirQueueEnqueue(
+    BOOL        bInLock,
+    PVDIR_QUEUE pQueue,
+    PVOID       pElement
+    );
+
+DWORD
+VmDirQueueDequeue(
+    BOOL        bInLock,
+    PVDIR_QUEUE pQueue,
+    int64_t     iTimeoutMs,
+    PVOID*      ppElement
+    );
+
+VOID
+VmDirQueueFree(
+    PVDIR_QUEUE pQueue
     );
 
 DWORD
