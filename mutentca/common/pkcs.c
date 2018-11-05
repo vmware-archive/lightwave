@@ -3669,8 +3669,6 @@ _LwCAConvertASNTimeToGeneralizedTime(
     DWORD dwError = 0;
     ASN1_GENERALIZEDTIME *pAsnGTm = NULL;
     PSTR pszGeneralizedTime = NULL;
-    BUF_MEM *pBuffMem = NULL;
-    BIO* pBioMem = NULL;
 
     pAsnGTm = ASN1_TIME_to_generalizedtime(pAsnTime, NULL);
     if (pAsnGTm == NULL)
@@ -3679,27 +3677,15 @@ _LwCAConvertASNTimeToGeneralizedTime(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    pBioMem = BIO_new(BIO_s_mem());
-    if (pBioMem == NULL)
-    {
-        dwError = LWCA_OUT_OF_MEMORY_ERROR;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = ASN1_GENERALIZEDTIME_print(pBioMem, pAsnGTm);
-    BAIL_ON_SSL_ERROR(dwError, LWCA_OUT_OF_MEMORY_ERROR);
-
-    BIO_get_mem_ptr(pBioMem, &pBuffMem);
-
-    dwError = LwCAAllocateStringWithLengthA(pBuffMem->data, pBuffMem->length, &pszGeneralizedTime);
+    dwError = LwCAAllocateStringA(pAsnGTm->data, &pszGeneralizedTime);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszGeneralizedTime = pszGeneralizedTime;
 
 cleanup:
-    if (pBioMem != NULL)
+    if (pAsnGTm)
     {
-        BIO_free(pBioMem);
+        ASN1_STRING_free(pAsnGTm);
     }
     return dwError;
 
