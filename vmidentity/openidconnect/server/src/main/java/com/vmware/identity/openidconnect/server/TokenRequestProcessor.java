@@ -30,7 +30,6 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import com.nimbusds.jose.JOSEException;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.diagnostics.MetricUtils;
 import com.vmware.identity.idm.GSSResult;
 import com.vmware.identity.idm.IDMSecureIDNewPinException;
 import com.vmware.identity.idm.PrincipalId;
@@ -437,19 +436,15 @@ public class TokenRequestProcessor {
                             userId.getUPN(), this.tenant)), e);
         }
 
-        TokenSuccessResponse response = process(
-                                            personUser,
-                                            solutionUser,
-                                            this.tokenRequest.getClientID(),
-                                            this.tokenRequest.getScope(),
-                                            (Nonce)null,
-                                            (SessionID)(null),
-                                            false /* refreshTokenAllowed */,
-                                            GrantType.FEDERATION_TOKEN.toString());
-
-        String clientId = (this.tokenRequest.getClientID() == null) ? null : this.tokenRequest.getClientID().getValue();
-        MetricUtils.recordFederatedTokenLogin(tenant, personUser.getPrincipalId().getName(), clientId);
-        return response;
+        return process(
+                personUser,
+                solutionUser,
+                this.tokenRequest.getClientID(),
+                this.tokenRequest.getScope(),
+                (Nonce)null,
+                (SessionID)(null),
+                false /* refreshTokenAllowed */,
+                GrantType.FEDERATION_TOKEN.toString());
     }
 
     private TokenSuccessResponse process(

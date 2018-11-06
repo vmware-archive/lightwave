@@ -46,12 +46,6 @@ import java.util.concurrent.TimeUnit;
 
 import javax.security.auth.login.LoginException;
 
-import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
-import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
-import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
-import com.vmware.identity.diagnostics.IDiagnosticsLogger;
-import com.vmware.identity.diagnostics.VmEvent;
-import com.vmware.identity.diagnostics.MetricUtils;
 import org.apache.commons.lang.ArrayUtils;
 import org.apache.commons.lang.SystemUtils;
 import org.apache.commons.lang.Validate;
@@ -75,6 +69,11 @@ import com.vmware.identity.auth.passcode.spi.AuthenticationSecret;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSession;
 import com.vmware.identity.auth.passcode.spi.AuthenticationSessionFactory;
 import com.vmware.identity.auth.passcode.spi.SessionFactoryProvider;
+import com.vmware.identity.diagnostics.DiagnosticsContextFactory;
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsContextScope;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.diagnostics.VmEvent;
 import com.vmware.identity.idm.ADIDSAlreadyExistException;
 import com.vmware.identity.idm.ActiveDirectoryJoinInfo;
 import com.vmware.identity.idm.Attribute;
@@ -217,128 +216,55 @@ import sun.security.krb5.KrbException;
 public class IdentityManager implements IIdentityManager {
     class IdmCachePeriodicChecker extends Thread
     {
+
         @Override
         public void run()
         {
             try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCachePeriodicChecker", "IdmCachePeriodicChecker", "", "") )
             {
-                while(true)
+            while(true)
+            {
+                try
                 {
-                    try
-                    {
-                        long startTime = System.nanoTime();
+                    long startTime = System.nanoTime();
 
-                        IdentityManager.this.refreshTenantCache();
+                    IdentityManager.this.refreshTenantCache();
 
-                        if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
-                        {
-                            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
-                                    new PerfBucketKey(
-                                            PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
-                                            TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
-                        }
-                    }
-                    catch (Throwable t)
+                    if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
                     {
-                        logger.error(String.format("IdmCachePeriodicChecker refreshTenantCredential failed : %s",
-                                t.getMessage()), t);
-                        t.printStackTrace();
+                        PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
+                                new PerfBucketKey(
+                                        PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
+                                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
                     }
+                }
+                catch (Throwable t)
+                {
+                    logger.error(String.format("IdmCachePeriodicChecker refreshTenantCredential failed : %s",
+                            t.getMessage()), t);
+                    t.printStackTrace();
+                }
 
-                    try
-                    {
-                        // refresh tenant certificates every 15 seconds
-                        Thread.sleep(15000);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        logger.error("IdmCachePeriodicChecker Thread is interrupted!");
-                        e.printStackTrace();
-                    }
+                try
+                {
+                    // refresh tenant certificates every 15 seconds
+                    Thread.sleep(15000);
+                }
+                catch (InterruptedException e)
+                {
+                    logger.error("IdmCachePeriodicChecker Thread is interrupted!");
+                    e.printStackTrace();
                 }
             }
         }
     }
 
-    /**
-     * Thread to push IDM metrics at an interval of 1 hour
-     */
-    class IdmMetricsPeriodicReporter extends Thread
-    {
-        private final Integer checkInterval = 3600000;
-        private final String threadName = "IdmMetricsPeriodicReporter";
-        private HashMap<PrincipalId,Boolean> idmUsers;
-        private boolean mark;
-
-        @Override
-        public void run()
-        {
-            idmUsers = new HashMap<>();
-            mark = false;
-            try (IDiagnosticsContextScope ctxt = getDiagnosticsContext("", threadName, threadName, "", ""))
-            {
-                logger.info(String.format("Starting %s thread", threadName));
-                while(true)
-                {
-                    try
-                    {
-                        // Get all tenants, including ones created on other LW instances
-                        Collection<String> tenants = _configStore.getAllTenants();
-                        reportIDMMetrics(tenants, idmUsers, !mark);
-                    }
-                    catch (Throwable t)
-                    {
-                        logger.error(String.format("%s failed to report metrics : %s", threadName, t.getMessage()));
-                        logger.error(String.format("%s Stack trace: \n%s", threadName, t.getStackTrace().toString()));
-                    }
-                    mark = !mark;
-
-                    try
-                    {
-                        // Report metrics every hour
-                        Thread.sleep(checkInterval);
-                    }
-                    catch (InterruptedException e)
-                    {
-                        logger.error(String.format("%s Thread is interrupted, exiting", threadName));
-                        return;
-                    }
-                }
-            }
-        }
-
-        private void reportIDMMetrics(Collection<String> tenants, HashMap<PrincipalId,Boolean> userMap, boolean checked) throws Exception {
-            for (String tenant : tenants)
-            {
-                if (tenant.equalsIgnoreCase(getSystemTenant()))
-                {
-                    continue;
-                }
-                Set<PersonUser> users = findPersonUsers(tenant, new SearchCriteria("", tenant), -1);
-                for (PersonUser user : users)
-                {
-                    if (!user.getId().getName().equalsIgnoreCase("administrator"))
-                    {
-                        MetricUtils.recordUser(user.getId().getDomain(), user.getId().getName());
-                    }
-                    userMap.put(user.getId(), checked);
-                }
-            }
-            // report any users who are deleted
-            for (Entry<PrincipalId,Boolean> entry : userMap.entrySet())
-            {
-                if (entry.getValue() != checked)
-                {
-                    MetricUtils.removeUser(entry.getKey().getDomain(), entry.getKey().getName());
-                    userMap.remove(entry.getKey());
-                }
-            }
-        }
     }
 
 
     /**
      * CRL checker thread refreshing at interval of 1 hour (3600000 milliseconds)
+     *
      */
     class IdmCrlCachePeriodicChecker extends Thread
     {
@@ -484,10 +410,6 @@ public class IdentityManager implements IIdentityManager {
             // Start the Tenant Cache thread
             Thread idmCacheThread = new IdmCachePeriodicChecker();
             idmCacheThread.start();
-
-            // Start the IDM Metrics Reporter thread
-            Thread idmMetricsReporter = new IdmMetricsPeriodicReporter();
-            idmMetricsReporter.start();
 
             // Start the CRL Cache thread
             ManageCrlCacheChecker();

@@ -41,7 +41,6 @@ import com.vmware.identity.cdc.CdcGenericException;
 import com.vmware.identity.cdc.CdcSession;
 import com.vmware.identity.cdc.DCStatusInfo;
 import com.vmware.identity.cdc.CdcFactory;
-import com.vmware.identity.diagnostics.MetricUtils;
 import com.vmware.identity.idm.DomainType;
 import com.vmware.identity.idm.DuplicateTenantException;
 import com.vmware.identity.idm.ReplicationException;
@@ -410,7 +409,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     httpResponse.addCookie(sessionCookie);
     httpResponse.addCookie(cspIssuerCookie);
 
-    MetricUtils.recordFederatedUILogin(tenantName, user.getName());
     return httpResponse;
   }
 
