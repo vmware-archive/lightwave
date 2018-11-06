@@ -188,6 +188,13 @@ LwCAGetIntAttrFromResponse(
     );
 
 DWORD
+LwCAGetStringArrayAttrFromResponse(
+    PCSTR               pcszResponse,
+    PCSTR               pcszKey,
+    PLWCA_STRING_ARRAY  *ppStrArray
+    );
+
+DWORD
 LwCASerializeCertDataToJSON(
     PCSTR               pcszCAId,
     PLWCA_DB_CERT_DATA  pCertData,
@@ -199,4 +206,10 @@ DWORD
 LwCADeserializeJSONToCertData(
     PCSTR                       pcszResponse,
     PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    );
+
+DWORD
+LwCAGetCertArrayFromEncodedStringArray(
+    PLWCA_STRING_ARRAY          pEncodedStrArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
     );

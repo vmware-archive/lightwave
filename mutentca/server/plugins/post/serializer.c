@@ -147,13 +147,6 @@ _LwCAGetEncodedStringArrayFromCertArray(
     PLWCA_STRING_ARRAY          *ppEncodedStrArray
     );
 
-static
-DWORD
-_LwCAGetCertArrayFromEncodedStringArray(
-    PLWCA_STRING_ARRAY          pEncodedStrArray,
-    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
-    );
-
 DWORD
 LwCASerializeConfigCAToJSON(
     PCSTR       pcszCAId,
@@ -446,6 +439,48 @@ error:
     {
         *ppszAttrValue = NULL;
     }
+    goto cleanup;
+}
+
+DWORD
+LwCAGetStringArrayAttrFromResponse(
+    PCSTR               pcszResponse,
+    PCSTR               pcszKey,
+    PLWCA_STRING_ARRAY  *ppStrArray
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pAttrJson = NULL;
+    PLWCA_STRING_ARRAY  pStrArray = NULL;
+
+    if (IsNullOrEmptyString(pcszResponse) ||
+        IsNullOrEmptyString(pcszKey) ||
+        !ppStrArray
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAGetAttributesFromResponse(pcszResponse, &pAttrJson);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetStringArrayFromAttribute(pAttrJson, pcszKey, &pStrArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppStrArray = pStrArray;
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pAttrJson);
+    return dwError;
+
+error:
+    LwCAFreeStringArray(pStrArray);
+    if (ppStrArray)
+    {
+        *ppStrArray = NULL;
+    }
+
     goto cleanup;
 }
 
@@ -780,7 +815,7 @@ LwCADeserializeJSONToCA(
                                                );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCAGetCertArrayFromEncodedStringArray(pszCertArray, &pCertArray);
+    dwError = LwCAGetCertArrayFromEncodedStringArray(pszCertArray, &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAGetStringFromAttribute(pAttrJson,
@@ -1815,9 +1850,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_LwCAGetCertArrayFromEncodedStringArray(
+LwCAGetCertArrayFromEncodedStringArray(
     PLWCA_STRING_ARRAY          pEncodedStrArray,
     PLWCA_CERTIFICATE_ARRAY     *ppCertArray
     )

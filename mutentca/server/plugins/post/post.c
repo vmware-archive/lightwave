@@ -513,7 +513,48 @@ LwCADbPostPluginGetCACertificates(
     PLWCA_CERTIFICATE_ARRAY      *ppCertArray
     )
 {
-    return LWCA_NOT_IMPLEMENTED;
+    DWORD                       dwError = 0;
+    PSTR                        pszResponse = NULL;
+    PLWCA_STRING_ARRAY          pStrArray = NULL;
+    PLWCA_CERTIFICATE_ARRAY     pCertArray = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppCertArray)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
+                                         pcszCAId,
+                                         LWCA_POST_CA_CERTIFICATES,
+                                         &pszResponse
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetStringArrayAttrFromResponse(pszResponse,
+                                                 LWCA_POST_CA_CERTIFICATES,
+                                                 &pStrArray
+                                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetCertArrayFromEncodedStringArray(pStrArray, &pCertArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCertArray = pCertArray;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LwCAFreeStringArray(pStrArray);
+    return dwError;
+
+error:
+    LwCADbPostPluginFreeCertificates(pCertArray);
+    if (ppCertArray)
+    {
+        *ppCertArray = NULL;
+    }
+    goto cleanup;
+
 }
 
 DWORD
@@ -551,7 +592,7 @@ cleanup:
     return dwError;
 
 error:
-    LwCADbFreeCertDataArray(pCertDataArray);
+    LwCADbPostPluginFreeCertDataArray(pCertDataArray);
     if (ppCertDataArray)
     {
         *ppCertDataArray = NULL;
@@ -566,7 +607,42 @@ LwCADbPostPluginGetCACRLNumber(
     PSTR                *ppszCRLNumber
     )
 {
-    return LWCA_NOT_IMPLEMENTED;
+    DWORD           dwError = 0;
+    PSTR            pszCRLNumber = NULL;
+    PSTR            pszResponse = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszCRLNumber)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
+                                         pcszCAId,
+                                         LWCA_POST_CA_CRL_NUM,
+                                         &pszResponse
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetStringAttrFromResponse(pszResponse,
+                                            LWCA_POST_CA_CRL_NUM,
+                                            &pszCRLNumber
+                                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszCRLNumber = pszCRLNumber;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
+    if (ppszCRLNumber)
+    {
+        *ppszCRLNumber = NULL;
+    }
+    goto cleanup;
 }
 
 DWORD
@@ -761,6 +837,7 @@ LwCADbPostPluginFreeCAData(
     PLWCA_DB_CA_DATA  pCAData
     )
 {
+    LwCADbFreeCAData(pCAData);
 }
 
 VOID
@@ -768,6 +845,7 @@ LwCADbPostPluginFreeCertDataArray(
     PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
     )
 {
+    LwCADbFreeCertDataArray(pCertDataArray);
 }
 
 VOID
@@ -775,6 +853,7 @@ LwCADbPostPluginFreeCertificates(
     PLWCA_CERTIFICATE_ARRAY pCertArray
     )
 {
+    LwCAFreeCertificates(pCertArray);
 }
 
 VOID
@@ -782,6 +861,7 @@ LwCADbPostPluginFreeString(
     PSTR    pszString
     )
 {
+    LWCA_SAFE_FREE_STRINGA(pszString);
 }
 
 VOID
