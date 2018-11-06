@@ -32,6 +32,7 @@
 
 // OPEN APIs
 #define LWCA_REST_OPENAPI_VERSION               "/v1/mutentca/version"
+#define LWCA_REST_INTERMEDIATE_URI_PREFIX       "/v1/mutentca/intermediate/"
 
 // REST Paramaeters
 #define LWCA_REST_PARAM_REQ_ID                  "X-Request-ID"

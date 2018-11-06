@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+DWORD
+_LwCARestReadURIParams(
+    PLWCA_REST_OPERATION   pRestOp
+    );
+
 DWORD
 LwCARestOperationCreate(
     PLWCA_REST_OPERATION*   ppRestOp
@@ -154,6 +160,10 @@ LwCARestOperationReadRequest(
         pszKey = NULL;
         pszVal = NULL;
     }
+
+    // read uri params
+    dwError = _LwCARestReadURIParams(pRestOp);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     // read request input json
     do
@@ -439,4 +449,56 @@ LwCAFreeRESTOperation(
 
         LWCA_SAFE_FREE_MEMORY(pRestOp);
     }
+}
+
+static
+DWORD
+_LwCARestReadURIParams(
+    PLWCA_REST_OPERATION   pRestOp
+    )
+{
+    DWORD   dwError                     = 0;
+    PSTR    pszKey                      = NULL;
+    PSTR    pszCAId                     = NULL;
+    PCSTR   pcszURI                     = NULL;
+    PCSTR   pcszTempURI                 = NULL;
+
+    // This method reads ca-id uri param
+
+    pcszURI = strstr(pRestOp->pszURI, LWCA_REST_INTERMEDIATE_URI_PREFIX);
+
+    if (IsNullOrEmptyString(pcszURI))
+    {
+        // No URI params to extract
+        goto error;
+    }
+
+    pcszURI = pcszURI + LwCAStringLenA(LWCA_REST_INTERMEDIATE_URI_PREFIX);
+    pcszTempURI = LwCAStringChrA(pcszURI, '/');
+
+    if (IsNullOrEmptyString(pcszTempURI))
+    {
+        dwError = LwCAAllocateStringA(pcszURI, &pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAAllocateStringWithLengthA(pcszURI, (pcszTempURI - pcszURI), &pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateStringA(LWCA_REST_PARAM_CA_ID, &pszKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwRtlHashMapInsert(pRestOp->pParamMap, pszKey, pszCAId, NULL);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // the below values will be released when pParamMap is released
+    pszKey = NULL;
+    pszCAId = NULL;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszKey);
+    LWCA_SAFE_FREE_STRINGA(pszCAId);
+    return dwError;
 }
