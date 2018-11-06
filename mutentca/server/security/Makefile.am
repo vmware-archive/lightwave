@@ -18,6 +18,7 @@ libmutentcasecurity_la_LIBADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/plugin/libmutentcasrvplugin.la \
+    $(top_builddir)/mutentca/server/db/libmutentcadb.la \
     @LWBASE_LIBS@ \
     @DL_LIBS@
 

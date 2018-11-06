@@ -20,6 +20,14 @@ _LwCASecurityDuplicateEncryptedData(
     PLWCA_BINARY_DATA *ppDataDest
     );
 
+static
+DWORD
+_LwCASecurityCreateEncryptedData(
+    PBYTE               pData,
+    DWORD               dwLength,
+    PLWCA_BINARY_DATA   *ppDataDest
+    );
+
 /* interface between security and storage */
 DWORD
 LwCASecurityStoragePut(
@@ -76,8 +84,46 @@ LwCASecurityStorageGet(
     PLWCA_BINARY_DATA *ppEncryptedData
     )
 {
-    /* TODO: get data from db */
-    return 0;
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_BINARY_DATA pEncryptedData = NULL;
+
+    if (!pcszCAId || !ppEncryptedData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCADbGetCA(pcszCAId, &pCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!pCAData->pEncryptedPrivateKey
+        || !pCAData->pEncryptedPrivateKey->pData
+        || pCAData->pEncryptedPrivateKey->dwLength == 0)
+    {
+        dwError = LWCA_SECURITY_KEY_NOT_IN_DB;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCASecurityCreateEncryptedData(
+                                pCAData->pEncryptedPrivateKey->pData,
+                                pCAData->pEncryptedPrivateKey->dwLength,
+                                &pEncryptedData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppEncryptedData = pEncryptedData;
+
+cleanup:
+    LwCADbFreeCAData(pCAData);
+    return dwError;
+
+error:
+    LwCASecurityFreeBinaryData(pEncryptedData);
+    if (ppEncryptedData)
+    {
+        *ppEncryptedData = NULL;
+    }
+    goto cleanup;
 }
 
 DWORD
@@ -159,6 +205,37 @@ error:
         LwCASecurityRemoveEncryptedKeyFromCache(pcszCAId);
     }
     LwCAFreeKey(pEncryptedCAKey);
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCASecurityCreateEncryptedData(
+    PBYTE               pData,
+    DWORD               dwLength,
+    PLWCA_BINARY_DATA   *ppDataDest
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_BINARY_DATA pDataDest = NULL;
+
+    dwError = VmAllocateMemory(sizeof(LWCA_BINARY_DATA), (PVOID *)&pDataDest);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = VmAllocateMemory(dwLength, (PVOID *)&pDataDest->pData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    memcpy(pDataDest->pData, pData, dwLength);
+
+    pDataDest->dwLength = dwLength;
+
+    *ppDataDest = pDataDest;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCASecurityFreeBinaryData(pDataDest);
     goto cleanup;
 }
 
