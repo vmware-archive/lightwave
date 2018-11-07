@@ -76,7 +76,7 @@ LwCAAuthZInitialize(
 
         gAuthZCtx.pPluginHandle = pPluginHandle;
 
-        LWCA_LOG_INFO("Loaded %s AuthZ Plugin", gAuthZCtx.pFT->pfnAuthZGetVersion());
+        LWCA_LOG_INFO("Loaded %s AuthZ Plugin", pFT->pfnAuthZGetVersion());
     }
 
     gAuthZCtx.pFT = pFT;
