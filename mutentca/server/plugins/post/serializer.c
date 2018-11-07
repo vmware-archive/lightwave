@@ -763,7 +763,6 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszTimeValidFrom);
     LWCA_SAFE_FREE_STRINGA(pszTimeValidTo);
     LWCA_SAFE_JSON_DECREF(pAttrArray);
-    LWCA_SAFE_JSON_DECREF(pJson);
 
     return dwError;
 
@@ -869,6 +868,7 @@ cleanup:
     LwCAFreeCertificates(pCertArray);
     LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
     LwCAFreeKey(pEncryptedPrivateKey);
+    LWCA_SAFE_JSON_DECREF(pAttrJson);
     return dwError;
 
 error:
@@ -1889,7 +1889,7 @@ _LwCAGetEncodedStringArrayFromCertArray(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(PLWCA_STRING_ARRAY),
+    dwError = LwCAAllocateMemory(sizeof(LWCA_STRING_ARRAY),
                                  (PVOID*)&pEncodedStrArray
                                  );
     BAIL_ON_LWCA_ERROR(dwError);
@@ -1946,7 +1946,7 @@ LwCAGetCertArrayFromEncodedStringArray(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(PLWCA_CERTIFICATE_ARRAY),
+    dwError = LwCAAllocateMemory(sizeof(LWCA_CERTIFICATE_ARRAY),
                                  (PVOID*)&pCertArray
                                  );
     BAIL_ON_LWCA_ERROR(dwError);

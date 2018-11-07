@@ -39,6 +39,8 @@ Test_LwCAPostDbInitCtx(
 
     dwError = LwCADbInitCtx(pJson);
     assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_JSON_DECREF(pJson);
 }
 
 VOID
@@ -106,6 +108,7 @@ PreTest_LwCAPostPlugin(
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszPluginConfigPath);
     LWCA_SAFE_FREE_STRINGA(pszPlugin);
+    LWCA_SAFE_JSON_DECREF(pJson);
 
     return dwError;
 
@@ -366,13 +369,14 @@ Test_LwCADeserializeJsonToRootCA(
     assert_string_equal(pCaData->pszCRLNumber, TEST_CRL_NUM);
     assert_int_equal(pCaData->status, TEST_CA_STATUS);
     assert_int_equal(pCaData->pEncryptedPrivateKey->dwLength, strlen(TEST_PRIV_KEY));
-    assert_string_equal(pCaData->pEncryptedPrivateKey->pData, TEST_PRIV_KEY);
+    assert_memory_equal(TEST_PRIV_KEY, pCaData->pEncryptedPrivateKey->pData, strlen(TEST_PRIV_KEY));
     assert_int_equal(pCaData->pCertificates->dwCount, 3);
     assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
     assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
     assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
     assert_string_equal(pCaData->pszLastCRLUpdate, TEST_LAST_CRL_UPDATE);
     assert_string_equal(pCaData->pszNextCRLUpdate, TEST_NEXT_CRL_UPDATE);
+    LwCADbFreeCAData(pCaData);
 }
 
 VOID
@@ -404,13 +408,15 @@ Test_LwCADeserializeJsonToIntrCA(
     assert_string_equal(pCaData->pszCRLNumber, TEST_CRL_NUM);
     assert_int_equal(pCaData->status, TEST_CA_STATUS);
     assert_int_equal(pCaData->pEncryptedPrivateKey->dwLength, strlen(TEST_PRIV_KEY));
-    assert_string_equal(pCaData->pEncryptedPrivateKey->pData, TEST_PRIV_KEY);
+    assert_memory_equal(TEST_PRIV_KEY, pCaData->pEncryptedPrivateKey->pData, strlen(TEST_PRIV_KEY));
     assert_int_equal(pCaData->pCertificates->dwCount, 3);
     assert_string_equal(pCaData->pCertificates->ppCertificates[0], TEST_CERT_1);
     assert_string_equal(pCaData->pCertificates->ppCertificates[1], TEST_CERT_2);
     assert_string_equal(pCaData->pCertificates->ppCertificates[2], TEST_CERT_3);
     assert_string_equal(pCaData->pszLastCRLUpdate, TEST_LAST_CRL_UPDATE);
     assert_string_equal(pCaData->pszNextCRLUpdate, TEST_NEXT_CRL_UPDATE);
+
+    LwCADbFreeCAData(pCaData);
 }
 
 VOID
@@ -511,6 +517,8 @@ Test_LwCADeserializeCertData(
     assert_string_equal(pCertData->pszTimeValidFrom, TEST_TIME_VALID_FROM);
     assert_string_equal(pCertData->pszTimeValidTo, TEST_TIME_VALID_TO);
     assert_int_equal(pCertData->status, TEST_LWCA_CERT_STATUS);
+
+    LwCADbFreeCertDataArray(pCertDataArray);
 }
 
 VOID
@@ -563,6 +571,7 @@ Test_LwCAUpdateRootCARequestBody(
     assert_non_null(pszReqBody);
     assert_string_equal(pszReqBody, CA_GENERATED_PATCH);
 
+    LwCADbFreeCAData(pCaData);
     LWCA_SAFE_FREE_STRINGA(pszReqBody);
 }
 
@@ -643,6 +652,7 @@ Test_LwCAUpdateCertData(
     assert_non_null(pszReqBody);
     assert_string_equal(pszReqBody, CERT_GENERATED_PATCH);
 
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
     LwCADbFreeCertData(pCertData);
 }
 
