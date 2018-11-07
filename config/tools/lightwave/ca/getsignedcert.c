@@ -32,6 +32,8 @@ VmwCaBuildParams(
     PCSTR           pcszDomain,
     PCSTR           pcszUsername,
     PCSTR           pcszPassword,
+    PCSTR           pcszCAServer,
+    PCSTR           pcszCAId,
     PCSTR           pcszKeySize,
     PCSTR           pcszDuration,
     BOOL            bInsecure,
@@ -50,6 +52,30 @@ VmwCaGetSignedCertRestRequest(
     PVMW_CA_PARAMS pCaParams,
     PVMCA_CSR      pCSR,
     PSTR*          ppszCert
+    );
+
+static
+DWORD
+VmwMutentCaGetSignedCertRestRequest(
+    PVMW_CA_PARAMS pCaParams,
+    PVMCA_CSR      pCSR,
+    PSTR*          ppszCert
+    );
+
+static
+DWORD
+VmwCaGetUrl(
+    PCSTR   pcszServer,
+    PCSTR   pcszPort,
+    PCSTR   pcszEndpoint,
+    PSTR*   ppszUrl
+    );
+
+static
+DWORD
+VmwCaParseRestOutput(
+    PCSTR pcszRestOutput,
+    PSTR* ppszCert
     );
 
 int
@@ -84,8 +110,16 @@ LightwaveCaGetSignedCert(
     dwError = VmwCaGenerateCertSigningRequest(pCaParams, &pCSR);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = VmwCaGetSignedCertRestRequest(pCaParams, pCSR, &pszCert);
-    BAIL_ON_DEPLOY_ERROR(dwError);
+    if (IsNullOrEmptyString(pCaParams->pszCAServer))
+    {
+        dwError = VmwCaGetSignedCertRestRequest(pCaParams, pCSR, &pszCert);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmwMutentCaGetSignedCertRestRequest(pCaParams, pCSR, &pszCert);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
 
     if (pCaParams->pszCertFilePath)
     {
@@ -149,11 +183,7 @@ VmwCaGetSignedCertRestRequest(
     PSTR                  pszHeader      = NULL;
     PSTR                  pszData        = NULL;
     json_t*               pJsonData      = NULL;
-    json_t*               pJsonResponse  = NULL;
-    json_t*               pJsonCert      = NULL;
-    json_error_t          jsonError      = {0};
     PSTR                  pszRestOutput  = NULL;
-    PCSTR                 pcszCert       = NULL;
     PSTR                  pszCert        = NULL;
 
     if (!ppszCert || !pCSR || !pCaParams)
@@ -162,29 +192,15 @@ VmwCaGetSignedCertRestRequest(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    dwError = VmwCaAcquireOidcToken(pCaParams, &pszAccessToken);
+    dwError = VmwCaAcquireOidcToken(pCaParams, VMW_OIDC_CA_SCOPE, &pszAccessToken);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    if (VmwCaIsIPV6AddrFormat(pCaParams->pszServer))
-    {
-        dwError = VmwDeployAllocateStringPrintf(
-                            &pszUrl,
-                            VMW_CA_REST_URL_FORMAT_IPV6,
-                            pCaParams->pszServer,
-                            VMW_CA_HTTPS_PORT,
-                            VMW_CA_CERT_REST_ENDPOINT);
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
-    else
-    {
-        dwError = VmwDeployAllocateStringPrintf(
-                            &pszUrl,
-                            VMW_CA_REST_URL_FORMAT_IPV4,
-                            pCaParams->pszServer,
-                            VMW_CA_HTTPS_PORT,
-                            VMW_CA_CERT_REST_ENDPOINT);
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
+    dwError = VmwCaGetUrl(
+                pCaParams->pszServer,
+                VMW_CA_HTTPS_PORT,
+                VMW_CA_CERT_REST_ENDPOINT,
+                &pszUrl);
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmwDeployAllocateStringPrintf(
                         &pszHeader,
@@ -223,7 +239,204 @@ VmwCaGetSignedCertRestRequest(
                     &pszRestOutput);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    pJsonResponse = json_loads(pszRestOutput, 0, &jsonError);
+    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    *ppszCert = pszCert;
+
+cleanup:
+    VmwDeployFreeMemory(pszEpochTime);
+    VmwDeployFreeMemory(pszAccessToken);
+    VmwDeployFreeMemory(pszUrl);
+    VmwDeployFreeMemory(pszHeader);
+    VmwDeployFreeMemory(pszData);
+    VmwDeployFreeMemory(pszRestOutput);
+
+    if (pJsonData)
+    {
+        json_decref(pJsonData);
+        pJsonData = NULL;
+    }
+
+    return dwError;
+
+error:
+    VmwDeployFreeMemory(pszCert);
+    pszCert = NULL;
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwMutentCaGetSignedCertRestRequest(
+    PVMW_CA_PARAMS pCaParams,
+    PVMCA_CSR      pCSR,
+    PSTR*          ppszCert
+    )
+{
+    DWORD                 dwError        = 0;
+    PSTR                  pszEndpoint    = NULL;
+    PSTR                  pszAccessToken = NULL;
+    PSTR                  pszUrl         = NULL;
+    PSTR                  pszHeader      = NULL;
+    PSTR                  pszData        = NULL;
+    json_t*               pJsonData      = NULL;
+    PSTR                  pszRestOutput  = NULL;
+    PSTR                  pszCert        = NULL;
+
+    if (!ppszCert || !pCSR || !pCaParams)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    dwError = VmwCaAcquireOidcToken(pCaParams, VMW_OIDC_MUTENTCA_SCOPE, &pszAccessToken);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pCaParams->pszCAId))
+    {
+        dwError = VmwDeployAllocateStringPrintf(
+                            &pszEndpoint,
+                            VMW_MUTENTCA_INTERMEDIATE_CERT_REST_ENDPOINT,
+                            pCaParams->pszCAId);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmwDeployAllocateStringA(
+                            VMW_MUTENTCA_ROOT_CERT_REST_ENDPOINT,
+                            &pszEndpoint);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    dwError = VmwCaGetUrl(
+                pCaParams->pszCAServer,
+                VMW_MUTENTCA_HTTPS_PORT,
+                pszEndpoint,
+                &pszUrl);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmwDeployAllocateStringPrintf(
+                        &pszHeader,
+                        VMW_CA_BEARER_AUTH_FORMAT,
+                        pszAccessToken);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    // TODO: Add Cert Duration to json input data if provided
+    pJsonData = json_pack("{ss}", "csr", pCSR);
+    if (!pJsonData)
+    {
+        fprintf(stderr, "Could not create JSON body for REST request\n");
+        dwError = VMW_CA_DEFAULT_ERROR;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    pszData = json_dumps(pJsonData, 0);
+    if (!pszData)
+    {
+        fprintf(stderr, "Could not dump JSON REST request body data into string\n");
+        dwError = VMW_CA_DEFAULT_ERROR;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    dwError = VmwCaMakeRestRequest(
+                    pszUrl,
+                    pszHeader,
+                    pszData,
+                    VMW_MUTENTCA_CERT_REST_REQUEST_METHOD,
+                    pCaParams->bInsecure,
+                    &pszRestOutput);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    *ppszCert = pszCert;
+
+cleanup:
+    VmwDeployFreeMemory(pszEndpoint);
+    VmwDeployFreeMemory(pszAccessToken);
+    VmwDeployFreeMemory(pszUrl);
+    VmwDeployFreeMemory(pszHeader);
+    VmwDeployFreeMemory(pszData);
+    VmwDeployFreeMemory(pszRestOutput);
+
+    if (pJsonData)
+    {
+        json_decref(pJsonData);
+        pJsonData = NULL;
+    }
+
+    return dwError;
+
+error:
+    VmwDeployFreeMemory(pszCert);
+    pszCert = NULL;
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwCaGetUrl(
+    PCSTR   pcszServer,
+    PCSTR   pcszPort,
+    PCSTR   pcszEndpoint,
+    PSTR*   ppszUrl
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszUrl = NULL;
+
+    if (VmwCaIsIPV6AddrFormat(pcszServer))
+    {
+        dwError = VmwDeployAllocateStringPrintf(
+                            &pszUrl,
+                            VMW_CA_REST_URL_FORMAT_IPV6,
+                            pcszServer,
+                            pcszPort,
+                            pcszEndpoint);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+    else
+    {
+        dwError = VmwDeployAllocateStringPrintf(
+                            &pszUrl,
+                            VMW_CA_REST_URL_FORMAT_IPV4,
+                            pcszServer,
+                            pcszPort,
+                            pcszEndpoint);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    *ppszUrl = pszUrl;
+
+cleanup:
+    return dwError;
+
+error:
+    VmwDeployFreeMemory(pszUrl);
+    pszUrl = NULL;
+
+    goto cleanup;
+}
+
+static
+DWORD
+VmwCaParseRestOutput(
+    PCSTR pcszRestOutput,
+    PSTR* ppszCert
+    )
+{
+    DWORD           dwError         = 0;
+    PCSTR           pcszCert        = NULL;
+    json_t*         pJsonResponse   = NULL;
+    json_t*         pJsonCert       = NULL;
+    json_error_t    jsonError       = {0};
+    PSTR            pszCert         = NULL;
+
+    pJsonResponse = json_loads(pcszRestOutput, 0, &jsonError);
     if (!pJsonResponse)
     {
         fprintf(stderr, "Failed to load json response. JSON Error: %s\n", jsonError.text);
@@ -255,29 +468,18 @@ VmwCaGetSignedCertRestRequest(
     *ppszCert = pszCert;
 
 cleanup:
-    VmwDeployFreeMemory(pszEpochTime);
-    VmwDeployFreeMemory(pszAccessToken);
-    VmwDeployFreeMemory(pszUrl);
-    VmwDeployFreeMemory(pszHeader);
-    VmwDeployFreeMemory(pszData);
-    VmwDeployFreeMemory(pszRestOutput);
-
-    if (pJsonData)
-    {
-        json_decref(pJsonData);
-    }
     if (pJsonResponse)
     {
         json_decref(pJsonResponse);
+        pJsonResponse = NULL;
     }
 
     return dwError;
 
 error:
-    if (pszCert)
-    {
-        VmwDeployFreeMemory(pszCert);
-    }
+    VmwDeployFreeMemory(pszCert);
+    pszCert = NULL;
+
     goto cleanup;
 }
 
@@ -298,6 +500,8 @@ ParseArgs(
     PSTR            pszDomain          = NULL;
     PSTR            pszUsername        = NULL;
     PSTR            pszPassword        = NULL;
+    PSTR            pszCAServer        = NULL;
+    PSTR            pszCAId            = NULL;
     PSTR            pszKeySize         = NULL;
     PSTR            pszDuration        = NULL;
     BOOL            bInsecure          = false;
@@ -313,6 +517,8 @@ ParseArgs(
         PARSE_MODE_DOMAIN,
         PARSE_MODE_USERNAME,
         PARSE_MODE_PASSWORD,
+        PARSE_MODE_CASERVER,
+        PARSE_MODE_CAID,
         PARSE_MODE_KEYSIZE,
         PARSE_MODE_DURATION,
     } parseMode = PARSE_MODE_OPEN;
@@ -351,6 +557,14 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--password"))
                 {
                     parseMode = PARSE_MODE_PASSWORD;
+                }
+                else if (!strcmp(pszArg, "--caserver"))
+                {
+                    parseMode = PARSE_MODE_CASERVER;
+                }
+                else if (!strcmp(pszArg, "--caid"))
+                {
+                    parseMode = PARSE_MODE_CAID;
                 }
                 else if (!strcmp(pszArg, "--keysize"))
                 {
@@ -456,6 +670,30 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_CASERVER:
+                if (pszCAServer)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszCAServer = pszArg;
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_CAID:
+                if (pszCAId)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszCAId = pszArg;
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             case PARSE_MODE_KEYSIZE:
                 if (pszKeySize)
                 {
@@ -496,6 +734,8 @@ ParseArgs(
                     pszDomain,
                     pszUsername,
                     pszPassword,
+                    pszCAServer,
+                    pszCAId,
                     pszKeySize,
                     pszDuration,
                     bInsecure,
@@ -535,6 +775,8 @@ VmwCaBuildParams(
     PCSTR           pcszDomain,
     PCSTR           pcszUsername,
     PCSTR           pcszPassword,
+    PCSTR           pcszCAServer,
+    PCSTR           pcszCAId,
     PCSTR           pcszKeySize,
     PCSTR           pcszDuration,
     BOOL            bInsecure,
@@ -668,6 +910,30 @@ VmwCaBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pcszCAServer))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pcszCAServer,
+                        &pCaParams->pszCAServer
+                        );
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszCAId))
+    {
+        if (IsNullOrEmptyString(pcszCAServer))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_DEPLOY_ERROR(dwError);
+        }
+
+        dwError = VmwDeployAllocateStringA(
+                        pcszCAId,
+                        &pCaParams->pszCAId
+                        );
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     if (IsNullOrEmptyString(pcszKeySize))
     {
         pCaParams->privKeySize = VMW_CA_DEFAULT_KEYSIZE;
@@ -741,6 +1007,8 @@ ShowUsage(
             "   [--domain <domain name>] (default: machine account domain)\n"
             "   [--username <username>] (default: machine account username)\n"
             "   [--password <password>] (default: machine account password)\n"
+            "   [--caserver <mutentca server ip/hostname>] (default: uses vmca)]\n"
+            "   [--caid <root/intermediate ca id>] (default: root ca id) (NOTE: Can only be used with --caserver option)\n"
             "   [--insecure] (skip certificate validation)\n";
 
     printf("%s", pszUsageText);

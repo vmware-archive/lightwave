@@ -33,6 +33,7 @@ CurlWriteMemoryCallback(
 DWORD
 VmwCaAcquireOidcToken(
     PVMW_CA_PARAMS pCaParams,
+    PCSTR          pcszScope,
     PSTR*          ppszAccessToken
     )
 {
@@ -71,7 +72,7 @@ VmwCaAcquireOidcToken(
                 pClient,
                 pszUpn,
                 pCaParams->pszPassword,
-                VMW_OIDC_CA_SCOPE,
+                pcszScope,
                 &pTokenSuccessResponse,
                 &pTokenErrorResponse
                 );

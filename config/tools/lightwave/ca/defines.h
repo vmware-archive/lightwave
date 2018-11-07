@@ -16,6 +16,7 @@
 
 #define VMW_OIDC_PORT 443
 #define VMW_OIDC_CA_SCOPE "openid at_groups rs_vmca"
+#define VMW_OIDC_MUTENTCA_SCOPE "openid at_groups rs_mutentca"
 
 #define VMW_CA_REST_URL_FORMAT_IPV4 "https://%s:%s%s"
 #define VMW_CA_REST_URL_FORMAT_IPV6 "https://[%s]:%s%s"
@@ -25,6 +26,11 @@
 #define VMW_CA_CERT_REST_ENDPOINT "/v1/vmca/certificates"
 #define VMW_CA_CERT_REST_REQUEST_METHOD "PUT"
 #define VMW_CA_CERT_BUNDLE_PATH "/etc/ssl/certs"
+
+#define VMW_MUTENTCA_HTTPS_PORT "7878"
+#define VMW_MUTENTCA_ROOT_CERT_REST_ENDPOINT "/v1/mutentca/certificate"
+#define VMW_MUTENTCA_INTERMEDIATE_CERT_REST_ENDPOINT "/v1/mutentca/intermediate/%s/certificate"
+#define VMW_MUTENTCA_CERT_REST_REQUEST_METHOD "POST"
 
 #define VMW_CA_DEFAULT_KEYSIZE 2048
 
