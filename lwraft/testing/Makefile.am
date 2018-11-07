@@ -7,3 +7,8 @@ SUBDIRS = \
     unittests \
     query \
     kerberos
+
+if BUILD_GRPC
+    SUBDIRS += grpc
+endif
+

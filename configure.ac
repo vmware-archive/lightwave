@@ -1729,6 +1729,8 @@ AC_CONFIG_FILES([Makefile
                  lwraft/testing/Makefile
                  lwraft/testing/auth/Makefile
                  lwraft/testing/query/Makefile
+                 lwraft/testing/grpc/Makefile
+                 lwraft/testing/grpc/domath/Makefile
                  lwraft/testing/kerberos/Makefile
                  lwraft/testing/test_lib/Makefile
                  lwraft/testing/test_runner/Makefile
