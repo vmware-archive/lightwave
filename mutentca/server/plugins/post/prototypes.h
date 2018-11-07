@@ -213,3 +213,9 @@ LwCAGetCertArrayFromEncodedStringArray(
     PLWCA_STRING_ARRAY          pEncodedStrArray,
     PLWCA_CERTIFICATE_ARRAY     *ppCertArray
     );
+
+DWORD
+LwCAGenerateCertPatchRequestBody(
+    PLWCA_DB_CERT_DATA  pCertData,
+    PSTR                *ppszBody
+    );

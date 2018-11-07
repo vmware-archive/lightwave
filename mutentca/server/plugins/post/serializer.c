@@ -882,6 +882,82 @@ error:
 }
 
 DWORD
+LwCAGenerateCertPatchRequestBody(
+    PLWCA_DB_CERT_DATA  pCertData,
+    PSTR                *ppszBody
+    )
+{
+    DWORD               dwError = 0;
+    PLWCA_JSON_OBJECT   pJsonBody = NULL;
+    PSTR                pszBody = NULL;
+
+    if (!pCertData || !ppszBody)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonArrayCreate(&pJsonBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAJsonReplaceInteger(LWCA_POST_CERT_REVOKED_REASON,
+                                      pCertData->revokedReason,
+                                      pJsonBody
+                                      );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pCertData->pszRevokedDate))
+    {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CERT_REVOKED_DATE,
+                                         pCertData->pszRevokedDate,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCertData->pszTimeValidFrom))
+    {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CERT_TIME_VALID_FROM,
+                                         pCertData->pszTimeValidFrom,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pCertData->pszTimeValidTo))
+    {
+        dwError = _LwCAJsonReplaceString(LWCA_POST_CERT_TIME_VALID_TO,
+                                         pCertData->pszTimeValidTo,
+                                         pJsonBody
+                                         );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAJsonReplaceInteger(LWCA_POST_CERT_STATUS,
+                                      pCertData->status,
+                                      pJsonBody
+                                      );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonDumps(pJsonBody, JSON_DECODE_ANY, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszBody = pszBody;
+
+cleanup:
+    LWCA_SAFE_JSON_DECREF(pJsonBody);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+    if (ppszBody)
+    {
+        *ppszBody = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
 LwCAGenerateCAPatchRequestBody(
     PLWCA_DB_CA_DATA    pCaData,
     PSTR                *ppszBody

@@ -29,6 +29,7 @@
 #define LWCA_UPDATE_CA_REQUEST_BODY         "LwCAGenerateCAPatchRequestBody"
 #define LWCA_POST_GET_PARENT_CA_ID          "LwCADbPostPluginGetParentCAId"
 #define LWCA_GET_STRING_FROM_RESPONSE       "LwCAGetStringAttrFromResponse"
+#define LWCA_POST_UPDATE_CERT               "LwCAGenerateCertPatchRequestBody"
 #define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
@@ -487,3 +488,51 @@
     "        }\n" \
     "    ]\n" \
     "}")
+
+#define CERT_GENERATED_PATCH ("[\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"certRevokedReason\",\n" \
+    "            \"value\": [\n" \
+    "                \"1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"certRevokedDate\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181102223344.0Z\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"certTimeValidFrom\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181103223344.0Z\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"certTimeValidTo\",\n" \
+    "            \"value\": [\n" \
+    "                \"20181104223344.0Z\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"certStatus\",\n" \
+    "            \"value\": [\n" \
+    "                \"1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    }\n" \
+    "]")

@@ -271,3 +271,8 @@ VOID
 Test_LwCADeserializeCertData(
     VOID **state
     );
+
+VOID
+Test_LwCAUpdateCertData(
+    VOID **state
+    );

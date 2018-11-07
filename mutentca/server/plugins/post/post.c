@@ -107,6 +107,22 @@ _LwCADbPostGetCADN(
 
 static
 DWORD
+_LwCAGetDNFromResponse(
+    PCSTR   pcszResponse,
+    PSTR    *ppszDN
+    );
+
+static
+DWORD
+_LwCADbPostGetCertDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszSerialNumber,
+    PSTR                *ppszDN
+    );
+
+static
+DWORD
 _LwCARestExecute(
     PLWCA_POST_HANDLE   pHandle,
     VM_HTTP_METHOD      httpMethod,
@@ -772,7 +788,45 @@ LwCADbPostPluginUpdateCertData(
     PLWCA_DB_CERT_DATA      pCertData
     )
 {
-    return LWCA_NOT_IMPLEMENTED;
+    DWORD               dwError = 0;
+    PSTR                pszResponse = NULL;
+    PSTR                pszDN = NULL;
+    PSTR                pszBody = NULL;
+    long                statusCode = 0;
+
+    if (IsNullOrEmptyString(pcszCAId) ||
+        !pCertData ||
+        IsNullOrEmptyString(pCertData->pszSerialNumber) ||
+        !pHandle
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostGetCertDN(pHandle, pcszCAId, pCertData->pszSerialNumber, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGenerateCertPatchRequestBody(pCertData, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePatch((PLWCA_POST_HANDLE)pHandle,
+                                    pszDN,
+                                    pszBody,
+                                    &pszResponse,
+                                    &statusCode
+                                    );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 DWORD
@@ -1832,9 +1886,6 @@ _LwCADbPostGetCADN(
     DWORD               dwError = 0;
     PSTR                pszDN = NULL;
     PSTR                pszResponse = NULL;
-    PLWCA_JSON_OBJECT   pJson = NULL;
-    PLWCA_JSON_OBJECT   pResult = NULL;
-    PLWCA_JSON_OBJECT   pResultElem = NULL;
 
     dwError = _LwCADbPostPluginGetCAImpl(pHandle,
                                          pcszCAId,
@@ -1843,7 +1894,38 @@ _LwCADbPostGetCADN(
                                          );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAJsonLoadObjectFromString(pszResponse, &pJson);
+    dwError = _LwCAGetDNFromResponse(pszResponse, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszDN = pszDN;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    if (ppszDN)
+    {
+        *ppszDN = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetDNFromResponse(
+    PCSTR   pcszResponse,
+    PSTR    *ppszDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszDN = NULL;
+    PLWCA_JSON_OBJECT   pJson = NULL;
+    PLWCA_JSON_OBJECT   pResult = NULL;
+    PLWCA_JSON_OBJECT   pResultElem = NULL;
+
+    dwError = LwCAJsonLoadObjectFromString(pcszResponse, &pJson);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetObjectFromKey(pJson, FALSE, LWCA_RESP_RESULT, &pResult);
@@ -1859,6 +1941,52 @@ _LwCADbPostGetCADN(
 
 cleanup:
     LWCA_SAFE_JSON_DECREF(pJson);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    if (ppszDN)
+    {
+        *ppszDN = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCADbPostGetCertDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszSerialNumber,
+    PSTR                *ppszDN
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszDN = NULL;
+    PSTR        pszResponse = NULL;
+    PSTR        pszFilter = NULL;
+
+    dwError = LwCADbPostCNFilterBuilder(pcszSerialNumber,
+                                        LWCA_POST_CERT_OBJ_CLASS,
+                                        &pszFilter
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCADbPostPluginGetCertDataImpl(pHandle,
+                                               pcszCAId,
+                                               LWCA_LDAP_CN,
+                                               pszFilter,
+                                               &pszResponse
+                                               );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetDNFromResponse(pszResponse, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszDN = pszDN;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
     LWCA_SAFE_FREE_STRINGA(pszResponse);
     return dwError;
 
@@ -1870,3 +1998,4 @@ error:
     }
     goto cleanup;
 }
+

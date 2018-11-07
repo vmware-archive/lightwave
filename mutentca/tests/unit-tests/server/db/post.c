@@ -612,6 +612,40 @@ Test_LwCAPostGetParentCAId(
     LWCA_SAFE_FREE_STRINGA(pszParentCAID);
 }
 
+
+VOID
+Test_LwCAUpdateCertData(
+    VOID **state
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_TEST_STATE            pState = NULL;
+    PSTR                        pszFunc = LWCA_POST_UPDATE_CERT;
+    PSTR                        pszReqBody = NULL;
+    PLUGIN_UPDATE_CERT_REQ_BODY pFnUpdateCertReqBody = NULL;
+    PLWCA_PLUGIN_HANDLE         pPluginHandle = NULL;
+    PLWCA_DB_CERT_DATA          pCertData = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnUpdateCertReqBody = (PLUGIN_UPDATE_CERT_REQ_BODY)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnUpdateCertReqBody);
+
+    dwError = _LwCALoadCertData(&pCertData);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pCertData);
+
+    dwError = pFnUpdateCertReqBody(pCertData, &pszReqBody);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszReqBody);
+    assert_string_equal(pszReqBody, CERT_GENERATED_PATCH);
+
+    LwCADbFreeCertData(pCertData);
+}
+
 static
 DWORD
 _LwCALoadCAData(
