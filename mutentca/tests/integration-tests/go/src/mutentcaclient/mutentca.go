@@ -1,9 +1,13 @@
 package mutentcaclient
 
 import (
+	"crypto/tls"
 	"fmt"
 	"log"
+	"net"
+	"net/http"
 	"strings"
+	"time"
 
 	"github.com/go-openapi/runtime"
 	openapiclient "github.com/go-openapi/runtime/client"
@@ -19,7 +23,8 @@ import (
 )
 
 const (
-	MutentCARestPort = 7878
+	MutentCARestPort    = 7878
+	DefaultMaxIdleConns = 100
 )
 
 // MutentCAClient structure to encapsulate Multi Tenant CA Client
@@ -31,10 +36,33 @@ type MutentCAClient struct {
 	Token    string
 }
 
+func getTransport(connectionPoolSize int) *http.Transport {
+	tlsConf := &tls.Config{
+		InsecureSkipVerify: true,
+	}
+
+	return &http.Transport{
+		Proxy: http.ProxyFromEnvironment,
+		DialContext: (&net.Dialer{
+			Timeout:   30 * time.Second,
+			KeepAlive: 30 * time.Second,
+			DualStack: true,
+		}).DialContext,
+		MaxIdleConns:        connectionPoolSize,
+		IdleConnTimeout:     30 * time.Second,
+		TLSHandshakeTimeout: 5 * time.Second,
+		MaxIdleConnsPerHost: connectionPoolSize,
+		DisableKeepAlives:   false,
+		TLSClientConfig:     tlsConf,
+	}
+}
+
 // newMutentCAClient is helper function for unit testing
 func newMutentCAClient(host string, port int) *mutentcaclient.APIClient {
 	address := fmt.Sprintf("%s:%d", host, port)
 	openapiClient := openapiclient.New(address, mutentcaclient.DefaultBasePath, mutentcaclient.DefaultSchemes)
+	transport := getTransport(DefaultMaxIdleConns)
+	openapiClient.Transport = NewRetryableTransportWrapper(*transport)
 
 	return mutentcaclient.New(openapiClient, strfmt.Default)
 }
