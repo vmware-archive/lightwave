@@ -380,6 +380,29 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
 #define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
 
+// MutentCA OIDC constants
+
+#define LWCA_OIDC_VMDIR_SCOPE               "openid id_groups at_groups rs_vmdir"
+
+// MutentCA VMDir LDAP constants
+
+#define LWCA_LDAP_SCOPE                     "scope"
+#define LWCA_LDAP_SCOPE_SUB                 "sub"
+#define LWCA_LDAP_ATTRS                     "attrs"
+#define LWCA_LDAP_ATTR_UPN                  "userPrincipalName"
+#define LWCA_LDAP_ATTR_DN                   "dn"
+#define LWCA_LDAP_FILTER                    "filter"
+#define LWCA_LDAP_FILTER_UPN_FMT            "("LWCA_LDAP_ATTR_UPN"=%s)"
+#define LWCA_VMDIR_RESP_RESULT              "result"
+#define LWCA_VMDIR_REST_LDAP_PORT           7478
+#define LWCA_VMDIR_REST_LDAP_URI_PREFIX     "/v1/vmdir/ldap"
+
+// HTTP Status Codes
+
+#define LWCA_HTTP_RESP_OK                    200
+#define LWCA_HTTP_RESP_NOT_FOUND             404
+
+
 typedef struct _LWCA_CERT_VALIDITY
 {
     time_t tmNotBefore;
@@ -1042,6 +1065,18 @@ LwCADNToRDNArray(
     PCSTR               pcszDN,
     BOOLEAN             bNotypes,
     PLWCA_STRING_ARRAY* ppRDNStrArray
+    );
+
+DWORD
+LwCAUPNToDN(
+    PCSTR                   pcszUPN,
+    PSTR                    *ppszDN
+    );
+
+DWORD
+LwCADNSNameToDCDN(
+    PCSTR       pcszDNSName,
+    PSTR        *ppszDN
     );
 
 // jsonutils.c

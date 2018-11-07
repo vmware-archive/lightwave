@@ -601,6 +601,7 @@ LwCARequestContextFree(
     if (pReqCtx)
     {
         LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPN);
+        LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNDN);
         LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNTenant);
         LwCAFreeStringArray(pReqCtx->pBindUPNGroups);
         LWCA_SAFE_FREE_STRINGA(pReqCtx->pszCAId);

@@ -121,16 +121,14 @@ LwCAOIDCTokenAuthenticate(
     dwError = LwCAAllocateStringA(pOIDCToken->pszReqBindUPN, &pReqCtx->pszBindUPN);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAUPNToDN(pOIDCToken->pszReqBindUPN, &pReqCtx->pszBindUPNDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCAAllocateStringA(pOIDCToken->pszReqBindUPNTenant, &pReqCtx->pszBindUPNTenant);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCACopyStringArray(pOIDCToken->pReqBindUPNGroups, &pReqCtx->pBindUPNGroups);
     BAIL_ON_LWCA_ERROR(dwError);
-
-    *pbAuthenticated = TRUE;
-
-
-cleanup:
 
     LWCA_LOG_INFO(
             "[%s:%d] Authenticated OIDC token. UPN (%s) ReqID (%s)",
@@ -138,6 +136,11 @@ cleanup:
             __LINE__,
             pReqCtx->pszBindUPN,
             LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+
+    *pbAuthenticated = TRUE;
+
+
+cleanup:
 
     LwCAOIDCTokenFree(pOIDCToken);
 
@@ -150,6 +153,7 @@ error:
         *pbAuthenticated = FALSE;
     }
     LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPN);
+    LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNDN);
     LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNTenant);
     LwCAFreeStringArray(pReqCtx->pBindUPNGroups);
 
