@@ -28,6 +28,13 @@ _LwCASecurityCreateEncryptedData(
     PLWCA_BINARY_DATA   *ppDataDest
     );
 
+static
+DWORD
+_LwCAStorageFetchEncryptedDataFromDB(
+    PCSTR pcszCAId,
+    PLWCA_BINARY_DATA *ppEncryptedData
+    );
+
 /* interface between security and storage */
 DWORD
 LwCASecurityStoragePut(
@@ -85,14 +92,68 @@ LwCASecurityStorageGet(
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_BINARY_DATA pEncryptedData = NULL;
+    PLWCA_BINARY_DATA pCachedEncryptedData = NULL;
+    BOOLEAN bStorageLocked = FALSE;
 
     if (!pcszCAId || !ppEncryptedData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    /*
+     * check in local cache first. this will allow
+     * callers to keep operating on cache data
+     * till they are ready to save and clear cache
+    */
+    LWCA_LOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+
+    dwError = LwRtlHashMapFindKey(
+            gSecurityCtx.pStorageMap,
+            (PVOID *)&pCachedEncryptedData,
+            pcszCAId);
+    if (dwError == 0)
+    {
+        /* pCachedEncryptedData is a reference to map data so duplicate it */
+        dwError = _LwCASecurityDuplicateEncryptedData(
+                      pCachedEncryptedData,
+                      &pEncryptedData);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = 0; /* key is not in local cache so proceed with db fetch */
+
+        dwError = _LwCAStorageFetchEncryptedDataFromDB(pcszCAId, &pEncryptedData);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppEncryptedData = pEncryptedData;
+
+cleanup:
+    LWCA_UNLOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+    return dwError;
+
+error:
+    LwCASecurityFreeBinaryData(pEncryptedData);
+    if (ppEncryptedData)
+    {
+        *ppEncryptedData = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAStorageFetchEncryptedDataFromDB(
+    PCSTR pcszCAId,
+    PLWCA_BINARY_DATA *ppEncryptedData
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_BINARY_DATA pEncryptedData = NULL;
 
     dwError = LwCADbGetCA(pcszCAId, &pCAData);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -196,7 +257,7 @@ LwCASecurityGetEncryptedKey(
 
 cleanup:
     LwCASecurityFreeBinaryData(pEncryptedKey);
-    LWCA_LOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
+    LWCA_UNLOCK_MUTEX(bStorageLocked, &gSecurityCtx.storageMutex);
     return dwError;
 
 error:
