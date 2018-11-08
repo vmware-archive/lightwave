@@ -359,6 +359,9 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define BAIL_ON_LWCA_ERROR_NO_LOG(dwError) \
     if ((dwError)) { goto error; }
 
+#define BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid) \
+    if ((bIsValid) == FALSE) { goto error; }
+
 #ifndef IsNullOrEmptyString
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif /* IsNullOrEmptyString */

@@ -79,6 +79,41 @@ error:
 }
 
 DWORD
+LwCAPolicyCfgObjArrayAllocate(
+    DWORD                           dwCount,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      *ppObjArray
+    )
+{
+    DWORD dwError = 0;
+    PLWCA_POLICY_CFG_OBJ_ARRAY pObjArray = NULL;
+
+    if (!ppObjArray || dwCount == 0)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(
+                sizeof(LWCA_POLICY_CFG_OBJ_ARRAY),
+                (PVOID*)&pObjArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(
+                sizeof(LWCA_POLICY_CFG_OBJ) * dwCount,
+                (PVOID*)&pObjArray->ppObj);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppObjArray = pObjArray;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCAPolicyCfgObjArrayFree(pObjArray);
+    goto cleanup;
+}
+
+DWORD
 LwCAPolicyCfgObjArrayInit(
     PLWCA_POLICY_CFG_OBJ            *ppObj,
     DWORD                           dwCount,
@@ -95,14 +130,7 @@ LwCAPolicyCfgObjArrayInit(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(
-                sizeof(LWCA_POLICY_CFG_OBJ_ARRAY),
-                (PVOID*)&pObjArray);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateMemory(
-                sizeof(LWCA_POLICY_CFG_OBJ) * dwCount,
-                (PVOID*)&pObjArray->ppObj);
+    dwError = LwCAPolicyCfgObjArrayAllocate(dwCount, &pObjArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
     for ( ; dwIdx < dwCount ; ++dwIdx )
@@ -281,7 +309,7 @@ LwCAPolicyCfgObjArrayFree(
         {
             LwCAPolicyCfgObjFree(pObjArray->ppObj[dwIdx]);
         }
-
+        LWCA_SAFE_FREE_MEMORY(pObjArray->ppObj);
         LWCA_SAFE_FREE_MEMORY(pObjArray);
     }
 }

@@ -230,6 +230,12 @@ LwCAPolicyCfgObjInit(
     );
 
 DWORD
+LwCAPolicyCfgObjArrayAllocate(
+    DWORD                           dwCount,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      *ppObjArray
+    );
+
+DWORD
 LwCAPolicyCfgObjArrayInit(
     PLWCA_POLICY_CFG_OBJ            *ppObj,
     DWORD                           dwCount,
