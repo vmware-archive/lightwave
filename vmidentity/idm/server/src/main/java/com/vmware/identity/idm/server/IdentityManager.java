@@ -1647,12 +1647,6 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-            // TODO: remove reading from registry key
-            IdmServerConfig settings = IdmServerConfig.getInstance();
-            long maxBearerTokenLifetimeInRegistry = settings.getMaxBearerTokenLifetimeInMillis();
-            if (maxBearerTokenLifetimeInRegistry > 0) {
-                return maxBearerTokenLifetimeInRegistry;
-            }
 
             // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -1762,12 +1756,6 @@ public class IdentityManager implements IIdentityManager {
         try
         {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-            // TODO: remove reading from registry key
-            IdmServerConfig settings = IdmServerConfig.getInstance();
-            long maxBearerRefreshTokenLifetimeInRegistry = settings.getMaxBearerRefreshTokenLifetimeInMillis();
-            if (maxBearerRefreshTokenLifetimeInRegistry > 0) {
-                return maxBearerRefreshTokenLifetimeInRegistry;
-            }
 
             // read from directory service
             TenantInformation tenantInfo = findTenant(tenantName);
@@ -7333,14 +7321,17 @@ public class IdentityManager implements IIdentityManager {
 
         if (tenant != null)
         {
+
             TenantAttributes attrs = _configStore.getTokenPolicyExt(tenantName);
             TokenPolicy tokenPolicyInfo = attrs.getTokenPolicy();
             int delegationCount = tokenPolicyInfo.getMaxTokenDelegationCount();
             int renewCount = tokenPolicyInfo.getMaxTokenRenewCount();
             long clockTolerance = tokenPolicyInfo.getMaxTokenClockTolerance();
             long  maxHOKLifetime = tokenPolicyInfo.getMaxHOKLifetime();
-            long maxBearerTokenLifetime = tokenPolicyInfo.getMaxBearerTokenLifetime();
-            long maxBearerRefreshTokenLifetime = tokenPolicyInfo.getMaxBearerRefreshTokenLifetime();
+            // TODO: remove reading from registry key and use the values from vmdir
+            IdmServerConfig settings = IdmServerConfig.getInstance();
+            long maxBearerTokenLifetime = settings.getMaxBearerRefreshTokenLifetimeInMillis(); //tokenPolicyInfo.getMaxBearerTokenLifetime();
+            long maxBearerRefreshTokenLifetime = settings.getMaxBearerTokenLifetimeInMillis(); //tokenPolicyInfo.getMaxBearerRefreshTokenLifetime();
             long maxHoKRefreshTokenLifetime = tokenPolicyInfo.getMaxHoKRefreshTokenLifetime();
             String signatureAlgorithm = attrs.getSignatureAlgorithm();
             String brandName = attrs.getBrandName();
