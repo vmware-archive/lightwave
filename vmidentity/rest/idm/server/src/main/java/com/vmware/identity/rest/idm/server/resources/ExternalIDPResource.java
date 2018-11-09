@@ -83,7 +83,7 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<ExternalIDPDTO> getAll() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getAll").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Collection<IDPConfig> configs = getIDMClient().getAllExternalIdpConfig(tenant, IDPConfig.IDP_PROTOCOL_SAML_2_0);
@@ -97,7 +97,7 @@ public class ExternalIDPResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getAll").inc();
             requestTimer.observeDuration();
         }
     }
@@ -106,7 +106,7 @@ public class ExternalIDPResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO register(ExternalIDPDTO externalIDP) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "register").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "register").startTimer();
         String responseStatus = HTTP_OK;
         try {
             IDPConfig config = ExternalIDPMapper.getIDPConfig(externalIDP);
@@ -125,7 +125,7 @@ public class ExternalIDPResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "register").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "register").inc();
             requestTimer.observeDuration();
         }
     }
@@ -139,7 +139,7 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO registerWithMetadata(String externalIDPConfig) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "registerWithMetadata").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "registerWithMetadata").startTimer();
         String responseStatus = HTTP_OK;
         try {
             String entityId = getIDMClient().importExternalIDPConfiguration(tenant, parseSAMLConfig(externalIDPConfig));
@@ -157,7 +157,7 @@ public class ExternalIDPResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "registerWithMetadata").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "registerWithMetadata").inc();
             requestTimer.observeDuration();
         }
     }
@@ -166,7 +166,7 @@ public class ExternalIDPResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public ExternalIDPDTO get(@PathParam("entityID") String entityID) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             IDPConfig config = getIDMClient().getExternalIdpConfigForTenant(tenant, entityID);
@@ -185,7 +185,7 @@ public class ExternalIDPResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -193,7 +193,7 @@ public class ExternalIDPResource extends BaseSubResource {
     @DELETE @Path("/{entityID}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("entityID") String entityID, @DefaultValue("false") @QueryParam("remove") Boolean removeJitUsers) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().removeExternalIdpConfig(tenant, entityID, removeJitUsers);
@@ -206,7 +206,7 @@ public class ExternalIDPResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }

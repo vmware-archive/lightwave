@@ -94,7 +94,7 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
         String metricsOperation = "authenticate";
-        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+        Timer requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
         ModelAndView page = null;
         HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
@@ -132,8 +132,7 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
                 context.close();
             }
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
-                        String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
             }
             if (requestTimer != null) {
                 requestTimer.observeDuration();

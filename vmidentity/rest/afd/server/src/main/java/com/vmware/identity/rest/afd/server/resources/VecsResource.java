@@ -62,7 +62,7 @@ public class VecsResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @Path("/ssl")
     public Collection<CertificateDTO> getSSLCertificates() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getSSLCertificates").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getSSLCertificates").startTimer();
         String responseStatus = HTTP_OK;
         try {
             KeyStore keystore = KeyStore.getInstance("VKS");
@@ -84,7 +84,7 @@ public class VecsResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getSSLCertificates").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getSSLCertificates").inc();
             requestTimer.observeDuration();
         }
     }

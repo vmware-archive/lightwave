@@ -74,7 +74,7 @@ public class OIDCClientResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO add(OIDCClientMetadataDTO oidcClientMetadataDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "add").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "add").startTimer();
         String responseStatus = HTTP_OK;
         String clientId = null;
         try {
@@ -95,7 +95,7 @@ public class OIDCClientResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "add").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "add").inc();
             requestTimer.observeDuration();
         }
     }
@@ -107,7 +107,7 @@ public class OIDCClientResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public Collection<OIDCClientDTO> getAll() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addAll").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "addAll").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Collection<OIDCClient> oidcClients = getIDMClient().getOIDCClients(this.tenant);
@@ -125,7 +125,7 @@ public class OIDCClientResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addAll").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "addAll").inc();
             requestTimer.observeDuration();
         }
     }
@@ -137,7 +137,7 @@ public class OIDCClientResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO get(@PathParam("clientId") String clientId) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             OIDCClient oidcClient = getIDMClient().getOIDCClient(this.tenant, clientId);
@@ -161,7 +161,7 @@ public class OIDCClientResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -172,7 +172,7 @@ public class OIDCClientResource extends BaseSubResource {
     @DELETE @Path("/{clientId}")
     @RequiresRole(role=Role.TRUSTED_USER)
     public void delete(@PathParam("clientId") String clientId) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteOIDCClient(this.tenant, clientId);
@@ -189,7 +189,7 @@ public class OIDCClientResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }
@@ -201,7 +201,7 @@ public class OIDCClientResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.TRUSTED_USER)
     public OIDCClientDTO update(@PathParam("clientId") String clientId, OIDCClientMetadataDTO oidcClientMetadataDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             OIDCClientDTO oidcClientDTO = new OIDCClientDTO.Builder().
@@ -224,7 +224,7 @@ public class OIDCClientResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(this.sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }

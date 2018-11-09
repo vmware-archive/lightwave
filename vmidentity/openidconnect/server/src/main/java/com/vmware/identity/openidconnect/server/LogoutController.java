@@ -71,7 +71,7 @@ public class LogoutController {
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
         String metricsOperation = "logout";
-        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+        Timer requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
 
         HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
@@ -107,7 +107,7 @@ public class LogoutController {
                 context.close();
             }
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()),
                         metricsResource, metricsOperation);
             }
             if (requestTimer != null) {

@@ -141,7 +141,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public TenantDTO create(TenantDTO tenantDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "create").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "create").startTimer();
         String responseStatus = HTTP_OK;
         try {
             // Create tenant
@@ -202,7 +202,7 @@ public class TenantResource extends BaseResource {
             log.error("Failed to create tenant '{}' due to a server side error", tenantDTO.getName(), e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "create").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "create").inc();
             requestTimer.observeDuration();
         }
     }
@@ -225,7 +225,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public TenantDTO update(TenantDTO tenantDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             String issuer = tenantDTO.getIssuer();
@@ -248,7 +248,7 @@ public class TenantResource extends BaseResource {
             log.error("Failed to update tenant '{}' due to a server side error", tenantDTO.getName(), e);
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }
@@ -265,7 +265,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantDTO get(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             return TenantMapper.getTenantDTO(getIDMClient().getTenant(tenantName));
@@ -282,7 +282,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -293,7 +293,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.GUEST_USER)
     public PrincipalIdentifiersDTO findPrincipalIds(@PathParam(PathParameters.TENANT_NAME) String tenantName, PrincipalIdentifiersDTO principalIds) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "findPrincipalIds").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "findPrincipalIds").startTimer();
         String responseStatus = HTTP_OK;
 
         List<String> ids = new ArrayList<>();
@@ -324,7 +324,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "findPrincipalIds").inc();
             requestTimer.observeDuration();
         }
     }
@@ -334,7 +334,7 @@ public class TenantResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public Collection<SecurityDomainDTO> getSecurityDomains(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getSecurityDomains").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getSecurityDomains").startTimer();
         String responseStatus = HTTP_OK;
         try{
             CasIdmClient idmClient = this.getIDMClient();
@@ -353,7 +353,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getSecurityDomains").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getSecurityDomains").inc();
             requestTimer.observeDuration();
         }
     }
@@ -383,7 +383,7 @@ public class TenantResource extends BaseResource {
             @DefaultValue("200") @QueryParam("limit") int limit,
             @DefaultValue("NAME") @QueryParam("searchBy") String searchBy,
             @DefaultValue("") @QueryParam("query") String query) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "searchMembers").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "searchMembers").startTimer();
         String responseStatus = HTTP_OK;
 
         try {
@@ -435,7 +435,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "searchMembers").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "searchMembers").inc();
             requestTimer.observeDuration();
         }
     }
@@ -453,7 +453,7 @@ public class TenantResource extends BaseResource {
     @Path(PathParameters.TENANT_NAME_VAR)
     @RequiresRole(role = Role.TENANT_OPERATOR)
     public void delete(@PathParam(PathParameters.TENANT_NAME) String tenantName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteTenant(tenantName);
@@ -470,7 +470,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }
@@ -481,7 +481,7 @@ public class TenantResource extends BaseResource {
     @RequiresRole(role = Role.REGULAR_USER)
     public TenantConfigurationDTO getConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             @QueryParam("type") final List<String> configTypes) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "getConfig").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getConfig").startTimer();
         String responseStatus = HTTP_OK;
 
         Set<TenantConfigType> requestedConfigs = new HashSet<TenantConfigType>();
@@ -565,7 +565,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "getConfig").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getConfig").inc();
             requestTimer.observeDuration();
         }
     }
@@ -577,7 +577,7 @@ public class TenantResource extends BaseResource {
     @RequiresRole(role = Role.ADMINISTRATOR)
     public TenantConfigurationDTO updateConfig(@PathParam(PathParameters.TENANT_NAME) String tenantName,
             TenantConfigurationDTO configurationDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenantName, METRICS_RESOURCE, "updateConfig").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "updateConfig").startTimer();
         String responseStatus = HTTP_OK;
 
         TenantConfigurationDTO.Builder configBuilder = TenantConfigurationDTO.builder();
@@ -665,7 +665,7 @@ public class TenantResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenantName, responseStatus, METRICS_RESOURCE, "updateConfig").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "updateConfig").inc();
             requestTimer.observeDuration();
         }
     }

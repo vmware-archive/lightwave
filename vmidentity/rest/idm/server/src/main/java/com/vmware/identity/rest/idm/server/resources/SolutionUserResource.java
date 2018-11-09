@@ -72,7 +72,7 @@ public class SolutionUserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SolutionUserDTO get(@PathParam("solnName") String name) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             SolutionUser idmSolutionUser = getIDMClient().findSolutionUser(tenant, name);
@@ -93,7 +93,7 @@ public class SolutionUserResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -126,11 +126,11 @@ public class SolutionUserResource extends BaseSubResource {
 //            throw new InternalServerErrorException(sm.getString("ec.500"), e);
 //        }
 
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getGroups").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getGroups").startTimer();
         try {
             throw new NotImplementedError(sm.getString("ec.501"));
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, "501", METRICS_RESOURCE, "getGroups").inc();
+            totalRequests.labels(METRICS_COMPONENT, "501", METRICS_RESOURCE, "getGroups").inc();
             requestTimer.observeDuration();
         }
     }

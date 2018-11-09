@@ -99,7 +99,7 @@ public class GroupResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public GroupDTO create(GroupDTO groupDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "create").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "create").startTimer();
         String responseStatus = HTTP_OK;
 
         // Alias not supported
@@ -130,7 +130,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "create").inc();
             requestTimer.observeDuration();
         }
     }
@@ -148,7 +148,7 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public GroupDTO get(@PathParam("groupName") String groupName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
 
         try {
@@ -171,7 +171,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -192,7 +192,7 @@ public class GroupResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public GroupDTO update(@PathParam("groupName") String groupName, GroupDTO group) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
 
         try {
@@ -231,7 +231,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }
@@ -247,7 +247,7 @@ public class GroupResource extends BaseSubResource {
     @DELETE @Path("/{groupName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("groupName") String groupName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrincipalId id = PrincipalUtil.fromName(groupName);
@@ -269,7 +269,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }
@@ -289,7 +289,7 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SearchResultDTO getMembers(@PathParam("groupName") String groupName, @DefaultValue("all") @QueryParam("type") String memberType, @DefaultValue("200") @QueryParam("limit") int limit) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getMembers").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getMembers").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrincipalId id = PrincipalUtil.fromName(groupName);
@@ -313,7 +313,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getMembers").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getMembers").inc();
             requestTimer.observeDuration();
         }
     }
@@ -332,7 +332,7 @@ public class GroupResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<GroupDTO> getParents(@PathParam("groupName") String groupName, @DefaultValue("false") @QueryParam("nested") boolean nested) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getParents").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getParents").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrincipalId id = PrincipalUtil.fromName(groupName);
@@ -367,7 +367,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getParents").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getParents").inc();
             requestTimer.observeDuration();
         }
     }
@@ -387,7 +387,7 @@ public class GroupResource extends BaseSubResource {
     @PUT @Path("/{groupName}/members")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void addMembers(@PathParam("groupName") String groupName, @QueryParam("members") List<String> members, @QueryParam("type") String memberType) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addMembers").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "addMembers").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrincipalId id = PrincipalUtil.fromName(groupName);
@@ -424,7 +424,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addMembers").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "addMembers").inc();
             requestTimer.observeDuration();
         }
     }
@@ -444,7 +444,7 @@ public class GroupResource extends BaseSubResource {
     @DELETE @Path("/{groupName}/members")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void removeMembers(@PathParam("groupName") String groupName, @QueryParam("members") List<String> members, @QueryParam("type") String memberType) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "removeMembers").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "removeMembers").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrincipalId id = PrincipalUtil.fromName(groupName);
@@ -477,7 +477,7 @@ public class GroupResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "removeMembers").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "removeMembers").inc();
             requestTimer.observeDuration();
         }
     }

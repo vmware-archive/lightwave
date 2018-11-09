@@ -113,8 +113,7 @@ public class FederationTokenController {
             }
 
             // start timer after tenant is available
-            requestTimer = MetricUtils.startRequestTimer(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
-                    metricsResource, metricsOperation);
+            requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
 
             final IDPConfig idpConfig = findFederatedIDP(relayState.getIssuer()); // External IDP corresponding to Issuer
             final OidcConfig oidcConfig = idpConfig.getOidcConfig();
@@ -137,8 +136,7 @@ public class FederationTokenController {
             httpResponse = HttpResponse.createJsonResponse(errorObject);
         } finally {
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(StringUtils.isEmpty(tenant) ? "defaultTenant" : tenant,
-                        String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()), metricsResource, metricsOperation);
             }
             if (requestTimer != null) {
                 requestTimer.observeDuration();
@@ -177,7 +175,7 @@ public class FederationTokenController {
             HttpServletResponse response,
             @PathVariable("tenant") String tenant) throws IOException {
         String metricsOperation = "acquireFederationTokens";
-        Timer requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+        Timer requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
         HttpResponse httpResponse = null;
         IDiagnosticsContextScope context = null;
 
@@ -208,7 +206,7 @@ public class FederationTokenController {
                 context.close();
             }
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()),
                         metricsResource, metricsOperation);
             }
             if (requestTimer != null) {

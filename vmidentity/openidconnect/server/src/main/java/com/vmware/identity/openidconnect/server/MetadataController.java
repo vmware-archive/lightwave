@@ -111,7 +111,7 @@ public class MetadataController {
             if (tenant == null) {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
             }
-            requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+            requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
             tenant = tenantInfo.getName(); // use tenant name as it appears in directory
             Issuer issuer = tenantInfo.getIssuer();
@@ -139,7 +139,7 @@ public class MetadataController {
             httpResponse = HttpResponse.createJsonResponse(errorObject);
         } finally {
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()),
                         metricsResource, metricsOperation);
             }
             if (requestTimer != null) {

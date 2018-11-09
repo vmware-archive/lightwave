@@ -82,7 +82,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO add(RelyingPartyDTO relyingParty) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addDTO").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "addDTO").startTimer();
         String responseStatus = HTTP_OK;
         try {
             RelyingParty rp = RelyingPartyMapper.getRelyingParty(relyingParty);
@@ -101,7 +101,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addDTO").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "addDTO").inc();
             requestTimer.observeDuration();
         }
     }
@@ -114,7 +114,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void add(String relyingPartyXMLString) throws Exception {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addXML").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "addXML").startTimer();
         String responseStatus = HTTP_OK;
         try{
             Document xmlDoc = parseToDocument(relyingPartyXMLString);
@@ -132,7 +132,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addXML").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "addXML").inc();
             requestTimer.observeDuration();
         }
     }
@@ -161,7 +161,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<RelyingPartyDTO> getAll() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getAll").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Collection<RelyingParty> idmRelyingParties = getIDMClient().getRelyingParties(tenant);
@@ -179,7 +179,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getAll").inc();
             requestTimer.observeDuration();
         }
     }
@@ -191,7 +191,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO get(@PathParam("relyingPartyName") String relyingPartyName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         RelyingPartyDTO relyingParty = null;
         try {
@@ -216,7 +216,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -227,7 +227,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @DELETE @Path("/{relyingPartyName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("relyingPartyName") String relyingPartyName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteRelyingParty(tenant, relyingPartyName);
@@ -244,7 +244,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }
@@ -256,7 +256,7 @@ public class RelyingPartyResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public RelyingPartyDTO update(RelyingPartyDTO relyingParty) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             RelyingParty rpToUpdate = RelyingPartyMapper.getRelyingParty(relyingParty);
@@ -275,7 +275,7 @@ public class RelyingPartyResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }

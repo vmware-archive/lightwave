@@ -191,7 +191,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
     final String orgLink = request.getParameter(QUERY_PARAM_ORG_LINK);
     String tenantName = StringUtils.isEmpty(relayState.getTenant()) ? "defaultTenant" : relayState.getTenant();
-    Timer authCodeTimer = MetricUtils.startRequestTimer(tenantName, FederationTokenController.metricsResource, "getCSPAuthCode");
+    Timer authCodeTimer = MetricUtils.startRequestTimer(FederationTokenController.metricsResource, "getCSPAuthCode");
     try {
         if (orgLink != null && !orgLink.isEmpty()) {
             validateOIDCClient(relayState);
@@ -205,7 +205,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     }
 
     final String code = request.getParameter(QUERY_PARAM_CODE);
-    Timer tokenTimer = MetricUtils.startRequestTimer(tenantName, FederationTokenController.metricsResource, "getCSPToken");
+    Timer tokenTimer = MetricUtils.startRequestTimer(FederationTokenController.metricsResource, "getCSPToken");
     try {
         if (code != null && !code.isEmpty()) {
             return processRequestAuth(request, relayState, code, idpConfig);

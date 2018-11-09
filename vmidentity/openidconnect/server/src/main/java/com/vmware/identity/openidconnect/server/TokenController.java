@@ -107,7 +107,7 @@ public class TokenController {
                 context = DiagnosticsContextFactory.createContext(LoggerUtils.getCorrelationID(httpRequest).getValue(), tenant);
                 GrantType grantType = GrantType.parse(ParameterMapUtils.getString(httpRequest.getParameters(), "grant_type"));
                 metricsOperation += "_" + grantType.toString(); // group sub metrics based on grant type
-                requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+                requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
 
                 TokenRequestProcessor p = new TokenRequestProcessor(
                         this.idmClient,
@@ -131,7 +131,7 @@ public class TokenController {
                 context.close();
             }
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()),
                         metricsResource, metricsOperation);
             }
             if (requestTimer != null) {

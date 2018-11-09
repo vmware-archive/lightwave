@@ -81,7 +81,7 @@ public class ServerResource extends BaseResource {
     @RequiresRole(role = Role.CONFIGURATION_USER)
     public Collection<ServerDetailsDTO> getComputers(@DefaultValue("all") @QueryParam("type") String computerType)
     {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getComputers").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getComputers").startTimer();
         String responseStatus = HTTP_OK;
         String systemTenant = null;
         try {
@@ -119,7 +119,7 @@ public class ServerResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getComputers").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getComputers").inc();
             requestTimer.observeDuration();
         }
     }

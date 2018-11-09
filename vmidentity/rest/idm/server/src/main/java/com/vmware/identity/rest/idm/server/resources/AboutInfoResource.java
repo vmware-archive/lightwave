@@ -54,7 +54,7 @@ public class AboutInfoResource extends BaseResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public AboutInfoDTO getServiceInformation() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getServiceInformation").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getServiceInformation").startTimer();
         String responseStatus = HTTP_OK;
         try {
             log.info("trying to get about info");
@@ -64,7 +64,7 @@ public class AboutInfoResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getServiceInformation").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getServiceInformation").inc();
             requestTimer.observeDuration();
         }
     }

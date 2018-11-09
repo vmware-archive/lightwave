@@ -81,7 +81,7 @@ public class AttributesResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<AttributeDTO> getAll() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getAll").startTimer();
         String responseStatus = HTTP_OK;
         Collection<AttributeDTO> attributes = null;
         try {
@@ -100,7 +100,7 @@ public class AttributesResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getAll").inc();
             requestTimer.observeDuration();
         }
         return attributes;
@@ -115,7 +115,7 @@ public class AttributesResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<AttributeDTO> set(AttributeDefinitionsDTO attributesDTO) throws DTOMapperException {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "set").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "set").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().setAttributeDefinitions(tenant, AttributeMapper.getAttributes(attributesDTO));
@@ -137,7 +137,7 @@ public class AttributesResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "set").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "set").inc();
             requestTimer.observeDuration();
         }
     }
@@ -151,7 +151,7 @@ public class AttributesResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public Collection<AttributeDTO> update(UpdateAttributesDTO attributesUpdate) throws DTOMapperException {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             if (attributesUpdate != null){
@@ -191,7 +191,7 @@ public class AttributesResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }
