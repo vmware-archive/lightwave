@@ -121,7 +121,7 @@ func parseToken(
 
 	if !strings.EqualFold(tokenType, tok.Class()) {
 		PrintLog(logger, LogLevelError, "Failed to verify token: token class %s does not match expected %s", tokenType, tok.Class())
-		return nil, OIDCTokenInvalidError.MakeError("Failed to validate " + tok.Class() + " token", nil)
+		return nil, OIDCTokenInvalidError.MakeError("Failed to validate "+tok.Class()+" token", nil)
 	}
 
 	return tok, nil
@@ -669,4 +669,21 @@ func decodePayload(payload []byte) (map[string]interface{}, error) {
 	}
 
 	return tokenBody, nil
+}
+
+func parseTokenMulti(
+	token string, audience string, nonce string, providerInfo []ProviderInfo, tokenType string, logger Logger) (jwt, int, error) {
+	var tok jwt
+	var index int
+	var err error
+	var info ProviderInfo
+
+	for index, info = range providerInfo {
+		tok, err = parseToken(token, info.issuer, audience, nonce, info.signers, tokenType, logger)
+		if err == nil {
+			break
+		}
+	}
+
+	return tok, index, err
 }

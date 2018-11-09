@@ -101,3 +101,39 @@ type IssuerSigners interface {
 // CertRefreshHook can be registered with the client to be be called upon any unknown cert errors
 // The registered hook should be thread safe as multiple threads can try to refresh certs
 type CertRefreshHook func() (*x509.CertPool, error)
+
+// ProviderInfo contains client information needed to validate a token. An array of ProviderInfo
+// structs be used in calls to ParseAndValidateAccessTokenMulti() or ParseAndValidateIDTokenMulti()
+type ProviderInfo struct {
+	issuer  string
+	signers IssuerSigners
+}
+
+// NewProviderInfo creates a new ProviderInfo structure
+func NewProviderInfo(issuer string, signers IssuerSigners) (ProviderInfo, error) {
+	return newProviderInfo(issuer, signers)
+}
+
+// ParseAndValidateAccessTokenMulti parses the given access token as a string,
+// checks the signature, and validates the claims against each of the elements
+// of the providerInfo array.
+// Logger is optional.
+// It will return a verified access token and index of the ProviderInfo array
+// that verified successfully.
+func ParseAndValidateAccessTokenMulti(
+	token string, audience string, nonce string, providerInfo []ProviderInfo, logger Logger) (AccessToken, int, error) {
+
+	return parseTokenMulti(token, audience, nonce, providerInfo, AccessTokenClass, logger)
+}
+
+// ParseAndValidateIDTokenMulti parses the given access token as a string,
+// checks the signature, and validates the claims against each of the elements
+// of the providerInfo array.
+// Logger is optional.
+// It will return a verified ID token and index of the ProviderInfo array
+// that verified successfully.
+func ParseAndValidateIDTokenMulti(
+	token string, audience string, nonce string, providerInfo []ProviderInfo, logger Logger) (IDToken, int, error) {
+
+	return parseTokenMulti(token, audience, nonce, providerInfo, IDTokenClass, logger)
+}
