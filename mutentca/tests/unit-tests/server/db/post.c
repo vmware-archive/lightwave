@@ -241,7 +241,7 @@ Test_LwCASerializeIntermediateCAToJson(
     dwError = pFnSerialize(TEST_CA_ID,
                            pCaData,
                            TEST_PARENT_CA_ID,
-                           DUMMY_DOMAIN,
+                           TEST_PARENT_CA_DN,
                            &pszSerializedData
                            );
     assert_int_equal(dwError, 0);

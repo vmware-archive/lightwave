@@ -55,7 +55,9 @@
 #define TEST_TIME_VALID_FROM        "20181103223344.0Z"
 #define TEST_TIME_VALID_TO          "20181104223344.0Z"
 #define TEST_LWCA_CERT_STATUS       1
-#define TEST_INTR_CA_DN             ("cn=" TEST_CA_ID ",cn=" TEST_PARENT_CA_ID ",cn=Certificate-Authority," DUMMY_DOMAIN)
+
+#define TEST_PARENT_CA_DN           "cn=" TEST_PARENT_CA_ID ",cn=Certificate-Authority," DUMMY_DOMAIN
+#define TEST_INTR_CA_DN             "cn=" TEST_CA_ID "," TEST_PARENT_CA_DN
 
 #define SERIALIZED_ROOT_CA_JSON ("{\n" \
     "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \

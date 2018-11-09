@@ -278,6 +278,7 @@ LwCADbPostPluginAddCA(
     PLWCA_POST_HANDLE   pPostHandle = NULL;
     PSTR                pszReqBody = NULL;
     PSTR                pszResponse = NULL;
+    PSTR                pszParentDN = NULL;
     long                statusCode = 0;
 
     if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCAData)
@@ -292,12 +293,20 @@ LwCADbPostPluginAddCA(
     {
         dwError = _LwCAAddRootCAToConfig(pPostHandle, pcszCAId);
         BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCAAllocateStringA(pPostHandle->pszDomain, &pszParentDN);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = _LwCADbPostGetCADN(pHandle, pcszParentCA, &pszParentDN);
+        BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = LwCASerializeCAToJSON(pcszCAId,
                                     pCAData,
                                     pcszParentCA,
-                                    pPostHandle->pszDomain,
+                                    pszParentDN,
                                     &pszReqBody
                                     );
     BAIL_ON_LWCA_ERROR(dwError);
@@ -315,6 +324,7 @@ LwCADbPostPluginAddCA(
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszReqBody);
     LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszParentDN);
     return dwError;
 
 error:

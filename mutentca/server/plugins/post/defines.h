@@ -25,7 +25,7 @@
 #define LWCA_POST_CA_CONFIG_DN          "cn=%s," LWCA_POST_CONFIG_DN
 #define LWCA_POST_CA_DN                 "cn=Certificate-Authority,%s"
 #define LWCA_POST_ROOT_CA_DN_ENTRY      "cn=%s," LWCA_POST_CA_DN
-#define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,cn=%s," LWCA_POST_CA_DN
+#define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,%s"
 #define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
 #define LWCA_POST_CN_FILTER             "(&(cn=%s)(objectClass=%s))"
 #define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"

@@ -224,7 +224,7 @@ LwCASerializeCAToJSON(
     PCSTR               pcszCAId,
     PLWCA_DB_CA_DATA    pCAData,
     PCSTR               pcszParentCA,
-    PCSTR               pcszDomain,
+    PCSTR               pcszDN,
     PSTR                *ppszReqBody
     )
 {
@@ -233,12 +233,13 @@ LwCASerializeCAToJSON(
     PLWCA_JSON_OBJECT   pAttr = NULL;
     PSTR                pszDN = NULL;
     PSTR                pszReqBody = NULL;
+    PCSTR               pcszDNFormat = NULL;
     PBYTE               pEncoded = NULL;
     DWORD               dwLen = 0;
     PLWCA_STRING_ARRAY  pStrArray = NULL;
 
     if (IsNullOrEmptyString(pcszCAId) ||
-        IsNullOrEmptyString(pcszDomain) ||
+        IsNullOrEmptyString(pcszDN) ||
         !pCAData
         )
     {
@@ -251,24 +252,16 @@ LwCASerializeCAToJSON(
 
     if (IsNullOrEmptyString(pcszParentCA))
     {
-        dwError = LwCAAllocateStringPrintfA(&pszDN,
-                                            LWCA_POST_ROOT_CA_DN_ENTRY,
-                                            pcszCAId,
-                                            pcszDomain
-                                            );
-
-        BAIL_ON_LWCA_ERROR(dwError);
+        pcszDNFormat = LWCA_POST_ROOT_CA_DN_ENTRY;
     }
     else
     {
-        dwError = LwCAAllocateStringPrintfA(&pszDN,
-                                            LWCA_POST_INTERMEDIATE_CA_DN_ENTRY,
-                                            pcszCAId,
-                                            pcszParentCA,
-                                            pcszDomain
-                                            );
-        BAIL_ON_LWCA_ERROR(dwError);
+        pcszDNFormat = LWCA_POST_INTERMEDIATE_CA_DN_ENTRY;
     }
+
+    dwError = LwCAAllocateStringPrintfA(&pszDN, pcszDNFormat, pcszCAId, pcszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCAJsonSetStringToObject(pRoot, LWCA_LDAP_DN, pszDN);
     BAIL_ON_LWCA_ERROR(dwError);
 

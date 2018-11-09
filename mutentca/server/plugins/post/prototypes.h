@@ -150,7 +150,7 @@ LwCASerializeCAToJSON(
     PCSTR               pcszCAId,
     PLWCA_DB_CA_DATA    pCAData,
     PCSTR               pcszParentCA,
-    PCSTR               pcszDomain,
+    PCSTR               pcszDN,
     PSTR                *ppszReqBody
     );
 
