@@ -3,8 +3,7 @@ noinst_LTLIBRARIES = libwatchnotify.la
 
 libwatchnotify_la_SOURCES = \
     event.c \
-    eventlist.c \
-    eventnode.c
+    eventrepo.c
 
 libwatchnotify_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \

@@ -17,67 +17,53 @@
 
 DWORD
 VmDirEventInit(
-    PVDIR_EVENT*   ppEventNode
+    PVDIR_EVENT*   ppEvent
+    );
+
+DWORD
+VmDirEventRelease(
+    PVDIR_EVENT   pEvent
+    );
+
+DWORD
+VmDirEventAcquire(
+    PVDIR_EVENT   pEvent
     );
 
 VOID
 VmDirEventFree(
-    PVDIR_EVENT    pEventNode
+    PVDIR_EVENT    pEvent
     );
 
-/* eventlist.c
+/* eventrepo.c
  */
 
 DWORD
-VmDirEventListInit(
-    PVDIR_EVENT_LIST*   ppEventList
+VmDirEventRepoInit(
+    PVDIR_EVENT_REPO*   ppEventRepo
     );
 
 DWORD
-VmDirEventListGetNext(
-    PVDIR_EVENT_LIST    pEventList,
-    PVDIR_EVENT_NODE    pCurEvent,
-    PVDIR_EVENT_NODE*   ppNextEvent
+VmDirEventRepoGetNextReadyEvent(
+    PVDIR_EVENT_REPO            pEventRepo,
+    PVDIR_EVENT_REPO_COOKIE*    ppEventRepoCookie,
+    PVDIR_EVENT*                ppNextEvent
     );
 
 DWORD
-VmDirEventListAddNode(
-    PVDIR_EVENT_LIST    pEventList,
-    PVDIR_EVENT_NODE    pEventNode,
-    BOOL                bInLock
-    );
-
-DWORD
-VmDirEventListFreeHead(
-    PVDIR_EVENT_LIST    pEventList,
-    BOOL                bInLock
-    );
-
-VOID
-VmDirEventListFree(
-    PVDIR_EVENT_LIST    pEventList
-    );
-
-/* eventnode.c
- */
-
-DWORD
-VmDirEventNodeInit(
+VmDirEventRepoAddPendingEvent(
+    PVDIR_EVENT_REPO    pEventRepo,
     PVDIR_EVENT         pEvent,
-    PVDIR_EVENT_NODE*   ppEventNode
+    BOOLEAN             bInLock
     );
 
 DWORD
-VmDirEventNodeRelease(
-    PVDIR_EVENT_NODE   pEventNode
-    );
-
-DWORD
-VmDirEventNodeAcquire(
-    PVDIR_EVENT_NODE   pEventNode
+VmDirEventRepoSync(
+    PVDIR_EVENT_REPO    pEventRepo,
+    int64_t             iTimeoutMs
     );
 
 VOID
-VmDirEventNodeFree(
-    PVDIR_EVENT_NODE    pEventNode
+VmDirEventRepoFree(
+    PVDIR_EVENT_REPO    pEventRepo
     );

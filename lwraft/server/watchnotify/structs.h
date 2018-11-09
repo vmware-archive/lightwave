@@ -18,28 +18,31 @@ typedef enum
     VDIR_EVENT_DEL
 }VDIR_EVENT_TYPE;
 
-typedef struct _VDIR_EVENT
+typedef struct _VDIR_EVENT_DATA
 {
-    BOOL            bIsEventReady;
     BOOL            bIsGroupUpdate;
     DWORD           revision;
     PVDIR_ENTRY     pCurEntry;
     PVDIR_ENTRY     pPrevEntry;
     VDIR_EVENT_TYPE eventType;
-}VDIR_EVENT, *PVDIR_EVENT;
+}VDIR_EVENT_DATA, *PVDIR_EVENT_DATA;
 
-typedef struct _VDIR_EVENT_NODE
+typedef struct _VDIR_EVENT
 {
     DWORD                       refCount;
     PVMDIR_MUTEX                pMutex;
-    PVDIR_EVENT                 pEvent;
-    struct _VDIR_EVENT_LIST*    pEventList;
+    PVMDIR_COND                 pCond;
+    PVDIR_EVENT_DATA            pEventData;
+    BOOL                        bIsEventReady;
+    BOOL                        bIsSuccessful;
+    PVDIR_LINKED_LIST_NODE      pListNode;
     struct _VDIR_EVENT_NODE*    pNext;
-}VDIR_EVENT_NODE, *PVDIR_EVENT_NODE;
+}VDIR_EVENT, *PVDIR_EVENT;
 
-typedef struct _VDIR_EVENT_LIST
+typedef struct _VDIR_EVENT_REPO
 {
-    PVDIR_EVENT_NODE    pHead;
-    PVDIR_EVENT_NODE    pTail;
-    PVMDIR_MUTEX        pMutex;
-}VDIR_EVENT_LIST, *PVDIR_EVENT_LIST;
+    PVDIR_LINKED_LIST   pReadyEventList;
+    PVDIR_QUEUE         pPendingQueue;
+}VDIR_EVENT_REPO, *PVDIR_EVENT_REPO;
+
+typedef PVDIR_EVENT PVDIR_EVENT_REPO_COOKIE;
