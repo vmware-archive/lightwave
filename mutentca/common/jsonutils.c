@@ -327,15 +327,21 @@ LwCAJsonGetStringArrayFromKey(
         goto cleanup;
     }
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_STRING_ARRAY), (PVOID*)&pStrArray);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwArraySize = json_array_size(pJsonValue);
     if (!dwArraySize)
     {
+        if (bOptional)
+        {
+            *ppStrArrValue = NULL;
+            goto cleanup;
+        }
+
         dwError = LWCA_JSON_PARSE_ERROR;
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_STRING_ARRAY), (PVOID*)&pStrArray);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateMemory(sizeof(PSTR) * dwArraySize, (PVOID*)&pStrArray->ppData);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -416,7 +422,7 @@ LwCAJsonGetTimeFromKey(
     }
 
     errno = 0;
-    time = strtoul(pcszValue, NULL, 0);
+    time = strtoul(pcszValue, NULL, 10);
     if (errno)
     {
         dwError = LWCA_JSON_PARSE_ERROR;

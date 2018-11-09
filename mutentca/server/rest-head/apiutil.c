@@ -44,6 +44,12 @@ LwCARestGetCertValidityInput(
     dwError = LwCAJsonGetTimeFromKey(pJsonBody, FALSE, LWCA_JSON_KEY_END_TIME, &tEndTime);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (tStartTime == 0 || tEndTime == 0 || (tEndTime - tStartTime) <= 0)
+    {
+        dwError = LWCA_ERROR_INVALID_REQUEST;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
     dwError = LwCACreateCertValidity(tStartTime, tEndTime, &pCertValidity);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -144,7 +150,7 @@ error:
     LwCARestFreeIntCAInputSpec(pIntCASpec);
     if (ppIntCASpec)
     {
-        *ppIntCASpec = pIntCASpec;
+        *ppIntCASpec = NULL;
     }
 
     goto cleanup;
