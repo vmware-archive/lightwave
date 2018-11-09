@@ -1,5 +1,5 @@
 {
   "dbLwServer": "<LIGHTWAVE-SERVER-IP>",
   "dbPostServer": "localhost",
-  "dbDomain": "dc=lightwave,dc=local"
+  "dbDomain": "lightwave.local"
 }

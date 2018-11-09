@@ -213,6 +213,7 @@ LwCADbPostPluginInitialize(
     )
 {
     DWORD               dwError = 0;
+    PSTR                pszDomain = NULL;
     PLWCA_POST_HANDLE   pHandle = NULL;
     PLWCA_JSON_OBJECT   pJson = NULL;
 
@@ -248,13 +249,17 @@ LwCADbPostPluginInitialize(
     dwError = LwCAJsonGetStringFromKey(pJson,
                                        FALSE,
                                        LWCA_DB_DOMAIN,
-                                       &(pHandle->pszDomain)
+                                       &pszDomain
                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADNSNameToDCDN(pszDomain, &(pHandle->pszDomain));
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppHandle = (PLWCA_DB_HANDLE)pHandle;
 
 cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszDomain);
     LwCAJsonCleanupObject(pJson);
     return dwError;
 
