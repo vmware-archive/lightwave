@@ -69,8 +69,13 @@ LwCAShutdown(
     VOID
     )
 {
-
-    OidcClientGlobalCleanup();
+    /*
+     * temporarily disable oidc global cleanup
+     * there appears to be conflicting global free
+     * issues with openssl global cleanup in oidc
+     * and security plugin's openssl cleanup
+    */
+    //OidcClientGlobalCleanup();
 
 #ifdef REST_ENABLED
     if (LwCARestServerStop() == 0)
