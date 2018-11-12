@@ -10,6 +10,19 @@
     ],
     "host": "IPADDRESS_MARKER",
     "basePath": "/v1",
+    "securityDefinitions": {
+      "AuthToken": {
+        "description": "Token based authentication like Bearer, HOTK",
+        "type": "apiKey",
+        "name": "authorization",
+        "in": "header"
+      }
+    },
+    "security": [
+      {
+        "AuthToken": []
+      }
+    ],
     "produces": [
         "application/json",
         "text/plain"
@@ -40,7 +53,7 @@
         "/post/idp": {
             "get": {
                 "summary": "Retrive the URL to authenticate with the server",
-                "Description": "Returns the URL used to login to server",
+                "description": "Returns the URL used to login to server",
                 "consumes": [
                     "application/json"
                 ],

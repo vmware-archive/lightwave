@@ -26,6 +26,9 @@ func (suite *CAVersionSuite) SetupSuite() {
 
 // TearDownSuite will be run after every execution of the Suite
 func (suite *CAVersionSuite) TearDownSuite() {
+	// delete CAs here, example:
+	// postdbclient.DeleteCA(caId)
+
 }
 
 func (suite *CAVersionSuite) TestGetCAVersion() {
