@@ -33,6 +33,7 @@ typedef enum
 
 typedef struct _LWCA_SECURITY_CONFIG_
 {
+    PSTR pszRegion;
     PSTR pszCMKId;
     DATAKEYSPEC keySpec;
 }LWCA_SECURITY_CONFIG, *PLWCA_SECURITY_CONFIG;

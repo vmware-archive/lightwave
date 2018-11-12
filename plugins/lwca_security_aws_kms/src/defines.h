@@ -27,7 +27,8 @@
 
 #define AES_256_STR "AES_256"
 
-#define KEY_CMK_ID   "cmk_id"
-#define KEY_KEY_SPEC "key_spec"
+#define KEY_REGION         "region"
+#define KEY_CMK_ID         "cmk_id"
+#define KEY_KEY_SPEC       "key_spec"
 
 #endif /* _LWCA_SECURITY_AWS_KMS_DEFINES_H_ */

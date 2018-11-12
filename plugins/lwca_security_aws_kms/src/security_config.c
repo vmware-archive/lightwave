@@ -53,7 +53,7 @@ LwCASecurityReadConfigFile(
                   (PVOID *)&pConfig);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    /* {"kms":{"cmk_id":"arn","key_spec":"keyspec"}} */
+    /* {"kms":{"region":"region","cmk_id":"arn","key_spec":"keyspec"}} */
     dwError = VmJsonResultIterateObjectAt(
                   pPosition,
                   pConfig,
@@ -101,7 +101,7 @@ error:
 
 /*
  * Handles a callback for elements in "kms" object
- * we are interested in {"cmk_id":"arn","key_spec":"keyspec"}
+ * we are interested in {"region":"region","cmk_id":"arn","key_spec":"keyspec"}
 */
 static
 DWORD
@@ -124,6 +124,18 @@ _LwCASecurityConfigKeysCB(
         dwError = VmAllocateStringA(
                       pValue->value.pszValue,
                       &pConfig->pszCMKId);
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
+    else if (!VmStringCompareA(KEY_REGION, pszKey, TRUE))
+    {
+        if (IsNullOrEmptyString(pValue->value.pszValue))
+        {
+            dwError = LWCA_SECURITY_AWS_KMS_CONFIG_REGION_EMPTY;
+            BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+        }
+        dwError = VmAllocateStringA(
+                      pValue->value.pszValue,
+                      &pConfig->pszRegion);
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
     else if (!VmStringCompareA(KEY_KEY_SPEC, pszKey, TRUE))
@@ -185,6 +197,7 @@ LwAwsKmsFreeConfig(
 {
     if (pConfig)
     {
+        VmFreeMemory(pConfig->pszRegion);
         VmFreeMemory(pConfig->pszCMKId);
         VmFreeMemory(pConfig);
     }

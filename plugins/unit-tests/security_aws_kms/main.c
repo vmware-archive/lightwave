@@ -38,6 +38,7 @@ int main(VOID)
         cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_Root),
         cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_CMKId),
         cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_No_KeySpec),
+        cmocka_unit_test(Security_Aws_Kms_Tests_Config_Parse_Bad_Empty_Region),
 
         /* unload interface */
         cmocka_unit_test_teardown(

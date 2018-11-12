@@ -88,4 +88,9 @@ Security_Aws_Kms_Tests_Config_Parse_Bad_No_KeySpec(
     void **state
     );
 
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Bad_Empty_Region(
+    void **state
+    );
+
 #endif /* _LWCA_SECURITY_AWS_KMS_UNITTEST_PROTOTYPES_H_ */
