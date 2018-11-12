@@ -166,3 +166,193 @@ VmDirAllocateAttrValueMetaData(
     dwError = VmDirLinkedListInsertHead(pUpdate->pValueMetaDataList, (PVOID)pValueMetaData, NULL);
     assert_int_equal(dwError, 0);
 }
+
+BOOLEAN
+VmDirTestCompareAttr(
+    PVDIR_ATTRIBUTE pAttr1,
+    PVDIR_ATTRIBUTE pAttr2
+    )
+{
+    DWORD           dwError = 0;
+    DWORD           dwValCount = 0;
+    PLW_HASHMAP     pAttrValuesMap = NULL;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+
+    if (!pAttr1 && !pAttr2)
+    {
+        return TRUE;
+    }
+
+    assert_true(pAttr1 && pAttr2);
+
+    assert_int_equal(pAttr1->type.lberbv_len, pAttr2->type.lberbv_len);
+    assert_int_equal(VmDirStringNCompareA(pAttr1->type.lberbv_val, pAttr2->type.lberbv_val, pAttr1->type.lberbv_len, FALSE), 0);
+
+    assert_int_equal(pAttr1->numVals, pAttr2->numVals);
+
+    dwError = LwRtlCreateHashMap(
+            &pAttrValuesMap,
+            LwRtlHashDigestPstrCaseless,
+            LwRtlHashEqualPstrCaseless,
+            NULL);
+    assert_int_equal(dwError, 0);
+
+    for (dwValCount = 0; dwValCount < pAttr1->numVals; dwValCount++)
+    {
+        dwError = LwRtlHashMapInsert(pAttrValuesMap, pAttr1->vals[dwValCount].lberbv_val, NULL, NULL);
+        assert_int_equal(dwError, 0);
+    }
+
+    for (dwValCount = 0; dwValCount < pAttr2->numVals; dwValCount++)
+    {
+        dwError = LwRtlHashMapRemove(pAttrValuesMap, pAttr2->vals[dwValCount].lberbv_val, &pair);
+        assert_int_equal(dwError, 0);
+    }
+
+    assert_int_equal(LwRtlHashMapGetCount(pAttrValuesMap), 0);
+
+    if (pAttrValuesMap)
+    {
+        LwRtlFreeHashMap(&pAttrValuesMap);
+    }
+
+    return TRUE;
+}
+
+BOOLEAN
+VmDirTestCompareEntry(
+    PVDIR_ENTRY pEntry1,
+    PVDIR_ENTRY pEntry2
+    )
+{
+    PVDIR_ATTRIBUTE pAttr1 = NULL;
+    PVDIR_ATTRIBUTE pAttr2 = NULL;
+
+    if (!pEntry1 && !pEntry2)
+    {
+        return TRUE;
+    }
+
+    assert_true(pEntry1 && pEntry2);
+
+    assert_int_equal(pEntry1->dn.lberbv_len, pEntry2->dn.lberbv_len);
+    assert_int_equal(VmDirStringNCompareA(pEntry1->dn.lberbv_val, pEntry2->dn.lberbv_val, pEntry1->dn.lberbv_len, FALSE), 0);
+
+    pAttr1 = pEntry1->attrs;
+
+    while (pAttr1)
+    {
+        pAttr2 = VmDirFindAttrByName(pEntry2, pAttr1->type.lberbv_val);
+        assert_non_null(pAttr2);
+
+        assert_true(VmDirTestCompareAttr(pAttr1, pAttr2));
+
+        pAttr1 = pAttr1->next;
+    }
+
+    return TRUE;
+}
+
+BOOLEAN
+VmDirTestCompareMetaData(
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetadata1,
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetadata2
+    )
+{
+    if (!pReplMetadata1 && !pReplMetadata2)
+    {
+        return TRUE;
+    }
+
+    assert_true(pReplMetadata1 && pReplMetadata1);
+
+    assert_int_equal(VmDirStringCompareA(pReplMetadata1->pszAttrType, pReplMetadata2->pszAttrType, FALSE), 0);
+
+    assert_false(!pReplMetadata1->pMetaData || !pReplMetadata2->pMetaData);
+
+    assert_int_equal(pReplMetadata1->pMetaData->localUsn, pReplMetadata2->pMetaData->localUsn);
+    assert_int_equal(pReplMetadata1->pMetaData->version, pReplMetadata2->pMetaData->version);
+    assert_int_equal(pReplMetadata1->pMetaData->origUsn, pReplMetadata2->pMetaData->origUsn);
+    assert_int_equal(VmDirStringCompareA(pReplMetadata1->pMetaData->pszOrigInvoId, pReplMetadata2->pMetaData->pszOrigInvoId, FALSE), 0);
+    assert_int_equal(VmDirStringCompareA(pReplMetadata1->pMetaData->pszOrigTime, pReplMetadata2->pMetaData->pszOrigTime, FALSE), 0);
+
+    return TRUE;
+}
+
+BOOLEAN
+VmDirTestCompareMetaDataList(
+    PVDIR_LINKED_LIST pList1,
+    PVDIR_LINKED_LIST pList2
+    )
+{
+    PVDIR_LINKED_LIST_NODE          pNode = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetaData1 = NULL;
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetaData2 = NULL;
+
+    pNode = pList1->pHead;
+
+    while (pNode)
+    {
+        pReplMetaData1 = (PVMDIR_REPL_ATTRIBUTE_METADATA)pNode->pElement;
+
+        pReplMetaData2 = VmDirFindAttrMetaData(pList2, pReplMetaData1->pszAttrType);
+        assert_non_null(pReplMetaData2);
+
+        assert_true(VmDirTestCompareMetaData(pReplMetaData1, pReplMetaData2));
+
+        pNode = pNode->pNext;
+    }
+
+    return TRUE;
+}
+
+BOOLEAN
+VmDirTestCompareReplUpdate(
+    PVMDIR_REPLICATION_UPDATE    pUpdate1,
+    PVMDIR_REPLICATION_UPDATE    pUpdate2
+    )
+{
+    assert_int_equal(pUpdate1->syncState, pUpdate2->syncState);
+    assert_int_equal(pUpdate1->partnerUsn, pUpdate2->partnerUsn);
+
+    assert_true(VmDirTestCompareEntry(pUpdate1->pEntry, pUpdate2->pEntry));
+
+    assert_true(VmDirTestCompareMetaDataList(pUpdate1->pMetaDataList, pUpdate2->pMetaDataList));
+
+    return TRUE;
+}
+
+DWORD
+VmDirTestAllocateReplUpdate(
+    PVMDIR_REPLICATION_UPDATE   *ppReplUpdate
+    )
+{
+    DWORD                       dwError = 0;
+    PVMDIR_REPLICATION_UPDATE   pReplUpdate = NULL;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pReplUpdate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pReplUpdate->pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListCreate(&pReplUpdate->pMetaDataList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pReplUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+
+    *ppReplUpdate = pReplUpdate;
+
+cleanup:
+    return dwError;
+
+error:
+    print_message("%s failed with error %d", __FUNCTION__, dwError);
+
+    if (pReplUpdate)
+    {
+        VmDirFreeReplUpdate(pReplUpdate);
+    }
+
+    goto cleanup;
+}

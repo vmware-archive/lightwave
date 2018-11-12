@@ -132,17 +132,18 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
     );
 
 int
-VmDirSetupExtractEventPopulateMustAttributes(
+VmDirTestSetupExtractEventPopulateMustAttributes(
     VOID    **state
     );
 
 VOID
-VmDirExtractEventPopulateMustAttributes_ValidInput(
+VmDirTestExtractEventPopulateMustAttributes_ValidInput(
     VOID    **state
     );
+
 int
 VmDirSetupExtractEventPopulateOperationAttributes(
-    VOID **state
+    VOID    **state
     );
 
 VOID
@@ -152,6 +153,10 @@ VmDirExtractEventPopulateOperationAttributes_ValidInput(
 
 int
 VmDirTeardownExtractEvent(
+    VOID    **state
+    );
+
+int VmDirTestTeardownExtractEventMustAttr(
     VOID    **state
     );
 
@@ -195,5 +200,44 @@ VmDirAllocateMultiValueAttr(
     USN                          localUSN,
     USN                          origUSN,
     PVMDIR_REPLICATION_UPDATE    pUpdate
+    );
+
+/*
+ * TODO: See if these comparison functions can be moved to the main code instead of testing code,
+ * return int instead of bool and not use assert
+ * */
+BOOLEAN
+VmDirTestCompareReplUpdate(
+    PVMDIR_REPLICATION_UPDATE    pUpdate1,
+    PVMDIR_REPLICATION_UPDATE    pUpdate2
+    );
+
+BOOLEAN
+VmDirTestCompareMetaDataList(
+    PVDIR_LINKED_LIST pList1,
+    PVDIR_LINKED_LIST pList2
+    );
+
+BOOLEAN
+VmDirTestCompareMetaData(
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetadata1,
+    PVMDIR_REPL_ATTRIBUTE_METADATA  pReplMetadata2
+    );
+
+BOOLEAN
+VmDirTestCompareEntry(
+    PVDIR_ENTRY pEntry1,
+    PVDIR_ENTRY pEntry2
+    );
+
+BOOLEAN
+VmDirTestCompareAttr(
+    PVDIR_ATTRIBUTE pAttr1,
+    PVDIR_ATTRIBUTE pAttr2
+    );
+
+DWORD
+VmDirTestAllocateReplUpdate(
+    PVMDIR_REPLICATION_UPDATE   *ppReplUpdate
     );
 #endif
