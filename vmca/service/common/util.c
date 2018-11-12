@@ -138,6 +138,7 @@ VMCAUtilIsValueFQDN(
 
             ++dwIdx;
         }
+        dwIdx = 0;
 
         pszLabel = VMCAStringTokA(NULL, ".", &pszNextTok);
     }

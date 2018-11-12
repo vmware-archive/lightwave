@@ -138,6 +138,7 @@ LwCAUtilIsValueFQDN(
 
             ++dwIdx;
         }
+        dwIdx = 0;
 
         pszLabel = LwCAStringTokA(NULL, ".", &pszNextTok);
     }
