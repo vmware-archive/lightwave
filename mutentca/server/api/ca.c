@@ -576,7 +576,7 @@ LwCAGetSignedCertificate(
         }
 
         tmNotBefore = time(NULL);
-        tmNotAfter = tmNotBefore + dwDuration;
+        tmNotAfter = tmNotBefore + (dwDuration * LWCA_TIME_SECS_PER_DAY);
 
         dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
         BAIL_ON_LWCA_ERROR(dwError);
@@ -759,7 +759,7 @@ LwCACreateIntermediateCA(
         }
 
         tmNotBefore = time(NULL);
-        tmNotAfter = tmNotBefore + dwDuration;
+        tmNotAfter = tmNotBefore + (dwDuration * LWCA_TIME_SECS_PER_DAY);
 
         dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
         BAIL_ON_LWCA_ERROR(dwError);

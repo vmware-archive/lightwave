@@ -210,7 +210,7 @@ error:
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     if (ppSignCertSpec)
     {
-        *ppSignCertSpec = pSignCertSpec;
+        *ppSignCertSpec = NULL;
     }
 
     goto cleanup;

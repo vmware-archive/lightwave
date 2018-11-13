@@ -125,6 +125,7 @@ LwCARestUnknownGetHttpError(
         break;
 
     case LWCA_ERROR_INVALID_REQUEST:
+    case LWCA_POLICY_VALIDATION_ERROR:
     case LWCA_INVALID_CSR_FIELD:
         httpStatus = HTTP_BAD_REQUEST;
         break;

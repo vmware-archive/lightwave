@@ -1130,6 +1130,8 @@ LwCAX509ReqGetSubjectAltNames(
             BAIL_ON_LWCA_ERROR(dwError);
         }
 
+        // Skipping parsing of email address and uri
+
         if (pszSANName)
         {
             OPENSSL_free(pszSANName);
@@ -1137,8 +1139,11 @@ LwCAX509ReqGetSubjectAltNames(
         }
     }
 
-    dwError = LwCACreateStringArray(ppszSANEntries, dwIdx2, &pSANArray);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (dwIdx2 != 0)
+    {
+        dwError = LwCACreateStringArray(ppszSANEntries, dwIdx2, &pSANArray);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     *ppSANArray = pSANArray;
 
