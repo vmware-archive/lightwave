@@ -257,6 +257,7 @@ VmAfdRootFetchTask(
                     pArgs->pszUserName,
                     pArgs->pszPassword,
                     TRUE,
+                    gVmafdGlobals.bInsecure,
                     &pCACerts);
         BAIL_ON_VMDIR_ERROR(dwError);
     }

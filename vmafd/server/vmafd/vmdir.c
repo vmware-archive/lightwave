@@ -78,6 +78,12 @@ _VmAfSrvEnsureUseVmDirRestFlag(
 
 static
 DWORD
+_VmAfSrvEnsureInsecureFlag(
+    VOID
+    );
+
+static
+DWORD
 _CreateKrbConfig(
     PCSTR pszDefaultRealm,
     PCSTR pszConfigFileName,
@@ -1015,11 +1021,19 @@ _VmAfSrvRestClientPrejoinAtomic(
     PSTR  pszToken = NULL;
     PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
 
-    dwError = VmAfSrvGetCAPath(&pwszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    /* support insecure flag for test environments. skips cert checks */
+    if (gVmafdGlobals.bInsecure)
+    {
+        pszCAPath = NULL;
+    }
+    else
+    {
+        dwError = VmAfSrvGetCAPath(&pwszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     /* acquire token */
     dwError = VmAfdAcquireTokenForVmDirREST(
@@ -1215,6 +1229,12 @@ VmAfSrvJoinVmDir2(
             */
             dwError = _VmAfSrvEnsureUseVmDirRestFlag();
             BAIL_ON_VMAFD_ERROR(dwError);
+
+            if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_INSECURE))
+            {
+                dwError = _VmAfSrvEnsureInsecureFlag();
+                BAIL_ON_VMAFD_ERROR(dwError);
+            }
 
             dwError = _VmAfSrvRestClientPrejoinAtomic(
                           pszDCHostname,
@@ -2953,7 +2973,6 @@ error:
 static
 DWORD
 _VmAfSrvEnsureUseVmDirRestFlag(
-    VOID
     )
 {
     DWORD dwError = 0;
@@ -2974,6 +2993,35 @@ _VmAfSrvEnsureUseVmDirRestFlag(
         }
 
         gVmafdGlobals.bUseVmDirREST = TRUE;
+    }
+
+error:
+    return dwError;
+}
+
+static
+DWORD
+_VmAfSrvEnsureInsecureFlag(
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bInsecure = FALSE;
+
+    if (!gVmafdGlobals.bInsecure)
+    {
+        dwError = VmAfdSrvSetInsecure(TRUE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdSrvGetInsecure(&bInsecure);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (!bInsecure)
+        {
+            dwError = ERROR_FAILED_SET_INSECURE_FLAG;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        gVmafdGlobals.bInsecure = TRUE;
     }
 
 error:

@@ -69,6 +69,7 @@ typedef struct _VMW_IC_SETUP_PARAMS
     BOOLEAN bMachinePreJoined;
     BOOLEAN bGenMachineSSL;
     BOOLEAN bAtomicJoin;
+    BOOLEAN bInsecure;
 
     PSTR pszParentDomainName;
     PSTR pszParentDC;

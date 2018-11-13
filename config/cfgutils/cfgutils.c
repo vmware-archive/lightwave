@@ -1029,6 +1029,16 @@ VmwDeploySetupClientWithDC(
                         pParams->pszDomainName);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+    else /* if prejoining and the insecure flag is set, make a log trace */
+    {
+        if (pParams->bInsecure)
+        {
+            VMW_DEPLOY_LOG_INFO(
+                "Join is using insecure flag. This is only intended for test environments."
+                "For production environments, please use a server certificate signed by a "
+                "trusted CA or set up required trust before join");
+        }
+    }
 
     if (pParams->bDisableAfdListener)
     {
@@ -1068,6 +1078,11 @@ VmwDeploySetupClientWithDC(
     if (pParams->bMachinePreJoined)
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_CLIENT_PREJOINED;
+
+        if (pParams->bInsecure)
+        {
+            uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_INSECURE;
+        }
     }
 
     if (pParams->bDisableDNS)

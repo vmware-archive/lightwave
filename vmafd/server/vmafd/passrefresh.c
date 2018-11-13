@@ -267,6 +267,7 @@ VmAfdHandlePassRefresh(
                         pArgs->pszAccount,
                         pArgs->pszPassword,
                         bForceRefresh,
+                        gVmafdGlobals.bInsecure,
                         &pszActPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
     }

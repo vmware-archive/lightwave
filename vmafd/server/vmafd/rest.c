@@ -100,6 +100,7 @@ VmAfdRestPasswordRefresh(
     PCSTR pszUser,
     PCSTR pszPass,
     BOOLEAN bForce,
+    BOOLEAN bInsecure,
     PSTR *ppszNewPass
     )
 {
@@ -123,11 +124,18 @@ VmAfdRestPasswordRefresh(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetCAPath(&pwszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (bInsecure)
+    {
+        pszCAPath = NULL;
+    }
+    else
+    {
+        dwError = VmAfSrvGetCAPath(&pwszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     /* acquire token */
     dwError = VmAfdAcquireTokenForVmDirREST(

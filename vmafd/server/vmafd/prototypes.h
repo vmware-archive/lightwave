@@ -378,6 +378,16 @@ VmAfdSrvGetUseVmDirREST(
     BOOLEAN *pbValue
     );
 
+DWORD
+VmAfdSrvSetInsecure(
+    BOOLEAN bValue
+    );
+
+DWORD
+VmAfdSrvGetInsecure(
+    BOOLEAN *pbValue
+    );
+
 /* dns.c */
 
 DWORD
@@ -2483,6 +2493,7 @@ VmAfdRestPasswordRefresh(
     PCSTR pszUser,
     PCSTR pszPass,
     BOOLEAN bForce,
+    BOOLEAN bInsecure,
     PSTR *ppszNewPass
     );
 
@@ -2494,6 +2505,7 @@ VmAfdRestGetCACerts(
     PCSTR   pszUser,
     PCSTR   pszPass,
     BOOLEAN bDetail,
+    BOOLEAN bInsecure,
     PVMAFD_CA_CERT_ARRAY *ppCACerts
     );
 

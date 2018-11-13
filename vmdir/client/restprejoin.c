@@ -303,7 +303,6 @@ VmDirRestClientPreJoinAtomic(
     if (IsNullOrEmptyString(pszServerName) ||
         IsNullOrEmptyString(pszToken) ||
         IsNullOrEmptyString(pszPassword) ||
-        IsNullOrEmptyString(pszCAPath) ||
         IsNullOrEmptyString(pszMachineName) ||
         !ppMachineInfo
        )
