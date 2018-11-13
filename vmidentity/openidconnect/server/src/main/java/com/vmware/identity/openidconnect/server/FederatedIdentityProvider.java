@@ -21,6 +21,7 @@ import java.util.Map;
 
 import org.apache.commons.lang3.Validate;
 
+import com.vmware.identity.diagnostics.MetricUtils;
 import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
 import com.vmware.identity.diagnostics.IDiagnosticsLogger;
 import com.vmware.identity.idm.DomainType;
