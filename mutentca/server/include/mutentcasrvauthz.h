@@ -19,8 +19,9 @@
 extern "C" {
 #endif
 
-#define LWCA_CONFIG_AUTHZ_KEY           "authorization"
-#define LWCA_AUTHZ_PLUGIN_PATH_KEY      "pluginPath"
+#define LWCA_CONFIG_AUTHZ_KEY               "authorization"
+#define LWCA_AUTHZ_PLUGIN_PATH_KEY          "pluginPath"
+#define LWCA_AUTHZ_PLUGIN_CONFIG_PATH_KEY   "pluginConfigPath"
 
 
 /**
@@ -29,6 +30,12 @@ extern "C" {
  * @details  LwCAAuthZInitialize parses its JSON config to see if it should load
  *           a plugin.  If the config does not have a path to an AuthZ plugin,
  *           then the default AuthZ rules for Lightwave will be used.
+ *
+ *           Example JSON config:
+ *               {
+ *                  "pluginPath": "/opt/vmware/share/lib64/mutentcaplugins/libauthz.so",
+ *                  "pluginConfigPath": "/opt/vmware/share/config/mutentcaauthz.json"
+ *               }
  *
  * @param    pJsonConfig holds the JSON config for the AuthZ layer.
  *

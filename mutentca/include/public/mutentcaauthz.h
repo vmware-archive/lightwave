@@ -41,6 +41,25 @@ typedef enum _LWCA_AUTHZ_API_PERMISSION
 
 
 /**
+ * @brief    Initialize AuthZ Plugin
+ *
+ * @details  PFN_AUTHZ_PLUGIN_INITIALIZE is the signature for a plugin's function.
+ *           This function will load the specified config file and extract config
+ *           values from it.
+ *           This function is not required for a plugin--if it is not implemented
+ *           in a plugin, the MutentCA AuthZ service context will not call it during
+ *           plugin load.
+ *
+ * @param    pcszConfigPath is the path to the JSON config file for the plugin.
+ *
+ * @return   DWORD indicating function success/failure
+ */
+typedef DWORD
+(*PFN_LWCA_AUTHZ_PLUGIN_INIT)(
+    PCSTR       pcszConfigPath
+    );
+
+/**
  * @brief    Retrieve AuthZ Plugin Version
  *
  * @details  PFN_LWCA_AUTHZ_GET_VERSION is the signature for a plugin's get
@@ -100,6 +119,7 @@ typedef struct _LWCA_AUTHZ_FUNCTION_TABLE
     PFN_LWCA_AUTHZ_GET_VERSION          pfnAuthZGetVersion;
     PFN_LWCA_AUTHZ_ERROR_TO_STRING      pfnAuthZErrorToString;
     PFN_LWCA_AUTHZ_CHECK_ACCESS         pfnAuthZCheckAccess;
+    PFN_LWCA_AUTHZ_PLUGIN_INIT          pfnAuthZPluginInit;
 } LWCA_AUTHZ_FUNCTION_TABLE, *PLWCA_AUTHZ_FUNCTION_TABLE;
 
 

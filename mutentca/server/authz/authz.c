@@ -34,6 +34,7 @@ LwCAAuthZInitialize(
 {
     DWORD                           dwError = 0;
     PSTR                            pszPluginPath = NULL;
+    PSTR                            pszPluginConfigPath = NULL;
     PLWCA_PLUGIN_HANDLE             pPluginHandle = NULL;
     PLWCA_AUTHZ_FUNCTION_TABLE      pFT = NULL;
     BOOLEAN                         bLocked = FALSE;
@@ -61,12 +62,30 @@ LwCAAuthZInitialize(
         dwError = LwCAJsonGetStringFromKey(pJsonConfig, FALSE, LWCA_AUTHZ_PLUGIN_PATH_KEY, &pszPluginPath);
         BAIL_ON_LWCA_ERROR(dwError);
 
+        dwError = LwCAJsonGetStringFromKey(pJsonConfig, TRUE, LWCA_AUTHZ_PLUGIN_CONFIG_PATH_KEY, &pszPluginConfigPath);
+        BAIL_ON_LWCA_ERROR(dwError);
+
         dwError = LwCAPluginInitialize(pszPluginPath, pFT, &pPluginHandle);
         BAIL_ON_LWCA_ERROR(dwError);
 
         if (!LwCAAuthZIsValidFunctionTable(pFT))
         {
             BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_INVALID_PLUGIN);
+        }
+
+        if (pFT->pfnAuthZPluginInit)
+        {
+            dwError = pFT->pfnAuthZPluginInit(pszPluginConfigPath);
+            if (gAuthZCtx.bPluginLoaded)
+            {
+                LWCA_LOG_ERROR(
+                        "[%s,%d] (%s) AuthZ plugin Init failed with (%s)",
+                        __FUNCTION__,
+                        __LINE__,
+                        gAuthZCtx.pFT->pfnAuthZGetVersion(),
+                        gAuthZCtx.pFT->pfnAuthZErrorToString(dwError));
+                BAIL_WITH_LWCA_ERROR(dwError, LWCA_PLUGIN_FAILURE);
+            }
         }
 
         gAuthZCtx.bPluginLoaded = TRUE;
@@ -86,6 +105,7 @@ LwCAAuthZInitialize(
 cleanup:
 
     LWCA_SAFE_FREE_STRINGA(pszPluginPath);
+    LWCA_SAFE_FREE_STRINGA(pszPluginConfigPath);
 
     LWCA_LOCK_MUTEX_UNLOCK(&gAuthZCtx.pMutex, bLocked);
 
@@ -142,7 +162,7 @@ LwCAAuthZCheckAccess(
         if (gAuthZCtx.bPluginLoaded)
         {
             LWCA_LOG_ERROR(
-                    "[%s,%d] (%s) AuthZ plugin failed with (%s)",
+                    "[%s,%d] (%s) AuthZ plugin CheckAccess failed with (%s)",
                     __FUNCTION__,
                     __LINE__,
                     gAuthZCtx.pFT->pfnAuthZGetVersion(),
