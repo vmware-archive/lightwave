@@ -129,11 +129,7 @@ func (mtcaclient *MutentCAClient) GetRootCA() (*models.CACertificates, error) {
 }
 
 // CreateIntermediateCA - creates intermediate CA and returns intermediate CA certs
-func (mtcaclient *MutentCAClient) CreateIntermediateCA(caId string, parentCAId string, country []string, state []string, locality []string, orgUnit []string, policy string, startTime string, endTime string) (*models.CACertificates, error) {
-	validity := &models.Validity{
-		StartTime: startTime,
-		EndTime:   endTime,
-	}
+func (mtcaclient *MutentCAClient) CreateIntermediateCA(caId string, parentCAId string, country []string, state []string, locality []string, orgUnit []string, policy string, validity *models.Validity) (*models.CACertificates, error) {
 
 	createCASpec := &models.IntermediateCACreateSpec{
 		CaID:               &caId,
@@ -183,6 +179,11 @@ func (mtcaclient *MutentCAClient) RevokeIntermediateCA(caId string) error {
 	return nil
 }
 
+// DeleteIntermediateCA - deletes intermediate CA
+func (mtcaclient *MutentCAClient) DeleteIntermediateCA(caId string) error {
+	return nil
+}
+
 // GetRootCACRL - returns root CA crl
 func (mtcaclient *MutentCAClient) GetRootCACRL() (*models.CRL, error) {
 	params := crl.NewGetRootCACRLParams()
@@ -210,12 +211,7 @@ func (mtcaclient *MutentCAClient) GetIntermediateCACRL(caId string) (*models.CRL
 }
 
 // GetRootCASignedCert - returns root CA signed certificate
-func (mtcaclient *MutentCAClient) GetRootCASignedCert(csr string, startTime string, endTime string, signatureAlgo string) (*models.Certificate, error) {
-	validity := &models.Validity{
-		StartTime: startTime,
-		EndTime:   endTime,
-	}
-
+func (mtcaclient *MutentCAClient) GetRootCASignedCert(csr string, validity *models.Validity, signatureAlgo string) (*models.Certificate, error) {
 	createSignedCertSpec := &models.CreateSignedCertSpec{
 		Csr:                &csr,
 		Validity:           validity,
@@ -251,12 +247,7 @@ func (mtcaclient *MutentCAClient) RevokeRootCASignedCert(cert string) error {
 }
 
 // GetIntermediateCASignedCert - returns intermediate CA signed certificate
-func (mtcaclient *MutentCAClient) GetIntermediateCASignedCert(caId string, csr string, startTime string, endTime string, signatureAlgo string) (*models.Certificate, error) {
-	validity := &models.Validity{
-		StartTime: startTime,
-		EndTime:   endTime,
-	}
-
+func (mtcaclient *MutentCAClient) GetIntermediateCASignedCert(caId string, csr string,  validity *models.Validity, signatureAlgo string) (*models.Certificate, error) {
 	createSignedCertSpec := &models.CreateSignedCertSpec{
 		Csr:                &csr,
 		Validity:           validity,
