@@ -76,14 +76,14 @@ LwCAAuthZInitialize(
         if (pFT->pfnAuthZPluginInit)
         {
             dwError = pFT->pfnAuthZPluginInit(pszPluginConfigPath);
-            if (gAuthZCtx.bPluginLoaded)
+            if (dwError)
             {
                 LWCA_LOG_ERROR(
                         "[%s,%d] (%s) AuthZ plugin Init failed with (%s)",
                         __FUNCTION__,
                         __LINE__,
-                        gAuthZCtx.pFT->pfnAuthZGetVersion(),
-                        gAuthZCtx.pFT->pfnAuthZErrorToString(dwError));
+                        pFT->pfnAuthZGetVersion(),
+                        pFT->pfnAuthZErrorToString(dwError));
                 BAIL_WITH_LWCA_ERROR(dwError, LWCA_PLUGIN_FAILURE);
             }
         }
