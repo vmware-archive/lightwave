@@ -26,6 +26,9 @@
 #define LWCA_POST_CA_DN                 "cn=Certificate-Authority,%s"
 #define LWCA_POST_ROOT_CA_DN_ENTRY      "cn=%s," LWCA_POST_CA_DN
 #define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,%s"
+#define LWCA_POST_CERTS_CN              "Certs"
+#define LWCA_POST_ROOT_CERTS_DN         "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_ROOT_CA_DN_ENTRY
+#define LWCA_POST_INTR_CERTS_DN         "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_INTERMEDIATE_CA_DN_ENTRY
 #define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
 #define LWCA_POST_CN_FILTER             "(&(cn=%s)(objectClass=%s))"
 #define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"
@@ -39,7 +42,7 @@
 #define LWCA_POST_CA_NEXT_CRL_UPDATE    "cANextCRLUpdate"
 
 // Certificate Data LDAP Metadata
-#define LWCA_POST_CERT_DN               "cn=%s,%s"
+#define LWCA_POST_CERT_DN               "cn=%s,cn=" LWCA_POST_CERTS_CN ",%s"
 #define LWCA_POST_CERT_OBJ_CLASS        "vmwCerts"
 #define LWCA_POST_CERT_SERIAL_NUM       "certSerialNumber"
 #define LWCA_POST_CERT_ISSUER           "certIssuer"

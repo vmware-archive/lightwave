@@ -155,9 +155,9 @@ LwCASerializeCAToJSON(
     );
 
 DWORD
-LwCASerializeConfigCAToJSON(
-    PCSTR       pcszCAId,
-    PCSTR       pcszDomain,
+LwCASerializeContainerToJSON(
+    PCSTR       pcszDN,
+    PCSTR       pcszCN,
     PSTR        *ppszReqBody
     );
 

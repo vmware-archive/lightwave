@@ -256,6 +256,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_LDAP_GET_FAILED                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 2)
 #define LWCA_LDAP_PATCH_FAILED              (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 3)
 #define LWCA_LDAP_UNKNOWN_OP                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 4)
+#define LWCA_LDAP_DELETE_FAILED             (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 5)
 
 // Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
@@ -442,6 +443,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_LDAP_GET_FAILED              ,   "LWCA_LDAP_GET_FAILED"              ,   "LDAP search could not be completed"}, \
     { LWCA_LDAP_PATCH_FAILED            ,   "LWCA_LDAP_PATCH_FAILED"            ,   "LDAP update could not be completed"}, \
     { LWCA_LDAP_UNKNOWN_OP              ,   "LWCA_LDAP_UNKNOWN_OP"              ,   "LDAP operation not known"}, \
+    { LWCA_LDAP_DELETE_FAILED           ,   "LWCA_LDAP_DELETE_FAILED"           ,   "LDAP delete could not be completed"}, \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
     { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
     { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \

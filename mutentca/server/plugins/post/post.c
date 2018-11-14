@@ -80,6 +80,15 @@ _IsHttpResponseValid(
 
 static
 DWORD
+_LwCARestExecuteDelete(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PSTR                *ppszResponse,
+    long                *pStatusCode
+    );
+
+static
+DWORD
 _LwCADbPostPluginGetCAImpl(
     PLWCA_DB_HANDLE     pHandle,
     PCSTR               pcszCAId,
@@ -163,6 +172,24 @@ _LwCARestExecutePatch(
     PCSTR               pcszReqBody,
     PSTR                *ppszResponse,
     long                *pStatusCode
+    );
+
+static
+DWORD
+_LwCAAddCertContainerInCA(
+    PLWCA_POST_HANDLE   pPostHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszDN
+    );
+
+static
+VOID
+_LwCADbPostDeleteCA(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszParentDN
     );
 
 DWORD
@@ -271,6 +298,7 @@ error:
     }
     goto cleanup;
 }
+
 DWORD
 LwCADbPostPluginAddCA(
     PLWCA_DB_HANDLE     pHandle,
@@ -322,9 +350,14 @@ LwCADbPostPluginAddCA(
                                   &statusCode
                                   );
     BAIL_ON_LWCA_ERROR(dwError);
-    /* TODO -   the _LwCAAddRootCAToConfig step must be undone in case of a
-     *          failure. This will be added when delete CA is implemented.
-     */
+
+    // create certs container under the CA
+    dwError = _LwCAAddCertContainerInCA(pPostHandle,
+                                        pcszCAId,
+                                        pcszParentCA,
+                                        pszParentDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszReqBody);
@@ -333,7 +366,121 @@ cleanup:
     return dwError;
 
 error:
+    _LwCADbPostDeleteCA(pHandle, pcszCAId, pcszParentCA, pszParentDN);
     goto cleanup;
+}
+
+/*
+ * This is a best effort cleanup, hence we will not bail on error after placing
+ * REST request. We add three entries to POST while creating a CA, the creation
+ * of these entries should be atomic to the caller. Hence, we delete all the
+ * entries regardless of their existence on POST.
+ */
+static
+VOID
+_LwCADbPostDeleteCA(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszParentDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszConfigDN = NULL;
+    PSTR                pszCertDN = NULL;
+    PCSTR               pcszCertDNFormat = NULL;
+    PSTR                pszCertAuthDN = NULL;
+    PCSTR               pcszCertAuthDNFormat = NULL;
+    PSTR                pszResponse = NULL;
+    long                statusCode = 0;
+    PLWCA_POST_HANDLE   pPostHandle = NULL;
+
+    if (!pHandle ||
+        IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszParentDN)
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    if (IsNullOrEmptyString(pcszParentCA))
+    {
+        // delete the configuration entry
+        dwError = LwCAAllocateStringPrintfA(&pszConfigDN,
+                                            LWCA_POST_CA_CONFIG_DN,
+                                            pcszCAId
+                                            );
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = _LwCARestExecuteDelete(pPostHandle,
+                                         pszConfigDN,
+                                         &pszResponse,
+                                         &statusCode
+                                         );
+        if (dwError == LWCA_HTTP_NOT_FOUND)
+        {
+            dwError = 0;
+        }
+        BAIL_ON_LWCA_ERROR(dwError);
+        LWCA_SAFE_FREE_STRINGA(pszResponse);
+
+        pcszCertDNFormat = LWCA_POST_ROOT_CERTS_DN;
+        pcszCertAuthDNFormat = LWCA_POST_ROOT_CA_DN_ENTRY;
+    }
+    else
+    {
+        pcszCertDNFormat = LWCA_POST_INTR_CERTS_DN;
+        pcszCertAuthDNFormat = LWCA_POST_INTERMEDIATE_CA_DN_ENTRY;
+    }
+
+    // delete the cert container under CA
+    dwError = LwCAAllocateStringPrintfA(&pszCertDN,
+                                        pcszCertDNFormat,
+                                        pcszCAId,
+                                        pcszParentDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteDelete(pPostHandle,
+                                     pszCertDN,
+                                     &pszResponse,
+                                     &statusCode
+                                     );
+    if (dwError == LWCA_HTTP_NOT_FOUND)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+
+    // delete the CA itself
+    dwError = LwCAAllocateStringPrintfA(&pszCertAuthDN,
+                                        pcszCertAuthDNFormat,
+                                        pcszCAId,
+                                        pcszParentDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteDelete(pPostHandle,
+                                     pszCertAuthDN,
+                                     &pszResponse,
+                                     &statusCode
+                                     );
+    if (dwError == LWCA_HTTP_NOT_FOUND)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszConfigDN);
+    LWCA_SAFE_FREE_STRINGA(pszCertDN);
+    LWCA_SAFE_FREE_STRINGA(pszCertAuthDN);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return;
 }
 
 DWORD
@@ -1380,6 +1527,7 @@ _LwCAAddRootCAToConfig(
     DWORD               dwError = 0;
     PSTR                pszReqBody = NULL;
     PSTR                pszResponse = NULL;
+    PSTR                pszDN = NULL;
     long                statusCode = 0;
 
     if (!pPostHandle || IsNullOrEmptyString(pcszCAId))
@@ -1388,10 +1536,14 @@ _LwCAAddRootCAToConfig(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCASerializeConfigCAToJSON(pcszCAId,
-                                          pPostHandle->pszDomain,
-                                          &pszReqBody
-                                          );
+    dwError = LwCAAllocateStringPrintfA(&pszDN,
+                                        LWCA_POST_CA_CONFIG_DN,
+                                        pcszCAId,
+                                        pPostHandle->pszDomain
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASerializeContainerToJSON(pszDN, pcszCAId, &pszReqBody);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCARestExecutePut(pPostHandle,
@@ -1402,6 +1554,7 @@ _LwCAAddRootCAToConfig(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
     LWCA_SAFE_FREE_STRINGA(pszReqBody);
     LWCA_SAFE_FREE_STRINGA(pszResponse);
     return dwError;
@@ -1506,6 +1659,10 @@ _IsHttpResponseValid(
                 dwError = LWCA_LDAP_PATCH_FAILED;
                 break;
 
+            case VMHTTP_METHOD_DELETE:
+                dwError = LWCA_LDAP_DELETE_FAILED;
+                break;
+
             default:
                 dwError = LWCA_LDAP_UNKNOWN_OP;
                 break;
@@ -1517,6 +1674,61 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCARestExecuteDelete(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PSTR                *ppszResponse,
+    long                *pStatusCode
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszResponse = NULL;
+    long    statusCode = 0;
+
+    if (!pHandle ||
+        !ppszResponse ||
+        !pStatusCode ||
+        IsNullOrEmptyString(pcszDN)
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCARestExecute(pHandle,
+                               VMHTTP_METHOD_DELETE,
+                               pcszDN,
+                               NULL,
+                               NULL,
+                               NULL,
+                               NULL,
+                               &pszResponse,
+                               &statusCode
+                               );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _IsHttpResponseValid(pszResponse,
+                                   statusCode,
+                                   VMHTTP_METHOD_DELETE
+                                   );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszResponse = pszResponse;
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    if (ppszResponse)
+    {
+        *ppszResponse = NULL;
+    }
     goto cleanup;
 }
 
@@ -2011,6 +2223,67 @@ error:
     {
         *ppszDN = NULL;
     }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAAddCertContainerInCA(
+    PLWCA_POST_HANDLE   pPostHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszDN
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszReqBody = NULL;
+    PSTR        pszResponse = NULL;
+    PSTR        pszCertDN = NULL;
+    PCSTR       pcszDnFormat = NULL;
+    long        statusCode = 0;
+
+    if (!pPostHandle || IsNullOrEmptyString(pcszCAId))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (IsNullOrEmptyString(pcszParentCA))
+    {
+        pcszDnFormat = LWCA_POST_ROOT_CERTS_DN;
+    }
+    else
+    {
+        pcszDnFormat = LWCA_POST_INTR_CERTS_DN;
+    }
+
+    dwError = LwCAAllocateStringPrintfA(&pszCertDN,
+                                        pcszDnFormat,
+                                        pcszCAId,
+                                        pcszDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASerializeContainerToJSON(pszCertDN,
+                                           LWCA_POST_CERTS_CN,
+                                           &pszReqBody
+                                           );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePut(pPostHandle,
+                                  pszReqBody,
+                                  &pszResponse,
+                                  &statusCode
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszCertDN);
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
     goto cleanup;
 }
 

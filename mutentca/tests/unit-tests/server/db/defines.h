@@ -19,7 +19,7 @@
 #define LWCA_POST_PLUGIN_ADD_CERT           "LwCADbPostPluginAddCertData"
 #define LWCA_POST_SERIALIZE_CA_TO_JSON      "LwCASerializeCAToJSON"
 #define LWCA_POST_SERIALIZE_CERT_DATA_TO_JSON   "LwCASerializeCertDataToJSON"
-#define LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON      "LwCASerializeConfigCAToJSON"
+#define LWCA_POST_SERIALIZE_CONTAINER_TO_JSON   "LwCASerializeContainerToJSON"
 #define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
 #define LWCA_POST_DESERIALIZE_JSON_TO_CERT_DATA "LwCADeserializeJSONToCertData"
 #define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
@@ -191,8 +191,8 @@
     "    ]\n" \
     "}")
 
-#define SERIALIZED_CONFIG_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Configuration,dc=lw-testdom,dc=com\",\n"  \
+#define SERIALIZED_CONTAINER_JSON ("{\n" \
+    "    \"dn\": \""TEST_PARENT_CA_DN"\",\n"  \
     "    \"attributes\": [\n"   \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
@@ -293,7 +293,7 @@
 
 #define CERT_DATA_JSON_RESPONSE ("{\n" \
     "    \"result\": [{\n" \
-    "        \"dn\": \"cn=2000,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn=2000,cn=Certs,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -326,7 +326,7 @@
     "            \"value\": [\"vmwCerts\"]\n" \
     "        }]\n" \
     "    }, {\n" \
-    "        \"dn\": \"cn=1500,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn=1500,cn=Certs,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -432,7 +432,7 @@
     "]")
 
 #define SERIALIZED_CERT_DATA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn=Certs,cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "    \"attributes\": [\n" \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \

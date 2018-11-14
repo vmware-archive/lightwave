@@ -259,7 +259,7 @@ Test_LwCASerializeConfigRootCAToJson(
 {
     DWORD                       dwError = 0;
     PLWCA_TEST_STATE            pState = NULL;
-    PSTR                        pszFunc = LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON;
+    PSTR                        pszFunc = LWCA_POST_SERIALIZE_CONTAINER_TO_JSON;
     SERIALIZE_CONFIG_CA_JSON    pFnSerialize= NULL;
     PLWCA_DB_CA_DATA            pCaData = NULL;
     PSTR                        pszSerializedData = NULL;
@@ -276,13 +276,13 @@ Test_LwCASerializeConfigRootCAToJson(
     dwError = _LwCALoadCAData(&pCaData);
     assert_int_equal(dwError, 0);
 
-    dwError = pFnSerialize(TEST_PARENT_CA_ID,
-                           DUMMY_DOMAIN,
+    dwError = pFnSerialize(TEST_PARENT_CA_DN,
+                           TEST_PARENT_CA_ID,
                            &pszSerializedData
                            );
     assert_int_equal(dwError, 0);
     assert_non_null(pszSerializedData);
-    assert_string_equal(pszSerializedData, SERIALIZED_CONFIG_ROOT_CA_JSON);
+    assert_string_equal(pszSerializedData, SERIALIZED_CONTAINER_JSON);
 
     LWCA_SAFE_FREE_STRINGA(pszSerializedData);
     LwCADbFreeCAData(pCaData);
