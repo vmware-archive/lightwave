@@ -3,6 +3,9 @@ bin_PROGRAMS = testmutentcaapi
 check_PROGRAMS = testmutentcaapi
 TESTS = testmutentcaapi
 
+SUBDIRS = \
+    test-mutentca-config
+
 testmutentcaapi_SOURCES = \
     ca.c \
     main.c
@@ -17,6 +20,7 @@ testmutentcaapi_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/db/libmutentcadb.la \
+    $(top_builddir)/mutentca/server/policy/libmutentcapolicy.la \
     $(top_builddir)/mutentca/server/api/libmutentcaapi.la \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
@@ -31,16 +35,18 @@ testmutentcaapi_LDFLAGS = \
     -Wl,--wrap,LwCADbCheckCA \
     -Wl,--wrap,LwCADbGetCACertificates \
     -Wl,--wrap,LwCADbGetCA \
-    -Wl,--wrap,LwCAKmCreateKeyPair \
-    -Wl,--wrap,LwCAKmGetPublickey \
-    -Wl,--wrap,LwCAKmGetEncryptedKey \
-    -Wl,--wrap,LwCAKmSignX509Cert \
-    -Wl,--wrap,LwCAKmSignX509Request \
-    -Wl,--wrap,LwCAKmSignX509Crl \
+    -Wl,--wrap,LwCASecurityAddKeyPair \
+    -Wl,--wrap,LwCASecurityCreateKeyPair \
+    -Wl,--wrap,LwCASecurityGetEncryptedKey \
+    -Wl,--wrap,LwCASecuritySignX509Cert \
+    -Wl,--wrap,LwCASecuritySignX509Request \
+    -Wl,--wrap,LwCASecuritySignX509Crl \
     -Wl,--wrap,LwCADbCheckCertData \
     -Wl,--wrap,LwCADbGetCACRLNumber \
     -Wl,--wrap,LwCADbUpdateCA \
     -Wl,--wrap,LwCADbAddCertData \
     -Wl,--wrap,LwCADbGetCertData \
     -Wl,--wrap,LwCADbGetParentCAId \
-    -Wl,--wrap,LwCADbUpdateCAStatus
+    -Wl,--wrap,LwCADbUpdateCAStatus \
+    -Wl,--wrap,LwCAPolicyValidate \
+    -Wl,--wrap,LwCAPolicyGetCertDuration

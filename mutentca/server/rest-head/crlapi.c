@@ -53,6 +53,8 @@ LwCARestGetRootCACRL(
     DWORD                   dwError         = 0;
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
+    PLWCA_CRL               pCrl            = NULL;
+    PSTR                    pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -65,17 +67,23 @@ LwCARestGetRootCACRL(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Get Root CA CRL (Implementation) and set it in the result below
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetCACrl(pRestOp->pReqCtx, pszRootCAId, &pCrl);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CRL,
-                  LWCA_NOT_IMPLEMENTED_VALUE);
+                  pCrl);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCAFreeCrl(pCrl);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 
@@ -101,6 +109,7 @@ LwCARestGetIntermediateCACRL(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PSTR                    pszCAId         = NULL;
+    PLWCA_CRL               pCrl            = NULL;
 
     if (!pIn)
     {
@@ -116,18 +125,20 @@ LwCARestGetIntermediateCACRL(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Get Intermediate CA CRL (Implementation) and set it in the result below
+    dwError = LwCAGetCACrl(pRestOp->pReqCtx, pszCAId, &pCrl);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CRL,
-                  LWCA_NOT_IMPLEMENTED_VALUE);
+                  pCrl);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
+    LwCAFreeCrl(pCrl);
 
     return dwError;
 

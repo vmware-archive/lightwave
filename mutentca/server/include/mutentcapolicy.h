@@ -163,6 +163,8 @@ typedef struct _LWCA_POLICY_CONTEXT
     PLWCA_POLICIES                      pCertPoliciesAllowed;
 } LWCA_POLICY_CONTEXT, *PLWCA_POLICY_CONTEXT;
 
+extern PLWCA_POLICY_CONTEXT gpPolicyCtx;
+
 /*
  * MutentCA Policy requires a json policy config file to initialize. The contents of this
  * json file should be passed to the InitCtx method
@@ -193,6 +195,17 @@ LWCAPolicyValidate(
     );
 
 /*
+ * Get the certificate duration defined for the specified policy type
+ * If CertDuration policy is not defined, return duration 0 with error
+ */
+DWORD
+LwCAPolicyGetCertDuration(
+    PLWCA_POLICY_CONTEXT                pPolicyCtx,         // IN
+    LWCA_POLICY_TYPE                    policyType,         // IN
+    DWORD                               *pdwDuration        // OUT
+    );
+
+/*
  * Free the policy context when you no longer need it
  */
 VOID
@@ -214,6 +227,12 @@ LwCAPolicyCfgObjInit(
     PCSTR                           pcszPrefix,
     PCSTR                           pcszSuffix,
     PLWCA_POLICY_CFG_OBJ            *ppObj
+    );
+
+DWORD
+LwCAPolicyCfgObjArrayAllocate(
+    DWORD                           dwCount,
+    PLWCA_POLICY_CFG_OBJ_ARRAY      *ppObjArray
     );
 
 DWORD

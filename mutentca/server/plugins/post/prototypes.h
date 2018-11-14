@@ -12,6 +12,7 @@
  * under the License.
  */
 
+// post.c
 DWORD
 LwCADbPostPluginInitialize(
     PCSTR               pcszConfigPath,
@@ -134,4 +135,87 @@ LwCADbPostPluginFreeString(
 VOID
 LwCADbPostPluginFreeHandle(
     PLWCA_DB_HANDLE pDbHandle
+    );
+
+DWORD
+LwCADbPostCNFilterBuilder(
+    PCSTR   pcszContainer,
+    PCSTR   pcszObjClass,
+    PSTR    *ppszResultCond
+    );
+
+// serializer.c
+DWORD
+LwCASerializeCAToJSON(
+    PCSTR               pcszCAId,
+    PLWCA_DB_CA_DATA    pCAData,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszDN,
+    PSTR                *ppszReqBody
+    );
+
+DWORD
+LwCASerializeConfigCAToJSON(
+    PCSTR       pcszCAId,
+    PCSTR       pcszDomain,
+    PSTR        *ppszReqBody
+    );
+
+DWORD
+LwCADeserializeJSONToCA(
+    PCSTR               pcszResponse,
+    PLWCA_DB_CA_DATA    *ppCaData
+    );
+
+DWORD
+LwCAGenerateCAPatchRequestBody(
+    PLWCA_DB_CA_DATA    pCaData,
+    PSTR                *ppszBody
+    );
+
+DWORD
+LwCAGetStringAttrFromResponse(
+    PCSTR       pcszResponse,
+    PCSTR       pcszKey,
+    PSTR        *ppszAttrValue
+    );
+
+DWORD
+LwCAGetIntAttrFromResponse(
+    PCSTR       pcszResponse,
+    PCSTR       pcszKey,
+    int         *pValue
+    );
+
+DWORD
+LwCAGetStringArrayAttrFromResponse(
+    PCSTR               pcszResponse,
+    PCSTR               pcszKey,
+    PLWCA_STRING_ARRAY  *ppStrArray
+    );
+
+DWORD
+LwCASerializeCertDataToJSON(
+    PCSTR               pcszCAId,
+    PLWCA_DB_CERT_DATA  pCertData,
+    PCSTR               pcszCADN,
+    PSTR                *ppszResponse
+    );
+
+DWORD
+LwCADeserializeJSONToCertData(
+    PCSTR                       pcszResponse,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    );
+
+DWORD
+LwCAGetCertArrayFromEncodedStringArray(
+    PLWCA_STRING_ARRAY          pEncodedStrArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
+DWORD
+LwCAGenerateCertPatchRequestBody(
+    PLWCA_DB_CERT_DATA  pCertData,
+    PSTR                *ppszBody
     );

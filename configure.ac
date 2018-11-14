@@ -37,9 +37,22 @@ CXXFLAGS="$CXXFLAGS -frtti"
 AM_CPPFLAGS="$AM_CPPFLAGS -I${top_srcdir}/include"
 AM_CFLAGS="$AM_CFLAGS -Wall -Werror -fno-strict-aliasing"
 
+#flag overrides to allow per module compile flags.
+#warning ignore flags are here (temporarily) so that modules
+#can start fixing code by overriding in respective Makefile.am
+#to check a module, do AM_CFLAGS=$(CFLAGS_DESIRED) in Makefile.am
+CFLAGS_ORIGINAL="$AM_CFLAGS"
+CFLAGS_COMPAT="-Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
+CFLAGS_DESIRED="$CFLAGS_ORIGINAL -fno-strict-aliasing -Wformat -Wformat-security -Werror=format-security -fstack-protector-all"
+#reset cflags to not break existing
+AM_CFLAGS="$AM_CFLAGS $CFLAGS_COMPAT"
+
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_CFLAGS)
 AC_SUBST(AM_CXXFLAGS)
+AC_SUBST(CFLAGS_ORIGINAL)
+AC_SUBST(CFLAGS_COMPAT)
+AC_SUBST(CFLAGS_DESIRED)
 
 AC_HEADER_STDC
 AC_CHECK_HEADERS(pthread.h errno.h sys/types.h sys/stat.h stdio.h string.h strings.h)
@@ -1945,6 +1958,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/common/Makefile
                  mutentca/server/Makefile
                  mutentca/server/api/Makefile
+                 mutentca/server/authz/Makefile
                  mutentca/server/common/Makefile
                  mutentca/server/config/Makefile
                  mutentca/server/security/Makefile
@@ -1960,6 +1974,8 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/api/Makefile
+                 mutentca/tests/unit-tests/server/api/test-mutentca-config/Makefile
+                 mutentca/tests/unit-tests/server/authz/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile
                  mutentca/tests/unit-tests/server/db/test-mutentcadb-config/Makefile
@@ -2037,7 +2053,21 @@ AC_CONFIG_FILES([Makefile
 AC_CONFIG_LINKS([
                 vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
                 ])
-
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config2.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config2.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config-invalid.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config-invalid.json
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-certificate.pem:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-certificate.pem
+                ])
+AC_CONFIG_LINKS([
+                mutentca/tests/unit-tests/server/api/test-mutentca-config/test-privatekey.pem:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-privatekey.pem
+                ])
 AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json:mutentca/tests/unit-tests/server/db/test-mutentcadb-config/test-mutentcadb-config.json
                 ])

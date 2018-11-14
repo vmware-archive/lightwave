@@ -202,7 +202,13 @@ _LwCAX509ReqSetSubjectKeyIdentifier(
 
 static
 DWORD
-_LwCAX509VerifyAndSetValidity(
+_LwCAVerifyCertValidity(
+    PLWCA_CERT_VALIDITY pValidity
+    );
+
+static
+DWORD
+_LwCAX509SetValidity(
     X509                *pCert,
     X509                *pIssuer,
     PLWCA_CERT_VALIDITY pValidity
@@ -299,6 +305,27 @@ DWORD
 _LwCAConvertTimeToGeneralizedTime(
     time_t  tm,
     PSTR    *ppszGeneralizedTime
+    );
+
+static
+DWORD
+_LwCAAsn1BitStringToDword(
+    ASN1_BIT_STRING *pBitString,
+    DWORD           *pdwOut
+    );
+
+static
+DWORD
+_LwCAPrivateKeyToPEM(
+    EVP_PKEY    *pPrivateKey,
+    PSTR        *ppszPrivateKey
+    );
+
+static
+DWORD
+_LwCAGetPublicKey(
+    EVP_PKEY *pPrivateKey,
+    PSTR *ppszPublicKey
     );
 
 DWORD
@@ -1103,6 +1130,8 @@ LwCAX509ReqGetSubjectAltNames(
             BAIL_ON_LWCA_ERROR(dwError);
         }
 
+        // Skipping parsing of email address and uri
+
         if (pszSANName)
         {
             OPENSSL_free(pszSANName);
@@ -1110,8 +1139,11 @@ LwCAX509ReqGetSubjectAltNames(
         }
     }
 
-    dwError = LwCACreateStringArray(ppszSANEntries, dwIdx2, &pSANArray);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (dwIdx2 != 0)
+    {
+        dwError = LwCACreateStringArray(ppszSANEntries, dwIdx2, &pSANArray);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     *ppSANArray = pSANArray;
 
@@ -1153,10 +1185,8 @@ LwCAX509ReqGetKeyUsage(
     )
 {
     DWORD dwError = 0;
-    int iBytes = 0;
     STACK_OF(X509_EXTENSION) *pExts = NULL;
     ASN1_BIT_STRING *pKeyUsageBitString = NULL;
-    PBYTE pKeyUsageBytes = 0;
     DWORD dwKeyUsage = 0;
 
     if (!pReq || !pdwKeyUsage)
@@ -1179,20 +1209,12 @@ LwCAX509ReqGetKeyUsage(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    iBytes = i2d_ASN1_BIT_STRING(pKeyUsageBitString, &pKeyUsageBytes);
-    if (iBytes < 0)
-    {
-        dwError = LWCA_INVALID_CSR_FIELD;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCABytesToDword(pKeyUsageBytes, &dwKeyUsage);
+    dwError = _LwCAAsn1BitStringToDword(pKeyUsageBitString, &dwKeyUsage);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *pdwKeyUsage = dwKeyUsage;
 
 cleanup:
-    LWCA_SAFE_FREE_MEMORY(pKeyUsageBytes);
     if (pKeyUsageBitString)
     {
         ASN1_BIT_STRING_free(pKeyUsageBitString);
@@ -1314,7 +1336,10 @@ LwCAGenerateX509Certificate(
     dwError = _LwCAX509Init(&pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCAX509VerifyAndSetValidity(pCert, pIssuer, pValidity);
+    dwError = _LwCAVerifyCertValidity(pValidity);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAX509SetValidity(pCert, pIssuer, pValidity);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = X509_set_subject_name(pCert, pSubjectName);
@@ -1356,6 +1381,92 @@ cleanup:
     {
         X509_free(pIssuer);
     }
+    if (pPublicKey)
+    {
+        EVP_PKEY_free(pPublicKey);
+    }
+    if (pStack)
+    {
+        sk_X509_EXTENSION_pop_free(pStack, X509_EXTENSION_free);
+    }
+    return dwError;
+
+error:
+    LwCAX509Free(pCert);
+    if (ppCert)
+    {
+        *ppCert = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAGenerateSelfSignX509Certificate(
+    X509_REQ                *pRequest,
+    PLWCA_CERT_VALIDITY     pValidity,
+    X509                    **ppCert
+    )
+{
+    DWORD dwError = 0;
+    X509 *pCert = NULL;
+    EVP_PKEY *pPublicKey = NULL;
+    X509_NAME *pSubjectName = NULL;
+    STACK_OF(X509_EXTENSION) *pStack  = NULL;
+
+    if (!pRequest || !pValidity || !ppCert)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCAX509ReqGetPublicKey(pRequest, &pPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAX509ReqGetVerifiedSubjectNameRef(pRequest, &pSubjectName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAX509Init(&pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAVerifyCertValidity(pValidity);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!ASN1_TIME_set(X509_get_notBefore(pCert), pValidity->tmNotBefore))
+    {
+        BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_SET_START_TIME);
+    }
+
+    if (!ASN1_TIME_set(X509_get_notAfter(pCert), pValidity->tmNotAfter))
+    {
+        BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_SET_END_TIME);
+    }
+
+    dwError = X509_set_subject_name(pCert, pSubjectName);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
+
+    dwError = X509_set_issuer_name(pCert, pSubjectName);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
+
+    dwError = X509_set_pubkey(pCert, pPublicKey);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
+
+    pStack = X509_REQ_get_extensions(pRequest);
+    if (!pStack)
+    {
+        pStack = sk_X509_EXTENSION_new_null();
+        if (pStack == NULL)
+        {
+            dwError = LWCA_OUT_OF_MEMORY_ERROR;
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+    }
+
+    dwError = _LwCAAddExtensionsToX509Cert(pStack, pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCert = pCert;
+
+cleanup:
     if (pPublicKey)
     {
         EVP_PKEY_free(pPublicKey);
@@ -1912,6 +2023,107 @@ error:
     if (ppszNextCRLUpdate)
     {
         *ppszNextCRLUpdate = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCACreateKeyPair(
+    size_t nKeyLength,
+    PSTR *ppszPrivateKey,
+    PSTR *ppszPublicKey
+    )
+{
+    DWORD dwError = 0;
+    EVP_PKEY *pPrivateKey = NULL;
+    RSA *pRSA = NULL;
+    BIGNUM *pBigNum = NULL;
+    PSTR pszPrivateKey = NULL;
+    PSTR pszPublicKey = NULL;
+
+    if ((nKeyLength < 1024) || (nKeyLength > (16 * 1024)))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pPrivateKey = EVP_PKEY_new();
+    if (!pPrivateKey)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pRSA = RSA_new();
+    if ( pRSA == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pBigNum = BN_new();
+    if ( pBigNum == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!BN_set_word(pBigNum, RSA_F4))
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (RSA_generate_key_ex(pRSA, nKeyLength, pBigNum, NULL) <= 0)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!EVP_PKEY_assign_RSA(pPrivateKey, pRSA))
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pRSA = NULL; /* pPrivateKey free will free pRSA */
+
+    dwError = _LwCAPrivateKeyToPEM(pPrivateKey, &pszPrivateKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAGetPublicKey(pPrivateKey, &pszPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszPrivateKey = pszPrivateKey;
+    *ppszPublicKey = pszPublicKey;
+
+cleanup:
+    if (pBigNum != NULL)
+    {
+        BN_free(pBigNum);
+    }
+
+    if (pPrivateKey != NULL)
+    {
+        EVP_PKEY_free(pPrivateKey);
+    }
+
+    if (pRSA)
+    {
+        RSA_free(pRSA);
+    }
+    return dwError;
+
+error:
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPublicKey, LwCAStringLenA(pszPublicKey));
+    if (ppszPrivateKey)
+    {
+        *ppszPrivateKey = NULL;
+    }
+    if (ppszPublicKey)
+    {
+        *ppszPublicKey = NULL;
     }
     goto cleanup;
 }
@@ -3131,9 +3343,7 @@ error:
 
 static
 DWORD
-_LwCAX509VerifyAndSetValidity(
-    X509                *pCert,
-    X509                *pIssuer,
+_LwCAVerifyCertValidity(
     PLWCA_CERT_VALIDITY pValidity
     )
 {
@@ -3169,6 +3379,20 @@ _LwCAX509VerifyAndSetValidity(
         dwError = LWCA_INVALID_TIME_SPECIFIED;
         BAIL_ON_LWCA_ERROR(dwError);
     }
+
+error:
+    return dwError;
+}
+
+static
+DWORD
+_LwCAX509SetValidity(
+    X509                *pCert,
+    X509                *pIssuer,
+    PLWCA_CERT_VALIDITY pValidity
+    )
+{
+    DWORD dwError = 0;
 
     if (X509_cmp_time(X509_get_notBefore(pIssuer), &pValidity->tmNotBefore) >= 0)
     {
@@ -3450,8 +3674,6 @@ _LwCAConvertASNTimeToGeneralizedTime(
     DWORD dwError = 0;
     ASN1_GENERALIZEDTIME *pAsnGTm = NULL;
     PSTR pszGeneralizedTime = NULL;
-    BUF_MEM *pBuffMem = NULL;
-    BIO* pBioMem = NULL;
 
     pAsnGTm = ASN1_TIME_to_generalizedtime(pAsnTime, NULL);
     if (pAsnGTm == NULL)
@@ -3460,27 +3682,15 @@ _LwCAConvertASNTimeToGeneralizedTime(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    pBioMem = BIO_new(BIO_s_mem());
-    if (pBioMem == NULL)
-    {
-        dwError = LWCA_OUT_OF_MEMORY_ERROR;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = ASN1_GENERALIZEDTIME_print(pBioMem, pAsnGTm);
-    BAIL_ON_SSL_ERROR(dwError, LWCA_OUT_OF_MEMORY_ERROR);
-
-    BIO_get_mem_ptr(pBioMem, &pBuffMem);
-
-    dwError = LwCAAllocateStringWithLengthA(pBuffMem->data, pBuffMem->length, &pszGeneralizedTime);
+    dwError = LwCAAllocateStringA(pAsnGTm->data, &pszGeneralizedTime);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszGeneralizedTime = pszGeneralizedTime;
 
 cleanup:
-    if (pBioMem != NULL)
+    if (pAsnGTm)
     {
-        BIO_free(pBioMem);
+        ASN1_STRING_free(pAsnGTm);
     }
     return dwError;
 
@@ -3726,6 +3936,165 @@ error:
     if (ppszGeneralizedTime)
     {
         *ppszGeneralizedTime = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAAsn1BitStringToDword(
+    ASN1_BIT_STRING *pBitString,
+    DWORD           *pdwOut
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwIdx = 0;
+    BYTE temp = 0;
+    DWORD dwTemp = 0;
+    DWORD dwMove = 0;
+    DWORD dwOut = 0;
+
+    if (!pBitString || pBitString->length > 4)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    for ( ; dwIdx < pBitString->length ; ++dwIdx)
+    {
+        VM_BYTE_REVERSE_BITS(pBitString->data[dwIdx], temp);
+        dwTemp = (DWORD) temp;
+
+        dwOut = dwOut | (dwTemp << dwMove);
+        dwMove += 8;
+    }
+
+    *pdwOut = dwOut;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAPrivateKeyToPEM(
+    EVP_PKEY    *pPrivateKey,
+    PSTR        *ppszPrivateKey
+    )
+{
+    DWORD dwError = 0;
+    BUF_MEM *pBuffMem = NULL;
+    BIO* pBioMem = NULL;
+    PKCS8_PRIV_KEY_INFO *pPkcs8FormatKey = NULL;
+    PSTR pszPrivateKey = NULL;
+
+    if(pPrivateKey == NULL)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pBioMem = BIO_new(BIO_s_mem());
+    if (pBioMem == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pPkcs8FormatKey = EVP_PKEY2PKCS8_broken(pPrivateKey, PKCS8_OK);
+    if (pPkcs8FormatKey == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!PEM_write_bio_PKCS8_PRIV_KEY_INFO(pBioMem, pPkcs8FormatKey))
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    BIO_get_mem_ptr(pBioMem, &pBuffMem);
+
+    dwError = LwCAAllocateStringWithLengthA(pBuffMem->data, pBuffMem->length - 1, &pszPrivateKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszPrivateKey = pszPrivateKey;
+
+cleanup:
+    if (pBioMem != NULL)
+    {
+        BIO_free_all(pBioMem);
+    }
+    if (pPkcs8FormatKey)
+    {
+        PKCS8_PRIV_KEY_INFO_free(pPkcs8FormatKey);
+    }
+
+    return dwError;
+
+error:
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
+    if (ppszPrivateKey)
+    {
+        *ppszPrivateKey = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCAGetPublicKey(
+    EVP_PKEY *pPrivateKey,
+    PSTR *ppszPublicKey
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszPublicKey = NULL;
+    BUF_MEM *pBuffMem = NULL;
+    BIO *pBioMem = NULL;
+
+    if(pPrivateKey == NULL)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pBioMem = BIO_new(BIO_s_mem());
+    if (pBioMem == NULL)
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!PEM_write_bio_PUBKEY(pBioMem, pPrivateKey))
+    {
+        dwError = LWCA_OUT_OF_MEMORY_ERROR;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    BIO_get_mem_ptr(pBioMem, &pBuffMem);
+
+    dwError = LwCAAllocateStringWithLengthA(pBuffMem->data, pBuffMem->length - 1, &pszPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszPublicKey = pszPublicKey;
+
+cleanup:
+    if (pBioMem != NULL)
+    {
+        BIO_free(pBioMem);
+    }
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszPublicKey);
+    if (ppszPublicKey)
+    {
+        *ppszPublicKey = NULL;
     }
     goto cleanup;
 }

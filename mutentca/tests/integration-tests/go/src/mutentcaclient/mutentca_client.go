@@ -9,15 +9,16 @@ type MutentCAClientInterface interface {
 	GetCAVersion() (*models.Version, error)
 	GetRootCA() (*models.CACertificates, error)
 
-	CreateIntermediateCA(caId string, parentCAId string, country []string, state []string, locality []string, orgUnit []string, policy string, startTime string, endTime string) (*models.CACertificates, error)
+	CreateIntermediateCA(caId string, parentCAId string, country []string, state []string, locality []string, orgUnit []string, policy string, validity *models.Validity) (*models.CACertificates, error)
 	GetIntermediateCA(caId string) (*models.CACertificates, error)
 	RevokeIntermediateCA(caId string) error
+	DeleteIntermediateCA(caId string) error
 
 	GetRootCACRL() (*models.CRL, error)
 	GetIntermediateCACRL(caId string) (*models.CRL, error)
 
-	GetRootCASignedCert(csr string, startTime string, endTime string, signatureAlgo string) (*models.Certificate, error)
+	GetRootCASignedCert(csr string, validity *models.Validity, signatureAlgo string) (*models.Certificate, error)
 	RevokeRootCASignedCert(cert string) error
-	GetIntermediateCASignedCert(caId string, csr string, startTime string, endTime string, signatureAlgo string) (*models.Certificate, error)
+	GetIntermediateCASignedCert(caId string, csr string,  validity *models.Validity, signatureAlgo string) (*models.Certificate, error)
 	RevokeIntermediateCASignedCert(caId string, cert string) error
 }

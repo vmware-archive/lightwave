@@ -19,4 +19,6 @@
 #define MUTENTCA_SECURITY_PLUGIN_NAME        "securityPlugin"
 #define MUTENTCA_SECURITY_PLUGIN_CONFIG      "securityPluginConfig"
 
+#define LWCA_MIN_CA_CERT_PRIV_KEY_LENGTH     2048
+
 #endif /* _LWCA_MUTENTCA_SECURITY_DEFINES_H_ */

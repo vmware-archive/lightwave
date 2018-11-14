@@ -21,6 +21,9 @@ typedef struct _VMW_CA_PARAMS
     PSTR    pszUsername;
     PSTR    pszPassword;
 
+    PSTR    pszCAServer;
+    PSTR    pszCAId;
+
     PSTR    pszCertDuration;
     size_t  privKeySize;
 

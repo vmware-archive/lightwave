@@ -87,11 +87,6 @@ typedef UINT8 BOOLEAN, *PBOOLEAN;
 typedef struct _LWCA_CFG_CONNECTION* PLWCA_CFG_CONNECTION;
 typedef struct _LWCA_CFG_KEY*        PLWCA_CFG_KEY;
 
-typedef struct _LWCA_STRING_ARRAY
-{
-    PSTR    *ppData;
-    DWORD   dwCount;
-} LWCA_STRING_ARRAY, *PLWCA_STRING_ARRAY;
 
 #define LWCA_ASCII_aTof(c)     ( (c) >= 'a' && (c) <= 'f' )
 #define LWCA_ASCII_AToF(c)     ( (c) >= 'A' && (c) <= 'F' )
@@ -171,6 +166,14 @@ typedef struct _LWCA_STRING_ARRAY
         }                                   \
     } while (0)
 
+#define LWCA_SAFE_JSON_DECREF(PTR)      \
+    do {                                \
+        if ((PTR)) {                    \
+            LwCAJsonCleanupObject(PTR); \
+            (PTR) = NULL;               \
+        }                               \
+    } while(0)
+
 typedef enum
 {
     LWCA_LOG_TYPE_CONSOLE = 0,
@@ -232,6 +235,9 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 
 #define LWCA_LOG_ERROR( Format, ... ) \
     LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_ERROR, (Format), ##__VA_ARGS__ )
+
+#define LWCA_LOG_ALERT( Format, ... ) \
+    LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_ALERT, (Format), ##__VA_ARGS__ )
 
 #define LWCA_LOG_WARNING( Format, ... ) \
     LWCA_LOG_GENERAL( LWCA_LOG_LEVEL_WARNING, (Format), ##__VA_ARGS__ )
@@ -353,6 +359,9 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define BAIL_ON_LWCA_ERROR_NO_LOG(dwError) \
     if ((dwError)) { goto error; }
 
+#define BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid) \
+    if ((bIsValid) == FALSE) { goto error; }
+
 #ifndef IsNullOrEmptyString
 #define IsNullOrEmptyString(str) (!(str) || !*(str))
 #endif /* IsNullOrEmptyString */
@@ -370,6 +379,29 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_TIME_SECS_PER_DAY              ( 24 * LWCA_TIME_SECS_PER_HOUR)
 #define LWCA_TIME_SECS_PER_WEEK             (  7 * LWCA_TIME_SECS_PER_DAY)
 #define LWCA_TIME_SECS_PER_YEAR             (366 * LWCA_TIME_SECS_PER_DAY)
+
+// MutentCA OIDC constants
+
+#define LWCA_OIDC_VMDIR_SCOPE               "openid id_groups at_groups rs_vmdir"
+
+// MutentCA VMDir LDAP constants
+
+#define LWCA_LDAP_SCOPE                     "scope"
+#define LWCA_LDAP_SCOPE_SUB                 "sub"
+#define LWCA_LDAP_ATTRS                     "attrs"
+#define LWCA_LDAP_ATTR_UPN                  "userPrincipalName"
+#define LWCA_LDAP_ATTR_DN                   "dn"
+#define LWCA_LDAP_FILTER                    "filter"
+#define LWCA_LDAP_FILTER_UPN_FMT            "("LWCA_LDAP_ATTR_UPN"=%s)"
+#define LWCA_VMDIR_RESP_RESULT              "result"
+#define LWCA_VMDIR_REST_LDAP_PORT           7478
+#define LWCA_VMDIR_REST_LDAP_URI_PREFIX     "/v1/vmdir/ldap"
+
+// HTTP Status Codes
+
+#define LWCA_HTTP_RESP_OK                    200
+#define LWCA_HTTP_RESP_NOT_FOUND             404
+
 
 typedef struct _LWCA_CERT_VALIDITY
 {
@@ -490,6 +522,16 @@ LwCAFreeStringArrayA(
 VOID
 LwCAFreeStringArray(
     PLWCA_STRING_ARRAY pStrArray
+    );
+
+DWORD
+LwCARequestContextCreate(
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    );
+
+VOID
+LwCARequestContextFree(
+    PLWCA_REQ_CONTEXT       pReqCtx
     );
 
 DWORD
@@ -642,6 +684,12 @@ LwCACopyFile(
     PCSTR pszDest
     );
 
+DWORD
+LwCAReadFileToString(
+    PCSTR   pcszFilePath,
+    PSTR    *ppszData
+    );
+
 // misc.c
 
 typedef VOID*       LWCA_LIB_HANDLE;
@@ -679,12 +727,6 @@ LwCAHexStringToBytes(
     );
 
 DWORD
-LwCABytesToDword(
-    PBYTE  pBytes,
-    DWORD* pdwOut
-    );
-
-DWORD
 LwCAGetInstallDirectory(
     PSTR *ppszInstallDir
     );
@@ -699,6 +741,96 @@ LwCAGetLogDirectory(
     PSTR *ppszLogDir
     );
 
+DWORD
+LwCACreateKey(
+    PBYTE       pData,
+    DWORD       dwLength,
+    PLWCA_KEY   *ppKey
+    );
+
+DWORD
+LwCACopyKey(
+    PLWCA_KEY pKey,
+    PLWCA_KEY *ppKey
+    );
+
+VOID
+LwCAFreeKey(
+    PLWCA_KEY pKey
+    );
+
+DWORD
+LwCADbCreateCAData(
+    PCSTR                       pcszSubjectName,
+    PLWCA_CERTIFICATE_ARRAY     pCertificates,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    LWCA_CA_STATUS              status,
+    PLWCA_DB_CA_DATA            *ppCAData
+    );
+
+VOID
+LwCADbFreeCAData(
+    PLWCA_DB_CA_DATA pCAData
+    );
+
+DWORD
+LwCACreateCertArray(
+    PSTR                     *ppszCertificates,
+    DWORD                    dwCount,
+    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
+    );
+
+DWORD
+LwCACreateStringArrayFromCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_STRING_ARRAY          *ppStrArray
+    );
+
+DWORD
+LwCACopyCertArray(
+    PLWCA_CERTIFICATE_ARRAY     pCertArray,
+    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+    );
+
+VOID
+LwCAFreeCertificates(
+    PLWCA_CERTIFICATE_ARRAY pCertArray
+    );
+
+DWORD
+LwCACreateCertificate(
+    PCSTR               pcszCertificate,
+    PLWCA_CERTIFICATE   *ppCertificate
+    );
+
+VOID
+LwCAFreeCertificate(
+    PLWCA_CERTIFICATE pCertificate
+    );
+
+DWORD
+LwCADbCreateCertData(
+    PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszTimeValidFrom,
+    PCSTR                   pcszTimeValidTo,
+    DWORD                   revokedReason,
+    PCSTR                   pcszRevokedDate,
+    LWCA_CERT_STATUS        status,
+    PLWCA_DB_CERT_DATA      *ppCertData
+    );
+
+VOID
+LwCADbFreeCertData(
+    PLWCA_DB_CERT_DATA pCertData
+    );
+
+VOID
+LwCADbFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
+    );
 
 // regexutil.c
 
@@ -935,6 +1067,18 @@ LwCADNToRDNArray(
     PLWCA_STRING_ARRAY* ppRDNStrArray
     );
 
+DWORD
+LwCAUPNToDN(
+    PCSTR                   pcszUPN,
+    PSTR                    *ppszDN
+    );
+
+DWORD
+LwCADNSNameToDCDN(
+    PCSTR       pcszDNSName,
+    PSTR        *ppszDN
+    );
+
 // jsonutils.c
 
 typedef struct json_t   _LWCA_JSON_OBJECT;
@@ -952,6 +1096,14 @@ LwCAJsonGetObjectFromKey(
     BOOLEAN                 bOptional,
     PCSTR                   pcszKey,
     PLWCA_JSON_OBJECT       *ppJsonValue
+    );
+
+DWORD
+LwCAJsonGetConstStringFromKey(
+    PLWCA_JSON_OBJECT       pJson,
+    BOOLEAN                 bOptional,
+    PCSTR                   pcszKey,
+    PCSTR                   *ppcszValue
     );
 
 DWORD
@@ -1017,6 +1169,48 @@ LwCAJsonArrayGetBorrowedRef(
     PLWCA_JSON_OBJECT       pJsonIn,
     SIZE_T                  idx,
     PLWCA_JSON_OBJECT       *ppJsonOut // Borrowed reference, do not free
+    );
+
+DWORD
+LwCAJsonObjectCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    );
+
+DWORD
+LwCAJsonArrayCreate(
+    PLWCA_JSON_OBJECT  *ppJson
+    );
+
+DWORD
+LwCAJsonArrayStringCopy(
+    PLWCA_JSON_OBJECT   pSrc,
+    PLWCA_JSON_OBJECT   *ppDest
+    );
+
+DWORD
+LwCAJsonSetStringToObject(
+    PLWCA_JSON_OBJECT   pObj,
+    PCSTR               pcszKey,
+    PCSTR               pcszValue
+    );
+
+DWORD
+LwCAJsonSetJsonToObject(
+    PLWCA_JSON_OBJECT       pObj,
+    PCSTR                   pcszKey,
+    PLWCA_JSON_OBJECT       pJson
+    );
+
+DWORD
+LwCAJsonAppendStringToArray(
+    PLWCA_JSON_OBJECT   pArray,
+    PCSTR               pcszValue
+    );
+
+DWORD
+LwCAJsonAppendJsonToArray(
+    PLWCA_JSON_OBJECT       pArray,
+    PLWCA_JSON_OBJECT       pJson
     );
 
 VOID

@@ -46,8 +46,9 @@ typedef struct _LWCA_ERRNO_MAP
 
 #define LWCA_SYSTEM_ERROR_BASE              0
 #define LWCA_AUTH_ERROR_BASE                100
-#define LWCA_POLICY_ERROR_BASE              200
-#define LWCA_SSL_ERROR_BASE                 300
+#define LWCA_AUTHZ_ERROR_BASE               200
+#define LWCA_POLICY_ERROR_BASE              300
+#define LWCA_SSL_ERROR_BASE                 400
 #define LWCA_KEY_ERROR_BASE                 500
 #define LWCA_STORAGE_ERROR_BASE             600
 #define LWCA_REST_ERROR_BASE                700
@@ -56,6 +57,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SECURITY_ERROR_BASE            1000
 #define LWCA_CURL_ERROR_BASE                1100
 #define LWCA_REGEX_ERROR_BASE               1200
+#define LWCA_LDAP_ERROR_BASE                1300
 #define LWCA_MISC_ERROR_BASE                2000
 
 // System Error Codes (80000 - 80099)
@@ -78,7 +80,7 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_INVALID_DATA             (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  17)
 #define LWCA_ERROR_BUFFER_OVERFLOW          (LWCA_ERROR_BASE + LWCA_SYSTEM_ERROR_BASE +  18)
 
-// Auth and AuthZ Error Codes (80100 - 80199)
+// Auth Error Codes (80100 - 80199)
 #define LWCA_INVALID_USER_NAME              (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 1)
 #define LWCA_ERROR_AUTH_BAD_DATA            (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 2)
 #define LWCA_UNABLE_GET_CRED_CACHE_NAME     (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 3)
@@ -88,11 +90,17 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_LDAP_UPN_FAIL                  (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 7)
 #define LWCA_ACCESS_DENIED                  (LWCA_ERROR_BASE + LWCA_AUTH_ERROR_BASE + 8)
 
-// Policy Error Codes (80200 - 80299)
+// AuthZ Error Codes (80200 - 8299)
+#define LWCA_ERROR_AUTHZ_INITIALIZED        (LWCA_ERROR_BASE + LWCA_AUTHZ_ERROR_BASE + 1)
+#define LWCA_ERROR_AUTHZ_UNINITIALIZED      (LWCA_ERROR_BASE + LWCA_AUTHZ_ERROR_BASE + 2)
+#define LWCA_ERROR_AUTHZ_UNAUTHORIZED       (LWCA_ERROR_BASE + LWCA_AUTHZ_ERROR_BASE + 3)
+#define LWCA_ERROR_AUTHZ_INVALID_PLUGIN     (LWCA_ERROR_BASE + LWCA_AUTHZ_ERROR_BASE + 4)
+
+// Policy Error Codes (80300 - 80399)
 #define LWCA_POLICY_VALIDATION_ERROR        (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
 #define LWCA_POLICY_CONFIG_PARSE_ERROR      (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
 
-// SSL (CA) Error Codes (80300 - 80499)
+// SSL (CA) Error Codes (80400 - 80499)
 #define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
 #define LWCA_SSL_SET_PUBKEY_ERR             (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 2)
 #define LWCA_ROOT_CA_ALREADY_EXISTS         (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 3)
@@ -217,6 +225,9 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SECURITY_NOT_INITIALIZED       (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 1)
 #define LWCA_SECURITY_ALREADY_INITIALIZED   (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 2)
 #define LWCA_SECURITY_INVALID_PLUGIN        (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 3)
+#define LWCA_SECURITY_KEY_ALREADY_IN_CACHE  (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 4)
+#define LWCA_SECURITY_KEY_NOT_IN_CACHE      (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 5)
+#define LWCA_SECURITY_KEY_NOT_IN_DB         (LWCA_ERROR_BASE + LWCA_SECURITY_ERROR_BASE + 6)
 
 // CURL Error codes (81100 - 81199)
 #define LWCA_ERROR_CURL_FAILED_INIT         (LWCA_ERROR_BASE + LWCA_CURL_ERROR_BASE + 1)
@@ -239,6 +250,12 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_REGEX_ERROR_ESPACE             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 12)
 #define LWCA_REGEX_ERROR_BADRPT             (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 13)
 #define LWCA_REGEX_ERROR_UNKNOWN            (LWCA_ERROR_BASE + LWCA_REGEX_ERROR_BASE + 14)
+
+// LDAP Error codes (81300 - 81399)
+#define LWCA_LDAP_ADD_FAILED                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 1)
+#define LWCA_LDAP_GET_FAILED                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 2)
+#define LWCA_LDAP_PATCH_FAILED              (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 3)
+#define LWCA_LDAP_UNKNOWN_OP                (LWCA_ERROR_BASE + LWCA_LDAP_ERROR_BASE + 4)
 
 // Misc. Error Codes (82000 - 82999)
 #define LWCA_UNKNOWN_ERROR                  (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 1)
@@ -309,6 +326,10 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_NO_CACHE_FOUND               ,   "LWCA_NO_CACHE_FOUND"               ,   "Krb cache not found" }, \
     { LWCA_KRB_ACCESS_DENIED            ,   "LWCA_KRB_ACCESS_DENIED"            ,   "Kerb access denied" }, \
     { LWCA_ACCESS_DENIED                ,   "LWCA_ACCESS_DENIED"                ,   "Access denied" }, \
+    { LWCA_ERROR_AUTHZ_INITIALIZED      ,   "LWCA_ERROR_AUTHZ_INITIALIZED"      ,   "AuthZ context is already initialized" }, \
+    { LWCA_ERROR_AUTHZ_UNINITIALIZED    ,   "LWCA_ERROR_AUTHZ_UNINITIALIZED"    ,   "AuthZ context is not initialized" }, \
+    { LWCA_ERROR_AUTHZ_UNAUTHORIZED     ,   "LWCA_ERROR_AUTHZ_UNAUTHORIZED"     ,   "Requestor is not authorized" }, \
+    { LWCA_ERROR_AUTHZ_INVALID_PLUGIN   ,   "LWCA_ERROR_AUTHZ_INVALID_PLUGIN"   ,   "AuthZ plugin is not valid" }, \
     { LWCA_GET_ADDR_INFO_FAIL           ,   "LWCA_GET_ADDR_INFO_FAIL"           ,   "Network - Get addr info call failed" }, \
     { LWCA_NOT_IMPLEMENTED              ,   "LWCA_NOT_IMPLEMENTED"              ,   "Not implemented" }, \
     { LWCA_GET_NAME_INFO_FAIL           ,   "LWCA_GET_NAME_INFO_FAIL"           ,   "Network - Get name info call failed" }, \
@@ -410,10 +431,17 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SECURITY_NOT_INITIALIZED     ,   "LWCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin" }, \
     { LWCA_SECURITY_ALREADY_INITIALIZED ,   "LWCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized" }, \
     { LWCA_SECURITY_INVALID_PLUGIN      ,   "LWCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
+    { LWCA_SECURITY_KEY_ALREADY_IN_CACHE,   "LWCA_SECURITY_KEY_ALREADY_IN_CACHE",   "An encrypted key is already present in local cache for this ca id." }, \
+    { LWCA_SECURITY_KEY_NOT_IN_CACHE    ,   "LWCA_SECURITY_KEY_NOT_IN_CACHE"    ,   "An encrypted key is not present in local cache for this ca id." }, \
+    { LWCA_SECURITY_KEY_NOT_IN_DB       ,   "LWCA_SECURITY_KEY_NOT_IN_DB"       ,   "An encrypted key is not present in db for this ca id." }, \
     { LWCA_ERROR_CURL_FAILED_INIT       ,   "LWCA_ERROR_CURL_FAILED_INIT"       ,   "CURL Init Failed" } , \
     { LWCA_ERROR_CURL_SEND_ERROR        ,   "LWCA_ERROR_CURL_SEND_ERROR"        ,   "CURL failed to send request" } , \
     { LWCA_ERROR_CURL_RECV_ERROR        ,   "LWCA_ERROR_CURL_RECV_ERROR"        ,   "CURL failed to receive request" } , \
     { LWCA_ERROR_CURL_GENERIC_ERROR     ,   "LWCA_ERROR_CURL_GENERIC_ERROR"     ,   "CURL generic failure" } , \
+    { LWCA_LDAP_ADD_FAILED              ,   "LWCA_LDAP_ADD_FAILED"              ,   "LDAP add could not be completed"}, \
+    { LWCA_LDAP_GET_FAILED              ,   "LWCA_LDAP_GET_FAILED"              ,   "LDAP search could not be completed"}, \
+    { LWCA_LDAP_PATCH_FAILED            ,   "LWCA_LDAP_PATCH_FAILED"            ,   "LDAP update could not be completed"}, \
+    { LWCA_LDAP_UNKNOWN_OP              ,   "LWCA_LDAP_UNKNOWN_OP"              ,   "LDAP operation not known"}, \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
     { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
     { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \

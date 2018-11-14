@@ -304,7 +304,7 @@
     <commons.lang.version>2.6</commons.lang.version>
     <commons.lang3.version>3.3.2</commons.lang3.version>
     <commons.logging.version>1.2</commons.logging.version>
-    <commons.pool2.version>2.4.2</commons.pool2.version>
+    <commons.pool2.version>2.6.0</commons.pool2.version>
     <easymock.version>3.2</easymock.version>
     <esapi.version>2.0.1</esapi.version>
     <gmbal-api-only.version>3.1.0-b001</gmbal-api-only.version>

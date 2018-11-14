@@ -50,6 +50,9 @@ extern "C" {
 #include <mutentcasrvcommon.h>
 #include <mutentcaconfig.h>
 #include <mutentcaerror.h>
+#include <mutentcaauthz.h>
+#include <mutentcasrvauthz.h>
+#include <mutentcapolicy.h>
 
 #include "defines.h"
 #include "structs.h"

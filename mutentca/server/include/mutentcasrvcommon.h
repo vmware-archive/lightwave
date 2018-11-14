@@ -82,7 +82,8 @@ typedef DWORD LWCA_FUNC_LEVEL;
 
 #define SQL_BUFFER_SIZE          1024
 
-#define LWCA_MAX_INT_CA_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
+#define LWCA_DEFAULT_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 1)
+#define LWCA_DEFAULT_ROOTCA_CERT_DURATION  (LWCA_TIME_SECS_PER_YEAR * 10)
 
 #define LWCA_SAFE_FREE_HZN_PSTR(PTR)    \
     do {                                \
@@ -127,12 +128,6 @@ typedef struct _LWCA_DIR_SYNC_PARAMS
     BOOLEAN bRefresh;
 
 } LWCA_DIR_SYNC_PARAMS, *PLWCA_DIR_SYNC_PARAMS;
-
-typedef struct _LWCA_REQ_CONTEXT
-{
-    PSTR                    pszBindUPN;
-    PLWCA_STRING_ARRAY      pBindUPNGroups;
-} LWCA_REQ_CONTEXT, *PLWCA_REQ_CONTEXT;
 
 typedef enum
 {
@@ -195,103 +190,6 @@ LwCAUtilDoesValueHaveWildcards(
     PCSTR            pcszValue
     );
 
-DWORD
-LwCARequestContextCreate(
-    PSTR                    pszBindUPN,
-    PLWCA_STRING_ARRAY      pBindUPNGroups,
-    PLWCA_REQ_CONTEXT       *ppReqCtx
-    );
-
-VOID
-LwCARequestContextFree(
-    PLWCA_REQ_CONTEXT       pReqCtx
-    );
-
-DWORD
-LwCACreateCertificate(
-    PCSTR               pcszCertificate,
-    PLWCA_CERTIFICATE   *ppCertificate
-    );
-
-DWORD
-LwCACreateCertArray(
-    PSTR                     *ppszCertificates,
-    DWORD                    dwCount,
-    PLWCA_CERTIFICATE_ARRAY  *ppCertArray
-    );
-
-DWORD
-LwCACopyCertArray(
-    PLWCA_CERTIFICATE_ARRAY     pCertArray,
-    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
-    );
-
-DWORD
-LwCACreateKey(
-    PBYTE       pData,
-    DWORD       dwLength,
-    PLWCA_KEY   *ppKey
-    );
-
-DWORD
-LwCACopyKey(
-    PLWCA_KEY pKey,
-    PLWCA_KEY *ppKey
-    );
-
-VOID
-LwCAFreeCertificate(
-    PLWCA_CERTIFICATE pCertificate
-    );
-
-VOID
-LwCAFreeCertificates(
-    PLWCA_CERTIFICATE_ARRAY pCertArray
-    );
-
-VOID
-LwCAFreeKey(
-    PLWCA_KEY pKey
-    );
-
-DWORD
-LwCADbCreateCAData(
-    PCSTR                       pcszSubjectName,
-    PLWCA_CERTIFICATE_ARRAY     pCertificates,
-    PLWCA_KEY                   pEncryptedPrivateKey,
-    PCSTR                       pcszCRLNumber,
-    PCSTR                       pcszLastCRLUpdate,
-    PCSTR                       pcszNextCRLUpdate,
-    LWCA_CA_STATUS              status,
-    PLWCA_DB_CA_DATA            *ppCAData
-    );
-
-DWORD
-LwCADbCreateCertData(
-    PCSTR                   pcszSerialNumber,
-    PCSTR                   pcszTimeValidFrom,
-    PCSTR                   pcszTimeValidTo,
-    DWORD                   revokedReason,
-    PCSTR                   pcszRevokedDate,
-    LWCA_CERT_STATUS        status,
-    PLWCA_DB_CERT_DATA      *ppCertData
-    );
-
-VOID
-LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
-    );
-
-VOID
-LwCADbFreeCertData(
-    PLWCA_DB_CERT_DATA pCertData
-    );
-
-VOID
-LwCADbFreeCertDataArray(
-    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    );
-
 /* ../common/state.c */
 
 VOID
@@ -329,54 +227,64 @@ LwCASrvCleanupGlobalState(
     VOID
     );
 
-// Added secure key manager api definitions temporarily.
-// It will be removed once secure key manager is integrated.
-
-DWORD
-LwCAKmCreateKeyPair(
-    PCSTR pcszKeyId
-    );
-
-DWORD
-LwCAKmGetPublickey(
-    PCSTR pcszKeyId,
-    PSTR  *ppszPublicKey
-    );
-
-DWORD
-LwCAKmGetEncryptedKey(
-    PCSTR       pcszId,
-    PLWCA_KEY   *ppKey
-    );
-
-DWORD
-LwCAKmSignX509Cert(
-    X509 *pCert,
-    PCSTR pcszKeyId
-    );
-
-DWORD
-LwCAKmSignX509Request(
-    X509_REQ *pReq,
-    PCSTR    pcszKeyId
-    );
-
-DWORD
-LwCAKmSignX509Crl(
-    X509_CRL *pCrl,
-    PCSTR    pcszKeyId
-    );
-
-/* security */
+/* security/security.c */
 DWORD
 LwCASecurityInitCtx(
     PLWCA_JSON_OBJECT pConfig
+    );
+
+DWORD
+LwCASecurityAddKeyPair(
+    PCSTR pszKeyId,
+    PCSTR pszPrivateKey
+    );
+
+DWORD
+LwCASecurityCreateKeyPair(
+    PCSTR pszKeyId,
+    PSTR *ppszPublicKey
+    );
+
+DWORD
+LwCASecuritySignX509Cert(
+    PCSTR pcszKeyId,
+    X509 *pCert
+    );
+
+DWORD
+LwCASecuritySignX509Request(
+    PCSTR    pcszKeyId,
+    X509_REQ *pReq
+    );
+
+DWORD
+LwCASecuritySignX509Crl(
+    PCSTR    pcszKeyId,
+    X509_CRL *pCrl
     );
 
 VOID
 LwCASecurityFreeCtx(
    VOID
    );
+
+/* security/storage.c */
+DWORD
+LwCASecurityGetEncryptedKey(
+    PCSTR pszCAId,
+    PLWCA_KEY *ppEncryptedKey
+    );
+
+/*
+ * normally there is no need to call this
+ * but if there was an error during create key pair,
+ * call this at error handling to make sure cache is
+ * cleared
+*/
+DWORD
+LwCASecurityRemoveEncryptedKeyFromCache(
+    PCSTR pszCAId
+    );
 
 #ifdef __cplusplus
 }

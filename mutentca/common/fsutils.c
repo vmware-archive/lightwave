@@ -111,3 +111,60 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+LwCAReadFileToString(
+    PCSTR   pcszFilePath,
+    PSTR    *ppszData
+    )
+{
+    DWORD dwError = 0;
+    FILE* pFile = NULL;
+    PSTR pszData = NULL;
+    size_t dataLen = 0;
+
+    if (IsNullOrEmptyString(pcszFilePath) || !ppszData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAOpenFilePath(pcszFilePath, "r", &pFile);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    fseek (pFile, 0, SEEK_END);
+    dataLen = ftell (pFile);
+    if (dataLen == -1)
+    {
+        dwError = LWCA_ERRNO_TO_LWCAERROR(errno);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    fseek (pFile, 0, SEEK_SET);
+
+    dwError = LwCAAllocateMemory(dataLen+1, (void*)&pszData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (fread(pszData, 1, dataLen, pFile) == 0)
+    {
+        dwError = LWCA_ERRNO_TO_LWCAERROR(errno);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppszData = pszData;
+
+cleanup:
+    if (pFile)
+    {
+        fclose(pFile);
+        pFile = NULL;
+    }
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszData);
+    if (ppszData)
+    {
+        *ppszData = NULL;
+    }
+    goto cleanup;
+}

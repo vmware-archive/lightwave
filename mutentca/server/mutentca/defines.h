@@ -19,4 +19,8 @@
 #define LWCA_OPTION_ENABLE_SYSLOG 's'
 #define LWCA_OPTION_CONSOLE_LOGGING 'c'
 #define LWCA_OPTIONS_VALID "f:l:L:p:sc"
-#define MUTENTCA_SECURITY_PLUGIN_KEY "security"
+#define LWCA_SECURITY_PLUGIN_KEY "security"
+#define LWCA_CONFIG_POLICY_KEY "policy"
+#define LWCA_CONFIG_POLICY_CONFIG_PATH_KEY "policyConfig"
+#define LWCA_DB_CONFIG_KEY "database"
+#define LWCA_CA_CONFIG_KEY "config"

@@ -1,0 +1,17 @@
+{
+    "security": {
+        "securityPlugin": "/opt/vmware/lib64/liblwca_security_aws_kms.so",
+        "securityPluginConfig": "/opt/vmware/share/config/casecurity-aws-kms.json"
+    },
+    "policy": {
+        "policyConfig": "/opt/vmware/share/config/mutentca-policy.json"
+    },
+    "database": {
+        "dbPlugin": "/opt/vmware/lib64/libmutentcasrvpluginpost.so",
+        "dbPluginConfigPath": "/opt/vmware/share/config/mutentca-post.json"
+    },
+    "config": {
+        "name": "@@CANAME@@",
+        "organization": "@@CAORG@@"
+    }
+}

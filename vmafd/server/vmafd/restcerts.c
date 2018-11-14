@@ -270,6 +270,7 @@ VmAfdRestGetCACerts(
     PCSTR   pszUser,
     PCSTR   pszPass,
     BOOLEAN bDetail,
+    BOOLEAN bInsecure,
     PVMAFD_CA_CERT_ARRAY *ppCACerts
     )
 {
@@ -293,11 +294,19 @@ VmAfdRestGetCACerts(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfSrvGetCAPath(&pwszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    /* support insecure flag to bypass lightwave server certs check */
+    if (bInsecure)
+    {
+        pszCAPath = NULL;
+    }
+    else
+    {
+        dwError = VmAfSrvGetCAPath(&pwszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
-    BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringAFromW(pwszCAPath, &pszCAPath);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     /* acquire token */
     dwError = VmAfdAcquireTokenForVmDirREST(
@@ -325,7 +334,7 @@ VmAfdRestGetCACerts(
                   &pszUrl);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmHttpClientInit(&pHttpClient, NULL);
+    dwError = VmHttpClientInit(&pHttpClient, pszCAPath);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmHttpClientSetToken(pHttpClient,

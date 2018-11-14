@@ -3,9 +3,10 @@ SUBDIRS = \
     config \
     oidc-auth \
     plugin \
-    security \
+    authz \
     plugins \
     db \
+    security \
     policy \
     api \
     rest-head \

@@ -55,9 +55,24 @@ LwCACreateCertValidity(
     );
 
 DWORD
+LwCAInitCA(
+    PLWCA_JSON_OBJECT pConfig
+    );
+
+DWORD
+LwCAGetRootCAId(
+    PSTR *ppszRootCAId
+    );
+
+VOID
+LwCAFreeCACtx(
+    );
+
+DWORD
 LwCACreateRootCA(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszRootCAId,
+    PLWCA_PKCS_10_REQ_DATA  pCARequest,
     PLWCA_CERTIFICATE       pCertificate,
     PCSTR                   pcszPrivateKey,
     PCSTR                   pcszPassPhrase

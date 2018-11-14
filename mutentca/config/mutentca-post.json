@@ -1,0 +1,5 @@
+{
+    "dbLwServer": "@@LWSERVER@@",
+    "dbPostServer": "@@POSTSERVER@@",
+    "dbDomain": "@@LWDOMAIN@@"
+}

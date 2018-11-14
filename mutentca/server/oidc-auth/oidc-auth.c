@@ -47,6 +47,7 @@ LwCAOIDCGetSigningCertPEM(
 static
 DWORD
 LwCAOIDCTokenParse(
+    PLWCA_REQ_CONTEXT   pReqCtx,
     PLWCA_OIDC_TOKEN    pOIDCToken,
     PCSTR               pcszReqMethod,
     PCSTR               pcszReqContentType,
@@ -58,38 +59,41 @@ LwCAOIDCTokenParse(
 static
 DWORD
 LwCAOIDCTokenValidate(
+    PLWCA_REQ_CONTEXT   pReqCtx,
     PLWCA_OIDC_TOKEN    pOIDCToken
     );
 
 static
 DWORD
 LwCAOIDCTokenValidatePOP(
-    PLWCA_OIDC_TOKEN    pOIDCToken,
-    PBOOLEAN            pbVerified
+    PLWCA_REQ_CONTEXT   pReqCtx,
+    PLWCA_OIDC_TOKEN    pOIDCToken
     );
 
 
 DWORD
 LwCAOIDCTokenAuthenticate(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszReqAuthHdr,
     PCSTR                   pcszReqMethod,
     PCSTR                   pcszReqContentType,
     PCSTR                   pcszReqDate,
     PCSTR                   pcszReqBody,
     PCSTR                   pcszReqURI,
-    PBOOLEAN                pbAuthenticated,
-    PLWCA_REQ_CONTEXT       *ppReqCtx
+    PBOOLEAN                pbAuthenticated
     )
 {
     DWORD                   dwError = 0;
     PLWCA_OIDC_TOKEN        pOIDCToken = NULL;
-    BOOLEAN                 bVerified = FALSE;
-    BOOLEAN                 bAuthenticated = FALSE;
-    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
 
-    if (IsNullOrEmptyString(pcszReqAuthHdr) || !pbAuthenticated || !ppReqCtx)
+    if (!pbAuthenticated || !pReqCtx)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pcszReqAuthHdr))
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwError = LwCAOIDCTokenAllocate(&pOIDCToken);
@@ -99,6 +103,7 @@ LwCAOIDCTokenAuthenticate(
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAOIDCTokenParse(
+                    pReqCtx,
                     pOIDCToken,
                     pcszReqMethod,
                     pcszReqContentType,
@@ -107,36 +112,32 @@ LwCAOIDCTokenAuthenticate(
                     pcszReqURI);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAOIDCTokenValidate(pOIDCToken);
+    dwError = LwCAOIDCTokenValidate(pReqCtx, pOIDCToken);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARequestContextCreate(
-                        pOIDCToken->pszReqBindUPN,
-                        pOIDCToken->pReqBindUPNGroups,
-                        &pReqCtx);
+    dwError = LwCAOIDCTokenValidatePOP(pReqCtx, pOIDCToken);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAOIDCTokenValidatePOP(pOIDCToken, &bVerified);
+    dwError = LwCAAllocateStringA(pOIDCToken->pszReqBindUPN, &pReqCtx->pszBindUPN);
     BAIL_ON_LWCA_ERROR(dwError);
-    if (!bVerified)
-    {
-        LWCA_LOG_ERROR(
-                "[%s,%d] Failed to verify POP! UPN (%s)",
-                __FUNCTION__,
-                __LINE__,
-                pOIDCToken->pszReqBindUPN);
-    }
 
-    bAuthenticated = TRUE;
+    dwError = LwCAUPNToDN(pOIDCToken->pszReqBindUPN, &pReqCtx->pszBindUPNDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pOIDCToken->pszReqBindUPNTenant, &pReqCtx->pszBindUPNTenant);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACopyStringArray(pOIDCToken->pReqBindUPNGroups, &pReqCtx->pBindUPNGroups);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     LWCA_LOG_INFO(
-            "[%s:%d] Authenticated OIDC token.  UPN (%s)",
+            "[%s:%d] Authenticated OIDC token. UPN (%s) ReqID (%s)",
             __FUNCTION__,
             __LINE__,
-            pReqCtx->pszBindUPN);
+            pReqCtx->pszBindUPN,
+            LWCA_SAFE_STRING(pReqCtx->pszRequestId));
 
-    *pbAuthenticated = bAuthenticated;
-    *ppReqCtx = pReqCtx;
+    *pbAuthenticated = TRUE;
 
 
 cleanup:
@@ -147,21 +148,22 @@ cleanup:
 
 error:
 
-    LWCA_LOG_ERROR(
-            "[%s:%d] Failed to authenticate OIDC token. Error (%d)",
-            __FUNCTION__,
-            __LINE__,
-            dwError);
-
     if (pbAuthenticated)
     {
         *pbAuthenticated = FALSE;
     }
-    LwCARequestContextFree(pReqCtx);
-    if (ppReqCtx)
-    {
-        *ppReqCtx = NULL;
-    }
+    LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPN);
+    LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNDN);
+    LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNTenant);
+    LwCAFreeStringArray(pReqCtx->pBindUPNGroups);
+
+    LWCA_LOG_ERROR(
+            "[%s:%d] Failed to authenticate OIDC token. Error (%d) UPN (%s) ReqId (%s)",
+            __FUNCTION__,
+            __LINE__,
+            dwError,
+            LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+            LWCA_SAFE_STRING(pReqCtx->pszRequestId));
 
     goto cleanup;
 }
@@ -213,6 +215,7 @@ LwCAOIDCTokenFree(
         LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqOIDCToken);
         LwCAOIDCHOTKValuesFree(pOIDCToken->pReqHOTKValues);
         LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqBindUPN);
+        LWCA_SAFE_FREE_STRINGA(pOIDCToken->pszReqBindUPNTenant);
         LwCAFreeStringArray(pOIDCToken->pReqBindUPNGroups);
         LWCA_SAFE_FREE_MEMORY(pOIDCToken);
     }
@@ -297,17 +300,17 @@ LwCAOIDCGetSigningCertPEM(
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwOIDCError = OidcServerMetadataAcquire(
-            &pOidcMetadata,
-            pszDCName,
-            LWCA_OIDC_SERVER_PORT,
-            pszDomainName,
-            LIGHTWAVE_TLS_CA_PATH);
+                        &pOidcMetadata,
+                        pszDCName,
+                        LWCA_OIDC_SERVER_PORT,
+                        pszDomainName,
+                        LIGHTWAVE_TLS_CA_PATH);
     dwError = LwCAOIDCToLwCAError(dwOIDCError);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateStringA(
-            OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
-            &pszOIDCSigningCertPEM);
+                    OidcServerMetadataGetSigningCertificatePEM(pOidcMetadata),
+                    &pszOIDCSigningCertPEM);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszOIDCSigningCertPEM = pszOIDCSigningCertPEM;
@@ -342,6 +345,7 @@ error:
 static
 DWORD
 LwCAOIDCTokenParse(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PLWCA_OIDC_TOKEN        pOIDCToken,
     PCSTR                   pcszReqMethod,
     PCSTR                   pcszReqContentType,
@@ -358,7 +362,7 @@ LwCAOIDCTokenParse(
     PSTR                    pszStrTokCtx = NULL;
     PLWCA_OIDC_HOTK_VALUES  pReqHOTKValues = NULL;
 
-    if (!pOIDCToken)
+    if (!pOIDCToken || !pReqCtx)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -370,14 +374,22 @@ LwCAOIDCTokenParse(
     if (IsNullOrEmptyString(pszOIDCTokenType) ||
         IsNullOrEmptyString(pszStrTokCtx))
     {
-        LWCA_LOG_ERROR("[%s:%d] No OIDC token type in request header", __FUNCTION__, __LINE__);
+        LWCA_LOG_ERROR(
+                "[%s:%d] No OIDC token type in request header. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     pszOIDCToken = LwCAStringTokA(pszStrTokCtx, ":", &pszReqHexPOP);
     if (IsNullOrEmptyString(pszOIDCToken))
     {
-        LWCA_LOG_ERROR("[%s:%d] No OIDC token in request header", __FUNCTION__, __LINE__);
+        LWCA_LOG_ERROR(
+                "[%s:%d] No OIDC token in request header. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
@@ -388,7 +400,11 @@ LwCAOIDCTokenParse(
     {
         if (!IsNullOrEmptyString(pszReqHexPOP))
         {
-            LWCA_LOG_ERROR("[%s:%d] Bearer token should not have POP", __FUNCTION__, __LINE__);
+            LWCA_LOG_ERROR(
+                    "[%s:%d] Bearer token should not have POP. ReqID (%s)",
+                    __FUNCTION__,
+                    __LINE__,
+                    LWCA_SAFE_STRING(pReqCtx->pszRequestId));
             BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
         }
 
@@ -398,7 +414,11 @@ LwCAOIDCTokenParse(
     {
         if (IsNullOrEmptyString(pszReqHexPOP))
         {
-            LWCA_LOG_ERROR("[%s:%d] HOTK token missing POP", __FUNCTION__, __LINE__);
+            LWCA_LOG_ERROR(
+                    "[%s:%d] HOTK token missing POP. ReqID (%s)",
+                    __FUNCTION__,
+                    __LINE__,
+                    LWCA_SAFE_STRING(pReqCtx->pszRequestId));
             BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
         }
 
@@ -449,7 +469,11 @@ LwCAOIDCTokenParse(
     }
     else
     {
-        LWCA_LOG_ERROR("[%s:%d] Unsupported token type presented", __FUNCTION__, __LINE__);
+        LWCA_LOG_ERROR(
+                "[%s:%d] Unsupported token type presented. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_UNKNOWN_TOKEN);
     }
 
@@ -473,6 +497,7 @@ error:
 static
 DWORD
 LwCAOIDCTokenValidate(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PLWCA_OIDC_TOKEN        pOIDCToken
     )
 {
@@ -482,13 +507,19 @@ LwCAOIDCTokenValidate(
     PSTR                    pszOIDCSigningCert = NULL;
     PSTR                    pszReqHOTKPEM = NULL;
     PSTR                    pszReqBindUPN = NULL;
+    PSTR                    pszReqBindUPNTenant = NULL;
     const PSTRING           *ppGroups = NULL;
     PLWCA_STRING_ARRAY      pReqBindUPNGroups = NULL;
     POIDC_ACCESS_TOKEN      pOIDCAccessToken = NULL;
 
-    if (!pOIDCToken || !pOIDCToken->pszReqOIDCToken)
+    if (!pOIDCToken || !pReqCtx)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (IsNullOrEmptyString(pOIDCToken->pszReqOIDCToken))
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwOIDCError = OidcAccessTokenParse(&pOIDCAccessToken, pOIDCToken->pszReqOIDCToken);
@@ -498,11 +529,25 @@ LwCAOIDCTokenValidate(
     dwError = LwCAAllocateStringA(OidcAccessTokenGetSubject(pOIDCAccessToken), &pszReqBindUPN);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAAllocateStringA(OidcAccessTokenGetTenant(pOIDCAccessToken), &pszReqBindUPNTenant);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCAAllocateStringA(OidcAccessTokenGetHolderOfKeyPEM(pOIDCAccessToken), &pszReqHOTKPEM);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAOIDCGetSigningCertPEM(&pszOIDCSigningCert);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    if (IsNullOrEmptyString(pszReqBindUPN) ||
+        IsNullOrEmptyString(pszReqBindUPNTenant))
+    {
+        LWCA_LOG_ERROR(
+                "[%s,%d] OIDC token does not have subject claim or tenant claim. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
+    }
 
     dwOIDCError = OidcAccessTokenValidate(
                             pOIDCAccessToken,
@@ -516,8 +561,12 @@ LwCAOIDCTokenValidate(
     OidcAccessTokenGetGroups(pOIDCAccessToken, &ppGroups, &szReqNumBindUPNGroups);
     if (!ppGroups || szReqNumBindUPNGroups == 0)
     {
-        dwError = LWCA_ERROR_OIDC_BAD_AUTH_DATA;
-        BAIL_ON_LWCA_ERROR(dwError);
+        LWCA_LOG_ERROR(
+                "[%s,%d] OIDC token does not have user groups. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
     dwError = LwCACreateStringArray(
@@ -527,6 +576,7 @@ LwCAOIDCTokenValidate(
     BAIL_ON_LWCA_ERROR(dwError);
 
     pOIDCToken->pszReqBindUPN = pszReqBindUPN;
+    pOIDCToken->pszReqBindUPNTenant = pszReqBindUPNTenant;
     pOIDCToken->pReqBindUPNGroups = pReqBindUPNGroups;
     if (pOIDCToken->oidcTokenType == LWCA_OIDC_TOKEN_TYPE_HOTK)
     {
@@ -545,6 +595,8 @@ error:
 
     LWCA_SAFE_FREE_STRINGA(pszReqBindUPN);
     pOIDCToken->pszReqBindUPN = NULL;
+    LWCA_SAFE_FREE_STRINGA(pszReqBindUPNTenant);
+    pOIDCToken->pszReqBindUPNTenant = NULL;
     LwCAFreeStringArray(pReqBindUPNGroups);
     pOIDCToken->pReqBindUPNGroups = NULL;
     LWCA_SAFE_FREE_STRINGA(pszReqHOTKPEM);
@@ -554,11 +606,12 @@ error:
     }
 
     LWCA_LOG_ERROR(
-            "[%s:%d] Failed to validate OIDC token. Error (%d) OIDC Error (%d)",
+            "[%s:%d] Failed to validate OIDC token. Error (%d) OIDC Error (%d) ReqID (%s)",
             __FUNCTION__,
             __LINE__,
             dwError,
-            dwOIDCError);
+            dwOIDCError,
+            LWCA_SAFE_STRING(pReqCtx->pszRequestId));
 
     goto cleanup;
 }
@@ -566,15 +619,15 @@ error:
 static
 DWORD
 LwCAOIDCTokenValidatePOP(
-    PLWCA_OIDC_TOKEN            pOIDCToken,
-    PBOOLEAN                    pbVerified
+    PLWCA_REQ_CONTEXT           pReqCtx,
+    PLWCA_OIDC_TOKEN            pOIDCToken
     )
 {
     DWORD                       dwError = 0;
     PLWCA_OIDC_HOTK_VALUES      pReqHOTKValues = NULL;
     BOOLEAN                     bVerified = FALSE;
 
-    if (!pOIDCToken || !pbVerified)
+    if (!pOIDCToken || !pReqCtx)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -583,15 +636,18 @@ LwCAOIDCTokenValidatePOP(
     {
         // POP validation is only for HOTK tokens - other supported token types
         // do not present a POP
-        bVerified = TRUE;
-        goto ret;
+        goto cleanup;
     }
 
     pReqHOTKValues = pOIDCToken->pReqHOTKValues;
 
     if (!pReqHOTKValues)
     {
-        LWCA_LOG_ERROR("[%s:%d] Missing POP signature or HOTK PEM", __FUNCTION__, __LINE__);
+        LWCA_LOG_ERROR(
+                "[%s:%d] Missing POP signature or HOTK PEM. ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
 
@@ -608,24 +664,28 @@ LwCAOIDCTokenValidatePOP(
 
     if (!bVerified)
     {
-        LWCA_LOG_ERROR("[%s:%d] Request POP validation failed", __FUNCTION__);
+        LWCA_LOG_ALERT(
+                "[%s:%d] Request POP validation failed! ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_OIDC_BAD_AUTH_DATA);
     }
+    else
+    {
+        LWCA_LOG_INFO(
+                "[%s:%d] Validated request POP. UPN (%s) ReqID (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+    }
 
-ret:
-
-    *pbVerified = bVerified;
 
 cleanup:
 
     return dwError;
 
 error:
-
-    if (pbVerified)
-    {
-        *pbVerified = FALSE;
-    }
 
     goto cleanup;
 }

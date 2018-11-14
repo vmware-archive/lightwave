@@ -45,6 +45,11 @@ LwAwsKmsInitialize(
         BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pConfig->pszRegion))
+    {
+        pContext->clientConfig.region = pConfig->pszRegion;
+    }
+
     pContext->cmkId = pConfig->pszCMKId;
 
     dwError = _TranslateKeySpec(pConfig->keySpec, &pContext->keySpec);

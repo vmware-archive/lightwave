@@ -39,6 +39,7 @@ libmutentcaresthead_la_LIBADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/oidc-auth/libmutentcaoidc.la \
+    $(top_builddir)/mutentca/server/api/libmutentcaapi.la \
     @OPENSSL_LIBS@ \
     @DL_LIBS@
 

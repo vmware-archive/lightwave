@@ -186,3 +186,93 @@ VOID
 Test_LwCAPostDbFreeCtx(
     VOID    **state
     );
+
+int
+PreTest_LwCAPostPlugin(
+    VOID    **state
+    );
+
+int
+PostTest_LwCAPostPlugin(
+    VOID    **state
+    );
+
+VOID
+Test_LwCAPostDbAddCA(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeRootCAToJson(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeIntermediateCAToJson(
+    VOID    **state
+    );
+
+VOID
+Test_LwCASerializeConfigRootCAToJson(
+    VOID    **state
+    );
+
+VOID
+Test_LwCADeserializeJsonToRootCA(
+    VOID    **state
+    );
+
+VOID
+Test_LwCADeserializeJsonToIntrCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostDbCheckCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostDbGetCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostDbUpdateCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCAUpdateRootCARequestBody(
+    VOID **state
+    );
+
+VOID
+Test_LwCAPostGetParentCAId(
+    VOID **state
+    );
+
+VOID
+Test_LwCAAddCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCASerializeCertDataToJson(
+    VOID **state
+    );
+
+VOID
+Test_LwCADeserializeCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCAUpdateCertData(
+    VOID **state
+    );

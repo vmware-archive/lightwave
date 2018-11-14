@@ -35,8 +35,11 @@ extern "C" {
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
+#include <mutentcaplugin.h>
 
+#include "defines.h"
 #include "prototypes.h"
+#include "structs.h"
 
 #ifdef __cplusplus
 }

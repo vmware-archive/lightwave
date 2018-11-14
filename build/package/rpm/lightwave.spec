@@ -1443,11 +1443,14 @@ users.
 %{_sbindir}/mutentcad
 
 %{_datadir}/config/mutentca.reg
+%{_datadir}/config/mutentcaconfig.json
+%{_datadir}/config/mutentca-policy.json
 %{_datadir}/config/mutentca-rest.json
+%{_datadir}/config/mutentca-post.json
 %{_datadir}/config/mutentca-schema.ldif
 %{_datadir}/config/mutentcad-syslog-ng.conf
 %{_datadir}/config/mutentca-telegraf.conf
-
+%{_lib64dir}/libmutentcasrvpluginpost.so
 %{_configdir}/lw-firewall-mutentca.json
 
 %files devel
@@ -1475,6 +1478,7 @@ users.
 %{_includedir}/vmutil.h
 %{_includedir}/mutentca.h
 %{_includedir}/mutentcadb.h
+%{_includedir}/mutentcaauthz.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la

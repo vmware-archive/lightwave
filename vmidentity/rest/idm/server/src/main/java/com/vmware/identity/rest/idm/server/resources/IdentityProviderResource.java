@@ -99,7 +99,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public Collection<IdentityProviderDTO> getAll() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAll").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getAll").startTimer();
         String responseStatus = HTTP_OK;
         Collection<IdentityProviderDTO> identityProviders = null;
         try {
@@ -118,7 +118,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getAll").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getAll").inc();
             requestTimer.observeDuration();
         }
         return identityProviders;
@@ -134,7 +134,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public IdentityProviderDTO create(IdentityProviderDTO identityProvider, @DefaultValue("false") @QueryParam("probe") boolean probe) throws DTOMapperException {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "create").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "create").startTimer();
         String responseStatus = HTTP_OK;
         try {
             validateProviderType(identityProvider.getType());
@@ -167,7 +167,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "create").inc();
             requestTimer.observeDuration();
         }
     }
@@ -181,7 +181,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public IdentityProviderDTO get(@PathParam("providerName") String providerName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             IIdentityStoreData identitySource = getIDMClient().getProvider(tenant, providerName);
@@ -204,7 +204,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -220,7 +220,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public IdentityProviderDTO update(@PathParam("providerName") String providerName, IdentityProviderDTO identityProvider) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             validateProviderType(identityProvider.getType());
@@ -244,7 +244,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }
@@ -259,7 +259,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @RequiresRole(role=Role.REGULAR_USER)
     public Map<String,String> getAttributesMap(
             @PathParam("providerName") String providerName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getAttributesMap").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getAttributesMap").startTimer();
         String responseStatus = HTTP_OK;
         try {
             return getIDMClient().getProviderAttributesMap(tenant, providerName);
@@ -276,7 +276,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -294,7 +294,7 @@ public class IdentityProviderResource extends BaseSubResource {
     public Map<String, String> updateAttributesMap(
         @PathParam("providerName") String providerName,
         UpdateAttributesMapDTO updateAttrsDto) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "updateAttributesMap").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "updateAttributesMap").startTimer();
         String responseStatus = HTTP_OK;
         try {
             if (updateAttrsDto != null) {
@@ -328,7 +328,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "updateAttributesMap").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "updateAttributesMap").inc();
             requestTimer.observeDuration();
         }
     }
@@ -346,7 +346,7 @@ public class IdentityProviderResource extends BaseSubResource {
     public Map<String, String> setAttributesMap(
         @PathParam("providerName") String providerName,
         Map<String, String> attributesMap) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "setAttributesMap").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "setAttributesMap").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().setProviderAttributesMap(tenant, providerName, attributesMap);
@@ -367,7 +367,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "setAttributesMap").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "setAttributesMap").inc();
             requestTimer.observeDuration();
         }
     }
@@ -382,7 +382,7 @@ public class IdentityProviderResource extends BaseSubResource {
     @DELETE @Path("/{providerName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("providerName") String providerName) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().deleteProvider(tenant, providerName);
@@ -399,7 +399,7 @@ public class IdentityProviderResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }

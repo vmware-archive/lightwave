@@ -41,6 +41,7 @@ VmwDeployBuildParams(
     BOOLEAN bMachinePreJoined,
     BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
+    BOOLEAN bInsecure,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -170,6 +171,7 @@ ParseArgs(
     BOOLEAN bDisableDNS = FALSE;
     BOOLEAN bGenMachineSSL = TRUE;
     BOOLEAN bAtomicJoin = FALSE;
+    BOOLEAN bInsecure = FALSE;
 
     enum PARSE_MODE
     {
@@ -240,6 +242,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--atomic"))
                 {
                     bAtomicJoin = TRUE;
+                }
+                else if (!strcmp(pszArg, "--insecure"))
+                {
+                    bInsecure = TRUE;
                 }
                 else if (!strcmp(pszArg, "--help"))
                 {
@@ -404,6 +410,7 @@ ParseArgs(
                     bMachinePreJoined,
                     bGenMachineSSL,
                     bAtomicJoin,
+                    bInsecure,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -442,6 +449,7 @@ VmwDeployBuildParams(
     BOOLEAN bMachinePreJoined,
     BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
+    BOOLEAN bInsecure,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -541,6 +549,7 @@ VmwDeployBuildParams(
     pSetupParams->bMachinePreJoined = bMachinePreJoined;
     pSetupParams->bGenMachineSSL = bGenMachineSSL;
     pSetupParams->bAtomicJoin = bAtomicJoin;
+    pSetupParams->bInsecure = bInsecure;
 
     *ppSetupParams = pSetupParams;
 
@@ -582,6 +591,7 @@ ShowUsage(
            "    [--disable-dns]\n"
            "    [--use-machine-account] Use machine account credentials to join\n"
            "    [--prejoined] Machine account is already created in directory\n"
+           "    [--insecure] Trust lightwave server certificates. Only applicable with --prejoined where the client uses REST interfaces.\n"
            "    [--skip-gen-machine-ssl] Skips generation of machine SSL certificate\n"
            "    [--atomic] Perform atomic join\n"
            "    [--username <account name>]\n"

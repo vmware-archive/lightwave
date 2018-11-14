@@ -145,7 +145,7 @@ Test_LwCAPolicyInitCtx_Invalid_KeyUsage(
     VOID **state
     )
 {
-    // KeyUsagePolicy value > 255
+    // KeyUsagePolicy value > 511
     _Test_LwCAPolicyInitCtx_Invalid( TEST_POLICY_JSON_INVALID_KEYUSAGE1 );
 
     // KeyUsagePolicyValue < 0

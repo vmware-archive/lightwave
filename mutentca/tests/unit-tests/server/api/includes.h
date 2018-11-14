@@ -32,10 +32,12 @@ extern "C" {
 #include <mutentca.h>
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
+#include <mutentcapkcs.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>
+#include <mutentcapolicy.h>
 
 #include "prototypes.h"
 

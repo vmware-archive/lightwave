@@ -44,6 +44,12 @@ LwCARestGetCertValidityInput(
     dwError = LwCAJsonGetTimeFromKey(pJsonBody, FALSE, LWCA_JSON_KEY_END_TIME, &tEndTime);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (tStartTime == 0 || tEndTime == 0 || (tEndTime - tStartTime) <= 0)
+    {
+        dwError = LWCA_ERROR_INVALID_REQUEST;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
     dwError = LwCACreateCertValidity(tStartTime, tEndTime, &pCertValidity);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -112,11 +118,8 @@ LwCARestGetIntCAInputSpec(
     dwError = LwCAJsonGetStringFromKey(pJsonBody, TRUE, LWCA_JSON_KEY_POLICY, &pszPolicy);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (pCountryList || pStateList || pLocalityList || pOUList || pszPolicy)
-    {
-        dwError = LwCACreateIntCARequest(pCountryList, pStateList, pLocalityList, pOUList, pszPolicy, &pIntCASpec->pIntCAReqData);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
+    dwError = LwCACreateIntCARequest(pCountryList, pStateList, pLocalityList, pOUList, pszPolicy, &pIntCASpec->pIntCAReqData);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAJsonGetObjectFromKey(pJsonBody, TRUE, LWCA_JSON_KEY_VALIDITY, &pJsonValue);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -147,7 +150,7 @@ error:
     LwCARestFreeIntCAInputSpec(pIntCASpec);
     if (ppIntCASpec)
     {
-        *ppIntCASpec = pIntCASpec;
+        *ppIntCASpec = NULL;
     }
 
     goto cleanup;
@@ -207,7 +210,7 @@ error:
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     if (ppSignCertSpec)
     {
-        *ppSignCertSpec = pSignCertSpec;
+        *ppSignCertSpec = NULL;
     }
 
     goto cleanup;

@@ -43,6 +43,14 @@ static
 DWORD
 _VmHttpClientSetBodyTest();
 
+static
+DWORD
+_VmHttpClientSetupHOTKTest();
+
+static
+DWORD
+_VmHttpBase64Test();
+
 DWORD
 VmHttpClientTest()
 {
@@ -55,6 +63,8 @@ VmHttpClientTest()
     dwError += _VmHttpClientStatusCodeTest();
     dwError += _VmHttpClientHeaderTest();
     dwError += _VmHttpClientSetBodyTest();
+    dwError += _VmHttpClientSetupHOTKTest();
+    dwError += _VmHttpBase64Test();
 
     return dwError;
 }
@@ -322,6 +332,120 @@ cleanup:
     VmHttpClientFreeHandle(pClient);
     return dwError;
 
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpClientSetupHOTKTest()
+{
+    DWORD               dwError = 0;
+    PVM_HTTP_CLIENT     pClient = NULL;
+    PCSTR               pcszAccessToken = "access-token";
+    PCSTR               pcszSignature = "signature";
+    PCSTR               pcszReqTime = "Thu, 11 Oct 2018 17:42:39 GMT";
+    PCSTR               pcszExpectedAuthz = "Authorization: hotk-pk access-token:signature";
+    PCSTR               pcszExpectedDate = "Date: Thu, 11 Oct 2018 17:42:39 GMT";
+    PCSTR               pcszExpectedContentType = "Content-Type: application/json";
+    PCSTR               pcszReqBody = NULL;
+    struct curl_slist   *pHeader = NULL;
+    BOOLEAN             found = FALSE;
+    PSTR                pszHeaderData = NULL;
+
+    dwError = VmHttpClientInit(&pClient, NULL);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetupHOTK(pClient,
+                                    pcszAccessToken,
+                                    pcszSignature,
+                                    pcszReqTime,
+                                    pcszReqBody
+                                    );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pHeader = pClient->pHeaders;
+
+    if (!pHeader)
+    {
+        fprintf(stderr, "FAIL: HOTK Setup Test: Unable to find any headers\n");
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    while (pHeader)
+    {
+        pszHeaderData = pHeader->data;
+        found = !VmStringCompareA(pszHeaderData, pcszExpectedAuthz, TRUE) ||
+                !VmStringCompareA(pszHeaderData, pcszExpectedDate, TRUE) ||
+                !VmStringCompareA(pszHeaderData, pcszExpectedContentType, TRUE);
+        if (!found)
+        {
+            fprintf(stderr, "FAIL: HOTK Setup Test: Header Data %s didn't "
+                            "match any expected\n", pszHeaderData);
+            dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+
+        pHeader = pHeader->next;
+    }
+
+    fprintf(stdout, "PASS: httpclient Setup HOTK Test\n");
+
+cleanup:
+    VmHttpClientFreeHandle(pClient);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpBase64Test()
+{
+    DWORD       dwError = 0;
+    DWORD       dwLen = 0;
+    PCSTR       pcszExpectedDecodedString = "Hello World";
+    PCSTR       pcszExpectedEncodedString = "SGVsbG8gV29ybGQ=";
+    PSTR        pszActualEncodedString = NULL;
+    PSTR        pszActualDecodedString = NULL;
+
+    dwError = VmEncodeToBase64((PBYTE)pcszExpectedDecodedString,
+                               VmStringLenA(pcszExpectedDecodedString),
+                               (PBYTE *)&pszActualEncodedString,
+                               &dwLen
+                               );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+    if (VmStringCompareA(pcszExpectedEncodedString, pszActualEncodedString, TRUE))
+    {
+        fprintf(stderr, "FAIL: Base64 Encode Test: Expected '%s' Found '%s'\n",
+                pcszExpectedEncodedString, pszActualEncodedString);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmDecodeToBase64((PBYTE)pszActualEncodedString,
+                               dwLen,
+                               (PBYTE *)&pszActualDecodedString,
+                               &dwLen
+                               );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+    if (VmStringCompareA(pcszExpectedDecodedString, pszActualDecodedString, TRUE))
+    {
+        fprintf(stderr, "FAIL: Base64 Decode Test: Expected '%s' Found '%s'\n",
+            pcszExpectedDecodedString, pszActualDecodedString);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: Base64 Encode-Decode Test\n");
+
+cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszActualDecodedString);
+    VM_COMMON_SAFE_FREE_STRINGA(pszActualEncodedString);
+
+    return dwError;
 error:
     goto cleanup;
 }

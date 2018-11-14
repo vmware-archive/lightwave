@@ -108,10 +108,11 @@ LwCAPolicyParseCfgPolicies(
     if (pKeyUsagePolicyJson)
     {
         dwError = LwCAJsonGetUnsignedIntegerFromKey(pKeyUsagePolicyJson, TRUE, LWCA_ALLOWED_KEY_USAGES_KEY, &pPolicies->dwKeyUsage);
-        if (dwError || pPolicies->dwKeyUsage > 255)
+        // keyUsage can have max 9 bits set. So, the max value with 1st 9 bits set is 511
+        if (dwError || pPolicies->dwKeyUsage > 511)
         {
             dwError = LWCA_POLICY_CONFIG_PARSE_ERROR;
-            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid KeyUsagePolicy value in policy config. Expected 0-255");
+            BAIL_ON_LWCA_ERROR_WITH_MSG(dwError, "Invalid KeyUsagePolicy value in policy config. Expected 0-511 (9 bits)");
         }
     }
 
@@ -245,15 +246,16 @@ _LwCAPolicyGetCfgObjectsFromJson(
     PLWCA_JSON_OBJECT pJsonValue = NULL;
     LWCA_POLICY_CFG_TYPE type = 0;
     LWCA_POLICY_CFG_MATCH match = 0;
-    PLWCA_POLICY_CFG_OBJ *ppObjs = NULL;
     PLWCA_POLICY_CFG_OBJ_ARRAY pObjArray = NULL;
 
     dwArraySize = LwCAJsonArraySize(pJsonArray);
-    if (dwArraySize > 0)
+    if (dwArraySize <= 0)
     {
-        dwError = LwCAAllocateMemory(sizeof(LWCA_POLICY_CFG_OBJ) * dwArraySize, (PVOID*)&ppObjs);
-        BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
+
+    dwError = LwCAPolicyCfgObjArrayAllocate(dwArraySize, &pObjArray);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     for ( ; dwIdx < dwArraySize ; ++dwIdx )
     {
@@ -278,8 +280,10 @@ _LwCAPolicyGetCfgObjectsFromJson(
         dwError = _LwCAPolicyVerifyAndGetCfgObjEnums(pszType, pszMatch, pszValue, &type, &match);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        dwError = LwCAPolicyCfgObjInit(type, match, pszValue, pszPrefix, pszSuffix, &ppObjs[dwIdx]);
+        dwError = LwCAPolicyCfgObjInit(type, match, pszValue, pszPrefix, pszSuffix, &pObjArray->ppObj[dwIdx]);
         BAIL_ON_LWCA_ERROR(dwError);
+
+        pObjArray->dwCount = dwIdx + 1;
 
         LWCA_SAFE_FREE_STRINGA(pszType);
         LWCA_SAFE_FREE_STRINGA(pszMatch);
@@ -289,12 +293,7 @@ _LwCAPolicyGetCfgObjectsFromJson(
         pJsonValue = NULL;
     }
 
-    if (ppObjs)
-    {
-        dwError = LwCAPolicyCfgObjArrayInit(ppObjs, dwArraySize, &pObjArray);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
+ret:
     *ppObjArray = pObjArray;
 
 cleanup:
@@ -303,13 +302,6 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszValue);
     LWCA_SAFE_FREE_STRINGA(pszPrefix);
     LWCA_SAFE_FREE_STRINGA(pszSuffix);
-    if (ppObjs)
-    {
-        for ( dwIdx = 0 ; dwIdx < dwArraySize ; ++ dwIdx )
-        {
-            LwCAPolicyCfgObjFree(ppObjs[dwIdx]);
-        }
-    }
 
     return dwError;
 

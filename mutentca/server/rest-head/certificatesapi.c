@@ -22,11 +22,11 @@
 static REST_MODULE _rest_module[] =
 {
     {
-        "/v1/mutentca/certificates",
+        "/v1/mutentca/certificate",
         {NULL, NULL, LwCARestGetRootCASignedCert, LwCARestRevokeRootCASignedCert, NULL}
     },
     {
-        "/v1/mutentca/intermediate/*/certificates",
+        "/v1/mutentca/intermediate/*/certificate",
         {NULL, NULL, LwCARestGetIntermediateCASignedCert, LwCARestRevokeIntermediateCASignedCert, NULL}
     },
     {0}
@@ -54,6 +54,8 @@ LwCARestGetRootCASignedCert(
     PLWCA_REST_OPERATION        pRestOp         = NULL;
     PSTR                        pszRequestId    = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
+    PLWCA_CERTIFICATE           pCert           = NULL;
+    PSTR                        pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -69,18 +71,31 @@ LwCARestGetRootCASignedCert(
     dwError = LwCARestGetSignCertInputSpec(pRestOp->pjBody, &pSignCertSpec);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Sign the CSR using Root CA (Implementation) and set the cert in the result below
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetSignedCertificate(
+                            pRestOp->pReqCtx,
+                            pszRootCAId,
+                            pSignCertSpec->pszCSR,
+                            pSignCertSpec->pCertValidity,
+                            pSignCertSpec->signAlgorithm,
+                            &pCert
+                            );
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CERT,
-                  LWCA_NOT_IMPLEMENTED_VALUE);
+                  pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
+    LwCAFreeCertificate(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 
@@ -106,6 +121,7 @@ LwCARestRevokeRootCASignedCert(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PLWCA_CERTIFICATE       pCert           = NULL;
+    PSTR                    pszRootCAId     = NULL;
 
     if (!pIn)
     {
@@ -121,12 +137,17 @@ LwCARestRevokeRootCASignedCert(
     dwError = LwCARestGetCertificateInput(pRestOp->pjBody, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Revoke the certificate (Implementation)
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszRootCAId, pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCertificate(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
 
@@ -153,6 +174,7 @@ LwCARestGetIntermediateCASignedCert(
     PSTR                        pszRequestId    = NULL;
     PSTR                        pszCAId         = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
+    PLWCA_CERTIFICATE           pCert           = NULL;
 
     if (!pIn)
     {
@@ -171,12 +193,20 @@ LwCARestGetIntermediateCASignedCert(
     dwError = LwCARestGetSignCertInputSpec(pRestOp->pjBody, &pSignCertSpec);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Sign the CSR using Intermediate CA (Implementation) and set the cert in the result below
+    dwError = LwCAGetSignedCertificate(
+                            pRestOp->pReqCtx,
+                            pszCAId,
+                            pSignCertSpec->pszCSR,
+                            pSignCertSpec->pCertValidity,
+                            pSignCertSpec->signAlgorithm,
+                            &pCert
+                            );
+    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CERT,
-                  LWCA_NOT_IMPLEMENTED_VALUE);
+                  pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -184,6 +214,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
+    LwCAFreeCertificate(pCert);
 
     return dwError;
 
@@ -228,7 +259,8 @@ LwCARestRevokeIntermediateCASignedCert(
     dwError = LwCARestGetCertificateInput(pRestOp->pjBody, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Revoke the certificate (Implementation)
+    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszCAId, pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);

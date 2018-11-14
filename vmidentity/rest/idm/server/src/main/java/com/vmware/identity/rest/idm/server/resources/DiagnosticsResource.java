@@ -65,7 +65,7 @@ public class DiagnosticsResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public List<EventLogDTO> getEventLog(@Context UriInfo info) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getEventLog").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getEventLog").startTimer();
         String responseStatus = HTTP_OK;
         try {
             List<IIdmAuthStat> stats = getIDMClient().getIdmAuthStats(tenant);
@@ -79,7 +79,7 @@ public class DiagnosticsResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getEventLog").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getEventLog").inc();
             requestTimer.observeDuration();
         }
     }
@@ -88,7 +88,7 @@ public class DiagnosticsResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public EventLogStatusDTO getEventLogStatus() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getEventLogStatus").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getEventLogStatus").startTimer();
         String responseStatus = HTTP_OK;
         try {
             IIdmAuthStatus status = getIDMClient().getIdmAuthStatus(tenant);
@@ -102,7 +102,7 @@ public class DiagnosticsResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getEventLogStatus").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getEventLogStatus").inc();
             requestTimer.observeDuration();
         }
     }
@@ -110,7 +110,7 @@ public class DiagnosticsResource extends BaseSubResource {
     @POST @Path("/eventlog/start")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void startEventLog(@QueryParam("size") Integer size) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "startEventLog").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "startEventLog").startTimer();
         String responseStatus = HTTP_OK;
         try {
             if (size != null) {
@@ -127,7 +127,7 @@ public class DiagnosticsResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "startEventLog").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "startEventLog").inc();
             requestTimer.observeDuration();
         }
     }
@@ -135,7 +135,7 @@ public class DiagnosticsResource extends BaseSubResource {
     @POST @Path("/eventlog/stop")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void stopEventLog() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "stopEventLog").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "stopEventLog").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().disableIdmAuthStats(tenant);
@@ -148,7 +148,7 @@ public class DiagnosticsResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "stopEventLog").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "stopEventLog").inc();
             requestTimer.observeDuration();
         }
     }
@@ -156,7 +156,7 @@ public class DiagnosticsResource extends BaseSubResource {
     @DELETE @Path("/eventlog")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void clearEventLog() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "clearEventLog").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "clearEventLog").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().clearIdmAuthStats(tenant);
@@ -169,7 +169,7 @@ public class DiagnosticsResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "clearEventLog").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "clearEventLog").inc();
             requestTimer.observeDuration();
         }
     }

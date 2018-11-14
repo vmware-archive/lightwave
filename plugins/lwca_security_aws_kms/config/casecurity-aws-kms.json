@@ -1,5 +1,6 @@
 {
     "kms": {
+        "region": "@@REGION@@",
         "cmk_id": "@@ARN@@",
         "key_spec": "@@KEYSPEC@@"
     }

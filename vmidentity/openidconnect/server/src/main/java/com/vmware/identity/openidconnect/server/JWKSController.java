@@ -87,7 +87,7 @@ public class JWKSController {
             if (tenant == null) {
                 tenant = tenantInfoRetriever.getDefaultTenantName();
             }
-            requestTimer = MetricUtils.startRequestTimer(tenant, metricsResource, metricsOperation);
+            requestTimer = MetricUtils.startRequestTimer(metricsResource, metricsOperation);
             TenantInfo tenantInfo = tenantInfoRetriever.retrieveTenantInfo(tenant);
 
             List<Base64> x5c = new ArrayList<Base64>(1);
@@ -110,7 +110,7 @@ public class JWKSController {
             httpResponse = HttpResponse.createJsonResponse(errorObject);
         } finally {
             if (httpResponse != null) {
-                MetricUtils.increaseRequestCount(tenant, String.valueOf(httpResponse.getStatusCode().getValue()),
+                MetricUtils.increaseRequestCount(String.valueOf(httpResponse.getStatusCode().getValue()),
                         metricsResource, metricsOperation);
             }
             if (requestTimer != null) {

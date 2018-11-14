@@ -27,13 +27,7 @@ LwCAOIDCToLwCAError(
             dwError = LWCA_SUCCESS;
             break;
 
-        case SSOERROR_INVALID_ARGUMENT:
-        case SSOERROR_JSON_FAILURE:
-        case SSOERROR_JSON_PARSE_FAILURE:
-            dwError = LWCA_ERROR_INVALID_PARAMETER;
-            break;
-
-        case SSOERROR_OUT_OF_MEMORY:
+            case SSOERROR_OUT_OF_MEMORY:
             dwError = LWCA_OUT_OF_MEMORY_ERROR;
             break;
 
@@ -49,8 +43,15 @@ LwCAOIDCToLwCAError(
             dwError = LWCA_ERROR_CURL_SEND_ERROR;
             break;
 
+        case SSOERROR_INVALID_ARGUMENT:
+        case SSOERROR_JSON_FAILURE:
+        case SSOERROR_JSON_PARSE_FAILURE:
+        case SSOERROR_OIDC_SERVER_INVALID_REQUEST:
         case SSOERROR_TOKEN_INVALID_SIGNATURE:
         case SSOERROR_TOKEN_INVALID_AUDIENCE:
+        case SSOERROR_OIDC_SERVER_INVALID_SCOPE:
+        case SSOERROR_OIDC_SERVER_ACCESS_DENIED:
+        case SSOERROR_OIDC_SERVER_UNSUPPORTED_GRANT_TYPE:
         case SSOERROR_TOKEN_EXPIRED:
             dwError = LWCA_ERROR_OIDC_BAD_AUTH_DATA;
             break;

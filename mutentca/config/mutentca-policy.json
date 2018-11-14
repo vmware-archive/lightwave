@@ -1,0 +1,73 @@
+{
+    "CAPolicy": {
+        "SNPolicy": {
+            "AllowedCNs": [
+                {
+                    "type": "name",
+                    "match": "any"
+                }
+            ]
+        },
+        "SANPolicy": {
+            "multiSAN": false,
+            "AllowedSANs": []
+        },
+        "KeyUsagePolicy": {
+            "AllowedKeyUsages": 96
+        },
+        "CertDurationPolicy": {
+            "MaxAllowedDays" : 3650
+        }
+    },
+    "CertificatePolicy": {
+         "SNPolicy": {
+            "AllowedCNs": [
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "req.hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                }
+            ]
+        },
+        "SANPolicy": {
+            "multiSAN": false,
+            "AllowedSANs": [
+                {
+                    "type": "ip",
+                    "match": "inzone"
+                },
+                {
+                    "type": "name",
+                    "match": "constant",
+                    "value": "localhost"
+                },
+                {
+                    "type": "name",
+                    "match": "req.hostname"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "inzone"
+                },
+                {
+                    "type": "fqdn",
+                    "match": "req.fqdn"
+                }
+            ]
+        },
+        "KeyUsagePolicy": {
+            "AllowedKeyUsages": 511
+        },
+        "CertDurationPolicy": {
+            "MaxAllowedDays" : 365
+        }
+    }
+}

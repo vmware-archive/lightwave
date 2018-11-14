@@ -1972,3 +1972,52 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdSrvSetInsecure(
+    BOOLEAN bValue
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetInteger(VMAFD_REG_KEY_INSECURE,
+                                bValue ? 1 : 0);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdSrvGetInsecure(
+    BOOLEAN *pbValue
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwValue = 0;
+    BOOLEAN bValue = FALSE;
+
+    dwError = _ConfigGetInteger(VMAFD_REG_KEY_INSECURE,
+                                &dwValue);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    bValue = dwValue == 1 ? TRUE : FALSE;
+
+    *pbValue = bValue;
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}

@@ -96,6 +96,9 @@ typedef struct _LWCA_REST_OPERATION
 
     // error
     PFN_GET_HTTP_ERROR          pfnGetHttpError;
+
+    // context
+    PLWCA_REQ_CONTEXT           pReqCtx;
 } LWCA_REST_OPERATION, *PLWCA_REST_OPERATION;
 
 typedef struct _LWCA_SERVER_OPENSSL_GLOBALS

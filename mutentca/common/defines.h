@@ -81,4 +81,9 @@ typedef enum
 #define LWCA_VALIDITY_SYNC_BACK_DATE        (LWCA_TIME_SECS_PER_WEEK * 2)
 #define LWCA_MAX_CERT_DURATION              (LWCA_TIME_SECS_PER_YEAR * 10)
 
+// Max domain name length is 256 characters. Make the max DN length 512 to add
+// padding to account for a large number of labels (values seperated by `.`).
+// The `+1`
+#define LWCA_LDAP_DC_DN_MAXLENGTH           sizeof(char)*512 + 1
+
 #endif //__LWCA_COMMON_DEFINES_H__

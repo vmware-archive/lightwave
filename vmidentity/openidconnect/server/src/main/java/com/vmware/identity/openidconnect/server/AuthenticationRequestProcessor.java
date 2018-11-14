@@ -21,6 +21,7 @@ import java.util.Set;
 import javax.servlet.http.Cookie;
 
 import org.apache.commons.lang3.StringEscapeUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.commons.lang3.tuple.Pair;
 import org.apache.commons.lang3.tuple.Triple;
 import org.springframework.context.MessageSource;
@@ -114,6 +115,8 @@ public class AuthenticationRequestProcessor {
         ClientID clientId;
         URI redirectUri;
         AuthenticationErrorResponse parseErrorResponse;
+        boolean useDefaultTenantForFederatedIdp = false;
+
         try {
             this.authnRequest = AuthenticationRequest.parse(this.httpRequest);
             clientId = this.authnRequest.getClientID();
@@ -132,8 +135,18 @@ public class AuthenticationRequestProcessor {
 
         // check that tenant, client, and redirect_uri are registered (if not, return error to browser, not client)
         try {
-            this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
-            this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
+            // if tenant name is not provided, but login hint with external idp issuer is specified
+            // then we use federated login flow with default tenant discovery
+            useDefaultTenantForFederatedIdp = StringUtils.isEmpty(this.tenant)
+                            && this.authnRequest.getLoginHint() != null
+                            && StringUtils.isNotEmpty(this.authnRequest.getLoginHint().getValue());
+            if (useDefaultTenantForFederatedIdp) {
+                this.tenant = this.tenantInfoRetriever.getDefaultTenantName();
+                this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+            } else {
+                this.tenantInfo = this.tenantInfoRetriever.retrieveTenantInfo(this.tenant);
+                this.tenant = this.tenantInfo.getName(); // use tenant name as it appears in directory
+            }
             this.clientInfo = this.clientInfoRetriever.retrieveClientInfo(this.tenant, clientId);
             if (!this.clientInfo.getRedirectURIs().contains(redirectUri)) {
                 throw new ServerException(ErrorObject.invalidRequest("unregistered redirect_uri"));
@@ -170,7 +183,8 @@ public class AuthenticationRequestProcessor {
                 // use federated idp login page
                 logger.info("Processing SP-initiated authentication request for tenant {}.", tenant);
                 final FederatedIdentityProcessor processor = this.federatedProcessorProvider.findProcessor(idpConfig);
-                return Pair.of((ModelAndView) null, processor.processAuthRequestForFederatedIDP(this.authnRequest, tenant, idpConfig));
+                return Pair.of((ModelAndView) null, processor.processAuthRequestForFederatedIDP(this.authnRequest,
+                        useDefaultTenantForFederatedIdp ? null : tenant, idpConfig));
             }catch(ServerException e){
                 LoggerUtils.logFailedRequest(logger, e);
                 return Pair.of((ModelAndView) null, authnErrorResponse(e).toHttpResponse());

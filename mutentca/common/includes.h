@@ -42,12 +42,7 @@
 
 #include <jansson.h>
 
-#include <mutentca.h>
-#include <mutentcadb.h>
-#include <mutentcacommon.h>
-#include <mutentcaerror.h>
-#include <mutentcapkcs.h>
-
+#include <vmhttpclient.h>
 #include <vmafd.h>
 #include <vmafdclient.h>
 #include <vmafdtypes.h>
@@ -55,6 +50,14 @@
 #include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>
+
+#include <mutentca.h>
+#include <mutentcadb.h>
+#include <mutentcacommon.h>
+#include <mutentcaerror.h>
+#include <mutentcapkcs.h>
+
+#include <vmutil.h>
 
 #include "defines.h"
 #include "structs.h"

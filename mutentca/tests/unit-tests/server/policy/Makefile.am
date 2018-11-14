@@ -6,7 +6,8 @@ TESTS = testmutentcapolicy
 testmutentcapolicy_SOURCES = \
     main.c \
     parse.c \
-    util.c
+    util.c \
+    validate.c
 
 testmutentcapolicy_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \

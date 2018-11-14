@@ -16,9 +16,11 @@
 #define _LWCA_DB_PLUGIN_POST
 
 #include <stdio.h>
+#include <stdlib.h>
 #include <stdint.h>
 #include <stdarg.h>
 #include <time.h>
+#include <errno.h>
 
 #include <jansson.h>
 #include <errno.h>

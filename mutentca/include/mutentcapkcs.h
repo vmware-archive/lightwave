@@ -195,6 +195,13 @@ LwCAGenerateX509Certificate(
     );
 
 DWORD
+LwCAGenerateSelfSignX509Certificate(
+    X509_REQ                *pRequest,
+    PLWCA_CERT_VALIDITY     pValidity,
+    X509                    **ppCert
+    );
+
+DWORD
 LwCAGenerateX509Crl(
     PCSTR                       pcszCRLNumber,
     PCSTR                       pcszLastCRLUpdate,
@@ -255,6 +262,13 @@ LwCAGenerateCrlTimestamps(
     time_t  tmCrlValidity,
     PSTR    *ppszLastCRLUpdate,
     PSTR    *ppszNextCRLUpdate
+    );
+
+DWORD
+LwCACreateKeyPair(
+    size_t nKeyLength,
+    PSTR *ppszPrivateKey,
+    PSTR *ppszPublicKey
     );
 
 DWORD

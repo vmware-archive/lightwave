@@ -92,7 +92,7 @@ public class CertificateResource extends BaseSubResource {
     @GET
     @Produces(MediaType.APPLICATION_JSON)
     public Collection<CertificateChainDTO> getCertificates(@QueryParam("scope") String certificateScope, @DefaultValue("CHAIN") @QueryParam("granularity") String granularity) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getCertificates").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getCertificates").startTimer();
         String responseStatus = HTTP_OK;
         try {
             CertificateScope scope = validateCertificateScope(certificateScope);
@@ -149,7 +149,7 @@ public class CertificateResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getCertificates").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getCertificates").inc();
             requestTimer.observeDuration();
         }
     }
@@ -164,7 +164,7 @@ public class CertificateResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public PrivateKeyDTO getPrivateKey() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "getPrivateKey").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getPrivateKey").startTimer();
         String responseStatus = HTTP_OK;
         try {
             return new PrivateKeyDTO(getTenantPrivateKey());
@@ -181,7 +181,7 @@ public class CertificateResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "getPrivateKey").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getPrivateKey").inc();
             requestTimer.observeDuration();
         }
     }
@@ -195,7 +195,7 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void setTenantCredentials(TenantCredentialsDTO tenantCredentialsDTO) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "setTenantCredentials").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "setTenantCredentials").startTimer();
         String responseStatus = HTTP_OK;
         try {
             PrivateKey privateKey = tenantCredentialsDTO.getPrivateKey().getPrivateKey();
@@ -214,7 +214,7 @@ public class CertificateResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "setTenantCredentials").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "setTenantCredentials").inc();
             requestTimer.observeDuration();
         }
     }
@@ -237,7 +237,7 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void addCertificate(CertificateDTO certificate) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "addCertificate").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "addCertificate").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Certificate cert = certificate.getX509Certificate();
@@ -255,7 +255,7 @@ public class CertificateResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "addCertificate").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "addCertificate").inc();
             requestTimer.observeDuration();
         }
     }
@@ -272,7 +272,7 @@ public class CertificateResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@QueryParam("fingerprint") String fingerprint) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Validate.notEmpty(fingerprint, sm.getString("valid.not.empty", "fingerprint"));
@@ -293,7 +293,7 @@ public class CertificateResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE,  "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE,  "delete").inc();
             requestTimer.observeDuration();
         }
     }

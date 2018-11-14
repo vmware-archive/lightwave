@@ -28,7 +28,8 @@ libvmcommon_la_LIBADD = \
     @CURL_LIBS@ \
     @JANSSON_LIBS@ \
     @LWBASE_LIBS@ \
-    @PTHREAD_LIBS@
+    @PTHREAD_LIBS@ \
+    @SASL_LIBS@
 
 libvmcommon_la_LDFLAGS = \
     @CURL_LDFLAGS@ \

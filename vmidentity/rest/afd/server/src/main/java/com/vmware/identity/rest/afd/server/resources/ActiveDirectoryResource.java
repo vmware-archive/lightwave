@@ -74,7 +74,7 @@ public class ActiveDirectoryResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public ActiveDirectoryJoinInfoDTO joinActiveDirectory(ActiveDirectoryJoinRequestDTO joinRequest) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "joinActiveDirectory").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "joinActiveDirectory").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Validate.notEmpty(joinRequest.getUsername(), "Missing username. Username is required to join AD");
@@ -94,7 +94,7 @@ public class ActiveDirectoryResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), ex);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "joinActiveDirectory").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "joinActiveDirectory").inc();
             requestTimer.observeDuration();
         }
     }
@@ -113,7 +113,7 @@ public class ActiveDirectoryResource extends BaseResource {
     @Consumes(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.ADMINISTRATOR)
     public void leaveActiveDirectory(CredentialsDTO activeDirectoryCredentials) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "leaveActiveDirectory").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "leaveActiveDirectory").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Validate.notEmpty(activeDirectoryCredentials.getUsername(), "Missing username. Username is required to leave AD");
@@ -130,7 +130,7 @@ public class ActiveDirectoryResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "leaveActiveDirectory").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "leaveActiveDirectory").inc();
             requestTimer.observeDuration();
         }
     }
@@ -146,7 +146,7 @@ public class ActiveDirectoryResource extends BaseResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role = Role.REGULAR_USER)
     public ActiveDirectoryJoinInfoDTO getActiveDirectoryStatus() {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, "", METRICS_RESOURCE, "getActiveDirectoryStatus").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "getActiveDirectoryStatus").startTimer();
         String responseStatus = HTTP_OK;
         ActiveDirectoryJoinInfoDTO adJoinInfoDTO = null;
         try {
@@ -158,7 +158,7 @@ public class ActiveDirectoryResource extends BaseResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), ex);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, "", responseStatus, METRICS_RESOURCE, "getActiveDirectoryStatus").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "getActiveDirectoryStatus").inc();
             requestTimer.observeDuration();
         }
     }

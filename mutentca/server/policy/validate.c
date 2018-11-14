@@ -59,6 +59,7 @@ LwCAPolicyValidateSNPolicy(
 {
     DWORD dwError = 0;
     PSTR pszCN = NULL;
+    BOOLEAN bIsIP = FALSE;
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
@@ -71,16 +72,25 @@ LwCAPolicyValidateSNPolicy(
     dwError = LwCAX509ReqGetCommonName(pRequest, &pszCN);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if(LwCAUtilDoesValueHaveWildcards(pszCN))
+    {
+        LWCA_LOG_ERROR("Policy Violation: CN %s contains wildcards", pszCN);
+        bIsValid = FALSE;
+        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+    }
+
+    bIsIP = LwCAUtilIsValueIPAddr(pszCN);
+
     dwError = LwCAUtilIsValueFQDN(pszCN, &bIsFQDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (bIsFQDN)
-    {
-        bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_FQDN, pSNsAllowed);
-    }
-    else if (LwCAUtilIsValueIPAddr(pszCN))
+    if (bIsIP)
     {
         bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_IP, pSNsAllowed);
+    }
+    else if (bIsFQDN)
+    {
+        bIsValid = _LwCAPolicyValidateEntry(pszCN, pReqContext, LWCA_POLICY_CFG_TYPE_FQDN, pSNsAllowed);
     }
     else
     {
@@ -119,6 +129,7 @@ LwCAPolicyValidateSANPolicy(
     DWORD dwError = 0;
     DWORD dwIdx = 0;
     PLWCA_STRING_ARRAY pSANArray = NULL;
+    BOOLEAN bIsIP = FALSE;
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
@@ -131,6 +142,13 @@ LwCAPolicyValidateSANPolicy(
     dwError = LwCAX509ReqGetSubjectAltNames(pRequest, &pSANArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (!pSANArray)
+    {
+        // CSR does not contain any SANs. Passing validation
+        bIsValid = TRUE;
+        goto ret;
+    }
+
     if (!bMultiSANEnabled && pSANArray->dwCount > 1)
     {
         LWCA_LOG_ERROR("Policy Violation: Multiple SANs are not allowed");
@@ -139,23 +157,33 @@ LwCAPolicyValidateSANPolicy(
 
     for ( ; dwIdx < pSANArray->dwCount ; ++dwIdx )
     {
+        if(LwCAUtilDoesValueHaveWildcards(pSANArray->ppData[dwIdx]))
+        {
+            LWCA_LOG_ERROR("Policy Violation: SAN %s contains wildcards", pSANArray->ppData[dwIdx]);
+            bIsValid = FALSE;
+            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+        }
+
+
+        bIsIP = LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]);
+
         dwError = LwCAUtilIsValueFQDN(pSANArray->ppData[dwIdx], &bIsFQDN);
         BAIL_ON_LWCA_ERROR(dwError);
 
-        if (bIsFQDN)
-        {
-            bIsValid = _LwCAPolicyValidateEntry(
-                        pSANArray->ppData[dwIdx],
-                        pReqContext,
-                        LWCA_POLICY_CFG_TYPE_FQDN,
-                        pSANsAllowed);
-        }
-        else if (LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]))
+        if (bIsIP)
         {
             bIsValid = _LwCAPolicyValidateEntry(
                         pSANArray->ppData[dwIdx],
                         pReqContext,
                         LWCA_POLICY_CFG_TYPE_IP,
+                        pSANsAllowed);
+        }
+        else if (bIsFQDN)
+        {
+            bIsValid = _LwCAPolicyValidateEntry(
+                        pSANArray->ppData[dwIdx],
+                        pReqContext,
+                        LWCA_POLICY_CFG_TYPE_FQDN,
                         pSANsAllowed);
         }
         else
@@ -176,6 +204,7 @@ LwCAPolicyValidateSANPolicy(
         }
     }
 
+ret:
     *pbIsValid = bIsValid;
 
 cleanup:
@@ -218,6 +247,7 @@ LwCAPolicyValidateKeyUsagePolicy(
     else
     {
         LWCA_LOG_ERROR("Policy Violation. Some key usages in CSR are not allowed.");
+        bIsValid = FALSE;
     }
 
     *pbIsValid = bIsValid;
@@ -243,6 +273,7 @@ LwCAPolicyValidateCertDurationPolicy(
 {
     DWORD dwError = 0;
     double duration = 0;
+    DWORD dwDuration = 0;
     BOOLEAN bIsValid = FALSE;
 
     if (!pValidity || !pbIsValid)
@@ -252,17 +283,27 @@ LwCAPolicyValidateCertDurationPolicy(
     }
 
     duration = difftime(pValidity->tmNotAfter, pValidity->tmNotBefore);
+    if (duration < 0)
+    {
+        LWCA_LOG_ERROR("Policy Violation: Invalid cert duration. tmNotBefore greater than tmNotAfter");
+        bIsValid = FALSE;
+        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+    }
 
-    if (duration > 0 && duration <= (double) dwAllowedDuration)
+    dwDuration = (DWORD) duration / LWCA_TIME_SECS_PER_DAY;
+
+    if (dwDuration <= dwAllowedDuration)
     {
         bIsValid = TRUE;
     }
     else
     {
         LWCA_LOG_ERROR(
-            "Policy Violation: Given cert duration %f is higher than allowed duration %d",
-            duration,
+            "Policy Violation: Given cert duration %d is higher than allowed duration %d",
+            dwDuration,
             dwAllowedDuration);
+        bIsValid = FALSE;
+        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
     }
 
     *pbIsValid = bIsValid;
@@ -384,11 +425,15 @@ _LwCAPolicyValidateInzone(
     switch (type)
     {
     case LWCA_POLICY_CFG_TYPE_IP:
-        // TODO: Do Reverse DNS lookup (in subsequent commits)
+        // TODO: Do Reverse DNS lookup
+        LWCA_LOG_INFO("Inzone policy validation currently not implemented. Passing");
+        bIsValid = TRUE;
         break;
 
     case LWCA_POLICY_CFG_TYPE_FQDN:
-        // TODO: Do Forward DNS lookup (in subsequent commits)
+        // TODO: Do Forward DNS lookup
+        LWCA_LOG_INFO("Inzone policy validation currently not implemented. Passing");
+        bIsValid = TRUE;
         break;
 
     default:
@@ -422,7 +467,8 @@ _LwCAPolicyValidateWithReqUPN(
     pszHostFQDN = LwCAStringTokA(pszTemp, "@", &pszNextTok);
     if (!pszHostFQDN)
     {
-        goto error;
+        bIsValid = FALSE;
+        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
     }
 
     if (bIsFQDN)
@@ -434,10 +480,12 @@ _LwCAPolicyValidateWithReqUPN(
     pszHostname = LwCAStringTokA(pszHostFQDN, ".", &pszNextTok);
     if (!pszHostname)
     {
-        goto error;
+        bIsValid = FALSE;
+        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
     }
 
-    bIsValid = _LwCAPolicyValidateWithValue(pcszEntry, pszHostFQDN, pcszPrefix, pcszSuffix);
+    bIsValid = _LwCAPolicyValidateWithValue(pcszEntry, pszHostname, pcszPrefix, pcszSuffix);
+    BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszTemp);
@@ -465,7 +513,7 @@ _LwCAPolicyValidateWithValue(
                 &pszExpectedEntry,
                 "%s%s%s",
                 LWCA_SAFE_STRING(pcszPrefix),
-                pcszEntry,
+                pcszValue,
                 LWCA_SAFE_STRING(pcszSuffix));
     BAIL_ON_LWCA_ERROR(dwError);
 

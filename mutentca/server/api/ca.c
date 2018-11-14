@@ -28,13 +28,6 @@ _LwCACheckCANotExist(
 
 static
 DWORD
-_LwCASignX509Certificate(
-    X509    *pCert,
-    PCSTR   pcszCAId
-    );
-
-static
-DWORD
 _LwCAGetCurrentCACertificate(
     PCSTR               pcszCAId,
     PLWCA_CERTIFICATE   *ppCACert
@@ -49,10 +42,318 @@ _LwCAStoreIntermediateCA(
     PLWCA_KEY   pEncryptedKey
     );
 
+static
+DWORD
+_LwCACreateSelfSignedRootCACert(
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszRootCAId,
+    PLWCA_PKCS_10_REQ_DATA  pCARequest,
+    X509                    **ppX509CACert,
+    PSTR                    *ppszPrivateKey
+    );
+
+/*
+ * Lightwave Root CA will be initialized based on the config file provided.
+ * This method takes json object which is refered to "config" section
+ *
+ * Required fields:
+ *    - name
+ *
+ * Below is the sample config file:
+ *{
+ * "config": {
+ *      "name": "LightwaveCA-US",
+ *      "domainName": "lightwave.local",
+ *      "organization": "VMware Inc",
+ *      "organizationUnit": "VMware Inc",
+ *      "country": "US",
+ *      "state": "WA",
+ *      "locality": "Bellevue",
+ *      "certificateFile": "<file path to certificate>",
+ *      "privateKeyFile": "<file path to privatekey>",
+ *      "passphraseFile": "<file path to passphrase>"
+ *      }
+ *}
+*/
+
+DWORD
+LwCAInitCA(
+    PLWCA_JSON_OBJECT pConfig
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwKeyUsageConstraints = 0;
+    PSTR pszName = NULL;
+    PSTR pszDomainName = NULL;
+    PSTR pszOrganziation = NULL;
+    PSTR pszOrganizationUnit = NULL;
+    PSTR pszCountry = NULL;
+    PSTR pszState = NULL;
+    PSTR pszLocality = NULL;
+    PSTR pszCertificate = NULL;
+    PSTR pszPrivateKey = NULL;
+    PSTR pszPassPhrase = NULL;
+    PSTR pszCertificateFile = NULL;
+    PSTR pszPrivateKeyFile = NULL;
+    PSTR pszPassPhraseFile = NULL;
+    PLWCA_STRING_ARRAY pOrganizationList = NULL;
+    PLWCA_STRING_ARRAY pOUList = NULL;
+    PLWCA_STRING_ARRAY pCountryList = NULL;
+    PLWCA_STRING_ARRAY pStateList = NULL;
+    PLWCA_STRING_ARRAY pLocalityList = NULL;
+    PLWCA_PKCS_10_REQ_DATA pPKCSReq = NULL;
+    PLWCA_REQ_CONTEXT pReqCtx = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (!pConfig)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                FALSE,
+                                LWCA_CA_CONFIG_KEY_NAME,
+                                &pszName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_DOMAIN_NAME,
+                                &pszDomainName);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_ORGANIZATION,
+                                &pszOrganziation);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_ORGANIZATION_UNIT,
+                                &pszOrganizationUnit);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_COUNTRY,
+                                &pszCountry);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_STATE,
+                                &pszState);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_LOCALITY,
+                                &pszLocality);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_CERTIFICATE_FILE,
+                                &pszCertificateFile);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_PRIVATEKEY_FILE,
+                                &pszPrivateKeyFile);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetStringFromKey(
+                                pConfig,
+                                TRUE,
+                                LWCA_CA_CONFIG_KEY_PASSPHRASE_FILE,
+                                &pszPassPhraseFile);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pszOrganziation))
+    {
+        dwError = LwCACreateStringArray((PSTR*)&pszOrganziation, 1, &pOrganizationList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszOrganizationUnit))
+    {
+        dwError = LwCACreateStringArray((PSTR*)&pszOrganizationUnit, 1, &pOUList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszCountry))
+    {
+        dwError = LwCACreateStringArray((PSTR*)&pszCountry, 1, &pCountryList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszState))
+    {
+        dwError = LwCACreateStringArray((PSTR*)&pszState, 1, &pStateList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszLocality))
+    {
+        dwError = LwCACreateStringArray((PSTR*)&pszLocality, 1, &pLocalityList);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszCertificateFile))
+    {
+        dwError = LwCAReadFileToString(pszCertificateFile, &pszCertificate);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszPrivateKeyFile))
+    {
+        dwError = LwCAReadFileToString(pszPrivateKeyFile, &pszPrivateKey);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszPassPhraseFile))
+    {
+        dwError = LwCAReadFileToString(pszPassPhraseFile, &pszPassPhrase);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwKeyUsageConstraints = (LWCA_KEY_USAGE_FLAG_KEY_CERT_SIGN |
+                                LWCA_KEY_USAGE_FLAG_KEY_CRL_SIGN);
+
+    dwError = LwCACreatePKCSRequest(
+                            pszName,
+                            pszDomainName,
+                            pCountryList,
+                            pLocalityList,
+                            pStateList,
+                            pOrganizationList,
+                            pOUList,
+                            NULL,
+                            NULL,
+                            NULL,
+                            NULL,
+                            dwKeyUsageConstraints,
+                            &pPKCSReq
+                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_REQ_CONTEXT), (PVOID *)&pReqCtx);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gApiGlobals.mutex, bLocked);
+
+    dwError = LwCAAllocateStringA(pszName, &gApiGlobals.pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateRootCA(
+                        pReqCtx,
+                        pszName,
+                        pPKCSReq,
+                        pszCertificate,
+                        pszPrivateKey,
+                        pszPassPhrase);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gApiGlobals.mutex, bLocked);
+    LWCA_SAFE_FREE_STRINGA(pszName);
+    LWCA_SAFE_FREE_STRINGA(pszDomainName);
+    LWCA_SAFE_FREE_STRINGA(pszOrganziation);
+    LWCA_SAFE_FREE_STRINGA(pszOrganizationUnit);
+    LWCA_SAFE_FREE_STRINGA(pszCountry);
+    LWCA_SAFE_FREE_STRINGA(pszState);
+    LWCA_SAFE_FREE_STRINGA(pszLocality);
+    LWCA_SAFE_FREE_STRINGA(pszCertificate);
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPassPhrase, LwCAStringLenA(pszPassPhrase));
+    LWCA_SAFE_FREE_STRINGA(pszCertificateFile);
+    LWCA_SAFE_FREE_STRINGA(pszPrivateKeyFile);
+    LWCA_SAFE_FREE_STRINGA(pszPassPhraseFile);
+    LwCAFreeStringArray(pOrganizationList);
+    LwCAFreeStringArray(pOUList);
+    LwCAFreeStringArray(pCountryList);
+    LwCAFreeStringArray(pStateList);
+    LwCAFreeStringArray(pLocalityList);
+    LwCAFreePKCSRequest(pPKCSReq);
+    LwCARequestContextFree(pReqCtx);
+    return dwError;
+
+error:
+    if (dwError == LWCA_CA_ALREADY_EXISTS)
+    {
+        dwError = 0;
+        goto cleanup;
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gApiGlobals.mutex, bLocked);
+    LwCAFreeCACtx();
+    goto cleanup;
+}
+
+DWORD
+LwCAGetRootCAId(
+    PSTR *ppszRootCAId
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszRootCAId = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (!ppszRootCAId)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gApiGlobals.mutex, bLocked);
+
+    dwError = LwCAAllocateStringA(gApiGlobals.pszRootCAId, &pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszRootCAId = pszRootCAId;
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gApiGlobals.mutex, bLocked);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
+    if (ppszRootCAId)
+    {
+        *ppszRootCAId = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+LwCAFreeCACtx(
+    )
+{
+    BOOLEAN bLocked = FALSE;
+
+    LWCA_LOCK_MUTEX_EXCLUSIVE(&gApiGlobals.mutex, bLocked);
+
+    LWCA_SAFE_FREE_STRINGA(gApiGlobals.pszRootCAId);
+
+    LWCA_LOCK_MUTEX_UNLOCK(&gApiGlobals.mutex, bLocked);
+}
+
 DWORD
 LwCACreateRootCA(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszRootCAId,
+    PLWCA_PKCS_10_REQ_DATA  pCARequest,
     PLWCA_CERTIFICATE       pCertificate,
     PCSTR                   pcszPrivateKey,
     PCSTR                   pcszPassPhrase
@@ -60,16 +361,19 @@ LwCACreateRootCA(
 {
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
-    X509 *pCert = NULL;
+    X509 *pX509CACert = NULL;
     PSTR pszSubject = NULL;
     PSTR pszCRLNumber = NULL;
     PSTR pszLastCRLUpdate = NULL;
     PSTR pszNextCRLUpdate = NULL;
+    PSTR pszPrivateKey = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_CERTIFICATE pCACert =  NULL;
     BOOLEAN bIsCA = FALSE;
+    PLWCA_KEY pEncryptedKey = NULL;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszRootCAId) ||
-        !pCertificate || IsNullOrEmptyString(pcszPrivateKey)
+        !((pCertificate && !IsNullOrEmptyString(pcszPrivateKey)) || pCARequest)
         )
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
@@ -79,13 +383,30 @@ LwCACreateRootCA(
     dwError = _LwCACheckCANotExist(pcszRootCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAPEMToX509(pCertificate, &pCert);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (pCertificate)
+    {
+        dwError = LwCAPEMToX509(pCertificate, &pX509CACert);
+        BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509ValidateCertificate(pCert, pcszPrivateKey, pcszPassPhrase);
-    BAIL_ON_LWCA_ERROR(dwError);
+        dwError = LwCAX509ValidateCertificate(pX509CACert, pcszPrivateKey, pcszPassPhrase);
+        BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509CheckIfCACert(pCert, &bIsCA);
+        dwError = LwCAAllocateStringA(pcszPrivateKey, &pszPrivateKey);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = _LwCACreateSelfSignedRootCACert(
+                                    pReqCtx,
+                                    pcszRootCAId,
+                                    pCARequest,
+                                    &pX509CACert,
+                                    &pszPrivateKey
+                                    );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAX509CheckIfCACert(pX509CACert, &bIsCA);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (!bIsCA)
@@ -94,12 +415,16 @@ LwCACreateRootCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAX509GetSubjectName(pCert, &pszSubject);
+    dwError = LwCASecurityAddKeyPair(pcszRootCAId, pszPrivateKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    //TODO: Secure manager APIs must be called to encrypt and store private key.
+    dwError = LwCAX509GetSubjectName(pX509CACert, &pszSubject);
+    BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACreateCertArray((PSTR*)&pCertificate, 1 , &pCertArray);
+    dwError = LwCAX509ToPEM(pX509CACert, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateCertArray((PSTR*)&pCACert, 1 , &pCertArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAGenerateCRLNumber(&pszCRLNumber);
@@ -111,9 +436,12 @@ LwCACreateRootCA(
                         &pszNextCRLUpdate);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCASecurityGetEncryptedKey(pcszRootCAId, &pEncryptedKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCADbCreateCAData(pszSubject,
                                 pCertArray,
-                                NULL,
+                                pEncryptedKey,
                                 pszCRLNumber,
                                 pszLastCRLUpdate,
                                 pszNextCRLUpdate,
@@ -126,13 +454,16 @@ LwCACreateRootCA(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
+    LwCAFreeCertificate(pCACert);
     LwCAFreeCertificates(pCertArray);
     LwCADbFreeCAData(pCAData);
     LWCA_SAFE_FREE_STRINGA(pszSubject);
     LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
     LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
-    LwCAX509Free(pCert);
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
+    LwCAX509Free(pX509CACert);
+    LwCAFreeKey(pEncryptedKey);
 
     return dwError;
 
@@ -191,10 +522,15 @@ LwCAGetSignedCertificate(
     X509 *pX509Cert = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_CERTIFICATE pCert = NULL;
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+    PLWCA_CERT_VALIDITY pTempValidity = NULL;
+    DWORD dwDuration = 0;
+    BOOLEAN bIsValid = FALSE;
     BOOLEAN bIsCA = FALSE;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) ||
-        !pCertRequest || !pValidity || !ppCertifcate)
+        !pCertRequest || !ppCertifcate)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -203,9 +539,48 @@ LwCAGetSignedCertificate(
     dwError = LwCAPEMToX509Req(pCertRequest, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    //TODO: Policy plugin must verify subjectname does not have wildcardstring
-    //TODO: Policy plugin must verify subjectaltname does not have wildcardstring
-    //TODO: Policy plugin must verify multiple SANs are not allowed
+    dwError = LwCAPolicyValidate(
+                gpPolicyCtx,
+                pReqCtx,
+                pRequest,
+                pValidity,
+                LWCA_POLICY_TYPE_CERTIFICATE,
+                LWCA_POLICY_CHECK_ALL,
+                &bIsValid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bIsValid)
+    {
+        dwError = LWCA_POLICY_VALIDATION_ERROR;
+        BAIL_ON_LWCA_ERROR_WITH_MSG(
+            dwError,
+            "Failed to sign certificate due to policy violation");
+    }
+
+    if (pValidity)
+    {
+        dwError = LwCACreateCertValidity(pValidity->tmNotBefore,
+                                        pValidity->tmNotAfter,
+                                        &pTempValidity
+                                        );
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAPolicyGetCertDuration(gpPolicyCtx, LWCA_POLICY_TYPE_CERTIFICATE,  &dwDuration);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        if (dwDuration == 0)
+        {
+            dwDuration = LWCA_DEFAULT_CERT_DURATION;
+        }
+
+        tmNotBefore = time(NULL);
+        tmNotAfter = tmNotBefore + (dwDuration * LWCA_TIME_SECS_PER_DAY);
+
+        dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     dwError = _LwCACheckCAExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -213,7 +588,7 @@ LwCAGetSignedCertificate(
     dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGenerateX509Certificate(pRequest, pValidity, pCACert, &pX509Cert);
+    dwError = LwCAGenerateX509Certificate(pRequest, pTempValidity, pCACert, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509CheckIfCACert(pX509Cert, &bIsCA);
@@ -226,7 +601,7 @@ LwCAGetSignedCertificate(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCASignX509Certificate(pX509Cert, pcszCAId);
+    dwError = LwCASecuritySignX509Cert(pcszCAId, pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509ToPEM(pX509Cert, &pCert);
@@ -260,11 +635,12 @@ LwCACreateIntermediateCA(
 {
     DWORD                       dwError = 0;
     DWORD                       dwKeyUsageConstraints = 0;
+    DWORD                       dwDuration = 0;
     time_t                      tmNotBefore;
     time_t                      tmNotAfter;
-    struct tm                   *tm = NULL;
     BOOLEAN                     bIsCA = FALSE;
     PSTR                        pszPublicKey = NULL;
+    PSTR                        pszParentCAId = NULL;
     PLWCA_KEY                   pEncryptedKey = NULL;
     PLWCA_STRING_ARRAY          pOrganizationList = NULL;
     X509                        *pX509CACert = NULL;
@@ -275,22 +651,32 @@ LwCACreateIntermediateCA(
     PLWCA_CERTIFICATE           pCACert =  NULL;
     PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
     PLWCA_CERT_VALIDITY         pTempValidity = NULL;
+    BOOLEAN                     bIsValid = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts ||
-        !pCARequest || IsNullOrEmptyString(pcszParentCAId)
-        )
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts || !pCARequest)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszParentCAId))
+    {
+        dwError =  LwCAAllocateStringA(pcszParentCAId, &pszParentCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAGetRootCAId(&pszParentCAId);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = _LwCACheckCANotExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCACheckCAExist(pcszParentCAId);
+    dwError = _LwCACheckCAExist(pszParentCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCAGetCurrentCACertificate(pcszParentCAId, &pParentCACert);
+    dwError = _LwCAGetCurrentCACertificate(pszParentCAId, &pParentCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAPEMToX509(pParentCACert, &pX509ParentCACert);
@@ -318,16 +704,40 @@ LwCACreateIntermediateCA(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmCreateKeyPair(pcszCAId);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAKmGetPublickey(pcszCAId, &pszPublicKey);
+    /*
+     * in the normal security workflow, db layer will be called
+     * from within the CreateKeyPair implementation to store
+     * encrypted key. Since this is during creation, db layer
+     * is not ready to store partial info. therefore, a storage
+     * cache is maintained which caches encrypted key and clears
+     * on GetEncryptedKey call. Fetches are always done from db
+     * layer.
+    */
+    dwError = LwCASecurityCreateKeyPair(pcszCAId, &pszPublicKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmSignX509Request(pRequest, pcszCAId);
+    dwError = LwCAPolicyValidate(
+                gpPolicyCtx,
+                pReqCtx,
+                pRequest,
+                pValidity,
+                LWCA_POLICY_TYPE_CA,
+                LWCA_POLICY_CHECK_ALL,
+                &bIsValid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!bIsValid)
+    {
+        dwError = LWCA_POLICY_VALIDATION_ERROR;
+        BAIL_ON_LWCA_ERROR_WITH_MSG(
+            dwError,
+            "Failed to create intermediate CA due to policy violation");
+    }
+
+    dwError = LwCASecuritySignX509Request(pcszCAId, pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (pValidity)
@@ -340,16 +750,18 @@ LwCACreateIntermediateCA(
     }
     else
     {
-        tmNotBefore = time(NULL);
-        tm = localtime(&tmNotBefore);
-        //TODO: Get CA Cert duration from policy engine
-        tm->tm_yday += LWCA_MAX_INT_CA_CERT_DURATION;
-        tmNotAfter = mktime(tm);
+        dwError = LwCAPolicyGetCertDuration(gpPolicyCtx, LWCA_POLICY_TYPE_CA, &dwDuration);
+        BAIL_ON_LWCA_ERROR(dwError);
 
-        dwError = LwCACreateCertValidity(tmNotBefore,
-                                        tmNotAfter,
-                                        &pTempValidity
-                                        );
+        if (dwDuration == 0)
+        {
+            dwDuration = LWCA_DEFAULT_CERT_DURATION;
+        }
+
+        tmNotBefore = time(NULL);
+        tmNotAfter = tmNotBefore + (dwDuration * LWCA_TIME_SECS_PER_DAY);
+
+        dwError = LwCACreateCertValidity(tmNotBefore, tmNotAfter, &pTempValidity);
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
@@ -365,10 +777,10 @@ LwCACreateIntermediateCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAKmSignX509Cert(pX509CACert, pcszParentCAId);
+    dwError = LwCASecuritySignX509Cert(pszParentCAId, pX509CACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAKmGetEncryptedKey(pcszCAId, &pEncryptedKey);
+    dwError = LwCASecurityGetEncryptedKey(pcszCAId, &pEncryptedKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509ToPEM(pX509CACert, &pCACert);
@@ -380,7 +792,7 @@ LwCACreateIntermediateCA(
     dwError = _LwCAStoreIntermediateCA(
                                     pX509CACert,
                                     pcszCAId,
-                                    pcszParentCAId,
+                                    pszParentCAId,
                                     pEncryptedKey
                                     );
     BAIL_ON_LWCA_ERROR(dwError);
@@ -389,6 +801,7 @@ LwCACreateIntermediateCA(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszPublicKey);
+    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
     LwCAFreeStringArray(pOrganizationList);
     LwCAFreePKCSRequest(pPKCSReq);
     LwCAX509ReqFree(pRequest);
@@ -397,6 +810,7 @@ cleanup:
     LwCAFreeCertificate(pParentCACert);
     LwCAFreeCertificate(pCACert);
     LwCAFreeCertValidity(pTempValidity);
+    LwCAFreeKey(pEncryptedKey);
 
     return dwError;
 
@@ -618,7 +1032,7 @@ LwCAGetCACrl(
                     );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError =  LwCAKmSignX509Crl(pX509Crl, pcszCAId);
+    dwError =  LwCASecuritySignX509Crl(pcszCAId, pX509Crl);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAX509CrlToPEM(pX509Crl, &pCrl);
@@ -728,46 +1142,6 @@ error:
 
 static
 DWORD
-_LwCASignX509Certificate(
-    X509    *pCert,
-    PCSTR   pcszCAId
-    )
-{
-    DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
-    PSTR pszPrivateKey = NULL;
-
-    //TODO: This method will be re-implemented
-    // after secure manager is integrated.
-
-    dwError = LwCADbGetCA(pcszCAId, &pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAAllocateStringWithLengthA(
-                        pCAData->pEncryptedPrivateKey->pData,
-                        pCAData->pEncryptedPrivateKey->dwLength,
-                        &pszPrivateKey
-                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAX509SignCertificate(
-                        pCert,
-                        pszPrivateKey,
-                        NULL
-                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszPrivateKey);
-    LwCADbFreeCAData(pCAData);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-static
-DWORD
 _LwCAStoreIntermediateCA(
     X509        *pCert,
     PCSTR       pcszCAId,
@@ -827,5 +1201,77 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCACreateSelfSignedRootCACert(
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszRootCAId,
+    PLWCA_PKCS_10_REQ_DATA  pCARequest,
+    X509                    **ppX509CACert,
+    PSTR                    *ppszPrivateKey
+    )
+{
+    DWORD dwError = 0;
+    X509_REQ *pRequest = NULL;
+    X509 *pX509CACert = NULL;
+    PSTR pszPublicKey = NULL;
+    PSTR pszPrivateKey = NULL;
+    time_t tmNotBefore;
+    time_t tmNotAfter;
+    PLWCA_CERT_VALIDITY pValidity =  NULL;
+
+    if (!pReqCtx || IsNullOrEmptyString(pcszRootCAId) || !pCARequest)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCACreateKeyPair(LWCA_MIN_CA_CERT_PRIV_KEY_LENGTH, &pszPrivateKey, &pszPublicKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCACreateCertificateSignRequest(pCARequest, pszPublicKey, &pRequest);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509ReqSignRequest(pRequest, pszPrivateKey, NULL);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    tmNotBefore = time(NULL);
+    tmNotAfter = tmNotBefore + LWCA_DEFAULT_ROOTCA_CERT_DURATION;
+
+    dwError = LwCACreateCertValidity(tmNotBefore,
+                                    tmNotAfter,
+                                    &pValidity
+                                    );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError =  LwCAGenerateSelfSignX509Certificate(pRequest, pValidity, &pX509CACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509SignCertificate(pX509CACert, pszPrivateKey, NULL);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppX509CACert = pX509CACert;
+    *ppszPrivateKey = pszPrivateKey;
+
+cleanup:
+    LwCAX509ReqFree(pRequest);
+    LwCAFreeCertValidity(pValidity);
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPublicKey, LwCAStringLenA(pszPublicKey));
+    return dwError;
+
+error:
+    LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
+    LwCAX509Free(pX509CACert);
+    if (ppX509CACert)
+    {
+        *ppX509CACert = NULL;
+    }
+    if (ppszPrivateKey)
+    {
+        *ppszPrivateKey = NULL;
+    }
     goto cleanup;
 }

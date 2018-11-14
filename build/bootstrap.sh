@@ -1,9 +1,9 @@
 #!/bin/sh
 
-  autoreconf -vif .. \
-  && \
-  ../configure \
-    CFLAGS="-Wall -Werror -Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare" \
+autoreconf -vif .. \
+&& \
+../configure \
+    CFLAGS="-Wall -Werror" \
     LDFLAGS="-ldl -pie -fPIE" \
     --prefix=/opt/vmware \
     --enable-debug=yes \

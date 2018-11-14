@@ -125,13 +125,24 @@ LwCARestUnknownGetHttpError(
         break;
 
     case LWCA_ERROR_INVALID_REQUEST:
+    case LWCA_POLICY_VALIDATION_ERROR:
+    case LWCA_INVALID_CSR_FIELD:
         httpStatus = HTTP_BAD_REQUEST;
         break;
 
     case LWCA_ERROR_OIDC_BAD_AUTH_DATA:
     case LWCA_ERROR_OIDC_INVALID_POP:
+    case LWCA_ERROR_OIDC_UNKNOWN_TOKEN:
     case LWCA_ERROR_REST_UNAUTHENTICATED:
-        httpStatus = HTTP_FORBIDDEN;
+        httpStatus = HTTP_UNAUTHORIZED;
+        break;
+
+    case LWCA_CA_ALREADY_EXISTS:
+        httpStatus = HTTP_CONFLICT;
+        break;
+
+    case LWCA_CA_MISSING:
+        httpStatus = HTTP_NOT_FOUND;
         break;
 
     default:

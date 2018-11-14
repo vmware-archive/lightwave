@@ -17,7 +17,7 @@
 #define MAX_PATH 256
 
 #define SECURITY_AWS_KMS_CONFIG_GOOD \
-"{\"kms\":{\"cmk_id\":\"test_cmk_id_good\",\"key_spec\":\"AES_256\"}}"
+"{\"kms\":{\"region\":\"us-east-1\",\"cmk_id\":\"test_cmk_id_good\",\"key_spec\":\"AES_256\"}}"
 
 #define SECURITY_AWS_KMS_CONFIG_BAD_NO_ROOT \
 "{\"kms_no_root\":{\"cmk_id\":\"test_cmk_id_bad\"}}"
@@ -26,7 +26,10 @@
 "{\"kms\":{\"cmk_id_bad\":\"test_cmk_id_bad\"}}"
 
 #define SECURITY_AWS_KMS_CONFIG_BAD_NO_KEYSPEC \
-"{\"kms\":{\"cmk_id\":\"test_cmk_id\",\"key_spec_bad\":\"keyspec_bad\"}}"
+"{\"kms\":{\"region\":\"us-east-1\",\"cmk_id\":\"test_cmk_id\",\"key_spec_bad\":\"keyspec_bad\"}}"
+
+#define SECURITY_AWS_KMS_CONFIG_EMPTY_REGION \
+"{\"kms\":{\"region\":\"\",\"cmk_id\":\"test_cmk_id\",\"key_spec_bad\":\"keyspec_bad\"}}"
 
 char _tmpfilename[MAX_PATH];
 
@@ -91,6 +94,21 @@ Security_Aws_Kms_Tests_Config_Parse_Bad_No_KeySpec(
                   &pState->pHandle);
 
     assert_true(dwError == LWCA_SECURITY_AWS_KMS_INVALID_CONFIG);
+}
+
+VOID
+Security_Aws_Kms_Tests_Config_Parse_Bad_Empty_Region(
+    void **state
+    )
+{
+    DWORD dwError = 0;
+    PSECURITY_AWS_KMS_TEST_STATE pState = *state;
+
+    dwError = pState->pInterface->pFnInitialize(
+                  _FileWithContents(SECURITY_AWS_KMS_CONFIG_EMPTY_REGION),
+                  &pState->pHandle);
+
+    assert_true(dwError == LWCA_SECURITY_AWS_KMS_CONFIG_REGION_EMPTY);
 }
 
 static

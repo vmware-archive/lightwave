@@ -82,7 +82,7 @@ public class SolutionUserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public SolutionUserDTO create(SolutionUserDTO user) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "create").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "create").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Validate.notEmpty(user.getName(), sm.getString("valid.not.empty", "name"));
@@ -110,7 +110,7 @@ public class SolutionUserResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "create").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "create").inc();
             requestTimer.observeDuration();
         }
     }
@@ -126,7 +126,7 @@ public class SolutionUserResource extends BaseSubResource {
     @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.REGULAR_USER)
     public SolutionUserDTO get(@PathParam("solnName") String name) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "get").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "get").startTimer();
         String responseStatus = HTTP_OK;
         try {
             SolutionUser idmSolutionUser = getIDMClient().findSolutionUser(tenant, name);
@@ -147,7 +147,7 @@ public class SolutionUserResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "get").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "get").inc();
             requestTimer.observeDuration();
         }
     }
@@ -167,7 +167,7 @@ public class SolutionUserResource extends BaseSubResource {
     @Consumes(MediaType.APPLICATION_JSON) @Produces(MediaType.APPLICATION_JSON)
     @RequiresRole(role=Role.ADMINISTRATOR)
     public SolutionUserDTO update(@PathParam("solnName") String name, SolutionUserDTO user) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "update").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "update").startTimer();
         String responseStatus = HTTP_OK;
         try {
             Validate.notNull(user.getCertificate(), sm.getString("valid.not.null", "user certificate"));
@@ -195,7 +195,7 @@ public class SolutionUserResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "update").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "update").inc();
             requestTimer.observeDuration();
         }
     }
@@ -214,7 +214,7 @@ public class SolutionUserResource extends BaseSubResource {
     @DELETE @Path("/{solnName}")
     @RequiresRole(role=Role.ADMINISTRATOR)
     public void delete(@PathParam("solnName") String name) {
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         String responseStatus = HTTP_OK;
         try {
             getIDMClient().deletePrincipal(tenant, name);
@@ -231,7 +231,7 @@ public class SolutionUserResource extends BaseSubResource {
             responseStatus = HTTP_SERVER_ERROR;
             throw new InternalServerErrorException(sm.getString("ec.500"), e);
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, responseStatus, METRICS_RESOURCE, "delete").inc();
+            totalRequests.labels(METRICS_COMPONENT, responseStatus, METRICS_RESOURCE, "delete").inc();
             requestTimer.observeDuration();
         }
     }
@@ -264,11 +264,11 @@ public class SolutionUserResource extends BaseSubResource {
 //            throw new InternalServerErrorException(sm.getString("ec.500"), e);
 //        }
 
-        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, tenant, METRICS_RESOURCE, "delete").startTimer();
+        Histogram.Timer requestTimer = requestLatency.labels(METRICS_COMPONENT, METRICS_RESOURCE, "delete").startTimer();
         try {
             throw new NotImplementedError(sm.getString("ec.501"));
         } finally {
-            totalRequests.labels(METRICS_COMPONENT, tenant, "501", METRICS_RESOURCE, "getGroups").inc();
+            totalRequests.labels(METRICS_COMPONENT, "501", METRICS_RESOURCE, "getGroups").inc();
             requestTimer.observeDuration();
         }
     }

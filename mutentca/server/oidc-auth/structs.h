@@ -41,6 +41,7 @@ typedef struct _LWCA_OIDC_TOKEN
     LWCA_OIDC_TOKEN_TYPE        oidcTokenType;
     PLWCA_OIDC_HOTK_VALUES      pReqHOTKValues;
     PSTR                        pszReqBindUPN;
+    PSTR                        pszReqBindUPNTenant;
     PLWCA_STRING_ARRAY          pReqBindUPNGroups;
 } LWCA_OIDC_TOKEN, *PLWCA_OIDC_TOKEN;
 

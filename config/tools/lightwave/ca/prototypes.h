@@ -21,6 +21,7 @@ LightwaveCaGetSignedCert(
 DWORD
 VmwCaAcquireOidcToken(
     PVMW_CA_PARAMS pCaParams,
+    PCSTR          pcszScope,
     PSTR*          ppszAccessToken
     );
 

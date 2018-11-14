@@ -457,7 +457,7 @@ public class TokenRequestProcessor {
             boolean refreshTokenAllowed,
             String grantType) throws ServerException {
         User user = (personUser != null) ? personUser : solutionUser;
-        Timer rsInfoTimer = MetricUtils.startRequestTimer(this.tenant, TokenController.metricsResource, "retrieveResourceServerInfo_" + grantType);
+        Timer rsInfoTimer = MetricUtils.startRequestTimer(TokenController.metricsResource, "retrieveResourceServerInfo_" + grantType);
         Set<ResourceServerInfo> resourceServerInfos;
         try {
             resourceServerInfos = this.serverInfoRetriever.retrieveResourceServerInfos(this.tenant, scope);
@@ -467,7 +467,7 @@ public class TokenRequestProcessor {
             }
         }
 
-        Timer userInfoTimer = MetricUtils.startRequestTimer(this.tenant, TokenController.metricsResource, "retrieveUserInfo_" + grantType);
+        Timer userInfoTimer = MetricUtils.startRequestTimer(TokenController.metricsResource, "retrieveUserInfo_" + grantType);
         UserInfo userInfo;
         try {
             userInfo = this.userInfoRetriever.retrieveUserInfo(user, scope, resourceServerInfos);

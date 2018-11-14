@@ -14,6 +14,12 @@
 
 #include "includes.h"
 
+static
+DWORD
+_LwCARestReadURIParams(
+    PLWCA_REST_OPERATION   pRestOp
+    );
+
 DWORD
 LwCARestOperationCreate(
     PLWCA_REST_OPERATION*   ppRestOp
@@ -155,6 +161,10 @@ LwCARestOperationReadRequest(
         pszVal = NULL;
     }
 
+    // read uri params
+    dwError = _LwCARestReadURIParams(pRestOp);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     // read request input json
     do
     {
@@ -255,7 +265,6 @@ LwCARestOperationProcessRequest(
 {
     DWORD                   dwError = 0;
     BOOLEAN                 bAuthenticated = FALSE;
-    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
 
     if (!pRestOp)
     {
@@ -263,14 +272,13 @@ LwCARestOperationProcessRequest(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCARestAuth(pRestOp, &pReqCtx, &bAuthenticated);
+    dwError = LwCARestAuth(pRestOp, &pRestOp->pReqCtx, &bAuthenticated);
     BAIL_ON_LWCA_ERROR(dwError);
     if (!bAuthenticated)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_REST_UNAUTHENTICATED);
     }
 
-    // TODO: Modify REST APIs to take request context (pReqCtx) as parameter
     if (LwCAStringCompareA(pRestOp->pszMethod, LWCA_HTTP_METHOD_OPTIONS, FALSE) != 0)
     {
         dwError = coapi_find_handler(
@@ -292,8 +300,6 @@ LwCARestOperationProcessRequest(
 
 
 cleanup:
-
-    LwCARequestContextFree(pReqCtx);
 
     return dwError;
 
@@ -438,6 +444,61 @@ LwCAFreeRESTOperation(
         LwRtlHashMapClear(pRestOp->pParamMap, VmSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         LwCAFreeRESTResult(pRestOp->pResult);
+
+        LwCARequestContextFree(pRestOp->pReqCtx);
+
         LWCA_SAFE_FREE_MEMORY(pRestOp);
     }
+}
+
+static
+DWORD
+_LwCARestReadURIParams(
+    PLWCA_REST_OPERATION   pRestOp
+    )
+{
+    DWORD   dwError                     = 0;
+    PSTR    pszKey                      = NULL;
+    PSTR    pszCAId                     = NULL;
+    PCSTR   pcszURI                     = NULL;
+    PCSTR   pcszTempURI                 = NULL;
+
+    // This method reads ca-id uri param
+
+    pcszURI = strstr(pRestOp->pszURI, LWCA_REST_INTERMEDIATE_URI_PREFIX);
+
+    if (IsNullOrEmptyString(pcszURI))
+    {
+        // No URI params to extract
+        goto error;
+    }
+
+    pcszURI = pcszURI + LwCAStringLenA(LWCA_REST_INTERMEDIATE_URI_PREFIX);
+    pcszTempURI = LwCAStringChrA(pcszURI, '/');
+
+    if (IsNullOrEmptyString(pcszTempURI))
+    {
+        dwError = LwCAAllocateStringA(pcszURI, &pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwCAAllocateStringWithLengthA(pcszURI, (pcszTempURI - pcszURI), &pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateStringA(LWCA_REST_PARAM_CA_ID, &pszKey);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwRtlHashMapInsert(pRestOp->pParamMap, pszKey, pszCAId, NULL);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // the below values will be released when pParamMap is released
+    pszKey = NULL;
+    pszCAId = NULL;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszKey);
+    LWCA_SAFE_FREE_STRINGA(pszCAId);
+    return dwError;
 }

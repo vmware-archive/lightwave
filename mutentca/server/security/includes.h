@@ -36,9 +36,15 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
 
+#include <vmmemory.h>
+
+#include <lw/types.h>
+#include <lw/hash.h>
+
 #include "structs.h"
 #include "externs.h"
 #include "defines.h"
+#include "prototypes.h"
 
 #ifdef __cplusplus
 }

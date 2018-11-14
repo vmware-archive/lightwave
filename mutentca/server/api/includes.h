@@ -33,9 +33,16 @@
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
 #include <mutentcaerror.h>
+#include <mutentcapkcs.h>
 #include <mutentcasrvcommon.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>
 #include <mutentcapkcs.h>
+#include <mutentcapolicy.h>
+
+#include "defines.h"
+#include "structs.h"
+#include "externs.h"
+
 
 #endif /* _LWCA_SERVICE_API_INCLUDES_H_ */
