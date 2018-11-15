@@ -26,8 +26,9 @@ SUBDIRS = \
     schema \
     acl \
     watchnotify \
+    $(GRPC_HEAD) \
     vmdir
 
 if BUILD_GRPC
-    SUBDIRS += grpc-head
+    GRPC_HEAD = grpc-head
 endif
