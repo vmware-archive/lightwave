@@ -200,7 +200,7 @@ LwCAPolicyGetCertDuration(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    *pdwDuration = dwDuration;
+    *pdwDuration = dwDuration * LWCA_TIME_SECS_PER_DAY;
 
 cleanup:
     return dwError;
