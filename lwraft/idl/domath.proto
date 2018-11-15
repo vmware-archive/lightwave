@@ -18,6 +18,12 @@ package domath;
 
 service MathComputation {
   rpc Add2Values(TwoIntValues) returns (IntResult) {}
+  rpc AddValues(stream OneIntValue) returns (IntResult) {}
+  rpc AddValuesBiStream(stream OneIntValue) returns (stream IntResult) {}
+}
+
+message OneIntValue {
+  int64 i = 1;
 }
 
 message TwoIntValues {

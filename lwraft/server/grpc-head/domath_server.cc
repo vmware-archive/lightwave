@@ -50,6 +50,13 @@ using grpc::ServerBuilder;
 using grpc::ServerContext;
 using grpc::Status;
 using grpc::protobuf::int64;
+
+// Needed for stream I/O
+using grpc::ServerReader;
+using grpc::ServerReaderWriter;
+using grpc::ServerWriter;
+
+using domath::OneIntValue;
 using domath::TwoIntValues;
 using domath::IntResult;
 using domath::MathComputation;
@@ -75,6 +82,38 @@ public:
 
     return Status::OK;
   }
+
+  Status AddValues(ServerContext* context,
+                   ServerReader<OneIntValue> *reader,
+                   IntResult *sum) override
+  {
+    OneIntValue one_int;
+    int sum_total = 0;
+
+    while (reader->Read(&one_int)) {
+      sum_total += one_int.i();
+    }
+    sum->set_v(sum_total);
+
+    return Status::OK;
+  }
+
+
+Status AddValuesBiStream(
+    ServerContext* context,
+    ServerReaderWriter<IntResult, OneIntValue>* stream) override
+{
+    OneIntValue one_int;
+    IntResult ret_one_int;
+    int sum_total = 0;
+
+    while (stream->Read(&one_int)) {
+        sum_total += one_int.i();
+        ret_one_int.set_v(sum_total);
+        stream->Write(ret_one_int);
+    }
+    return Status::OK;
+}
 };
 
 void RunServer(int argc, char **argv) {

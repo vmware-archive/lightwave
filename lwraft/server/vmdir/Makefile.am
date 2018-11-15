@@ -58,6 +58,10 @@ postd_CPPFLAGS = \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
+if BUILD_GRPC
+    GRPC_HEAD = $(top_builddir)/lwraft/server/grpc-head/libdomath-grpc.la
+endif
+
 postd_LDADD = \
     $(top_builddir)/lwraft/server/metrics/libmetrics.la \
     $(top_builddir)/lwraft/server/ldap-head/libldap-head.la \
@@ -79,7 +83,7 @@ postd_LDADD = \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     $(top_builddir)/vmcommon/libvmcommon.la \
-    $(top_builddir)/lwraft/server/grpc-head/libdomath-grpc.la \
+    $(GRPC_HEAD) \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

@@ -16,14 +16,15 @@
  *
  */
 
+// C++ includes
 #include <iostream>
 #include <memory>
 #include <string>
+#include <thread>
 
+// Linux includes
 #include <stdio.h>
-#include <grpcpp/grpcpp.h>
-#include <grpcpp/impl/codegen/stub_options.h>
-
+#include <unistd.h>
 
 #ifdef BAZEL_BUILD
 #include "examples/protos/domath.grpc.pb.h"
@@ -31,9 +32,23 @@
 #include "domath.grpc.pb.h"
 #endif
 
+// gRPC includes
+#include <grpc/grpc.h>
+#include <grpcpp/channel.h>
+#include <grpcpp/client_context.h>
+#include <grpcpp/create_channel.h>
+
+// gRPC Namespaces
 using grpc::ClientContext;
 using grpc::Status;
 using grpc::protobuf::int64;
+
+// Needed for stream rpc
+using grpc::ClientReader;
+using grpc::ClientReaderWriter;
+using grpc::ClientWriter;
+
+using domath::OneIntValue;
 using domath::TwoIntValues;
 using domath::IntResult;
 using domath::MathComputation;
@@ -73,6 +88,83 @@ int64 AddTwoIntValues(
   }
 }
 
+int64 AddIntValues(
+    unique_ptr<domath::MathComputation::Stub>& stub_,
+    int argc,
+    char *argv[],
+    bool& ok)
+{
+  ClientContext context;
+  OneIntValue one_value;
+  IntResult total_sum;
+  int val;
+  Status status;
+  int64 ret_sum = 0;
+  bool grpc_ok = false;
+
+  std::unique_ptr<ClientWriter<OneIntValue> > writer(
+    stub_->AddValues(&context, &total_sum));
+
+  for (int i=1; i<argc; i++)
+  {
+    val = atoi(argv[i]);
+    one_value.set_i(val);
+    grpc_ok = writer->Write(one_value);
+    if (!grpc_ok)
+    {
+        ok = grpc_ok;
+        return 0;
+    }
+  }
+  writer->WritesDone();
+  status = writer->Finish();
+  if (status.ok())
+  {
+    ok = true;
+    ret_sum = total_sum.v();
+  }
+  else
+  {
+    ok = false;
+  }
+
+  return ret_sum;
+}
+
+int64 AddValuesBiStreamClient(
+    unique_ptr<domath::MathComputation::Stub>& stub_,
+    int argc,
+    char *argv[],
+    bool& ok)
+{
+    ClientContext context;
+    int64 sum;
+    IntResult server_sum;
+
+    std::shared_ptr<ClientReaderWriter<OneIntValue, IntResult> > stream(
+        stub_->AddValuesBiStream(&context));
+
+    // Create writer thread
+    std::thread writer([stream]() {
+        int i = 0;
+        OneIntValue int_val;
+
+        for (i=0; i<10; i++) {
+            int_val.set_i(i);
+            stream->Write(int_val);
+        }
+        stream->WritesDone();
+    });
+
+
+    while (stream->Read(&server_sum)) {
+        cout << "Server sum: " << server_sum.v() << endl;
+    }
+    writer.join();
+
+    return sum;
+}
+
 int main(int argc, char** argv)
 {
   // Instantiate the client. It requires a channel, out of which the actual RPCs
@@ -91,6 +183,7 @@ int main(int argc, char** argv)
               grpc::CreateChannel(server_addr,
                                   grpc::InsecureChannelCredentials()));
 
+  cout << "Calling blocking RPC to add numbers" << endl;
   while (i<argc) {
     reply = AddTwoIntValues(stub_, reply, atoi(argv[i]), ok);
     if (!ok) {
@@ -99,7 +192,28 @@ int main(int argc, char** argv)
     }
     i++;
   }
+  cout << endl;
+
   cout << "DoMath client sum: " << reply << endl;
+  AddValuesBiStreamClient(
+    stub_,
+    argc,
+    argv,
+    ok);
+
+  cout << "Calling AddIntValues, c->s stream, to add numbers" << endl;
+  reply = AddIntValues(stub_,
+                       argc,
+                       argv,
+                       ok);
+  if (ok) {
+    cout << "sum=" << reply << endl;
+  }
+  else
+  {
+    cout << "AddIntValues failed for some reason!" << endl;
+  }
+  cout << endl;
 
   return 0;
 }
