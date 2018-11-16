@@ -150,6 +150,55 @@ error:
     goto cleanup;
 }
 
+BOOL
+VmDirQueueCompare(
+    PVDIR_QUEUE pLeftQueue,
+    PVDIR_QUEUE pRightQueue
+    )
+{
+    BOOL returnValue = FALSE;
+    PVDIR_QUEUE_NODE pHeadLeft = NULL;
+    PVDIR_QUEUE_NODE pHeadRight = NULL;
+
+    if (!pLeftQueue || !pRightQueue)
+    {
+        return FALSE;
+    }
+
+    pHeadLeft = pLeftQueue->pHead;
+    pHeadRight = pRightQueue->pHead;
+
+    if (pLeftQueue->iSize != pRightQueue->iSize)
+    {
+        returnValue = FALSE;
+    }
+    else if(!pHeadLeft && !pHeadRight)
+    {
+        returnValue = TRUE;
+    }
+    else
+    {
+        returnValue = TRUE;
+        while (pHeadLeft && pHeadRight)
+        {
+            if (pHeadLeft->pElement != pHeadRight->pElement)
+            {
+                returnValue = FALSE;
+                break;
+            }
+            pHeadLeft = pHeadLeft->pNext;
+            pHeadRight = pHeadRight->pNext;
+        }
+
+        if (returnValue && (pHeadLeft || pHeadRight))
+        {
+            returnValue = FALSE;
+        }
+    }
+
+    return returnValue;
+}
+
 VOID
 VmDirQueueFree(
     PVDIR_QUEUE pQueue

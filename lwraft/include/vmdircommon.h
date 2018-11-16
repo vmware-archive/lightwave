@@ -1400,6 +1400,12 @@ VmDirQueueDequeue(
     PVOID*      ppElement
     );
 
+BOOL
+VmDirQueueCompare(
+    PVDIR_QUEUE pLeftQueue,
+    PVDIR_QUEUE pRightQueue
+    );
+
 VOID
 VmDirQueueFree(
     PVDIR_QUEUE pQueue
