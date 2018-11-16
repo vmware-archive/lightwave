@@ -32,6 +32,7 @@ typedef struct _LWCA_DB_CA_DATA
     PSTR                            pszLastCRLUpdate;
     // ASN1 TIME Format
     PSTR                            pszNextCRLUpdate;
+    PSTR                            pszAuthBlob;
     LWCA_CA_STATUS                  status;
 } LWCA_DB_CA_DATA, *PLWCA_DB_CA_DATA;
 

@@ -83,6 +83,7 @@ Test_LwCADbAddCA(
                                 "10001",
                                 "20181025201010.542",
                                 "20191025201010.542",
+                                "some-tenant-info",
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
@@ -125,6 +126,7 @@ Test_LwCADbAddCA_Invalid(
                                 NULL,
                                 NULL,
                                 NULL,
+                                NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData1);
     assert_int_equal(dwError, 0);
@@ -132,6 +134,7 @@ Test_LwCADbAddCA_Invalid(
     dwError = LwCADbCreateCAData(NULL,
                                 pCertArray,
                                 pEncryptedPrivateKey,
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -145,6 +148,7 @@ Test_LwCADbAddCA_Invalid(
                                 NULL,
                                 NULL,
                                 NULL,
+                                NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData3);
     assert_int_equal(dwError, 0);
@@ -152,6 +156,7 @@ Test_LwCADbAddCA_Invalid(
     dwError = LwCADbCreateCAData("cn=CA",
                                 NULL,
                                 pEncryptedPrivateKey,
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -588,6 +593,7 @@ Test_LwCADbCAData(
                                 "10001",
                                 "20181025201010.542",
                                 "20191025201010.542",
+                                "some-tenant-info",
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
@@ -623,6 +629,7 @@ Test_LwCADbCAData_Invalid(
     DWORD dwError = 0;
 
     dwError = LwCADbCreateCAData("cn=CA",
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,

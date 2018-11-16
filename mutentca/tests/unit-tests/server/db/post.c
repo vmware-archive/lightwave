@@ -606,7 +606,7 @@ Test_LwCAPostGetParentCAId(
                                    "cAParentCAId",
                                    &pszParentCAID
                                    );
-    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
+    assert_int_equal(dwError, 0);
     assert_null(pszParentCAID);
 
     dwError = pFnJsonGetStringAttr(INTR_CA_JSON_RESPONSE,
@@ -698,6 +698,9 @@ _LwCALoadCAData(
     dwError = LwCAAllocateStringA(TEST_NEXT_CRL_UPDATE,
                                   &pCaData->pszNextCRLUpdate
                                   );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(TEST_AUTH_BLOB, &pCaData->pszAuthBlob);
     BAIL_ON_LWCA_ERROR(dwError);
 
     pCaData->status = TEST_CA_STATUS;

@@ -715,8 +715,11 @@ LwCADbPostPluginGetCACertificates(
                                                  );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCertArrayFromEncodedStringArray(pStrArray, &pCertArray);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (pStrArray)
+    {
+        dwError = LwCAGetCertArrayFromEncodedStringArray(pStrArray, &pCertArray);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     *ppCertArray = pCertArray;
 
@@ -928,7 +931,16 @@ LwCADbPostPluginUpdateCAStatus(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCADbCreateCAData(NULL, NULL, NULL, NULL, NULL, NULL, status, &pCAData);
+    dwError = LwCADbCreateCAData(NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 NULL,
+                                 status,
+                                 &pCAData
+                                 );
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCADbPostPluginUpdateCA(pHandle, pcszCAId, pCAData);
@@ -1029,6 +1041,7 @@ LwCADbPostPluginUpdateCACRLNumber(
                                  NULL,
                                  NULL,
                                  pcszCRLNumber,
+                                 NULL,
                                  NULL,
                                  NULL,
                                  status,

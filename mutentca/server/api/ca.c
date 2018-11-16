@@ -39,7 +39,8 @@ _LwCAStoreIntermediateCA(
     X509        *pCert,
     PCSTR       pcszCAId,
     PCSTR       pcszParentCAId,
-    PLWCA_KEY   pEncryptedKey
+    PLWCA_KEY   pEncryptedKey,
+    PCSTR       pcszAuthBlob
     );
 
 static
@@ -367,6 +368,7 @@ LwCACreateRootCA(
     PSTR pszLastCRLUpdate = NULL;
     PSTR pszNextCRLUpdate = NULL;
     PSTR pszPrivateKey = NULL;
+    PSTR pszAuthBlob = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_CERTIFICATE pCACert =  NULL;
     BOOLEAN bIsCA = FALSE;
@@ -445,6 +447,7 @@ LwCACreateRootCA(
                                 pszCRLNumber,
                                 pszLastCRLUpdate,
                                 pszNextCRLUpdate,
+                                pszAuthBlob,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
                                 );
@@ -461,6 +464,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
     LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
     LWCA_SECURE_SAFE_FREE_MEMORY(pszPrivateKey, LwCAStringLenA(pszPrivateKey));
     LwCAX509Free(pX509CACert);
     LwCAFreeKey(pEncryptedKey);
@@ -640,6 +644,7 @@ LwCACreateIntermediateCA(
     BOOLEAN                     bIsCA = FALSE;
     PSTR                        pszPublicKey = NULL;
     PSTR                        pszParentCAId = NULL;
+    PSTR                        pszAuthBlob = NULL;
     PLWCA_KEY                   pEncryptedKey = NULL;
     PLWCA_STRING_ARRAY          pOrganizationList = NULL;
     X509                        *pX509CACert = NULL;
@@ -788,12 +793,12 @@ LwCACreateIntermediateCA(
     dwError = LwCACreateCertArray((PSTR*)&pCACert, 1 , &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCAStoreIntermediateCA(
-                                    pX509CACert,
-                                    pcszCAId,
-                                    pszParentCAId,
-                                    pEncryptedKey
-                                    );
+    dwError = _LwCAStoreIntermediateCA(pX509CACert,
+                                       pcszCAId,
+                                       pszParentCAId,
+                                       pEncryptedKey,
+                                       pszAuthBlob
+                                       );
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppCACerts = pCACerts;
@@ -801,6 +806,7 @@ LwCACreateIntermediateCA(
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszPublicKey);
     LWCA_SAFE_FREE_STRINGA(pszParentCAId);
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
     LwCAFreeStringArray(pOrganizationList);
     LwCAFreePKCSRequest(pPKCSReq);
     LwCAX509ReqFree(pRequest);
@@ -839,6 +845,7 @@ LwCARevokeCertificate(
     PSTR pszTimeValidTo = NULL;
     PSTR pszTimeValidFrom = NULL;
     PSTR pszRevokedDate = NULL;
+    PSTR pszAuthBlob = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_DB_CERT_DATA pCertData = NULL;
@@ -913,6 +920,7 @@ LwCARevokeCertificate(
                                 pszNextCRLNumber,
                                 pszLastCRLUpdate,
                                 pszNextCRLUpdate,
+                                pszAuthBlob,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
                                 );
@@ -933,6 +941,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszRevokedDate);
     LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
     LwCADbFreeCertData(pCertData);
     LwCADbFreeCAData(pCAData);
     if (pCert)
@@ -1145,7 +1154,8 @@ _LwCAStoreIntermediateCA(
     X509        *pCert,
     PCSTR       pcszCAId,
     PCSTR       pcszParentCAId,
-    PLWCA_KEY   pEncryptedKey
+    PLWCA_KEY   pEncryptedKey,
+    PCSTR       pcszAuthBlob
     )
 {
     DWORD                   dwError = 0;
@@ -1181,6 +1191,7 @@ _LwCAStoreIntermediateCA(
                                 pszCRLNumber,
                                 pszLastCRLUpdate,
                                 pszNextCRLUpdate,
+                                pcszAuthBlob,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData
                                 );

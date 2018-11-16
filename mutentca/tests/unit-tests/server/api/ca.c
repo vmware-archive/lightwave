@@ -610,6 +610,7 @@ __wrap_LwCADbGetCA(
                     "110000",
                     "20181025201010.542",
                     "20191025201010.542",
+                    "some-tenant-info",
                     LWCA_CA_STATUS_ACTIVE,
                     &pCAData
                 );

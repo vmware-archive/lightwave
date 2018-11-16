@@ -21092,6 +21092,13 @@ attributeTypes: (
     SINGLE-VALUE
     )
 
+attributeTypes: (
+    VMWare.CA.attribute.7
+    NAME 'cAAuthBlob'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
 objectClasses: (
     VMWare.CA.objectclass.1
     NAME 'vmwCertificationAuthority'
@@ -21106,6 +21113,7 @@ objectClasses: (
          $ cAStatus
          $ cALastCRLUpdate
          $ cANextCRLUpdate
+         $ cAAuthBlob
          )
     )
 

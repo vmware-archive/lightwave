@@ -44,6 +44,8 @@
 #define TEST_CRL_NUM                "1500"
 #define TEST_LAST_CRL_UPDATE        "20181031223344.0Z"
 #define TEST_NEXT_CRL_UPDATE        "20181101223344.0Z"
+#define TEST_AUTH_BLOB              "{\"user\":\"dummy\",\"password\":\"pass\"}"
+#define TEST_AUTH_BLOB_ESCAPED      "{\\\"user\\\":\\\"dummy\\\",\\\"password\\\":\\\"pass\\\"}"
 #define TEST_CA_STATUS              1
 #define TEST_CA_ID                  "testId"
 #define TEST_PARENT_CA_ID           "testParentId"
@@ -111,6 +113,12 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
     "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -183,6 +191,12 @@
     "            ]\n" \
     "        },\n" \
     "        {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
     "            \"type\": \"cAStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
@@ -242,6 +256,9 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\""TEST_AUTH_BLOB_ESCAPED"\"]\n" \
+    "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
     "        }]\n" \
@@ -283,6 +300,9 @@
     "        }, {\n" \
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
+    "        }, {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\""TEST_AUTH_BLOB_ESCAPED"\"]\n" \
     "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
@@ -417,6 +437,15 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
     "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
     "            ]\n" \
     "        }\n" \
     "    },\n" \

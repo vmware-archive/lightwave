@@ -725,6 +725,7 @@ _LwCADbCopyCAData(
                     pCAData->pszCRLNumber,
                     pCAData->pszLastCRLUpdate,
                     pCAData->pszNextCRLUpdate,
+                    pCAData->pszAuthBlob,
                     pCAData->status,
                     &pTempCAData
                 );

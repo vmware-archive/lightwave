@@ -144,6 +144,7 @@ LwCADbCreateCAData(
     PCSTR                       pcszCRLNumber,
     PCSTR                       pcszLastCRLUpdate,
     PCSTR                       pcszNextCRLUpdate,
+    PCSTR                       pcszAuthBlob,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     )
@@ -202,6 +203,11 @@ LwCADbCreateCAData(
                                       );
         BAIL_ON_LWCA_ERROR(dwError);
     }
+    if (!IsNullOrEmptyString(pcszAuthBlob))
+    {
+        dwError = LwCAAllocateStringA(pcszAuthBlob, &pCAData->pszAuthBlob);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     pCAData->status = status;
 
@@ -232,6 +238,7 @@ LwCADbFreeCAData(
         LWCA_SAFE_FREE_STRINGA(pCAData->pszCRLNumber);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszLastCRLUpdate);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszNextCRLUpdate);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszAuthBlob);
         LWCA_SAFE_FREE_MEMORY(pCAData);
     }
 }

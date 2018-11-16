@@ -40,6 +40,7 @@
 #define LWCA_POST_CA_CERTIFICATES       "cACertificate"
 #define LWCA_POST_CA_LAST_CRL_UPDATE    "cALastCRLUpdate"
 #define LWCA_POST_CA_NEXT_CRL_UPDATE    "cANextCRLUpdate"
+#define LWCA_POST_CA_AUTH_BLOB          "cAAuthBlob"
 
 // Certificate Data LDAP Metadata
 #define LWCA_POST_CERT_DN               "cn=%s,cn=" LWCA_POST_CERTS_CN ",%s"
