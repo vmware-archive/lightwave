@@ -473,6 +473,10 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_KEY_USE_VMDIR_REST  "UseVmDirREST"
 #define VMAFD_REG_KEY_INSECURE        "Insecure"
 
+#define VMAFD_REG_KEY_USE_MUTENTCA    "UseMultiTenantedCA"
+#define VMAFD_REG_KEY_MUTENTCA_SERVER "MultiTenantedCAServer"
+#define VMAFD_REG_KEY_MUTENTCA_CAID   "MultiTenantedCAId"
+
 #define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB   "JoinWithPreCopiedDB"
 
 #endif /* __VMAFDDEFINES_H__ */

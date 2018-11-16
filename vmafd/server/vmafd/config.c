@@ -2021,3 +2021,210 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmAfdSrvSetUseLwCA(
+    BOOLEAN bValue
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetInteger(VMAFD_REG_KEY_USE_MUTENTCA,
+                                bValue ? 1 : 0);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdSrvGetUseLwCA(
+    BOOLEAN *pbValue
+    )
+{
+    DWORD dwError = 0;
+    DWORD dwValue = 0;
+    BOOLEAN bValue = FALSE;
+
+    dwError = _ConfigGetInteger(VMAFD_REG_KEY_USE_MUTENTCA,
+                                &dwValue);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    bValue = dwValue == 1 ? TRUE : FALSE;
+
+    *pbValue = bValue;
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvSetLwCAServer(
+    PWSTR    pwszLwCAServer        /* IN     */
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_MUTENTCA_SERVER,
+                               pwszLwCAServer);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetLwCAServer(
+    PWSTR*   ppwszLwCAServer        /*    OUT */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszLwCAServer = NULL;
+
+    dwError = _ConfigGetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_MUTENTCA_SERVER,
+                               &pwszLwCAServer);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    *ppwszLwCAServer = pwszLwCAServer;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetLwCAServerA(
+    PSTR* ppszLwCAServer        /*    OUT */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszLwCAServer = NULL;
+    PSTR  pszLwCAServer = NULL;
+
+    dwError = VmAfSrvGetLwCAServer(&pwszLwCAServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszLwCAServer, &pszLwCAServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszLwCAServer =  pszLwCAServer;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAServer);
+
+    return dwError;
+
+error:
+
+    VMAFD_SAFE_FREE_STRINGA(pszLwCAServer);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvSetLwCAId(
+    PWSTR    pwszLwCAId        /* IN     */
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = _ConfigSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_MUTENTCA_CAID,
+                               pwszLwCAId);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetLwCAId(
+    PWSTR*   ppwszLwCAId        /*    OUT */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszLwCAId = NULL;
+
+    dwError = _ConfigGetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                               VMAFD_REG_KEY_MUTENTCA_CAID,
+                               &pwszLwCAId);
+    BAIL_ON_VMAFD_ERROR_NO_LOG(dwError);
+
+    *ppwszLwCAId = pwszLwCAId;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    VmAfdLog(VMAFD_DEBUG_ERROR, "%s failed. Error(%u)", __FUNCTION__, dwError);
+
+    goto cleanup;
+}
+
+DWORD
+VmAfSrvGetLwCAIdA(
+    PSTR* ppszLwCAId        /*    OUT */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszLwCAId = NULL;
+    PSTR  pszLwCAId = NULL;
+
+    dwError = VmAfSrvGetLwCAId(&pwszLwCAId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringAFromW(pwszLwCAId, &pszLwCAId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszLwCAId =  pszLwCAId;
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAId);
+
+    return dwError;
+
+error:
+
+    VMAFD_SAFE_FREE_STRINGA(pszLwCAId);
+
+    goto cleanup;
+}

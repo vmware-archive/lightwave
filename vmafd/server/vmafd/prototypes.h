@@ -122,6 +122,46 @@ VmAfSrvGetOldPassword(
     );
 
 DWORD
+VmAfdSrvSetUseMutentCA(
+    BOOLEAN bValue
+    );
+
+DWORD
+VmAfdSrvGetUseMutentCA(
+    BOOLEAN *pbValue
+    );
+
+DWORD
+VmAfSrvSetMutentCAServer(
+    PWSTR    pwszMutentCAServer        /* IN     */
+    );
+
+DWORD
+VmAfSrvGetMutentCAServer(
+    PWSTR*   ppwszMutentCAServer        /*    OUT */
+    );
+
+DWORD
+VmAfSrvGetMutentCAServerA(
+    PSTR* ppszMutentCAServer        /*    OUT */
+    );
+
+DWORD
+VmAfSrvSetMutentCAId(
+    PWSTR    pwszMutentCAId        /* IN     */
+    );
+
+DWORD
+VmAfSrvGetMutentCAId(
+    PWSTR*   ppwszMutentCAId        /*    OUT */
+    );
+
+DWORD
+VmAfSrvGetMutentCAIdA(
+    PSTR* ppszMutentCAId        /*    OUT */
+    );
+
+DWORD
 VmAfSrvGetMachineAccountInfo(
     PWSTR*   ppwszAccount,    /*    OUT */
     PWSTR*   ppwszPassword,   /*    OUT */
@@ -193,6 +233,8 @@ VmAfSrvJoinVmDir2(
     PWSTR            pwszMachineName,    /* IN     OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN     OPTIONAL */
     PWSTR            pwszSiteName,       /* IN     OPTIONAL */
+    PWSTR            pwszLwCAServer,     /* IN     OPTIONAL */
+    PWSTR            pwszLwCAId,         /* IN     OPTIONAL */
     VMAFD_JOIN_FLAGS dwFlags             /* IN              */
     );
 
@@ -2500,13 +2542,10 @@ VmAfdRestPasswordRefresh(
 //restcerts.c
 DWORD
 VmAfdRestGetCACerts(
-    PCSTR   pszServer,
-    PCSTR   pszDomain,
-    PCSTR   pszUser,
-    PCSTR   pszPass,
-    BOOLEAN bDetail,
-    BOOLEAN bInsecure,
-    PVMAFD_CA_CERT_ARRAY *ppCACerts
+    PVMAFD_ROOT_FETCH_ARG       pArgs,
+    BOOLEAN                     bDetail,
+    BOOLEAN                     bInsecure,
+    PVMAFD_CA_CERT_ARRAY        *ppCACerts
     );
 
 #ifdef __cplusplus

@@ -110,7 +110,7 @@ VmAfdJoinDomainWithSite(
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
-    dwError = VmAfdJoinVmDirWithSiteA(
+    dwError = VmAfdJoinVmDir3A(
                     NULL, /* server name */
                     pszDomain,
                     pszUsername,
@@ -118,6 +118,8 @@ VmAfdJoinDomainWithSite(
                     NULL, /* machine account */
                     pszOrgUnit,
                     pszSiteName,
+                    NULL,
+                    NULL,
                     dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 

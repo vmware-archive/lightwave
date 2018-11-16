@@ -35,8 +35,8 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
-    PCSTR pszCAServer,
-    PCSTR pszCAId,
+    PCSTR pszLwCAServer,
+    PCSTR pszLwCAId,
     BOOLEAN bDisableAfdListener,
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
@@ -168,8 +168,8 @@ ParseArgs(
     PSTR  pszUsername = NULL;
     PSTR  pszPassword = NULL;
     PSTR  pszSiteName = NULL;
-    PSTR  pszCAServer = NULL;
-    PSTR  pszCAId = NULL;
+    PSTR  pszLwCAServer = NULL;
+    PSTR  pszLwCAId = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
@@ -402,13 +402,13 @@ ParseArgs(
 
             case PARSE_MODE_CA_SERVER:
 
-                if (pszCAServer)
+                if (pszLwCAServer)
                 {
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_DEPLOY_ERROR(dwError);
                 }
 
-                pszCAServer = pszArg;
+                pszLwCAServer = pszArg;
 
                 parseMode = PARSE_MODE_OPEN;
 
@@ -416,13 +416,13 @@ ParseArgs(
 
             case PARSE_MODE_CA_ID:
 
-                if (pszCAId)
+                if (pszLwCAId)
                 {
                     dwError = ERROR_INVALID_PARAMETER;
                     BAIL_ON_DEPLOY_ERROR(dwError);
                 }
 
-                pszCAId = pszArg;
+                pszLwCAId = pszArg;
 
                 parseMode = PARSE_MODE_OPEN;
 
@@ -443,7 +443,7 @@ ParseArgs(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    if (bMultiTenantedCAEnabled && (IsNullOrEmptyString(pszCAServer) || IsNullOrEmptyString(pszCAId)))
+    if (bMultiTenantedCAEnabled && (IsNullOrEmptyString(pszLwCAServer) || IsNullOrEmptyString(pszLwCAId)))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -458,8 +458,8 @@ ParseArgs(
                     pszPassword,
                     pszSubjectAltName,
                     pszSiteName,
-                    pszCAServer,
-                    pszCAId,
+                    pszLwCAServer,
+                    pszLwCAId,
                     bDisableAfdListener,
                     bDisableDNS,
                     bUseMachineAccount,
@@ -500,8 +500,8 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
-    PCSTR pszCAServer,
-    PCSTR pszCAId,
+    PCSTR pszLwCAServer,
+    PCSTR pszLwCAId,
     BOOLEAN bDisableAfdListener,
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
@@ -597,19 +597,19 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    if (!IsNullOrEmptyString(pszCAServer))
+    if (!IsNullOrEmptyString(pszLwCAServer))
     {
         dwError = VmwDeployAllocateStringA(
-                            pszCAServer,
-                            &pSetupParams->pszCAServer);
+                            pszLwCAServer,
+                            &pSetupParams->pszLwCAServer);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
-    if (!IsNullOrEmptyString(pszCAId))
+    if (!IsNullOrEmptyString(pszLwCAId))
     {
         dwError = VmwDeployAllocateStringA(
-                            pszCAId,
-                            &pSetupParams->pszCAId);
+                            pszLwCAId,
+                            &pSetupParams->pszLwCAId);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 

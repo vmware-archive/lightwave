@@ -956,6 +956,16 @@ typedef struct _VMW_TYPE_SPEC_
         VMW_IPC_TYPE_WSTRING,\
         {NULL}\
     },\
+    {\
+        "MutentCA Server",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+    {\
+        "MutentCA CA Id",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
     { \
         "Join Flags",\
         VMW_IPC_TYPE_UINT32,\

@@ -252,10 +252,7 @@ VmAfdRootFetchTask(
     if (gVmafdGlobals.bUseVmDirREST)
     {
         dwError = VmAfdRestGetCACerts(
-                    pArgs->pszDCName,
-                    pArgs->pszDomain,
-                    pArgs->pszUserName,
-                    pArgs->pszPassword,
+                    pArgs,
                     TRUE,
                     gVmafdGlobals.bInsecure,
                     &pCACerts);
@@ -908,6 +905,8 @@ VmAfdGetThreadArgs(
     PWSTR pwszDomain = NULL;
     PWSTR pwszDCName = NULL;
     PWSTR pwszUserName = NULL;
+    PWSTR pwszLwCAServer = NULL;
+    PWSTR pwszLwCAId = NULL;
     PVMAFD_ROOT_FETCH_ARG pArgs = NULL;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE ;
 
@@ -969,6 +968,23 @@ VmAfdGetThreadArgs(
                 pArgs->pszDomain);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    dwError = VmAfdSrvGetUseLwCA(&pArgs->bUseLwCA);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetLwCAServer(&pwszLwCAServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+    dwError = VmAfdAllocateStringAFromW(
+                    pwszLwCAServer,
+                    &pArgs->pszLwCAServer);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfSrvGetLwCAId(&pwszLwCAId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+    dwError = VmAfdAllocateStringAFromW(
+                    pwszLwCAId,
+                    &pArgs->pszLwCAId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
     pArgs->nPort = LDAP_PORT;
 
     if (IsNullOrEmptyString(pArgs->pszDCName))
@@ -994,6 +1010,8 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pwszAccountDN);
     VMAFD_SAFE_FREE_MEMORY(pwszDCName);
     VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAServer);
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAId);
 
     return dwError;
 
@@ -1045,5 +1063,8 @@ VmAfdFreeThreadArgs(
     VMAFD_SAFE_FREE_MEMORY(pArgs->pszDCName);
     VMAFD_SAFE_FREE_MEMORY(pArgs->pszUpn);
     VMAFD_SAFE_FREE_MEMORY(pArgs->pszDomain);
+    VMAFD_SAFE_FREE_MEMORY(pArgs->pszLwCAServer);
+    VMAFD_SAFE_FREE_MEMORY(pArgs->pszLwCAId);
+    pArgs->bUseLwCA = FALSE;
     VmAfdFreeMemory(pArgs);
 }

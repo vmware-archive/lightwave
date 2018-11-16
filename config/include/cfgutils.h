@@ -85,8 +85,8 @@ typedef struct _VMW_IC_SETUP_PARAMS
      * 1. CA Server (dns name / ip address of the multi-tenanted CA Server)
      * 2. CA Id (identifier of intermediate CA this client wants to use)
     */
-    PSTR pszCAServer;
-    PSTR pszCAId;
+    PSTR pszLwCAServer;
+    PSTR pszLwCAId;
 
     DWORD dwLeaveFlags;
 

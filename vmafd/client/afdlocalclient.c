@@ -1133,6 +1133,8 @@ VmAfdLocalJoinVmDir2(
     PCWSTR           pwszMachineName,
     PCWSTR           pwszOrgUnit,
     PCWSTR           pwszSite,
+    PCWSTR           pwszLwCAServer,    /* IN: Optional */
+    PCWSTR           pwszLwCAId,        /* IN: Optional */
     VMAFD_JOIN_FLAGS dwFlags
     )
 {
@@ -1147,14 +1149,16 @@ VmAfdLocalJoinVmDir2(
     noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
     noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
 
-    input_spec[idx++].data.pWString = (PWSTR) pwszServerName;
-    input_spec[idx++].data.pWString = (PWSTR) pwszDomainName;
-    input_spec[idx++].data.pWString = (PWSTR) pwszUserName;
-    input_spec[idx++].data.pWString = (PWSTR) pwszPassword;
-    input_spec[idx++].data.pWString = (PWSTR) pwszMachineName;
-    input_spec[idx++].data.pWString = (PWSTR) pwszOrgUnit;
-    input_spec[idx++].data.pWString = (PWSTR) pwszSite;
-    input_spec[idx++].data.pUint32  = (PDWORD)&dwFlags;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszServerName;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszDomainName;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszUserName;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszPassword;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszMachineName;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszOrgUnit;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszSite;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszLwCAServer;
+    input_spec[idx++].data.pWString = (PWSTR)  pwszLwCAId;
+    input_spec[idx++].data.pUint32  = (PDWORD) &dwFlags;
 
     dwError = VecsLocalIPCRequest(
                     apiType,

@@ -28,6 +28,22 @@ VmAfdHeartbeatWorker(
     PVOID pThreadArgs
     );
 
+static
+DWORD
+VmAfJoinVmDirHelper(
+    PCSTR            pszServerName,  /* IN     OPTIONAL */
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    PCSTR            pszSiteName,    /* IN     OPTIONAL */
+    PCSTR            pszLwCAServer,  /* IN     OPTIONAL */
+    PCSTR            pszLwCAId,      /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
+    );
+
+
 DWORD
 VmAfdOpenServerA(
     PCSTR pszServerName,
@@ -2799,7 +2815,7 @@ VmAfdDemoteVmDirA(
     PWSTR pwszPassword = NULL;
 
     if ( IsNullOrEmptyString(pszUserName) ||
-	 IsNullOrEmptyString(pszPassword))
+         IsNullOrEmptyString(pszPassword))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -2807,8 +2823,8 @@ VmAfdDemoteVmDirA(
 
     if (pszServerName)
     {
-	dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
-	BAIL_ON_VMAFD_ERROR(dwError);
+        dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
     }
 
     dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
@@ -2846,7 +2862,7 @@ VmAfdDemoteVmDirW(
     DWORD dwError = 0;
 
     if (IsNullOrEmptyString(pwszUserName) ||
-	IsNullOrEmptyString(pwszPassword))
+        IsNullOrEmptyString(pwszPassword))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -3084,11 +3100,6 @@ VmAfdJoinVmDir2A(
     )
 {
     DWORD dwError = 0;
-    PWSTR pwszDomainName = NULL;
-    PWSTR pwszUserName = NULL;
-    PWSTR pwszPassword = NULL;
-    PWSTR pwszMachineName = NULL;
-    PWSTR pwszOrgUnit = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -3098,82 +3109,65 @@ VmAfdJoinVmDir2A(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (pszMachineName)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (pszOrgUnit)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdJoinVmDir2W(
-                  pwszDomainName,
-                  pwszUserName,
-                  pwszPassword,
-                  pwszMachineName,
-                  pwszOrgUnit,
+    dwError = VmAfJoinVmDirHelper(
+                  NULL,
+                  pszDomainName,
+                  pszUserName,
+                  pszPassword,
+                  pszMachineName,
+                  pszOrgUnit,
+                  NULL,
+                  NULL,
+                  NULL,
                   dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
-    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
-    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
-    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
-    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
-
     return dwError;
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDir2A failed. Error(%u)", dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }
 
 DWORD
-VmAfdJoinVmDir2W(
-    PCWSTR           pwszDomainName,  /* IN            */
-    PCWSTR           pwszUserName,    /* IN            */
-    PCWSTR           pwszPassword,    /* IN            */
-    PCWSTR           pwszMachineName, /* IN   OPTIONAL */
-    PCWSTR           pwszOrgUnit,     /* IN   OPTIONAL */
-    VMAFD_JOIN_FLAGS dwFlags          /* IN            */
+VmAfdJoinVmDir3A(
+    PCSTR            pszServerName,  /* IN     OPTIONAL */
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    PCSTR            pszSiteName,    /* IN     OPTIONAL */
+    PCSTR            pszLwCAServer,  /* IN     OPTIONAL */
+    PCSTR            pszLwCAId,      /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
     )
 {
     DWORD dwError = 0;
 
-    if (IsNullOrEmptyString(pwszUserName) ||
-            IsNullOrEmptyString(pwszPassword) ||
-            IsNullOrEmptyString(pwszDomainName))
+    if (IsNullOrEmptyString(pszUserName) ||
+        IsNullOrEmptyString(pszPassword) ||
+        IsNullOrEmptyString(pszDomainName))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfdLocalJoinVmDir2(
-                      NULL,
-                      pwszDomainName,
-                      pwszUserName,
-                      pwszPassword,
-                      pwszMachineName,
-                      pwszOrgUnit,
-                      NULL,
-                      dwFlags);
+    dwError = VmAfJoinVmDirHelper(
+                  pszServerName,
+                  pszDomainName,
+                  pszUserName,
+                  pszPassword,
+                  pszMachineName,
+                  pszOrgUnit,
+                  pszSiteName,
+                  pszLwCAServer,
+                  pszLwCAId,
+                  dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
@@ -3182,7 +3176,7 @@ cleanup:
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDir2W failed. Error(%u)", dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -3200,13 +3194,6 @@ VmAfdJoinVmDirWithSiteA(
     )
 {
     DWORD dwError = 0;
-    PWSTR pwszServerName = NULL;
-    PWSTR pwszDomainName = NULL;
-    PWSTR pwszUserName = NULL;
-    PWSTR pwszPassword = NULL;
-    PWSTR pwszMachineName = NULL;
-    PWSTR pwszOrgUnit = NULL;
-    PWSTR pwszSiteName = NULL;
 
     if (IsNullOrEmptyString(pszUserName) ||
         IsNullOrEmptyString(pszPassword) ||
@@ -3216,109 +3203,26 @@ VmAfdJoinVmDirWithSiteA(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    if (pszServerName)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (pszMachineName)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    if (pszOrgUnit)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    if (pszSiteName)
-    {
-        dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdJoinVmDirWithSiteW(
-                  pwszServerName,
-                  pwszDomainName,
-                  pwszUserName,
-                  pwszPassword,
-                  pwszMachineName,
-                  pwszOrgUnit,
-                  pwszSiteName,
+    dwError = VmAfJoinVmDirHelper(
+                  pszServerName,
+                  pszDomainName,
+                  pszUserName,
+                  pszPassword,
+                  pszMachineName,
+                  pszOrgUnit,
+                  pszSiteName,
+                  NULL,
+                  NULL,
                   dwFlags);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
 
-    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
-    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
-    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
-    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
-    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
-    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
-    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
-
     return dwError;
 
 error:
 
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDirWithSiteA failed. Error(%u)", dwError);
-
-    goto cleanup;
-}
-
-DWORD
-VmAfdJoinVmDirWithSiteW(
-    PCWSTR           pwszServerName,  /* IN   OPTIONAL */
-    PCWSTR           pwszDomainName,  /* IN            */
-    PCWSTR           pwszUserName,    /* IN            */
-    PCWSTR           pwszPassword,    /* IN            */
-    PCWSTR           pwszMachineName, /* IN   OPTIONAL */
-    PCWSTR           pwszOrgUnit,     /* IN   OPTIONAL */
-    PCWSTR           pwszSiteName,    /* IN   OPTIONAL */
-    VMAFD_JOIN_FLAGS dwFlags          /* IN            */
-    )
-{
-    DWORD dwError = 0;
-
-    if (IsNullOrEmptyString(pwszUserName) ||
-            IsNullOrEmptyString(pwszPassword) ||
-            IsNullOrEmptyString(pwszDomainName))
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwError = VmAfdLocalJoinVmDir2(
-                      pwszServerName,
-                      pwszDomainName,
-                      pwszUserName,
-                      pwszPassword,
-                      pwszMachineName,
-                      pwszOrgUnit,
-                      pwszSiteName,
-                      dwFlags);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "VmAfdJoinVmDirWithSiteW failed. Error(%u)", dwError);
+    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
 
     goto cleanup;
 }
@@ -5655,4 +5559,109 @@ VmAfdIsRetriableError(
         bCanRetry = TRUE;
     }
     return bCanRetry;
+}
+
+
+static
+DWORD
+VmAfJoinVmDirHelper(
+    PCSTR            pszServerName,  /* IN     OPTIONAL */
+    PCSTR            pszDomainName,  /* IN              */
+    PCSTR            pszUserName,    /* IN              */
+    PCSTR            pszPassword,    /* IN              */
+    PCSTR            pszMachineName, /* IN     OPTIONAL */
+    PCSTR            pszOrgUnit,     /* IN     OPTIONAL */
+    PCSTR            pszSiteName,    /* IN     OPTIONAL */
+    PCSTR            pszLwCAServer,  /* IN     OPTIONAL */
+    PCSTR            pszLwCAId,      /* IN     OPTIONAL */
+    VMAFD_JOIN_FLAGS dwFlags         /* IN              */
+    )
+{
+    DWORD dwError = 0;
+    PWSTR pwszServerName = NULL;
+    PWSTR pwszDomainName = NULL;
+    PWSTR pwszUserName = NULL;
+    PWSTR pwszPassword = NULL;
+    PWSTR pwszMachineName = NULL;
+    PWSTR pwszOrgUnit = NULL;
+    PWSTR pwszSiteName = NULL;
+    PWSTR pwszLwCAServer = NULL;
+    PWSTR pwszLwCAId = NULL;
+
+    if (pszServerName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszServerName, &pwszServerName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringWFromA(pszDomainName, &pwszDomainName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszUserName, &pwszUserName);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmAfdAllocateStringWFromA(pszPassword, &pwszPassword);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszMachineName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszMachineName, &pwszMachineName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszOrgUnit)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszOrgUnit, &pwszOrgUnit);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszSiteName)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszSiteName, &pwszSiteName);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszLwCAServer)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszLwCAServer, &pwszLwCAServer);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (pszLwCAId)
+    {
+        dwError = VmAfdAllocateStringWFromA(pszLwCAId, &pwszLwCAId);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdLocalJoinVmDir2(
+                      pwszServerName,
+                      pwszDomainName,
+                      pwszUserName,
+                      pwszPassword,
+                      pwszMachineName,
+                      pwszOrgUnit,
+                      pwszSiteName,
+                      pwszLwCAServer,
+                      pwszLwCAId,
+                      dwFlags);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+
+cleanup:
+
+    VMAFD_SAFE_FREE_MEMORY(pwszServerName);
+    VMAFD_SAFE_FREE_MEMORY(pwszDomainName);
+    VMAFD_SAFE_FREE_MEMORY(pwszUserName);
+    VMAFD_SAFE_FREE_MEMORY(pwszPassword);
+    VMAFD_SAFE_FREE_MEMORY(pwszMachineName);
+    VMAFD_SAFE_FREE_MEMORY(pwszOrgUnit);
+    VMAFD_SAFE_FREE_MEMORY(pwszSiteName);
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAServer);
+    VMAFD_SAFE_FREE_MEMORY(pwszLwCAId);
+
+    return dwError;
+
+error:
+
+    goto cleanup;
 }
