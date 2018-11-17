@@ -193,8 +193,8 @@ LwCASrvInitCA(
                   &pCAConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    //dwError = LwCAInitCA(pCAConfig);
-    //BAIL_ON_LWCA_ERROR(dwError);
+    dwError = LwCAInitCA(pCAConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
 
 error:
 
