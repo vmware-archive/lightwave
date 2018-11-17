@@ -1028,6 +1028,12 @@ LwCAX509GetOrganizations(
     dwError = _LwCAX509NameGetValues(pSubjectName, NID_organizationName, &pOrgList);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (pOrgList->dwCount == 0)
+    {
+        LwCAFreeStringArray(pOrgList);
+        pOrgList = NULL;
+    }
+
     *ppOrgList = pOrgList;
 
 cleanup:
