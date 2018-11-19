@@ -32,6 +32,7 @@
 
 // OPEN APIs
 #define LWCA_REST_OPENAPI_VERSION               "/v1/mutentca/version"
+#define LWCA_REST_OPENAPI_GETROOTCA             "/v1/mutentca/root"
 #define LWCA_REST_INTERMEDIATE_URI_PREFIX       "/v1/mutentca/intermediate/"
 
 // REST Paramaeters
