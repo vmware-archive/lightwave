@@ -2539,6 +2539,25 @@ VmAfdRestPasswordRefresh(
     PSTR *ppszNewPass
     );
 
+//restcerts-vmca.c
+DWORD
+VmAfdRestGetCACertsVMCA(
+    PCSTR                   pcszServer,
+    BOOLEAN                 bDetail,
+    PVM_HTTP_CLIENT         pHttpClient,
+    PVMAFD_CA_CERT_ARRAY    *ppCACerts
+    );
+
+//restcerts-lwca.c
+DWORD
+VmAfdRestGetCACertsLwCA(
+    PCSTR                   pcszLwCAServer,
+    PCSTR                   pcszLwCAId,
+    BOOLEAN                 bDetail,
+    PVM_HTTP_CLIENT         pHTTPClient,
+    PVMAFD_CA_CERT_ARRAY    *ppCACerts
+    );
+
 //restcerts.c
 DWORD
 VmAfdRestGetCACerts(
@@ -2547,6 +2566,7 @@ VmAfdRestGetCACerts(
     BOOLEAN                     bInsecure,
     PVMAFD_CA_CERT_ARRAY        *ppCACerts
     );
+
 
 #ifdef __cplusplus
 }

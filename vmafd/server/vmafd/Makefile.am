@@ -31,6 +31,8 @@ vmafdd_SOURCES = \
     passrefresh.c \
     regconfig.c   \
     rest.c        \
+    restcerts-lwca.c   \
+    restcerts-vmca.c   \
     restcerts.c   \
     rootfetch.c   \
     rpc.c         \

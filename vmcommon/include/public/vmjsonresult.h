@@ -68,6 +68,13 @@ typedef DWORD (*PFN_JSON_RESULT_ARRAY_CB)(
                   size_t,
                   PVM_JSON_POSITION);
 
+/* callback for get value from arrays */
+typedef DWORD (*PFN_JSON_RESULT_ARRAYVALUE_CB)(
+                  PVOID pUserData,
+                  size_t,
+                  size_t,
+                  PVM_JSON_RESULT_VALUE);
+
 /* callback for objects */
 typedef DWORD (*PFN_JSON_RESULT_OBJECT_CB)(
                   PVOID pUserData,
@@ -113,6 +120,13 @@ VmJsonResultIterateArrayAt(
     PVM_JSON_POSITION pPosition,
     PVOID pUserData,
     PFN_JSON_RESULT_ARRAY_CB pfnCB
+    );
+
+DWORD
+VmJsonResultIterateAndGetValueFromArrayAt(
+    PVM_JSON_POSITION pPosition,
+    PVOID pUserData,
+    PFN_JSON_RESULT_ARRAYVALUE_CB pfnCB
     );
 
 /*

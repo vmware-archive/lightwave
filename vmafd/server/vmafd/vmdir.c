@@ -1036,12 +1036,13 @@ _VmAfSrvRestClientPrejoinAtomic(
     }
 
     /* acquire token */
-    dwError = VmAfdAcquireTokenForVmDirREST(
+    dwError = VmAfdAcquireOIDCToken(
                   pszDCHostName,
                   pszDomainName,
                   pszUserName,
                   pszPassword,
                   pszCAPath,
+                  VMAFD_OIDC_VMDIR_SCOPE,
                   &pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 

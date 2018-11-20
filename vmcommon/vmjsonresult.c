@@ -300,6 +300,45 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmJsonResultIterateAndGetValueFromArrayAt(
+    PVM_JSON_POSITION pPosition,
+    PVOID pUserData,
+    PFN_JSON_RESULT_ARRAYVALUE_CB pfnCB
+    )
+{
+    DWORD dwError = 0;
+    size_t nIndex = 0;
+    size_t nSize = 0;
+    json_t *pValue = NULL;
+    VM_JSON_RESULT_VALUE resultVal = {0};
+
+    if (!pPosition ||
+        !pfnCB ||
+        json_typeof((json_t *)pPosition) != JSON_RESULT_ARRAY)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    nSize = json_array_size(pPosition);
+
+    json_array_foreach(pPosition, nIndex, pValue)
+    {
+        dwError = _VmJsonPopulateResultValue(pValue, &resultVal);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = pfnCB(pUserData, nSize, nIndex, &resultVal);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 /*
  * Map simple result objects from json
  * pszJson is a valid json string.eg: {"greeting":"hello","recipient":"world"}

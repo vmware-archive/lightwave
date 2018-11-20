@@ -138,12 +138,13 @@ VmAfdRestPasswordRefresh(
     }
 
     /* acquire token */
-    dwError = VmAfdAcquireTokenForVmDirREST(
+    dwError = VmAfdAcquireOIDCToken(
                   pszServer,
                   pszDomain,
                   pszUser,
                   pszPass,
                   pszCAPath,
+                  VMAFD_OIDC_VMDIR_SCOPE,
                   &pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 
