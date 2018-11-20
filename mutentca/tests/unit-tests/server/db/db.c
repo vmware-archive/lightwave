@@ -17,6 +17,8 @@
 #define LWCA_DB_CONFIG "./test-mutentcadb-config/test-mutentcadb-config.json"
 #define TEST_CA_ID "testId"
 #define TEST_PARENT_CA_ID "testParentId"
+#define LWCA_LOCK_CA_UUID "8eb59f16-59fa-485e-9f3f-eab876c527f1"
+#define LWCA_LOCK_CERT_UUID "9fc6a027-6a0b-596f-a040-fbc987d63802"
 
 static
 VOID
@@ -430,6 +432,118 @@ Test_LwCADbGetCAAuthBlob_Invalid(
     assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 
     LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+}
+
+VOID
+Test_LwCADbLockCA(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+
+    dwError = LwCADbLockCA(TEST_CA_ID, &pszUuid);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+}
+
+VOID
+Test_LwCADbLockCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+
+    dwError = LwCADbLockCA(NULL, &pszUuid);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbLockCA(TEST_CA_ID, &pszUuid);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+}
+
+VOID
+Test_LwCADbUnlockCA(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = LwCADbUnlockCA(TEST_CA_ID, LWCA_LOCK_CA_UUID);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbUnlockCA_Invalid(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = LwCADbUnlockCA(NULL, LWCA_LOCK_CA_UUID);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUnlockCA(TEST_CA_ID, LWCA_LOCK_CA_UUID);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+VOID
+Test_LwCADbLockCert(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+
+    dwError = LwCADbLockCert(TEST_CA_ID, "1500", &pszUuid);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+}
+
+VOID
+Test_LwCADbLockCert_Invalid(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+
+    dwError = LwCADbLockCert(NULL, "1500", &pszUuid);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbLockCert(TEST_CA_ID, "1500", &pszUuid);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+}
+
+VOID
+Test_LwCADbUnlockCert(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = LwCADbUnlockCert(TEST_CA_ID, "1500", LWCA_LOCK_CERT_UUID);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbUnlockCert_Invalid(
+    VOID **state
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = LwCADbUnlockCert(NULL, "1500", LWCA_LOCK_CERT_UUID);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbUnlockCert(TEST_CA_ID, "1500", LWCA_LOCK_CERT_UUID);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 }
 
 VOID

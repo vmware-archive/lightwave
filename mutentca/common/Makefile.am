@@ -39,7 +39,8 @@ libcommon_la_LIBADD = \
     @LWRSUTILS_LIBS@ \
     @PTHREAD_LIBS@ \
     @DL_LIBS@ \
-    @JANSSON_LIBS@
+    @JANSSON_LIBS@ \
+    @UUID_LIBS@
 
 libcommon_la_LDFLAGS = \
     -DLDAP_DEPRECATED \

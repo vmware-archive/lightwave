@@ -46,6 +46,37 @@ objectClasses: (
         $ crossCertificatePair
         )
     )
+############################################################
+# VMware Resource Lock attributes
+############################################################
+
+attributeTypes: (
+    VMWare.ResourceLock.attribute.1
+    NAME 'resourceLockOwner'
+    DESC 'The process/user holding the lock'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    VMWare.ResourceLock.attribute.2
+    NAME 'resourceLockExpirationTime'
+    DESC 'Time by when the lock will expire, in epoc'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+objectClasses: (
+    VMWare.ResourceLock.objectclass.0
+    NAME 'resourceLock'
+    SUP top
+    AUXILIARY
+    MUST (
+         )
+    MAY ( resourceLockOwner
+        $ resourceLockExpirationTime
+        )
+    )
 
 ############################################################
 # VMware certification authority
@@ -121,6 +152,7 @@ dITContentRules:  (
     VMWare.DIR.contentrule.vmwCertificationAuthority
     NAME 'vmwCertificationAuthority'
     AUX ( pkiCA
+        $ resourceLock
         )
     )
 
@@ -191,5 +223,12 @@ objectClasses: (
         $ certTimeValidFrom
         $ certTimeValidTo
         $ certStatus
+        )
+    )
+
+dITContentRules:  (
+    VMWare.DIR.contentrule.vmwCerts
+    NAME 'vmwCerts'
+    AUX ( resourceLock
         )
     )

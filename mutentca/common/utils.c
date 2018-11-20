@@ -681,3 +681,47 @@ LwCAGetErrorDescription(
     }
     return NULL;
 }
+
+DWORD
+LwCAUuidGenerate(
+    PSTR    *ppszUuid
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+    uuid_t  uuid = {0};
+
+    if (!ppszUuid)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    uuid_generate(uuid);
+    if (uuid_is_null(uuid))
+    {
+        dwError = LWCA_ERROR_UUID_GENERATE;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(*pszUuid) * LWCA_UUID_LEN,
+                                 (PVOID *)&pszUuid
+                                 );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    uuid_unparse_lower(uuid, pszUuid);
+
+    *ppszUuid = pszUuid;
+
+cleanup:
+    uuid_clear(uuid);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+    if (ppszUuid)
+    {
+        *ppszUuid = NULL;
+    }
+    goto cleanup;
+}

@@ -272,6 +272,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
 #define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
 #define LWCA_ERROR_VMAFD_UNAVAILABLE        (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 9)
+#define LWCA_ERROR_UUID_GENERATE            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 10)
+#define LWCA_LOCK_APPLY_FAILED              (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 11)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -455,6 +457,8 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_LDAP_UNKNOWN_OP              ,   "LWCA_LDAP_UNKNOWN_OP"              ,   "LDAP operation not known"}, \
     { LWCA_LDAP_DELETE_FAILED           ,   "LWCA_LDAP_DELETE_FAILED"           ,   "LDAP delete could not be completed"}, \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
+    { LWCA_ERROR_UUID_GENERATE          ,   "LWCA_ERROR_UUID_GENERATE"          ,   "Error while generating UUID" }, \
+    { LWCA_LOCK_APPLY_FAILED            ,   "LWCA_LOCK_APPLY_FAILED"            ,   "Could not apply lock on DN" }, \
     { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
     { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \
     { LWCA_REGEX_ERROR_ECOLLATE         ,   "LWCA_REGEX_ERROR_ECOLLATE"         ,   "Invalid collating element referenced" }, \

@@ -113,6 +113,46 @@ Test_LwCADbGetCAAuthBlob_Invalid(
     );
 
 VOID
+Test_LwCADbLockCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbLockCA_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUnlockCA(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUnlockCA_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbLockCert(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbLockCert_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUnlockCert(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbUnlockCert_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbGetCACRLNumber(
     VOID **state
     );
@@ -294,5 +334,10 @@ Test_LwCADeserializeCertData(
 
 VOID
 Test_LwCAUpdateCertData(
+    VOID **state
+    );
+
+VOID
+Test_LwCALockData(
     VOID **state
     );

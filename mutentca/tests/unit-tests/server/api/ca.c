@@ -443,6 +443,8 @@
 #define LWCA_CA_CONFIG "./test-mutentca-config/test-mutentca-config.json"
 #define LWCA_CA_CONFIG2 "./test-mutentca-config/test-mutentca-config2.json"
 #define LWCA_CA_CONFIG_INVALID "./test-mutentca-config/test-mutentca-config-invalid.json"
+#define LWCA_LOCK_CA_UUID "8eb59f16-59fa-485e-9f3f-eab876c527f1"
+#define LWCA_LOCK_CERT_UUID "9fc6a027-6a0b-596f-a040-fbc987d63802"
 
 // defines output value of __wrap_LwCADbCheckCA
 PBOOLEAN pbExistsMockArray =  NULL;
@@ -670,6 +672,74 @@ __wrap_LwCADbGetCAAuthBlob(
 
     dwError = LwCAAllocateStringA("{'user':'root', 'password':'password'}", ppszAuthBlob);
     assert_int_equal(dwError, 0);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbLockCA(
+    PCSTR       pcszCAId,
+    PSTR        *ppszUuid
+    )
+{
+    DWORD       dwError = 0;
+
+    assert_non_null(pcszCAId);
+    assert_non_null(ppszUuid);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    dwError = LwCAAllocateStringA(LWCA_LOCK_CA_UUID, ppszUuid);
+    assert_int_equal(dwError, 0);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbUnlockCA(
+    PCSTR       pcszCAId,
+    PCSTR       pcszUuid
+    )
+{
+    assert_non_null(pcszCAId);
+    assert_non_null(pcszUuid);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_string_equal(pcszUuid, LWCA_LOCK_CA_UUID);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbLockCert(
+    PCSTR       pcszCAId,
+    PCSTR       pcszSerialNumber,
+    PSTR        *ppszUuid
+    )
+{
+    DWORD       dwError = 0;
+
+    assert_non_null(pcszCAId);
+    assert_non_null(pcszSerialNumber);
+    assert_non_null(ppszUuid);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    dwError = LwCAAllocateStringA(LWCA_LOCK_CERT_UUID, ppszUuid);
+    assert_int_equal(dwError, 0);
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbUnlockCert(
+    PCSTR       pcszCAId,
+    PCSTR       pcszSerialNumber,
+    PCSTR       pcszUuid
+    )
+{
+    assert_non_null(pcszCAId);
+    assert_non_null(pcszSerialNumber);
+    assert_non_null(pcszUuid);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+    assert_string_equal(pcszUuid, LWCA_LOCK_CA_UUID);
 
     return mock();
 }

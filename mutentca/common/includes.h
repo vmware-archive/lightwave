@@ -31,6 +31,8 @@
 #include <ldap.h>
 #include <sasl/sasl.h>
 
+#include <uuid/uuid.h>
+
 #include <openssl/x509.h>
 #include <openssl/conf.h>
 #include <openssl/x509v3.h>

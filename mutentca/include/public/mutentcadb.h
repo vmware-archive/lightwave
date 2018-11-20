@@ -197,6 +197,48 @@ typedef DWORD
     );
 
 /*
+ * Acquire lock for CA Id
+ */
+typedef DWORD
+(*PFN_LWCA_DB_LOCK_CA)(
+    PLWCA_DB_HANDLE         pHandle,        //IN
+    PCSTR                   pcszCAId,       //IN
+    PSTR                    *ppszUuid       //OUT
+    );
+
+/*
+ * Release lock for CA Id
+ */
+typedef DWORD
+(*PFN_LWCA_DB_UNLOCK_CA)(
+    PLWCA_DB_HANDLE         pHandle,        //IN
+    PCSTR                   pcszCAId,       //IN
+    PCSTR                   pcszUuid        //IN
+    );
+
+/*
+ * Acquire lock for Cert
+ */
+typedef DWORD
+(*PFN_LWCA_DB_LOCK_CERT)(
+    PLWCA_DB_HANDLE         pHandle,            //IN
+    PCSTR                   pcszCAId,           //IN
+    PCSTR                   pcszSerialNumber,   //IN
+    PSTR                    *ppszUuid           //OUT
+    );
+
+/*
+ * Release lock for Cert
+ */
+typedef DWORD
+(*PFN_LWCA_DB_UNLOCK_CERT)(
+    PLWCA_DB_HANDLE         pHandle,            //IN
+    PCSTR                   pcszCAId,           //IN
+    PCSTR                   pcszSerialNumber,   //IN
+    PCSTR                   pcszUuid            //IN
+    );
+
+/*
  * Update CA data
  */
 typedef DWORD
@@ -293,6 +335,10 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_GET_PARENT_CA_ID        pFnGetParentCAId;
     PFN_LWCA_DB_GET_CA_STATUS           pFnGetCAStatus;
     PFN_LWCA_DB_GET_CA_AUTH_BLOB        pFnGetCAAuthBlob;
+    PFN_LWCA_DB_LOCK_CA                 pFnLockCA;
+    PFN_LWCA_DB_UNLOCK_CA               pFnUnlockCA;
+    PFN_LWCA_DB_LOCK_CERT               pFnLockCert;
+    PFN_LWCA_DB_UNLOCK_CERT             pFnUnlockCert;
     PFN_LWCA_DB_UPDATE_CA               pFnUpdateCA;
     PFN_LWCA_DB_UPDATE_CA_STATUS        pFnUpdateCAStatus;
     PFN_LWCA_DB_UPDATE_CERT_DATA        pFnUpdateCertData;

@@ -833,6 +833,11 @@ LwCADbFreeCertDataArray(
     PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
     );
 
+DWORD
+LwCAUuidGenerate(
+    PSTR    *ppszUuid
+    );
+
 // regexutil.c
 
 typedef regex_t REGEX, *PREGEX;

@@ -656,6 +656,40 @@ Test_LwCAUpdateCertData(
     LwCADbFreeCertData(pCertData);
 }
 
+VOID
+Test_LwCALockData(
+    VOID **state
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_TEST_STATE        pState = NULL;
+    PSTR                    pszFunc = LWCA_POST_SERIALIZE_LOCK;
+    PSTR                    pszReqBody = NULL;
+    PLUGIN_SERIALIZE_LOCK   pFnSerializeLock = NULL;
+    PLWCA_PLUGIN_HANDLE     pPluginHandle = NULL;
+
+    assert_non_null(state);
+    pState = *state;
+
+    pPluginHandle = pState->pPluginHandle;
+
+    pFnSerializeLock = (PLUGIN_SERIALIZE_LOCK)LwCAGetLibSym(pPluginHandle, pszFunc);
+    assert_non_null(pFnSerializeLock);
+
+    dwError = pFnSerializeLock(TEST_LOCK_OWNER, TEST_LOCK_EXPIRE, &pszReqBody);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszReqBody);
+    assert_string_equal(pszReqBody, LOCK_SERIALIZED_BODY);
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
+
+    dwError = pFnSerializeLock(TEST_LOCK_NO_OWNER, TEST_LOCK_NO_EXPIRE, &pszReqBody);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pszReqBody);
+    assert_string_equal(pszReqBody, UNLOCK_SERIALIZED_BODY);
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
+
+}
+
 static
 DWORD
 _LwCALoadCAData(

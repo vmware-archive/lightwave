@@ -41,6 +41,10 @@ LwCAPluginLoad(
     pFt->pFnUpdateCA = &LwCADbTestPluginUpdateCA;
     pFt->pFnUpdateCAStatus = &LwCADbTestPluginUpdateCAStatus;
     pFt->pFnUpdateCertData = &LwCADbTestPluginUpdateCertData;
+    pFt->pFnLockCA = &LwCADbTestPluginLockCA;
+    pFt->pFnUnlockCA = &LwCADbTestPluginUnlockCA;
+    pFt->pFnLockCert = &LwCADbTestPluginLockCert;
+    pFt->pFnUnlockCert = &LwCADbTestPluginUnlockCert;
     pFt->pFnUpdateCACRLNumber = &LwCADbTestPluginUpdateCACRLNumber;
     pFt->pFnFreeCAData = &LwCADbTestPluginFreeCAData;
     pFt->pFnFreeCertDataArray = &LwCADbTestPluginFreeCertDataArray;
@@ -170,6 +174,48 @@ LwCADbTestPluginUpdateCAStatus(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
     LWCA_CA_STATUS          status
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginLockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PSTR            *ppszUuid
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginUnlockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszUuid
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginLockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PSTR            *ppszUuid
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginUnlockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PCSTR           pcszUuid
     )
 {
     return 0;
