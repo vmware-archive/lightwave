@@ -55,6 +55,7 @@ typedef DWORD (*PFN_SET_RESULT)(
 
 typedef DWORD (*PFN_GET_HTTP_ERROR)(
         PLWCA_REST_RESULT       pRestRslt,
+        PCSTR                   pcszMethod,
         PLWCA_HTTP_ERROR*       ppHttpStatus
         );
 

@@ -535,7 +535,7 @@ LwCADbCopyCertData(
     DWORD dwError = 0;
     PLWCA_DB_CERT_DATA pTempCertData = NULL;
 
-    if (pCertData || !ppCertData)
+    if (!pCertData || !ppCertData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -606,7 +606,7 @@ LwCADbCopyCertDataArray(
 
     pTempCertDataArray->dwCount = pCertDataArray->dwCount;
 
-    dwError = LwCAAllocateMemory(sizeof(PSTR) * pCertDataArray->dwCount, (PVOID*)&pTempCertDataArray->ppCertData);
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_DB_CERT_DATA) * pCertDataArray->dwCount, (PVOID*)&pTempCertDataArray->ppCertData);
     BAIL_ON_LWCA_ERROR(dwError);
 
     for(; iEntry < pCertDataArray->dwCount; ++iEntry)

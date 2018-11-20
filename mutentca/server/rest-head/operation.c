@@ -345,7 +345,7 @@ LwCARestOperationWriteResponse(
     dwError = VmRESTSetHttpStatusVersion(ppResponse, "HTTP/1.1");
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to set REST http response status version");
 
-    dwError = pRestOp->pfnGetHttpError(pResult, &pHttpError);
+    dwError = pRestOp->pfnGetHttpError(pResult, pRestOp->pszMethod, &pHttpError);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = VmRESTSetHttpStatusCode(ppResponse, pHttpError->pszHttpStatus);

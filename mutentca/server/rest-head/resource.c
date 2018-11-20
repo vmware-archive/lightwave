@@ -105,6 +105,7 @@ error:
 DWORD
 LwCARestUnknownGetHttpError(
     PLWCA_REST_RESULT   pRestRslt,
+    PCSTR               pcszMethod,
     PLWCA_HTTP_ERROR*   ppHttpError
     )
 {
@@ -121,7 +122,14 @@ LwCARestUnknownGetHttpError(
     switch ((DWORD)pRestRslt->errCode)
     {
     case LWCA_SUCCESS:
-        httpStatus = HTTP_OK;
+        if (LwCAStringCompareA(pcszMethod, "DELETE", false) == 0)
+        {
+            httpStatus = HTTP_NO_CONTENT;
+        }
+        else
+        {
+            httpStatus = HTTP_OK;
+        }
         break;
 
     case LWCA_ERROR_INVALID_REQUEST:
@@ -138,6 +146,7 @@ LwCARestUnknownGetHttpError(
         break;
 
     case LWCA_CA_ALREADY_EXISTS:
+    case LWCA_CRL_CERT_ALREADY_REVOKED:
         httpStatus = HTTP_CONFLICT;
         break;
 

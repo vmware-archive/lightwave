@@ -836,7 +836,8 @@ LwCARevokeCertificate(
     )
 {
     DWORD dwError = 0;
-    X509 *pCert = NULL;
+    X509 *pX509Cert = NULL;
+    X509 *pX509CACert = NULL;
     PSTR pszSerialNumber = NULL;
     PSTR pszCRLNumber = NULL;
     PSTR pszNextCRLNumber = NULL;
@@ -846,7 +847,7 @@ LwCARevokeCertificate(
     PSTR pszTimeValidFrom = NULL;
     PSTR pszRevokedDate = NULL;
     PSTR pszAuthBlob = NULL;
-    PLWCA_CERTIFICATE_ARRAY pCACerts = NULL;
+    PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_DB_CERT_DATA pCertData = NULL;
     BOOLEAN bExists = FALSE;
@@ -860,16 +861,19 @@ LwCARevokeCertificate(
     dwError = _LwCACheckCAExist(pcszCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCADbGetCACertificates(pcszCAId, &pCACerts);
+    dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAVerifyCertificate(pCACerts, pCertificate);
+    dwError = LwCAPEMToX509(pCACert, &pX509CACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAPEMToX509(pCertificate, &pCert);
+    dwError = LwCAPEMToX509(pCertificate, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509GetSerialNumber(pCert, &pszSerialNumber);
+    dwError = LwCAVerifyCertificateSign(pX509Cert, pX509CACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetSerialNumber(pX509Cert, &pszSerialNumber);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCADbCheckCertData(pcszCAId, pszSerialNumber, &bExists);
@@ -884,10 +888,10 @@ LwCARevokeCertificate(
     dwError = LwCADbGetCACRLNumber(pcszCAId, &pszCRLNumber);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509GetTimeValidFrom(pCert, &pszTimeValidFrom);
+    dwError = LwCAX509GetTimeValidFrom(pX509Cert, &pszTimeValidFrom);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAX509GetTimeValidTo(pCert, &pszTimeValidTo);
+    dwError = LwCAX509GetTimeValidTo(pX509Cert, &pszTimeValidTo);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAGenerateCertRevokedDate(&pszRevokedDate);
@@ -942,15 +946,25 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszLastCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszNextCRLUpdate);
     LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+    LwCAFreeCertificate(pCACert);
     LwCADbFreeCertData(pCertData);
     LwCADbFreeCAData(pCAData);
-    if (pCert)
+    if (pX509Cert)
     {
-        X509_free(pCert);
+        X509_free(pX509Cert);
+    }
+    if (pX509CACert)
+    {
+        X509_free(pX509CACert);
     }
     return dwError;
 
 error:
+    if (dwError == LWCA_SSL_CERT_VERIFY_ERR ||
+        dwError == LWCA_CERT_IO_FAILURE)
+    {
+        dwError = LWCA_ERROR_INVALID_REQUEST;
+    }
     goto cleanup;
 }
 
