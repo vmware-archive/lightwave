@@ -1023,7 +1023,7 @@ LwCAGetCACrl(
     X509 *pX509CACert = NULL;
     X509_CRL *pX509Crl = NULL;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCrl)
+    if (IsNullOrEmptyString(pcszCAId) || !ppCrl)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);

@@ -123,7 +123,12 @@ LwCARestAuthIsOpenAPI(
     {
         bIsOpenAPI = TRUE;
     }
-    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_GETROOTCA, pcszURI, FALSE) &&
+    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_ROOTCA, pcszURI, FALSE) &&
+             !LwCAStringCompareA("GET", pcszMethod, FALSE))
+    {
+        bIsOpenAPI = TRUE;
+    }
+    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_ROOTCA_CRL, pcszURI, FALSE) &&
              !LwCAStringCompareA("GET", pcszMethod, FALSE))
     {
         bIsOpenAPI = TRUE;
