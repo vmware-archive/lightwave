@@ -110,7 +110,7 @@ LwCARestGetRootCACert(
     dwError = LwCAGetRootCAId(&pszRootCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszRootCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(pszRootCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(

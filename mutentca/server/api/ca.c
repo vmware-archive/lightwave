@@ -473,7 +473,6 @@ error:
 
 DWORD
 LwCAGetCACertificates(
-    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,
     PLWCA_CERTIFICATE_ARRAY *ppCertificates
     )
@@ -481,7 +480,7 @@ LwCAGetCACertificates(
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCertificates )
+    if (IsNullOrEmptyString(pcszCAId) || !ppCertificates )
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);

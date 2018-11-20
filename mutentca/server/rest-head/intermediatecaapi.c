@@ -132,7 +132,7 @@ LwCARestGetIntermediateCACert(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(pszCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(

@@ -100,7 +100,6 @@ LwCAGetSignedCertificate(
 
 DWORD
 LwCAGetCACertificates(
-    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,
     PLWCA_CERTIFICATE_ARRAY *ppCertificates
     );
