@@ -13,12 +13,14 @@ const (
 	LwCAInvalidCert   ErrorCode = 1501
 	LwCAKeyGeneration ErrorCode = 1502
 	LwCAInvalidCSR    ErrorCode = 1503
+	LwCAInvalidCrl    ErrorCode = 1504
 )
 
 var errorMap = map[ErrorCode]LwCATestError{
 	LwCAInvalidCert:   {ErrorCode: LwCAInvalidCert, Msg: "Invalid certificate"},
 	LwCAKeyGeneration: {ErrorCode: LwCAKeyGeneration, Msg: "Unable to generate key"},
 	LwCAInvalidCSR:    {ErrorCode: LwCAInvalidCSR, Msg: "Invalid CSR"},
+	LwCAInvalidCrl:    {ErrorCode: LwCAInvalidCrl, Msg: "Invalid Crl"},
 }
 
 // MakeError makes an error from message, and optional error

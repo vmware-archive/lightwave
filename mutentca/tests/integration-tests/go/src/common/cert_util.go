@@ -7,9 +7,11 @@ import (
 	"crypto/x509/pkix"
 	"encoding/asn1"
 	"encoding/pem"
+	"fmt"
 	"net"
 	"reflect"
 	"strconv"
+	"strings"
 	"time"
 )
 
@@ -18,6 +20,29 @@ var (
 	oidKeyUsage        = asn1.ObjectIdentifier{2, 5, 29, 15}
 	oidBasicConstraint = asn1.ObjectIdentifier{2, 5, 29, 19}
 )
+
+// oidMap is map for objectId of elements in a certificate subject to their object names.
+var oidMap = map[string]string{
+	"2.5.4.3":                    "CN",
+	"2.5.4.4":                    "SN",
+	"2.5.4.5":                    "serialNumber",
+	"2.5.4.6":                    "C",
+	"2.5.4.7":                    "L",
+	"2.5.4.8":                    "ST",
+	"2.5.4.9":                    "streetAddress",
+	"2.5.4.10":                   "O",
+	"2.5.4.11":                   "OU",
+	"2.5.4.12":                   "title",
+	"2.5.4.17":                   "postalCode",
+	"2.5.4.42":                   "GN",
+	"2.5.4.43":                   "initials",
+	"2.5.4.44":                   "generationQualifier",
+	"2.5.4.46":                   "dnQualifier",
+	"2.5.4.65":                   "pseudonym",
+	"0.9.2342.19200300.100.1.25": "DC",
+	"1.2.840.113549.1.9.1":       "emailAddress",
+	"0.9.2342.19200300.100.1.1":  "userid",
+}
 
 type CertSignRequest struct {
 	CommonName     string
@@ -47,6 +72,25 @@ type CertData struct {
 	EmailAddresses []string
 	KeyUsage       int
 	IsCA           bool
+}
+
+func constructDN(rdn pkix.RDNSequence) string {
+	subject := []string{}
+	for _, s := range rdn {
+		for _, i := range s {
+			if v, ok := i.Value.(string); ok {
+				if name, ok := oidMap[i.Type.String()]; ok {
+					subject = append(subject, fmt.Sprintf("%s=%s", name, v))
+				} else {
+					subject = append(subject, fmt.Sprintf("%s=%s", i.Type.String(), v))
+				}
+			} else {
+				subject = append(subject, fmt.Sprintf("%s=%v", i.Type.String, v))
+			}
+		}
+	}
+
+	return strings.Join(subject, ",")
 }
 
 func ConvertPEMToX509(cert string) (*x509.Certificate, error) {
@@ -303,4 +347,72 @@ func VerifyCert(cert, CACert string) error {
 	}
 
 	return nil
+}
+
+func parseCrl(crl string) (*pkix.CertificateList, error) {
+	crlBytes := []byte(crl)
+	x509Crl, err := x509.ParseCRL(crlBytes)
+	if err != nil {
+		return nil, LwCAInvalidCrl.MakeErr().WithDetail("Unable to parse crl. Error: %+v", err)
+	}
+
+	return x509Crl, nil
+}
+
+func CheckAndVerifyCrl(cert string, crl string) error {
+	x509Crl, err := parseCrl(crl)
+	if err != nil {
+		return err
+	}
+
+	if x509Crl.HasExpired(time.Now()) {
+		return LwCAInvalidCrl.MakeErr().WithDetail("Crl is not valid now")
+	}
+
+	if !x509Crl.TBSCertList.NextUpdate.After(x509Crl.TBSCertList.ThisUpdate) {
+		return LwCAInvalidCrl.MakeErr().WithDetail("Next crl update time is invalid")
+
+	}
+
+	crlIssuer := constructDN(x509Crl.TBSCertList.Issuer)
+	if crlIssuer == "" {
+		return LwCAInvalidCrl.MakeErr().WithDetail("Crl issuer is invalid")
+	}
+
+	x509Cert, err := ConvertPEMToX509(cert)
+	if err != nil {
+		return err
+	}
+
+	err = x509Cert.CheckCRLSignature(x509Crl)
+	if err != nil {
+		return LwCAInvalidCrl.MakeErr().WithDetail("Unable to verify x509Crl. Error: %+v", err)
+	}
+
+	return nil
+}
+
+func CheckIfSignedCertIsRevoked(signedCert string, crl string) (bool, error) {
+	x509SignedCert, err := ConvertPEMToX509(signedCert)
+	if err != nil {
+		return false, err
+	}
+
+	x509Crl, err := parseCrl(crl)
+	if err != nil {
+		return false, err
+	}
+
+	revokedCertList := x509Crl.TBSCertList.RevokedCertificates
+	if len(revokedCertList) <= 0 {
+		return false, nil
+	}
+
+	for _, revokedCert := range revokedCertList {
+		if revokedCert.SerialNumber.Cmp(x509SignedCert.SerialNumber) == 0 {
+			return true, nil
+		}
+	}
+
+	return false, nil
 }
