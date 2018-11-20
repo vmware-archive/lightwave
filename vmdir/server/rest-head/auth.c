@@ -61,14 +61,14 @@ VmDirRESTAuthViaBasic(
     PVDIR_REST_OPERATION    pRestOp
     )
 {
-    DWORD   dwError = 0;
-    int     sts = 0;
-    int     len = 0;
-    PSTR    pszBasic = NULL;
-    PSTR    pszData = NULL;
-    PSTR    pszDecode = NULL;
-    PSTR    pszBindDN = NULL;
-    PSTR    pszPasswd = NULL;
+    DWORD        dwError = 0;
+    int          sts = 0;
+    unsigned int len = 0;
+    PSTR         pszBasic = NULL;
+    PSTR         pszData = NULL;
+    PSTR         pszDecode = NULL;
+    PSTR         pszBindDN = NULL;
+    PSTR         pszPasswd = NULL;
     PVDIR_OPERATION pBindOp = NULL;
 
     if (!pRestOp || IsNullOrEmptyString(pRestOp->pszAuth))

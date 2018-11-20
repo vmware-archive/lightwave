@@ -1537,6 +1537,11 @@ dequeIsEmpty(
     PDEQUE pDeque
     );
 
+VOID
+dequeFreeStringContents(
+    PDEQUE pDeque
+    );
+
 DWORD
 VmDirLinkedListCreate(
     PVDIR_LINKED_LIST*  ppLinkedList
@@ -1630,6 +1635,7 @@ VmDirReplURIToHostname(
     PSTR*   ppszPartnerHostName
     );
 
+// vmdir/regconfig.c
 DWORD
 VmDirGetMdbWalEnable(
     BOOLEAN *pbMdbEnableWal
@@ -1638,6 +1644,16 @@ VmDirGetMdbWalEnable(
 DWORD
 VmDirGetMdbChkptInterval(
     DWORD *pdwMdbChkptInterval
+    );
+
+DWORD
+VmDirGetLdapCopyEnable(
+    BOOLEAN *pbLdapCopyEnable
+    );
+
+DWORD
+VmDirSrvUpdateConfig(
+    VOID
     );
 
 DWORD
@@ -2010,6 +2026,12 @@ VmDirDNToRDNList(
     PCSTR               pszDN,
     BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
+    );
+
+DWORD
+VmDirInternalDeleteTree(
+    PCSTR   pBaseDN,
+    BOOLEAN bInclusive
     );
 
 //IPC

@@ -31,7 +31,7 @@ VmDirRESTDecodeAttributeNoAlloc(
     PSTR    pszDecoded = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     size_t  valLen = 0;
-    int     len = 0;
+    unsigned int len = 0;
 
     if (!pAttr)
     {

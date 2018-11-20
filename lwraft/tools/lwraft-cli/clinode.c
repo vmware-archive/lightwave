@@ -324,6 +324,7 @@ RaftCliReadPassword(
     DWORD dwError = 0;
     struct termios orig, nonecho;
     CHAR  szPassword[33] = "";
+    PSTR  pszPasswordTemp = szPassword;
     PSTR  pszPassword = NULL;
     DWORD iChar = 0;
 
@@ -377,7 +378,7 @@ RaftCliReadPassword(
         }
     }
 
-    if (IsNullOrEmptyString(szPassword))
+    if (IsNullOrEmptyString(pszPasswordTemp))
     {
         dwError = ERROR_PASSWORD_RESTRICTION;
         BAIL_ON_VMDIR_ERROR(dwError);

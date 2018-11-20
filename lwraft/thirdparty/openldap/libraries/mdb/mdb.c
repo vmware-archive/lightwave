@@ -3020,7 +3020,7 @@ mdb_txn_commit(MDB_txn *txn)
 {
 	int		rc;
 	unsigned int i;
-	MDB_env	*env;
+	MDB_env	*env = NULL;
         void *raft_commit_ctx = NULL;
 
 	if (txn == NULL || txn->mt_env == NULL)
@@ -3244,7 +3244,7 @@ done:
 	return MDB_SUCCESS;
 
 fail:
-        if (env->me_raft_commit_fail_func)
+        if (env && env->me_raft_commit_fail_func)
         {
             env->me_raft_commit_fail_func(raft_commit_ctx);
         }
@@ -3390,7 +3390,9 @@ mdb_env_write_meta(MDB_txn *txn)
 	off_t off;
 	int rc, len, toggle;
 	char *ptr;
+#ifdef _WIN32
 	HANDLE mfd;
+#endif
         MDB_metabuf mbuf = {0};
         MDB_page *dp;
         MDB_page *np = NULL;
@@ -3505,9 +3507,9 @@ mdb_env_write_meta(MDB_txn *txn)
 	off += PAGEHDRSZ;
 
 	/* Write to the SYNC fd */
+#ifdef _WIN32
 	mfd = env->me_flags & (MDB_NOSYNC|MDB_NOMETASYNC) ?
 		env->me_fd : env->me_mfd;
-#ifdef _WIN32
 	{
 		memset(&ov, 0, sizeof(ov));
 		ov.Offset = off;
@@ -8839,6 +8841,7 @@ int commit_xlog_txn(MDB_env *env, MDB_ID2L xlog_pgs, int start, int end)
             for (j=0; j < (int)p->mp_pages; j++) {
                 unsigned long d_offset = (unsigned long)(((p->mp_pgno +j ) * env->me_psize));
                 char *s_pos = xlog_pgs[i+j].mptr;
+		//TODO: check retval of pwrite?
                 pwrite(env->me_fd, s_pos, env->me_psize, d_offset);
             }
             mdb_eassert(env, p->mp_pages > 0);
@@ -8846,12 +8849,14 @@ int commit_xlog_txn(MDB_env *env, MDB_ID2L xlog_pgs, int start, int end)
         } else if (F_ISSET(p->mp_flags, P_META))
         {
             mbufp = (MDB_metabuf *)p;
+            //TODO: check retval of pwrite?
             m = &mbufp->mb_metabuf.mm_meta;
             pwrite(env->me_mfd, p, env->me_psize, (p->mp_pgno * env->me_psize));
             env->me_txns->mti_txnid = m->mm_txnid;
             i++;
         } else
         {
+           //TODO: check retval of pwrite?
            pwrite(env->me_fd, p, env->me_psize, (p->mp_pgno * env->me_psize));
            i++;
         }

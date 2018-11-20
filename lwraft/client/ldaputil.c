@@ -1661,7 +1661,7 @@ VmDirLdapSetupDCAccountOnPartner(
                                          &dwDCAccountPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteDCAccountPasswd;
+        bvPasswd.bv_val = (PSTR) pByteDCAccountPasswd;
         bvPasswd.bv_len = dwDCAccountPasswdSize;
 
         // and the ldap_add_ext_s is a synchronous call
@@ -1681,7 +1681,7 @@ VmDirLdapSetupDCAccountOnPartner(
         bAcctExists = TRUE;
 
         // reset DCAccount password. NOTE pByteDCAccountPasswd is null terminated.
-        dwError = VmDirLdapModReplaceAttribute( pLd, pszDCDN, ATTR_USER_PASSWORD, pByteDCAccountPasswd );
+        dwError = VmDirLdapModReplaceAttribute( pLd, pszDCDN, ATTR_USER_PASSWORD, (PCSTR) pByteDCAccountPasswd );
         BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = VmDirLdapModReplaceAttribute( pLd, pszDCDN, ATTR_PSC_VERSION, VDIR_PSC_VERSION );
@@ -1699,7 +1699,7 @@ VmDirLdapSetupDCAccountOnPartner(
     dwError = VmDirConfigSetDCAccountInfo(
                     pszDCHostName,
                     pszDCDN,
-                    pByteDCAccountPasswd,
+                    (PCSTR) pByteDCAccountPasswd,
                     dwDCAccountPasswdSize,
                     pszMachineGUID );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1890,7 +1890,7 @@ VmDirLdapSetupComputerAccount(
                                          &dwAccountPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteAccountPasswd;
+        bvPasswd.bv_val = (PSTR) pByteAccountPasswd;
         bvPasswd.bv_len = dwAccountPasswdSize;
 
         // and the ldap_add_ext_s is a synchronous call
@@ -1910,7 +1910,7 @@ VmDirLdapSetupComputerAccount(
         bAcctExists = TRUE;
 
         // reset ComputerAccount password. NOTE pByteDCAccountPasswd is null terminted.
-        dwError = VmDirLdapModReplaceAttribute( pLd, pszComputerDN, ATTR_USER_PASSWORD, pByteAccountPasswd );
+        dwError = VmDirLdapModReplaceAttribute( pLd, pszComputerDN, ATTR_USER_PASSWORD, (PCSTR) pByteAccountPasswd );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1925,7 +1925,7 @@ VmDirLdapSetupComputerAccount(
     dwError = VmDirConfigSetDCAccountInfo(
                     pszComputerHostName,
                     pszComputerDN,
-                    pByteAccountPasswd,
+                    (PCSTR) pByteAccountPasswd,
                     dwAccountPasswdSize,
                     pszMachineGUID);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2174,7 +2174,7 @@ VmDirLdapSetupServiceAccount(
                                          &dwMSAPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteMSAPasswd;
+        bvPasswd.bv_val = (PSTR) pByteMSAPasswd;
         bvPasswd.bv_len = dwMSAPasswdSize;
 
         // and the ldap_add_ext_s is a synchronous call

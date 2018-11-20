@@ -1,5 +1,5 @@
 /*
- * Copyright ©2017 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2018 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,67 +12,59 @@
  * under the License.
  */
 
+#ifndef __VMDIR_CLUSTER_STATE_INTERFACE_H__
+#define __VMDIR_CLUSTER_STATE_INTERFACE_H__
 
-
-#ifndef _CLUSTERSTATE_PROTOTYPES_H_
-#define _CLUSTERSTATE_PROTOTYPES_H_
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-// statecache.c
+// raftstate.c
 DWORD
-VmDirClusterLoadCache(
-    VOID
+VmDirRaftGetLeaderString(
+    PSTR *ppszLeader
+    );
+
+
+DWORD
+VmDirRaftGetFollowers(
+    PDEQUE pFollowers
+    );
+
+DWORD
+VmDirRaftGetMembers(
+    PDEQUE pMembers
+    );
+
+DWORD
+VmDirRaftGetState(
+    PDEQUE pStateQueue
     );
 
 VOID
-VmDirClusterFreeCache(
-    VOID
+VmDirClusterDeleteNode(
+    PVDIR_ENTRY pEntry
     );
 
-DWORD
-VmDirClusterNodeLDPConn(
-    PVMDIR_NODE_STATE   pNode,
-    BOOLEAN             bForce
+// statecache.c
+VOID
+VmDirClusterSetCacheReload(
+    VOID
     );
 
 // clusterthr.c
 DWORD
-VmDirInitClusterStateThread(
-    VOID
+VmDirPingReplyEntry(
+    PVDIR_RAFT_PING_CONTROL_VALUE pCscv,
+    PVDIR_ENTRY *ppEntry
     );
 
 DWORD
-VmDirInitRaftPsState(
-    VOID
+VmDirVoteReplyEntry(
+    PVDIR_RAFT_VOTE_CONTROL_VALUE pCvcv,
+    PVDIR_ENTRY *ppEntry
     );
 
-VOID
-VmDirLoadRaftState(
-    VOID
-    );
-
+// libmain.c
 DWORD
-VmDirSetRaftClusterSize(
-    BOOLEAN bNeedClusterStateLock
-    );
-
-VOID
-VmDirPersistTerm(
-    int term
-    );
-
-// raftstate.c
-BOOLEAN
-VmDirSchemaSupportSingleMaster(
+VmDirClusterLibInit(
     VOID
     );
 
-#ifdef __cplusplus
-}
 #endif
-
-#endif // _CLUSTERSTATE_PROTOTYPES_H_
-

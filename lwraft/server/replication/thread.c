@@ -51,8 +51,6 @@ static VOID _VmDirEvaluateVoteResult(UINT64 *waitTime);
 static VOID _VmDirFixLogsForDR();
 static DWORD _VmDirRaftAddLog(PVDIR_OPERATION pOp, PVDIR_RAFT_LOG pChgLog);
 
-DWORD VmDirRaftGetFollowers(PDEQUE followers);
-
 PVMDIR_MUTEX gRaftStateMutex = NULL;
 PVMDIR_MUTEX gRaftRpcReplyMutex = NULL;
 
@@ -627,7 +625,7 @@ cleanup:
 
     if (bHasTxn)
     {
-        _VmDirChgLogFree(&gLogEntry, FALSE);
+        VmDirChgLogFree(&gLogEntry, FALSE);
         if (ldapOp.pBEIF)
         {
             ldapOp.pBEIF->pfnBETxnAbort(ldapOp.pBECtx);
@@ -1159,7 +1157,7 @@ _VmDirRequestVoteRpc(PVMDIR_PEER_PROXY pProxySelf)
 
     dwError = VmDirRaftLdapRpcRequestVote(pProxySelf, reqVoteArgs.term, reqVoteArgs.candidateId,
                                   (UINT32)reqVoteArgs.lastLogIndex, reqVoteArgs.lastLogTerm,
-                                  &reqVoteArgs.currentTerm, &reqVoteArgs.voteGranted);
+                                  (INT32 *)&reqVoteArgs.currentTerm, (INT32 *)&reqVoteArgs.voteGranted);
     if (dwError)
     {
         if(pProxySelf->proxy_state == RPC_DISCONN)
@@ -1346,7 +1344,7 @@ ReplicateLog:
                                    args.preLogIndex, args.preLogTerm,
                                    args.leaderCommit,
                                    args.entriesSize, args.entries,
-                                   &args.currentTerm, &args.status);
+                                   (INT32 *) &args.currentTerm, &args.status);
     if (dwError)
     {
         if (pProxySelf->proxy_state == RPC_DISCONN)
@@ -1415,7 +1413,7 @@ ReplicateLog:
         args.entries = NULL;
         args.entriesSize = 0;
 
-        _VmDirChgLogFree(&preChgLog, FALSE);
+        VmDirChgLogFree(&preChgLog, FALSE);
 
         //When status is not 0, it passes the peer's last log index, we can fetch logs
         //  backward from there (plus a margin) to save time for a much lagged follower.
@@ -1454,7 +1452,7 @@ ReplicateLog:
     //The peer has confirmed the matching preLogIndex.
     if (args.entries)
     {
-        _VmDirChgLogFree(&curChgLog, FALSE);
+        VmDirChgLogFree(&curChgLog, FALSE);
         curChgLog.packRaftLog.lberbv_len = args.entriesSize;
         dwError = VmDirAllocateAndCopyMemory(args.entries, args.entriesSize, (PVOID*)&curChgLog.packRaftLog.lberbv_val);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -1521,7 +1519,7 @@ ReplicateLog:
 
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
 
-    _VmDirChgLogFree(&preChgLog, FALSE);
+    VmDirChgLogFree(&preChgLog, FALSE);
 
     dwError = _VmDirGetNextLog(args.preLogIndex + 1, startLogIndex, &preChgLog,  __LINE__);
     if (preChgLog.index == 0)
@@ -1546,7 +1544,7 @@ ReplicateLog:
     args.entries = NULL;
     args.entriesSize = 0;
 
-    _VmDirChgLogFree(&curChgLog, FALSE);
+    VmDirChgLogFree(&curChgLog, FALSE);
     dwError = _VmDirGetNextLog(args.preLogIndex+1, startLogIndex, &curChgLog,  __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -1568,8 +1566,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(args.entries);
     args.entries = NULL;
     args.entriesSize = 0;
-    _VmDirChgLogFree(&preChgLog, FALSE);
-    _VmDirChgLogFree(&curChgLog, FALSE);
+    VmDirChgLogFree(&preChgLog, FALSE);
+    VmDirChgLogFree(&curChgLog, FALSE);
 
     if (dwError == 0)
     {
@@ -1843,7 +1841,7 @@ raft_commit_done:
     }
 
 cleanup:
-    _VmDirChgLogFree(&gLogEntry, FALSE);
+    VmDirChgLogFree(&gLogEntry, FALSE);
     gEntries = NULL;
     if (dwError==0)
     {
@@ -1969,7 +1967,7 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirChgLogFree(pChgLog, TRUE);
+    VmDirChgLogFree(pChgLog, TRUE);
     goto cleanup;
 }
 
@@ -2032,7 +2030,7 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirChgLogFree(pChgLog, TRUE);
+    VmDirChgLogFree(pChgLog, TRUE);
     VmDirFreeBervalContent(&encodedMods);
     goto cleanup;
 }
@@ -2089,7 +2087,7 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirChgLogFree(pChgLog, TRUE);
+    VmDirChgLogFree(pChgLog, TRUE);
     goto cleanup;
 }
 
@@ -2532,14 +2530,12 @@ _VmDirApplyLog(unsigned long long indexToApply, BOOLEAN bFollowerOnly)
     VDIR_RAFT_LOG logEntry = {0};
     PVDIR_RAFT_LOG pLogEntry = NULL;
     BOOLEAN bLock = FALSE;
-    BOOLEAN alreadyApplied = FALSE;
     DEQUE encodedLogs = {0};
     VDIR_BACKEND_CTX beCtx = {0};
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (indexToApply <= gRaftState.lastApplied)
     {
-        alreadyApplied = TRUE;
         VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: ignore allready applied LogIndex %llu lastApplied %llu",
                      __func__, indexToApply, gRaftState.lastApplied);
         goto cleanup;
@@ -2568,7 +2564,7 @@ _VmDirApplyLog(unsigned long long indexToApply, BOOLEAN bFollowerOnly)
            dequePopLeft(&encodedLogs, (PVOID*)&pLogEntry);
            dwError = _VmDirApplyOneLogEntry(pLogEntry, indexToApply, &beCtx);
            BAIL_ON_VMDIR_ERROR(dwError);
-           _VmDirChgLogFree(pLogEntry, TRUE);
+           VmDirChgLogFree(pLogEntry, TRUE);
            pLogEntry = NULL;
         }
 
@@ -2599,8 +2595,8 @@ _VmDirApplyLog(unsigned long long indexToApply, BOOLEAN bFollowerOnly)
 
 cleanup:
     VMDIR_UNLOCK_MUTEX(bLock, gRaftStateMutex);
-    _VmDirChgLogFree(pLogEntry, TRUE);
-    _VmDirChgLogFree(&logEntry, FALSE);
+    VmDirChgLogFree(pLogEntry, TRUE);
+    VmDirChgLogFree(&logEntry, FALSE);
     return dwError;
 
 error:
@@ -3198,7 +3194,7 @@ _VmdirDeleteLog(unsigned long long logIndex, BOOLEAN bCompactLog)
     PSTR pDn = NULL;
     BOOLEAN bLock = FALSE;
     unsigned long long preLogIndex = 0;
-    int preLogTerm = 0;
+    UINT32 preLogTerm = 0;
 
     dwError = VmDirSchemaCtxAcquire( &pSchemaCtx );
     BAIL_ON_VMDIR_ERROR(dwError);

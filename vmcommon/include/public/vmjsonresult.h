@@ -137,4 +137,9 @@ VmJsonResultFreeHandle(
     PVM_JSON_RESULT pResult
     );
 
+DWORD
+VmJsonResultMapObject(
+    PCSTR pszJson,
+    PVM_JSON_OBJECT_MAP pMap
+    );
 #endif /* VM_JSONRESULT_H_ */

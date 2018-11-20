@@ -73,6 +73,7 @@ typedef void *VMCISLIB_BIND_T;
 #include <vmdirerrors.h>
 #include <vmdirclient.h>
 #include <type_spec.h>
+#include <vmstring.h>
 
 #include <vmhttpclient.h>
 #include <vmjsonresult.h>

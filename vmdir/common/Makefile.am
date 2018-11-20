@@ -57,8 +57,10 @@ libcommon_la_SOURCES = \
     schema/util.c \
     schema/verify.c
 
+#TODO: Remove -DLDAP_DEPRECATED after fixing ldap_value_free call
 libcommon_la_CPPFLAGS = \
     -DOPENSSL_NO_KRB5 \
+    -DLDAP_DEPRECATED \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal \

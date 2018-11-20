@@ -43,7 +43,8 @@ libkrb5crypto_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@ \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal/asn1 \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto \
-    -I$(top_srcdir)/vmdir/server/tools
+    -I$(top_srcdir)/vmdir/server/tools \
+    -Wno-unused-but-set-variable
 
 libkrb5crypto_la_LDFLAGS = \
     -export-symbols $(top_srcdir)/vmdir/thirdparty/heimdal/krb5-crypto/krb5-crypto.exp

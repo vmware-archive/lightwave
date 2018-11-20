@@ -25,3 +25,4 @@
 #include <vmdircommon.h>
 #include <srvcommon.h>
 #include <vmdirserver.h>
+#include <vmkdcserver.h>

@@ -89,6 +89,79 @@ VmDirRaftGetLastLogIndex(
     VOID
     );
 
+VOID
+VmDirRaftNextNewEntryId(
+    ENTRYID *pEntryId
+    );
+
+VOID
+VmDirChgLogFree(
+    PVDIR_RAFT_LOG chgLog,
+    BOOLEAN freeSelf
+    );
+
+DWORD
+VmDirEncodeLogEntry(
+    VOID
+    );
+
+VOID
+VmDirRaftGetRole(
+    VDIR_RAFT_ROLE *pRole
+    );
+
+DWORD
+VmDirRaftGetLeader(
+    PSTR *ppszLeader
+    );
+
+DWORD
+VmDirRaftGetLeaderString(
+    PSTR *ppszLeader
+    );
+
+DWORD
+VmDirRaftGetFollowers(
+    PDEQUE pFollowers
+    );
+
+DWORD
+VmDirRaftGetMembers(
+    PDEQUE pMembers
+    );
+
+DWORD
+VmDirRaftGetState(
+    PDEQUE pStateQueue
+    );
+
+DWORD
+VmDirRaftStartVoteSrv(
+    VOID
+    );
+
+DWORD
+VmDirRaftFollowerInitiateVoteSrv(
+    VOID
+    );
+
+//replentry.c
+DWORD
+VmDirAppendEntriesReplyEntry(
+    PVDIR_APPEND_ENTRIES_CONTROL_VALUE pv,
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
+VmDirRequestVoteReplyEntry(
+    PVDIR_REQUEST_VOTE_CONTROL_VALUE pv,
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
+VmDirInitRaftPsState(
+    VOID
+    );
 #ifdef __cplusplus
 }
 #endif

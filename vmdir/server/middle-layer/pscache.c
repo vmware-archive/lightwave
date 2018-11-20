@@ -188,7 +188,7 @@ _RefPagedSearchRecord(
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord
     )
 {
-    InterlockedIncrement(&pSearchRecord->dwRefCount);
+    InterlockedIncrement((INT32 *) &pSearchRecord->dwRefCount);
 }
 
 static
@@ -197,7 +197,7 @@ _DerefPagedSearchRecord(
     PVDIR_PAGED_SEARCH_RECORD pSearchRecord
     )
 {
-    if (InterlockedDecrement(&pSearchRecord->dwRefCount) == 0)
+    if (InterlockedDecrement((INT32 *) &pSearchRecord->dwRefCount) == 0)
     {
         VmDirPagedSearchCacheRecordFree(pSearchRecord);
     }

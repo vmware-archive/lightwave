@@ -245,7 +245,7 @@ VmDirCreateBindingHandleUtilityA(
         {
             rpc_binding_set_auth_info(
                     pBinding,
-                    pszServerPrincipalName,         /* Server Principal Name */
+                    (PUCHAR) pszServerPrincipalName,         /* Server Principal Name */
                     VMDIR_RPC_PROTECT_LEVEL_PKT_PRIVACY,
                     VMDIR_RPC_AUTHN_GSS_NEGOTIATE,
                     rpc_identity_h,                 /* Auth Identity */
@@ -261,9 +261,7 @@ cleanup:
 
     if (pszStringBinding)
     {
-        ULONG ulError1 = 0;
-
-        ulError1 = VmDirRpcFreeString(&pszStringBinding);
+        (VOID) VmDirRpcFreeString(&pszStringBinding);
     }
 
     VMDIR_SAFE_FREE_MEMORY( pszServerPrincipalName );
@@ -454,9 +452,7 @@ VmDirFreeBindingHandle(
 {
     if (ppBinding)
     {
-        ULONG ulError = 0;
-
-        ulError = VmDirRpcFreeBinding(ppBinding);
+        (VOID) VmDirRpcFreeBinding(ppBinding);
     }
 }
 

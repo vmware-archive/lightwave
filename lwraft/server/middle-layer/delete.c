@@ -21,17 +21,6 @@ DeleteMods(
     ModifyReq * modReq);
 
 int
-DeleteRefAttributesValue(
-    VDIR_OPERATION *    pOperation,
-    VDIR_BERVALUE *     dn);
-
-int
-GenerateDeleteAttrsMods(
-    PVDIR_OPERATION pOperation,
-    VDIR_ENTRY *    pEntry
-    );
-
-int
 VmDirMLDelete(
     PVDIR_OPERATION    pOperation
     )

@@ -791,7 +791,7 @@ _VmDirReplUpdateListExpandVerifyAddEntry(
     pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_USN_CREATED);
     assert_non_null(pAttr);
     assert_string_equal(pAttr->type.lberbv_val, ATTR_USN_CREATED);
-    dwError = VmDirStringToUINT64(pAttr->vals[0].lberbv_val, NULL, &localUsn);
+    dwError = VmDirStringToINT64(pAttr->vals[0].lberbv_val, NULL, &localUsn);
     assert_int_equal(dwError, 0);
     assert_int_equal(localUsn, 100);
 
@@ -1072,7 +1072,7 @@ _VmDirReplUpdateListExpandVerifyOperationAttr(
     pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, ATTR_USN_CHANGED);
     assert_non_null(pAttr);
     assert_string_equal(pAttr->type.lberbv_val, ATTR_USN_CHANGED);
-    dwError = VmDirStringToUINT64(pAttr->vals[0].lberbv_val, NULL, &localUsn);
+    dwError = VmDirStringToINT64(pAttr->vals[0].lberbv_val, NULL, &localUsn);
     assert_int_equal(dwError, 0);
     assert_int_equal(localUsn, usn);
 

@@ -148,6 +148,18 @@ WriteConsistencyWriteDoneControl(
     BerElement *           pBer
     );
 
+int
+VmDirCreateAppendEntriesCtrl(
+    PVDIR_APPEND_ENTRIES_CONTROL_VALUE pAppendEntriesCtrlValue,
+    LDAPControl*    pAppendEntriesCtrl
+    );
+
+int
+VmDirCreateRequestVoteCtrl(
+    PVDIR_REQUEST_VOTE_CONTROL_VALUE pRequestVoteCtrlValue,
+    LDAPControl*    pRequestVoteCtrl
+    );
+
 // delete.c
 int
 VmDirPerformDelete(

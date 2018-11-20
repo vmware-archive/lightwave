@@ -1546,6 +1546,13 @@ int     mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlo
 
 unsigned long long mdb_env_get_lasttid(MDB_env *env);
 
+/** @brief callback for raft commit fail to write WAL or meta page (due to disk
+full/failure). The callback
+ *  would set the server to Raft Follower role to avoid reusing the logIndex/log
+Term for new client requests.
+ */
+void mdb_set_raft_commit_fail_func(MDB_env *env, MDB_raft_commit_fail_func  *raft_commit_fail_func);
+
 /**	@} */
 
 #ifdef __cplusplus

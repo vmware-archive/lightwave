@@ -58,6 +58,10 @@
 #include <ldaphead.h>
 #include <middlelayer.h>
 #include <replication.h>
+//TODO: Remove this include. Layer violation
+#include <resthead.h>
+#include <vmacl.h>
+#include <mdbstore.h>
 
 #include <structs.h>
 #include <prototypes.h>

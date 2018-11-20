@@ -201,7 +201,7 @@ VmDirLoadRaftState(
     dwError = pLogBE->pfnBEMaxEntryId(pLogBE, &maxEId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    _VmDirChgLogFree(&logEntry, FALSE);
+    VmDirChgLogFree(&logEntry, FALSE);
     dwError = _VmDirFetchLogEntry(maxEId & (~LOG_ENTRY_EID_PREFIX), &logEntry, __LINE__);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -217,7 +217,7 @@ cleanup:
     {
         VmDirSchemaCtxRelease(pSchemaCtx);
     }
-    _VmDirChgLogFree(&logEntry, FALSE);
+    VmDirChgLogFree(&logEntry, FALSE);
 
     if (dwError==0)
     {
@@ -383,7 +383,7 @@ _VmDirLogLookup(
     *pbTermMatch = bTermMatch;
 
 cleanup:
-    _VmDirChgLogFree(&logEntry, FALSE);
+    VmDirChgLogFree(&logEntry, FALSE);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return dwError;
 
@@ -604,7 +604,7 @@ cleanup:
     return dwError;
 
 error:
-    _VmDirChgLogFree(pLogEntry, FALSE);
+    VmDirChgLogFree(pLogEntry, FALSE);
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s line %d", VDIR_SAFE_STRING(pszLocalErrorMsg), from);
     goto cleanup;
 }
@@ -635,7 +635,7 @@ _VmDirGetPrevLogArgs(unsigned long long *pPrevIndex, UINT32 *pPrevTerm, UINT64 s
     *pPrevTerm = prevTerm;
 
 cleanup:
-    _VmDirChgLogFree(&prevLogEntry, FALSE);
+    VmDirChgLogFree(&prevLogEntry, FALSE);
     return dwError;
 error:
     goto cleanup;
@@ -746,7 +746,7 @@ _VmDirPackLogEntry(PVDIR_RAFT_LOG pLogEntry)
 
     pLogEntry->packRaftLog.lberbv_len = iSize;
 
-    writer = pLogEntry->packRaftLog.lberbv_val;
+    writer = (unsigned char *) pLogEntry->packRaftLog.lberbv_val;
     _VmDirEncodeUINT64(&writer, pLogEntry->index);
     _VmDirEncodeUINT32(&writer, pLogEntry->term);
     _VmDirEncodeUINT64(&writer, pLogEntry->entryId);
@@ -798,7 +798,7 @@ VmDirPackLogEntries(PVDIR_RAFT_LOG pLogEntry, PDEQUE pChglogs)
     dwError = VmDirAllocateMemory(chglog_size, (PVOID*)&(chgLog.packRaftLog.lberbv_val));
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    writer = chgLog.packRaftLog.lberbv_val;
+    writer = (unsigned char *) chgLog.packRaftLog.lberbv_val;
     _VmDirEncodeUINT64(&writer, logIndex);
     _VmDirEncodeUINT32(&writer, logTerm);
     _VmDirEncodeUINT64(&writer, entryId);
@@ -820,7 +820,7 @@ VmDirPackLogEntries(PVDIR_RAFT_LOG pLogEntry, PDEQUE pChglogs)
             memcpy(writer, pChgLog->chglog.lberbv_val, pChgLog->chglog.lberbv_len);
             writer += pChgLog->chglog.lberbv_len;
         }
-        _VmDirChgLogFree(pChgLog, TRUE);
+        VmDirChgLogFree(pChgLog, TRUE);
     }
 
     pLogEntry->packRaftLog.lberbv_val = chgLog.packRaftLog.lberbv_val;
@@ -839,7 +839,7 @@ DWORD
 _VmDirUnpackLogEntry(PVDIR_RAFT_LOG pLogEntry)
 {
     DWORD dwError = 0;
-    unsigned char *reader = pLogEntry->packRaftLog.lberbv_val;
+    unsigned char *reader = (unsigned char *) pLogEntry->packRaftLog.lberbv_val;
 
     if (pLogEntry->packRaftLog.lberbv_val == NULL ||
         pLogEntry->packRaftLog.lberbv_len < RAFT_LOG_HEADER_LEN)
@@ -878,8 +878,8 @@ VmDirUnpackLogEntries(PDEQUE pChglogs, PVDIR_RAFT_LOG pLogEntry)
     PVDIR_RAFT_LOG pRaftLog = NULL;
     int iSize = 0;
 
-    unsigned char *reader = pLogEntry->packRaftLog.lberbv_val;
-    unsigned char *end = pLogEntry->packRaftLog.lberbv_val + pLogEntry->packRaftLog.lberbv_len;
+    unsigned char *reader = (unsigned char *) pLogEntry->packRaftLog.lberbv_val;
+    unsigned char *end = (unsigned char *)(pLogEntry->packRaftLog.lberbv_val + pLogEntry->packRaftLog.lberbv_len);
 
     if (pLogEntry->packRaftLog.lberbv_val == NULL ||
         pLogEntry->packRaftLog.lberbv_len < RAFT_LOG_HEADER_LEN)
@@ -898,7 +898,7 @@ VmDirUnpackLogEntries(PDEQUE pChglogs, PVDIR_RAFT_LOG pLogEntry)
        {
            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
        }
-       logEntry.packRaftLog.lberbv_val = reader;
+       logEntry.packRaftLog.lberbv_val = (PSTR) reader;
        logEntry.packRaftLog.lberbv_len = iSize;
        dwError = _VmDirUnpackLogEntry(&logEntry);
        BAIL_ON_VMDIR_ERROR(dwError);
@@ -986,7 +986,7 @@ _VmDirDecodeUINT64(
 }
 
 VOID
-_VmDirChgLogFree(
+VmDirChgLogFree(
     PVDIR_RAFT_LOG chgLog,
     BOOLEAN freeSelf
 )
@@ -1021,7 +1021,7 @@ _VmDirGetLogTerm(UINT64 index, UINT32 *term)
      *term = logEntry.term;
 
 cleanup:
-    _VmDirChgLogFree(&logEntry, FALSE);
+    VmDirChgLogFree(&logEntry, FALSE);
     return dwError;
 
 error:

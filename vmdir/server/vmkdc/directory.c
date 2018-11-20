@@ -72,7 +72,7 @@ VmKdcInitializeDirectory(
         pszRealm = pGlobals->pszDefaultRealm;
 
         dwError = VmKdcDecodeMasterKey(
-                        gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val, //pMasterKeyBlob,
+                        (PBYTE) gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val, //pMasterKeyBlob,
                         (DWORD) gVmdirKrbGlobals.bervMasterKey.lberbv.bv_len, //dwMasterKeySize,
                         &master);
         BAIL_ON_VMKDC_ERROR(dwError);
@@ -338,7 +338,7 @@ VmKdcFindKeyByEType(
     dwError = 0;
     for (k=0; k<pDirectoryEntry->keyset->numKeys; k++)
     {
-        if (etype == pDirectoryEntry->keyset->keys[k]->type)
+        if ((DWORD)etype == (DWORD)pDirectoryEntry->keyset->keys[k]->type)
         {
             pKey = pDirectoryEntry->keyset->keys[k];
             goto found_key;

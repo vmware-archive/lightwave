@@ -18,6 +18,7 @@
 #include <vmdirsys.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
+#include <arpa/inet.h>
 
 #else
 

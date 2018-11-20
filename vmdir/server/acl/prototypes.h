@@ -102,12 +102,6 @@ VmDirAppendAllowAceForEntry(
     ACCESS_MASK accessMask
     );
 
-DWORD
-VmDirSecurityAclSelfRelativeToAbsoluteSD(
-    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppAbsolute,
-    PSECURITY_DESCRIPTOR_RELATIVE   pRelative
-    );
-
 // objectSid.c
 void
 VmDirFindDomainRidSequenceWithDN(

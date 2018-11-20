@@ -1254,7 +1254,7 @@ hashFuncSHA256(
     DWORD   dwError = 0;
 
     // TODO: error handling?
-    SHA256(pszPassword, uPasswordLen, pszOutBuf);
+    SHA256((PUCHAR) pszPassword, uPasswordLen, (PUCHAR) pszOutBuf);
 
     return dwError;
 }
@@ -1270,7 +1270,7 @@ hashFuncSHA512(
     DWORD       dwError = 0;
 
     // TODO: error handling?
-    SHA512(pszPassword, uPasswordLen, pszOutBuf);
+    SHA512((PUCHAR) pszPassword, uPasswordLen, (PUCHAR) pszOutBuf);
 
     return dwError;
 }
@@ -1285,7 +1285,7 @@ hashFuncSHA1(
 {
     DWORD       dwError = 0;
 
-    SHA1(pszPassword, uPasswordLen, pszOutBuf);
+    SHA1((PUCHAR) pszPassword, uPasswordLen, (PUCHAR) pszOutBuf);
 
     return dwError;
 }

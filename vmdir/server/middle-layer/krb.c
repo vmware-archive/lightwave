@@ -192,7 +192,7 @@ VmDirKrbUPNKeySet(
         {
             /* Decode existing key to get kvno value */
             dwError = VmDirKeySetGetKvno(
-                          pAttrUPN->vals[0].lberbv.bv_val,
+                          (PBYTE) pAttrUPN->vals[0].lberbv.bv_val,
                           (DWORD) pAttrUPN->vals[0].lberbv.bv_len,
                           &kvno);
         }
@@ -218,7 +218,7 @@ VmDirKrbUPNKeySet(
         {
             /* Decode existing key to get kvno value */
             dwError = VmDirKeySetGetKvno(
-                          pOldKeyBlob->vals[0].lberbv.bv_val,
+                          (PBYTE) pOldKeyBlob->vals[0].lberbv.bv_val,
                           (DWORD) pOldKeyBlob->vals[0].lberbv.bv_len,
                           &kvno);
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -322,14 +322,14 @@ VmDirKrbCreateKeyBlob(
         dwError = VmKdcStringToKeysEncrypt(
                       pBervPrincipalName->lberbv.bv_val,
                       pBervPasswd->lberbv.bv_val,
-                      gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
+                      (PBYTE) gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
                       (DWORD)gVmdirKrbGlobals.bervMasterKey.lberbv.bv_len,
                       dwKvno,
                       &pKeyBlob,
                       &dwKeyLen);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pOutKeyBlob->lberbv.bv_val = pKeyBlob;
+        pOutKeyBlob->lberbv.bv_val = (PVOID) pKeyBlob;
         pOutKeyBlob->lberbv.bv_len = dwKeyLen;
         pOutKeyBlob->bOwnBvVal = TRUE;
         pKeyBlob = NULL;

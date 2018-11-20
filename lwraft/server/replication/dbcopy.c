@@ -352,7 +352,7 @@ _VmDirGetRemoteDBUsingRPC(
                  &low_xlognum,
                  &remoteDbSizeMb,
                  &remoteDbMapSizeMb,
-                 localDir,
+                 (PBYTE) localDir,
                  VMDIR_MAX_FILE_NAME_LEN);
     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -381,7 +381,7 @@ _VmDirGetRemoteDBUsingRPC(
                  &high_xlognum,
                  &remoteDbSizeMb,
                  &remoteDbMapSizeMb,
-                 localDir,
+                 (PBYTE) localDir,
                  VMDIR_MAX_FILE_NAME_LEN);
     BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -423,7 +423,7 @@ cleanup:
             &xlognum,
             &remoteDbSizeMb,
             &remoteDbMapSizeMb,
-            localDir,
+            (PBYTE) localDir,
             VMDIR_MAX_FILE_NAME_LEN);
     }
 

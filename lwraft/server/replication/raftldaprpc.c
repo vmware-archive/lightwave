@@ -708,7 +708,7 @@ cleanup:
         VmDirPersistTerm(newTerm);
     }
 
-    _VmDirChgLogFree(&chgLog, FALSE);
+    VmDirChgLogFree(&chgLog, FALSE);
 
     //Raft inconsistency may occur if fatal error detected.
     assert(!bFatalError);

@@ -240,7 +240,7 @@ TestAclWritePermissionRespected(
                 pState->pLdLimited,
                 pszUserContainerDN,
                 ATTR_ACL_STRING,
-                pszContainerSD,
+                (PBYTE)pszContainerSD,
                 strlen(pszContainerSD));
     TestAssert(dwError == LDAP_INSUFFICIENT_ACCESS);
 
@@ -251,7 +251,7 @@ TestAclWritePermissionRespected(
                 pState->pLd,
                 pszUserContainerDN,
                 ATTR_ACL_STRING,
-                pszContainerSD,
+                (PBYTE)pszContainerSD,
                 strlen(pszContainerSD));
     TestAssert(dwError == 0);
 

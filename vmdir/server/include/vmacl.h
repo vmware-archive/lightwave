@@ -334,6 +334,12 @@ VmDirSetDefaultSecurityDescriptorForClass(
     PCSTR   pszDacl
     );
 
+DWORD
+VmDirSecurityAclSelfRelativeToAbsoluteSD(
+    PSECURITY_DESCRIPTOR_ABSOLUTE*  ppAbsolute,
+    PSECURITY_DESCRIPTOR_RELATIVE   pRelative
+    );
+
 // sdcalc.c
 DWORD
 VmDirComputeObjectSecurityDescriptor(

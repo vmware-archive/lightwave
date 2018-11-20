@@ -45,6 +45,8 @@
 #include <ldaphead.h>
 #include <vmacl.h>
 #include <replication.h>
+#include <clusterstate.h>
+#include <resthead.h>
 
 #include <middlelayer.h>
 

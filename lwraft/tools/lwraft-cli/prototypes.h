@@ -58,6 +58,13 @@ RaftCliDemoteA(
     PCSTR     pszLeaveNode
     );
 
+DWORD
+RaftCliStartVoteA(
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszServerName
+    );
+
 // clibackup.c
 DWORD
 RaftCliDBBackup(

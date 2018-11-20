@@ -84,6 +84,7 @@
 #include <indexcfg.h>
 #include <schema.h>
 #include <middlelayer.h>
+#include <mdbstore.h>
 
 #include "defines.h"
 #include "structs.h"

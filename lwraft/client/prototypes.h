@@ -734,3 +734,9 @@ DWORD
 VmDirRaftFollowerInitiateVote(
     PVMDIR_SERVER_CONTEXT   hBinding
     );
+
+/* client.c */
+DWORD
+VmDirLocalServerReset(
+    UINT32  *pServerState
+    );

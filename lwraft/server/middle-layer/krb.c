@@ -281,13 +281,13 @@ _VmDirKrbCreateKeyBlob(
         dwError = VmKdcStringToKeysEncrypt(
                       pBervPrincipalName->lberbv.bv_val,
                       pBervPasswd->lberbv.bv_val,
-                      gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
+                      (PBYTE)gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
                       (DWORD)gVmdirKrbGlobals.bervMasterKey.lberbv.bv_len,
                       &pKeyBlob,
                       &dwKeyLen);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pOutKeyBlob->lberbv.bv_val = pKeyBlob;
+        pOutKeyBlob->lberbv.bv_val = (PSTR) pKeyBlob;
         pOutKeyBlob->lberbv.bv_len = dwKeyLen;
         pOutKeyBlob->bOwnBvVal = TRUE;
         pKeyBlob = NULL;

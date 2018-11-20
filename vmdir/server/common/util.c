@@ -1721,3 +1721,32 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszAttrVal);
     goto cleanup;
 }
+
+DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszValue = NULL;
+    va_list args;
+
+    va_start(args, pszFormat);
+    dwError = VmDirVsnprintf(&pszValue, pszFormat, args);
+    va_end(args);
+
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pbvValue->lberbv_val = pszValue;
+    pbvValue->lberbv_len = VmDirStringLenA(pszValue);
+    pbvValue->bOwnBvVal = TRUE;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszValue);
+    goto cleanup;
+}

@@ -837,7 +837,7 @@ _VmDirSynchronizeRidSequence(
     VDIR_ENTRY_ARRAY    entryArray = {0};
     PSTR                pszObjectSid = NULL;
     DWORD               dwCnt = 0;
-    VDIR_BERVALUE       bvRID = VDIR_BERVALUE_INIT;
+//    VDIR_BERVALUE       bvRID = VDIR_BERVALUE_INIT;
     char                buf64[ 64+1 ] = {0};
 
     // Walk down from the next batch and look for the first used
@@ -885,8 +885,8 @@ _VmDirSynchronizeRidSequence(
         dwError = VmDirStringPrintFA( buf64, sizeof(buf64), "%u", dwCnt );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvRID.lberbv_val = buf64;
-        bvRID.lberbv_len = VmDirStringLenA(buf64);
+        //bvRID.lberbv_val = buf64;
+        //bvRID.lberbv_len = VmDirStringLenA(buf64);
 
         // TODO
         // This causes mdb deadlock during non-first node promotion

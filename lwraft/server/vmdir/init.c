@@ -25,6 +25,11 @@
 
 #define VDIR_OPEN_FILES_MAX 16384
 
+DWORD
+OidcClientGlobalInit(
+    VOID
+    );
+
 static
 DWORD
 InitializeCFGEntries(
@@ -60,9 +65,6 @@ _VmDirWriteBackInvocationId(VOID);
 static
 DWORD
 _VmDirGenerateInvocationId(VOID);
-
-int
-LoadServerGlobals(BOOLEAN *pbWriteInvocationId);
 
 static
 DWORD
@@ -1214,34 +1216,5 @@ cleanup:
 
 error:
     VmDirFreeStrArray(ppszServerInfo);
-    goto cleanup;
-}
-
-DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    )
-{
-    DWORD dwError = 0;
-    PSTR pszValue = NULL;
-    va_list args;
-
-    va_start(args, pszFormat);
-    dwError = VmDirVsnprintf(&pszValue, pszFormat, args);
-    va_end(args);
-
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pbvValue->lberbv_val = pszValue;
-    pbvValue->lberbv_len = VmDirStringLenA(pszValue);
-    pbvValue->bOwnBvVal = TRUE;
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_SAFE_FREE_MEMORY(pszValue);
     goto cleanup;
 }

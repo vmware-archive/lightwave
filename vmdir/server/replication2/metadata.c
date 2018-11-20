@@ -138,7 +138,6 @@ _VmDirReplPopulateAttrNewMetaData(
     PLW_HASHMAP    pMetaDataMap
     )
 {
-    PSTR                        pszAttrType = NULL;
     DWORD                       dwError = 0;
     PVDIR_ATTRIBUTE             pCurrAttr = NULL;
     LW_HASHMAP_PAIR             pair = {NULL, NULL};
@@ -153,7 +152,6 @@ _VmDirReplPopulateAttrNewMetaData(
     {
         dwError = LwRtlHashMapRemove(pMetaDataMap, pCurrAttr->type.lberbv.bv_val, &pair);
 
-        pszAttrType = (PSTR) pair.pKey;
         pSupplierMetaData = (PVMDIR_ATTRIBUTE_METADATA) pair.pValue;
 
         /*

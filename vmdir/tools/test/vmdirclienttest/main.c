@@ -117,7 +117,11 @@ TestVmDirForceResetPassword(
     DWORD       dwByteSize = 0;
 
     printf( "  Account DN: ");
-    scanf("%s", pszDN);
+
+    if (scanf("%s", pszDN) < 0)
+    {
+        return;
+    }
 
     dwError = VmDirForceResetPassword( pszDN, &pLocalByte, &dwByteSize );
 
@@ -148,9 +152,18 @@ TestVmDirSetLogParameters(
     int         iMask = 0;
 
     printf( "  Log level (ERROR|WARNING|INFO|VERBOSE|DEBUG):");
-    scanf("%s", pszLogLevel);
+
+    if (scanf("%s", pszLogLevel) < 0)
+    {
+        return;
+    }
+
     printf( "  Log mask :");
-    scanf("%d", &iMask);
+
+    if (scanf("%d", &iMask) < 0)
+    {
+        return;
+    }
 
     dwError = VmDirSetLogLevel(pszLogLevel);
     if (dwError)
@@ -173,11 +186,25 @@ void TestVmDirCreateUser()
     DWORD       dwError = 0;
 
     printf( "  User account:");
-    scanf("%s", pszUserName);
+
+    if (scanf("%s", pszUserName) < 0)
+    {
+        return;
+    }
+
     printf( "  User password:");
-    scanf("%s", pszPassword);
+
+    if (scanf("%s", pszPassword) < 0)
+    {
+        return;
+    }
+
     printf( "  UPN name:");
-    scanf("%s", pszUPNName);
+
+    if (scanf("%s", pszUPNName) < 0)
+    {
+        return;
+    }
 
     dwError = VmDirCreateUser(
         pszUserName,
@@ -194,6 +221,7 @@ void TestVmDirCreateUserEx()
     char   szAdmin[] = "Administrator";
     char   szDomain[] = "vsphere.local";
     char   szServer[SIZE_256] = {0};
+    PSTR   pszServer = szServer;
     char   szAdminPassword[SIZE_256] = {0};
     char   szUserName[SIZE_256] = {0};
     char   szAccount[SIZE_256] = {0};
@@ -205,22 +233,56 @@ void TestVmDirCreateUserEx()
     VMDIR_USER_CREATE_PARAMS_A createParams = {0};
 
     printf("DC:");
-    scanf("%s", szServer);
+
+    if (scanf("%s", szServer) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("Password (%s@%s):", szAdmin, szDomain);
-    scanf("%s", szAdminPassword);
+
+    if (scanf("%s", szAdminPassword) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("First name:");
-    scanf("%s", szFirstname);
+
+    if (scanf("%s", szFirstname) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("Last name:");
-    scanf("%s", szLastname);
+
+    if (scanf("%s", szLastname) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("Account name:");
-    scanf("%s", szAccount);
+
+    if (scanf("%s", szAccount) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("Common name:");
-    scanf("%s", szUserName);
+
+    if (scanf("%s", szUserName) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf("Password:");
-    scanf("%s", szPassword);
+
+    if (scanf("%s", szPassword) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
 
     dwError = VmDirOpenServerA(
-                   IsNullOrEmptyString(szServer) ? "localhost" : szServer,
+                   IsNullOrEmptyString(pszServer) ? "localhost" : szServer,
                    szAdmin,
                    szDomain,
                    szAdminPassword,
@@ -266,7 +328,11 @@ TestVmDirReplNow()
     PSTR        pszLocalErrorMsg = NULL;
 
     printf("Enter partner hostname: ");
-    scanf("%s", pszServerName);
+
+    if (scanf("%s", pszServerName) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
 
     dwError = VmDirReplNow( pszServerName );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( dwError, (pszLocalErrorMsg),
@@ -385,7 +451,10 @@ int _tmain(int argc, TCHAR *targv[])
         printf( "8. TestVmDirSetLogParameters\n");
         printf( "9. TestVmDirCreateUserEx\n");
         printf( "==================\n\n");
-        scanf("%d", &choice);
+        if (scanf("%d", &choice) < 0)
+        {
+            goto cleanup;
+        }
 
         if (!choice)
         {

@@ -179,7 +179,7 @@ VmDirRefreshActPassword(
                     dwError = VmDirLdapModReplaceAttribute( pLD,
                                                             pszActDN,
                                                             ATTR_USER_PASSWORD,
-                                                            pByteDCAccountPasswd);
+                                                            (PCSTR) pByteDCAccountPasswd);
                     if (dwError == LDAP_CONSTRAINT_VIOLATION)
                     {
                         continue;
@@ -195,7 +195,7 @@ VmDirRefreshActPassword(
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
 
-                *ppszNewPassword = pByteDCAccountPasswd;
+                *ppszNewPassword = (PSTR) pByteDCAccountPasswd;
                 pByteDCAccountPasswd = NULL;
                 VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Act (%s) password refreshed", pszActUPN);
             }
@@ -337,7 +337,7 @@ VmDirResetMachineActCred(
         }
 
         //set the new password in the machine registry
-        dwError = VmDirConfigSetDCAccountPassword(pszNewPassword,
+        dwError = VmDirConfigSetDCAccountPassword((PCSTR) pszNewPassword,
                                                   pszNewPasswordSize);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -670,6 +670,11 @@ VmDirSetupHostInstance(
     // Generate an initial DC account password and store it in the registry.
 
     err = RAND_pseudo_bytes(pszDCAccountPassword, VMDIR_KDC_RANDOM_PWD_LEN);
+    if (err != 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_HASH);
+    }
+
     for (i=0; i<VMDIR_KDC_RANDOM_PWD_LEN; i++)
     {
         pszDCAccountPassword[i] &= 0x7f;
@@ -681,8 +686,8 @@ VmDirSetupHostInstance(
     pszDCAccountPassword[VMDIR_KDC_RANDOM_PWD_LEN] = '\0';
 
     dwError = VmDirConfigSetDCAccountPassword(
-                        pszDCAccountPassword,
-                        (DWORD) VmDirStringLenA(pszDCAccountPassword));
+                        (PCSTR) pszDCAccountPassword,
+                        (DWORD) VmDirStringLenA((PCSTR) pszDCAccountPassword));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Determine the name of lotus server
@@ -996,7 +1001,7 @@ VmDirServerReset(
         BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirLocalServerReset(&pState);
+    dwError = VmDirLocalServerReset(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s succeded", __FUNCTION__);
@@ -2420,7 +2425,7 @@ _VmDirModDcPassword(
     dwError = VmDirLdapModReplaceAttribute(pLD,
                                            pszMachineActDn,
                                            ATTR_USER_PASSWORD,
-                                           pszNewPassword);
+                                           (PCSTR) pszNewPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Update account (%s) password on node (%s)", pszMachineActDn, pszHostName);
@@ -2603,9 +2608,9 @@ VmDirSetBackendState(
     *pdwDbSizeMb = 0;
     *pdwDbMapSizeMb = 0;
 
-    readBufferContainer.dwCount = VmDirStringLenA(pDbPath);
+    readBufferContainer.dwCount = (UINT32) VmDirStringLenA((PCSTR) pDbPath);
 
-    dwError = VmDirAllocateStringA(pDbPath, (PSTR *)&readBufferContainer.data);
+    dwError = VmDirAllocateStringA((PCSTR) pDbPath, (PSTR *)&readBufferContainer.data);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_RPC_TRY

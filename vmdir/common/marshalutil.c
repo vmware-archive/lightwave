@@ -191,7 +191,7 @@ VmDirMarshal(
 				pCursor += sizeof (size_t);
                                 dwError = VmDirCheckMemory (stringLength, &dwActualResponseSz);
                                 BAIL_ON_VMDIR_ERROR (dwError);
-				strncpy (pCursor, tempString, stringLength);
+				strncpy ((PSTR)pCursor, tempString, stringLength);
 				pCursor += stringLength;
 				break;
 			case VMW_IPC_TYPE_WSTRING:
@@ -375,7 +375,7 @@ VmDirUnMarshal(
 				dwError = VmDirAllocateMemory (stringLength+1,(PVOID *)&pTempString);
 				BAIL_ON_VMDIR_ERROR (dwError);
 
-				strncpy(pTempString,pResponse,stringLength);
+				strncpy((PSTR)pTempString, (PSTR)pResponse, stringLength);
 				pTempString[stringLength] = '\0';
 				pResponse += stringLength;
 				dwBytesRead += stringLength;

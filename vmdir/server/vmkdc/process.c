@@ -431,7 +431,7 @@ VmKdcProcessAsReq(
      */
     for (i=0; i<asRequest->req_body.etype.count; i++)
     {
-        if (asRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+        if ((DWORD)asRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
         {
             etype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
             dwError = VmKdcMakeSaltForEtype(
@@ -458,7 +458,7 @@ VmKdcProcessAsReq(
 
             break;
         }
-        if (asRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
+        if ((DWORD)asRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
         {
             etype = ENCTYPE_ARCFOUR_HMAC_MD5;
         }
@@ -495,7 +495,7 @@ VmKdcProcessAsReq(
         dwError2 = VmKdcMakeSalt(
                        etype,
                        dwSaltStringLen,
-                       pszSaltString,
+                       (PUCHAR) pszSaltString,
                        &pSalt);
         BAIL_ON_VMKDC_ERROR(dwError2);
 
@@ -779,12 +779,12 @@ VmKdcProcessTgsReq(
      */
     for (i=0; i<tgsRequest->req_body.etype.count; i++)
     {
-        if (tgsRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
+        if ((DWORD)tgsRequest->req_body.etype.type[i] == ENCTYPE_AES256_CTS_HMAC_SHA1_96)
         {
             etype = ENCTYPE_AES256_CTS_HMAC_SHA1_96;
             break;
         }
-        if (tgsRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
+        if ((DWORD)tgsRequest->req_body.etype.type[i] == ENCTYPE_ARCFOUR_HMAC_MD5)
         {
             etype = ENCTYPE_ARCFOUR_HMAC_MD5;
         }

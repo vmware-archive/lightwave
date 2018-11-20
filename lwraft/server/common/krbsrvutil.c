@@ -91,8 +91,8 @@ VmKdcGenerateMasterKey(
     krb5_keyblock keyBlock = {0};
     krb5_keyblock keyBlockClear = {0};
     krb5_context krb5Context;
-    ssize_t asn1_masterkey_len = 0;
-    ssize_t asn1_encmasterkey_len = 0;
+    size_t asn1_masterkey_len = 0;
+    size_t asn1_encmasterkey_len = 0;
     ssize_t len = 0;
     PBYTE asn1_masterkey = NULL;
     PBYTE asn1_encmasterkey = NULL;
@@ -337,7 +337,7 @@ _VmKdcAsn1EncodeStringToKeys(
 {
     DWORD dwError = 0;
     PBYTE asn1_keyset = NULL;
-    ssize_t asn1_keyset_len = 0;
+    size_t asn1_keyset_len = 0;
     krb5_error_code err = 0;
     ssize_t len = 0;
     KrbKeySet inKeySet = {0};
@@ -1284,7 +1284,7 @@ VmDirMigrateUserKey(
     KrbMKey     newMKey = {0};
     size_t      newMKeyLen = 0;
     PBYTE       new_keyset = NULL;
-    ssize_t     new_keyset_len = 0;
+    size_t     new_keyset_len = 0;
 
     krb5_context    krb5Context = {0};
     BOOLEAN         krb5ContextInitialized = 0;

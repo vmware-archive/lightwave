@@ -335,11 +335,10 @@ _VmDirLog1(
     const char* logLevelTag = "";
     struct      timespec tspec = {0};
     struct      tm mytm = {0};
-    DWORD       dwError = 0;
     DWORD       logLength = 0;
     PVMDIR_THREAD_LOG_CONTEXT pThreadLogContextVal = NULL;
 
-    dwError = VmDirGetThreadLogContextValue(&pThreadLogContextVal);
+    VmDirGetThreadLogContextValue(&pThreadLogContextVal);
     // ignore error
 
     if (pThreadLogContextVal)

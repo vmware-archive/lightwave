@@ -182,7 +182,7 @@ VmDirSrvForceResetPassword(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pContainer->dwCount = (DWORD)VmDirStringLenA(pLocalPassword);
-    pContainer->data    = pLocalPassword;
+    pContainer->data    = (PUCHAR) pLocalPassword;
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTargetUPN) );
 
@@ -1180,7 +1180,7 @@ _VmDirRPCCheckAccess(
 
     if ( dwRpcFlags & VMDIR_RPC_FLAG_REQUIRE_AUTHZ )
     {
-        dwError = VmDirAdministratorAccessCheck(authPrinc, (PCSTR) pszDomainDn);
+        dwError = VmDirAdministratorAccessCheck((PCSTR) authPrinc, (PCSTR) pszDomainDn);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "%s: Authorized user %s", __FUNCTION__, authPrinc);
@@ -1926,7 +1926,7 @@ Srv_RpcVmDirSetBackendState(
 
     dwError = VmDirRpcAllocateMemory( dwDbPathSize, (PVOID*)&(pData) );
     BAIL_ON_VMDIR_ERROR(dwError);
-    dwError = VmDirSetMdbBackendState(fileTransferState, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, pData, dwDbPathSize);
+    dwError = VmDirSetMdbBackendState(fileTransferState, &dwXlogNum, &dwDbSizeMb, &dwDbMapSizeMb, (PSTR) pData, dwDbPathSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s db state set to (%u)", __FUNCTION__, fileTransferState);

@@ -299,11 +299,6 @@ typedef struct _VMDIR_DB_CROSS_CHECK_GLOBALS
 
 extern VMDIR_DB_CROSS_CHECK_GLOBALS gVmdirDBCrossCheck;
 
-typedef struct _VMDIR_WRITE_QUEUE
-{
-    PVDIR_LINKED_LIST  pList;
-} VMDIR_WRITE_QUEUE, *PVMDIR_WRITE_QUEUE;
-
 typedef struct _VMDIR_SERVER_OPERATIONS_GLOBALS
 {
     PVMDIR_MUTEX         pMutex;
@@ -605,6 +600,16 @@ VmDirSrvStatMetricsShutdown(
     VOID
     );
 
+DWORD
+VmDirLwGitHashMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirLwGitHashMetricsShutdown(
+    VOID
+    );
+
 // promote/dcactmgmt.c
 DWORD
 VmDirCreateDomainController(
@@ -617,6 +622,88 @@ VmDirWriteQueueSize(
     PVMDIR_WRITE_QUEUE          pWriteQueue
     );
 
+// vmdir/dbcrosschk.c
+DWORD
+VmDirInitDBCrossChkThread(
+    VOID
+    );
+
+// vmdir/trusts.c
+DWORD
+VmDirKrbGetTrustAuthInfo(
+    PCSTR  pszDN,
+    DWORD  dwTrustDirection,
+    PBYTE* ppByteAuthInfo,
+    DWORD* pdwAuthInfoLen
+    );
+
+// vmdir/init.c
+int
+LoadServerGlobals(
+    BOOLEAN*    pbWriteInvocationId
+    );
+
+DWORD
+VmDirInit(
+    VOID
+    );
+
+// vmdir/rpcstring.c
+ULONG
+VmDirRpcAllocateStringW(
+    PWSTR  pwszSrc,
+    PWSTR* ppwszDst
+    );
+
+ULONG
+VmDirRpcAllocateStringWFromA(
+    PSTR    pszSrc,
+    PWSTR*  ppszDst
+    );
+
+ULONG
+VmDirRpcAllocateStringAFromW(
+    PWSTR  pwszSrc,
+    PSTR*  ppszDst
+    );
+
+// vmdir/parseargs.c
+
+DWORD
+VmDirParseArgs(
+    int         argc,
+    char*       argv[],
+    PCSTR*      ppszBootstrapSchemaFile,
+    int*        pLoggingLevel,
+    PCSTR*      ppszLogFileName,
+    PBOOLEAN    pbEnableSysLog,
+    PBOOLEAN    pbConsoleMode
+    );
+
+VOID
+ShowUsage(
+    PSTR pName
+    );
+
+#ifndef _WIN32
+
+// vmdir/signals.c
+VOID
+VmDirBlockSelectedSignals(
+    VOID
+    );
+
+DWORD
+VmDirHandleSignals(
+    VOID
+    );
+
+// vmdir/regconfig.c
+VOID
+VmDirSrvFreeConfig(
+    VOID
+    );
+#endif
 #ifdef __cplusplus
 }
 #endif

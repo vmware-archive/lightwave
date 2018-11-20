@@ -672,6 +672,10 @@ error:
     ber_free(ber_resp, 1);
     if (maj)
     {
+        if (min)
+        {
+            *minor_status = min;
+        }
         /* Cleanup return memory stuff here */
     }
 

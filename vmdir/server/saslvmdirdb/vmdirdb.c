@@ -90,7 +90,6 @@ vmdirdb_auxprop_lookup (
     )
 {
 
-    int             iSASLRtn = 0;
     unsigned char*  pSecret = NULL;
     unsigned int    iSecretLen = 0;
     const struct propval*   pVal = NULL;
@@ -109,10 +108,10 @@ vmdirdb_auxprop_lookup (
                     // if have value, erase it then add new value back
                     pSrvParams->utils->prop_erase( pSrvParams->propctx, pVal[iIdx].name );
 
-                    iSASLRtn = pSrvParams->utils->prop_set(
+                    pSrvParams->utils->prop_set(
                                                 pSrvParams->propctx,
                                                 pVal[iIdx].name,
-                                                pSecret,
+                                                (const char *) pSecret,
                                                 iSecretLen);
                     // SASL code ldapdb.c/sasldb.c ignore this return code
                     // If this property is not set, subsequent srp code treats it as

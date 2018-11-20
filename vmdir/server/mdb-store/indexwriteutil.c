@@ -222,7 +222,7 @@ MdbDeleteAllReccord(
         }
 
         {
-            unsigned char* p = (char*)currKey.mv_data;
+            unsigned char* p = (unsigned char*)currKey.mv_data;
             VMDIR_LOG_VERBOSE(
                 LDAP_DEBUG_BACKEND,
                 "delete key size %d key %02X %02X %02X %02X %02X %02X %02X",
@@ -529,7 +529,6 @@ MdbValidateAttrUniqueness(
     )
 {
     DWORD   dwError = 0;
-    size_t  entryDnLen = 0;
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator = NULL;
     PLW_HASHMAP             pOccupiedScopes = NULL;
     LW_HASHMAP_ITER         iter = LW_HASHMAP_ITER_INIT;
@@ -667,8 +666,6 @@ MdbValidateAttrUniqueness(
     }
 
     // check if the new entry dn matches any occupied scope
-    entryDnLen = VmDirStringLenA(pszEntryDN);
-
     LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pOccupiedScopes, &iter, &pair))
     {

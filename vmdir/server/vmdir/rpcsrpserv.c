@@ -72,7 +72,7 @@ static long _get_srp_secret_decoded(
      * by this implementation
      */
     sts = VmDirSRPGetIdentityData(
-              username,
+              (PCSTR) username,
               &srp_secret_str,
               &srp_secret_str_len);
     if (sts)
@@ -87,9 +87,9 @@ static long _get_srp_secret_decoded(
         goto error;
     }
     srp_secret_len_max = srp_secret_str_len;
-    sts = sasl_decode64(srp_secret_str,
+    sts = sasl_decode64((PCSTR) srp_secret_str,
                         srp_secret_str_len,
-                        srp_secret,
+                        (PSTR) srp_secret,
                         srp_secret_len_max,
                         &srp_secret_len);
     if (sts != SASL_OK)
@@ -257,7 +257,7 @@ long Srv_rpc_srp_verifier_new(
      */
     ver = srp_verifier_new(alg,
                            ng_type,
-                           username,
+                           (PCSTR) username,
                            srp_data.salt,
                            (int) srp_data.salt_len,
                            srp_data.v,

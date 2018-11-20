@@ -50,6 +50,7 @@
 
 #include <backend.h>
 #include <mdbstore.h>
+#include <middlelayer.h>
 
 //#include "defines.h"
 #include "structs.h"

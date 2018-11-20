@@ -252,7 +252,7 @@ VmDirEntrySHA1Digest(
     DWORD           dwSizeLimit = 128;
     unsigned        dwCnt = 0;
     SHA_CTX         shaCtx = {0};
-    char            sha1Digest[SHA_DIGEST_LENGTH] = {0};
+    unsigned char   sha1Digest[SHA_DIGEST_LENGTH] = {0};
     VDIR_BERVALUE** ppVdirBV = NULL;
 
 

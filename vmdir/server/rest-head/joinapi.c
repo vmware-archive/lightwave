@@ -63,7 +63,7 @@ _VmDirGetJoinResultKrbInfo(
     {
         pKrbBlob = &pKrbInfo->pKrbBlobs[dwIndex];
 
-        dwError = sasl_encode64(pKrbBlob->krbBlob,
+        dwError = sasl_encode64((PCSTR) pKrbBlob->krbBlob,
                                 pKrbBlob->dwCount,
                                 NULL,
                                 0,
@@ -77,7 +77,7 @@ _VmDirGetJoinResultKrbInfo(
         dwError = VmDirAllocateMemory(nOutLength + 1, (PVOID *)&pszBlobBase64);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = sasl_encode64(pKrbBlob->krbBlob,
+        dwError = sasl_encode64((PCSTR) pKrbBlob->krbBlob,
                                 pKrbBlob->dwCount,
                                 pszBlobBase64,
                                 nOutLength + 1,

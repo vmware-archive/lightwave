@@ -54,7 +54,7 @@ SpecifyingAclStringAndSecurityDescriptorShouldFail(
                 &dwLength);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    bvSecurityDescriptor.bv_val = pbSecurityDescriptor;
+    bvSecurityDescriptor.bv_val = (PSTR)pbSecurityDescriptor;
     bvSecurityDescriptor.bv_len = dwLength;
     bvSecurityDescriptorValues[0] = &bvSecurityDescriptor;
     mod[8].mod_op = LDAP_MOD_ADD | LDAP_MOD_BVALUES;

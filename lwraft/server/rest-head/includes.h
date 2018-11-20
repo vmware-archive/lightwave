@@ -18,6 +18,7 @@
 #include <vmdirsys.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
+#include <arpa/inet.h>
 
 #include <ldap_log.h>
 
@@ -51,6 +52,8 @@
 #include <resthead.h>
 #include <schema.h>
 #include <vmdirserver.h>
+#include <vmacl.h>
+#include <replication.h>
 
 #ifdef REST_ENABLED
 

@@ -690,7 +690,6 @@ LockoutCacheRecGet(
 {
     DWORD                   dwError = 0;
     BOOLEAN                 bInLock = FALSE;
-    PCSTR                   pszErrorContext = NULL;
     PLW_HASHTABLE_NODE      pNode = NULL;
     PVDIR_LOCKOUT_REC       pLockoutRec = NULL;
 
@@ -700,7 +699,6 @@ LockoutCacheRecGet(
 
     if (gVdirLockoutCache.pHashTbl)
     {
-        pszErrorContext = "lockout cache lookup";
         dwError = LwRtlHashTableFindKey(
                         gVdirLockoutCache.pHashTbl,
                         &pNode,

@@ -417,6 +417,11 @@ VmDirSrvStatMetricsShutdown(
     VOID
     );
 
+// vmdir/init.c
+int
+LoadServerGlobals(
+    BOOLEAN *pbWriteInvocationId
+    );
 #ifdef __cplusplus
 }
 #endif

@@ -714,6 +714,11 @@ typedef enum
 
 } VDIR_OPERATION_PROTOCOL;
 
+typedef struct _VMDIR_WRITE_QUEUE
+{
+    PVDIR_LINKED_LIST  pList;
+} VMDIR_WRITE_QUEUE, *PVMDIR_WRITE_QUEUE;
+
 typedef struct _VMDIR_WRITE_QUEUE_ELEMENT
 {
     USN   usn;
@@ -1478,6 +1483,13 @@ VmDirDNCopySingleAttributeString(
     PSTR    *ppszAttrVal
     );
 
+DWORD
+VmDirAllocateBerValueAVsnprintf(
+    PVDIR_BERVALUE pbvValue,
+    PCSTR pszFormat,
+    ...
+    );
+
 //accnt_mgmt.c
 DWORD
 VmDirSrvGetConnectionObj(
@@ -1985,6 +1997,13 @@ VmDirKeySetGetKvno(
     DWORD *kvno
     );
 
+DWORD
+VmDirGetKeyTabRecBlob(
+    PSTR      pszUpnName,
+    PBYTE*    ppBlob,
+    DWORD*    pdwBlobLen
+);
+
 // background.c
 DWORD
 VmDirBkgdThreadInitialize(
@@ -2216,6 +2235,36 @@ VmDirValueMetaDataCreate(
     DWORD                               dwOpCode,
     PVDIR_BERVALUE                      pBervValue,
     PVMDIR_VALUE_ATTRIBUTE_METADATA*    ppValueMetaData
+    );
+
+// writequeue.c
+DWORD
+VmDirWriteQueueElementAllocate(
+    PVMDIR_WRITE_QUEUE_ELEMENT*    ppWriteQueueEle
+    );
+
+VOID
+VmDirWriteQueueElementFree(
+    PVMDIR_WRITE_QUEUE_ELEMENT    pWriteQueueEle
+    );
+
+DWORD
+VmDirWriteQueuePush(
+    PVDIR_BACKEND_CTX           pBECtx,
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
+    );
+
+VOID
+VmDirWriteQueuePop(
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
+    );
+
+DWORD
+VmDirWriteQueueWait(
+    PVMDIR_WRITE_QUEUE          pWriteQueue,
+    PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueEle
     );
 
 #ifdef __cplusplus

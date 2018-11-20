@@ -190,7 +190,6 @@ VmDirInternalSearch(
     int     retVal = LDAP_SUCCESS;
     DWORD   dwEntryCount = 0;
     BOOLEAN bHasTxn = FALSE;
-    BOOLEAN bUseOldSearch = TRUE;
     PSTR    pszLocalErrMsg = NULL;
     ENTRYID     eId = 0;
     ENTRYID*    pValidatedEntries = NULL;
@@ -283,8 +282,6 @@ VmDirInternalSearch(
                         &pValidatedEntries,
                         &dwEntryCount);
             BAIL_ON_VMDIR_ERROR(retVal);
-
-            bUseOldSearch = FALSE;
         }
     }
 

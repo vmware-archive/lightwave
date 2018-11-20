@@ -26,4 +26,4 @@
 #include <vmdirserver.h>
 #include <ldaphead.h>
 #include <resthead.h>
-
+#include <replication.h>

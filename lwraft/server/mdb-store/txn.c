@@ -431,7 +431,7 @@ _VmDirFreeTxnLogs(PVMDIR_THREAD_TXN_CONTEXT pThreadTxnContext)
         while(!dequeIsEmpty(&pThreadTxnContext->chgLogs))
         {
             dequePopLeft(&pThreadTxnContext->chgLogs, (PVOID*)&pChgLog);
-            _VmDirChgLogFree(pChgLog, TRUE);
+            VmDirChgLogFree(pChgLog, TRUE);
         }
     }
 

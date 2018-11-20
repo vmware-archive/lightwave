@@ -865,7 +865,6 @@ _VmHandlePingReply(
     )
 {
     DWORD dwError = 0;
-    int oldTerm = 0;
     int newTerm = 0;
 
     if (pPingReply == NULL || pPingReply->fromFqdn.lberbv_val == NULL)
@@ -878,7 +877,6 @@ _VmHandlePingReply(
         BAIL_WITH_VMDIR_ERROR(dwError, pPingReply->dwError);
     }
 
-    oldTerm = gRaftState.currentTerm;
     if (pPingReply->currentTerm > gRaftState.currentTerm)
     {
         gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;

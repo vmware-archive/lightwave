@@ -35,14 +35,11 @@ VmDirShutdown(
     PBOOLEAN pbVmDirStopped
     )
 {
-    PVDIR_BACKEND_INTERFACE pBE = NULL;
     BOOLEAN bRESTHeadStopped = FALSE;
     BOOLEAN bLDAPHeadStopped = FALSE;
 
     assert(pbVmDirStopped);
     *pbVmDirStopped = FALSE;
-
-    pBE = VmDirBackendSelect(ALIAS_MAIN);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop REST listening threads", __func__);
     if (VmDirRESTServerStop() == 0)
