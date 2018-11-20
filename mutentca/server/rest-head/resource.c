@@ -147,11 +147,16 @@ LwCARestUnknownGetHttpError(
 
     case LWCA_CA_ALREADY_EXISTS:
     case LWCA_CRL_CERT_ALREADY_REVOKED:
+    case LWCA_CA_ALREADY_REVOKED:
         httpStatus = HTTP_CONFLICT;
         break;
 
     case LWCA_CA_MISSING:
         httpStatus = HTTP_NOT_FOUND;
+        break;
+
+    case LWCA_CA_REVOKED:
+        httpStatus = HTTP_FORBIDDEN;
         break;
 
     default:
