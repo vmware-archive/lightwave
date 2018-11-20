@@ -31,9 +31,11 @@ extern "C" {
 
 #include <mutentca.h>
 #include <mutentcadb.h>
+#include <mutentcaauthz.h>
 #include <mutentcacommon.h>
 #include <mutentcapkcs.h>
 #include <mutentcasrvcommon.h>
+#include <mutentcasrvauthz.h>
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>

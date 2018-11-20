@@ -529,6 +529,7 @@ LwCAGetSignedCertificate(
     time_t tmNotAfter;
     PLWCA_CERT_VALIDITY pTempValidity = NULL;
     DWORD dwDuration = 0;
+    BOOLEAN bAuthorized = FALSE;
     BOOLEAN bIsCA = FALSE;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) ||
@@ -540,6 +541,23 @@ LwCAGetSignedCertificate(
 
     dwError = LwCAPEMToX509Req(pCertRequest, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAuthZCheckAccess(
+                    pReqCtx,
+                    pcszCAId,
+                    pRequest,
+                    LWCA_AUTHZ_CSR_PERMISSION,
+                    &bAuthorized);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "[%s:%d] UPN (%s) is unauthorized to obtain a signed certificate!",
+                __FUNCTION__,
+                __LINE__,
+                pReqCtx->pszBindUPN);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
+    }
 
     dwError = LwCAPolicyValidate(
                 gpPolicyCtx,
@@ -632,6 +650,7 @@ LwCACreateIntermediateCA(
     time_t                      tmNotBefore;
     time_t                      tmNotAfter;
     BOOLEAN                     bIsCA = FALSE;
+    BOOLEAN                     bAuthorized = FALSE;
     PSTR                        pszPublicKey = NULL;
     PSTR                        pszParentCAId = NULL;
     PSTR                        pszAuthBlob = NULL;
@@ -705,12 +724,30 @@ LwCACreateIntermediateCA(
      * cache is maintained which caches encrypted key and clears
      * on GetEncryptedKey call. Fetches are always done from db
      * layer.
-    */
+     */
     dwError = LwCASecurityCreateKeyPair(pcszCAId, &pszPublicKey);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAuthZCheckAccess(
+                    pReqCtx,
+                    pszParentCAId,
+                    pRequest,
+                    LWCA_AUTHZ_CA_CREATE_PERMISSION,
+                    &bAuthorized);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "[%s:%d] UPN (%s) is unauthorized to create an intermediate CA (%s)!",
+                __FUNCTION__,
+                __LINE__,
+                pReqCtx->pszBindUPN,
+                pcszCAId);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
+    }
 
     dwError = LwCAPolicyValidate(
                 gpPolicyCtx,

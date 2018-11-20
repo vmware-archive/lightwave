@@ -463,7 +463,7 @@ _CreateCertDataArray(
     );
 
 int
-TestLwCACreateRequestContext(
+Test_LwCAAPITests_Setup(
     VOID **state
     )
 {
@@ -474,11 +474,15 @@ TestLwCACreateRequestContext(
         dwError = LwCAAllocateMemory(sizeof(LWCA_REQ_CONTEXT), (PVOID*)&pReqCtx);
         assert_int_equal(dwError, 0);
     }
+
+    dwError = LwCAAuthZInitialize(NULL);
+    assert_int_equal(dwError, 0);
+
     return 0;
 }
 
 int
-TestLwCAFreeRequestContext(
+Test_LwCAAPI_Teardown(
     VOID **state
     )
 {
@@ -486,7 +490,29 @@ TestLwCAFreeRequestContext(
     {
         LWCA_SAFE_FREE_MEMORY(pReqCtx);
     }
+
+    LwCAAuthZDestroy();
+
     return 0;
+}
+
+DWORD
+__wrap_LwCAAuthZCheckAccess(
+    PLWCA_REQ_CONTEXT               pReqCtx,
+    PCSTR                           pcszCAId,
+    X509_REQ                        *pX509Request,
+    LWCA_AUTHZ_API_PERMISSION       apiPermissions,
+    PBOOLEAN                        pbAuthorized
+    )
+{
+    assert_non_null(pReqCtx);
+    assert_non_null(pcszCAId);
+    assert_non_null(pX509Request);
+    assert_non_null(pbAuthorized);
+
+    *pbAuthorized = TRUE;
+
+    return mock();
 }
 
 DWORD
@@ -1182,6 +1208,7 @@ Test_LwCAGetSignedCertificate_Valid(
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return_always(__wrap_LwCAPolicyGetCertDuration, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
@@ -1235,6 +1262,7 @@ Test_LwCAGetSignedCertificate_Invalid(
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     dwError = LwCAGetSignedCertificate(pReqCtx, NULL, TEST_CLIENT_CSR, pValidity, signAlgorithm, &pCertificate);
@@ -1308,6 +1336,7 @@ Test_LwCACreateIntermediateCA_Valid(
     will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
     will_return_always(__wrap_LwCASecuritySignX509Request, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
@@ -1372,6 +1401,7 @@ Test_LwCACreateIntermediateCA_Invalid(
     will_return_always(__wrap_LwCASecurityCreateKeyPair, 0);
     will_return_always(__wrap_LwCASecuritySignX509Request, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     // Testcase 1: Invalid input

@@ -36,7 +36,7 @@ int main(VOID)
         cmocka_unit_test(Test_LwCAGetCACrl_Invalid),
     };
 
-    ret = cmocka_run_group_tests(tests, TestLwCACreateRequestContext, TestLwCAFreeRequestContext);
+    ret = cmocka_run_group_tests(tests, Test_LwCAAPITests_Setup, Test_LwCAAPI_Teardown);
 
     if (ret)
     {

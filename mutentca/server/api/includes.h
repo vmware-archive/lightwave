@@ -31,10 +31,12 @@
 
 #include <mutentca.h>
 #include <mutentcadb.h>
+#include <mutentcaauthz.h>
 #include <mutentcacommon.h>
 #include <mutentcaerror.h>
 #include <mutentcapkcs.h>
 #include <mutentcasrvcommon.h>
+#include <mutentcasrvauthz.h>
 #include <mutentcadbapi.h>
 #include <mutentcaapi.h>
 #include <mutentcapkcs.h>

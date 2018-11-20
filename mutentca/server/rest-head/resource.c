@@ -158,6 +158,7 @@ LwCARestUnknownGetHttpError(
         httpStatus = HTTP_NOT_FOUND;
         break;
 
+    case LWCA_ERROR_AUTHZ_UNAUTHORIZED:
     case LWCA_CA_REVOKED:
         httpStatus = HTTP_FORBIDDEN;
         break;
