@@ -278,15 +278,19 @@ VmDirTestQueueTearDownEnqueue(
 
     while (!dwError)
     {
-        VmDirQueueDequeue(bInLock, pEnqueueContext->pInputQueue, 0, (PVOID*)&pszString);
+        dwError = VmDirQueueDequeue(bInLock, pEnqueueContext->pInputQueue, 0, (PVOID*)&pszString);
         VMDIR_SAFE_FREE_MEMORY(pszString);
+    }
+    if (dwError == VMDIR_ERROR_QUEUE_EMPTY)
+    {
+        dwError = 0;
     }
 
     VmDirQueueFree(pEnqueueContext->pInputQueue);
     VmDirQueueFree(pEnqueueContext->pExpectedQueue);
     VMDIR_SAFE_FREE_MEMORY(pEnqueueContext);
 
-    return 0;
+    return dwError;
 }
 
 int
@@ -323,15 +327,19 @@ VmDirTestQueueTearDownCompare(
 
     while (!dwError)
     {
-        VmDirQueueDequeue(bInLock, pCompareContext->pLeftQueue, 0, (PVOID*)&pszString);
+        dwError = VmDirQueueDequeue(bInLock, pCompareContext->pLeftQueue, 0, (PVOID*)&pszString);
         VMDIR_SAFE_FREE_MEMORY(pszString);
+    }
+    if (dwError == VMDIR_ERROR_QUEUE_EMPTY)
+    {
+        dwError = 0;
     }
 
     VmDirQueueFree(pCompareContext->pLeftQueue);
     VmDirQueueFree(pCompareContext->pRightQueue);
     VMDIR_SAFE_FREE_MEMORY(pCompareContext);
 
-    return 0;
+    return dwError;
 }
 
 static

@@ -46,3 +46,24 @@ typedef struct _VDIR_EVENT_REPO
 }VDIR_EVENT_REPO, *PVDIR_EVENT_REPO;
 
 typedef PVDIR_EVENT PVDIR_EVENT_REPO_COOKIE;
+
+typedef struct _VDIR_WATCH_SESSION
+{
+    BOOL                    bPrevVersion;
+    DWORD                   watchSessionId;
+    DWORD                   startRevision;
+    PSTR                    pszFilter;
+    PVOID                   pConnectionHndl;
+    VDIR_BERVALUE           subTreeDn;
+    PVDIR_EVENT_REPO_COOKIE pRepoCookie;
+}VDIR_WATCH_SESSION, *PVDIR_WATCH_SESSION;
+
+typedef struct _VDIR_WATCH_SESSION_MANAGER
+{
+    DWORD               watchSessionCounter;
+    PLW_HASHMAP         pDeletedMap;
+    PVDIR_QUEUE         pActiveQueue;
+    PVDIR_QUEUE         pInactiveQueue;
+    PVDIR_EVENT_REPO    pEventRepo;
+    PVMDIR_MUTEX        pMutex;
+}VDIR_WATCH_SESSION_MANAGER, *PVDIR_WATCH_SESSION_MANAGER;

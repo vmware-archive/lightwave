@@ -67,3 +67,85 @@ VOID
 VmDirEventRepoFree(
     PVDIR_EVENT_REPO    pEventRepo
     );
+
+/* watchsession.c
+ */
+
+DWORD
+VmDirWatchSessionInit(
+    PVDIR_WATCH_SESSION*    ppWatchSession
+    );
+
+DWORD
+VmDirWatchSessionSendEvents(
+    PVDIR_WATCH_SESSION pWatchSession,
+    DWORD               eventCount
+    );
+
+VOID
+VmDirWatchSessionFree(
+    PVDIR_WATCH_SESSION pWatchSession
+    );
+
+/* watchsessionmanager.c
+ */
+
+DWORD
+VmDirWatchSessionManagerInit(
+    PVDIR_WATCH_SESSION_MANAGER*    ppWatchSessionManager,
+    PVDIR_EVENT_REPO                pEventRepo
+    );
+
+DWORD
+VmDirWatchSessionManagerAddNewSession(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager,
+    BOOL                        bPrevVersion,
+    DWORD                       startRevision,
+    PSTR                        pszFilter,
+    PVOID                       pConnectionHndl,
+    VDIR_BERVALUE               subTreeDn,
+    DWORD*                      pWatchId
+    );
+
+DWORD
+VmDirWatchSessionManagerGetNextSession(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager,
+    PVDIR_WATCH_SESSION*        ppWatchSession
+    );
+
+DWORD
+VmDirWatchSessionManagerAddActiveSession(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager,
+    PVDIR_WATCH_SESSION         pWatchSession
+    );
+
+DWORD
+VmDirWatchSessionManagerAddInactiveSession(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager,
+    PVDIR_WATCH_SESSION         pWatchSession
+    );
+
+DWORD
+VmDirWatchSessionManagerActivateSessions(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager
+    );
+
+DWORD
+VmDirWatchSessionManagerDeleteSession(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager,
+    DWORD                       dwWatchSessionId
+    );
+
+VOID
+VmDirWatchSessionManagerFree(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager
+    );
+
+/*
+ * sessionthreadmanager.c
+ */
+
+DWORD
+VmDirSessionManagerThreadInit(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager
+    );

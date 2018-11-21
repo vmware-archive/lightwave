@@ -54,9 +54,10 @@ VmDirEventRelease(
     PVDIR_EVENT   pEvent
     )
 {
-    DWORD           dwError = 0;
-    BOOL            bInLock = FALSE;
-    PVMDIR_MUTEX    pMutex = NULL;
+    DWORD                   dwError = 0;
+    BOOL                    bInLock = FALSE;
+    PVMDIR_MUTEX            pMutex = NULL;
+    PVDIR_LINKED_LIST_NODE  pHead = NULL;
 
     if (!pEvent)
     {
@@ -73,9 +74,12 @@ VmDirEventRelease(
     }
     pEvent->refCount--;
 
-    if (pEvent->refCount == 0)
+    dwError = VmDirLinkedListGetHead(pEvent->pListNode->pList, &pHead);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (((PVDIR_EVENT)pHead->pElement)->refCount == 0)
     {
-        dwError = VmDirLinkedListRemove(pEvent->pListNode->pList, pEvent->pListNode);
+        dwError = VmDirLinkedListRemove(pEvent->pListNode->pList, pHead);
         BAIL_ON_VMDIR_ERROR(dwError);
         VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
         VmDirEventFree(pEvent);
