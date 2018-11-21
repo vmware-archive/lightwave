@@ -216,6 +216,8 @@ LwCAPluginLoad(
     pFt->pFnGetCertData = &LwCADbPostPluginGetCertData;
     pFt->pFnGetCACRLNumber = &LwCADbPostPluginGetCACRLNumber;
     pFt->pFnGetParentCAId = &LwCADbPostPluginGetParentCAId;
+    pFt->pFnGetCAStatus = &LwCADbPostPluginGetCAStatus;
+    pFt->pFnGetCAAuthBlob = &LwCADbPostPluginGetCAAuthBlob;
     pFt->pFnUpdateCA = &LwCADbPostPluginUpdateCA;
     pFt->pFnUpdateCAStatus = &LwCADbPostPluginUpdateCAStatus;
     pFt->pFnUpdateCACRLNumber = &LwCADbPostPluginUpdateCACRLNumber;
@@ -866,8 +868,93 @@ error:
     LWCA_SAFE_FREE_STRINGA(pszParentCAId);
     if (ppszParentCAId)
     {
-        *ppszParentCAId = pszParentCAId;
+        *ppszParentCAId = NULL;
     }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCAAuthBlob(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PSTR                    *ppszAuthBlob
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszAuthBlob = NULL;
+    PSTR                pszResponse = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszAuthBlob)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
+                                         pcszCAId,
+                                         LWCA_POST_CA_AUTH_BLOB,
+                                         &pszResponse
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetStringAttrFromResponse(pszResponse,
+                                            LWCA_POST_CA_AUTH_BLOB,
+                                            &pszAuthBlob
+                                            );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszAuthBlob = pszAuthBlob;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+    if (ppszAuthBlob)
+    {
+        *ppszAuthBlob = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCAStatus(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_CA_STATUS         pStatus
+    )
+{
+    DWORD       dwError = 0;
+    int         status = 0;
+    PSTR        pszResponse = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pStatus)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
+                                         pcszCAId,
+                                         LWCA_POST_CA_STATUS,
+                                         &pszResponse
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetIntAttrFromResponse(pszResponse,
+                                         LWCA_POST_CA_STATUS,
+                                         &status
+                                         );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *pStatus = status;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
     goto cleanup;
 }
 

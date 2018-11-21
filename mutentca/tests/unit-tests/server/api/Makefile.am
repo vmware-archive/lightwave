@@ -42,6 +42,8 @@ testmutentcaapi_LDFLAGS = \
     -Wl,--wrap,LwCASecuritySignX509Request \
     -Wl,--wrap,LwCASecuritySignX509Crl \
     -Wl,--wrap,LwCADbCheckCertData \
+    -Wl,--wrap,LwCADbGetCAStatus \
+    -Wl,--wrap,LwCADbGetCAAuthBlob \
     -Wl,--wrap,LwCADbGetCACRLNumber \
     -Wl,--wrap,LwCADbUpdateCA \
     -Wl,--wrap,LwCADbAddCertData \

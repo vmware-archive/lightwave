@@ -36,6 +36,8 @@ LwCAPluginLoad(
     pFt->pFnGetCertData = &LwCADbTestPluginGetCertData;
     pFt->pFnGetCACRLNumber = &LwCADbTestPluginGetCACRLNumber;
     pFt->pFnGetParentCAId = &LwCADbTestPluginGetParentCAId;
+    pFt->pFnGetCAStatus = &LwCADbTestPluginGetCAStatus;
+    pFt->pFnGetCAAuthBlob = &LwCADbTestPluginGetCAAuthBlob;
     pFt->pFnUpdateCA = &LwCADbTestPluginUpdateCA;
     pFt->pFnUpdateCAStatus = &LwCADbTestPluginUpdateCAStatus;
     pFt->pFnUpdateCertData = &LwCADbTestPluginUpdateCertData;
@@ -198,6 +200,26 @@ LwCADbTestPluginGetParentCAId(
     PLWCA_DB_HANDLE             pHandle,
     PCSTR                       pcszCAId,
     PSTR                        *ppszParentCAId
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginGetCAStatus(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_CA_STATUS             pStatus
+    )
+{
+    return 0;
+}
+
+DWORD
+LwCADbTestPluginGetCAAuthBlob(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszAuthBlob
     )
 {
     return 0;

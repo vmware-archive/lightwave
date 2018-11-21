@@ -643,6 +643,39 @@ __wrap_LwCADbCheckCertData(
 }
 
 DWORD
+__wrap_LwCADbGetCAStatus(
+    PCSTR               pcszCAId,
+    PLWCA_CA_STATUS     pStatus
+    )
+{
+    assert_non_null(pcszCAId);
+    assert_non_null(pStatus);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    *pStatus = LWCA_CA_STATUS_ACTIVE;
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetCAAuthBlob(
+    PCSTR       pcszCAId,
+    PSTR        *ppszAuthBlob
+    )
+{
+    DWORD       dwError = 0;
+
+    assert_non_null(pcszCAId);
+    assert_non_null(ppszAuthBlob);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    dwError = LwCAAllocateStringA("{'user':'root', 'password':'password'}", ppszAuthBlob);
+    assert_int_equal(dwError, 0);
+
+    return mock();
+}
+
+DWORD
 __wrap_LwCADbGetCACRLNumber(
     PCSTR   pcszCAId,
     PSTR    *ppszCRLNumber

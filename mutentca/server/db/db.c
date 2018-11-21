@@ -44,6 +44,8 @@ IsValidFunctionTable(
             && pFt->pFnGetCertData
             && pFt->pFnGetCACRLNumber
             && pFt->pFnGetParentCAId
+            && pFt->pFnGetCAStatus
+            && pFt->pFnGetCAAuthBlob
             && pFt->pFnUpdateCA
             && pFt->pFnUpdateCAStatus
             && pFt->pFnUpdateCACRLNumber
@@ -382,6 +384,98 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+LwCADbGetCAStatus(
+    PCSTR               pcszCAId,
+    PLWCA_CA_STATUS     pStatus
+    )
+{
+    DWORD           dwError = 0;
+    LWCA_CA_STATUS  status = LWCA_CA_STATUS_INACTIVE;
+    BOOLEAN         bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pStatus)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetCAStatus(gDbCtx.pDbHandle, pcszCAId, &status);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *pStatus = status;
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    if (pStatus)
+    {
+        *pStatus = LWCA_CA_STATUS_INACTIVE;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbGetCAAuthBlob(
+    PCSTR   pcszCAId,
+    PSTR    *ppszAuthBlob
+    )
+{
+    DWORD       dwError = 0;
+    PSTR        pszAuthBlob = NULL;
+    PSTR        pszTmpAuthBlob = NULL;
+    BOOLEAN     bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppszAuthBlob)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnGetCAAuthBlob(gDbCtx.pDbHandle,
+                                           pcszCAId,
+                                           &pszTmpAuthBlob
+                                           );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pszTmpAuthBlob)
+    {
+        dwError = LwCAAllocateStringA(pszTmpAuthBlob, &pszAuthBlob);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppszAuthBlob = pszAuthBlob;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeString(pszTmpAuthBlob);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+    if (ppszAuthBlob)
+    {
+        *ppszAuthBlob = NULL;
+    }
+    goto cleanup;
+}
+
 
 DWORD
 LwCADbGetCertData(

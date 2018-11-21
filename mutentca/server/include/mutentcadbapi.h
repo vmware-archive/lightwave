@@ -57,6 +57,18 @@ LwCADbGetCA(
     );
 
 DWORD
+LwCADbGetCAStatus(
+    PCSTR                   pcszCAId,
+    PLWCA_CA_STATUS         pStatus
+    );
+
+DWORD
+LwCADbGetCAAuthBlob(
+    PCSTR                   pcszCAId,
+    PSTR                    *ppszAuthBlob
+    );
+
+DWORD
 LwCADbGetCACertificates(
     PCSTR                      pcszCAId,
     PLWCA_CERTIFICATE_ARRAY    *ppCertArray

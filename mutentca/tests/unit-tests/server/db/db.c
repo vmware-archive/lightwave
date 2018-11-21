@@ -375,6 +375,64 @@ Test_LwCADbGetCertData_Invalid(
 }
 
 VOID
+Test_LwCADbGetCAStatus(
+    VOID **state
+    )
+{
+    DWORD           dwError = 0;
+    LWCA_CA_STATUS  status = LWCA_CA_STATUS_INACTIVE;
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, &status);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbGetCAStatus_Invalid(
+    VOID **state
+    )
+{
+    DWORD           dwError = 0;
+    LWCA_CA_STATUS  status = LWCA_CA_STATUS_INACTIVE;
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, &status);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+VOID
+Test_LwCADbGetCAAuthBlob(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAuthBlob = NULL;
+
+    dwError = LwCADbGetCAAuthBlob(TEST_CA_ID, &pszAuthBlob);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+}
+
+VOID
+Test_LwCADbGetCAAuthBlob_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAuthBlob = NULL;
+
+    dwError = LwCADbGetCAAuthBlob(NULL, &pszAuthBlob);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCAAuthBlob(TEST_CA_ID, &pszAuthBlob);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+}
+
+VOID
 Test_LwCADbGetCACRLNumber(
     VOID **state
     )
