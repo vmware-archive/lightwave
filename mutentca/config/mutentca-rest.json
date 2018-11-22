@@ -74,7 +74,7 @@
           "rootca"
         ],
         "summary": "Get root ca certificate",
-        "description": "Returns root ca certificate\n",
+        "description": "Returns root ca certificate.\n",
         "operationId": "getRootCA",
         "parameters": [
           {
@@ -82,13 +82,19 @@
             "in": "header",
             "type": "string",
             "required": false
+          },
+          {
+            "name": "detail",
+            "in": "header",
+            "type": "boolean",
+            "required": false
           }
         ],
         "responses": {
           "200": {
             "description": "Certificate authority details\n",
             "schema": {
-              "$ref": "#/definitions/CACertificates"
+              "$ref": "#/definitions/CADetails"
             }
           },
           "default": {
@@ -128,7 +134,7 @@
           "200": {
             "description": "Certificate authority details\n",
             "schema": {
-              "$ref": "#/definitions/CACertificates"
+              "$ref": "#/definitions/CADetails"
             }
           },
           "default": {
@@ -161,13 +167,19 @@
             "required": true,
             "type": "string",
             "description": "identifies intermediate ca context in which operation is executed"
+          },
+          {
+            "name": "detail",
+            "in": "header",
+            "type": "boolean",
+            "required": false
           }
         ],
         "responses": {
           "200": {
             "description": "Certificate authority details\n",
             "schema": {
-              "$ref": "#/definitions/CACertificates"
+              "$ref": "#/definitions/CADetails"
             }
           },
           "404": {
@@ -480,15 +492,19 @@
     }
   },
   "definitions": {
-    "CACertificates": {
+    "CADetails": {
       "type": "object",
       "properties": {
         "certs": {
           "type": "array",
-          "description": "List of CA certificates",
+          "description": "CA certificate and/or CRL",
           "items": {
             "type": "string"
           }
+        },
+        "crl": {
+          "type": "string",
+          "description": "CA CRL"
         }
       }
     },
@@ -568,7 +584,9 @@
         },
         "signatureAlgorithm": {
           "type": "string",
-          "enum": ["SHA256"],
+          "enum": [
+            "SHA256"
+          ],
           "description": "Certificate signature algorithm"
         }
       }

@@ -39,6 +39,7 @@
 // REST Paramaeters
 #define LWCA_REST_PARAM_REQ_ID                  "X-Request-ID"
 #define LWCA_REST_PARAM_CA_ID                   "ca-id"
+#define LWCA_REST_PARAM_WITH_CRL                "detail"
 
 // JSON Keys
 #define LWCA_JSON_KEY_VERSION                   "version"

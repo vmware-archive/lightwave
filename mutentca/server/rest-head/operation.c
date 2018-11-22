@@ -462,6 +462,7 @@ _LwCARestReadURIParams(
     PSTR    pszCAId                     = NULL;
     PCSTR   pcszURI                     = NULL;
     PCSTR   pcszTempURI                 = NULL;
+    PCSTR   pcszTempURI2                = NULL;
 
     // This method reads ca-id uri param
 
@@ -475,10 +476,16 @@ _LwCARestReadURIParams(
 
     pcszURI = pcszURI + LwCAStringLenA(LWCA_REST_INTERMEDIATE_URI_PREFIX);
     pcszTempURI = LwCAStringChrA(pcszURI, '/');
+    pcszTempURI2 = LwCAStringChrA(pcszURI, '?');
 
-    if (IsNullOrEmptyString(pcszTempURI))
+    if (IsNullOrEmptyString(pcszTempURI) && IsNullOrEmptyString(pcszTempURI2))
     {
         dwError = LwCAAllocateStringA(pcszURI, &pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else if (IsNullOrEmptyString(pcszTempURI) && !IsNullOrEmptyString(pcszTempURI2))
+    {
+        dwError = LwCAAllocateStringWithLengthA(pcszURI, (pcszTempURI2 - pcszURI), &pszCAId);
         BAIL_ON_LWCA_ERROR(dwError);
     }
     else
