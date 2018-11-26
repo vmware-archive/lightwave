@@ -376,13 +376,6 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
 
     if (!federatedIdp.isFederationUserActive(user)) {
         federatedIdp.provisionFederationUser(relayState.getIssuer(), user);
-        if (isOrgOwner) {
-            try {
-                idmClient.addUserToGroup(tenantName, user, ADMIN_GROUP_NAME);
-            } catch (Exception e) {
-                logger.warn("Failed to add org owner {} to admin group.", user.getUPN());
-            }
-        }
     }
 
     federatedIdp.updateUserGroups(user, accessToken.getPermissions(), federatedIdpInfo.getRoleGroupMappings());
