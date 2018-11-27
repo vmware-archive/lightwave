@@ -30,8 +30,7 @@ DWORD
 LwCAPolicyValidateSNPolicy(
     PLWCA_POLICY_CFG_OBJ_ARRAY  pSNsAllowed,
     PLWCA_REQ_CONTEXT           pReqContext,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     );
 
 DWORD
@@ -39,22 +38,19 @@ LwCAPolicyValidateSANPolicy(
     PLWCA_POLICY_CFG_OBJ_ARRAY  pSANsAllowed,
     BOOLEAN                     bMultiSANEnabled,
     PLWCA_REQ_CONTEXT           pReqContext,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     );
 
 DWORD
 LwCAPolicyValidateKeyUsagePolicy(
     DWORD                       dwAllowedKeys,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     );
 
 DWORD
 LwCAPolicyValidateCertDurationPolicy(
     DWORD                       dwAllowedDuration,
-    PLWCA_CERT_VALIDITY         pValidity,
-    BOOLEAN                     *pbIsValid
+    PLWCA_CERT_VALIDITY         pValidity
     );
 
 #ifdef __cplusplus

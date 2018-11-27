@@ -875,15 +875,11 @@ __wrap_LwCAPolicyValidate(
     X509_REQ                *pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
     LWCA_POLICY_TYPE        policyType,
-    LWCA_POLICY_CHECKS      policyChecks,
-    BOOLEAN                 *pbIsValid
+    LWCA_POLICY_CHECKS      policyChecks
     )
 {
     assert_non_null(pReqContext);
     assert_non_null(pRequest);
-    assert_non_null(pbIsValid);
-
-    *pbIsValid = TRUE;
 
     return mock();
 }

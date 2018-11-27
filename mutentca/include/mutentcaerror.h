@@ -97,8 +97,11 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERROR_AUTHZ_INVALID_PLUGIN     (LWCA_ERROR_BASE + LWCA_AUTHZ_ERROR_BASE + 4)
 
 // Policy Error Codes (80300 - 80399)
-#define LWCA_POLICY_VALIDATION_ERROR        (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
-#define LWCA_POLICY_CONFIG_PARSE_ERROR      (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
+#define LWCA_SN_POLICY_VIOLATION            (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 1)
+#define LWCA_SAN_POLICY_VIOLATION           (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 2)
+#define LWCA_CERT_DURATION_POLICY_VIOLATION (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 3)
+#define LWCA_KEY_USAGE_POLICY_VIOLATION     (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 4)
+#define LWCA_POLICY_CONFIG_PARSE_ERROR      (LWCA_ERROR_BASE + LWCA_POLICY_ERROR_BASE + 5)
 
 // SSL (CA) Error Codes (80400 - 80499)
 #define LWCA_ROOT_CA_MISSING                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 1)
@@ -380,7 +383,10 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_ERROR_EVP_DIGEST             ,   "LWCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
     { LWCA_JSON_FILE_LOAD_ERROR         ,   "LWCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
     { LWCA_JSON_PARSE_ERROR             ,   "LWCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \
-    { LWCA_POLICY_VALIDATION_ERROR      ,   "LWCA_POLICY_VALIDATION_ERROR"      ,   "Request does not comply with policy" }, \
+    { LWCA_SN_POLICY_VIOLATION          ,   "LWCA_SN_POLICY_VIOLATION"          ,   "Request does not comply with the defined SN policies" }, \
+    { LWCA_SAN_POLICY_VIOLATION         ,   "LWCA_SAN_POLICY_VIOLATION"         ,   "Request does not comply with the defined SAN policies" }, \
+    { LWCA_KEY_USAGE_POLICY_VIOLATION   ,   "LWCA_KEY_USAGE_POLICY_VIOLATION"   ,   "Request does not comply with the defined KeyUsage policies" }, \
+    { LWCA_CERT_DURATION_POLICY_VIOLATION,  "LWCA_CERT_DURATION_POLICY_VIOLATION",  "Request does not comply with the defined CertDuration policies" }, \
     { LWCA_POLICY_CONFIG_PARSE_ERROR    ,   "LWCA_POLICY_CONFIG_PARSE_ERROR"    ,   "Invalid content in policy config file" }, \
     { LWCA_DB_NOT_INITIALIZED           ,   "LWCA_DB_NOT_INITIALIZED"           ,   "Db context is not initialized" }, \
     { LWCA_DB_ALREADY_INITIALIZED       ,   "LWCA_DB_ALREADY_INITIALIZED"       ,   "Db context is already initialized" }, \
