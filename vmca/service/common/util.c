@@ -171,7 +171,6 @@ VMCAUtilDoesValueHaveWildcards(
     PCSTR            pszValue
     )
 {
-    DWORD           dwError = 0;
     int             count = 0;
 
     if (IsNullOrEmptyString(pszValue))
@@ -179,7 +178,7 @@ VMCAUtilDoesValueHaveWildcards(
         return FALSE;
     }
 
-    dwError = VMCAStringCountSubstring(
+    VMCAStringCountSubstring(
                         pszValue,
                         "*",
                         &count);

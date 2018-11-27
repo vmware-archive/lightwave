@@ -376,7 +376,7 @@ VMCASignedRequestPrivate(
     {
         VMCA_LOG_INFO("VMCASignedRequestPrivate: Using CA certs not after field");
         if(!ASN1_TIME_set_string(X509_get_notAfter(pCertificate),
-                                 X509_get_notAfter(pCA->pCertificate)->data))
+                                 (PCSTR)X509_get_notAfter(pCA->pCertificate)->data))
         {
             dwError = 0;
             BAIL_ON_SSL_ERROR(dwError, VMCA_SSL_SET_END_TIME);

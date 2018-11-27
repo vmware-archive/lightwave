@@ -1368,7 +1368,7 @@ VMCAVerifyCertificateHW(
     VMCARpcCall(
         RpcVMCAVerifyCertificate(
                     BindingHandle,
-                    (PSTR)pszPEMEncodedCertificate,
+                    (UCHAR *)pszPEMEncodedCertificate,
                     (unsigned int*)dwStatus)
         );
     BAIL_ON_ERROR(dwError);
@@ -2211,7 +2211,10 @@ VMCAGetNextCertificate(
         dwCertIndex = 0;
     }
     dwLen = pLocalContext->pCertChain->certificates[dwCertIndex].dwCount;
-    dwError = VMCAAllocateStringWithLengthA(pLocalContext->pCertChain->certificates[dwCertIndex].pCert, dwLen, ppCertificate);
+    dwError = VMCAAllocateStringWithLengthA(
+                  (RP_PCSTR)pLocalContext->pCertChain->certificates[dwCertIndex].pCert,
+                  dwLen,
+                  ppCertificate);
     BAIL_ON_ERROR(dwError);
     pLocalContext->iCurrentUserIndex++;
 
@@ -3403,7 +3406,7 @@ VMCARevokeCertPrivate(
          VMCARpcRevokeCertificate(
                                 BindingHandle,
                                 (PWSTR)pwszServerName,
-                                (unsigned char*)pszPEMEncodedCertificate,
+                                (idl_char*)pszPEMEncodedCertificate,
                                 certRevokeReason,
                                 pwszSharedSecret
                                 )

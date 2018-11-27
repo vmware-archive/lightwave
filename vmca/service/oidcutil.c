@@ -186,7 +186,7 @@ VMCAVerifyOIDCHOTKTokenSignature(
         // sha256 digest of body
         dwError = VMCAComputeMessageDigest(
                 EVP_sha256(),
-                pVMCARequest->pszPayload,
+                (UCHAR *)pVMCARequest->pszPayload,
                 VMCAStringLenA(pVMCARequest->pszPayload),
                 &sha256Body,
                 &sha256BodySize);
@@ -212,7 +212,7 @@ VMCAVerifyOIDCHOTKTokenSignature(
     dwError = VMCAVerifyRSASignature(
             pPubKey,
             EVP_sha256(),
-            pszBlob,
+            (UCHAR *)pszBlob,
             VMCAStringLenA(pszBlob),
             signature,
             signatureSize,
