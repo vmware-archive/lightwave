@@ -1074,7 +1074,7 @@ _LwCACheckCAExist(
 {
     DWORD dwError = 0;
     BOOLEAN bCAExists = FALSE;
-    PLWCA_DB_CA_DATA pCAData = NULL;
+    LWCA_CA_STATUS status = LWCA_CA_STATUS_INACTIVE;
 
     dwError = LwCADbCheckCA(pcszCAId, &bCAExists);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -1085,18 +1085,16 @@ _LwCACheckCAExist(
     }
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // TODO: Change the api to LWCADbGetCAStatus
-    dwError = LwCADbGetCA(pcszCAId, &pCAData);
+    dwError = LwCADbGetCAStatus(pcszCAId, &status);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (pCAData->status == LWCA_CA_STATUS_INACTIVE)
+    if (status == LWCA_CA_STATUS_INACTIVE)
     {
         dwError = LWCA_CA_REVOKED;
     }
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:
-    LwCADbFreeCAData(pCAData);
     return dwError;
 }
 

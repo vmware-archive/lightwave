@@ -650,7 +650,6 @@ __wrap_LwCADbGetCAStatus(
 {
     assert_non_null(pcszCAId);
     assert_non_null(pStatus);
-    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
 
     *pStatus = LWCA_CA_STATUS_ACTIVE;
 
@@ -1042,6 +1041,7 @@ Test_LwCAGetCACertificates_Valid(
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
+    will_return(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCAGetCACertificates(TEST_ROOT_CA_ID, &pCertificates);
@@ -1113,6 +1113,7 @@ Test_LwCAGetSignedCertificate_Valid(
     will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
     will_return_always(__wrap_LwCAPolicyGetCertDuration, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     dwError = LwCADbGetCACertificates(TEST_ROOT_CA_ID, &pCACerts);
     assert_int_equal(dwError, 0);
@@ -1164,6 +1165,7 @@ Test_LwCAGetSignedCertificate_Invalid(
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     dwError = LwCAGetSignedCertificate(pReqCtx, NULL, TEST_CLIENT_CSR, pValidity, signAlgorithm, &pCertificate);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
@@ -1236,6 +1238,7 @@ Test_LwCACreateIntermediateCA_Valid(
     will_return_always(__wrap_LwCASecuritySignX509Cert, 0);
     will_return_always(__wrap_LwCASecuritySignX509Request, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 2);
     dwError = LwCACreateIntermediateCA(
@@ -1299,6 +1302,7 @@ Test_LwCACreateIntermediateCA_Invalid(
     will_return_always(__wrap_LwCASecurityCreateKeyPair, 0);
     will_return_always(__wrap_LwCASecuritySignX509Request, 0);
     will_return_always(__wrap_LwCAPolicyValidate, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     // Testcase 1: Invalid input
 
@@ -1374,6 +1378,7 @@ Test_LwCARevokeCertificate_Valid(
     will_return(__wrap_LwCADbUpdateCA, 0);
     will_return(__wrap_LwCADbAddCertData, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
+    will_return(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE);
@@ -1390,6 +1395,7 @@ Test_LwCARevokeCertificate_Invalid(
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     // Testcase1: Invalid input
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
@@ -1399,7 +1405,7 @@ Test_LwCARevokeCertificate_Invalid(
     // Testcase2: Certificate not issued by requested CA
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
     dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
-    assert_int_equal(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_REQUEST);
 }
 
 VOID
@@ -1411,6 +1417,7 @@ Test_LwCARevokeIntermediateCA_Valid(
     BOOLEAN bCheckCAMockValues[] = {TRUE, TRUE};
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
     will_return(__wrap_LwCADbCheckCertData, 0);
     will_return(__wrap_LwCADbGetCACRLNumber, 0);
     will_return(__wrap_LwCADbUpdateCA, 0);
@@ -1459,6 +1466,7 @@ Test_LwCAGetCACrl_Valid(
     will_return_always(__wrap_LwCADbGetCA, 0);
     will_return_always(__wrap_LwCADbGetCertData, 0);
     will_return_always(__wrap_LwCASecuritySignX509Crl, 0);
+    will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     // Testcase1: CRL with revoked certificates
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
