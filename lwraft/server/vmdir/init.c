@@ -424,6 +424,9 @@ VmDirInit(
 #ifdef BUILD_GRPC
     dwError = VmDirGrpcServerInitialize();
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGrpcPostWatchServerInitialize();
+    BAIL_ON_VMDIR_ERROR(dwError);
 #endif
 
     //Wait only if there is not a vdcprome pending.

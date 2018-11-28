@@ -1718,6 +1718,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/server/schema/Makefile
                  lwraft/server/acl/Makefile
                  lwraft/server/grpc-head/Makefile
+                 lwraft/server/grpc-head/postwatch/Makefile
                  lwraft/server/ldap-head/Makefile
                  lwraft/server/rest-head/Makefile
                  lwraft/server/replication/Makefile
@@ -1731,6 +1732,7 @@ AC_CONFIG_FILES([Makefile
                  lwraft/testing/query/Makefile
                  lwraft/testing/grpc/Makefile
                  lwraft/testing/grpc/domath/Makefile
+                 lwraft/testing/grpc/postwatch/Makefile
                  lwraft/testing/kerberos/Makefile
                  lwraft/testing/test_lib/Makefile
                  lwraft/testing/test_runner/Makefile

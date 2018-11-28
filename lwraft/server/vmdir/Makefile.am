@@ -59,7 +59,8 @@ postd_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 if BUILD_GRPC
-    GRPC_HEAD = $(top_builddir)/lwraft/server/grpc-head/libdomath-grpc.la
+    GRPC_HEAD = $(top_builddir)/lwraft/server/grpc-head/libdomath-grpc.la \
+                $(top_builddir)/lwraft/server/grpc-head/postwatch/libpostwatch.la
 endif
 
 postd_LDADD = \

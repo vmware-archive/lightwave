@@ -1,2 +1,5 @@
+if BUILD_GRPC
 SUBDIRS = \
-    domath
+    domath \
+    postwatch
+endif
