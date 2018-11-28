@@ -665,3 +665,19 @@ LwCADbFreeCertDataArray(
         LWCA_SAFE_FREE_MEMORY(pCertDataArray);
     }
 }
+
+PCSTR
+LwCAGetErrorDescription(
+    DWORD dwErrorCode
+    )
+{
+    DWORD i;
+    for (i=0; i < LWCA_ERROR_Table_size; i++)
+    {
+        if ( dwErrorCode == LWCA_ERROR_Table[i].code )
+        {
+            return LWCA_ERROR_Table[i].desc;
+        }
+    }
+    return NULL;
+}

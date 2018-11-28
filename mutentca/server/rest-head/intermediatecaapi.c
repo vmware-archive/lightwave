@@ -87,7 +87,7 @@ LwCARestCreateIntermediateCA(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeIntCAInputSpec(pIntCASpec);
     LwCAFreeCertificates(pCACerts);
@@ -159,7 +159,7 @@ LwCARestGetIntermediateCACert(
     }
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCAFreeCertificates(pCACerts);
@@ -208,7 +208,7 @@ LwCARestRevokeIntermediateCA(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
 

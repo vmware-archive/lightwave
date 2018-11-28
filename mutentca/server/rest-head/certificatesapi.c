@@ -91,7 +91,7 @@ LwCARestGetRootCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     LwCAFreeCertificate(pCert);
@@ -144,7 +144,7 @@ LwCARestRevokeRootCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCertificate(pCert);
     LWCA_SAFE_FREE_STRINGA(pszRootCAId);
@@ -210,7 +210,7 @@ LwCARestGetIntermediateCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
@@ -263,7 +263,7 @@ LwCARestRevokeIntermediateCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCAFreeCertificate(pCert);

@@ -12,7 +12,5 @@
  * under the License.
  */
 
-#include "includes.h"
-
-LWCA_ERROR_CODE_NAME_DESC LWCA_ERROR_Table[] = LWCA_ERROR_TABLE_INITIALIZER;
-DWORD LWCA_ERROR_Table_size = sizeof(LWCA_ERROR_Table)/sizeof(LWCA_ERROR_Table[0]);
+extern LWCA_ERROR_CODE_NAME_DESC LWCA_ERROR_Table[];
+extern DWORD LWCA_ERROR_Table_size;

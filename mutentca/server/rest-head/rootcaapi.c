@@ -68,7 +68,7 @@ LwCARestGetVersion(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, NULL, dwError, NULL);
+    LwCASetRestResult(pRestOp, NULL, dwError);
 
     return dwError;
 
@@ -137,7 +137,7 @@ LwCARestGetRootCACert(
     }
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCertificates(pCACerts);
     LwCAFreeCrl(pCrl);
