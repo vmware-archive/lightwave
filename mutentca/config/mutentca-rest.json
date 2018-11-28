@@ -492,19 +492,28 @@
     }
   },
   "definitions": {
-    "CADetails": {
+    "CACertDetails": {
       "type": "object",
       "properties": {
-        "certs": {
-          "type": "array",
-          "description": "CA certificate and/or CRL",
-          "items": {
-            "type": "string"
-          }
+        "cert": {
+          "type": "string",
+          "description": "CA certificate"
         },
         "crl": {
           "type": "string",
-          "description": "CA CRL"
+          "description": "CA certificate's corresponding CRL"
+        }
+      }
+    },
+    "CADetails": {
+      "type": "object",
+      "properties": {
+        "caDetails": {
+          "type": "array",
+          "description": "CA certificates and/or their corresponding CRLs",
+          "items": {
+            "$ref": "#/definitions/CACertDetails"
+          }
         }
       }
     },

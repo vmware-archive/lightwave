@@ -329,6 +329,15 @@ LwCARestRevokeIntermediateCASignedCert(
     PVOID*                  pOut
     );
 
+// utils.c
+DWORD
+LwCARestMakeGetCAJsonResponse(
+    PLWCA_CERTIFICATE_ARRAY     pCACerts,
+    PLWCA_STRING_ARRAY          pCRLs,
+    BOOLEAN                     bDetail,
+    PLWCA_JSON_OBJECT           *ppJsonRespArray
+    );
+
 #ifdef __cplusplus
 }
 #endif

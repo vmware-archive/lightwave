@@ -55,6 +55,7 @@
 #define LWCA_JSON_KEY_END_TIME                  "endTime"
 #define LWCA_JSON_KEY_CSR                       "csr"
 #define LWCA_JSON_KEY_SIGN_ALGO                 "signatureAlgorithm"
+#define LWCA_JSON_KEY_CA_DETAILS                "caDetails"
 #define LWCA_JSON_KEY_CERT                      "cert"
 #define LWCA_JSON_KEY_CERTS                     "certs"
 #define LWCA_JSON_KEY_CRL                       "crl"
