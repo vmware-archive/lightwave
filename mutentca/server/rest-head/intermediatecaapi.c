@@ -55,6 +55,7 @@ LwCARestCreateIntermediateCA(
     PSTR                    pszRequestId    = NULL;
     PLWCA_REST_INT_CA_SPEC  pIntCASpec      = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
+    PLWCA_JSON_OBJECT       pJsonRespArray  = NULL;
 
     if (!pIn)
     {
@@ -80,10 +81,10 @@ LwCARestCreateIntermediateCA(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARestResultSetCertArrayData(
-                  pRestOp->pResult,
-                  LWCA_JSON_KEY_CERTS,
-                  pCACerts);
+    dwError = LwCARestMakeGetCAJsonResponse(pCACerts, NULL, false, &pJsonRespArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARestResultSetObjData(pRestOp->pResult, LWCA_JSON_KEY_CA_DETAILS, pJsonRespArray);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
