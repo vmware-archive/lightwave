@@ -11,8 +11,8 @@
   ],
   "basePath": "/v1",
   "securityDefinitions": {
-    "BearerToken": {
-      "description": "Bearer Token authentication",
+    "AuthToken": {
+      "description": "Token based authentication like Bearer, HOTK",
       "type": "apiKey",
       "name": "authorization",
       "in": "header"
@@ -20,7 +20,7 @@
   },
   "security": [
     {
-      "BearerToken": []
+      "AuthToken": []
     }
   ],
   "produces": [
@@ -60,7 +60,7 @@
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -73,8 +73,8 @@
         "tags": [
           "rootca"
         ],
-        "summary": "Get root ca certificate",
-        "description": "Returns root ca certificate.\n",
+        "summary": "Get root ca certificate details",
+        "description": "Returns root ca certificates with (optional) crls.\n",
         "operationId": "getRootCA",
         "parameters": [
           {
@@ -87,7 +87,8 @@
             "name": "detail",
             "in": "header",
             "type": "boolean",
-            "required": false
+            "required": false,
+            "description": "This can be set to return ca certificates with corresponding crls"
           }
         ],
         "responses": {
@@ -98,7 +99,7 @@
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -137,8 +138,38 @@
               "$ref": "#/definitions/CADetails"
             }
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "404": {
+            "description": "Parent CA Not Found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "409": {
+            "description": "CA Already Exists\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -152,7 +183,7 @@
           "intermediateca"
         ],
         "summary": "Get intermediate ca certificate",
-        "description": "Returns intermediate ca certificate\n",
+        "description": "Returns intermediate ca certificate with (optional) crls\n",
         "operationId": "getIntermediateCA",
         "parameters": [
           {
@@ -172,7 +203,8 @@
             "name": "detail",
             "in": "header",
             "type": "boolean",
-            "required": false
+            "required": false,
+            "description": "This can be set to return ca certificates with corresponding crls"
           }
         ],
         "responses": {
@@ -182,14 +214,32 @@
               "$ref": "#/definitions/CADetails"
             }
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "404": {
-            "description": "CA not found\n",
+            "description": "CA Not Found\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -222,14 +272,38 @@
           "204": {
             "description": "Successful operation\n"
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "404": {
-            "description": "CA not found\n",
+            "description": "CA Not Found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "409": {
+            "description": "CA Already Revoked\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -261,7 +335,7 @@
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -299,14 +373,32 @@
               "$ref": "#/definitions/CRL"
             }
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "404": {
-            "description": "CA is not found\n",
+            "description": "CA Not Found\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -345,8 +437,26 @@
               "$ref": "#/definitions/Certificate"
             }
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -380,8 +490,32 @@
           "204": {
             "description": "Certificate revoked by certificate authority\n"
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "409": {
+            "description": "Cert Already Revoked\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -427,14 +561,32 @@
               "$ref": "#/definitions/Certificate"
             }
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "404": {
-            "description": "Certificate authority not found\n",
+            "description": "CA Not Found\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -475,14 +627,38 @@
           "204": {
             "description": "Certificate revoked by certificate authority\n"
           },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
           "404": {
-            "description": "Certificate authority is not found\n",
+            "description": "Parent CA Not Found\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "409": {
+            "description": "Cert Already Revoked\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
           },
           "default": {
-            "description": "operation error\n",
+            "description": "Internal Server Error\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
