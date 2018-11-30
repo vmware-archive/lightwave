@@ -33,6 +33,7 @@
 #include <cdcclient.h>
 #include <vecslocalclient.h>
 #include <vecs_error.h>
+#include <vmcommonerror.h>
 
 #include <ssotypes.h>
 #include <ssocommon.h>

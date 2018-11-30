@@ -86,7 +86,7 @@ EventLogCreateBindingHandleA(
     BAIL_ON_ERROR(dwError);
 
     rpc_binding_from_string_binding(
-                        pszStringBinding,
+                        (UCHAR *)pszStringBinding,
                         &pBinding,
                         &dwError);
     BAIL_ON_ERROR(dwError);
@@ -107,7 +107,7 @@ EventLogCreateBindingHandleA(
 
         rpc_binding_set_auth_info(
                         pBinding,
-                        pszServerPrincipalName,
+                        (UCHAR *)pszServerPrincipalName,
                         rpc_c_protect_level_pkt_privacy,
                         rpc_c_authn_gss_negotiate,
                         NULL, /* Auth Identity */

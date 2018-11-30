@@ -231,7 +231,7 @@ VmAfdCreateBindingHandleUtilityA(
         {
             rpc_binding_set_auth_info(
                     pBinding,
-                    pszServerPrincipalName,
+                    (UCHAR *)pszServerPrincipalName,
                     rpc_c_protect_level_pkt_privacy,
                     rpc_c_authn_gss_negotiate,
                     rpc_identity_h,
@@ -368,8 +368,6 @@ VmAfdFreeBindingHandle(
 {
     if (ppBinding)
     {
-        DWORD dwError = 0;
-
-        dwError = VmAfdRpcFreeBinding(ppBinding);
+        VmAfdRpcFreeBinding(ppBinding);
     }
 }

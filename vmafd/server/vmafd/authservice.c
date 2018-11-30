@@ -18,7 +18,6 @@ VecsSrvCreateCertStoreWithAuth (
     )
 {
     DWORD dwError = 0;
-    DWORD dwDeleteError = 0;
     PVECS_SRV_STORE_HANDLE pStore = NULL;
     PVMAFD_SECURITY_DESCRIPTOR pSecurityDescriptor = NULL;
     PVECS_SERV_STORE pStoreInstance = NULL;
@@ -82,7 +81,7 @@ cleanup:
 error:
     if (dwError != ERROR_ALREADY_EXISTS)
     {
-        dwDeleteError = VecsSrvDeleteCertStore(pszStoreName);
+        VecsSrvDeleteCertStore(pszStoreName);
     }
 
     if (ppStore)
@@ -283,6 +282,10 @@ VecsSrvSetPermission (
                      !IsNullOrEmptyString(paszUserName)? paszUserName: ""
                     );
         }
+        else
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s log failed. error(%u)", __FUNCTION__, dwLogError);
+        }
         VMAFD_SAFE_FREE_MEMORY (pszAccountName);
         VMAFD_SAFE_FREE_MEMORY (paszUserName);
     }
@@ -397,6 +400,10 @@ VecsSrvRevokePermission (
                      accessMask & WRITE_STORE ? "write": "",
                      !IsNullOrEmptyString(paszUserName)? paszUserName: ""
                     );
+        }
+        else
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s log failed. error(%u)", __FUNCTION__, dwLogError);
         }
         VMAFD_SAFE_FREE_MEMORY (pszAccountName);
         VMAFD_SAFE_FREE_MEMORY (paszUserName);

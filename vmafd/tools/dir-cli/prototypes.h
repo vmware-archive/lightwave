@@ -786,3 +786,17 @@ DirCliDBBackup(
     PCSTR pszPassword,
     PCSTR pszBackupPath
     );
+
+DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
+
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    );

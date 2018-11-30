@@ -1,5 +1,8 @@
 sbin_PROGRAMS = vmafdd
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 idl_srcdir=$(top_srcdir)/vmafd/idl
 
 vmafdd_SOURCES = \
@@ -58,7 +61,10 @@ vmafdd_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/server/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdns/include/public \
+    -I$(top_srcdir)/vmcommon/include \
     -I$(top_srcdir)/vmcommon/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

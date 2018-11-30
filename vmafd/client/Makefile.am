@@ -1,6 +1,9 @@
 
 lib_LTLIBRARIES = libvmafdclient.la
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 idl_srcdir=$(top_srcdir)/vmafd/idl
 
 libvmafdclient_la_CPPFLAGS = \
@@ -8,6 +11,7 @@ libvmafdclient_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@

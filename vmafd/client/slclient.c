@@ -310,11 +310,11 @@ _VmAfdAllocateSuperLogEntryArray(
 
         for (i = 0; i < pDstEntries->dwCount; i++)
         {
-            dwError = VmAfdStringCpyA(dstEntries[i].pszDomainName, VMAFD_MAX_DN_LEN, srcEntries[i].pszDomainName);
+            dwError = VmAfdStringCpyA((PSTR)dstEntries[i].pszDomainName, VMAFD_MAX_DN_LEN, (PCSTR)srcEntries[i].pszDomainName);
             BAIL_ON_VMAFD_ERROR(dwError);
-            dwError = VmAfdStringCpyA(dstEntries[i].pszSiteName, VMAFD_MAX_DN_LEN, srcEntries[i].pszSiteName);
+            dwError = VmAfdStringCpyA((PSTR)dstEntries[i].pszSiteName, VMAFD_MAX_DN_LEN, (PCSTR)srcEntries[i].pszSiteName);
             BAIL_ON_VMAFD_ERROR(dwError);
-            dwError = VmAfdStringCpyA(dstEntries[i].pszDCName, VMAFD_MAX_DN_LEN, srcEntries[i].pszDCName);
+            dwError = VmAfdStringCpyA((PSTR)dstEntries[i].pszDCName, VMAFD_MAX_DN_LEN, (PCSTR)srcEntries[i].pszDCName);
             BAIL_ON_VMAFD_ERROR(dwError);
 
             dstEntries[i].dwState = srcEntries[i].dwState;

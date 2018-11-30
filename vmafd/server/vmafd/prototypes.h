@@ -391,6 +391,26 @@ VmAfSrvGetVmDirJoinWithPreCopiedDB(
     PBOOLEAN    pbJoinWithPreCopiedDB           /* OUT */
     );
 
+DWORD
+VmAfdSrvGetUseLwCA(
+    BOOLEAN *pbValue
+    );
+
+DWORD
+VmAfSrvGetLwCAServer(
+    PWSTR*   ppwszLwCAServer        /*    OUT */
+    );
+
+DWORD
+VmAfSrvSetLwCAId(
+    PWSTR    pwszLwCAId        /* IN     */
+    );
+
+DWORD
+VmAfSrvGetLwCAId(
+    PWSTR*   ppwszLwCAId        /*    OUT */
+    );
+
 /* dcfinder.c */
 
 DWORD
@@ -430,6 +450,15 @@ VmAfdSrvGetInsecure(
     BOOLEAN *pbValue
     );
 
+DWORD
+VmAfdSrvSetUseLwCA(
+    BOOLEAN bValue
+    );
+
+DWORD
+VmAfSrvSetLwCAServer(
+    PWSTR    pwszLwCAServer        /* IN     */
+    );
 /* dns.c */
 
 DWORD
@@ -2567,6 +2596,26 @@ VmAfdRestGetCACerts(
     PVMAFD_CA_CERT_ARRAY        *ppCACerts
     );
 
+DWORD
+VmAfdAcquireTokenForVmDirREST(
+    PCSTR pszServer,
+    PCSTR pszDomain,
+    PCSTR pszUser,
+    PCSTR pszPass,
+    PCSTR pszLocalCertsPath,
+    PSTR *ppszToken
+    );
+
+DWORD
+VmAfdAcquireOIDCToken(
+    PCSTR                           pszServer,
+    PCSTR                           pszDomain,
+    PCSTR                           pszUser,
+    PCSTR                           pszPass,
+    PCSTR                           pszLocalCertsPath,
+    VMAFD_OIDC_SERVICE_SCOPE        oidcScope,
+    PSTR                            *ppszToken
+    );
 
 #ifdef __cplusplus
 }

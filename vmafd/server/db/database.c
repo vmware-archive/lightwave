@@ -857,7 +857,7 @@ VecsDBGetColumnBlob(
     memcpy(*pszValue, psztmpValue, dwLen);
     *pdwLen = dwLen;
     } else {
-        *pszValue = psztmpValue;
+        *pszValue = (PBYTE)psztmpValue;
     }
 error :
     return dwError;

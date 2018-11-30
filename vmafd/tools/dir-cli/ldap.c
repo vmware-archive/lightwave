@@ -209,7 +209,7 @@ DirCliLdapCreateService(
     mod_multi_tenant.mod_vals.modv_strvals = vals_multi_tenant;
 
     bercert.bv_len = dwLength;
-    bercert.bv_val = pCertBytes;
+    bercert.bv_val = (PSTR)pCertBytes;
 
     mod_cert.mod_op   = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
     mod_cert.mod_type = ATTR_NAME_CERT;
@@ -273,7 +273,7 @@ DirCliLdapUpdateService(
         struct berval *bervals_cert[] = {&bercert, NULL};
 
         bercert.bv_len = dwLength;
-        bercert.bv_val = pCertBytes;
+        bercert.bv_val = (PSTR)pCertBytes;
 
         mod_cert.mod_op   = LDAP_MOD_REPLACE | LDAP_MOD_BVALUES;
         mod_cert.mod_type = ATTR_NAME_CERT;
@@ -302,7 +302,7 @@ DirCliLdapUpdateService(
         mod_subject_dn.mod_vals.modv_strvals = vals_subject_dn;
 
         bercert.bv_len = dwLength;
-        bercert.bv_val = pCertBytes;
+        bercert.bv_val = (PSTR)pCertBytes;
 
         mod_cert.mod_op   = LDAP_MOD_REPLACE | LDAP_MOD_BVALUES;
         mod_cert.mod_type = ATTR_NAME_CERT;
@@ -925,7 +925,7 @@ DirCliLdapFindFingerPrintMatch(
         }
 
         dwError = DirCliDERToX509(
-                        ppValues[0]->bv_val,
+                        (PBYTE)ppValues[0]->bv_val,
                         ppValues[0]->bv_len,
                         &pX509Cert);
         BAIL_ON_VMAFD_ERROR(dwError);

@@ -396,7 +396,7 @@ EventLogDbFillValues(
                     }
 
                     dwError = EventLogAllocateStringWFromA(
-                                    pszValue,
+                                    (PCSTR)pszValue,
                                     pColumn->pValue->data.ppwszValue);
                     BAIL_ON_EVENTLOG_ERROR(dwError);
 

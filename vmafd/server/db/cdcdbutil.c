@@ -1599,7 +1599,7 @@ CdcDbGetClosestDC(
     PWSTR pwszDCName = NULL;
     DWORD dwCount = 0;
     DWORD dwHeartbeat = 0;
-    time_t tMinusLastState = 0;
+    /*time_t tMinusLastState = 0;*/
 
     char szQuery[] = "SELECT DCName FROM DCTable"
                      " WHERE IsAlive = 1 AND"
@@ -1642,10 +1642,10 @@ CdcDbGetClosestDC(
         dwError = 0;
     }
 
-    tMinusLastState = time(NULL) - dwHeartbeat;
 
     /*
      * TODO: Commenting this out till we fix CdcUpdateAndPing to wake up statemachine
+     *tMinusLastState = time(NULL) - dwHeartbeat;
      *dwError = VecsBindDword(
      *                    pDbQuery,
      *                    ":time",
@@ -1815,7 +1815,7 @@ CdcDbGetClosestNewDC(
     PWSTR pwszDCName = NULL;
     DWORD dwCount = 0;
     DWORD dwHeartbeat = 0;
-    time_t tMinusLastState = 0;
+    /*time_t tMinusLastState = 0;*/
 
     char szQuery[] = "SELECT DCName FROM DCTable"
                      " WHERE IsAlive = 1 AND"
@@ -1865,10 +1865,10 @@ CdcDbGetClosestNewDC(
         dwError = 0;
     }
 
-    tMinusLastState = time(NULL) - dwHeartbeat;
 
     /*
      * TODO: Commenting this out till we fix CdcUpdateAndPing to wake up statemachine
+     *tMinusLastState = time(NULL) - dwHeartbeat;
      *dwError = VecsBindDword(
      *                    pDbQuery,
      *                    ":time",

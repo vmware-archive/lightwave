@@ -236,7 +236,7 @@ VmAfdMarshal(
 				pCursor += sizeof (VMAFD_IPC_SIZE_T);
                                 dwError = VmAfdCheckMemory (stringLength, &dwActualResponseSz);
                                 BAIL_ON_VMAFD_ERROR (dwError);
-				strncpy (pCursor, tempString, stringLength);
+				strncpy ((PSTR)pCursor, tempString, stringLength);
 				pCursor += stringLength;
 				break;
 			case VMW_IPC_TYPE_WSTRING:
@@ -420,7 +420,7 @@ VmAfdUnMarshal(
 				dwError = VmAfdAllocateMemory (stringLength+1,(PVOID *)&pTempString);
 				BAIL_ON_VMAFD_ERROR (dwError);
 
-				strncpy(pTempString,pResponse,stringLength);
+				strncpy(pTempString,(PCSTR)pResponse,stringLength);
 				pTempString[stringLength] = '\0';
 				pResponse += stringLength;
 				dwBytesRead += stringLength;
@@ -2030,7 +2030,6 @@ VmAfdUnMarshalGetDCList(
     DWORD dwError = 0;
     DWORD dwSizeRemaining = dwBlobSize;
     DWORD dwIndex = 0;
-    DWORD dwBlobSizeRead = 0;
     DWORD dwCount = 0;
     PVMAFD_DC_INFO_W pVmAfdDCInfo = NULL;
     PBYTE pCursor = pMarshaledBlob;
@@ -2054,7 +2053,6 @@ VmAfdUnMarshalGetDCList(
 
     BAIL_ON_VMAFD_ERROR (dwError);
 
-    dwBlobSizeRead = *((PUINT32)pCursor);
     pCursor += sizeof (UINT32);
 
     dwError = VmAfdCheckMemory(
