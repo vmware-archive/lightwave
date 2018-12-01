@@ -6,7 +6,7 @@ import (
 
 const (
 	ignoreCertificate = true
-	tokenScope        = "rs_mutentca at_groups openid"
+	tokenScope        = "rs_mutentca at_groups openid rs_post"
 )
 
 // TokenOptions represents Tokens

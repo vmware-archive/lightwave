@@ -299,6 +299,9 @@ typedef struct _VMAFD_ROOT_FETCH_ARG {
     PSTR pszDomain;
     PSTR pszDCName;
     PSTR pszUpn;
+    BOOLEAN bUseLwCA;
+    PSTR pszLwCAServer;
+    PSTR pszLwCAId;
     unsigned int nPort;
 }VMAFD_ROOT_FETCH_ARG, *PVMAFD_ROOT_FETCH_ARG;
 

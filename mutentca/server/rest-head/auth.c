@@ -17,7 +17,8 @@
 static
 BOOLEAN
 LwCARestAuthIsOpenAPI(
-    PCSTR           pcszURI
+    PCSTR           pcszURI,
+    PCSTR           pcszMethod
     );
 
 
@@ -37,7 +38,7 @@ LwCARestAuth(
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
-    if (LwCARestAuthIsOpenAPI(pRestOp->pszURI))
+    if (LwCARestAuthIsOpenAPI(pRestOp->pszURI, pRestOp->pszMethod))
     {
         bAuthenticated = TRUE;
         goto ret;
@@ -110,8 +111,28 @@ error:
 static
 BOOLEAN
 LwCARestAuthIsOpenAPI(
-    PCSTR           pcszURI
+    PCSTR           pcszURI,
+    PCSTR           pcszMethod
     )
 {
-    return (!LwCAStringCompareA(LWCA_REST_OPENAPI_VERSION, pcszURI, FALSE));
+
+    BOOLEAN         bIsOpenAPI = FALSE;
+
+    if (!LwCAStringCompareA(LWCA_REST_OPENAPI_VERSION, pcszURI, FALSE) &&
+        !LwCAStringCompareA("GET", pcszMethod, FALSE))
+    {
+        bIsOpenAPI = TRUE;
+    }
+    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_ROOTCA, pcszURI, FALSE) &&
+             !LwCAStringCompareA("GET", pcszMethod, FALSE))
+    {
+        bIsOpenAPI = TRUE;
+    }
+    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_ROOTCA_CRL, pcszURI, FALSE) &&
+             !LwCAStringCompareA("GET", pcszMethod, FALSE))
+    {
+        bIsOpenAPI = TRUE;
+    }
+
+    return bIsOpenAPI;
 }

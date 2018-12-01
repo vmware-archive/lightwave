@@ -1953,7 +1953,7 @@ VMCACreateExtensions(
     {
         dwError = VMCAAddExtension(pStack,
                             NID_basic_constraints,
-                            "critical,CA:TRUE, pathlen:0"
+                            "critical,CA:TRUE"
                             );
         BAIL_ON_ERROR(dwError);
     }

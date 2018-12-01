@@ -39,17 +39,14 @@ Test_LwCAPolicyValidate_SN_Valid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_SN_JSON_VALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -58,10 +55,8 @@ Test_LwCAPolicyValidate_SN_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -70,10 +65,8 @@ Test_LwCAPolicyValidate_SN_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -84,17 +77,14 @@ Test_LwCAPolicyValidate_SN_Invalid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_SN_JSON_INVALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SN,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_SN);
+    assert_int_equal(dwError, LWCA_SN_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -103,10 +93,8 @@ Test_LwCAPolicyValidate_SN_Invalid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SN,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_SN);
+    assert_int_equal(dwError, LWCA_SN_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -117,17 +105,14 @@ Test_LwCAPolicyValidate_SAN_Valid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_SAN_JSON_VALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SAN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -136,10 +121,8 @@ Test_LwCAPolicyValidate_SAN_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SAN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -148,10 +131,8 @@ Test_LwCAPolicyValidate_SAN_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
+                LWCA_POLICY_CHECK_SAN);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -162,17 +143,14 @@ Test_LwCAPolicyValidate_SAN_Invalid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_SAN_JSON_INVALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_SAN);
+    assert_int_equal(dwError, LWCA_SAN_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -181,10 +159,8 @@ Test_LwCAPolicyValidate_SAN_Invalid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_SAN);
+    assert_int_equal(dwError, LWCA_SAN_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -193,10 +169,8 @@ Test_LwCAPolicyValidate_SAN_Invalid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_SAN,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_SAN);
+    assert_int_equal(dwError, LWCA_SAN_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -207,17 +181,14 @@ Test_LwCAPolicyValidate_KeyUsage_Valid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_KEY_USAGE_JSON_VALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_KEY_USAGE,
-                &bIsValid);
+                LWCA_POLICY_CHECK_KEY_USAGE);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -228,17 +199,14 @@ Test_LwCAPolicyValidate_KeyUsage_Invalid(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     __wrap_LwCAPolicyValidateSetup(TEST_KEY_USAGE_JSON_INVALID1, DUMMY_UPN, TEST_CSR1);
 
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_KEY_USAGE,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_KEY_USAGE);
+    assert_int_equal(dwError, LWCA_KEY_USAGE_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -250,7 +218,6 @@ Test_LwCAPolicyValidate_CertDuration_Valid(
 {
     DWORD dwError = 0;
     PLWCA_CERT_VALIDITY pValidity = NULL;
-    BOOLEAN bIsValid = FALSE;
     time_t tmNotBefore = 0;
     time_t tmNotAfter = 0;
 
@@ -266,10 +233,8 @@ Test_LwCAPolicyValidate_CertDuration_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, pValidity,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_DURATION,
-                &bIsValid);
+                LWCA_POLICY_CHECK_DURATION);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 
@@ -280,10 +245,8 @@ Test_LwCAPolicyValidate_CertDuration_Valid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, NULL,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_DURATION,
-                &bIsValid);
+                LWCA_POLICY_CHECK_DURATION);
     assert_int_equal(dwError, 0);
-    assert_true(bIsValid);
 
     __wrap_LwCAPolicyValidateCleanup();
 }
@@ -295,7 +258,6 @@ Test_LwCAPolicyValidate_CertDuration_Invalid(
 {
     DWORD dwError = 0;
     PLWCA_CERT_VALIDITY pValidity = NULL;
-    BOOLEAN bIsValid = FALSE;
     time_t tmNotBefore = 0;
     time_t tmNotAfter = 0;
 
@@ -311,10 +273,8 @@ Test_LwCAPolicyValidate_CertDuration_Invalid(
     dwError = LwCAPolicyValidate(
                 pPolicyCtx, pReqCtx, pReq, pValidity,
                 LWCA_POLICY_TYPE_CERTIFICATE,
-                LWCA_POLICY_CHECK_DURATION,
-                &bIsValid);
-    assert_int_equal(dwError, 0);
-    assert_false(bIsValid);
+                LWCA_POLICY_CHECK_DURATION);
+    assert_int_equal(dwError, LWCA_CERT_DURATION_POLICY_VIOLATION);
 
     __wrap_LwCAPolicyValidateCleanup();
 

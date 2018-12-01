@@ -154,6 +154,7 @@ LwCARestUnknownSetResult(
 DWORD
 LwCARestUnknownGetHttpError(
     PLWCA_REST_RESULT       pRestRslt,
+    PCSTR                   pcszMethod,
     PLWCA_HTTP_ERROR*       ppHttpError
     );
 

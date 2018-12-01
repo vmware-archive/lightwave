@@ -92,9 +92,9 @@ int main(VOID)
                 VmDirSetupExtractEventAttributeValueChanges,
                 VmDirTeardownExtractEvent),
         cmocka_unit_test_setup_teardown(
-                VmDirExtractEventPopulateMustAttributes_ValidInput,
-                VmDirSetupExtractEventPopulateMustAttributes,
-                VmDirTeardownExtractEvent),
+                VmDirTestExtractEventPopulateMustAttributes_ValidInput,
+                VmDirTestSetupExtractEventPopulateMustAttributes,
+                VmDirTestTeardownExtractEventMustAttr),
         cmocka_unit_test_setup_teardown(
                 VmDirExtractEventPopulateOperationAttributes_ValidInput,
                 VmDirSetupExtractEventPopulateOperationAttributes,

@@ -1077,6 +1077,8 @@ VmAfSrvJoinVmDir2(
     PWSTR            pwszMachineName,    /* IN   OPTIONAL */
     PWSTR            pwszOrgUnit,        /* IN   OPTIONAL */
     PWSTR            pwszSiteName,       /* IN   OPTIONAL */
+    PWSTR            pwszLwCAServer,     /* IN   OPTIONAL */
+    PWSTR            pwszLwCAId,         /* IN   OPTIONAL */
     VMAFD_JOIN_FLAGS dwFlags             /* IN            */
     )
 {
@@ -1213,6 +1215,27 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfdUpperCaseStringA(pszDefaultRealm);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    if (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_MULTI_TENANTED_CA))
+    {
+        /*
+         * If using MutentnCA for certificate operations, then an endpoint
+         * and CA Id must be provided.
+         */
+        if (IsNullOrEmptyString(pwszLwCAServer) || IsNullOrEmptyString(pwszLwCAId))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+
+        dwError = VmAfdSrvSetUseLwCA(TRUE);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetLwCAServer(pwszLwCAServer);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfSrvSetLwCAId(pwszLwCAId);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     dwDirJoinFlags = (IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED)) ?
                             VMDIR_CLIENT_JOIN_FLAGS_PREJOINED : 0;
@@ -1271,9 +1294,7 @@ VmAfSrvJoinVmDir2(
                       dwDirJoinFlags
                       );
         BAIL_ON_VMAFD_ERROR(dwError);
-
     }
-
 
     if (!IsFlagSet(dwFlags, VMAFD_JOIN_FLAGS_CLIENT_PREJOINED))
     {
@@ -1767,7 +1788,7 @@ VmAfSrvCreateComputerAccount(
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringWFromA(
-                                pMachineInfo->pszPassword, 
+                                pMachineInfo->pszPassword,
                                 &pwszOutPassword
                                 );
         BAIL_ON_VMAFD_ERROR(dwError);

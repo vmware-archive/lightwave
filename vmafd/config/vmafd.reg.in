@@ -85,3 +85,15 @@
     default = dword:00000000
     doc     = "Use REST api to communicate with remote Directory service"
 }
+"UseMultiTenantedCA" = {
+    default = dword:00000000
+    doc     = "Use Multi Tenated CA to create machine SSL cert and trusted root sync"
+}
+"MultiTenantedCAServer" = {
+    default = ""
+    doc     = "The Multi Tenanted CA endpoint to use, if Multi Tenanted CA is enabled"
+}
+"MultiTenantedCAId" = {
+    default = ""
+    doc     = "CA Id to send CSR for machine SSL cert, and to sync trusted roots from. Only if Multi Tenanted CA is enabled"
+}

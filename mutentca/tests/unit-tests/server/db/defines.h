@@ -19,7 +19,7 @@
 #define LWCA_POST_PLUGIN_ADD_CERT           "LwCADbPostPluginAddCertData"
 #define LWCA_POST_SERIALIZE_CA_TO_JSON      "LwCASerializeCAToJSON"
 #define LWCA_POST_SERIALIZE_CERT_DATA_TO_JSON   "LwCASerializeCertDataToJSON"
-#define LWCA_POST_SERIALIZE_CONFIG_CA_TO_JSON      "LwCASerializeConfigCAToJSON"
+#define LWCA_POST_SERIALIZE_CONTAINER_TO_JSON   "LwCASerializeContainerToJSON"
 #define LWCA_POST_DESERIALIZE_JSON_TO_CA    "LwCADeserializeJSONToCA"
 #define LWCA_POST_DESERIALIZE_JSON_TO_CERT_DATA "LwCADeserializeJSONToCertData"
 #define LWCA_POST_CHECK_CA                  "LwCADbPostPluginCheckCA"
@@ -44,6 +44,8 @@
 #define TEST_CRL_NUM                "1500"
 #define TEST_LAST_CRL_UPDATE        "20181031223344.0Z"
 #define TEST_NEXT_CRL_UPDATE        "20181101223344.0Z"
+#define TEST_AUTH_BLOB              "{\"user\":\"dummy\",\"password\":\"pass\"}"
+#define TEST_AUTH_BLOB_ESCAPED      "{\\\"user\\\":\\\"dummy\\\",\\\"password\\\":\\\"pass\\\"}"
 #define TEST_CA_STATUS              1
 #define TEST_CA_ID                  "testId"
 #define TEST_PARENT_CA_ID           "testParentId"
@@ -111,6 +113,12 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\n" \
     "                \""TEST_NEXT_CRL_UPDATE"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -183,6 +191,12 @@
     "            ]\n" \
     "        },\n" \
     "        {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
     "            \"type\": \"cAStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
@@ -191,8 +205,8 @@
     "    ]\n" \
     "}")
 
-#define SERIALIZED_CONFIG_ROOT_CA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_PARENT_CA_ID",cn=Configuration,dc=lw-testdom,dc=com\",\n"  \
+#define SERIALIZED_CONTAINER_JSON ("{\n" \
+    "    \"dn\": \""TEST_PARENT_CA_DN"\",\n"  \
     "    \"attributes\": [\n"   \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
@@ -242,6 +256,9 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\""TEST_AUTH_BLOB_ESCAPED"\"]\n" \
+    "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
     "        }]\n" \
@@ -284,6 +301,9 @@
     "            \"type\": \"cANextCRLUpdate\",\n" \
     "            \"value\": [\""TEST_NEXT_CRL_UPDATE"\"]\n" \
     "        }, {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\""TEST_AUTH_BLOB_ESCAPED"\"]\n" \
+    "        }, {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\"vmwCertificationAuthority\", \"pkiCA\"]\n" \
     "        }]\n" \
@@ -293,7 +313,7 @@
 
 #define CERT_DATA_JSON_RESPONSE ("{\n" \
     "    \"result\": [{\n" \
-    "        \"dn\": \"cn=2000,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn=2000,cn=Certs,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -326,7 +346,7 @@
     "            \"value\": [\"vmwCerts\"]\n" \
     "        }]\n" \
     "    }, {\n" \
-    "        \"dn\": \"cn=1500,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "        \"dn\": \"cn=1500,cn=Certs,cn=testId,cn=testParentId,cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "        \"attributes\": [{\n" \
     "            \"type\": \"nTSecurityDescriptor\",\n" \
     "            \"value\": [\"\\u0001\"]\n" \
@@ -423,6 +443,15 @@
     "    {\n" \
     "        \"operation\": \"replace\",\n" \
     "        \"attribute\": {\n" \
+    "            \"type\": \"cAAuthBlob\",\n" \
+    "            \"value\": [\n" \
+    "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
     "            \"type\": \"cAStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
@@ -432,7 +461,7 @@
     "]")
 
 #define SERIALIZED_CERT_DATA_JSON ("{\n" \
-    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
+    "    \"dn\": \"cn="TEST_SERIAL_NUMBER",cn=Certs,cn="TEST_CA_ID",cn="TEST_PARENT_CA_ID",cn=Certificate-Authority,dc=lw-testdom,dc=com\",\n" \
     "    \"attributes\": [\n" \
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \

@@ -12,9 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"strings"
+	"sync"
 	"testing"
 	"time"
-	"sync"
 
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -434,6 +434,88 @@ func TestParseTokenType(t *testing.T) {
 	if assert.NotNil(t, err, "Error expected when parsing ID token as Access Token") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "Invalid Token error expected")
 	}
+}
+
+func checkProviderInfo(t *testing.T, providerInfo ProviderInfo) {
+	assert.NotEmpty(t, providerInfo.issuer, "issuer check")
+	assert.NotEmpty(t, providerInfo.signers, "signers check")
+}
+
+func checkParseAndValidateAccessTokenMulti(t *testing.T, oidcClient Client, clientID, reqID string, logger Logger) {
+	var providerInfo [2]ProviderInfo
+
+	tokens, err := oidcClient.AcquireTokensBySolutionUserCert(config.SolutionUserDn, config.PrivateKey, scope, "")
+	require.Nil(t, err, "Error in AcquiringTokens: %+v", err)
+	checkToken(t, tokens)
+
+	idToken, err := BuildIDToken(oidcClient, tokens, reqID, logger)
+	require.Nil(t, err, "Error in Building ID Token: %+v", err)
+	checkIDToken(t, idToken, config.SolutionUserName, HOKTokenType, clientID, oidcClient.Issuer())
+
+	signers, _ := oidcClient.Signers(false, reqID)
+
+	providerInfo[0], err = NewProviderInfo("invalid-issuer", signers)
+	require.Nil(t, err, "Error in creating client info struct: %+v", err)
+	checkProviderInfo(t, providerInfo[0])
+
+	providerInfo[1], err = NewProviderInfo(oidcClient.Issuer(), signers)
+	require.Nil(t, err, "Error in creating client info struct: %+v", err)
+	checkProviderInfo(t, providerInfo[1])
+
+	accessToken, index, err := ParseAndValidateAccessTokenMulti(
+		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+
+	require.Nil(t, err, "Error in parsing access token: %+v", err)
+	assert.Equal(t, index, 1, "index check")
+
+	checkAccessToken(t, accessToken, config.SolutionUserName, HOKTokenType, clientID, oidcClient.Issuer())
+}
+
+func checkParseAndValidateAccessTokenMultiFail(t *testing.T, oidcClient Client, clientID, reqID string, logger Logger) {
+	var providerInfo [2]ProviderInfo
+
+	tokens, err := oidcClient.AcquireTokensBySolutionUserCert(config.SolutionUserDn, config.PrivateKey, scope, "")
+	require.Nil(t, err, "Error in AcquiringTokens: %+v", err)
+	checkToken(t, tokens)
+
+	idToken, err := BuildIDToken(oidcClient, tokens, reqID, logger)
+	require.Nil(t, err, "Error in Building ID Token: %+v", err)
+	checkIDToken(t, idToken, config.SolutionUserName, HOKTokenType, clientID, oidcClient.Issuer())
+
+	signers, _ := oidcClient.Signers(false, reqID)
+
+	providerInfo[0], err = NewProviderInfo(config.Issuer2, signers)
+	require.Nil(t, err, "Error in creating client info struct: %+v", err)
+	checkProviderInfo(t, providerInfo[0])
+
+	providerInfo[1], err = NewProviderInfo(config.FakeIssuer, signers)
+	require.Nil(t, err, "Error in creating client info struct: %+v", err)
+	checkProviderInfo(t, providerInfo[1])
+
+	_, _, err = ParseAndValidateAccessTokenMulti(
+		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+
+	require.NotNil(t, err, "Error expected when parsing access token")
+}
+
+func TestParseAndValidateAccessTokenMulti(t *testing.T) {
+	logger := config.NoopLogger
+
+	oidcClient, err := buildOidcClient(config.Issuer2, "", "", logger)
+	if err != nil {
+		t.Fatalf("Error in building Oidc Client")
+	}
+
+	checkParseAndValidateAccessTokenMulti(t, oidcClient, "", "", logger)
+
+	oidcClient, err = buildOidcClient(config.Issuer1, config.ClientID, "", logger)
+	if err != nil {
+		t.Fatalf("Error in building Oidc Client")
+	}
+
+	checkParseAndValidateAccessTokenMulti(t, oidcClient, config.ClientID, "", logger)
+
+	checkParseAndValidateAccessTokenMultiFail(t, oidcClient, config.ClientID, "", logger)
 }
 
 func BuildIDToken(oidcClient Client, tokens Tokens, reqID string, logger Logger) (IDToken, error) {

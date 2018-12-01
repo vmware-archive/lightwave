@@ -610,6 +610,7 @@ __wrap_LwCADbGetCA(
                     "110000",
                     "20181025201010.542",
                     "20191025201010.542",
+                    "some-tenant-info",
                     LWCA_CA_STATUS_ACTIVE,
                     &pCAData
                 );
@@ -637,6 +638,39 @@ __wrap_LwCADbCheckCertData(
     assert_non_null(pcszSerialNumber);
     assert_non_null(pbExists);
     *pbExists = FALSE;
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetCAStatus(
+    PCSTR               pcszCAId,
+    PLWCA_CA_STATUS     pStatus
+    )
+{
+    assert_non_null(pcszCAId);
+    assert_non_null(pStatus);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    *pStatus = LWCA_CA_STATUS_ACTIVE;
+
+    return mock();
+}
+
+DWORD
+__wrap_LwCADbGetCAAuthBlob(
+    PCSTR       pcszCAId,
+    PSTR        *ppszAuthBlob
+    )
+{
+    DWORD       dwError = 0;
+
+    assert_non_null(pcszCAId);
+    assert_non_null(ppszAuthBlob);
+    assert_string_equal(pcszCAId, TEST_ROOT_CA_ID);
+
+    dwError = LwCAAllocateStringA("{'user':'root', 'password':'password'}", ppszAuthBlob);
+    assert_int_equal(dwError, 0);
 
     return mock();
 }
@@ -841,15 +875,11 @@ __wrap_LwCAPolicyValidate(
     X509_REQ                *pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
     LWCA_POLICY_TYPE        policyType,
-    LWCA_POLICY_CHECKS      policyChecks,
-    BOOLEAN                 *pbIsValid
+    LWCA_POLICY_CHECKS      policyChecks
     )
 {
     assert_non_null(pReqContext);
     assert_non_null(pRequest);
-    assert_non_null(pbIsValid);
-
-    *pbIsValid = TRUE;
 
     return mock();
 }
@@ -1014,7 +1044,7 @@ Test_LwCAGetCACertificates_Valid(
     will_return(__wrap_LwCADbGetCACertificates, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
+    dwError = LwCAGetCACertificates(TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, 0);
     assert_non_null(pCertificates);
     assert_int_equal(pCertificates->dwCount, 1);
@@ -1037,14 +1067,14 @@ Test_LwCAGetCACertificates_Invalid(
 
     // Testcase 1: Invalid input
 
-    dwError = LwCAGetCACertificates(pReqCtx, NULL, &pCertificates);
+    dwError = LwCAGetCACertificates(NULL, &pCertificates);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertificates);
 
     // Testcase 2: CA does not exist
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
+    dwError = LwCAGetCACertificates(TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, LWCA_CA_MISSING);
     assert_null(pCertificates);
 

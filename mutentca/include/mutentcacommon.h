@@ -767,6 +767,7 @@ LwCADbCreateCAData(
     PCSTR                       pcszCRLNumber,
     PCSTR                       pcszLastCRLUpdate,
     PCSTR                       pcszNextCRLUpdate,
+    PCSTR                       pcszAuthBlob,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     );

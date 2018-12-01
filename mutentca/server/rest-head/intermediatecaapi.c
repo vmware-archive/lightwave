@@ -104,7 +104,7 @@ error:
 }
 
 /*
- * Returns Intermediate CA Certificate
+ * Returns Intermediate CA Certificate and CRL
  */
 DWORD
 LwCARestGetIntermediateCACert(
@@ -116,6 +116,8 @@ LwCARestGetIntermediateCACert(
     PLWCA_REST_OPERATION    pRestOp         = NULL;
     PSTR                    pszRequestId    = NULL;
     PSTR                    pszCAId         = NULL;
+    BOOLEAN                 bDetail         = FALSE;
+    PLWCA_CRL               pCrl            = NULL;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
 
     if (!pIn)
@@ -132,20 +134,36 @@ LwCARestGetIntermediateCACert(
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszCAId, &pCACerts);
+    dwError = LwCARestGetBoolParam(pRestOp, LWCA_REST_PARAM_WITH_CRL, &bDetail, FALSE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetCACertificates(pszCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetCertArrayData(
-                  pRestOp->pResult,
-                  LWCA_JSON_KEY_CERTS,
-                  pCACerts);
+                        pRestOp->pResult,
+                        LWCA_JSON_KEY_CERTS,
+                        pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    if (bDetail)
+    {
+        dwError = LwCAGetCACrl(pRestOp->pReqCtx, pszCAId, &pCrl);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCARestResultSetStrData(
+                            pRestOp->pResult,
+                            LWCA_JSON_KEY_CRL,
+                            pCrl);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
 cleanup:
     LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCAFreeCertificates(pCACerts);
+    LwCAFreeCrl(pCrl);
 
     return dwError;
 

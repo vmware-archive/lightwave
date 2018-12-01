@@ -45,6 +45,7 @@ targets:
     description: run mutentca tests
     after:
       - gen-mutentca-tests
+      - gen-post-mutentca-tests
       - deploy_mutentca_test_env
     always: true
     image: lightwave_lightwave-client

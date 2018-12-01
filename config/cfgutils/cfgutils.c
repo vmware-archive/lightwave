@@ -365,6 +365,14 @@ VmwDeployFreeSetupParams(
     {
         VmwDeployFreeMemory(pParams->pszSubjectAltName);
     }
+    if (pParams->pszLwCAServer)
+    {
+        VmwDeployFreeMemory(pParams->pszLwCAServer);
+    }
+    if (pParams->pszLwCAId)
+    {
+        VmwDeployFreeMemory(pParams->pszLwCAId);
+    }
     VmwDeployFreeMemory(pParams);
 }
 
@@ -1016,7 +1024,7 @@ VmwDeploySetupClientWithDC(
 
     /*
      * prejoin flag is assuming no ldap connection
-     * from client to server. prejoin uses rest interface
+     * from client to server. prejoin uses rest interface.
      * before prejoin process starts, afd will acquire
      * a token with supplied credentials.
     */
@@ -1093,10 +1101,14 @@ VmwDeploySetupClientWithDC(
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_ATOMIC_JOIN;
     }
+    if (pParams->bMultiTenantedCAEnabled)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_MULTI_TENANTED_CA;
+    }
 
     do
     {
-        dwError = VmAfdJoinVmDirWithSiteA(
+        dwError = VmAfdJoinVmDir3A(
                     pParams->pszServer,
                     pParams->pszDomainName,
                     pParams->pszUsername,
@@ -1105,6 +1117,8 @@ VmwDeploySetupClientWithDC(
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
                     NULL,
+                    pParams->pszLwCAServer,
+                    pParams->pszLwCAId,
                     uJoinFlags
                     );
         if (dwError)
@@ -1168,10 +1182,10 @@ VmwDeploySetupClientWithDC(
         {
             // As per https://tools.ietf.org/html/rfc6125
             // CN portion of the certificate will ignored
-            // for certificate validation if SAN is present 
-            // CN has a limitation of 64 chars and 
+            // for certificate validation if SAN is present
+            // CN has a limitation of 64 chars and
             // FQDN can be upto 256 chars. Passing a
-            // hard coded value machine ssl certificate 
+            // hard coded value machine ssl certificate
             dwError = VmwDeployCreateMachineSSLCert(
                             pParams->pszServer,
                             pParams->pszDomainName,
@@ -1345,10 +1359,14 @@ VmwDeploySetupClient(
     {
         uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_ATOMIC_JOIN;
     }
+    if (pParams->bMultiTenantedCAEnabled)
+    {
+        uJoinFlags = uJoinFlags | VMAFD_JOIN_FLAGS_MULTI_TENANTED_CA;
+    }
 
     do
     {
-        dwError = VmAfdJoinVmDirWithSiteA(
+        dwError = VmAfdJoinVmDir3A(
                     NULL,
                     pParams->pszDomainName,
                     pParams->pszUsername,
@@ -1357,6 +1375,8 @@ VmwDeploySetupClient(
                         pParams->pszMachineAccount : pParams->pszHostname,
                     pParams->pszOrgUnit,
                     pParams->pszSite,
+                    pParams->pszLwCAServer,
+                    pParams->pszLwCAId,
                     uJoinFlags
                     );
         if (dwError)

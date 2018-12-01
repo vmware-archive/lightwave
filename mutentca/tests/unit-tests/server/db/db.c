@@ -83,6 +83,7 @@ Test_LwCADbAddCA(
                                 "10001",
                                 "20181025201010.542",
                                 "20191025201010.542",
+                                "some-tenant-info",
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
@@ -125,6 +126,7 @@ Test_LwCADbAddCA_Invalid(
                                 NULL,
                                 NULL,
                                 NULL,
+                                NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData1);
     assert_int_equal(dwError, 0);
@@ -132,6 +134,7 @@ Test_LwCADbAddCA_Invalid(
     dwError = LwCADbCreateCAData(NULL,
                                 pCertArray,
                                 pEncryptedPrivateKey,
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -145,6 +148,7 @@ Test_LwCADbAddCA_Invalid(
                                 NULL,
                                 NULL,
                                 NULL,
+                                NULL,
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData3);
     assert_int_equal(dwError, 0);
@@ -152,6 +156,7 @@ Test_LwCADbAddCA_Invalid(
     dwError = LwCADbCreateCAData("cn=CA",
                                 NULL,
                                 pEncryptedPrivateKey,
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,
@@ -367,6 +372,64 @@ Test_LwCADbGetCertData_Invalid(
     assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
 
     LwCADbFreeCertDataArray(pCertDataArray);
+}
+
+VOID
+Test_LwCADbGetCAStatus(
+    VOID **state
+    )
+{
+    DWORD           dwError = 0;
+    LWCA_CA_STATUS  status = LWCA_CA_STATUS_INACTIVE;
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, &status);
+    assert_int_equal(dwError, 0);
+}
+
+VOID
+Test_LwCADbGetCAStatus_Invalid(
+    VOID **state
+    )
+{
+    DWORD           dwError = 0;
+    LWCA_CA_STATUS  status = LWCA_CA_STATUS_INACTIVE;
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, NULL);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCAStatus(TEST_CA_ID, &status);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+}
+
+VOID
+Test_LwCADbGetCAAuthBlob(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAuthBlob = NULL;
+
+    dwError = LwCADbGetCAAuthBlob(TEST_CA_ID, &pszAuthBlob);
+    assert_int_equal(dwError, 0);
+
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
+}
+
+VOID
+Test_LwCADbGetCAAuthBlob_Invalid(
+    VOID **state
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszAuthBlob = NULL;
+
+    dwError = LwCADbGetCAAuthBlob(NULL, &pszAuthBlob);
+    assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
+
+    dwError = LwCADbGetCAAuthBlob(TEST_CA_ID, &pszAuthBlob);
+    assert_int_equal(dwError, LWCA_DB_NOT_INITIALIZED);
+
+    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
 }
 
 VOID
@@ -588,6 +651,7 @@ Test_LwCADbCAData(
                                 "10001",
                                 "20181025201010.542",
                                 "20191025201010.542",
+                                "some-tenant-info",
                                 LWCA_CA_STATUS_ACTIVE,
                                 &pCAData);
     assert_int_equal(dwError, 0);
@@ -623,6 +687,7 @@ Test_LwCADbCAData_Invalid(
     DWORD dwError = 0;
 
     dwError = LwCADbCreateCAData("cn=CA",
+                                NULL,
                                 NULL,
                                 NULL,
                                 NULL,

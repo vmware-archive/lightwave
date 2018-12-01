@@ -94,6 +94,20 @@ LwCADbTestPluginGetParentCAId(
     );
 
 DWORD
+LwCADbTestPluginGetCAStatus(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_CA_STATUS             pStatus
+    );
+
+DWORD
+LwCADbTestPluginGetCAAuthBlob(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszAuthBlob
+    );
+
+DWORD
 LwCADbTestPluginUpdateCA(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,

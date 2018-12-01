@@ -14,6 +14,14 @@
 
 #include "includes.h"
 
+typedef struct _VMDIR_EXTRACT_EVENT_TEST_CONTEXT
+{
+    PVMDIR_REPLICATION_UPDATE   pIndividualUpdate;
+    PVMDIR_REPLICATION_UPDATE   pCombinedUpdate;
+    USN                         usn;
+    PVMDIR_REPLICATION_UPDATE   pExpectedCombinedUpdate;
+} VMDIR_EXTRACT_EVENT_TEST_CONTEXT, *PVMDIR_EXTRACT_EVENT_TEST_CONTEXT;
+
 //AttributeChanges Setup Functions
 int
 VmDirSetupExtractEventAttributeChanges(
@@ -148,34 +156,63 @@ VmDirSetupExtractEventAttributeValueChanges(
 
 //PopulateMustAttributes Setup Functions
 int
-VmDirSetupExtractEventPopulateMustAttributes(
+VmDirTestSetupExtractEventPopulateMustAttributes(
     VOID    **state
     )
 {
-    DWORD                        dwError = 0;
-    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
+    DWORD                               dwError = 0;
+    PVMDIR_REPLICATION_UPDATE           pIndividualUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pCombinedUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pExpectedCombinedUpdate = NULL;
+    PVMDIR_EXTRACT_EVENT_TEST_CONTEXT   pTestContext = NULL;
 
-    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pUpdate);
-    assert_int_equal(dwError, 0);
-    assert_non_null(pUpdate);
+    dwError = VmDirTestAllocateReplUpdate(&pIndividualUpdate);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pUpdate->pEntry);
-    assert_int_equal(dwError, 0);
-    assert_non_null(pUpdate->pEntry);
+    pIndividualUpdate->syncState = LDAP_SYNC_ADD;
 
-    pUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
-    pUpdate->syncState = LDAP_SYNC_ADD;
+    /*
+     * Add a may attr newuser_sn and a must attr newuser_cn to the individual update but not to the combined update.
+     * The expected behavior is that the must attr should be copied to the combined update by VmDirExtractEventPopulateMustAttributes
+     */
+    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 100, 100, 1, pIndividualUpdate);
 
-    dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
-    assert_int_equal(dwError, 0);
+    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 101, 101, 2, pIndividualUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 100, 100, 1, pUpdate);
+    dwError = VmDirTestAllocateReplUpdate(&pCombinedUpdate);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 101, 101, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pCombinedUpdate);
 
-    *state = pUpdate;
+    pCombinedUpdate->syncState = LDAP_SYNC_ADD;
+    pCombinedUpdate->partnerUsn = 100;
 
-    return 0;
+    dwError = VmDirTestAllocateReplUpdate(&pExpectedCombinedUpdate);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pExpectedCombinedUpdate);
+
+    pExpectedCombinedUpdate->syncState = LDAP_SYNC_ADD;
+    pExpectedCombinedUpdate->partnerUsn = 100;
+
+    //Verify Attr MetaData is as expected in pIndividualUpdate
+    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 100, 100, 1, pExpectedCombinedUpdate);
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_EXTRACT_EVENT_TEST_CONTEXT), (PVOID*)&pTestContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pTestContext->pIndividualUpdate = pIndividualUpdate;
+    pTestContext->pCombinedUpdate = pCombinedUpdate;
+    pTestContext->pExpectedCombinedUpdate = pExpectedCombinedUpdate;
+
+    *state = pTestContext;
+
+cleanup:
+    return dwError;
+
+error:
+    print_message("%s failed with error %d", __FUNCTION__, dwError);
+    goto cleanup;
 }
 
 //PopulateOperationAttributes Setup Functions
@@ -225,6 +262,29 @@ VmDirTeardownExtractEvent(
     pUpdate = (PVMDIR_REPLICATION_UPDATE)*state;
 
     VmDirFreeReplUpdate(pUpdate);
+
+    return 0;
+}
+
+int VmDirTestTeardownExtractEventMustAttr(
+    VOID    **state
+    )
+{
+    PVMDIR_REPLICATION_UPDATE           pIndividualUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pCombinedUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pExpectedCombinedUpdate = NULL;
+    PVMDIR_EXTRACT_EVENT_TEST_CONTEXT   pTestContext = NULL;
+
+    pTestContext = (PVMDIR_EXTRACT_EVENT_TEST_CONTEXT) *state;
+    pIndividualUpdate = pTestContext->pIndividualUpdate;
+    pCombinedUpdate = pTestContext->pCombinedUpdate;
+    pExpectedCombinedUpdate = pTestContext->pExpectedCombinedUpdate;
+
+    VmDirFreeReplUpdate(pIndividualUpdate);
+    VmDirFreeReplUpdate(pCombinedUpdate);
+    VmDirFreeReplUpdate(pExpectedCombinedUpdate);
+
+    VMDIR_SAFE_FREE_MEMORY(pTestContext);
 
     return 0;
 }
@@ -439,57 +499,24 @@ VmDirExtractEventAttributeValueChanges_ValidInput(
  *         USN: 100    ATTR: CN
  */
 VOID
-VmDirExtractEventPopulateMustAttributes_ValidInput(
+VmDirTestExtractEventPopulateMustAttributes_ValidInput(
     VOID    **state
     )
 {
-    DWORD                             dwError = 0;
-    PVMDIR_REPLICATION_UPDATE         pCombinedUpdate = NULL;
-    PVMDIR_REPLICATION_UPDATE         pIndividualUpdate = NULL;
-    PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData = NULL;
-    PVDIR_ATTRIBUTE                   pAttr = NULL;
+    DWORD                               dwError = 0;
+    PVMDIR_REPLICATION_UPDATE           pCombinedUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pIndividualUpdate = NULL;
+    PVMDIR_REPLICATION_UPDATE           pExpectedCombinedUpdate = NULL;
+    PVMDIR_EXTRACT_EVENT_TEST_CONTEXT   pTestContext = NULL;
 
-    pIndividualUpdate = (PVMDIR_REPLICATION_UPDATE) *state;
-
-    dwError = VmDirAllocateMemory(sizeof(VMDIR_REPLICATION_UPDATE), (PVOID*)&pCombinedUpdate);
-    assert_int_equal(dwError, 0);
-    assert_non_null(pCombinedUpdate);
-
-    dwError = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pCombinedUpdate->pEntry);
-    assert_int_equal(dwError, 0);
-    assert_non_null(pCombinedUpdate->pEntry);
-
-    dwError = VmDirLinkedListCreate(&pCombinedUpdate->pMetaDataList);
-    assert_int_equal(dwError, 0);
-    assert_non_null(pCombinedUpdate->pMetaDataList);
-
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pCombinedUpdate);
-
-    pCombinedUpdate->syncState = LDAP_SYNC_ADD;
-    pCombinedUpdate->partnerUsn = 100;
-    pCombinedUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
+    pTestContext = (PVMDIR_EXTRACT_EVENT_TEST_CONTEXT) *state;
+    pIndividualUpdate = pTestContext->pIndividualUpdate;
+    pCombinedUpdate = pTestContext->pCombinedUpdate;
+    pExpectedCombinedUpdate = pTestContext->pExpectedCombinedUpdate;
 
     dwError = VmDirExtractEventPopulateMustAttributes(pIndividualUpdate, pCombinedUpdate);
     assert_int_equal(dwError, 0);
-
-    //Verify Attr MetaData is as expected in pIndividualUpdate
-    pReplMetaData = VmDirFindAttrMetaData(pCombinedUpdate->pMetaDataList, ATTR_CN);
-    assert_non_null(pReplMetaData);
-    assert_string_equal(pReplMetaData->pszAttrType, ATTR_CN);
-    assert_int_equal(pReplMetaData->pMetaData->localUsn, 100);
-    assert_int_equal(pReplMetaData->pMetaData->version, 1);
-    assert_string_equal(
-            pReplMetaData->pMetaData->pszOrigInvoId, "7ef77c0f-cff1-4239-b293-39a2b302d5bd");
-    assert_string_equal(pReplMetaData->pMetaData->pszOrigTime, "20180702222545.584");
-    assert_int_equal(pReplMetaData->pMetaData->origUsn, 100);
-
-    //Verify Attr value is as expected in pCombinedUpdate
-    pAttr = VmDirFindAttrByName(pCombinedUpdate->pEntry, ATTR_CN);
-    assert_non_null(pAttr);
-    assert_string_equal(pAttr->type.lberbv_val, ATTR_CN);
-    assert_string_equal(pAttr->vals[0].lberbv_val, "newuser_cn");
-
-    VmDirFreeReplUpdate(pCombinedUpdate);
+    assert_true(VmDirTestCompareReplUpdate(pExpectedCombinedUpdate, pCombinedUpdate));
 }
 
 /*

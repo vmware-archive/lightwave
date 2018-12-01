@@ -602,6 +602,12 @@ VMCALdapAccessCheck(
     VMCA_USER_TYPE userType
     );
 
+DWORD
+VMCALdapIsAdministrator(
+    PCSTR szAuthPrinc,
+    PBOOLEAN pbHasAdminPrivilege
+    );
+
 //utils.c
 
 DWORD

@@ -394,7 +394,7 @@ VMCASignedRequestPrivate(
     dwError = VMCACopyExtensions(pCertificate, pCA->pCertificate, pRequest);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    if (X509_check_ca(pCertificate))
+    if (X509_check_ca(pCertificate) && !pReqContext->bHasAdminPrivilege)
     {
         VMCA_LOG_INFO("Request for a CA certificate is not allowed");
         dwError = VMCA_INVALID_CSR_FIELD;
@@ -404,17 +404,23 @@ VMCASignedRequestPrivate(
     if (((pCertificate->ex_flags & EXFLAG_KUSAGE) &&
          (pCertificate->ex_kusage & KU_KEY_CERT_SIGN)))
     {
-        VMCA_LOG_INFO("Request for a certificate signing cert is not allowed");
-        dwError = VMCA_INVALID_CSR_FIELD;
-        BAIL_ON_VMCA_ERROR(dwError);
+        if (!pReqContext->bHasAdminPrivilege)
+        {
+            VMCA_LOG_INFO("Request for a certificate signing cert is not allowed");
+            dwError = VMCA_INVALID_CSR_FIELD;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
     }
 
     if (((pCertificate->ex_flags & EXFLAG_KUSAGE) &&
          (pCertificate->ex_kusage & KU_CRL_SIGN)))
     {
-        VMCA_LOG_INFO("Request for a CRL signing cert is not allowed");
-        dwError = VMCA_INVALID_CSR_FIELD;
-        BAIL_ON_VMCA_ERROR(dwError);
+        if (!pReqContext->bHasAdminPrivilege)
+        {
+            VMCA_LOG_INFO("Request for a CRL signing cert is not allowed");
+            dwError = VMCA_INVALID_CSR_FIELD;
+            BAIL_ON_VMCA_ERROR(dwError);
+        }
     }
 
     if (((pCertificate->ex_flags & EXFLAG_KUSAGE) &&

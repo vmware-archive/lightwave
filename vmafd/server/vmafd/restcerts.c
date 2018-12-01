@@ -241,7 +241,7 @@ _VmAfdGetHttpResultCACerts(
                   (PVOID *)&pCACerts);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    /* 
+    /*
      * root position is an object which holds an array
      * like {"certs":[{...}, {...}]}.
      * this iterate call is on the top level certs object.
@@ -263,32 +263,89 @@ error:
     goto cleanup;
 }
 
+static
 DWORD
-VmAfdRestGetCACerts(
-    PCSTR   pszServer,
-    PCSTR   pszDomain,
-    PCSTR   pszUser,
-    PCSTR   pszPass,
-    BOOLEAN bDetail,
-    BOOLEAN bInsecure,
-    PVMAFD_CA_CERT_ARRAY *ppCACerts
+_VmAfdRestGetCACertsVMCA(
+    PCSTR                   pcszServer,
+    BOOLEAN                 bDetail,
+    PVM_HTTP_CLIENT         pHttpClient,
+    PVMAFD_CA_CERT_ARRAY    *ppCACerts
     )
 {
-    DWORD dwError = 0;
-    PSTR pszToken = NULL;
-    PSTR pszUrl = NULL;
-    PVM_HTTP_CLIENT pHttpClient = NULL;
-    PSTR pszParamString = NULL;
-    PCSTR pszResult = NULL;
-    PVMAFD_CA_CERT_ARRAY pCACerts = NULL;
-    PWSTR pwszCAPath = NULL;
-    PSTR pszCAPath = NULL;
+    DWORD                   dwError = 0;
+    PSTR                    pszUrl = NULL;
+    PSTR                    pszParamString = NULL;
+    PCSTR                   pszResult = NULL;
+    PVMAFD_CA_CERT_ARRAY    pCACerts = NULL;
 
-    if (IsNullOrEmptyString(pszServer) ||
-        IsNullOrEmptyString(pszDomain) ||
-        IsNullOrEmptyString(pszUser) ||
-        IsNullOrEmptyString(pszPass) ||
-        !ppCACerts)
+    if (IsNullOrEmptyString(pcszServer) || !pHttpClient || !ppCACerts)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = VmAfdAllocateStringPrintf(
+                  &pszParamString,
+                  "?detail=%s",
+                  bDetail?"true":"false");
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    /* make rest url */
+    dwError = VmFormatUrl(
+                  "https",
+                  pcszServer,
+                  VMDIR_REST_API_HTTPS_PORT,
+                  VMDIR_REST_API_BASE"/"VMDIR_REST_API_GET_CERTS_CMD,
+                  pszParamString,
+                  &pszUrl);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmHttpClientPerform(pHttpClient, VMHTTP_METHOD_GET, pszUrl);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmHttpClientGetResult(pHttpClient, &pszResult);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = _VmAfdGetHttpResultCACerts(pszResult, &pCACerts);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppCACerts = pCACerts;
+
+
+cleanup:
+
+    VMAFD_SAFE_FREE_STRINGA(pszParamString);
+    VMAFD_SAFE_FREE_STRINGA(pszUrl);
+
+    return dwError;
+
+error:
+
+    VecsFreeCACertArray(pCACerts);
+    if (ppCACerts)
+    {
+        *ppCACerts = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+VmAfdRestGetCACerts(
+    PVMAFD_ROOT_FETCH_ARG       pArgs,
+    BOOLEAN                     bDetail,
+    BOOLEAN                     bInsecure,
+    PVMAFD_CA_CERT_ARRAY        *ppCACerts
+    )
+{
+    DWORD                       dwError = 0;
+    PSTR                        pszToken = NULL;
+    PSTR                        pszCAPath = NULL;
+    PWSTR                       pwszCAPath = NULL;
+    PVM_HTTP_CLIENT             pHttpClient = NULL;
+    PVMAFD_CA_CERT_ARRAY        pCACerts = NULL;
+
+    if (!pArgs || !ppCACerts)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -310,61 +367,50 @@ VmAfdRestGetCACerts(
 
     /* acquire token */
     dwError = VmAfdAcquireTokenForVmDirREST(
-                  pszServer,
-                  pszDomain,
-                  pszUser,
-                  pszPass,
+                  pArgs->pszDCName,
+                  pArgs->pszDomain,
+                  pArgs->pszUserName,
+                  pArgs->pszPassword,
                   pszCAPath,
                   &pszToken);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdAllocateStringPrintf(
-                  &pszParamString,
-                  "?detail=%s",
-                  bDetail?"true":"false");
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    /* make rest url */
-    dwError = VmFormatUrl(
-                  "https",
-                  pszServer,
-                  VMDIR_REST_API_HTTPS_PORT,
-                  VMDIR_REST_API_BASE"/"VMDIR_REST_API_GET_CERTS_CMD,
-                  pszParamString,
-                  &pszUrl);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmHttpClientInit(&pHttpClient, pszCAPath);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmHttpClientSetToken(pHttpClient,
-                                   VMHTTP_TOKEN_TYPE_BEARER,
-                                   pszToken
-                                   );
+    dwError = VmHttpClientSetToken(pHttpClient, VMHTTP_TOKEN_TYPE_BEARER, pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmHttpClientPerform(pHttpClient, VMHTTP_METHOD_GET, pszUrl);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (pArgs->bUseLwCA)
+    {
+        VmAfdLog(VMAFD_DEBUG_ANY,
+                 "[%s:%d] Use MutentCA Params: CA Server (%s) CA Id (%s)",
+                 __FUNCTION__,
+                 __LINE__,
+                 pArgs->pszLwCAServer,
+                 pArgs->pszLwCAId);
 
-    dwError = VmHttpClientGetResult(pHttpClient, &pszResult);
-    BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
-    dwError = _VmAfdGetHttpResultCACerts(pszResult, &pCACerts);
+    dwError = _VmAfdRestGetCACertsVMCA(pArgs->pszDCName, bDetail, pHttpClient, &pCACerts);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     *ppCACerts = pCACerts;
 
+
 cleanup:
+
     VmHttpClientFreeHandle(pHttpClient);
     VMAFD_SAFE_FREE_MEMORY(pszCAPath);
     VMAFD_SAFE_FREE_MEMORY(pwszCAPath);
-    VMAFD_SAFE_FREE_STRINGA(pszParamString);
-    VMAFD_SAFE_FREE_STRINGA(pszUrl);
     VMAFD_SAFE_FREE_STRINGA(pszToken);
+
     return dwError;
 
 error:
+
     VecsFreeCACertArray(pCACerts);
     VmAfdLog(VMAFD_DEBUG_ANY, "Error: [%s : %d]", __FUNCTION__, dwError);
+
     goto cleanup;
 }

@@ -85,6 +85,20 @@ LwCADbPostPluginGetParentCAId(
     );
 
 DWORD
+LwCADbPostPluginGetCAAuthBlob(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PSTR                    *ppszAuthBlob
+    );
+
+DWORD
+LwCADbPostPluginGetCAStatus(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_CA_STATUS         pStatus
+    );
+
+DWORD
 LwCADbPostPluginUpdateCA(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
@@ -155,9 +169,9 @@ LwCASerializeCAToJSON(
     );
 
 DWORD
-LwCASerializeConfigCAToJSON(
-    PCSTR       pcszCAId,
-    PCSTR       pcszDomain,
+LwCASerializeContainerToJSON(
+    PCSTR       pcszDN,
+    PCSTR       pcszCN,
     PSTR        *ppszReqBody
     );
 

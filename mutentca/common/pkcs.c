@@ -1028,6 +1028,12 @@ LwCAX509GetOrganizations(
     dwError = _LwCAX509NameGetValues(pSubjectName, NID_organizationName, &pOrgList);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    if (pOrgList->dwCount == 0)
+    {
+        LwCAFreeStringArray(pOrgList);
+        pOrgList = NULL;
+    }
+
     *ppOrgList = pOrgList;
 
 cleanup:
@@ -1768,6 +1774,33 @@ error :
         EVP_PKEY_free(pKey);
     }
 
+    return dwError;
+}
+
+DWORD
+LwCAVerifyCertificateSign(
+    X509    *pCert,
+    X509    *pCACert
+    )
+{
+    DWORD dwError = 0;
+    EVP_PKEY *pKey = NULL;
+
+    if ((pKey = X509_get_pubkey(pCACert)) == NULL )
+    {
+        LWCA_LOG_ERROR("Certificate does not have a public key");
+        dwError = LWCA_INVALID_CSR_FIELD;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = X509_verify(pCert, pKey);
+    BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+
+error:
+    if (pKey != NULL)
+    {
+        EVP_PKEY_free(pKey);
+    }
     return dwError;
 }
 

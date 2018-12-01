@@ -93,6 +93,26 @@ Test_LwCADbGetCertData_Invalid(
     );
 
 VOID
+Test_LwCADbGetCAStatus(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCAStatus_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCAAuthBlob(
+    VOID **state
+    );
+
+VOID
+Test_LwCADbGetCAAuthBlob_Invalid(
+    VOID **state
+    );
+
+VOID
 Test_LwCADbGetCACRLNumber(
     VOID **state
     );

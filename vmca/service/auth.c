@@ -109,6 +109,46 @@ error:
     goto cleanup;
 }
 
+DWORD
+VMCAIsAdministrator(
+    PCSTR       szAuthPrinc,
+    PBOOLEAN    pbHasAdminPrivilege
+    )
+{
+    DWORD dwError = 0;
+    BOOLEAN bHasAdminPrivilege = FALSE;
+
+    if (IsNullOrEmptyString(szAuthPrinc) || !pbHasAdminPrivilege)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCALdapAccessCheck(szAuthPrinc, VMCA_ADMINISTRATORS);
+    if (dwError == ERROR_ACCESS_DENIED)
+    {
+        dwError = 0;
+        bHasAdminPrivilege = FALSE;
+    }
+    else if (dwError == 0)
+    {
+        bHasAdminPrivilege = TRUE;
+    }
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *pbHasAdminPrivilege = bHasAdminPrivilege;
+
+cleanup:
+    return dwError;
+
+error:
+    if (pbHasAdminPrivilege)
+    {
+        *pbHasAdminPrivilege = FALSE;
+    }
+    goto cleanup;
+}
+
 BOOL
 VMCAIsMemberOf(
     PSTR* ppszMemberships,

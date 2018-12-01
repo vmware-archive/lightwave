@@ -216,51 +216,48 @@ import sun.security.krb5.KrbException;
 public class IdentityManager implements IIdentityManager {
     class IdmCachePeriodicChecker extends Thread
     {
-
         @Override
         public void run()
         {
             try(IDiagnosticsContextScope ctxt = getDiagnosticsContext("", "IdmCachePeriodicChecker", "IdmCachePeriodicChecker", "", "") )
             {
-            while(true)
-            {
-                try
+                while(true)
                 {
-                    long startTime = System.nanoTime();
-
-                    IdentityManager.this.refreshTenantCache();
-
-                    if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
+                    try
                     {
-                        PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
-                                new PerfBucketKey(
-                                        PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
-                                        TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
-                    }
-                }
-                catch (Throwable t)
-                {
-                    logger.error(String.format("IdmCachePeriodicChecker refreshTenantCredential failed : %s",
-                            t.getMessage()), t);
-                    t.printStackTrace();
-                }
+                        long startTime = System.nanoTime();
 
-                try
-                {
-                    // refresh tenant certificates every 15 seconds
-                    Thread.sleep(15000);
-                }
-                catch (InterruptedException e)
-                {
-                    logger.error("IdmCachePeriodicChecker Thread is interrupted!");
-                    e.printStackTrace();
+                        IdentityManager.this.refreshTenantCache();
+
+                        if (PerfDataSinkFactory.getPerfDataSinkInstance() != null)
+                        {
+                            PerfDataSinkFactory.getPerfDataSinkInstance().addMeasurement(
+                                    new PerfBucketKey(
+                                            PerfMeasurementPoint.IDMPeriodicRefreshTenantCertificates),
+                                    TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - startTime));
+                        }
+                    }
+                    catch (Throwable t)
+                    {
+                        logger.error(String.format("IdmCachePeriodicChecker refreshTenantCredential failed : %s",
+                                t.getMessage()), t);
+                        t.printStackTrace();
+                    }
+
+                    try
+                    {
+                        // refresh tenant certificates every 15 seconds
+                        Thread.sleep(15000);
+                    }
+                    catch (InterruptedException e)
+                    {
+                        logger.error("IdmCachePeriodicChecker Thread is interrupted!");
+                        e.printStackTrace();
+                    }
                 }
             }
         }
     }
-
-    }
-
 
     /**
      * CRL checker thread refreshing at interval of 1 hour (3600000 milliseconds)

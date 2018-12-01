@@ -240,6 +240,12 @@ LwCAX509ValidateCertificate(
     );
 
 DWORD
+LwCAVerifyCertificateSign(
+    X509    *pCert,
+    X509    *pCACert
+    );
+
+DWORD
 LwCAVerifyCertificate(
     PLWCA_CERTIFICATE_ARRAY pCACertChain,
     PLWCA_CERTIFICATE       pCertificate

@@ -305,6 +305,8 @@ VmAfdLocalJoinVmDir2(
     PCWSTR           pwszMachineName,
     PCWSTR           pwszOrgUnit,
     PCWSTR           pwszSite,
+    PCWSTR           pwszLwCAServer,
+    PCWSTR           pwszLwCAId,
     VMAFD_JOIN_FLAGS dwFlags
     );
 

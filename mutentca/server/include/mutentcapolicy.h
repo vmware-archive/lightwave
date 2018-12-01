@@ -182,16 +182,16 @@ LwCAPolicyInitCtx(
 /*
  * Validate all the specified policy types for the given request
  * This will internally call each policy validate function for the specified policy types
+ * For any policy violation, corresponding error code will be returned
  */
 DWORD
-LWCAPolicyValidate(
+LwCAPolicyValidate(
     PLWCA_POLICY_CONTEXT                pPolicyCtx,         // IN
     PLWCA_REQ_CONTEXT                   pReqContext,        // IN
     X509_REQ                            *pRequest,          // IN
     PLWCA_CERT_VALIDITY                 pValidity,          // IN (Optional)
     LWCA_POLICY_TYPE                    policyType,         // IN
-    LWCA_POLICY_CHECKS                  policyChecks,       // IN
-    BOOLEAN                             *pbIsValid          // OUT
+    LWCA_POLICY_CHECKS                  policyChecks        // IN
     );
 
 /*

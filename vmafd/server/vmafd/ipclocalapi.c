@@ -4321,6 +4321,8 @@ VmAfdIpcJoinVmDir2(
     PWSTR pwszDomainName = NULL;
     PWSTR pwszOrgUnit = NULL;
     PWSTR pwszSiteName = NULL;
+    PWSTR pwszLwCAServer = NULL;
+    PWSTR pwszLwCAId = NULL;
     VMAFD_JOIN_FLAGS dwFlags = 0;
     int idx = 0;
 
@@ -4358,6 +4360,8 @@ VmAfdIpcJoinVmDir2(
     pwszMachineName = input_spec[idx++].data.pWString;
     pwszOrgUnit     = input_spec[idx++].data.pWString;
     pwszSiteName    = input_spec[idx++].data.pWString;
+    pwszLwCAServer  = input_spec[idx++].data.pWString;
+    pwszLwCAId      = input_spec[idx++].data.pWString;
     dwFlags         = *input_spec[idx++].data.pUint32;
 
     if (IsNullOrEmptyString(pwszUserName) ||
@@ -4383,6 +4387,8 @@ VmAfdIpcJoinVmDir2(
                       pwszMachineName,
                       pwszOrgUnit,
                       pwszSiteName,
+                      pwszLwCAServer,
+                      pwszLwCAId,
                       dwFlags);
     LOG_URESULT_ERROR(uResult);
 

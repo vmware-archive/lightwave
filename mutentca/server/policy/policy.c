@@ -21,8 +21,7 @@ _LwCAPolicyValidateInternal(
     PLWCA_REQ_CONTEXT           pReqContext,
     X509_REQ                    *pRequest,
     PLWCA_CERT_VALIDITY         pValidity,
-    LWCA_POLICY_CHECKS          policyChecks,
-    BOOLEAN                     *pbIsValid
+    LWCA_POLICY_CHECKS          policyChecks
     );
 
 DWORD
@@ -87,14 +86,12 @@ LwCAPolicyValidate(
     X509_REQ                    *pRequest,
     PLWCA_CERT_VALIDITY         pValidity,
     LWCA_POLICY_TYPE            policyType,
-    LWCA_POLICY_CHECKS          policyChecks,
-    BOOLEAN                     *pbIsValid
+    LWCA_POLICY_CHECKS          policyChecks
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
-    if (!pPolicyCtx || !pReqContext || !pRequest || !pbIsValid)
+    if (!pPolicyCtx || !pReqContext || !pRequest)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -110,15 +107,12 @@ LwCAPolicyValidate(
                         pReqContext,
                         pRequest,
                         pValidity,
-                        policyChecks,
-                        &bIsValid);
+                        policyChecks);
             BAIL_ON_LWCA_ERROR(dwError);
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
         }
         else
         {
             LWCA_LOG_INFO("Policy Engine: No CA Policies defined in policy config. Passing.");
-            bIsValid = TRUE;
         }
 
         break;
@@ -131,15 +125,12 @@ LwCAPolicyValidate(
                         pReqContext,
                         pRequest,
                         pValidity,
-                        policyChecks,
-                        &bIsValid);
+                        policyChecks);
             BAIL_ON_LWCA_ERROR(dwError);
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
         }
         else
         {
             LWCA_LOG_INFO("Policy Engine: No Certificate Policies defined in policy config. Passing.");
-            bIsValid = TRUE;
         }
 
         break;
@@ -149,17 +140,10 @@ LwCAPolicyValidate(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    *pbIsValid = bIsValid;
-
 cleanup:
     return dwError;
 
 error:
-    if (pbIsValid)
-    {
-        *pbIsValid = FALSE;
-    }
-
     goto cleanup;
 }
 
@@ -200,7 +184,7 @@ LwCAPolicyGetCertDuration(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    *pdwDuration = dwDuration;
+    *pdwDuration = dwDuration * LWCA_TIME_SECS_PER_DAY;
 
 cleanup:
     return dwError;
@@ -229,32 +213,23 @@ _LwCAPolicyValidateInternal(
     PLWCA_REQ_CONTEXT           pReqContext,
     X509_REQ                    *pRequest,
     PLWCA_CERT_VALIDITY         pValidity,
-    LWCA_POLICY_CHECKS          policyChecks,
-    BOOLEAN                     *pbIsValid
+    LWCA_POLICY_CHECKS          policyChecks
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bIsValid = FALSE;
 
     // TODO: Check expiration date
-
-    if ( policyChecks == LWCA_POLICY_CHECK_NONE )
-    {
-        bIsValid = TRUE;
-    }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_SN) )
     {
         if (pPoliciesAllowed->pSNs)
         {
-            dwError = LwCAPolicyValidateSNPolicy(pPoliciesAllowed->pSNs, pReqContext, pRequest, &bIsValid);
+            dwError = LwCAPolicyValidateSNPolicy(pPoliciesAllowed->pSNs, pReqContext, pRequest);
             BAIL_ON_LWCA_ERROR(dwError);
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
         }
         else
         {
             LWCA_LOG_INFO("Policy Engine: No SN policies defined in policy config. Passing");
-            bIsValid = TRUE;
         }
     }
 
@@ -266,46 +241,37 @@ _LwCAPolicyValidateInternal(
                         pPoliciesAllowed->pSANs,
                         pPoliciesAllowed->bMultiSANEnabled,
                         pReqContext,
-                        pRequest,
-                        &bIsValid);
+                        pRequest);
             BAIL_ON_LWCA_ERROR(dwError);
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
         }
         else
         {
             LWCA_LOG_INFO("Policy Engine: No SAN policies defined in policy config. Passing");
-            bIsValid = TRUE;
         }
     }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_KEY_USAGE) )
     {
-        dwError = LwCAPolicyValidateKeyUsagePolicy(pPoliciesAllowed->dwKeyUsage, pRequest, &bIsValid);
+        dwError = LwCAPolicyValidateKeyUsagePolicy(pPoliciesAllowed->dwKeyUsage, pRequest);
         BAIL_ON_LWCA_ERROR(dwError);
-        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
     }
 
     if ( (policyChecks & LWCA_POLICY_CHECK_DURATION) )
     {
         if (pValidity)
         {
-            dwError = LwCAPolicyValidateCertDurationPolicy(pPoliciesAllowed->dwCertDuration, pValidity, &bIsValid);
+            dwError = LwCAPolicyValidateCertDurationPolicy(pPoliciesAllowed->dwCertDuration, pValidity);
             BAIL_ON_LWCA_ERROR(dwError);
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
         }
         else
         {
             LWCA_LOG_INFO("Validity not provided. Duration will be taken from the policy config.");
-            bIsValid = TRUE;
         }
     }
-
-    *pbIsValid = bIsValid;
 
 cleanup:
     return dwError;
 
 error:
-    *pbIsValid = FALSE;
     goto cleanup;
 }

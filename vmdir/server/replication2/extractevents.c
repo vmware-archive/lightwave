@@ -290,7 +290,7 @@ VmDirExtractEventPopulateMustAttributes(
 {
     DWORD                             dwError = 0;
     PLW_HASHMAP                       pAllMustAttrMap = NULL;
-    PVDIR_ATTRIBUTE                   pAttr = NULL;
+    PVDIR_ATTRIBUTE                   pIndividualUpdateAttr = NULL;
     PVDIR_ATTRIBUTE                   pCombinedUpdateAttr = NULL;
     PVDIR_ATTRIBUTE                   pNewAttr = NULL;
     PVDIR_LINKED_LIST_NODE            pCurrNode = NULL;
@@ -338,24 +338,20 @@ VmDirExtractEventPopulateMustAttributes(
     dwError = VmDirEntryGetAllMustAttrs(pCombinedUpdate->pEntry, &pAllMustAttrMap);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //copy MustAttrs in PIndividualUpdate to pCombinedUpdate
-    dwError = VmDirLinkedListGetHead(pIndividualUpdate->pMetaDataList, &pCurrNode);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    while (pCurrNode)
+    for (pIndividualUpdateAttr = pIndividualUpdate->pEntry->attrs;
+         pIndividualUpdateAttr;
+         pIndividualUpdateAttr = pIndividualUpdateAttr->next)
     {
-        pReplMetaData = (PVMDIR_REPL_ATTRIBUTE_METADATA) pCurrNode->pElement;
-
-        if (LwRtlHashMapFindKey(pAllMustAttrMap, NULL, pReplMetaData->pszAttrType) == 0)
+        if (LwRtlHashMapFindKey(pAllMustAttrMap, NULL, pIndividualUpdateAttr->type.lberbv.bv_val) == 0)
         {
             pCombinedUpdateAttr = VmDirFindAttrByName(
-                    pCombinedUpdate->pEntry, pReplMetaData->pszAttrType);
+                    pCombinedUpdate->pEntry, pIndividualUpdateAttr->type.lberbv.bv_val);
 
             if (pCombinedUpdateAttr == NULL)
             {
                 //copy Attr MetaData
                 dwError = VmDirReplMetaDataCreate(
-                        pReplMetaData->pszAttrType,
+                        pIndividualUpdateAttr->type.lberbv.bv_val,
                         pCombinedUpdate->partnerUsn,
                         1,
                         pUsnCreatedMetaData->pMetaData->pszOrigInvoId,
@@ -370,19 +366,7 @@ VmDirExtractEventPopulateMustAttributes(
                 pNewReplMetaData = NULL;
 
                 //copy Attr
-                pAttr = VmDirFindAttrByName(pIndividualUpdate->pEntry, pReplMetaData->pszAttrType);
-
-                if (pAttr == NULL)
-                {
-                    VMDIR_LOG_ERROR(
-                            VMDIR_LOG_MASK_ALL,
-                            "%s: AttrMetaData present but no attr for: %s",
-                            __FUNCTION__,
-                            pReplMetaData->pszAttrType);
-                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_SUCH_ATTRIBUTE);
-                }
-
-                dwError = VmDirAttributeDup(pAttr, &pNewAttr);
+                dwError = VmDirAttributeDup(pIndividualUpdateAttr, &pNewAttr);
                 BAIL_ON_VMDIR_ERROR(dwError);
 
                 pNewAttr->next = pCombinedUpdate->pEntry->attrs;
@@ -390,8 +374,6 @@ VmDirExtractEventPopulateMustAttributes(
                 pNewAttr = NULL;
             }
         }
-
-        pCurrNode = pCurrNode->pNext;
     }
 
 cleanup:

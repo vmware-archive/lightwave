@@ -35,6 +35,8 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
+    PCSTR pszLwCAServer,
+    PCSTR pszLwCAId,
     BOOLEAN bDisableAfdListener,
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
@@ -42,6 +44,7 @@ VmwDeployBuildParams(
     BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
     BOOLEAN bInsecure,
+    BOOLEAN bMultiTenantedCAEnabled,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     );
 
@@ -197,6 +200,8 @@ ParseArgs(
     PSTR  pszUsername = NULL;
     PSTR  pszPassword = NULL;
     PSTR  pszSiteName = NULL;
+    PSTR  pszLwCAServer = NULL;
+    PSTR  pszLwCAId = NULL;
     BOOLEAN bDisableAfdListener = FALSE;
     BOOLEAN bUseMachineAccount = FALSE;
     BOOLEAN bMachinePreJoined = FALSE;
@@ -204,6 +209,7 @@ ParseArgs(
     BOOLEAN bGenMachineSSL = TRUE;
     BOOLEAN bAtomicJoin = FALSE;
     BOOLEAN bInsecure = FALSE;
+    BOOLEAN bMultiTenantedCAEnabled = FALSE;
 
     enum PARSE_MODE
     {
@@ -215,7 +221,9 @@ ParseArgs(
         PARSE_MODE_MACHINE_ACCOUNT,
         PARSE_MODE_ORG_UNIT,
         PARSE_MODE_SSL_SUBJECT_ALT_NAME,
-        PARSE_MODE_SITE
+        PARSE_MODE_SITE,
+        PARSE_MODE_CA_SERVER,
+        PARSE_MODE_CA_ID,
     } parseMode = PARSE_MODE_OPEN;
     int iArg = 0;
     PVMW_IC_SETUP_PARAMS pSetupParams = NULL;
@@ -292,6 +300,18 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--site"))
                 {
                     parseMode = PARSE_MODE_SITE;
+                }
+                else if (!strcmp(pszArg, "--enable-multi-tenanted-ca"))
+                {
+                    bMultiTenantedCAEnabled = TRUE;
+                }
+                else if (!strcmp(pszArg, "--ca-server"))
+                {
+                    parseMode = PARSE_MODE_CA_SERVER;
+                }
+                else if (!strcmp(pszArg, "--ca-id"))
+                {
+                    parseMode = PARSE_MODE_CA_ID;
                 }
                 else
                 {
@@ -413,6 +433,34 @@ ParseArgs(
 
                 break;
 
+            case PARSE_MODE_CA_SERVER:
+
+                if (pszLwCAServer)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszLwCAServer = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+            case PARSE_MODE_CA_ID:
+
+                if (pszLwCAId)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszLwCAId = pszArg;
+
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
             default:
 
                 dwError = ERROR_INVALID_PARAMETER;
@@ -428,6 +476,14 @@ ParseArgs(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (bMultiTenantedCAEnabled &&
+        (IsNullOrEmptyString(pszLwCAServer) ||
+         IsNullOrEmptyString(pszLwCAId)))
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployBuildParams(
                     pszDomainController,
                     pszDomain,
@@ -437,6 +493,8 @@ ParseArgs(
                     pszPassword,
                     pszSubjectAltName,
                     pszSiteName,
+                    pszLwCAServer,
+                    pszLwCAId,
                     bDisableAfdListener,
                     bDisableDNS,
                     bUseMachineAccount,
@@ -444,6 +502,7 @@ ParseArgs(
                     bGenMachineSSL,
                     bAtomicJoin,
                     bInsecure,
+                    bMultiTenantedCAEnabled,
                     &pSetupParams);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -476,6 +535,8 @@ VmwDeployBuildParams(
     PCSTR pszPassword,
     PCSTR pszSubjectAltName,
     PCSTR pszSiteName,
+    PCSTR pszLwCAServer,
+    PCSTR pszLwCAId,
     BOOLEAN bDisableAfdListener,
     BOOLEAN bDisableDNS,
     BOOLEAN bUseMachineAccount,
@@ -483,6 +544,7 @@ VmwDeployBuildParams(
     BOOLEAN bGenMachineSSL,
     BOOLEAN bAtomicJoin,
     BOOLEAN bInsecure,
+    BOOLEAN bMultiTenantedCAEnabled,
     PVMW_IC_SETUP_PARAMS* ppSetupParams
     )
 {
@@ -571,6 +633,22 @@ VmwDeployBuildParams(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    if (!IsNullOrEmptyString(pszLwCAServer))
+    {
+        dwError = VmwDeployAllocateStringA(
+                            pszLwCAServer,
+                            &pSetupParams->pszLwCAServer);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pszLwCAId))
+    {
+        dwError = VmwDeployAllocateStringA(
+                            pszLwCAId,
+                            &pSetupParams->pszLwCAId);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     dwError = VmwDeployAllocateStringA(pszUsername, &pSetupParams->pszUsername);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -584,6 +662,7 @@ VmwDeployBuildParams(
     pSetupParams->bGenMachineSSL = bGenMachineSSL;
     pSetupParams->bAtomicJoin = bAtomicJoin;
     pSetupParams->bInsecure = bInsecure;
+    pSetupParams->bMultiTenantedCAEnabled = bMultiTenantedCAEnabled;
 
     *ppSetupParams = pSetupParams;
 
@@ -630,5 +709,8 @@ ShowUsage(
            "[--ssl-subject-alt-name <subject alternate name on generated SSL certificate. Default: hostname>]\n"
            "[--site <sitename>] Specific region to join to\n"
            "[--skip-gen-machine-ssl] Skip generation of machine SSL certificate\n"
-           "[--atomic] Perform atomic domain join\n");
+           "[--atomic] Perform atomic domain join\n"
+           "[--enable-multi-tenanted-ca] join to a multi tenanted ca enabled server\n"
+           "[--ca-server] ca server when enable-multi-tenanted-ca is set\n"
+           "[--ca-id] ca id when enable-multi-tenanted-ca is set\n");
 }

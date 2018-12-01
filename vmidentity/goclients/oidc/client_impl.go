@@ -39,6 +39,19 @@ type oidcClientImpl struct {
 	logger Logger
 }
 
+func newProviderInfo(issuer string, signers IssuerSigners) (ProviderInfo, error) {
+	if issuer == "" {
+		return ProviderInfo{}, OIDCInvalidArgError.MakeError("issuer is required", nil)
+	}
+
+	providerInfo := ProviderInfo{
+		issuer:  issuer,
+		signers: signers,
+	}
+
+	return providerInfo, nil
+}
+
 func newClient(clientConfig ClientConfig, issuer, requestID string, logger Logger) (Client, error) {
 	var err error
 

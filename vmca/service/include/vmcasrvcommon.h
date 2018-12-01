@@ -55,6 +55,7 @@ typedef struct _VMCA_POLICY VMCA_POLICY, *PVMCA_POLICY;
 typedef struct _VMCA_REQ_CONTEXT
 {
     PSTR            pszAuthPrincipal;
+    BOOLEAN         bHasAdminPrivilege;
 } VMCA_REQ_CONTEXT, *PVMCA_REQ_CONTEXT;
 
 typedef enum

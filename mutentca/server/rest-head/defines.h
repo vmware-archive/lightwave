@@ -32,11 +32,14 @@
 
 // OPEN APIs
 #define LWCA_REST_OPENAPI_VERSION               "/v1/mutentca/version"
+#define LWCA_REST_OPENAPI_ROOTCA                "/v1/mutentca/root"
+#define LWCA_REST_OPENAPI_ROOTCA_CRL            "/v1/mutentca/crl"
 #define LWCA_REST_INTERMEDIATE_URI_PREFIX       "/v1/mutentca/intermediate/"
 
 // REST Paramaeters
 #define LWCA_REST_PARAM_REQ_ID                  "X-Request-ID"
 #define LWCA_REST_PARAM_CA_ID                   "ca-id"
+#define LWCA_REST_PARAM_WITH_CRL                "detail"
 
 // JSON Keys
 #define LWCA_JSON_KEY_VERSION                   "version"

@@ -53,8 +53,7 @@ DWORD
 LwCAPolicyValidateSNPolicy(
     PLWCA_POLICY_CFG_OBJ_ARRAY  pSNsAllowed,
     PLWCA_REQ_CONTEXT           pReqContext,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     )
 {
     DWORD dwError = 0;
@@ -63,10 +62,9 @@ LwCAPolicyValidateSNPolicy(
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
-    if (!pSNsAllowed || !pReqContext || !pRequest || !pbIsValid)
+    if (!pSNsAllowed || !pReqContext || !pRequest)
     {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
     dwError = LwCAX509ReqGetCommonName(pRequest, &pszCN);
@@ -75,8 +73,7 @@ LwCAPolicyValidateSNPolicy(
     if(LwCAUtilDoesValueHaveWildcards(pszCN))
     {
         LWCA_LOG_ERROR("Policy Violation: CN %s contains wildcards", pszCN);
-        bIsValid = FALSE;
-        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SN_POLICY_VIOLATION);
     }
 
     bIsIP = LwCAUtilIsValueIPAddr(pszCN);
@@ -100,20 +97,14 @@ LwCAPolicyValidateSNPolicy(
     if (!bIsValid)
     {
         LWCA_LOG_ERROR("Policy Violation: CN %s does not match allowed CN values", pszCN);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SN_POLICY_VIOLATION);
     }
-
-    *pbIsValid = bIsValid;
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszCN);
     return dwError;
 
 error:
-    if (pbIsValid)
-    {
-        *pbIsValid = FALSE;
-    }
-
     goto cleanup;
 }
 
@@ -122,8 +113,7 @@ LwCAPolicyValidateSANPolicy(
     PLWCA_POLICY_CFG_OBJ_ARRAY  pSANsAllowed,
     BOOLEAN                     bMultiSANEnabled,
     PLWCA_REQ_CONTEXT           pReqContext,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     )
 {
     DWORD dwError = 0;
@@ -133,10 +123,9 @@ LwCAPolicyValidateSANPolicy(
     BOOLEAN bIsFQDN = FALSE;
     BOOLEAN bIsValid = FALSE;
 
-    if (!pSANsAllowed || !pReqContext || !pRequest || !pbIsValid)
+    if (!pSANsAllowed || !pReqContext || !pRequest)
     {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
     dwError = LwCAX509ReqGetSubjectAltNames(pRequest, &pSANArray);
@@ -145,14 +134,13 @@ LwCAPolicyValidateSANPolicy(
     if (!pSANArray)
     {
         // CSR does not contain any SANs. Passing validation
-        bIsValid = TRUE;
         goto ret;
     }
 
     if (!bMultiSANEnabled && pSANArray->dwCount > 1)
     {
         LWCA_LOG_ERROR("Policy Violation: Multiple SANs are not allowed");
-        goto error;
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SAN_POLICY_VIOLATION);
     }
 
     for ( ; dwIdx < pSANArray->dwCount ; ++dwIdx )
@@ -160,10 +148,8 @@ LwCAPolicyValidateSANPolicy(
         if(LwCAUtilDoesValueHaveWildcards(pSANArray->ppData[dwIdx]))
         {
             LWCA_LOG_ERROR("Policy Violation: SAN %s contains wildcards", pSANArray->ppData[dwIdx]);
-            bIsValid = FALSE;
-            BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_SAN_POLICY_VIOLATION);
         }
-
 
         bIsIP = LwCAUtilIsValueIPAddr(pSANArray->ppData[dwIdx]);
 
@@ -200,123 +186,86 @@ LwCAPolicyValidateSANPolicy(
             LWCA_LOG_ERROR(
                 "Policy Violation: SAN %s does not match allowed SAN values",
                 pSANArray->ppData[dwIdx]);
-            break;
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_SAN_POLICY_VIOLATION);
         }
     }
 
 ret:
-    *pbIsValid = bIsValid;
-
 cleanup:
     LwCAFreeStringArray(pSANArray);
     return dwError;
 
 error:
-    if (pbIsValid)
-    {
-        *pbIsValid = FALSE;
-    }
-
     goto cleanup;
 }
 
 DWORD
 LwCAPolicyValidateKeyUsagePolicy(
     DWORD                       dwAllowedKeys,
-    X509_REQ                    *pRequest,
-    BOOLEAN                     *pbIsValid
+    X509_REQ                    *pRequest
     )
 {
     DWORD dwError = 0;
     DWORD dwKeyUsage = 0;
-    BOOLEAN bIsValid = FALSE;
 
-    if (!pRequest || !pbIsValid)
+    if (!pRequest)
     {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
     dwError = LwCAX509ReqGetKeyUsage(pRequest, &dwKeyUsage);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if ( (dwKeyUsage & dwAllowedKeys) == dwKeyUsage )
-    {
-        bIsValid = TRUE;
-    }
-    else
+    if ( (dwKeyUsage & dwAllowedKeys) != dwKeyUsage )
     {
         LWCA_LOG_ERROR("Policy Violation. Some key usages in CSR are not allowed.");
-        bIsValid = FALSE;
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_KEY_USAGE_POLICY_VIOLATION);
     }
-
-    *pbIsValid = bIsValid;
 
 cleanup:
     return dwError;
 
 error:
-    if (pbIsValid)
-    {
-        *pbIsValid = FALSE;
-    }
-
     goto cleanup;
 }
 
 DWORD
 LwCAPolicyValidateCertDurationPolicy(
     DWORD                       dwAllowedDuration,
-    PLWCA_CERT_VALIDITY         pValidity,
-    BOOLEAN                     *pbIsValid
+    PLWCA_CERT_VALIDITY         pValidity
     )
 {
     DWORD dwError = 0;
     double duration = 0;
     DWORD dwDuration = 0;
-    BOOLEAN bIsValid = FALSE;
 
-    if (!pValidity || !pbIsValid)
+    if (!pValidity)
     {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
     duration = difftime(pValidity->tmNotAfter, pValidity->tmNotBefore);
     if (duration < 0)
     {
         LWCA_LOG_ERROR("Policy Violation: Invalid cert duration. tmNotBefore greater than tmNotAfter");
-        bIsValid = FALSE;
-        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_CERT_DURATION_POLICY_VIOLATION);
     }
 
     dwDuration = (DWORD) duration / LWCA_TIME_SECS_PER_DAY;
 
-    if (dwDuration <= dwAllowedDuration)
-    {
-        bIsValid = TRUE;
-    }
-    else
+    if (dwDuration > dwAllowedDuration)
     {
         LWCA_LOG_ERROR(
             "Policy Violation: Given cert duration %d is higher than allowed duration %d",
             dwDuration,
             dwAllowedDuration);
-        bIsValid = FALSE;
-        BAIL_ON_LWCA_POLICY_VIOLATION(bIsValid);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_CERT_DURATION_POLICY_VIOLATION);
     }
-
-    *pbIsValid = bIsValid;
 
 cleanup:
     return dwError;
 
 error:
-    if (pbIsValid)
-    {
-        *pbIsValid = FALSE;
-    }
-
     goto cleanup;
 }
 

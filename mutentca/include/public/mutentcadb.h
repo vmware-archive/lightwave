@@ -32,6 +32,7 @@ typedef struct _LWCA_DB_CA_DATA
     PSTR                            pszLastCRLUpdate;
     // ASN1 TIME Format
     PSTR                            pszNextCRLUpdate;
+    PSTR                            pszAuthBlob;
     LWCA_CA_STATUS                  status;
 } LWCA_DB_CA_DATA, *PLWCA_DB_CA_DATA;
 
@@ -176,6 +177,26 @@ typedef DWORD
     );
 
 /*
+ * Get CA Status
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_CA_STATUS)(
+    PLWCA_DB_HANDLE          pHandle,   //IN
+    PCSTR                    pcszCAId,  //IN
+    PLWCA_CA_STATUS          pStatus    //OUT
+    );
+
+/*
+ * Get CA Auth Blob
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_CA_AUTH_BLOB)(
+    PLWCA_DB_HANDLE          pHandle,       //IN
+    PCSTR                    pcszCAId,      //IN
+    PSTR                     *ppszAuthBlob  //OUT
+    );
+
+/*
  * Update CA data
  */
 typedef DWORD
@@ -270,6 +291,8 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_GET_CERT_DATA           pFnGetCertData;
     PFN_LWCA_DB_GET_CA_CRL_NUMBER       pFnGetCACRLNumber;
     PFN_LWCA_DB_GET_PARENT_CA_ID        pFnGetParentCAId;
+    PFN_LWCA_DB_GET_CA_STATUS           pFnGetCAStatus;
+    PFN_LWCA_DB_GET_CA_AUTH_BLOB        pFnGetCAAuthBlob;
     PFN_LWCA_DB_UPDATE_CA               pFnUpdateCA;
     PFN_LWCA_DB_UPDATE_CA_STATUS        pFnUpdateCAStatus;
     PFN_LWCA_DB_UPDATE_CERT_DATA        pFnUpdateCertData;

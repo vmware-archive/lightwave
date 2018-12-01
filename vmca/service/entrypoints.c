@@ -1544,6 +1544,7 @@ VMCAAllocateReqContext(
 {
     DWORD                   dwError = 0;
     PVMCA_REQ_CONTEXT       pReqContext = NULL;
+    BOOLEAN                 bHasAdminPrivilege = FALSE;
 
     if (IsNullOrEmptyString(pcszAuthPrincipal) ||
         !ppReqContext)
@@ -1551,6 +1552,9 @@ VMCAAllocateReqContext(
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
     }
+
+    dwError = VMCAIsAdministrator(pcszAuthPrincipal, &bHasAdminPrivilege);
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAAllocateMemory(
                         sizeof(VMCA_REQ_CONTEXT),
@@ -1563,6 +1567,8 @@ VMCAAllocateReqContext(
                     &pReqContext->pszAuthPrincipal
                     );
     BAIL_ON_VMCA_ERROR(dwError);
+
+    pReqContext->bHasAdminPrivilege = bHasAdminPrivilege;
 
     *ppReqContext = pReqContext;
 

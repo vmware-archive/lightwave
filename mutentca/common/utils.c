@@ -144,6 +144,7 @@ LwCADbCreateCAData(
     PCSTR                       pcszCRLNumber,
     PCSTR                       pcszLastCRLUpdate,
     PCSTR                       pcszNextCRLUpdate,
+    PCSTR                       pcszAuthBlob,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     )
@@ -202,6 +203,11 @@ LwCADbCreateCAData(
                                       );
         BAIL_ON_LWCA_ERROR(dwError);
     }
+    if (!IsNullOrEmptyString(pcszAuthBlob))
+    {
+        dwError = LwCAAllocateStringA(pcszAuthBlob, &pCAData->pszAuthBlob);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     pCAData->status = status;
 
@@ -232,6 +238,7 @@ LwCADbFreeCAData(
         LWCA_SAFE_FREE_STRINGA(pCAData->pszCRLNumber);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszLastCRLUpdate);
         LWCA_SAFE_FREE_STRINGA(pCAData->pszNextCRLUpdate);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszAuthBlob);
         LWCA_SAFE_FREE_MEMORY(pCAData);
     }
 }
@@ -528,7 +535,7 @@ LwCADbCopyCertData(
     DWORD dwError = 0;
     PLWCA_DB_CERT_DATA pTempCertData = NULL;
 
-    if (pCertData || !ppCertData)
+    if (!pCertData || !ppCertData)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -599,7 +606,7 @@ LwCADbCopyCertDataArray(
 
     pTempCertDataArray->dwCount = pCertDataArray->dwCount;
 
-    dwError = LwCAAllocateMemory(sizeof(PSTR) * pCertDataArray->dwCount, (PVOID*)&pTempCertDataArray->ppCertData);
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_DB_CERT_DATA) * pCertDataArray->dwCount, (PVOID*)&pTempCertDataArray->ppCertData);
     BAIL_ON_LWCA_ERROR(dwError);
 
     for(; iEntry < pCertDataArray->dwCount; ++iEntry)

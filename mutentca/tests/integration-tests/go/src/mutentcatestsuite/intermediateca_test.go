@@ -26,6 +26,9 @@ func (suite *IntermediateCASuite) SetupSuite() {
 
 // TearDownSuite will be run after every execution of the Suite
 func (suite *IntermediateCASuite) TearDownSuite() {
+	// delete intermediate CAs here, example:
+	// postdbclient.DeleteCA(caId)
+	// CRLs are taken care, but the intermediate CAs delete order should be bottom up
 }
 
 // TODO: Add the required tests below
