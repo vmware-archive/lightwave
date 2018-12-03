@@ -44,11 +44,32 @@ VmDirSetupExtractEventAttributeChanges(
     dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
     assert_int_equal(dwError, 0);
 
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CHANGED, "101", 101, 101, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_USN_CHANGED,
+            "101",
+            101,
+            101,
+            2,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 100, 100, 1, pUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_CN,
+            "newuser_cn",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 101, 101, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_SN,
+            "newuser_sn",
+            101,
+            101,
+            2,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
     *state = pUpdate;
 
@@ -175,14 +196,35 @@ VmDirTestSetupExtractEventPopulateMustAttributes(
      * Add a may attr newuser_sn and a must attr newuser_cn to the individual update but not to the combined update.
      * The expected behavior is that the must attr should be copied to the combined update by VmDirExtractEventPopulateMustAttributes
      */
-    VmDirAllocateAttrAndMetaData(ATTR_SN, "newuser_sn", 100, 100, 1, pIndividualUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_SN,
+            "newuser_sn",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pIndividualUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 101, 101, 2, pIndividualUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_CN,
+            "newuser_cn",
+            101,
+            101,
+            2,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pIndividualUpdate);
 
     dwError = VmDirTestAllocateReplUpdate(&pCombinedUpdate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pCombinedUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_USN_CREATED,
+            "100",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pCombinedUpdate);
 
     pCombinedUpdate->syncState = LDAP_SYNC_ADD;
     pCombinedUpdate->partnerUsn = 100;
@@ -190,13 +232,27 @@ VmDirTestSetupExtractEventPopulateMustAttributes(
     dwError = VmDirTestAllocateReplUpdate(&pExpectedCombinedUpdate);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pExpectedCombinedUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_USN_CREATED,
+            "100",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pExpectedCombinedUpdate);
 
     pExpectedCombinedUpdate->syncState = LDAP_SYNC_ADD;
     pExpectedCombinedUpdate->partnerUsn = 100;
 
     //Verify Attr MetaData is as expected in pIndividualUpdate
-    VmDirAllocateAttrAndMetaData(ATTR_CN, "newuser_cn", 100, 100, 1, pExpectedCombinedUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_CN,
+            "newuser_cn",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pExpectedCombinedUpdate);
 
     dwError = VmDirAllocateMemory(sizeof(VMDIR_EXTRACT_EVENT_TEST_CONTEXT), (PVOID*)&pTestContext);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -239,12 +295,32 @@ VmDirSetupExtractEventPopulateOperationAttributes(
     dwError = VmDirLinkedListCreate(&pUpdate->pMetaDataList);
     assert_int_equal(dwError, 0);
 
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CHANGED, "101", 101, 101, 2, pUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_USN_CHANGED,
+            "101",
+            101,
+            101,
+            2,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
     VmDirAllocateAttrAndMetaData(
-            ATTR_OBJECT_GUID, "e7f6eae8-9902-4270-91ee-1ab36c898580", 100, 100, 1, pUpdate);
+            ATTR_OBJECT_GUID,
+            "e7f6eae8-9902-4270-91ee-1ab36c898580",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_USN_CREATED, "100", 100, 100, 1, pUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_USN_CREATED,
+            "100",
+            100,
+            100,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pUpdate);
 
     *state = pUpdate;
 
@@ -570,9 +646,22 @@ VmDirExtractEventPopulateOperationAttributes_ValidInput(
     pIndividualUpdate->pEntry->allocType = ENTRY_STORAGE_FORMAT_NORMAL;
 
     VmDirAllocateAttrAndMetaData(
-            ATTR_OBJECT_CLASS, OC_DELETED_OBJECT, 101, 101, 2, pIndividualUpdate);
+            ATTR_OBJECT_CLASS,
+            OC_DELETED_OBJECT,
+            101,
+            101,
+            2,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pIndividualUpdate);
 
-    VmDirAllocateAttrAndMetaData(ATTR_IS_DELETED, "true", 101, 101, 1, pIndividualUpdate);
+    VmDirAllocateAttrAndMetaData(
+            ATTR_IS_DELETED,
+            "true",
+            101,
+            101,
+            1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pIndividualUpdate);
 
     VmDirAllocateAttrAndMetaData(
             ATTR_LAST_KNOWN_DN,
@@ -580,6 +669,7 @@ VmDirExtractEventPopulateOperationAttributes_ValidInput(
             101,
             101,
             1,
+            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
             pIndividualUpdate);
 
     dwError = VmDirExtractEventPopulateOperationAttributes(pCombinedUpdate, pIndividualUpdate);
