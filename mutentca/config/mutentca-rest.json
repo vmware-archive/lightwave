@@ -37,6 +37,9 @@
       "name": "intermediateca"
     },
     {
+      "name": "chainoftrust"
+    },
+    {
       "name": "crl"
     },
     {
@@ -298,6 +301,101 @@
           },
           "409": {
             "description": "CA Already Revoked\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "default": {
+            "description": "Internal Server Error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/chainoftrust": {
+      "get": {
+        "tags": [
+          "chainoftrust"
+        ],
+        "summary": "Chain of trust of the root CA",
+        "description": "Retrieves the chain of trust of the root CA\n",
+        "operationId": "getRootCAChainOfTrust",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain of trust of the root certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/ChainOfTrust"
+            }
+          },
+          "default": {
+            "description": "Internal Server Error\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          }
+        }
+      }
+    },
+    "/mutentca/intermediate/{ca-id}/chainoftrust": {
+      "get": {
+        "tags": [
+          "chainoftrust"
+        ],
+        "summary": "Chain of trust of an intermediate CA",
+        "description": "Retrieves the chain of trust of an intermediate CA\n",
+        "operationId": "getIntermediateCAChainOfTrust",
+        "parameters": [
+          {
+            "name": "X-Request-ID",
+            "in": "header",
+            "type": "string",
+            "required": false
+          },
+          {
+            "name": "ca-id",
+            "in": "path",
+            "required": true,
+            "type": "string",
+            "description": "identifies intermediate ca context in which operation is executed"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Chain of trust of the intermediate certificate authority\n",
+            "schema": {
+              "$ref": "#/definitions/ChainOfTrust"
+            }
+          },
+          "400": {
+            "description": "Bad Request\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "401": {
+            "description": "Invalid Credentials\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "403": {
+            "description": "Forbidden\n",
+            "schema": {
+              "$ref": "#/definitions/ApiError"
+            }
+          },
+          "404": {
+            "description": "CA Not Found\n",
             "schema": {
               "$ref": "#/definitions/ApiError"
             }
@@ -699,6 +797,10 @@
         "cert": {
           "type": "string",
           "description": "CA signed certificate"
+        },
+        "chainoftrust": {
+          "type": "string",
+          "description": "Chain of trust of the issuing CA"
         }
       }
     },
@@ -786,6 +888,15 @@
         "endTime": {
           "type": "string",
           "description": "End time"
+        }
+      }
+    },
+    "ChainOfTrust": {
+      "type": "object",
+      "properties": {
+        "chainOfTrust": {
+          "type": "string",
+          "description": "CA's chain of trust"
         }
       }
     },
