@@ -55,6 +55,7 @@ typedef struct _VDIR_WATCH_SESSION
     PSTR                    pszFilter;
     PVOID                   pConnectionHndl;
     VDIR_BERVALUE           subTreeDn;
+    PVDIR_EVENT_REPO        pEventRepo;
     PVDIR_EVENT_REPO_COOKIE pRepoCookie;
 }VDIR_WATCH_SESSION, *PVDIR_WATCH_SESSION;
 

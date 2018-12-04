@@ -4,6 +4,7 @@ noinst_LTLIBRARIES = libwatchnotify.la
 libwatchnotify_la_SOURCES = \
     event.c \
     eventrepo.c \
+    notifythread.c \
     sessionmanagerthread.c \
     watchsession.c \
     watchsessionmanager.c

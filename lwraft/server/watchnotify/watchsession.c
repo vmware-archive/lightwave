@@ -15,19 +15,22 @@
 
 DWORD
 VmDirWatchSessionInit(
-    PVDIR_WATCH_SESSION*    ppWatchSession
+    PVDIR_WATCH_SESSION*    ppWatchSession,
+    PVDIR_EVENT_REPO        pEventRepo
     )
 {
     DWORD               dwError = 0;
     PVDIR_WATCH_SESSION pWatchSession = NULL;
 
-    if (!ppWatchSession)
+    if (!ppWatchSession || !pEventRepo)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirAllocateMemory(sizeof(VDIR_WATCH_SESSION), (PVOID*)pWatchSession);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    pWatchSession->pEventRepo = pEventRepo;
 
     *ppWatchSession = pWatchSession;
 
@@ -42,19 +45,63 @@ error:
 
 DWORD
 VmDirWatchSessionSendEvents(
-    PVDIR_WATCH_SESSION pWatchSession,
-    DWORD               eventCount
+    PVDIR_WATCH_SESSION         pWatchSession,
+    DWORD                       eventCount
     )
 {
-    DWORD dwError = 0;
+    DWORD               dwError = 0;
+    DWORD               dwListError = 0;
+    DWORD               dwSentCount = 0;
+    PVDIR_EVENT         pEvent = NULL;
+    PVDIR_OPERATION     pOperation = NULL;
+    PVDIR_LINKED_LIST   pSendEventList = NULL;
 
     if (!pWatchSession)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    dwError = VmDirLinkedListCreate(&pSendEventList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirExternalOperationCreate(NULL, -1, LDAP_REQ_SEARCH, NULL, &pOperation);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (dwSentCount < eventCount)
+    {
+        dwError = VmDirEventRepoGetNextReadyEvent(
+                pWatchSession->pEventRepo, &pWatchSession->pRepoCookie, &pWatchSession->pRepoCookie);
+        if (dwError == VMDIR_ERROR_WATCH_ENDOFLIST)
+        {
+            dwListError = dwError;
+            dwError = 0;
+            break;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirMatchEntryWithFilter(
+                pOperation, pEvent->pEventData->pCurEntry, pWatchSession->pszFilter);
+        if (dwError == VMDIR_LDAP_ERROR_PRE_CONDITION)
+        {
+            dwError = 0;
+            continue;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirLinkedListInsertTail(
+                pSendEventList, (PVOID)pWatchSession->pRepoCookie->pEventData, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwSentCount++;
+    }
+
     // TODO: Call send event function api for grpc
+
+    BAIL_ON_VMDIR_ERROR(dwListError);
+
 cleanup:
+    VmDirFreeOperation(pOperation);
+    VmDirFreeLinkedList(pSendEventList);
     return dwError;
 
 error:

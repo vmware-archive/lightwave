@@ -28,11 +28,8 @@
 #include <vmdircommon.h>
 #include <srvcommon.h>
 
-#include <backend.h>
 #include <middlelayer.h>
 #include <ldaphead.h>
-#include <resthead.h>
-#include <schema.h>
 #include <vmdirserver.h>
 
 #include "structs.h"

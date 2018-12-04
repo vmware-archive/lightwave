@@ -73,13 +73,14 @@ VmDirEventRepoFree(
 
 DWORD
 VmDirWatchSessionInit(
-    PVDIR_WATCH_SESSION*    ppWatchSession
+    PVDIR_WATCH_SESSION*    ppWatchSession,
+    PVDIR_EVENT_REPO        pEventRepo
     );
 
 DWORD
 VmDirWatchSessionSendEvents(
-    PVDIR_WATCH_SESSION pWatchSession,
-    DWORD               eventCount
+    PVDIR_WATCH_SESSION         pWatchSession,
+    DWORD                       eventCount
     );
 
 VOID
@@ -147,5 +148,14 @@ VmDirWatchSessionManagerFree(
 
 DWORD
 VmDirSessionManagerThreadInit(
+    PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager
+    );
+
+/*
+ * notifythread.c
+ */
+
+DWORD
+VmDirNotifyThreadInit(
     PVDIR_WATCH_SESSION_MANAGER pWatchSessionManager
     );

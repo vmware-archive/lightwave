@@ -79,7 +79,7 @@ VmDirWatchSessionManagerAddNewSession(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirWatchSessionInit(&pWatchSession);
+    dwError = VmDirWatchSessionInit(&pWatchSession, pWatchSessionManager->pEventRepo);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pWatchSession->bPrevVersion = bPrevVersion;
