@@ -1632,6 +1632,19 @@ public class CasIdmClient
     }
 
     /**
+     * Retrieves the secondary OIDC Entity ID if configured, or null if not.
+     *
+     * @param tenantName Name of tenant
+     * @return OIDC Entity ID String
+     * @throws IDMException
+     * @throws Exception
+     */
+    public String getSecondaryOIDCEntity(String tenantName) throws Exception
+    {
+        return getService().getSecondaryOIDCEntity(tenantName, this.getServiceContext());
+    }
+
+    /**
      * Retrieves the configuration setting in the tenant pertaining to the
      * maximum number of times a SAML token may be delegated.
      *

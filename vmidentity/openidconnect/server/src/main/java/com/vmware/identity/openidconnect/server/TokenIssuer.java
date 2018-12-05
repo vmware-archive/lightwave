@@ -14,27 +14,25 @@
 
 package com.vmware.identity.openidconnect.server;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.security.interfaces.RSAPublicKey;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.List;
 
+import com.vmware.identity.diagnostics.DiagnosticsLoggerFactory;
+import com.vmware.identity.diagnostics.IDiagnosticsLogger;
+import com.vmware.identity.openidconnect.common.*;
 import org.apache.commons.lang3.Validate;
 
 import com.nimbusds.jose.JOSEException;
-import com.vmware.identity.openidconnect.common.ClientID;
-import com.vmware.identity.openidconnect.common.ErrorObject;
-import com.vmware.identity.openidconnect.common.JWTID;
-import com.vmware.identity.openidconnect.common.Nonce;
-import com.vmware.identity.openidconnect.common.Scope;
-import com.vmware.identity.openidconnect.common.ScopeValue;
-import com.vmware.identity.openidconnect.common.SessionID;
-import com.vmware.identity.openidconnect.common.Subject;
-import com.vmware.identity.openidconnect.common.TokenType;
 import com.vmware.identity.openidconnect.protocol.AccessToken;
 import com.vmware.identity.openidconnect.protocol.IDToken;
 import com.vmware.identity.openidconnect.protocol.RefreshToken;
+
+import javax.print.URIException;
 
 /**
  * @author Yehia Zayour
@@ -48,6 +46,9 @@ public class TokenIssuer {
     private final Nonce nonce;
     private final ClientID clientId;
     private final SessionID sessionId;
+    private final URI requestUri;
+
+    private static final IDiagnosticsLogger logger = DiagnosticsLoggerFactory.getLogger(TokenIssuer.class);
 
     public TokenIssuer(
             PersonUser personUser,
@@ -74,6 +75,64 @@ public class TokenIssuer {
         this.nonce = nonce;
         this.clientId = clientId;
         this.sessionId = sessionId;
+        this.requestUri = null;
+    }
+
+    /**
+     Initializes TokenIssuer with the request's uri for the token flow. If STS is configured to use a secondary issuer
+     matching the passed in parameter, the resulting token will have the secondary issuer.
+     TODO remove once endpoint migration complete
+     */
+    public TokenIssuer(
+            PersonUser personUser,
+            SolutionUser solutionUser,
+            UserInfo userInfo,
+            TenantInfo tenantInfo,
+            Scope scope,
+            Nonce nonce,
+            ClientID clientId,
+            SessionID sessionId,
+            URI requestUri) {
+        Validate.isTrue(personUser != null || solutionUser != null, "personUser and solutionUser should not both be null");
+        Validate.notNull(userInfo, "userInfo");
+        Validate.notNull(tenantInfo, "tenantInfo");
+        Validate.notNull(scope, "scope");
+        Validate.notNull(requestUri, "requestUri");
+        // nullable nonce
+        // nullable clientId
+        // nullable sessionId
+
+        this.personUser = personUser;
+        this.solutionUser = solutionUser;
+        this.userInfo = userInfo;
+        this.tenantInfo = tenantInfo;
+        this.scope = scope;
+        this.nonce = nonce;
+        this.clientId = clientId;
+        this.sessionId = sessionId;
+        this.requestUri = requestUri;
+    }
+
+    // Gets the appropriate issuer claim to use for the token
+    private Issuer getIssuer() {
+        Issuer issuer = this.tenantInfo.getIssuer();
+        if (this.requestUri == null) {
+            return issuer;
+        }
+
+        String secondaryIssuer = issuer.getSecondaryIssuer();
+        if (secondaryIssuer != null && !secondaryIssuer.isEmpty()) {
+            // If the incoming request matches the configured secondary issuer, use that instead
+            try {
+                URI issuerURI = new URI(secondaryIssuer);
+                if (issuerURI.getHost().equalsIgnoreCase(this.requestUri.getHost())) {
+                    return new Issuer(secondaryIssuer);
+                }
+            } catch (URISyntaxException e) {
+                logger.error("Failed to parse configured issuer URI: {}", secondaryIssuer);
+            }
+        }
+        return issuer;
     }
 
     public IDToken issueIDToken() throws ServerException {
@@ -105,7 +164,7 @@ public class TokenIssuer {
                     this.tenantInfo.getPrivateKey(),
                     tokenType(),
                     new JWTID(),
-                    this.tenantInfo.getIssuer(),
+                    getIssuer(),
                     subject(),
                     audience(),
                     issueTime,
@@ -160,7 +219,7 @@ public class TokenIssuer {
                     this.tenantInfo.getPrivateKey(),
                     tokenType(),
                     new JWTID(),
-                    this.tenantInfo.getIssuer(),
+                    getIssuer(),
                     subject(),
                     audience,
                     issueTime,
@@ -193,7 +252,7 @@ public class TokenIssuer {
                     this.tenantInfo.getPrivateKey(),
                     tokenType(),
                     new JWTID(),
-                    this.tenantInfo.getIssuer(),
+                    getIssuer(),
                     subject(),
                     audience(),
                     issueTime,

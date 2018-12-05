@@ -325,6 +325,7 @@ public class IdentityManager implements IIdentityManager {
     private static final String DEFAULT_HTTPS_PORT = "443";
     private static final String HOSTNAME_MACRO = "<HOSTNAME>"; // to be susbstituted with getHostIPAddress()
     private static final String PORT_MACRO = "<PORT>"; // to be substituted with StsTomcat ipaddress
+    private static final String OIDC_ENTITY = "https://%s:%s/openidconnect/%s"; // Issuer URL for oidc
     private static final String LOCAL_OS_STATIC_ALIAS = "localos";
     private static final String PROVIDER_TYPE_RSA_SECURID = "RsaSecureID";
     private static final String PASSCODE_PROVIDER_TYPE = "RSA";
@@ -6829,40 +6830,23 @@ public class IdentityManager implements IIdentityManager {
     }
 
     private
-    String getOIDCEntityID(String tenantName) throws Exception
-    {
-        try
-        {
+    String getOIDCEntityID(String tenantName, String host) throws Exception {
+        try {
             ValidateUtil.validateNotEmpty(tenantName, "Tenant name");
-
-            // reuse the existing entity id to create OIDC entity id.
-            // if the entity id has websso suffix, replace it with oidc suffix,
-            // otherwise, create a new OIDC entity id.
-            // in the long term, we want to change the entity id to be service neutral.
-            // see bug# 1410188
-            String serviceUri = getEntityID(tenantName);
-            String webssoSuffix = String.format("/websso/SAML2/Metadata/%s", tenantName);
-            String oidcSuffix = String.format("/openidconnect/%s", tenantName);
-            if (serviceUri != null && serviceUri.endsWith(webssoSuffix)) {
-                serviceUri = serviceUri.replace(webssoSuffix, oidcSuffix);
-            } else {
-                serviceUri = String.format(
-                        "https://%s:%s/openidconnect/%s",
-                        HOSTNAME_MACRO,
-                        PORT_MACRO,
-                        tenantName);
-                serviceUri = expandEntityID(serviceUri);
+            if (host == null || host.isEmpty()) {
+                host = HOSTNAME_MACRO;
             }
+            // Ideally, we should check a service-neutral value in directory. CNA-3806
+            String serviceUri = String.format(
+                    OIDC_ENTITY,
+                    host,
+                    PORT_MACRO,
+                    tenantName);
+            serviceUri = expandEntityID(serviceUri);
 
             return serviceUri;
-        }
-        catch(Exception ex)
-        {
-            logger.error(
-                    String.format(
-                            "Failed to get OIDC Entity ID for tenant [%s]",
-                            tenantName));
-
+        } catch (Exception ex) {
+            logger.error(String.format("Failed to get OIDC Entity ID for tenant [%s]", tenantName));
             throw ex;
         }
     }
@@ -9621,10 +9605,26 @@ public class IdentityManager implements IIdentityManager {
         {
             try
             {
-                return this.getOIDCEntityID(tenantName);
+                return this.getOIDCEntityID(tenantName, HOSTNAME_MACRO);
             }
             catch(Exception ex)
             {
+                throw ServerUtils.getRemoteException(ex);
+            }
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    @Override
+    public String getSecondaryOIDCEntity(String tenantName, IIdmServiceContext serviceContext)
+            throws IDMException {
+        try (IDiagnosticsContextScope ctxt = getDiagnosticsContext(tenantName, serviceContext, "getSecondaryOIDCIssuer")) {
+            try {
+                IdmServerConfig settings = IdmServerConfig.getInstance();
+                return this.getOIDCEntityID(tenantName, settings.getSecondaryOIDCEntity());
+            } catch (Exception ex) {
                 throw ServerUtils.getRemoteException(ex);
             }
         }

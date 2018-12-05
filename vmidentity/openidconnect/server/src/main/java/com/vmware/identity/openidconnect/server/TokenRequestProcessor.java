@@ -497,7 +497,8 @@ public class TokenRequestProcessor {
                 scope,
                 nonce,
                 clientId,
-                sessionId);
+                sessionId,
+                httpRequest.getURI());
 
         IDToken idToken = tokenIssuer.issueIDToken();
         AccessToken accessToken = tokenIssuer.issueAccessToken();

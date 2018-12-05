@@ -92,6 +92,7 @@ public class TenantInfoRetriever {
 
         AuthnPolicy authnPolicy;
         String issuer;
+        String secondaryIssuer;
         String brandName;
         String logonBannerTitle;
         String logonBannerContent;
@@ -106,6 +107,7 @@ public class TenantInfoRetriever {
         try {
             authnPolicy                  = this.idmClient.getAuthnPolicy(tenant);
             issuer                       = this.idmClient.getOIDCEntityID(tenant);
+            secondaryIssuer              = this.idmClient.getSecondaryOIDCEntity(tenant);
             brandName                    = this.idmClient.getBrandName(tenant);
             logonBannerTitle             = this.idmClient.getLogonBannerTitle(tenant);
             logonBannerContent           = this.idmClient.getLogonBannerContent(tenant);
@@ -134,7 +136,7 @@ public class TenantInfoRetriever {
                 publicKey(publicKey).
                 certificate(certificate).
                 authnPolicy(tenantAuthnPolicy).
-                issuer(new Issuer(issuer)).
+                issuer(new Issuer(issuer, secondaryIssuer)).
                 brandName(brandName).
                 logonBannerTitle(logonBannerTitle).
                 logonBannerContent(logonBannerContent).

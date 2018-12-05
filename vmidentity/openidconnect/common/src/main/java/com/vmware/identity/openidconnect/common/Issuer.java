@@ -19,8 +19,15 @@ package com.vmware.identity.openidconnect.common;
  * @author Jun Sun
  */
 public final class Issuer extends Identifier {
+    private String secondaryIssuer = null;
+
     public Issuer(String value) {
         super(value);
+    }
+
+    public Issuer(String value, String secondaryValue) {
+        super(value);
+        secondaryIssuer = secondaryValue;
     }
 
     @Override
@@ -28,5 +35,9 @@ public final class Issuer extends Identifier {
         return
                 other instanceof Issuer &&
                 ((Issuer) other).getValue().equals(this.getValue());
+    }
+
+    public String getSecondaryIssuer() {
+        return this.secondaryIssuer;
     }
 }

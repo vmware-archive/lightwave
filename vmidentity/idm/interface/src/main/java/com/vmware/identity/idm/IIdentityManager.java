@@ -110,6 +110,8 @@ public interface IIdentityManager
 
     public String getOIDCEntityID(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
 
+    public String getSecondaryOIDCEntity(String tenantName, IIdmServiceContext serviceContext) throws  IDMException;
+
     /**
      * Retrieves the alias associated with the entityId of local identity provider.
      *
