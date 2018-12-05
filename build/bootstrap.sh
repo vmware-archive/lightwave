@@ -3,7 +3,7 @@
 autoreconf -vif .. \
 && \
 ../configure \
-    CFLAGS="-Wall -Werror" \
+    CFLAGS="-Wall -Werror -D_FORTIFY_SOURCE=2 -O2" \
     LDFLAGS="-ldl -pie -fPIE" \
     --prefix=/opt/vmware \
     --enable-debug=yes \

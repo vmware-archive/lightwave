@@ -63,7 +63,7 @@ VmNetEventRegister(
                           );
     BAIL_ON_VMNETEVENT_ERROR(dwError);
 
-    pEventHandle->dwRefCount = 1;
+    pEventHandle->nRefCount = 1;
     pEventHandle->peventThread = &pEventHandle->eventThread;
 
     *ppEventHandle = pEventHandle;
@@ -117,7 +117,7 @@ VmNetEventReleaseEventHandle(
 {
     if (pEventHandle)
     {
-        if (InterlockedDecrement(&pEventHandle->dwRefCount) == 0)
+        if (InterlockedDecrement(&pEventHandle->nRefCount) == 0)
         {
             VmNetEventFreeEventHandle(pEventHandle);
         }

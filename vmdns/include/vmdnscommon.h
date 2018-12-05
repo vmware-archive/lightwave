@@ -1079,6 +1079,30 @@ VmDirLoadLibrary(
     VMDNS_LIB_HANDLE*   ppLibHandle
     );
 
+DWORD
+VmDnsRecordTypeToString(
+    VMDNS_RR_TYPE       type,
+    PCSTR*              ppszName
+    );
+
+DWORD
+VmDnsIp4AddressToString(
+    VMDNS_IP4_ADDRESS Ip4Address,
+    PSTR*             ppStr
+    );
+
+DWORD
+VmDnsIp6AddressToString(
+    VMDNS_IP6_ADDRESS Ip6Address,
+    PSTR*             ppStr
+    );
+
+DWORD
+VmDnsLoadLibrary(
+    PCSTR               pszLibPath,
+    VMDNS_LIB_HANDLE*   ppLibHandle
+    );
+
 #ifdef __cplusplus
 }
 #endif

@@ -256,7 +256,7 @@ VmDnsCreateBindingHandleA(
     {
         rpc_binding_set_auth_info(
                             pBinding,
-                            pszServerPrincipalName,         /* Server Principal Name */
+                            (UCHAR *)pszServerPrincipalName,         /* Server Principal Name */
                             VMDNS_RPC_PROTECT_LEVEL_PKT_PRIVACY,
                             VMDNS_RPC_AUTHN_GSS_NEGOTIATE,
                             rpc_identity_h,                 /* Auth Identity */
@@ -271,9 +271,7 @@ cleanup:
 
     if (pszStringBinding)
     {
-        ULONG ulError1 = 0;
-
-        ulError1 = VmDnsRpcFreeString(&pszStringBinding);
+        VmDnsRpcFreeString(&pszStringBinding);
     }
 
     VMDNS_SAFE_FREE_MEMORY(pszServerPrincipalName);
@@ -385,9 +383,7 @@ VmDnsFreeBindingHandle(
 {
     if (ppBinding)
     {
-        DWORD dwError = 0;
-
-        dwError = VmDnsRpcFreeBinding(ppBinding);
+        VmDnsRpcFreeBinding(ppBinding);
     }
 }
 

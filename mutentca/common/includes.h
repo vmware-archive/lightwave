@@ -60,6 +60,7 @@
 #include <mutentcapkcs.h>
 
 #include <vmutil.h>
+#include <vmnetworkutil.h>
 
 #include "defines.h"
 #include "structs.h"

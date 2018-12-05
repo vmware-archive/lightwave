@@ -27,7 +27,7 @@ ThreadWorker(
 
     for (; dwIndex < MAX_ITERATIONS; ++dwIndex)
     {
-          char buffer[32];
+          unsigned char buffer[32];
 
           int rc = RAND_pseudo_bytes(buffer, sizeof(buffer));
           e = ERR_get_error();

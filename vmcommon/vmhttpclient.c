@@ -733,7 +733,7 @@ VmHttpClientSignRequest(
     {
         requestBodyLen = VmStringLenA(pszTrimBody);
         dwError = VmSignatureComputeMessageDigest(VMSIGN_DIGEST_METHOD_SHA256,
-                                                  pszTrimBody,
+                                                  (UCHAR *)pszTrimBody,
                                                   requestBodyLen,
                                                   &pszHashedBody,
                                                   &hashedBodyLen
@@ -758,7 +758,7 @@ VmHttpClientSignRequest(
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = VmSignatureComputeRSASignature(VMSIGN_DIGEST_METHOD_SHA256,
-                                             pszToSign,
+                                             (UCHAR *)pszToSign,
                                              toSignLen,
                                              pcszPEM,
                                              &pszRSARaw,
@@ -772,11 +772,11 @@ VmHttpClientSignRequest(
     *ppszSignature = pszSignature;
 
 cleanup:
-    VM_COMMON_SAFE_FREE_STRINGA(pszHashedBody);
+    VM_COMMON_SAFE_FREE_MEMORY(pszHashedBody);
     VM_COMMON_SAFE_FREE_STRINGA(pszTrimBody);
     VM_COMMON_SAFE_FREE_STRINGA(pszHashedBodyHex);
     VM_COMMON_SAFE_FREE_STRINGA(pszToSign);
-    VM_COMMON_SAFE_FREE_STRINGA(pszRSARaw);
+    VM_COMMON_SAFE_FREE_MEMORY(pszRSARaw);
 
     return dwError;
 
@@ -851,7 +851,7 @@ VmHttpClientVerifySignedRequest(
 
         dwError = VmSignatureComputeMessageDigest(
                             VMSIGN_DIGEST_METHOD_SHA256,
-                            pszReqSanitizedBody,
+                            (UCHAR *)pszReqSanitizedBody,
                             VmStringLenA(pszReqSanitizedBody),
                             &pSHA256Body,
                             &szSHA256BodySize);
@@ -879,7 +879,7 @@ VmHttpClientVerifySignedRequest(
     // Verify request POP
     dwError = VmSignatureVerifyRSASignature(
                     VMSIGN_DIGEST_METHOD_SHA256,
-                    pszStringToSign,
+                    (UCHAR *)pszStringToSign,
                     szStringToSign,
                     pcszReqHOTKPEM,
                     pSignature,

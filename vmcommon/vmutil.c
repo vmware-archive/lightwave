@@ -109,7 +109,7 @@ VmSignatureDecodeHex(
     size_t              hexlen = 0;
     size_t              datalen = 0;
     unsigned char       *pData = NULL;
-    unsigned char       twoHexChars[3];
+    char                twoHexChars[3] = {'\0'};
 
     BAIL_ON_VM_COMMON_INVALID_STR_PARAMETER(pcszHexStr, dwError);
     BAIL_ON_VM_COMMON_INVALID_PARAMETER(ppData, dwError)
@@ -140,7 +140,7 @@ cleanup:
     return dwError;
 
 error:
-    VM_COMMON_SAFE_FREE_STRINGA(pData);
+    VM_COMMON_SAFE_FREE_MEMORY(pData);
     if (ppData)
     {
         *ppData = NULL;
@@ -182,9 +182,9 @@ VmEncodeToBase64(
                                );
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = sasl_encode64(pInput,
+    dwError = sasl_encode64((PCSTR)pInput,
                             dwInputLen,
-                            pBase64Encoded,
+                            (PSTR)pBase64Encoded,
                             dwBase64EncodedBufferLen,
                             &dwBase64EncodedByteLen
                             );
@@ -233,9 +233,9 @@ VmDecodeToBase64(
     dwError = VmAllocateMemory(dwEncodedLen, (PVOID *)&pBase64Decoded);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = sasl_decode64(pEncodedInput,
+    dwError = sasl_decode64((PCSTR)pEncodedInput,
                             dwEncodedLen,
-                            pBase64Decoded,
+                            (PSTR)pBase64Decoded,
                             dwEncodedLen,
                             &dwBase64DecodedByteLen
                             );

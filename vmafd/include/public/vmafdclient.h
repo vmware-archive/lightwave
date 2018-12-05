@@ -893,6 +893,11 @@ VmAfdIsRetriableError(
     DWORD dwError
     );
 
+DWORD
+VmAfdLocalTriggerPasswordRefresh(
+    VOID
+);
+
 #ifdef UNICODE
 
 #define VmAfdOpenServer                 VmAfdOpenServerW

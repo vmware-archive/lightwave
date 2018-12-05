@@ -36,6 +36,7 @@
 #include <vmmemory.h>
 #include <vmjsonresult.h>
 #include <vmhttpclient.h>
+#include <vmstring.h>
 
 #include "security_aws_kms_errors.h"
 #include "defines.h"

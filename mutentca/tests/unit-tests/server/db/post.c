@@ -712,7 +712,7 @@ _LwCALoadCAData(
     dwError = LwCAAllocateStringA(TEST_CRL_NUM, &pCaData->pszCRLNumber);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCACreateKey(TEST_PRIV_KEY,
+    dwError = LwCACreateKey((PBYTE)TEST_PRIV_KEY,
                             strlen(TEST_PRIV_KEY),
                             &pCaData->pEncryptedPrivateKey
                             );

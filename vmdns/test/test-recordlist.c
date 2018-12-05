@@ -46,10 +46,10 @@ TestRecordListAddObject(
 
     pListObject = VmDnsRecordListGetRecord(pList, 0);
     CuAssert(tc, "TestRecordListCreate: Zero entries.", pListObject == pRecordObject);
-    CuAssert(tc, "TestRecordListCreate: Zero entries.", pRecordObject->lRefCount == 2);
+    CuAssert(tc, "TestRecordListCreate: Zero entries.", pRecordObject->nRefCount == 2);
 
     VmDnsRecordListRelease(pList);
-    CuAssert(tc, "TestRecordListCreate: Zero entries.", pRecordObject->lRefCount == 1);
+    CuAssert(tc, "TestRecordListCreate: Zero entries.", pRecordObject->nRefCount == 1);
 
     VmDnsRecordObjectRelease(pRecordObject);
     CuAssert(tc, "VmDnsLruFree succeeded.", TRUE);
@@ -60,19 +60,18 @@ TestRecordListRemoveObject(
     CuTest* tc
     )
 {
-    DWORD dwError = 0;
     PVMDNS_RECORD_LIST pList = NULL;
     PVMDNS_RECORD pRecord = NULL;
     PVMDNS_RECORD_OBJECT pRecordObject = NULL;
 
-    dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (PVOID*)&pRecord);
-    dwError = VmDnsRecordObjectCreate(pRecord, &pRecordObject);
-    dwError = VmDnsRecordListCreate(&pList);
-    dwError = VmDnsRecordListAdd(pList, pRecordObject);
+    VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (PVOID*)&pRecord);
+    VmDnsRecordObjectCreate(pRecord, &pRecordObject);
+    VmDnsRecordListCreate(&pList);
+    VmDnsRecordListAdd(pList, pRecordObject);
 
-    dwError = VmDnsRecordListRemove(pList, pRecordObject);
+    VmDnsRecordListRemove(pList, pRecordObject);
     CuAssert(tc, "TestRecordListRemoveObject: Zero entries.", pList->dwCurrentSize == 0);
-    CuAssert(tc, "TestRecordListRemoveObject: Released Object.", pRecordObject->lRefCount == 1);
+    CuAssert(tc, "TestRecordListRemoveObject: Released Object.", pRecordObject->nRefCount == 1);
 
     VmDnsRecordListRelease(pList);
     VmDnsRecordObjectRelease(pRecordObject);
@@ -83,18 +82,18 @@ TestRecordListAddObject100(
     CuTest* tc
     )
 {
-    DWORD dwError = 0, i = 0;
+    DWORD i = 0;
     PVMDNS_RECORD_LIST pList = NULL;
     PVMDNS_RECORD pRecord = NULL;
     PVMDNS_RECORD_OBJECT pRecordObject = NULL;
 
-    dwError = VmDnsRecordListCreate(&pList);
+    VmDnsRecordListCreate(&pList);
 
     for (i = 0; i < 100; ++i)
     {
-        dwError = VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (PVOID*)&pRecord);
-        dwError = VmDnsRecordObjectCreate(pRecord, &pRecordObject);
-        dwError = VmDnsRecordListAdd(pList, pRecordObject);
+        VmDnsAllocateMemory(sizeof(VMDNS_RECORD), (PVOID*)&pRecord);
+        VmDnsRecordObjectCreate(pRecord, &pRecordObject);
+        VmDnsRecordListAdd(pList, pRecordObject);
         VmDnsRecordObjectRelease(pRecordObject);
     }
 

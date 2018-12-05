@@ -564,6 +564,11 @@ VmDnsDirClose(
     PVMDNS_DIR_CONTEXT pDirContext
     );
 
+DWORD
+VmDnsOpenVmAfdClientLib(
+    VMDNS_LIB_HANDLE*   pplibHandle
+    );
+
 #ifdef __cplusplus
 }
 #endif

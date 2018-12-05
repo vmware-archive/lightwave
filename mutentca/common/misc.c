@@ -448,7 +448,7 @@ LwCAHexStringToBytes(
     size_t  hexlen = 0;
     size_t  datalen = 0;
     PBYTE   pData = NULL;
-    unsigned char twoHexChars[3];
+    char    twoHexChars[3] = {'\0'};
 
     if (!pszHexStr || !ppData || !pLength)
     {

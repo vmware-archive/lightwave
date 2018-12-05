@@ -29,7 +29,7 @@ VmDnsNameEntryCreate(
     dwError = VmDnsAllocateMemory(sizeof(VMDNS_NAME_ENTRY), (VOID*)&pNameEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pNameEntry->lRefCount = 1;
+    pNameEntry->nRefCount = 1;
 
     pNameEntry->dwRoundRobinIndex = 0;
     pNameEntry->dwRoundRobinType = 0;
@@ -54,7 +54,7 @@ VmDnsNameEntryAddRef(
     PVMDNS_NAME_ENTRY  pNameEntry
     )
 {
-    return InterlockedIncrement(&pNameEntry->lRefCount);
+    return InterlockedIncrement(&pNameEntry->nRefCount);
 }
 
 VOID
@@ -62,7 +62,7 @@ VmDnsNameEntryRelease(
     PVMDNS_NAME_ENTRY   pNameEntry
     )
 {
-    if (pNameEntry && InterlockedDecrement(&pNameEntry->lRefCount) == 0)
+    if (pNameEntry && InterlockedDecrement(&pNameEntry->nRefCount) == 0)
     {
         VmDnsNameEntryDelete(pNameEntry);
     }

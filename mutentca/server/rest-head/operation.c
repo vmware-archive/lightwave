@@ -92,7 +92,7 @@ LwCARestOperationReadRequest(
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get REST http request method");
 
     // Get the client IP
-    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, &pRestOp->dwPort);
+    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, (int *)&pRestOp->dwPort);
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get REST connection info");
 
     // read raw request URI as sent from client - for token POP validation

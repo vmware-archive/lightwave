@@ -562,7 +562,7 @@ VmDnsReadRecordFromBuffer(
 
     dwError = VmDnsReadUINT32FromBuffer(
                             pVmDnsBuffer,
-                            &pDnsRecord->dwTtl
+                            (PUINT32)&pDnsRecord->dwTtl
                             );
     BAIL_ON_VMDNS_ERROR(dwError);
 

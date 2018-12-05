@@ -148,7 +148,7 @@ VmDnsCheckAccess(
 
     if (bNeedAdminPrivilage)
     {
-        dwError = VmDnsLdapAccessCheck(authPrinc, VMDNS_ADMINISTRATORS);
+        dwError = VmDnsLdapAccessCheck((PCSTR)authPrinc, VMDNS_ADMINISTRATORS);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 

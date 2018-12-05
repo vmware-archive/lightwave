@@ -23,6 +23,7 @@
 #include <setjmp.h>
 #include <cmocka.h>
 #include <errno.h>
+#include <unistd.h>
 
 #include <config.h>
 
@@ -30,6 +31,8 @@
 
 #include <lwca_security.h>
 #include <security_aws_kms_errors.h>
+
+#include <vmmemory.h>
 
 #include "structs.h"
 #include "prototypes.h"

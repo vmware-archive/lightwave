@@ -71,6 +71,7 @@
 #include <vmsock.h>
 #include <vmdnsserver.h>
 #include <vmdnsmetrics.h>
+#include <resthead.h>
 
 #include "defines.h"
 #include "structs.h"

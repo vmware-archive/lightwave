@@ -108,7 +108,7 @@ localAdd()
     DWORD dwError = 0;
     char serverName[50];
     printf("Server:");
-    scanf("%s", serverName);
+    dwError = scanf("%s", serverName);
 
     dwError = EventLogAdd(serverName, 1, 1, "Message-Test");
     BAIL_ON_VMEVENT_ERROR(dwError);
@@ -135,18 +135,22 @@ clientTest()
     PEVENTLOG_CONTAINER pEventContainer = NULL;
 
     printf("Server:");
-    scanf("%s", serverName);
+    dwError = scanf("%s", serverName);
 
     dwError = EventLogInitEnumEventsHandle(serverName, &dwHandle);
     BAIL_ON_VMEVENT_ERROR(dwError);
 
     printf("Page size:");
-    scanf("%d", &pageSize);
+    dwError = scanf("%d", &pageSize);
 
     while (hasNext)
     {
         printf("[press return key]");
-        fgets(msg, 100, stdin);
+        if (!fgets(msg, 100, stdin))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMEVENT_ERROR(dwError);
+        }
 
         dwError = EventLogEnumEvents(serverName, dwHandle, offset, pageSize, &pEventContainer);
         BAIL_ON_VMEVENT_ERROR(dwError);

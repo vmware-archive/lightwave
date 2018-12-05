@@ -499,7 +499,6 @@ LwCAAllocateRWLock(
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = pthread_rwlock_init(&pLock->rwLock, NULL);
-    dwError = POSIX_TO_WIN32_ERROR(dwError);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppLock = pLock;

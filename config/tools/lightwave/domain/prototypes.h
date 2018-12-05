@@ -12,27 +12,3 @@
  * under the License.
  */
 
-
-int
-LightwaveDomainPromote(
-    int argc,
-    char* argv[]
-    );
-
-int
-LightwaveDomainDemote(
-    int argc,
-    char* argv[]
-    );
-
-int
-LightwaveDomainJoin(
-    int argc,
-    char* argv[]
-    );
-
-int
-LightwaveDomainLeave(
-    int argc,
-    char* argv[]
-    );

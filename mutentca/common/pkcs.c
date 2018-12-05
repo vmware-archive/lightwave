@@ -3123,7 +3123,7 @@ _LwCAX509NameAddEntryByTxt(
 {
     DWORD dwError = 0;
 
-    dwError = X509_NAME_add_entry_by_txt(pSubjectName, pcszField, MBSTRING_UTF8, pcszEntry, -1, -1, 0);
+    dwError = X509_NAME_add_entry_by_txt(pSubjectName, pcszField, MBSTRING_UTF8, (const UCHAR *)pcszEntry, -1, -1, 0);
     ERR_print_errors_fp(stdout);
     BAIL_ON_SSL_ERROR(dwError, LWCA_INVALID_CSR_FIELD);
 
@@ -3641,7 +3641,7 @@ _LwCAX509SetValidity(
     // If the request is beyond CA cert validity use CA cert validity
     if (X509_cmp_time(X509_get_notAfter(pIssuer), &pValidity->tmNotAfter) <= 0)
     {
-        if (!ASN1_TIME_set_string(X509_get_notAfter(pCert), X509_get_notAfter(pIssuer)->data))
+        if (!ASN1_TIME_set_string(X509_get_notAfter(pCert), (PCSTR)X509_get_notAfter(pIssuer)->data))
         {
             BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_SET_END_TIME);
         }
@@ -3910,7 +3910,7 @@ _LwCAConvertASNTimeToGeneralizedTime(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateStringA(pAsnGTm->data, &pszGeneralizedTime);
+    dwError = LwCAAllocateStringA((PCSTR)pAsnGTm->data, &pszGeneralizedTime);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppszGeneralizedTime = pszGeneralizedTime;

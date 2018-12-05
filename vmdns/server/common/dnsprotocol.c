@@ -153,7 +153,7 @@ VmDnsProcessRequest(
                         pDnsMessage,
                         &pDnsResponse,
                         &dwDnsResponseSize,
-                        &rCode,
+                        (PCHAR)&rCode,
                         &bQueryInZone
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -173,7 +173,7 @@ VmDnsProcessRequest(
                         pDnsUpdateMessage,
                         &pDnsResponse,
                         &dwDnsResponseSize,
-                        &rCode,
+                        (PCHAR)&rCode,
                         &bUpdateInZone
                         );
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -408,7 +408,6 @@ VmDnsProcessUpdate(
     DWORD dwZOCount = 0;
     DWORD dwPRCount = 0;
     DWORD dwUPCount = 0;
-    DWORD dwADCount = 0;
     BOOL bIsVerified = FALSE;
     VMDNS_HEADER ResponseHeader = { 0 };
     VMDNS_UPDATE_MESSAGE ResponseMessage = { 0 };
@@ -444,7 +443,6 @@ VmDnsProcessUpdate(
     dwZOCount = pDnsUpdateMessage->pHeader->usZOCount;
     dwPRCount = pDnsUpdateMessage->pHeader->usPRCount;
     dwUPCount = pDnsUpdateMessage->pHeader->usUPCount;
-    dwADCount = pDnsUpdateMessage->pHeader->usADCount;
 
     ResponseHeader.usZOCount = dwZOCount;
     ResponseHeader.usPRCount = dwPRCount;
@@ -481,7 +479,7 @@ VmDnsProcessUpdate(
         dwError = VmDnsProcessUpdateZone(
                             pDnsUpdateMessage->pZone,
                             &pZoneObject,
-                            &ResponseHeader.codes.RCODE
+                            (PCHAR)&ResponseHeader.codes.RCODE
                             );
         BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -500,7 +498,7 @@ VmDnsProcessUpdate(
                                 pDnsUpdateMessage->pPrerequisite,
                                 pDnsUpdateMessage->pZone,
                                 pZoneObject,
-                                &ResponseHeader.codes.RCODE
+                                (PCHAR)&ResponseHeader.codes.RCODE
                                 );
         BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -531,7 +529,7 @@ VmDnsProcessUpdate(
                             pDnsUpdateMessage->pUpdate,
                             pDnsUpdateMessage->pZone,
                             pZoneObject,
-                            &ResponseHeader.codes.RCODE
+                            (PCHAR)&ResponseHeader.codes.RCODE
                             );
         BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -546,7 +544,7 @@ VmDnsProcessUpdate(
                                 pDnsUpdateMessage->pUpdate,
                                 pDnsUpdateMessage->pZone,
                                 pZoneObject,
-                                &ResponseHeader.codes.RCODE
+                                (PCHAR)&ResponseHeader.codes.RCODE
                                 );
             BAIL_ON_VMDNS_ERROR(dwError);
 

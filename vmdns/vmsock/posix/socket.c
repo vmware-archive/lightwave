@@ -787,16 +787,15 @@ VmDnsSockPosixShutdownEventQueue(
     PVM_SOCK_EVENT_QUEUE pQueue
     )
 {
-    LONG result = 0;
-
+    ssize_t bytesWritten = 0;
     if (pQueue)
     {
-        result = InterlockedExchange((LONG*)(&pQueue->bShutdown), TRUE);
+        InterlockedExchange((LONG*)(&pQueue->bShutdown), TRUE);
         if (pQueue->pSignalWriter)
         {
             char szBuf[] = {0};
-            ssize_t nWritten = 0;
-            nWritten = write(pQueue->pSignalWriter->fd, szBuf, sizeof(szBuf));
+            bytesWritten = write(pQueue->pSignalWriter->fd, szBuf, sizeof(szBuf));
+            VMDNS_LOG_DEBUG("%s: write %ld bytes\n", __FUNCTION__, bytesWritten);
         }
     }
 }
@@ -1577,7 +1576,7 @@ VmDnsSockPosixAllocateIoBuffer(
     pIoContext->eventType = eventType;
     pIoContext->pEventContext = pEventContext;
     pIoContext->IoBuffer.dwExpectedSize = dwSize;
-    pIoContext->IoBuffer.pData = pIoContext->DataBuffer;
+    pIoContext->IoBuffer.pData = (PBYTE)pIoContext->DataBuffer;
 
     *ppIoBuffer = &pIoContext->IoBuffer;
 

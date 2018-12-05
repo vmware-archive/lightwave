@@ -128,7 +128,7 @@ VmDnsZoneCreateFromRecordList(
                     (void**)&pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pZoneObject->lRefCount = 1;
+    pZoneObject->nRefCount = 1;
 
     dwError = VmDnsAllocateStringA(szZoneName, &pZoneObject->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -190,7 +190,7 @@ VmDnsZoneObjectAddRef(
     PVMDNS_ZONE_OBJECT  pZoneObject
     )
 {
-    return InterlockedIncrement(&pZoneObject->lRefCount);
+    return InterlockedIncrement(&pZoneObject->nRefCount);
 }
 
 VOID
@@ -198,7 +198,7 @@ VmDnsZoneObjectRelease(
     PVMDNS_ZONE_OBJECT  pZoneObject
     )
 {
-    if (pZoneObject && InterlockedDecrement(&pZoneObject->lRefCount) == 0)
+    if (pZoneObject && InterlockedDecrement(&pZoneObject->nRefCount) == 0)
     {
         VmDnsLockWrite(pZoneObject->pLock);
 

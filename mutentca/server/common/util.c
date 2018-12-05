@@ -171,7 +171,6 @@ LwCAUtilDoesValueHaveWildcards(
     PCSTR            pcszValue
     )
 {
-    DWORD           dwError = 0;
     int             count = 0;
 
     if (IsNullOrEmptyString(pcszValue))
@@ -179,7 +178,7 @@ LwCAUtilDoesValueHaveWildcards(
         return FALSE;
     }
 
-    dwError = LwCAStringCountSubstring(
+    LwCAStringCountSubstring(
                         pcszValue,
                         "*",
                         &count);
