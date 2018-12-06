@@ -463,7 +463,7 @@ func checkParseAndValidateAccessTokenMulti(t *testing.T, oidcClient Client, clie
 	checkProviderInfo(t, providerInfo[1])
 
 	accessToken, index, err := ParseAndValidateAccessTokenMulti(
-		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+		tokens.AccessToken(), clientID, providerInfo[:], logger)
 
 	require.Nil(t, err, "Error in parsing access token: %+v", err)
 	assert.Equal(t, index, 1, "index check")
@@ -493,7 +493,7 @@ func checkParseAndValidateAccessTokenMultiFail(t *testing.T, oidcClient Client, 
 	checkProviderInfo(t, providerInfo[1])
 
 	_, _, err = ParseAndValidateAccessTokenMulti(
-		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+		tokens.AccessToken(), clientID, providerInfo[:], logger)
 
 	require.NotNil(t, err, "Error expected when parsing access token")
 }
