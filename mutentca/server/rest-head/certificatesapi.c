@@ -55,6 +55,7 @@ LwCARestGetRootCASignedCert(
     PSTR                        pszRequestId    = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
     PLWCA_CERTIFICATE           pCert           = NULL;
+    PSTR                        pszChainOfTrust = NULL;
     PSTR                        pszRootCAId     = NULL;
 
     if (!pIn)
@@ -84,10 +85,19 @@ LwCARestGetRootCASignedCert(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAGetChainOfTrust(pszRootCAId, &pszChainOfTrust);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CERT,
                   pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARestResultSetStrData(
+                  pRestOp->pResult,
+                  LWCA_JSON_KEY_TRUSTCHAIN,
+                  pszChainOfTrust);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -95,6 +105,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     LwCAFreeCertificate(pCert);
+    LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
     LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     return dwError;
@@ -173,6 +184,7 @@ LwCARestGetIntermediateCASignedCert(
     PLWCA_REST_OPERATION        pRestOp         = NULL;
     PSTR                        pszRequestId    = NULL;
     PSTR                        pszCAId         = NULL;
+    PSTR                        pszChainOfTrust = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
     PLWCA_CERTIFICATE           pCert           = NULL;
 
@@ -203,10 +215,19 @@ LwCARestGetIntermediateCASignedCert(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAGetChainOfTrust(pszCAId, &pszChainOfTrust);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     dwError = LwCARestResultSetStrData(
                   pRestOp->pResult,
                   LWCA_JSON_KEY_CERT,
                   pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCARestResultSetStrData(
+                  pRestOp->pResult,
+                  LWCA_JSON_KEY_TRUSTCHAIN,
+                  pszChainOfTrust);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -214,6 +235,7 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
+    LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
     LwCAFreeCertificate(pCert);
 
     return dwError;

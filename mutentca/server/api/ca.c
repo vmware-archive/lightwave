@@ -511,6 +511,186 @@ error:
 }
 
 DWORD
+LwCAGetChainOfTrust(
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszChainOfTrust
+    )
+{
+    DWORD                       dwError = 0;
+    DWORD                       dwCursor = 0;
+    size_t                      szCertLen = 0;
+    PSTR                        pszRootCAId = NULL;
+    PSTR                        pszIssuerCAId = NULL;
+    BOOLEAN                     bVerified = FALSE;
+    PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
+    PLWCA_CERTIFICATE_ARRAY     pIssuerCACerts = NULL;
+    PLWCA_CERTIFICATE           pCACert = NULL;
+    PLWCA_CERTIFICATE           pIssuerCACert = NULL;
+    X509                        *pX509CACert = NULL;
+    X509                        *pX509IssuerCACert = NULL;
+    PSTR                        pszTmpChain = NULL;
+    PSTR                        pszChainOfTrust = NULL;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppszChainOfTrust)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCAGetRootCAId(&pszRootCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateMemory(
+                    sizeof(char) * LWCA_MAX_CHAIN_OF_TRUST_SIZE,
+                    (PVOID *)&pszTmpChain);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // Get the current cert of the specified CA and:
+    //     * Append the PEM blob to the tmp buffer
+    //     * Get the issuer common name
+    dwError = LwCAGetCACertificates(pcszCAId, &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetLatestCertificateFromArray(pCACerts, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAPEMToX509(pCACert, &pX509CACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAX509GetIssuerCommonName(pX509CACert, &pszIssuerCAId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    szCertLen = LwCAStringLenA(pCACert);
+    if ((dwCursor + szCertLen) >= LWCA_MAX_CHAIN_OF_TRUST_SIZE)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_BUFFER_OVERFLOW);
+    }
+    dwError = LwCACopyMemory(
+                    (PVOID)(pszTmpChain + dwCursor),
+                    szCertLen,
+                    pCACert,
+                    szCertLen);
+    BAIL_ON_LWCA_ERROR(dwError);
+    dwCursor += szCertLen;
+
+    if (LwCAStringCompareA(pcszCAId, pszRootCAId, FALSE) == 0)
+    {
+        goto ret;
+    }
+
+    // Keep following the issuer field of each CA cert until we get to the root CA
+    while (LwCAStringCompareA(pszRootCAId, pszIssuerCAId, FALSE) != 0)
+    {
+        // Get issuing CA certificate
+        dwError = LwCAGetCACertificates(pszIssuerCAId, &pIssuerCACerts);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCAGetLatestCertificateFromArray(pIssuerCACerts, &pIssuerCACert);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        dwError = LwCAPEMToX509(pIssuerCACert, &pX509IssuerCACert);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        // Verify that certificate was indeeded issued and signed by the issuer
+        dwError = LwCAX509VerifyCertIssuer(pX509CACert, pX509IssuerCACert, &bVerified);
+        BAIL_ON_LWCA_ERROR(dwError);
+        if (!bVerified)
+        {
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+        }
+
+        // Append the issuer cert PEM blob to the tmp buffer
+        szCertLen = LwCAStringLenA(pIssuerCACert);
+        if ((dwCursor + szCertLen) >= LWCA_MAX_CHAIN_OF_TRUST_SIZE)
+        {
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_BUFFER_OVERFLOW);
+        }
+        dwError = LwCACopyMemory(
+                        (PVOID)(pszTmpChain + dwCursor),
+                        szCertLen,
+                        pIssuerCACert,
+                        szCertLen);
+        BAIL_ON_LWCA_ERROR(dwError);
+        dwCursor += szCertLen;
+
+        // Reset tmp variables and get issuer of cert we just appended
+        LwCAX509Free(pX509CACert);
+        pX509CACert = NULL;
+        LwCAFreeCertificates(pIssuerCACerts);
+        pIssuerCACerts = NULL;
+        LWCA_SAFE_FREE_STRINGA(pszIssuerCAId);
+        pszIssuerCAId = NULL;
+
+        // This works as X509 struct memory is managed by libssl through ref counts.
+        // As pX509CACert is freed above, the next iteration of the loop will clear
+        // pX509IssuerCACert. In the function's cleanup stage, both X509 ptrs are
+        // cleaned up.
+        pX509CACert = pX509IssuerCACert;
+        pX509IssuerCACert = NULL;
+
+        dwError = LwCAX509GetIssuerCommonName(pX509CACert, &pszIssuerCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LwCAFreeCertificate(pCACert);
+    pCACert = NULL;
+    LwCAFreeCertificates(pCACerts);
+    pCACerts = NULL;
+
+    // Append root CA cert PEM blob after chain has been added up to this point
+    dwError = LwCAGetCACertificates(pszRootCAId, &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGetLatestCertificateFromArray(pCACerts, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    szCertLen = LwCAStringLenA(pCACert);
+    if ((dwCursor + szCertLen) >= LWCA_MAX_CHAIN_OF_TRUST_SIZE)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_BUFFER_OVERFLOW);
+    }
+    dwError = LwCACopyMemory(
+                    (PVOID)(pszTmpChain + dwCursor),
+                    szCertLen,
+                    pCACert,
+                    szCertLen);
+    BAIL_ON_LWCA_ERROR(dwError);
+    dwCursor += szCertLen;
+
+
+ret:
+
+    pszTmpChain[dwCursor] = '\0';
+    dwError = LwCAAllocateStringA(pszTmpChain, &pszChainOfTrust);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszChainOfTrust = pszChainOfTrust;
+
+cleanup:
+
+    LWCA_SAFE_FREE_STRINGA(pszTmpChain);
+    LwCAX509Free(pX509CACert);
+    LwCAX509Free(pX509IssuerCACert);
+    LwCAFreeCertificate(pCACert);
+    LwCAFreeCertificate(pIssuerCACert);
+    LwCAFreeCertificates(pCACerts);
+    LwCAFreeCertificates(pIssuerCACerts);
+    LWCA_SAFE_FREE_STRINGA(pszIssuerCAId);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
+    if (ppszChainOfTrust)
+    {
+        *ppszChainOfTrust = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCAGetSignedCertificate(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,

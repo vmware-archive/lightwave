@@ -59,6 +59,7 @@
 #define LWCA_JSON_KEY_CERT                      "cert"
 #define LWCA_JSON_KEY_CERTS                     "certs"
 #define LWCA_JSON_KEY_CRL                       "crl"
+#define LWCA_JSON_KEY_TRUSTCHAIN                "chainoftrust"
 
 // HTTP headers
 #define LWCA_REST_HEADER_AUTHORIZATION          "Authorization"
