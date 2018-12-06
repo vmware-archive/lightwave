@@ -27,11 +27,7 @@ SSOHttpClientSetCurlOptionInt(
     SSOERROR e = SSOERROR_NONE;
 
     CURLcode code = curl_easy_setopt(p->pCurl, option, intValue);
-    if (code != CURLE_OK)
-    {
-        e = SSOERROR_CURL_FAILURE;
-        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
-    }
+    BAIL_AND_LOG_ON_CURL_ERROR(e, code);
 
 error:
     return e;
@@ -47,11 +43,7 @@ SSOHttpClientSetCurlOptionPointer(
     SSOERROR e = SSOERROR_NONE;
 
     CURLcode code = curl_easy_setopt(p->pCurl, option, pValue);
-    if (code != CURLE_OK)
-    {
-        e = SSOERROR_CURL_FAILURE;
-        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
-    }
+    BAIL_AND_LOG_ON_CURL_ERROR(e, code);
 
 error:
     return e;
@@ -230,11 +222,7 @@ SSOHttpClientGlobalInit(
     BAIL_ON_ERROR(e);
 
     CURLcode code = curl_global_init(CURL_GLOBAL_DEFAULT);
-    if (code != CURLE_OK)
-    {
-        e = SSOERROR_CURL_INIT_FAILURE;
-        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
-    }
+    BAIL_AND_LOG_ON_CURL_ERROR(e, code);
 
     e = SSOHttpClientSSLLocksInit(&pCurlInitCtx->pMutexBuffer,
                                   &pCurlInitCtx->dwMutexBufSize);
@@ -419,19 +407,13 @@ SSOHttpClientSend(
         size_t len = strlen(errbuf);
         if(len)
         {
-          BAIL_AND_LOG_ON_ERROR(e, errbuf);
+            /* might contain context sensitive data */
+            LOG_ERROR(e, errbuf);
         }
-        else
-        {
-          BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
-        }
+        BAIL_AND_LOG_ON_CURL_ERROR(e, code);
     }
     code = curl_easy_getinfo(p->pCurl, CURLINFO_RESPONSE_CODE, &statusCode);
-    if (code != CURLE_OK)
-    {
-        e = SSOERROR_CURL_FAILURE;
-        BAIL_AND_LOG_ON_ERROR(e, curl_easy_strerror(code));
-    }
+    BAIL_AND_LOG_ON_CURL_ERROR(e, code);
 
     pszHttpClientResponse = SSOHttpClientResponseGetString(pHttpClientResponse);
     e = SSOStringAllocate(pszHttpClientResponse, &pszOutResponse);

@@ -116,31 +116,34 @@ extern "C" {
 #define VMAFD_SSOERROR_NONE                                     0
 #define VMAFD_SSOERROR_INVALID_ARGUMENT                         1101
 #define VMAFD_SSOERROR_OUT_OF_MEMORY                            1102
-#define VMAFD_SSOERROR_CURL_FAILURE                             1103
-#define VMAFD_SSOERROR_CURL_INIT_FAILURE                        1104
-#define VMAFD_SSOERROR_HTTP_SEND_FAILURE                        1104
-#define VMAFD_SSOERROR_JSON_FAILURE                             1105
-#define VMAFD_SSOERROR_JSON_PARSE_FAILURE                       1106
-#define VMAFD_SSOERROR_OPENSSL_FAILURE                          1107
-#define VMAFD_SSOERROR_VMAFD_LOAD_FAILURE                       1108
-#define VMAFD_SSOERROR_VMAFD_CALL_FAILURE                       1109
-#define VMAFD_SSOERROR_TOKEN_INVALID_SIGNATURE                  1110
-#define VMAFD_SSOERROR_TOKEN_INVALID_AUDIENCE                   1111
-#define VMAFD_SSOERROR_TOKEN_EXPIRED                            1112
+#define VMAFD_SSOERROR_OIDC_SERVER                              1103
+#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_REQUEST              1104
+#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_SCOPE                1105
+#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_GRANT                1106
+#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_CLIENT               1107
+#define VMAFD_SSOERROR_OIDC_SERVER_UNSUPPORTED_RESPONSE_TYPE    1108
+#define VMAFD_SSOERROR_OIDC_SERVER_UNSUPPORTED_GRANT_TYPE       1109
+#define VMAFD_SSOERROR_OIDC_SERVER_ACCESS_DENIED                1110
+#define VMAFD_SSOERROR_OIDC_SERVER_SERVER_ERROR                 1111
 
-#define VMAFD_SSOERROR_OIDC_SERVER                              1113
-#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_REQUEST              1114
-#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_SCOPE                1115
-#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_GRANT                1116
-#define VMAFD_SSOERROR_OIDC_SERVER_INVALID_CLIENT               1117
-#define VMAFD_SSOERROR_OIDC_SERVER_UNSUPPORTED_RESPONSE_TYPE    1118
-#define VMAFD_SSOERROR_OIDC_SERVER_UNSUPPORTED_GRANT_TYPE       1119
-#define VMAFD_SSOERROR_OIDC_SERVER_ACCESS_DENIED                1120
-#define VMAFD_SSOERROR_OIDC_SERVER_SERVER_ERROR                 1121
+#define VMAFD_SSOERROR_UNKNOWN                                  1112
+#define VMAFD_OIDC_ERROR_RESPONSE                               1113
+#define VMAFD_OIDC_EMPTY_RESPONSE                               1114
 
-#define VMAFD_SSOERROR_UNKNOWN                                  1122
-#define VMAFD_OIDC_ERROR_RESPONSE                               1123
-#define VMAFD_OIDC_EMPTY_RESPONSE                               1124
+#define VMAFD_SSOERROR_RETRIABLE_START                          1200
+#define VMAFD_SSOERROR_CURL_START                               1201
+#define VMAFD_SSOERROR_CURL_END                                 1400
+/* generic curl failure. no curl error code. questionable if this is retriable */
+#define VMAFD_SSOERROR_CURL_FAILURE                             1401
+#define VMAFD_SSOERROR_JSON_FAILURE                             1402
+#define VMAFD_SSOERROR_JSON_PARSE_FAILURE                       1403
+#define VMAFD_SSOERROR_OPENSSL_FAILURE                          1404
+#define VMAFD_SSOERROR_VMAFD_LOAD_FAILURE                       1405
+#define VMAFD_SSOERROR_VMAFD_CALL_FAILURE                       1406
+#define VMAFD_SSOERROR_TOKEN_INVALID_SIGNATURE                  1407
+#define VMAFD_SSOERROR_TOKEN_INVALID_AUDIENCE                   1408
+#define VMAFD_SSOERROR_TOKEN_EXPIRED                            1409
+#define VMAFD_SSOERROR_RETRIABLE_END                            1410
 
 #ifdef __cplusplus
 }

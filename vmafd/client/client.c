@@ -5549,8 +5549,8 @@ VmAfdIsRetriableError(
     )
 {
     BOOLEAN bCanRetry = FALSE;
-    if (dwError >= VMAFD_SSOERROR_CURL_FAILURE &&
-        dwError <= VMAFD_OIDC_EMPTY_RESPONSE)
+    if (dwError > VMAFD_SSOERROR_RETRIABLE_START &&
+        dwError < VMAFD_SSOERROR_RETRIABLE_END)
     {
         bCanRetry = TRUE;
     }

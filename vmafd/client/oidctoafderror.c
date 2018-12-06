@@ -39,14 +39,6 @@ VmAfdOidcToVmafdError(
             dwError = VMAFD_SSOERROR_CURL_FAILURE;
             break;
 
-        case SSOERROR_CURL_INIT_FAILURE:
-            dwError = VMAFD_SSOERROR_CURL_INIT_FAILURE;
-            break;
-
-        case SSOERROR_HTTP_SEND_FAILURE:
-            dwError = VMAFD_SSOERROR_HTTP_SEND_FAILURE;
-            break;
-
         case SSOERROR_JSON_FAILURE:
             dwError = VMAFD_SSOERROR_JSON_FAILURE;
             break;
@@ -117,6 +109,11 @@ VmAfdOidcToVmafdError(
 
         default:
             dwError = VMAFD_SSOERROR_UNKNOWN;
+            if (SSOErrorHasCurlError(dwOIDCError))
+            {
+                dwError = VMAFD_SSOERROR_CURL_START +
+                          SSOErrorGetCurlCode(dwOIDCError);
+            }
     }
 
     return dwError;

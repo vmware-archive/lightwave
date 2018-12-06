@@ -55,4 +55,11 @@
 #define SSOERROR_REST_SERVER_INVALID_REQUEST            208
 #define SSOERROR_REST_SERVER_INVALID_TOKEN              209
 
+/*
+ * allow curl error codes to be returned
+ * curl error codes returned as SSOERROR_CURL_START + CURLcode
+*/
+#define SSOERROR_CURL_START                             300
+#define SSOERROR_CURL_END                               SSOERROR_CURL_START + CURL_LAST
+
 #endif

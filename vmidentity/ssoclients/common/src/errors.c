@@ -68,17 +68,48 @@ SSOErrorToString(
     SSOERROR code)
 {
     PCSTRING result = "<invalid SSOERROR code>";
-
     size_t i = 0;
     size_t entryCount = sizeof(errorCodeToString) / sizeof(errorCodeToString[0]);
-    for (i = 0; i < entryCount; i++)
+    CURLcode curlCode = CURLE_OK;
+
+    if (SSOErrorHasCurlError(code))
     {
-        if (errorCodeToString[i].code == code)
+        curlCode = SSOErrorGetCurlCode(code);
+        result = curl_easy_strerror(curlCode);
+    }
+    else
+    {
+        for (i = 0; i < entryCount; i++)
         {
-            result = errorCodeToString[i].pszString;
-            break;
+            if (errorCodeToString[i].code == code)
+            {
+                result = errorCodeToString[i].pszString;
+                break;
+            }
         }
     }
 
     return result;
+}
+
+int
+SSOErrorHasCurlError(
+    SSOERROR nError
+    )
+{
+    return (nError > SSOERROR_CURL_START) &&
+           (nError < SSOERROR_CURL_END);
+}
+
+int
+SSOErrorGetCurlCode(
+    SSOERROR nError
+    )
+{
+    CURLcode curlCode = CURLE_OK;
+    if (SSOErrorHasCurlError(nError))
+    {
+        curlCode = nError - SSOERROR_CURL_START;
+    }
+    return curlCode;
 }

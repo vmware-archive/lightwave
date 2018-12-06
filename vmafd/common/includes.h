@@ -36,6 +36,9 @@
 #include <vmafderrorcode.h>
 #include <vecs_error.h>
 #include <vmafdcommon.h>
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
 
 #ifdef __MACH__
 #include <sys/un.h>

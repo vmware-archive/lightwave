@@ -25,4 +25,12 @@ PCSTRING
 SSOErrorToString(
     SSOERROR code);
 
+int
+SSOErrorHasCurlError(
+    SSOERROR code);
+
+int
+SSOErrorGetCurlCode(
+    SSOERROR code);
+
 #endif
