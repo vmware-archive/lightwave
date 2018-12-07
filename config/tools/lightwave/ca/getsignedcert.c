@@ -28,6 +28,7 @@ VmwCaBuildParams(
     PCSTR           pcszConfigFilePath,
     PCSTR           pcszPrivKeyFilePath,
     PCSTR           pcszCertFilePath,
+    PCSTR           pcszCertChainFilePath,
     PCSTR           pcszServer,
     PCSTR           pcszDomain,
     PCSTR           pcszUsername,
@@ -59,7 +60,8 @@ DWORD
 VmwMutentCaGetSignedCertRestRequest(
     PVMW_CA_PARAMS pCaParams,
     PVMCA_CSR      pCSR,
-    PSTR*          ppszCert
+    PSTR*          ppszCert,
+    PSTR*          ppszCertChain
     );
 
 static
@@ -75,7 +77,8 @@ static
 DWORD
 VmwCaParseRestOutput(
     PCSTR pcszRestOutput,
-    PSTR* ppszCert
+    PSTR* ppszCert,
+    PSTR* ppszCertChain
     );
 
 int
@@ -91,14 +94,9 @@ LightwaveCaGetSignedCert(
     PVMW_CA_PARAMS  pCaParams      = NULL;
     PVMCA_CSR       pCSR           = NULL;
     PSTR            pszCert        = NULL;
+    PSTR            pszCertChain   = NULL;
 
-    if (argc == 0)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_DEPLOY_ERROR(dwError);
-    }
-
-    if (!strcmp(argv[0], "--help"))
+    if (argc == 0 || !strcmp(argv[0], "--help"))
     {
         ShowUsage();
         goto cleanup;
@@ -117,7 +115,7 @@ LightwaveCaGetSignedCert(
     }
     else
     {
-        dwError = VmwMutentCaGetSignedCertRestRequest(pCaParams, pCSR, &pszCert);
+        dwError = VmwMutentCaGetSignedCertRestRequest(pCaParams, pCSR, &pszCert, &pszCertChain);
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
@@ -131,10 +129,17 @@ LightwaveCaGetSignedCert(
         fprintf(stdout, "%s", pszCert);
     }
 
+    if (pCaParams->pszCertChainFilePath && !IsNullOrEmptyString(pszCertChain))
+    {
+        dwError = VmwCaWriteToFile(pCaParams->pszCertChainFilePath, pszCertChain);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
 cleanup:
     VmwDeployFreeMemory(pszErrorMsg);
     VMCAFreeCSR(pCSR);
     VmwDeployFreeMemory(pszCert);
+    VmwDeployFreeMemory(pszCertChain);
 
     if (pCaParams)
     {
@@ -185,6 +190,7 @@ VmwCaGetSignedCertRestRequest(
     json_t*               pJsonData      = NULL;
     PSTR                  pszRestOutput  = NULL;
     PSTR                  pszCert        = NULL;
+    PSTR                  pszCertChain   = NULL;
 
     if (!ppszCert || !pCSR || !pCaParams)
     {
@@ -239,7 +245,7 @@ VmwCaGetSignedCertRestRequest(
                     &pszRestOutput);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert);
+    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert, &pszCertChain);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     *ppszCert = pszCert;
@@ -251,6 +257,7 @@ cleanup:
     VmwDeployFreeMemory(pszHeader);
     VmwDeployFreeMemory(pszData);
     VmwDeployFreeMemory(pszRestOutput);
+    VmwDeployFreeMemory(pszCertChain);
 
     if (pJsonData)
     {
@@ -272,7 +279,8 @@ DWORD
 VmwMutentCaGetSignedCertRestRequest(
     PVMW_CA_PARAMS pCaParams,
     PVMCA_CSR      pCSR,
-    PSTR*          ppszCert
+    PSTR*          ppszCert,
+    PSTR*          ppszCertChain
     )
 {
     DWORD                 dwError        = 0;
@@ -284,8 +292,9 @@ VmwMutentCaGetSignedCertRestRequest(
     json_t*               pJsonData      = NULL;
     PSTR                  pszRestOutput  = NULL;
     PSTR                  pszCert        = NULL;
+    PSTR                  pszCertChain   = NULL;
 
-    if (!ppszCert || !pCSR || !pCaParams)
+    if (!ppszCert || !ppszCertChain || !pCSR || !pCaParams)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_DEPLOY_ERROR(dwError);
@@ -349,10 +358,11 @@ VmwMutentCaGetSignedCertRestRequest(
                     &pszRestOutput);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
-    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert);
+    dwError = VmwCaParseRestOutput(pszRestOutput, &pszCert, &pszCertChain);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     *ppszCert = pszCert;
+    *ppszCertChain = pszCertChain;
 
 cleanup:
     VmwDeployFreeMemory(pszEndpoint);
@@ -373,6 +383,8 @@ cleanup:
 error:
     VmwDeployFreeMemory(pszCert);
     pszCert = NULL;
+    VmwDeployFreeMemory(pszCertChain);
+    pszCertChain = NULL;
 
     goto cleanup;
 }
@@ -426,15 +438,19 @@ static
 DWORD
 VmwCaParseRestOutput(
     PCSTR pcszRestOutput,
-    PSTR* ppszCert
+    PSTR* ppszCert,
+    PSTR* ppszCertChain
     )
 {
     DWORD           dwError         = 0;
-    PCSTR           pcszCert        = NULL;
     json_t*         pJsonResponse   = NULL;
     json_t*         pJsonCert       = NULL;
+    json_t*         pJsonCertChain  = NULL;
     json_error_t    jsonError       = {0};
+    PCSTR           pcszCert        = NULL;
+    PCSTR           pcszCertChain   = NULL;
     PSTR            pszCert         = NULL;
+    PSTR            pszCertChain    = NULL;
 
     pJsonResponse = json_loads(pcszRestOutput, 0, &jsonError);
     if (!pJsonResponse)
@@ -453,7 +469,7 @@ VmwCaParseRestOutput(
     }
 
     pcszCert = json_string_value(pJsonCert);
-    if (!pcszCert)
+    if (IsNullOrEmptyString(pcszCert))
     {
         fprintf(stderr, "Failed to get certificate string from json response\n");
         dwError = VMW_CA_DEFAULT_ERROR;
@@ -465,7 +481,25 @@ VmwCaParseRestOutput(
                     &pszCert);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
+    pJsonCertChain = json_object_get(pJsonResponse, "chainoftrust");
+    if (pJsonCertChain)
+    {
+        pcszCertChain = json_string_value(pJsonCertChain);
+        if (IsNullOrEmptyString(pcszCertChain))
+        {
+            fprintf(stderr, "Failed to get certificate chain string from json response\n");
+            dwError = VMW_CA_DEFAULT_ERROR;
+            BAIL_ON_DEPLOY_ERROR(dwError);
+        }
+
+        dwError = VmwDeployAllocateStringA(
+                    pcszCertChain,
+                    &pszCertChain);
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
     *ppszCert = pszCert;
+    *ppszCertChain = pszCertChain;
 
 cleanup:
     if (pJsonResponse)
@@ -479,6 +513,8 @@ cleanup:
 error:
     VmwDeployFreeMemory(pszCert);
     pszCert = NULL;
+    VmwDeployFreeMemory(pszCertChain);
+    pszCertChain = NULL;
 
     goto cleanup;
 }
@@ -491,21 +527,22 @@ ParseArgs(
     PVMW_CA_PARAMS* ppCaParams
     )
 {
-    DWORD           dwError            = 0;
-    int             iArg               = 0;
-    PSTR            pszConfigFilePath  = NULL;
-    PSTR            pszPrivKeyFilePath = NULL;
-    PSTR            pszCertFilePath    = NULL;
-    PSTR            pszServer          = NULL;
-    PSTR            pszDomain          = NULL;
-    PSTR            pszUsername        = NULL;
-    PSTR            pszPassword        = NULL;
-    PSTR            pszCAServer        = NULL;
-    PSTR            pszCAId            = NULL;
-    PSTR            pszKeySize         = NULL;
-    PSTR            pszDuration        = NULL;
-    BOOL            bInsecure          = false;
-    PVMW_CA_PARAMS  pCaParams          = NULL;
+    DWORD           dwError              = 0;
+    int             iArg                 = 0;
+    PSTR            pszConfigFilePath    = NULL;
+    PSTR            pszPrivKeyFilePath   = NULL;
+    PSTR            pszCertFilePath      = NULL;
+    PSTR            pszCertChainFilePath = NULL;
+    PSTR            pszServer            = NULL;
+    PSTR            pszDomain            = NULL;
+    PSTR            pszUsername          = NULL;
+    PSTR            pszPassword          = NULL;
+    PSTR            pszCAServer          = NULL;
+    PSTR            pszCAId              = NULL;
+    PSTR            pszKeySize           = NULL;
+    PSTR            pszDuration          = NULL;
+    BOOL            bInsecure            = false;
+    PVMW_CA_PARAMS  pCaParams            = NULL;
 
     enum PARSE_MODE
     {
@@ -513,6 +550,7 @@ ParseArgs(
         PARSE_MODE_CONFIG,
         PARSE_MODE_PRIVKEY,
         PARSE_MODE_CERT,
+        PARSE_MODE_CERTCHAIN,
         PARSE_MODE_SERVER,
         PARSE_MODE_DOMAIN,
         PARSE_MODE_USERNAME,
@@ -541,6 +579,10 @@ ParseArgs(
                 else if (!strcmp(pszArg, "--cert"))
                 {
                     parseMode = PARSE_MODE_CERT;
+                }
+                else if (!strcmp(pszArg, "--certchain"))
+                {
+                    parseMode = PARSE_MODE_CERTCHAIN;
                 }
                 else if (!strcmp(pszArg, "--server"))
                 {
@@ -618,6 +660,18 @@ ParseArgs(
                 }
 
                 pszCertFilePath = pszArg;
+                parseMode = PARSE_MODE_OPEN;
+
+                break;
+
+             case PARSE_MODE_CERTCHAIN:
+                if (pszCertChainFilePath)
+                {
+                    dwError = ERROR_INVALID_PARAMETER;
+                    BAIL_ON_DEPLOY_ERROR(dwError);
+                }
+
+                pszCertChainFilePath = pszArg;
                 parseMode = PARSE_MODE_OPEN;
 
                 break;
@@ -730,6 +784,7 @@ ParseArgs(
                     pszConfigFilePath,
                     pszPrivKeyFilePath,
                     pszCertFilePath,
+                    pszCertChainFilePath,
                     pszServer,
                     pszDomain,
                     pszUsername,
@@ -771,6 +826,7 @@ VmwCaBuildParams(
     PCSTR           pcszConfigFilePath,
     PCSTR           pcszPrivKeyFilePath,
     PCSTR           pcszCertFilePath,
+    PCSTR           pcszCertChainFilePath,
     PCSTR           pcszServer,
     PCSTR           pcszDomain,
     PCSTR           pcszUsername,
@@ -834,6 +890,15 @@ VmwCaBuildParams(
         dwError = VmwDeployAllocateStringA(
                         pcszCertFilePath,
                         &pCaParams->pszCertFilePath
+                        );
+        BAIL_ON_DEPLOY_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszCertChainFilePath))
+    {
+        dwError = VmwDeployAllocateStringA(
+                        pcszCertChainFilePath,
+                        &pCaParams->pszCertChainFilePath
                         );
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
@@ -1009,6 +1074,7 @@ ShowUsage(
             "   [--password <password>] (default: machine account password)\n"
             "   [--caserver <mutentca server ip/hostname>] (default: uses vmca)]\n"
             "   [--caid <root/intermediate ca id>] (default: root ca id) (NOTE: Can only be used with --caserver option)\n"
+            "   [--certchain <path to store certificate chain of trust>] (overwrites if exists) (NOTE: Only works with --caserver option)\n"
             "   [--insecure] (skip certificate validation)\n";
 
     printf("%s", pszUsageText);
