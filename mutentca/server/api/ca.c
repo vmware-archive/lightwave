@@ -571,6 +571,7 @@ LwCAGetChainOfTrust(
                     szCertLen);
     BAIL_ON_LWCA_ERROR(dwError);
     dwCursor += szCertLen;
+    pszTmpChain[dwCursor++] = '\n';
 
     if (LwCAStringCompareA(pcszCAId, pszRootCAId, FALSE) == 0)
     {
@@ -611,6 +612,7 @@ LwCAGetChainOfTrust(
                         szCertLen);
         BAIL_ON_LWCA_ERROR(dwError);
         dwCursor += szCertLen;
+        pszTmpChain[dwCursor++] = '\n';
 
         // Reset tmp variables and get issuer of cert we just appended
         LwCAX509Free(pX509CACert);
@@ -655,6 +657,7 @@ LwCAGetChainOfTrust(
                     szCertLen);
     BAIL_ON_LWCA_ERROR(dwError);
     dwCursor += szCertLen;
+    pszTmpChain[dwCursor++] = '\n';
 
 
 ret:

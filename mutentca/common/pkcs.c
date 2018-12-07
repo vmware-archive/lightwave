@@ -1954,6 +1954,7 @@ LwCAX509VerifyCertIssuer(
         BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_CERT_VERIFY_ERR);
     }
 
+    bVerified = TRUE;
     *pbVerified = bVerified;
 
 
