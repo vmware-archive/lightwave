@@ -115,9 +115,6 @@ LwCAOIDCTokenAuthenticate(
     dwError = LwCAOIDCTokenValidate(pReqCtx, pOIDCToken);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAOIDCTokenValidatePOP(pReqCtx, pOIDCToken);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwError = LwCAAllocateStringA(pOIDCToken->pszReqBindUPN, &pReqCtx->pszBindUPN);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -130,11 +127,14 @@ LwCAOIDCTokenAuthenticate(
     dwError = LwCACopyStringArray(pOIDCToken->pReqBindUPNGroups, &pReqCtx->pBindUPNGroups);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = LwCAOIDCTokenValidatePOP(pReqCtx, pOIDCToken);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     LWCA_LOG_INFO(
             "[%s:%d] Authenticated OIDC token. UPN (%s) ReqID (%s)",
             __FUNCTION__,
             __LINE__,
-            pReqCtx->pszBindUPN,
+            LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
             LWCA_SAFE_STRING(pReqCtx->pszRequestId));
 
     *pbAuthenticated = TRUE;
@@ -677,6 +677,7 @@ LwCAOIDCTokenValidatePOP(
                 "[%s:%d] Validated request POP. UPN (%s) ReqID (%s)",
                 __FUNCTION__,
                 __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
                 LWCA_SAFE_STRING(pReqCtx->pszRequestId));
     }
 

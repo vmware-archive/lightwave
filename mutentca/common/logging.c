@@ -59,6 +59,12 @@ DWORD gLwCAMaxOldLogs = LOG_GENERATION_MAX;
 DWORD gLwCAMaxLogSizeBytes = MAX_LOG_SIZE;
 ULONG64 gLwCACurrentLogSizeBytes = 0;
 
+static
+int
+LwCALevelToSysLogLevel(
+    LWCA_LOG_LEVEL level
+    );
+
 DWORD
 _LwCAMkDir( PSTR pszDirName, int mode)
 {
@@ -217,6 +223,7 @@ LwCAInitLog()
     if (gLwCALogType == LWCA_LOG_TYPE_SYSLOG)
     {
         openlog("mutentcad", 0, LOG_DAEMON);
+        setlogmask(LOG_UPTO(currentLevel));
     }
 
 error :
@@ -261,7 +268,10 @@ int LwCALevelToLen(LWCA_LOG_LEVEL level)
 }
 
 static
-int LwCALevelToSysLogLevel(LWCA_LOG_LEVEL level)
+int
+LwCALevelToSysLogLevel(
+    LWCA_LOG_LEVEL level
+    )
 {
     if (LWCA_LOG_LEVEL_ERROR >= level)
         return LOG_ERR;
