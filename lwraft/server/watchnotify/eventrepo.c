@@ -19,6 +19,7 @@ VmDirEventRepoInit(
     )
 {
     DWORD               dwError = 0;
+    PVDIR_EVENT         pEvent = NULL;
     PVDIR_EVENT_REPO    pEventRepo = NULL;
 
     if (!ppEventRepo)
@@ -35,6 +36,12 @@ VmDirEventRepoInit(
     dwError = VmDirLinkedListCreate(&pEventRepo->pReadyEventList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateMemory(sizeof(VDIR_EVENT), (PVOID *)&pEvent);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListInsertTail(pEventRepo->pReadyEventList, pEvent, &pEvent->pListNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppEventRepo = pEventRepo;
 
 cleanup:
@@ -43,6 +50,36 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
     VmDirEventRepoFree(pEventRepo);
+    goto cleanup;
+}
+
+DWORD
+VmDirEventRepoGetTail(
+     PVDIR_EVENT_REPO   pEventRepo,
+     PVDIR_EVENT*       ppTail
+     )
+{
+    DWORD                   dwError = 0;
+    PVDIR_LINKED_LIST_NODE  pListTail = NULL;
+
+    if (!pEventRepo || !ppTail)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirLinkedListGetTail(pEventRepo->pReadyEventList, &pListTail);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirEventAcquire(pListTail->pElement);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppTail = (PVDIR_EVENT)pListTail->pElement;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -58,7 +95,7 @@ VmDirEventRepoGetNextReadyEvent(
     PVDIR_EVENT             pCurEvent = NULL;
     PVDIR_LINKED_LIST_NODE  pTail = NULL;
 
-    if (!pEventRepo || !ppNextEvent || !ppEventRepoCookie)
+    if (!pEventRepo || !ppNextEvent || !ppEventRepoCookie || !*ppEventRepoCookie)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -67,17 +104,6 @@ VmDirEventRepoGetNextReadyEvent(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pCurEvent = *ppEventRepoCookie;
-
-    if (!pTail)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_WATCH_ENDOFLIST);
-    }
-
-    if (!pCurEvent)
-    {
-        pCurEvent = (PVDIR_EVENT)pTail->pElement;
-        *ppEventRepoCookie = pCurEvent;
-    }
 
     if (pCurEvent->pListNode != pTail)
     {
@@ -92,6 +118,7 @@ VmDirEventRepoGetNextReadyEvent(
 
     dwError = VmDirEventAcquire(pNextEvent);
     BAIL_ON_VMDIR_ERROR(dwError);
+
     *ppNextEvent = pNextEvent;
     *ppEventRepoCookie = pNextEvent;
 
@@ -171,10 +198,13 @@ VmDirEventRepoSync(
         dwError = VmDirLinkedListGetTail(pEventRepo->pReadyEventList, &pListTail);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pTail = (PVDIR_EVENT)pListTail->pElement;
-        pMutex = pTail->pMutex;
+        if (pListTail)
+        {
+            pTail = (PVDIR_EVENT)pListTail->pElement;
+            pMutex = pTail->pMutex;
 
-        VMDIR_LOCK_MUTEX(bInLock, pMutex);
+            VMDIR_LOCK_MUTEX(bInLock, pMutex);
+        }
 
         dwError = VmDirLinkedListInsertTail(
                 pEventRepo->pReadyEventList, (PVOID)pEvent, &pEvent->pListNode);
@@ -188,6 +218,28 @@ cleanup:
 error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
     goto cleanup;
+}
+
+BOOL
+VmDirEventRepoIsAtHead(
+    PVDIR_EVENT_REPO    pEventRepo,
+    PVDIR_EVENT         pCurEvent
+    )
+{
+    BOOL                    bIsHead = FALSE;
+    PVDIR_LINKED_LIST_NODE  pHead = NULL;
+
+    if (pEventRepo && pCurEvent)
+    {
+        VmDirLinkedListGetHead(pEventRepo->pReadyEventList, &pHead);
+
+        if (pHead && pCurEvent->pListNode == pHead->pNext)
+        {
+            bIsHead = TRUE;
+        }
+    }
+
+    return bIsHead;
 }
 
 VOID

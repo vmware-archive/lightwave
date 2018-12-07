@@ -72,12 +72,15 @@ VmDirWatchSessionManagerAddNewSession(
 {
     DWORD               dwError = 0;
     BOOL                bInLock = FALSE;
+    PVMDIR_MUTEX        pMutex = NULL;
     PVDIR_WATCH_SESSION pWatchSession = NULL;
 
     if (!pszFilter || !pConnectionHndl || !pWatchSessionManager || !pWatchId)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    pMutex = pWatchSessionManager->pMutex;
 
     dwError = VmDirWatchSessionInit(&pWatchSession, pWatchSessionManager->pEventRepo);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -88,22 +91,15 @@ VmDirWatchSessionManagerAddNewSession(
     pWatchSession->pConnectionHndl = pConnectionHndl;
     pWatchSession->subTreeDn = subTreeDn;
 
-    dwError = VmDirEventRepoGetNextReadyEvent(
+    VMDIR_LOCK_MUTEX(bInLock, pMutex);
+
+    dwError = VmDirEventRepoGetTail(
             pWatchSessionManager->pEventRepo,
-            &pWatchSession->pRepoCookie,
             &pWatchSession->pRepoCookie
             );
-    if (dwError == VMDIR_ERROR_WATCH_ENDOFLIST)
-    {
-        dwError = 0;
-    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOCK_MUTEX(bInLock, pWatchSessionManager->pMutex);
-
-    pWatchSession->watchSessionId = pWatchSessionManager->watchSessionCounter++;
-
-    VMDIR_UNLOCK_MUTEX(bInLock, pWatchSessionManager->pMutex);
+    pWatchSession->watchSessionId = pWatchSessionManager->nextWatchId++;
 
     dwError = VmDirWatchSessionManagerAddActiveSession(pWatchSessionManager, pWatchSession);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -111,6 +107,7 @@ VmDirWatchSessionManagerAddNewSession(
     *pWatchId = pWatchSession->watchSessionId;
 
 cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
     return dwError;
 
 error:

@@ -20,23 +20,29 @@ typedef enum
 
 typedef struct _VDIR_EVENT_DATA
 {
-    BOOL            bIsGroupUpdate;
-    DWORD           revision;
-    PVDIR_ENTRY     pCurEntry;
-    PVDIR_ENTRY     pPrevEntry;
-    VDIR_EVENT_TYPE eventType;
+    BOOL                        bIsGroupUpdate;
+    PVDIR_ENTRY                 pCurEntry;
+    PVDIR_ENTRY                 pPrevEntry;
+    VDIR_EVENT_TYPE             eventType;
 }VDIR_EVENT_DATA, *PVDIR_EVENT_DATA;
+
+typedef struct _VDIR_EVENT_DATA_NODE
+{
+    PVDIR_EVENT_DATA                pEventData;
+    struct _VDIR_EVENT_DATA_NODE*   pNext;
+}VDIR_EVENT_DATA_NODE, *PVDIR_EVENT_DATA_NODE;
 
 typedef struct _VDIR_EVENT
 {
     DWORD                       refCount;
+    DWORD                       revision;
     PVMDIR_MUTEX                pMutex;
     PVMDIR_COND                 pCond;
-    PVDIR_EVENT_DATA            pEventData;
+    PVDIR_EVENT_DATA_NODE       pEventDataHead;
+    PVDIR_EVENT_DATA_NODE       pEventDataTail;
     BOOL                        bIsEventReady;
     BOOL                        bIsSuccessful;
     PVDIR_LINKED_LIST_NODE      pListNode;
-    struct _VDIR_EVENT_NODE*    pNext;
 }VDIR_EVENT, *PVDIR_EVENT;
 
 typedef struct _VDIR_EVENT_REPO
@@ -61,7 +67,7 @@ typedef struct _VDIR_WATCH_SESSION
 
 typedef struct _VDIR_WATCH_SESSION_MANAGER
 {
-    DWORD               watchSessionCounter;
+    DWORD               nextWatchId;
     PLW_HASHMAP         pDeletedMap;
     PVDIR_QUEUE         pActiveQueue;
     PVDIR_QUEUE         pInactiveQueue;

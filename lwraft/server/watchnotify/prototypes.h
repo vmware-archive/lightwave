@@ -21,8 +21,14 @@ VmDirEventInit(
     );
 
 DWORD
+VmDirEventAddEventData(
+    PVDIR_EVENT         pEvent,
+    PVDIR_EVENT_DATA    pEventData
+    );
+
+DWORD
 VmDirEventRelease(
-    PVDIR_EVENT   pEvent
+    PVDIR_EVENT pEvent
     );
 
 DWORD
@@ -44,6 +50,12 @@ VmDirEventRepoInit(
     );
 
 DWORD
+VmDirEventRepoGetTail(
+     PVDIR_EVENT_REPO   pEventRepo,
+     PVDIR_EVENT*       ppTail
+     );
+
+DWORD
 VmDirEventRepoGetNextReadyEvent(
     PVDIR_EVENT_REPO            pEventRepo,
     PVDIR_EVENT_REPO_COOKIE*    ppEventRepoCookie,
@@ -63,6 +75,12 @@ VmDirEventRepoSync(
     int64_t             iTimeoutMs
     );
 
+BOOL
+VmDirEventRepoIsAtHead(
+    PVDIR_EVENT_REPO    pEventRepo,
+    PVDIR_EVENT         pCurEvent
+    );
+
 VOID
 VmDirEventRepoFree(
     PVDIR_EVENT_REPO    pEventRepo
@@ -78,9 +96,15 @@ VmDirWatchSessionInit(
     );
 
 DWORD
+VmDirWatchSessionSendOneEvent(
+    PVDIR_WATCH_SESSION pWatchSession,
+    BOOL*               pbEventSent
+    );
+
+DWORD
 VmDirWatchSessionSendEvents(
-    PVDIR_WATCH_SESSION         pWatchSession,
-    DWORD                       eventCount
+    PVDIR_WATCH_SESSION pWatchSession,
+    DWORD               eventCount
     );
 
 VOID

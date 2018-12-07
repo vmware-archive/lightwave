@@ -91,6 +91,11 @@ _VmDirNotifyThread(
             VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
                     "Failed to send events to session with ID (%d), error (%d)",
                     pWatchSession->watchSessionId, dwError);
+
+            dwError = VmDirWatchSessionManagerAddInactiveSession(
+                    pWatchSessionManager, pWatchSession);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
             dwError = VmDirWatchSessionManagerDeleteSession(
                     pWatchSessionManager, pWatchSession->watchSessionId);
             BAIL_ON_VMDIR_ERROR(dwError);

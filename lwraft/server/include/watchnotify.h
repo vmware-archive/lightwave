@@ -9,30 +9,14 @@
  * distributed under the License is distributed on an “AS IS” BASIS, without
  * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
  * License for the specific language governing permissions and limitations
- * under the License.
  */
 
+DWORD
+VmDirWatchNotifyServerInit(
+    VOID
+    );
 
-#include <config.h>
-#include <vmdirsys.h>
-#include <sys/types.h>
-#include <ifaddrs.h>
-
-#include <ldap_log.h>
-
-#include <vmdir.h>
-#include <vmdirtypes.h>
-#include <vmdirdefines.h>
-#include <vmdirerrorcode.h>
-#include <vmdirerrors.h>
-#include <vmdircommon.h>
-#include <srvcommon.h>
-
-#include <middlelayer.h>
-#include <ldaphead.h>
-#include <vmdirserver.h>
-#include <watchnotify.h>
-
-#include "structs.h"
-#include "prototypes.h"
-#include "externs.h"
+VOID
+VmDirWatchNotifyServerShutdown(
+    VOID
+    );

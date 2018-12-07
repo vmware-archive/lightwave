@@ -29,9 +29,6 @@ VmDirEventInit(
     dwError = VmDirAllocateMemory(sizeof(VDIR_EVENT), (PVOID *)&pEvent);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(sizeof(VDIR_EVENT_DATA), (PVOID *)&pEvent->pEventData);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = VmDirAllocateMutex(&pEvent->pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -50,8 +47,54 @@ error:
 }
 
 DWORD
+VmDirEventAddEventData(
+    PVDIR_EVENT         pEvent,
+    PVDIR_EVENT_DATA    pEventData
+    )
+{
+    BOOL                    bInLock = FALSE;
+    DWORD                   dwError = 0;
+    PVMDIR_MUTEX            pMutex = NULL;
+    PVDIR_EVENT_DATA_NODE   pNewNode = NULL;
+
+    if (!pEvent || !pEventData)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pMutex = pEvent->pMutex;
+
+    dwError = VmDirAllocateMemory(sizeof(VDIR_EVENT_DATA_NODE), (PVOID*)&pNewNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pNewNode->pEventData = pEventData;
+
+    VMDIR_LOCK_MUTEX(bInLock, pMutex);
+
+    if (!pEvent->pEventDataHead)
+    {
+        pEvent->pEventDataHead = pNewNode;
+        pEvent->pEventDataTail = pNewNode;
+    }
+    else
+    {
+        pEvent->pEventDataTail->pNext = pNewNode;
+        pEvent->pEventDataTail = pNewNode;
+    }
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pNewNode);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
 VmDirEventRelease(
-    PVDIR_EVENT   pEvent
+    PVDIR_EVENT pEvent
     )
 {
     DWORD                   dwError = 0;
@@ -64,6 +107,14 @@ VmDirEventRelease(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
+    dwError = VmDirLinkedListGetHead(pEvent->pListNode->pList, &pHead);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pEvent->pListNode == pHead) // at fake head do nothing
+    {
+        goto cleanup;
+    }
+
     pMutex = pEvent->pMutex;
 
     VMDIR_LOCK_MUTEX(bInLock, pMutex);
@@ -74,12 +125,9 @@ VmDirEventRelease(
     }
     pEvent->refCount--;
 
-    dwError = VmDirLinkedListGetHead(pEvent->pListNode->pList, &pHead);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (((PVDIR_EVENT)pHead->pElement)->refCount == 0)
+    if (pEvent->refCount == 0 && pEvent->pListNode == pHead->pNext)
     {
-        dwError = VmDirLinkedListRemove(pEvent->pListNode->pList, pHead);
+        dwError = VmDirLinkedListRemove(pEvent->pListNode->pList, pHead->pNext);
         BAIL_ON_VMDIR_ERROR(dwError);
         VMDIR_UNLOCK_MUTEX(bInLock, pMutex);
         VmDirEventFree(pEvent);
@@ -126,16 +174,26 @@ VmDirEventFree(
     PVDIR_EVENT pEvent
     )
 {
+    PVDIR_EVENT_DATA_NODE   pTemp = NULL;
+
     if (pEvent)
     {
         VmDirFreeMutex(pEvent->pMutex);
         VmDirFreeCondition(pEvent->pCond);
-        if (pEvent->pEventData)
+
+        pTemp = pEvent->pEventDataHead;
+        while (pTemp)
         {
-            VmDirFreeEntry(pEvent->pEventData->pCurEntry);
-            VmDirFreeEntry(pEvent->pEventData->pPrevEntry);
+            pEvent->pEventDataHead = pTemp->pNext;
+
+            VmDirFreeEntry(pTemp->pEventData->pCurEntry);
+            VmDirFreeEntry(pTemp->pEventData->pPrevEntry);
+            VMDIR_SAFE_FREE_MEMORY(pTemp->pEventData);
+
+            VMDIR_SAFE_FREE_MEMORY(pTemp);
+            pTemp = pEvent->pEventDataHead;
         }
-        VMDIR_SAFE_FREE_MEMORY(pEvent->pEventData);
+
         VMDIR_SAFE_FREE_MEMORY(pEvent);
     }
 }
