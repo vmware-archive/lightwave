@@ -129,8 +129,8 @@ type CertRefreshHook func() (*x509.CertPool, error)
 // ProviderInfo contains client information needed to validate a token. An array of ProviderInfo
 // structs be used in calls to ParseAndValidateAccessTokenMulti() or ParseAndValidateIDTokenMulti()
 type ProviderInfo struct {
-	issuer  string
-	signers IssuerSigners
+	Issuer  string
+	Signers IssuerSigners
 }
 
 // NewProviderInfo creates a new ProviderInfo structure

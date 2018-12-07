@@ -437,8 +437,8 @@ func TestParseTokenType(t *testing.T) {
 }
 
 func checkProviderInfo(t *testing.T, providerInfo ProviderInfo) {
-	assert.NotEmpty(t, providerInfo.issuer, "issuer check")
-	assert.NotEmpty(t, providerInfo.signers, "signers check")
+	assert.NotEmpty(t, providerInfo.Issuer, "issuer check")
+	assert.NotEmpty(t, providerInfo.Signers, "signers check")
 }
 
 func checkParseAndValidateAccessTokenMulti(t *testing.T, oidcClient Client, clientID, reqID string, logger Logger) {
