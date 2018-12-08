@@ -28,7 +28,8 @@ _LwCAX509ReqInit(
 
 static
 DWORD
-_LwCAX509GenerateSerial(
+_LwCAX509GenerateRandomNumber(
+    DWORD dwNumBits,
     ASN1_INTEGER **ppSerial
     );
 
@@ -270,6 +271,14 @@ _LwCAConvertASNTimeToGeneralizedTime(
 
 static
 DWORD
+_LwCAASN1OctetStringToDelimtedString(
+    ASN1_OCTET_STRING       *pASN1OctetString,
+    char                    cDelim,
+    PSTR                    *ppszString
+    );
+
+static
+DWORD
 _LWCACreateX509Revoked(
     PLWCA_DB_CERT_DATA  pCertData,
     X509_REVOKED        **ppRevoked
@@ -366,6 +375,104 @@ error:
     if (ppszSerialNumber)
     {
         *ppszSerialNumber = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAX509GetSubjectKeyIdentifier(
+    X509        *pCert,
+    PSTR        *ppszSKI
+    )
+{
+    DWORD               dwError = 0;
+    ASN1_OCTET_STRING   *pASN1SKI = NULL;
+    size_t              szSKILen = 0;
+    PSTR                pszSKI = NULL;
+
+    if (!pCert || !ppszSKI)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pASN1SKI = X509_get_ext_d2i(pCert, NID_subject_key_identifier, NULL, NULL);
+    if (!pASN1SKI)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_CERT_DECODE_FAILURE);
+    }
+
+    szSKILen = pASN1SKI->length;
+    if (szSKILen <= 0 || szSKILen >= 255)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SSL_INVALID_SKI);
+    }
+
+    dwError = _LwCAASN1OctetStringToDelimtedString(
+                        pASN1SKI,
+                        ':',
+                        &pszSKI);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszSKI = pszSKI;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszSKI);
+    if (ppszSKI)
+    {
+        *ppszSKI = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAX509GetAuthorityKeyIdentifier(
+    X509        *pCert,
+    PSTR        *ppszAKI
+    )
+{
+    DWORD               dwError = 0;
+    AUTHORITY_KEYID     *pAKI = NULL;
+    size_t              szAKILen = 0;
+    PSTR                pszAKI = NULL;
+
+    if (!pCert || !ppszAKI)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pAKI = X509_get_ext_d2i(pCert, NID_authority_key_identifier, NULL, NULL);
+    if (!pAKI)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SSL_INVALID_AKI);
+    }
+
+    szAKILen = pAKI->keyid->length;
+    if (szAKILen <= 0 || szAKILen >= 255)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_SSL_INVALID_AKI);
+    }
+
+    dwError = _LwCAASN1OctetStringToDelimtedString(
+                        pAKI->keyid,
+                        ':',
+                        &pszAKI);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszAKI = pszAKI;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszAKI);
+    if (ppszAKI)
+    {
+        *ppszAKI = NULL;
     }
     goto cleanup;
 }
@@ -2206,7 +2313,7 @@ LwCAGenerateCRLNumber(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCAX509GenerateSerial(&pSerial);
+    dwError = _LwCAX509GenerateRandomNumber(32, &pSerial);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAConvertASNIntegertoString(pSerial, &pszCRLNumber);
@@ -2532,7 +2639,7 @@ _LwCAX509Init(
     dwError = X509_set_version(pCert, 2);
     BAIL_ON_SSL_ERROR(dwError, LWCA_CERT_IO_FAILURE);
 
-    dwError = _LwCAX509GenerateSerial(&pSerial);
+    dwError = _LwCAX509GenerateRandomNumber(64, &pSerial);
     BAIL_ON_LWCA_ERROR(dwError);
 
     X509_set_serialNumber(pCert, pSerial);
@@ -2588,12 +2695,12 @@ error:
 // This function creates the random serial numbers for certificates
 static
 DWORD
-_LwCAX509GenerateSerial(
+_LwCAX509GenerateRandomNumber(
+    DWORD dwNumBits,
     ASN1_INTEGER **ppSerial
     )
 {
     DWORD dwError = 0;
-    #define RAND_BITS_SIZE 64
     BIGNUM *bn = NULL;
     ASN1_INTEGER *pSerial = NULL;
 
@@ -2611,7 +2718,7 @@ _LwCAX509GenerateSerial(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = BN_pseudo_rand(bn, RAND_BITS_SIZE, 1, 0);
+    dwError = BN_pseudo_rand(bn, dwNumBits, 1, 0);
     BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_RAND_ERR);
 
     BN_to_ASN1_INTEGER(bn, pSerial);
@@ -3955,6 +4062,59 @@ error:
 
 static
 DWORD
+_LwCAASN1OctetStringToDelimtedString(
+    ASN1_OCTET_STRING       *pASN1OctetString,
+    char                    cDelim,
+    PSTR                    *ppszString
+    )
+{
+    DWORD                   dwError = 0;
+    DWORD                   dwIdx = 0;
+    DWORD                   dwJ = 0;
+    size_t                  szOctetStringLen = 0;
+    char                    pszTmpString[1024];
+    PSTR                    pszString = NULL;
+
+    szOctetStringLen = pASN1OctetString->length;
+
+    if (szOctetStringLen <= 0)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+    else if (szOctetStringLen >= 1024)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_BUFFER_OVERFLOW);
+    }
+
+    for (; dwIdx < szOctetStringLen; ++dwIdx)
+    {
+        sprintf(&pszTmpString[dwJ], "%02X", pASN1OctetString->data[dwIdx]);
+        pszTmpString[dwJ + 2] = cDelim;
+        dwJ+=3;
+    }
+    pszTmpString[dwJ - 1] = '\0';
+
+    dwError = LwCAAllocateStringA(pszTmpString, &pszString);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszString = pszString;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszString);
+    if (ppszString)
+    {
+        *ppszString = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
 _LWCACreateX509Revoked(
     PLWCA_DB_CERT_DATA  pCertData,
     X509_REVOKED        **ppRevoked
@@ -3998,7 +4158,7 @@ _LWCACreateX509Revoked(
     dwError = X509_REVOKED_set_revocationDate(pRevoked, pRevTime);
     BAIL_ON_SSL_ERROR(dwError, LWCA_CRL_SET_TIME_FAIL);
 
-    ASN1_ENUMERATED_set(pCode, pCertData->revokedReason);
+    ASN1_ENUMERATED_set(pCode, pCertData->dwRevokedReason);
 
     dwError = X509_REVOKED_add1_ext_i2d(pRevoked, NID_crl_reason, pCode, 0, 0);
     BAIL_ON_SSL_ERROR(dwError, LWCA_CRL_REASON_FAIL);
@@ -4347,3 +4507,4 @@ error:
     }
     goto cleanup;
 }
+

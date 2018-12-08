@@ -95,9 +95,11 @@ LwCAGetSignedCertificate(
 
 DWORD
 LwCAGetCACertificates(
-    PLWCA_REQ_CONTEXT       pReqCtx,
-    PCSTR                   pcszCAId,
-    PLWCA_CERTIFICATE_ARRAY *ppCertificates
+    PLWCA_REQ_CONTEXT               pReqCtx,
+    PCSTR                           pcszCAId,
+    LWCA_DB_GET_CERTS_FLAGS         certsToGet,
+    PCSTR                           pcszSKI,
+    PLWCA_CERTIFICATE_ARRAY         *ppCertificates
     );
 
 DWORD
@@ -124,8 +126,7 @@ DWORD
 LwCARevokeCertificate(
     PLWCA_REQ_CONTEXT           pReqCtx,
     PCSTR                       pcszCAId,
-    PLWCA_CERTIFICATE           pCertificate,
-    LWCA_AUTHZ_API_PERMISSION   apiType
+    PLWCA_CERTIFICATE           pCertificate
     );
 
 VOID

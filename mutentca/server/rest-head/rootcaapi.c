@@ -113,7 +113,12 @@ LwCARestGetRootCACert(
     dwError = LwCARestGetBoolParam(pRestOp, LWCA_REST_PARAM_WITH_CRL, &bDetail, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszRootCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(
+                        pRestOp->pReqCtx,
+                        pszRootCAId,
+                        LWCA_DB_GET_ACTIVE_CA_CERT,
+                        NULL,
+                        &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (bDetail)

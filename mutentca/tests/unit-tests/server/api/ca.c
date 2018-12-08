@@ -1485,7 +1485,7 @@ Test_LwCARevokeCertificate_Valid(
     will_return(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE);
     assert_int_equal(dwError, 0);
 }
 
@@ -1504,12 +1504,12 @@ Test_LwCARevokeCertificate_Invalid(
 
     // Testcase1: Invalid input
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, NULL, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
     // Testcase2: Certificate not issued by requested CA
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_REQUEST);
 }
 

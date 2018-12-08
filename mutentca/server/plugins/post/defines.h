@@ -12,6 +12,11 @@
  * under the License.
  */
 
+#define LWCA_DB_POST_PLUGIN_NAME                "POST Database Plugin for MutentCA"
+#define LWCA_DB_POST_PLUGIN_VERSION_MAJOR       "1"
+#define LWCA_DB_POST_PLUGIN_VERSION_MINOR       "0"
+#define LWCA_DB_POST_PLUGIN_VERSION_RELEASE     "0"
+
 #define LWCA_DB_LW_SERVER           "dbLwServer"
 #define LWCA_DB_POST_SERVER         "dbPostServer"
 #define LWCA_DB_DOMAIN              "dbDomain"
@@ -19,40 +24,65 @@
 #define LWCA_POST_OBJ_CLASS             "objectClass"
 #define LWCA_POST_CONTAINER             "container"
 #define LWCA_POST_TOP                   "top"
+#define LWCA_POST_CN                    "cn"
+#define LWCA_POST_DN                    "dn"
 
 // Certificate Authority LDAP Metadata
-#define LWCA_POST_CONFIG_DN             "cn=Configuration,%s"
-#define LWCA_POST_CA_CONFIG_DN          "cn=%s," LWCA_POST_CONFIG_DN
-#define LWCA_POST_CA_DN                 "cn=Certificate-Authority,%s"
-#define LWCA_POST_ROOT_CA_DN_ENTRY      "cn=%s," LWCA_POST_CA_DN
-#define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY   "cn=%s,%s"
-#define LWCA_POST_CERTS_CN              "Certs"
-#define LWCA_POST_ROOT_CERTS_DN         "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_ROOT_CA_DN_ENTRY
-#define LWCA_POST_INTR_CERTS_DN         "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_INTERMEDIATE_CA_DN_ENTRY
-#define LWCA_POST_CA_OBJ_CLASS          "vmwCertificationAuthority"
-#define LWCA_POST_CN_FILTER             "(&(cn=%s)(objectClass=%s))"
-#define LWCA_POST_PKICA_AUX_CLASS       "pkiCA"
-#define LWCA_POST_CA_SUBJ_NAME          "cACertificateDN"
-#define LWCA_POST_CA_ENCR_PRIV_KEY      "cAEncryptedPrivateKey"
-#define LWCA_POST_CA_STATUS             "cAStatus"
-#define LWCA_POST_CA_CRL_NUM            "cACRLNumber"
-#define LWCA_POST_CA_PARENT             "cAParentCAId"
-#define LWCA_POST_CA_CERTIFICATES       "cACertificate"
-#define LWCA_POST_CA_LAST_CRL_UPDATE    "cALastCRLUpdate"
-#define LWCA_POST_CA_NEXT_CRL_UPDATE    "cANextCRLUpdate"
-#define LWCA_POST_CA_AUTH_BLOB          "cAAuthBlob"
+#define LWCA_POST_CONFIG_DN                 "cn=Configuration,%s"
+#define LWCA_POST_CA_DN                     "cn=Certificate-Authority,%s"
+#define LWCA_POST_CA_CONFIG_DN              "cn=%s," LWCA_POST_CONFIG_DN
+#define LWCA_POST_ROOT_CA_DN_ENTRY          "cn=%s," LWCA_POST_CA_DN
+#define LWCA_POST_INTERMEDIATE_CA_DN_ENTRY  "cn=%s,%s"
+#define LWCA_POST_ROOT_ROOTS_DN             "cn=" LWCA_POST_ROOTS_CN "," LWCA_POST_ROOT_CA_DN_ENTRY
+#define LWCA_POST_INTR_ROOTS_DN             "cn=" LWCA_POST_ROOTS_CN "," LWCA_POST_INTERMEDIATE_CA_DN_ENTRY
+#define LWCA_POST_ROOT_CERTS_DN             "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_ROOT_CA_DN_ENTRY
+#define LWCA_POST_INTR_CERTS_DN             "cn=" LWCA_POST_CERTS_CN "," LWCA_POST_INTERMEDIATE_CA_DN_ENTRY
+#define LWCA_POST_CA_OBJ_CLASS              "certificateAuthority"
+#define LWCA_POST_CN_FILTER                 "(&(cn=%s)(objectClass=%s))"
+#define LWCA_POST_CA_SUBJ_NAME              "cACertificateDN"
+#define LWCA_POST_CA_PARENT                 "cAParentCAId"
+#define LWCA_POST_CA_ACTIVE_CERT            "cAActiveRootCertSKI"
+#define LWCA_POST_CA_STATUS                 "cAStatus"
+#define LWCA_POST_CA_AUTH_BLOB              "cAAuthBlob"
 
 // Certificate Data LDAP Metadata
+#define LWCA_POST_CERTS_CN              "Certs"
+#define LWCA_POST_CERTS_DN              "cn=" LWCA_POST_CERTS_CN ",%s"
 #define LWCA_POST_CERT_DN               "cn=%s,cn=" LWCA_POST_CERTS_CN ",%s"
-#define LWCA_POST_CERT_OBJ_CLASS        "vmwCerts"
-#define LWCA_POST_CERT_SERIAL_NUM       "certSerialNumber"
+#define LWCA_POST_CERT_OBJ_CLASS        "certificate"
 #define LWCA_POST_CERT_ISSUER           "certIssuer"
+#define LWCA_POST_CERT_SERIAL_NUM       "certSerialNumber"
+#define LWCA_POST_CERT_ISSUER_SERIAL    "certIssuerSerialNumber"
+#define LWCA_POST_CERT_SKI              "certSKI"
+#define LWCA_POST_CERT_AKI              "certAKI"
 #define LWCA_POST_CERT_REVOKED_REASON   "certRevokedReason"
 #define LWCA_POST_CERT_REVOKED_DATE     "certRevokedDate"
 #define LWCA_POST_CERT_TIME_VALID_FROM  "certTimeValidFrom"
 #define LWCA_POST_CERT_TIME_VALID_TO    "certTimeValidTo"
 #define LWCA_POST_CERT_STATUS           "certStatus"
 #define LWCA_POST_CERT_OBJ_FILTER       "(objectClass="LWCA_POST_CERT_OBJ_CLASS")"
+#define LWCA_POST_CERT_ISSUER_FILTER    "("LWCA_POST_CERT_ISSUER "=%s)"
+#define LWCA_POST_CERT_STATUS_FILTER    "(&" LWCA_POST_CERT_OBJ_FILTER "(" LWCA_POST_CERT_STATUS "=%d))"
+#define LWCA_POST_CERT_SERIAL_FILTER    "("LWCA_POST_CERT_SERIAL_NUM"=%s)"
+#define LWCA_POST_CERT_SKI_FILTER       "("LWCA_POST_CERT_SKI"=%s)"
+#define LWCA_POST_CERT_AKI_FILTER       "("LWCA_POST_CERT_AKI"=%s)"
+#define LWCA_POST_REVOKED_CERTS_FILTER  "(&" LWCA_POST_CERT_OBJ_FILTER LWCA_POST_CERT_AKI_FILTER LWCA_POST_CERT_STATUS_FILTER ")"
+
+// Trusted Root Certificate Data LDAP Metadata
+#define LWCA_POST_ROOTS_CN                          "Trusted-Roots"
+#define LWCA_POST_CA_ROOT_CERTS_DN                  "cn=" LWCA_POST_ROOTS_CN ",%s"
+#define LWCA_POST_CA_ROOT_CERT_DN                   "cn=%s,cn=" LWCA_POST_ROOTS_CN ",%s"
+#define LWCA_POST_ROOT_CERT_OBJ_CLASS               "trustedRootCertificate"
+#define LWCA_POST_ROOT_CERT_OBJ_FILTER              "(objectClass=" LWCA_POST_ROOT_CERT_OBJ_CLASS ")"
+#define LWCA_POST_ROOT_CERT_CA_ID                   "caId"
+#define LWCA_POST_ROOT_CERT_PEM                     "trustedRootCert"
+#define LWCA_POST_ROOT_CERT_ENCR_PRIV_KEY           "encryptedPrivateKey"
+#define LWCA_POST_ROOT_CERT_CHAIN_OF_TRUST          "chainOfTrust"
+#define LWCA_POST_ROOT_CERT_CRL_NUM                 "CRLNumber"
+#define LWCA_POST_ROOT_CERT_LAST_CRL_UPDATE         "lastCRLUpdate"
+#define LWCA_POST_ROOT_CERT_NEXT_CRL_UPDATE         "nextCRLUpdate"
+#define LWCA_POST_ROOT_CERT_CA_ID_FILTER            "(" LWCA_POST_ROOT_CERT_CA_ID "=%s)"
+#define LWCA_POST_ROOT_CERT_CA_CERTS_FILTER         "(&" LWCA_POST_ROOT_CERT_OBJ_FILTER LWCA_POST_ROOT_CERT_CA_ID_FILTER LWCA_POST_CERT_STATUS ")"
 
 // Lock attributes on POST
 #define LWCA_POST_LOCK_OBJ_CLASS        "resourceLock"

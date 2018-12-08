@@ -144,6 +144,12 @@ error:
     goto cleanup;
 }
 
+/*
+ * TODO:
+ *
+ *      When we support multiple roots per CA, this needs to be updated to accept
+ *      a particular SKI to obtain its key.
+ */
 static
 DWORD
 _LwCAStorageFetchEncryptedDataFromDB(
@@ -152,30 +158,30 @@ _LwCAStorageFetchEncryptedDataFromDB(
     )
 {
     DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY pCACerts = NULL;
     PLWCA_BINARY_DATA pEncryptedData = NULL;
 
-    dwError = LwCADbGetCA(pcszCAId, &pCAData);
+    dwError = LwCADbGetCACerts(LWCA_DB_GET_ACTIVE_CA_CERT, pcszCAId, NULL, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    if (!pCAData->pEncryptedPrivateKey
-        || !pCAData->pEncryptedPrivateKey->pData
-        || pCAData->pEncryptedPrivateKey->dwLength == 0)
+    if (!pCACerts->ppRootCertData[0]->pEncryptedPrivateKey
+        || !pCACerts->ppRootCertData[0]->pEncryptedPrivateKey->pData
+        || pCACerts->ppRootCertData[0]->pEncryptedPrivateKey->dwLength == 0)
     {
         dwError = LWCA_SECURITY_KEY_NOT_IN_DB;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
     dwError = _LwCASecurityCreateEncryptedData(
-                                pCAData->pEncryptedPrivateKey->pData,
-                                pCAData->pEncryptedPrivateKey->dwLength,
-                                &pEncryptedData);
+                        pCACerts->ppRootCertData[0]->pEncryptedPrivateKey->pData,
+                        pCACerts->ppRootCertData[0]->pEncryptedPrivateKey->dwLength,
+                        &pEncryptedData);
     BAIL_ON_LWCA_ERROR(dwError);
 
     *ppEncryptedData = pEncryptedData;
 
 cleanup:
-    LwCADbFreeCAData(pCAData);
+    LwCADbFreeRootCertDataArray(pCACerts);
     return dwError;
 
 error:

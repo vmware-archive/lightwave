@@ -24,30 +24,16 @@ LwCADbInitCtx(
     PLWCA_JSON_OBJECT pConfig
     );
 
+VOID
+LwCADbFreeCtx(
+   VOID
+   );
+
 DWORD
 LwCADbAddCA(
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CA_DATA        pCAData,
-    PCSTR                   pcszParentCAId
-    );
-
-DWORD
-LwCADbAddCertData(
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CERT_DATA      pCertData
-    );
-
-DWORD
-LwCADbCheckCA(
-    PCSTR                   pcszCAId,
-    PBOOLEAN                pbExists
-    );
-
-DWORD
-LwCADbCheckCertData(
-    PCSTR                   pcszCAId,
-    PCSTR                   pcszSerialNumber,
-    PBOOLEAN                pbExists
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CA_DATA            pCAData,
+    PLWCA_DB_ROOT_CERT_DATA     pCARootCertData
     );
 
 DWORD
@@ -57,21 +43,9 @@ LwCADbGetCA(
     );
 
 DWORD
-LwCADbGetCAStatus(
+LwCADbUpdateCA(
     PCSTR                   pcszCAId,
-    PLWCA_CA_STATUS         pStatus
-    );
-
-DWORD
-LwCADbGetCAAuthBlob(
-    PCSTR                   pcszCAId,
-    PSTR                    *ppszAuthBlob
-    );
-
-DWORD
-LwCADbGetCACertificates(
-    PCSTR                      pcszCAId,
-    PLWCA_CERTIFICATE_ARRAY    *ppCertArray
+    PLWCA_DB_CA_DATA        pCAData
     );
 
 DWORD
@@ -87,6 +61,61 @@ LwCADbUnlockCA(
     );
 
 DWORD
+LwCADbAddCACert(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    );
+
+DWORD
+LwCADbGetCACerts(
+    LWCA_DB_GET_CERTS_FLAGS         certsToGet,
+    PCSTR                           pcszCAId,       //OPTIONAL: only if requesting all or active CA cert
+    PCSTR                           pcszSKI,        //OPTIONAL: only if requesting ca cert via SKI
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppCACerts
+    );
+
+DWORD
+LwCADbUpdateCACert(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    );
+
+DWORD
+LwCADbLockCACert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PSTR    *ppszUuid
+    );
+
+DWORD
+LwCADbUnlockCACert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PCSTR   pcszUuid
+    );
+
+DWORD
+LwCADbAddCert(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    );
+
+DWORD
+LwCADbGetCerts(
+    LWCA_DB_GET_CERTS_FLAGS     certsToGet,
+    PCSTR                       pcszCAId,           //OPTIONAL: only if requesting CA or revoked certs
+    PCSTR                       pcszSerialNumber,   //OPTIONAL: only if requesting cert via serial number
+    PCSTR                       pcszAKI,            //OPTIONAL: only if requesting revoked certs
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
+    );
+
+DWORD
+LwCADbUpdateCert(
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    );
+
+DWORD
 LwCADbLockCert(
     PCSTR   pcszCAId,
     PCSTR   pcszSerialNumber,
@@ -99,68 +128,6 @@ LwCADbUnlockCert(
     PCSTR   pcszSerialNumber,
     PCSTR   pcszUuid
     );
-
-DWORD
-LwCADbGetCertData(
-    PCSTR                       pcszCAId,
-    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
-    );
-
-DWORD
-LwCADbGetCACRLNumber(
-    PCSTR   pcszCAId,
-    PSTR    *ppszCRLNumber
-    );
-
-DWORD
-LwCADbGetParentCAId(
-    PCSTR   pcszCAId,
-    PSTR    *ppszParentCAId
-    );
-
-DWORD
-LwCADbUpdateCA(
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CA_DATA        pCAData
-    );
-
-DWORD
-LwCADbUpdateCAStatus(
-    PCSTR                pcszCAId,
-    LWCA_CA_STATUS       status
-    );
-
-DWORD
-LwCADbUpdateCertData(
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CERT_DATA      pCertData
-    );
-
-DWORD
-LwCADbUpdateCACRLNumber(
-    PCSTR   pcszCAId,
-    PCSTR   pcszCRLNumber
-    );
-
-VOID
-LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
-    );
-
-VOID
-LwCADbFreeCertData(
-    PLWCA_DB_CERT_DATA pCertData
-    );
-
-VOID
-LwCADbFreeCertDataArray(
-    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    );
-
-VOID
-LwCADbFreeCtx(
-   VOID
-   );
 
 #ifdef __cplusplus
 }

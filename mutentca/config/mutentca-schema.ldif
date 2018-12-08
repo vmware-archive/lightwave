@@ -1,57 +1,13 @@
 ############################################################
-# CA RFC definition
+# POST Schema for MutentCA DB
+############################################################
+
+############################################################
+# MutentCA Resource Lock attributes
 ############################################################
 
 attributeTypes: (
-    2.5.4.37
-    NAME 'cACertificate'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    )
-
-attributeTypes: (
-    2.5.4.38
-    NAME 'authorityRevocationList'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    )
-
-attributeTypes: (
-    2.5.4.39
-    NAME 'certificateRevocationList'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    SINGLE-VALUE
-    )
-
-attributeTypes: (
-    2.5.4.40
-    NAME 'crossCertificatePair'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
-    )
-
-attributeTypes: (
-    1.2.840.113556.1.4.697
-    NAME 'cACertificateDN'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
-    SINGLE-VALUE
-    )
-
-objectClasses: (
-    2.5.6.22
-    NAME 'pkiCA'
-    DESC 'RFC2587: PKI certificate authority'
-    SUP top
-    AUXILIARY
-    MAY ( authorityRevocationList
-        $ certificateRevocationList
-        $ cACertificate
-        $ crossCertificatePair
-        )
-    )
-############################################################
-# VMware Resource Lock attributes
-############################################################
-
-attributeTypes: (
-    VMWare.ResourceLock.attribute.1
+    MutentCA.ResourceLock.attribute.1
     NAME 'resourceLockOwner'
     DESC 'The process/user holding the lock'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
@@ -59,7 +15,7 @@ attributeTypes: (
     )
 
 attributeTypes: (
-    VMWare.ResourceLock.attribute.2
+    MutentCA.ResourceLock.attribute.2
     NAME 'resourceLockExpirationTime'
     DESC 'Time by when the lock will expire, in epoc'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
@@ -67,7 +23,7 @@ attributeTypes: (
     )
 
 objectClasses: (
-    VMWare.ResourceLock.objectclass.0
+    MutentCA.ResourceLock.objectclass.0
     NAME 'resourceLock'
     SUP top
     AUXILIARY
@@ -79,145 +35,219 @@ objectClasses: (
     )
 
 ############################################################
-# VMware certification authority
+# MutentCA Certificate Authority
 ############################################################
 
 attributeTypes: (
-    VMWare.CA.attribute.1
-    NAME 'cAEncryptedPrivateKey'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    MutentCA.CA.attribute.1
+    NAME 'cACertificateDN'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.CA.attribute.2
+    MutentCA.CA.attribute.2
     NAME 'cAParentCAId'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.CA.attribute.3
+    MutentCA.CA.attribute.3
+    NAME 'cAActiveRootCertSKI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.CA.attribute.4
+    NAME 'cAAuthBlob'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.CA.attribute.5
     NAME 'cAStatus'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
 
-attributeTypes: (
-    VMWare.CA.attribute.4
-    NAME 'cACRLNumber'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
-    )
-
-attributeTypes: (
-    VMWare.CA.attribute.5
-    NAME 'cALastCRLUpdate'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
-    SINGLE-VALUE
-    )
-
-attributeTypes: (
-    VMWare.CA.attribute.6
-    NAME 'cANextCRLUpdate'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
-    SINGLE-VALUE
-    )
-
-attributeTypes: (
-    VMWare.CA.attribute.7
-    NAME 'cAAuthBlob'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
-    SINGLE-VALUE
-    )
-
 objectClasses: (
-    VMWare.CA.objectclass.1
-    NAME 'vmwCertificationAuthority'
+    MutentCA.CA.objectclass.1
+    NAME 'certificateAuthority'
     SUP top
     STRUCTURAL
     MUST ( cn
          )
     MAY ( cACertificateDN
-        $ cACRLNumber
         $ cAParentCAId
-        $ cAEncryptedPrivateKey
+        $ cAActiveRootCertSKI
         $ cAStatus
-        $ cALastCRLUpdate
-        $ cANextCRLUpdate
         $ cAAuthBlob
         )
     )
 
 dITContentRules:  (
-    VMWare.DIR.contentrule.vmwCertificationAuthority
-    NAME 'vmwCertificationAuthority'
-    AUX ( pkiCA
-        $ resourceLock
+    MutentCA.DIR.contentrule.certificateAuthority
+    NAME 'certificateAuthority'
+    AUX ( resourceLock
         )
     )
 
 ############################################################
-# VMware Certificates
+# MutentCA Trusted Root Certificate
 ############################################################
 
 attributeTypes: (
-    VMWare.Certificate.attribute.1
-    NAME 'certSerialNumber'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    MutentCA.TrustedRootCertificate.attribute.1
+    NAME 'caId'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    MutentCA.TrustedRootCertificate.attribute.2
+    NAME 'trustedRootCert'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.2
+    MutentCA.TrustedRootCertificate.attribute.3
+    NAME 'encryptedPrivateKey'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.5
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.TrustedRootCertificate.attribute.4
+    NAME 'chainOfTrust'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.TrustedRootCertificate.attribute.5
+    NAME 'CRLNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    MutentCA.TrustedRootCertificate.attribute.6
+    NAME 'lastCRLUpdate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.TrustedRootCertificate.attribute.7
+    NAME 'nextCRLUpdate'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
+    SINGLE-VALUE
+    )
+
+objectClasses: (
+    MutentCA.TrustedRootCertificate.objectclass.0
+    NAME 'trustedRootCertificate'
+    SUP top
+    AUXILIARY
+    MUST ( caId
+         $ trustedRootCert
+         $ encryptedPrivateKey
+         $ CRLNumber
+         $ lastCRLUpdate
+         $ nextCRLUpdate
+         )
+    MAY ( chainOfTrust
+        )
+    )
+
+############################################################
+# MutentCA Certificate
+############################################################
+
+attributeTypes: (
+    MutentCA.Certificate.attribute.1
     NAME 'certIssuer'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.3
+    MutentCA.Certificate.attribute.2
+    NAME 'certSerialNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.Certificate.attribute.3
+    NAME 'certIssuerSerialNumber'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.Certificate.attribute.4
+    NAME 'certSKI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.Certificate.attribute.5
+    NAME 'certAKI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    MutentCA.Certificate.attribute.6
     NAME 'certRevokedReason'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.4
+    MutentCA.Certificate.attribute.7
     NAME 'certRevokedDate'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.5
+    MutentCA.Certificate.attribute.8
     NAME 'certTimeValidFrom'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.6
+    MutentCA.Certificate.attribute.9
     NAME 'certTimeValidTo'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.24
     SINGLE-VALUE
     )
 
 attributeTypes: (
-    VMWare.Certificate.attribute.7
+    MutentCA.Certificate.attribute.10
     NAME 'certStatus'
     SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     SINGLE-VALUE
     )
 
 objectClasses: (
-    VMWare.Certificate.objectclass.1
-    NAME 'vmwCerts'
+    MutentCA.Certificate.objectclass.1
+    NAME 'certificate'
     SUP top
     STRUCTURAL
     MUST ( cn
          )
-    MAY ( certSerialNumber
-        $ certIssuer
+    MAY ( certIssuer
+        $ certSerialNumber
+        $ certIssuerSerialNumber
+        $ certSKI
+        $ certAKI
         $ certRevokedReason
         $ certRevokedDate
         $ certTimeValidFrom
@@ -227,8 +257,9 @@ objectClasses: (
     )
 
 dITContentRules:  (
-    VMWare.DIR.contentrule.vmwCerts
-    NAME 'vmwCerts'
+    MutentCA.DIR.contentrule.certificate
+    NAME 'certificate'
     AUX ( resourceLock
+        $ trustedRootCertificate
         )
     )

@@ -58,13 +58,6 @@ _LwCAGetCerts(
 
 static
 DWORD
-_LwCAAddRootCAToConfig(
-    PLWCA_POST_HANDLE   pPostHandle,
-    PCSTR               pcszCAId
-    );
-
-static
-DWORD
 _IsPutResponseValid(
     PSTR    pszResponse,
     long    statusCode
@@ -98,16 +91,6 @@ _LwCADbPostPluginGetCAImpl(
 
 static
 DWORD
-_LwCADbPostPluginGetCertDataImpl(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszAttr,
-    PCSTR               pcszFilter,
-    PSTR                *ppszResponse
-    );
-
-static
-DWORD
 _LwCADbPostGetCADN(
     PLWCA_DB_HANDLE     pHandle,
     PCSTR               pcszCAId,
@@ -125,7 +108,6 @@ static
 DWORD
 _LwCADbPostGetCertDN(
     PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
     PCSTR               pcszSerialNumber,
     PSTR                *ppszDN
     );
@@ -177,7 +159,7 @@ _LwCARestExecutePatch(
 
 static
 DWORD
-_LwCAAddCertContainerInCA(
+_LwCAAddContainersInCA(
     PLWCA_POST_HANDLE   pPostHandle,
     PCSTR               pcszCAId,
     PCSTR               pcszParentCA,
@@ -193,12 +175,27 @@ _LwCADbPostDeleteCA(
     PCSTR               pcszParentDN
     );
 
+static
+DWORD
+_LwCADbPostGetCACertsDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pszCAId,
+    PSTR                *ppszCACertsDN
+    );
+
+static
+DWORD
+_LwCADbPostGetCARootCertsDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PSTR                *ppszCARootCertsDN
+    );
+
 DWORD
 LwCAPluginLoad(
     PLWCA_DB_FUNCTION_TABLE pFt
     )
 {
-
     DWORD dwError = 0;
 
     if (!pFt)
@@ -207,31 +204,37 @@ LwCAPluginLoad(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    pFt->pFnInit = &LwCADbPostPluginInitialize;
-    pFt->pFnAddCA = &LwCADbPostPluginAddCA;
-    pFt->pFnAddCertData = &LwCADbPostPluginAddCertData;
-    pFt->pFnCheckCA = &LwCADbPostPluginCheckCA;
-    pFt->pFnCheckCertData = &LwCADbPostPluginCheckCertData;
-    pFt->pFnGetCACertificates = &LwCADbPostPluginGetCACertificates;
-    pFt->pFnGetCA = &LwCADbPostPluginGetCA;
-    pFt->pFnGetCertData = &LwCADbPostPluginGetCertData;
-    pFt->pFnGetCACRLNumber = &LwCADbPostPluginGetCACRLNumber;
-    pFt->pFnGetParentCAId = &LwCADbPostPluginGetParentCAId;
-    pFt->pFnGetCAStatus = &LwCADbPostPluginGetCAStatus;
-    pFt->pFnGetCAAuthBlob = &LwCADbPostPluginGetCAAuthBlob;
-    pFt->pFnUpdateCA = &LwCADbPostPluginUpdateCA;
-    pFt->pFnUpdateCAStatus = &LwCADbPostPluginUpdateCAStatus;
-    pFt->pFnUpdateCACRLNumber = &LwCADbPostPluginUpdateCACRLNumber;
-    pFt->pFnFreeCAData = &LwCADbPostPluginFreeCAData;
-    pFt->pFnUpdateCertData = &LwCADbPostPluginUpdateCertData;
-    pFt->pFnLockCA = &LwCADbPostPluginLockCA;
-    pFt->pFnUnlockCA = &LwCADbPostPluginUnlockCA;
-    pFt->pFnLockCert = &LwCADbPostPluginLockCert;
-    pFt->pFnUnlockCert = &LwCADbPostPluginUnlockCert;
-    pFt->pFnFreeCertDataArray = &LwCADbPostPluginFreeCertDataArray;
-    pFt->pFnFreeCertArray = &LwCADbPostPluginFreeCertificates;
-    pFt->pFnFreeString = &LwCADbPostPluginFreeString;
-    pFt->pFnFreeHandle = &LwCADbPostPluginFreeHandle;
+    pFt->pFnInit                    = &LwCADbPostPluginInitialize;
+    pFt->pFnGetVersion              = &LwCADbPostPluginGetVersion;
+
+    pFt->pFnAddCA                   = &LwCADbPostPluginAddCA;
+    pFt->pFnGetCA                   = &LwCADbPostPluginGetCA;
+    pFt->pFnUpdateCA                = &LwCADbPostPluginUpdateCA;
+    pFt->pFnFreeCAData              = &LwCADbPostPluginFreeCAData;
+    pFt->pFnLockCA                  = &LwCADbPostPluginLockCA;
+    pFt->pFnUnlockCA                = &LwCADbPostPluginUnlockCA;
+
+    pFt->pFnAddCACert               = &LwCADbPostPluginAddCACert;
+    pFt->pFnGetCACerts              = &LwCADbPostPluginGetCACerts;
+    pFt->pFnGetCACert               = &LwCADbPostPluginGetCACert;
+    pFt->pFnUpdateCACert            = &LwCADbPostPluginUpdateCACert;
+    pFt->pFnFreeCACertData          = &LwCADbPostPluginFreeRootCertData;
+    pFt->pFnFreeCACertDataArray     = &LwCADbPostPluginFreeRootCertDataArray;
+    pFt->pFnLockCACert              = &LwCADbPostPluginLockCACert;
+    pFt->pFnUnlockCACert            = &LwCADbPostPluginUnlockCACert;
+
+    pFt->pFnAddCert                 = &LwCADbPostPluginAddCertData;
+    pFt->pFnGetCerts                = &LwCADbPostPluginGetCerts;
+    pFt->pFnGetCert                 = &LwCADbPostPluginGetCert;
+    pFt->pFnGetRevokedCerts         = &LwCADbPostPluginGetRevokedCerts;
+    pFt->pFnUpdateCert              = &LwCADbPostPluginUpdateCertData;
+    pFt->pFnFreeCertData            = &LwCADbPostPluginFreeCertData;
+    pFt->pFnFreeCertDataArray       = &LwCADbPostPluginFreeCertDataArray;
+    pFt->pFnLockCert                = &LwCADbPostPluginLockCert;
+    pFt->pFnUnlockCert              = &LwCADbPostPluginUnlockCert;
+
+    pFt->pFnFreeString              = &LwCADbPostPluginFreeString;
+    pFt->pFnFreeHandle              = &LwCADbPostPluginFreeHandle;
 
 cleanup:
     return dwError;
@@ -306,19 +309,128 @@ error:
     goto cleanup;
 }
 
+PCSTR
+LwCADbPostPluginGetVersion(
+    VOID
+    )
+{
+    return LWCA_DB_POST_PLUGIN_NAME" v" \
+           LWCA_DB_POST_PLUGIN_VERSION_MAJOR"." \
+           LWCA_DB_POST_PLUGIN_VERSION_MINOR"." \
+           LWCA_DB_POST_PLUGIN_VERSION_RELEASE;
+}
+
 DWORD
 LwCADbPostPluginAddCA(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PLWCA_DB_CA_DATA    pCAData,
-    PCSTR               pcszParentCA
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CA_DATA            pCAData,
+    PLWCA_DB_ROOT_CERT_DATA     pCARootCertData
     )
 {
     DWORD               dwError = 0;
     PLWCA_POST_HANDLE   pPostHandle = NULL;
-    PSTR                pszReqBody = NULL;
+    PSTR                pszCAReqBody = NULL;
+    PSTR                pszCACertReqBody = NULL;
     PSTR                pszResponse = NULL;
     PSTR                pszParentDN = NULL;
+    long                statusCode = 0;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCAData || !pCARootCertData)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    if (IsNullOrEmptyString(pCAData->pszParentCAId))
+    {
+        dwError = LwCAAllocateStringA(pPostHandle->pszDomain, &pszParentDN);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+    else
+    {
+        dwError = _LwCADbPostGetCADN(pHandle, pCAData->pszParentCAId, &pszParentDN);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    // Add CA to POST
+    dwError = LwCASerializeCAToJSON(pcszCAId, pCAData, pszParentDN, &pszCAReqBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePut(pPostHandle, pszCAReqBody, &pszResponse, &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // Create trusted roots and certs containers under the CA
+    dwError = _LwCAAddContainersInCA(pPostHandle, pcszCAId, pCAData->pszParentCAId, pszParentDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // Add trusted root cert under CA's trusted-root container
+    dwError = LwCADbPostPluginAddCACert(pHandle, pcszCAId, pCARootCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszCAReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszCACertReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszParentDN);
+    return dwError;
+
+error:
+    _LwCADbPostDeleteCA(pHandle, pcszCAId, pCAData->pszParentCAId, pszParentDN);
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCA(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        *ppCAData
+    )
+{
+    DWORD                   dwError = 0;
+    PSTR                    pszResponse = NULL;
+    PLWCA_DB_CA_DATA        pCAData = NULL;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppCAData || !pHandle)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostPluginGetCAImpl(pHandle, pcszCAId, NULL, &pszResponse);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToCA(pszResponse, &pCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCAData = pCAData;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pCAData);
+    if (ppCAData)
+    {
+        *ppCAData = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginUpdateCA(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CA_DATA        pCAData
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszResponse = NULL;
+    PSTR                pszDN = NULL;
+    PSTR                pszBody = NULL;
     long                statusCode = 0;
 
     if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCAData)
@@ -327,54 +439,36 @@ LwCADbPostPluginAddCA(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
-
-    if (IsNullOrEmptyString(pcszParentCA))
-    {
-        dwError = _LwCAAddRootCAToConfig(pPostHandle, pcszCAId);
-        BAIL_ON_LWCA_ERROR(dwError);
-
-        dwError = LwCAAllocateStringA(pPostHandle->pszDomain, &pszParentDN);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    else
-    {
-        dwError = _LwCADbPostGetCADN(pHandle, pcszParentCA, &pszParentDN);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCASerializeCAToJSON(pcszCAId,
-                                    pCAData,
-                                    pcszParentCA,
-                                    pszParentDN,
-                                    &pszReqBody
-                                    );
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCARestExecutePut(pPostHandle,
-                                  pszReqBody,
-                                  &pszResponse,
-                                  &statusCode
-                                  );
+    dwError = LwCAGenerateCAPatchRequestBody(pCAData, &pszBody);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    // create certs container under the CA
-    dwError = _LwCAAddCertContainerInCA(pPostHandle,
-                                        pcszCAId,
-                                        pcszParentCA,
-                                        pszParentDN
-                                        );
+    dwError = _LwCARestExecutePatch(
+                        (PLWCA_POST_HANDLE)pHandle,
+                        pszDN,
+                        pszBody,
+                        &pszResponse,
+                        &statusCode);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszReqBody);
     LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LWCA_SAFE_FREE_STRINGA(pszParentDN);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszBody);
     return dwError;
 
 error:
-    _LwCADbPostDeleteCA(pHandle, pcszCAId, pcszParentCA, pszParentDN);
     goto cleanup;
+}
+
+VOID
+LwCADbPostPluginFreeCAData(
+    PLWCA_DB_CA_DATA  pCAData
+    )
+{
+    LwCADbFreeCAData(pCAData);
 }
 
 DWORD
@@ -427,8 +521,7 @@ LwCADbPostPluginUnlockCA(
 
     if (IsNullOrEmptyString(pcszCAId) ||
         IsNullOrEmptyString(pcszUuid) ||
-        !pHandle
-        )
+        !pHandle)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -449,6 +542,598 @@ error:
 }
 
 DWORD
+LwCADbPostPluginAddCACert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_POST_HANDLE           pPostHandle = NULL;
+    PSTR                        pszReqBody = NULL;
+    PSTR                        pszCADN = NULL;
+    PSTR                        pszDN = NULL;
+    PSTR                        pszResponse = NULL;
+    long                        statusCode = 0;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCACert)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszDN,
+                        LWCA_POST_CA_ROOT_CERT_DN,
+                        pCACert->pRootCertData->pszSerialNumber,
+                        pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = LwCASerializeRootCertDataToJSON(
+                        pCACert,
+                        pszDN,
+                        &pszReqBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePut(
+                        pPostHandle,
+                        pszReqBody,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszCADN);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCACerts(
+    PLWCA_DB_HANDLE                 pHandle,
+    PCSTR                           pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppCACerts
+    )
+{
+    DWORD                           dwError = 0;
+    PSTR                            pszDN = NULL;
+    PSTR                            pszFilter = NULL;
+    PSTR                            pszResponse = NULL;
+    long                            statusCode = 0;
+    PLWCA_POST_HANDLE               pPostHandle = NULL;
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pCACerts = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppCACerts)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = _LwCADbPostGetCARootCertsDN(pHandle, pcszCAId, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszFilter,
+                        LWCA_POST_ROOT_CERT_CA_CERTS_FILTER,
+                        pcszCAId,
+                        LWCA_CERT_STATUS_ACTIVE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pszDN,
+                        pszFilter,
+                        NULL,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToRootCertDataArray(pszResponse, &pCACerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCACerts = pCACerts;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbFreeRootCertDataArray(pCACerts);
+    if (ppCACerts)
+    {
+        *ppCACerts = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCACert(
+    PLWCA_DB_HANDLE                 pHandle,
+    PCSTR                           pcszCAId,
+    PCSTR                           pcszSKI,
+    PLWCA_DB_ROOT_CERT_DATA         *ppCACert
+    )
+{
+    DWORD                           dwError = 0;
+    PSTR                            pszFilter = NULL;
+    PSTR                            pszResponse = NULL;
+    long                            statusCode = 0;
+    PLWCA_POST_HANDLE               pPostHandle = NULL;
+    PLWCA_DB_ROOT_CERT_DATA         pCACert = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszSKI) || !ppCACert)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszFilter,
+                        LWCA_POST_CERT_SKI_FILTER,
+                        pcszSKI);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pPostHandle->pszDomain,
+                        pszFilter,
+                        NULL,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToRootCertData(pszResponse, &pCACert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCACert = pCACert;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbFreeRootCertData(pCACert);
+    if (ppCACert)
+    {
+        *ppCACert = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginUpdateCACert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    )
+{
+    DWORD                       dwError = 0;
+    PSTR                        pszResponse = NULL;
+    PSTR                        pszDN = NULL;
+    PSTR                        pszBody = NULL;
+    long                        statusCode = 0;
+
+    if (IsNullOrEmptyString(pcszCAId) || !pCACert || !pHandle)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _LwCADbPostGetCertDN(
+                            pHandle,
+                            pCACert->pRootCertData->pszSerialNumber,
+                            &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGenerateRootCertPatchRequestBody(pCACert, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePatch(
+                            (PLWCA_POST_HANDLE)pHandle,
+                            pszDN,
+                            pszBody,
+                            &pszResponse,
+                            &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+VOID
+LwCADbPostPluginFreeRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA         pRootCertData
+    )
+{
+    LwCADbFreeRootCertData(pRootCertData);
+}
+
+VOID
+LwCADbPostPluginFreeRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray
+    )
+{
+    LwCADbFreeRootCertDataArray(pRootCertDataArray);
+}
+
+DWORD
+LwCADbPostPluginLockCACert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PSTR            *ppszUuid
+    )
+{
+    DWORD           dwError = 0;
+    PSTR            pszUuid = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszSerialNumber) || !ppszUuid)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCADbPostPluginLockCert(pHandle, pcszCAId, pcszSerialNumber, &pszUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszUuid = pszUuid;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+    if (ppszUuid)
+    {
+        *ppszUuid = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginUnlockCACert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PCSTR           pcszUuid
+    )
+{
+    DWORD           dwError = 0;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszSerialNumber) || IsNullOrEmptyString(pcszUuid))
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCADbPostPluginUnlockCert(pHandle, pcszCAId, pcszSerialNumber, pcszUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginAddCertData(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_POST_HANDLE       pPostHandle = NULL;
+    PSTR                    pszReqBody = NULL;
+    PSTR                    pszCADN = NULL;
+    PSTR                    pszDN = NULL;
+    PSTR                    pszResponse = NULL;
+    long                    statusCode = 0;
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCertData)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszDN,
+                        LWCA_POST_CERT_DN,
+                        pCertData->pszSerialNumber,
+                        pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = LwCASerializeCertDataToJSON(
+                            pCertData,
+                            pszDN,
+                            &pszReqBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePut(
+                            pPostHandle,
+                            pszReqBody,
+                            &pszResponse,
+                            &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszCADN);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCerts(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCerts
+    )
+{
+    DWORD                       dwError = 0;
+    PSTR                        pszDN = NULL;
+    PSTR                        pszFilter = NULL;
+    PSTR                        pszResponse = NULL;
+    long                        statusCode = 0;
+    PLWCA_POST_HANDLE           pPostHandle = NULL;
+    PLWCA_DB_CERT_DATA_ARRAY    pCerts = NULL;
+
+
+    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppCerts)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = _LwCADbPostGetCACertsDN(pHandle, pcszCAId, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pszDN,
+                        pszFilter,
+                        NULL,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToCertDataArray(pszResponse, &pCerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCerts = pCerts;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbPostPluginFreeCertDataArray(pCerts);
+    if (ppCerts)
+    {
+        *ppCerts = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetCert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PCSTR                       pcszSerialNumber,
+    PLWCA_DB_CERT_DATA          *ppCert
+    )
+{
+    DWORD                       dwError = 0;
+    PSTR                        pszFilter = NULL;
+    PSTR                        pszResponse = NULL;
+    long                        statusCode = 0;
+    PLWCA_POST_HANDLE           pPostHandle = NULL;
+    PLWCA_DB_CERT_DATA          pCert = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszSerialNumber) || !ppCert)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszFilter,
+                        LWCA_POST_CERT_SERIAL_FILTER,
+                        pcszSerialNumber);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pPostHandle->pszDomain,
+                        pszFilter,
+                        NULL,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToCertData(pszResponse, &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCert = pCert;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbPostPluginFreeCertData(pCert);
+    if (ppCert)
+    {
+        *ppCert = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginGetRevokedCerts(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PCSTR                       pcszAKI,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCerts
+    )
+{
+    DWORD                       dwError = 0;
+    PSTR                        pszDN = NULL;
+    PSTR                        pszFilter = NULL;
+    PSTR                        pszResponse = NULL;
+    long                        statusCode = 0;
+    PLWCA_POST_HANDLE           pPostHandle = NULL;
+    PLWCA_DB_CERT_DATA_ARRAY    pCerts = NULL;
+
+    if (!pHandle || IsNullOrEmptyString(pcszAKI) || !ppCerts)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszFilter,
+                        LWCA_POST_REVOKED_CERTS_FILTER,
+                        pcszAKI,
+                        LWCA_CERT_STATUS_INACTIVE);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pszDN,
+                        pszFilter,
+                        NULL,
+                        &pszResponse,
+                        &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCADeserializeJSONToCertDataArray(pszResponse, &pCerts);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCerts = pCerts;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return dwError;
+
+error:
+    LwCADbPostPluginFreeCertDataArray(pCerts);
+    if (ppCerts)
+    {
+        *ppCerts = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbPostPluginUpdateCertData(
+    PLWCA_DB_HANDLE         pHandle,
+    PCSTR                   pcszCAId,
+    PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    DWORD                   dwError = 0;
+    PSTR                    pszResponse = NULL;
+    PSTR                    pszDN = NULL;
+    PSTR                    pszBody = NULL;
+    long                    statusCode = 0;
+
+    if (IsNullOrEmptyString(pcszCAId) ||
+        !pCertData ||
+        IsNullOrEmptyString(pCertData->pszSerialNumber) ||
+        !pHandle)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    dwError = _LwCADbPostGetCertDN(
+                            pHandle,
+                            pCertData->pszSerialNumber,
+                            &pszDN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAGenerateCertPatchRequestBody(pCertData, &pszBody);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePatch(
+                            (PLWCA_POST_HANDLE)pHandle,
+                            pszDN,
+                            pszBody,
+                            &pszResponse,
+                            &statusCode);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszDN);
+    LWCA_SAFE_FREE_STRINGA(pszBody);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+VOID
+LwCADbPostPluginFreeCertData(
+    PLWCA_DB_CERT_DATA      pCertData
+    )
+{
+    LwCADbFreeCertData(pCertData);
+}
+
+VOID
+LwCADbPostPluginFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
+    )
+{
+    LwCADbFreeCertDataArray(pCertDataArray);
+}
+
+DWORD
 LwCADbPostPluginLockCert(
     PLWCA_DB_HANDLE pHandle,
     PCSTR           pcszCAId,
@@ -463,14 +1148,13 @@ LwCADbPostPluginLockCert(
     if (IsNullOrEmptyString(pcszCAId) ||
         IsNullOrEmptyString(pcszSerialNumber) ||
         !pHandle ||
-        !ppszUuid
-        )
+        !ppszUuid)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCADbPostGetCertDN(pHandle, pcszCAId, pcszSerialNumber, &pszDN);
+    dwError = _LwCADbPostGetCertDN(pHandle, pcszSerialNumber, &pszDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCALockDN((PLWCA_POST_HANDLE)pHandle, pszDN, &pszUuid);
@@ -505,14 +1189,13 @@ LwCADbPostPluginUnlockCert(
     if (IsNullOrEmptyString(pcszCAId) ||
         IsNullOrEmptyString(pcszSerialNumber) ||
         IsNullOrEmptyString(pcszUuid) ||
-        !pHandle
-        )
+        !pHandle)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = _LwCADbPostGetCertDN(pHandle, pcszCAId, pcszSerialNumber, &pszDN);
+    dwError = _LwCADbPostGetCertDN(pHandle, pcszSerialNumber, &pszDN);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAUnlockDN((PLWCA_POST_HANDLE)pHandle, pszDN, pcszUuid);
@@ -524,810 +1207,6 @@ cleanup:
 
 error:
     goto cleanup;
-}
-
-/*
- * This is a best effort cleanup, hence we will not bail on error after placing
- * REST request. We add three entries to POST while creating a CA, the creation
- * of these entries should be atomic to the caller. Hence, we delete all the
- * entries regardless of their existence on POST.
- */
-static
-VOID
-_LwCADbPostDeleteCA(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszParentCA,
-    PCSTR               pcszParentDN
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszConfigDN = NULL;
-    PSTR                pszCertDN = NULL;
-    PCSTR               pcszCertDNFormat = NULL;
-    PSTR                pszCertAuthDN = NULL;
-    PCSTR               pcszCertAuthDNFormat = NULL;
-    PSTR                pszResponse = NULL;
-    long                statusCode = 0;
-    PLWCA_POST_HANDLE   pPostHandle = NULL;
-
-    if (!pHandle ||
-        IsNullOrEmptyString(pcszCAId) ||
-        IsNullOrEmptyString(pcszParentDN)
-        )
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
-
-    if (IsNullOrEmptyString(pcszParentCA))
-    {
-        // delete the configuration entry
-        dwError = LwCAAllocateStringPrintfA(&pszConfigDN,
-                                            LWCA_POST_CA_CONFIG_DN,
-                                            pcszCAId
-                                            );
-        BAIL_ON_LWCA_ERROR(dwError);
-
-        dwError = _LwCARestExecuteDelete(pPostHandle,
-                                         pszConfigDN,
-                                         &pszResponse,
-                                         &statusCode
-                                         );
-        if (dwError == LWCA_HTTP_NOT_FOUND)
-        {
-            dwError = 0;
-        }
-        BAIL_ON_LWCA_ERROR(dwError);
-        LWCA_SAFE_FREE_STRINGA(pszResponse);
-
-        pcszCertDNFormat = LWCA_POST_ROOT_CERTS_DN;
-        pcszCertAuthDNFormat = LWCA_POST_ROOT_CA_DN_ENTRY;
-    }
-    else
-    {
-        pcszCertDNFormat = LWCA_POST_INTR_CERTS_DN;
-        pcszCertAuthDNFormat = LWCA_POST_INTERMEDIATE_CA_DN_ENTRY;
-    }
-
-    // delete the cert container under CA
-    dwError = LwCAAllocateStringPrintfA(&pszCertDN,
-                                        pcszCertDNFormat,
-                                        pcszCAId,
-                                        pcszParentDN
-                                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecuteDelete(pPostHandle,
-                                     pszCertDN,
-                                     &pszResponse,
-                                     &statusCode
-                                     );
-    if (dwError == LWCA_HTTP_NOT_FOUND)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_LWCA_ERROR(dwError);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-
-    // delete the CA itself
-    dwError = LwCAAllocateStringPrintfA(&pszCertAuthDN,
-                                        pcszCertAuthDNFormat,
-                                        pcszCAId,
-                                        pcszParentDN
-                                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecuteDelete(pPostHandle,
-                                     pszCertAuthDN,
-                                     &pszResponse,
-                                     &statusCode
-                                     );
-    if (dwError == LWCA_HTTP_NOT_FOUND)
-    {
-        dwError = 0;
-    }
-    BAIL_ON_LWCA_ERROR(dwError);
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszConfigDN);
-    LWCA_SAFE_FREE_STRINGA(pszCertDN);
-    LWCA_SAFE_FREE_STRINGA(pszCertAuthDN);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return;
-}
-
-DWORD
-LwCADbPostPluginAddCertData(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CERT_DATA      pCertData
-    )
-{
-    DWORD               dwError = 0;
-    PLWCA_POST_HANDLE   pPostHandle = NULL;
-    PSTR                pszReqBody = NULL;
-    PSTR                pszCADN = NULL;
-    PSTR                pszResponse = NULL;
-    long                statusCode = 0;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCertData)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
-
-    dwError = LwCASerializeCertDataToJSON(pcszCAId,
-                                          pCertData,
-                                          pszCADN,
-                                          &pszReqBody
-                                          );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecutePut(pPostHandle,
-                                  pszReqBody,
-                                  &pszResponse,
-                                  &statusCode
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszReqBody);
-    LWCA_SAFE_FREE_STRINGA(pszCADN);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginCheckCA(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PBOOLEAN            pbExists
-    )
-{
-    DWORD       dwError = 0;
-    PSTR        pszResponse = NULL;
-    PSTR        pszCNValue = NULL;
-
-    if (IsNullOrEmptyString(pcszCAId) || !pbExists || !pHandle)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_LDAP_CN,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringAttrFromResponse(pszResponse,
-                                            LWCA_LDAP_CN,
-                                            &pszCNValue
-                                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *pbExists = TRUE;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszCNValue);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    if (pbExists)
-    {
-        *pbExists = FALSE;
-    }
-    if (dwError == LWCA_ERROR_ENTRY_NOT_FOUND)
-    {
-        // there was no error in the request. Entry just didn't exist
-        dwError = 0;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginCheckCertData(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszSerialNumber,
-    PBOOLEAN            pbExists
-    )
-{
-    DWORD           dwError = 0;
-    PSTR            pszResponse = NULL;
-    PSTR            pszCNValue = NULL;
-    PSTR            pszFilter = NULL;
-
-    if (IsNullOrEmptyString(pcszCAId) ||
-        IsNullOrEmptyString(pcszSerialNumber) ||
-        !pbExists ||
-        !pHandle
-        )
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCADbPostCNFilterBuilder(pcszSerialNumber,
-                                        LWCA_POST_CERT_OBJ_CLASS,
-                                        &pszFilter
-                                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCADbPostPluginGetCertDataImpl(pHandle,
-                                               pcszCAId,
-                                               LWCA_LDAP_CN,
-                                               pszFilter,
-                                               &pszResponse
-                                               );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringAttrFromResponse(pszResponse,
-                                            LWCA_LDAP_CN,
-                                            &pszCNValue
-                                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *pbExists = TRUE;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LWCA_SAFE_FREE_STRINGA(pszCNValue);
-    LWCA_SAFE_FREE_STRINGA(pszFilter);
-    return dwError;
-
-error:
-    if (pbExists)
-    {
-        *pbExists = FALSE;
-    }
-    if (dwError == LWCA_ERROR_ENTRY_NOT_FOUND)
-    {
-        dwError = 0;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetCA(
-    PLWCA_DB_HANDLE          pHandle,
-    PCSTR                    pcszCAId,
-    PLWCA_DB_CA_DATA         *ppCAData
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszResponse = NULL;
-    PLWCA_DB_CA_DATA    pCAData = NULL;
-
-    if (IsNullOrEmptyString(pcszCAId) || !ppCAData || !pHandle)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle, pcszCAId, NULL, &pszResponse);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCADeserializeJSONToCA(pszResponse, &pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppCAData = pCAData;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    LwCADbFreeCAData(pCAData);
-    if (ppCAData)
-    {
-        *ppCAData = NULL;
-    }
-
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetCACertificates(
-    PLWCA_DB_HANDLE              pHandle,
-    PCSTR                        pcszCAId,
-    PLWCA_CERTIFICATE_ARRAY      *ppCertArray
-    )
-{
-    DWORD                       dwError = 0;
-    PSTR                        pszResponse = NULL;
-    PLWCA_STRING_ARRAY          pStrArray = NULL;
-    PLWCA_CERTIFICATE_ARRAY     pCertArray = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppCertArray)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_CERTIFICATES,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringArrayAttrFromResponse(pszResponse,
-                                                 LWCA_POST_CA_CERTIFICATES,
-                                                 &pStrArray
-                                                 );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    if (pStrArray)
-    {
-        dwError = LwCAGetCertArrayFromEncodedStringArray(pStrArray, &pCertArray);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    *ppCertArray = pCertArray;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LwCAFreeStringArray(pStrArray);
-    return dwError;
-
-error:
-    LwCADbPostPluginFreeCertificates(pCertArray);
-    if (ppCertArray)
-    {
-        *ppCertArray = NULL;
-    }
-    goto cleanup;
-
-}
-
-DWORD
-LwCADbPostPluginGetCertData(
-    PLWCA_DB_HANDLE             pHandle,
-    PCSTR                       pcszCAId,
-    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
-    )
-{
-    DWORD                       dwError = 0;
-    PSTR                        pszResponse = NULL;
-    PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppCertDataArray)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCertDataImpl(pHandle,
-                                               pcszCAId,
-                                               NULL,
-                                               LWCA_POST_CERT_OBJ_FILTER,
-                                               &pszResponse
-                                               );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCADeserializeJSONToCertData(pszResponse, &pCertDataArray);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppCertDataArray = pCertDataArray;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    LwCADbPostPluginFreeCertDataArray(pCertDataArray);
-    if (ppCertDataArray)
-    {
-        *ppCertDataArray = NULL;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetCACRLNumber(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PSTR                *ppszCRLNumber
-    )
-{
-    DWORD           dwError = 0;
-    PSTR            pszCRLNumber = NULL;
-    PSTR            pszResponse = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszCRLNumber)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_CRL_NUM,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringAttrFromResponse(pszResponse,
-                                            LWCA_POST_CA_CRL_NUM,
-                                            &pszCRLNumber
-                                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppszCRLNumber = pszCRLNumber;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszCRLNumber);
-    if (ppszCRLNumber)
-    {
-        *ppszCRLNumber = NULL;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetParentCAId(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PSTR                *ppszParentCAId
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszParentCAId = NULL;
-    PSTR                pszResponse = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszParentCAId)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_PARENT,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringAttrFromResponse(pszResponse,
-                                            LWCA_POST_CA_PARENT,
-                                            &pszParentCAId
-                                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppszParentCAId = pszParentCAId;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszParentCAId);
-    if (ppszParentCAId)
-    {
-        *ppszParentCAId = NULL;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetCAAuthBlob(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PSTR                    *ppszAuthBlob
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszAuthBlob = NULL;
-    PSTR                pszResponse = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszAuthBlob)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_AUTH_BLOB,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetStringAttrFromResponse(pszResponse,
-                                            LWCA_POST_CA_AUTH_BLOB,
-                                            &pszAuthBlob
-                                            );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppszAuthBlob = pszAuthBlob;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszAuthBlob);
-    if (ppszAuthBlob)
-    {
-        *ppszAuthBlob = NULL;
-    }
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginGetCAStatus(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_CA_STATUS         pStatus
-    )
-{
-    DWORD       dwError = 0;
-    int         status = 0;
-    PSTR        pszResponse = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pStatus)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_STATUS,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetIntAttrFromResponse(pszResponse,
-                                         LWCA_POST_CA_STATUS,
-                                         &status
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *pStatus = status;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginUpdateCA(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CA_DATA        pCAData
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszResponse = NULL;
-    PSTR                pszDN = NULL;
-    PSTR                pszBody = NULL;
-    long                statusCode = 0;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !pCAData)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszDN);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGenerateCAPatchRequestBody(pCAData, &pszBody);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecutePatch((PLWCA_POST_HANDLE)pHandle,
-                                    pszDN,
-                                    pszBody,
-                                    &pszResponse,
-                                    &statusCode
-                                    );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LWCA_SAFE_FREE_STRINGA(pszDN);
-    LWCA_SAFE_FREE_STRINGA(pszBody);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-
-DWORD
-LwCADbPostPluginUpdateCAStatus(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    LWCA_CA_STATUS          status
-    )
-{
-    DWORD               dwError = 0;
-    PLWCA_DB_CA_DATA    pCAData = NULL;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId))
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCADbCreateCAData(NULL,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 status,
-                                 &pCAData
-                                 );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCADbPostPluginUpdateCA(pHandle, pcszCAId, pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LwCADbPostPluginFreeCAData(pCAData);
-
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginUpdateCertData(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CERT_DATA      pCertData
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszResponse = NULL;
-    PSTR                pszDN = NULL;
-    PSTR                pszBody = NULL;
-    long                statusCode = 0;
-
-    if (IsNullOrEmptyString(pcszCAId) ||
-        !pCertData ||
-        IsNullOrEmptyString(pCertData->pszSerialNumber) ||
-        !pHandle
-        )
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostGetCertDN(pHandle,
-                                   pcszCAId,
-                                   pCertData->pszSerialNumber,
-                                   &pszDN
-                                   );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGenerateCertPatchRequestBody(pCertData, &pszBody);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecutePatch((PLWCA_POST_HANDLE)pHandle,
-                                    pszDN,
-                                    pszBody,
-                                    &pszResponse,
-                                    &statusCode
-                                    );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LWCA_SAFE_FREE_STRINGA(pszDN);
-    LWCA_SAFE_FREE_STRINGA(pszBody);
-
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-LwCADbPostPluginUpdateCACRLNumber(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszCRLNumber
-    )
-{
-    DWORD               dwError = 0;
-    PLWCA_DB_CA_DATA    pCAData = NULL;
-    PSTR                pszResponse = NULL;
-    int                 status = 0;
-
-    if (!pHandle ||
-        IsNullOrEmptyString(pcszCAId) ||
-        IsNullOrEmptyString(pcszCRLNumber)
-        )
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = _LwCADbPostPluginGetCAImpl(pHandle,
-                                         pcszCAId,
-                                         LWCA_POST_CA_STATUS,
-                                         &pszResponse
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAGetIntAttrFromResponse(pszResponse,
-                                         LWCA_POST_CA_STATUS,
-                                         &status
-                                         );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCADbCreateCAData(NULL,
-                                 NULL,
-                                 NULL,
-                                 pcszCRLNumber,
-                                 NULL,
-                                 NULL,
-                                 NULL,
-                                 status,
-                                 &pCAData
-                                 );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCADbPostPluginUpdateCA(pHandle, pcszCAId, pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    LwCADbPostPluginFreeCAData(pCAData);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-VOID
-LwCADbPostPluginFreeCAData(
-    PLWCA_DB_CA_DATA  pCAData
-    )
-{
-    LwCADbFreeCAData(pCAData);
-}
-
-VOID
-LwCADbPostPluginFreeCertDataArray(
-    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    )
-{
-    LwCADbFreeCertDataArray(pCertDataArray);
-}
-
-VOID
-LwCADbPostPluginFreeCertificates(
-    PLWCA_CERTIFICATE_ARRAY pCertArray
-    )
-{
-    LwCAFreeCertificates(pCertArray);
 }
 
 VOID
@@ -1372,8 +1251,7 @@ LwCADbPostCNFilterBuilder(
 
     if (IsNullOrEmptyString(pcszContainer) ||
         IsNullOrEmptyString(pcszObjClass) ||
-        !ppszResultCond
-        )
+        !ppszResultCond)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -1454,6 +1332,98 @@ error:
         *pStatusCode = 0;
     }
     goto cleanup;
+}
+
+
+/*
+ * This is a best effort cleanup, hence we will not bail on error after placing
+ * REST request. We add three entries to POST while creating a CA, the creation
+ * of these entries should be atomic to the caller. Hence, we delete all the
+ * entries regardless of their existence on POST.
+ */
+static
+VOID
+_LwCADbPostDeleteCA(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PCSTR               pcszParentCA,
+    PCSTR               pcszParentDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszCertDN = NULL;
+    PCSTR               pcszCertDNFormat = NULL;
+    PSTR                pszCertAuthDN = NULL;
+    PCSTR               pcszCertAuthDNFormat = NULL;
+    PSTR                pszResponse = NULL;
+    long                statusCode = 0;
+    PLWCA_POST_HANDLE   pPostHandle = NULL;
+
+    if (!pHandle ||
+        IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszParentDN))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    if (IsNullOrEmptyString(pcszParentCA))
+    {
+        pcszCertDNFormat = LWCA_POST_ROOT_CERTS_DN;
+        pcszCertAuthDNFormat = LWCA_POST_ROOT_CA_DN_ENTRY;
+    }
+    else
+    {
+        pcszCertDNFormat = LWCA_POST_INTR_CERTS_DN;
+        pcszCertAuthDNFormat = LWCA_POST_INTERMEDIATE_CA_DN_ENTRY;
+    }
+
+    // delete the cert container under CA
+    dwError = LwCAAllocateStringPrintfA(&pszCertDN,
+                                        pcszCertDNFormat,
+                                        pcszCAId,
+                                        pcszParentDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteDelete(pPostHandle,
+                                     pszCertDN,
+                                     &pszResponse,
+                                     &statusCode
+                                     );
+    if (dwError == LWCA_HTTP_NOT_FOUND)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+
+    // delete the CA itself
+    dwError = LwCAAllocateStringPrintfA(&pszCertAuthDN,
+                                        pcszCertAuthDNFormat,
+                                        pcszCAId,
+                                        pcszParentDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteDelete(pPostHandle,
+                                     pszCertAuthDN,
+                                     &pszResponse,
+                                     &statusCode
+                                     );
+    if (dwError == LWCA_HTTP_NOT_FOUND)
+    {
+        dwError = 0;
+    }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCertDN);
+    LWCA_SAFE_FREE_STRINGA(pszCertAuthDN);
+    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    return;
 }
 
 static
@@ -1827,52 +1797,6 @@ cleanup:
 error:
     LWCA_SAFE_FREE_STRINGA(pszCert);
     LWCA_SAFE_FREE_STRINGA(pszKey);
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCAAddRootCAToConfig(
-    PLWCA_POST_HANDLE   pPostHandle,
-    PCSTR               pcszCAId
-    )
-{
-    DWORD               dwError = 0;
-    PSTR                pszReqBody = NULL;
-    PSTR                pszResponse = NULL;
-    PSTR                pszDN = NULL;
-    long                statusCode = 0;
-
-    if (!pPostHandle || IsNullOrEmptyString(pcszCAId))
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCAAllocateStringPrintfA(&pszDN,
-                                        LWCA_POST_CA_CONFIG_DN,
-                                        pcszCAId,
-                                        pPostHandle->pszDomain
-                                        );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCASerializeContainerToJSON(pszDN, pcszCAId, &pszReqBody);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecutePut(pPostHandle,
-                                  pszReqBody,
-                                  &pszResponse,
-                                  &statusCode
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszDN);
-    LWCA_SAFE_FREE_STRINGA(pszReqBody);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    return dwError;
-
-error:
     goto cleanup;
 }
 
@@ -2343,10 +2267,10 @@ _LwCADbPostPluginGetCAImpl(
 
     pPostHandle = (PLWCA_POST_HANDLE)pHandle;
 
-    dwError = LwCADbPostCNFilterBuilder(pcszCAId,
-                                        LWCA_POST_CA_OBJ_CLASS,
-                                        &pszFilter
-                                        );
+   dwError = LwCADbPostCNFilterBuilder(pcszCAId,
+                                       LWCA_POST_CA_OBJ_CLASS,
+                                       &pszFilter
+                                       );
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAAllocateStringPrintfA(&pszDN,
@@ -2369,57 +2293,6 @@ _LwCADbPostPluginGetCAImpl(
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszDN);
     LWCA_SAFE_FREE_STRINGA(pszFilter);
-    return dwError;
-
-error:
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
-    if (ppszResponse)
-    {
-        *ppszResponse = NULL;
-    }
-    goto cleanup;
-}
-
-static
-DWORD
-_LwCADbPostPluginGetCertDataImpl(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszAttr,
-    PCSTR               pcszFilter,
-    PSTR                *ppszResponse
-    )
-{
-    DWORD               dwError = 0;
-    PLWCA_POST_HANDLE   pPostHandle = NULL;
-    PSTR                pszCADN = NULL;
-    PSTR                pszResponse = NULL;
-    long                statusCode = 0;
-
-    if (!pHandle || IsNullOrEmptyString(pcszCAId) || !ppszResponse)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
-
-    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCARestExecuteGet(pPostHandle,
-                                  pszCADN,
-                                  LWCA_SAFE_STRING(pcszFilter),
-                                  LWCA_SAFE_STRING(pcszAttr),
-                                  &pszResponse,
-                                  &statusCode
-                                  );
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    *ppszResponse = pszResponse;
-
-cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszCADN);
     return dwError;
 
 error:
@@ -2512,28 +2385,39 @@ static
 DWORD
 _LwCADbPostGetCertDN(
     PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
     PCSTR               pcszSerialNumber,
     PSTR                *ppszDN
     )
 {
-    DWORD       dwError = 0;
-    PSTR        pszDN = NULL;
-    PSTR        pszResponse = NULL;
-    PSTR        pszFilter = NULL;
+    DWORD               dwError = 0;
+    PSTR                pszResponse = NULL;
+    PSTR                pszFilter = NULL;
+    PSTR                pszSearchBaseDN = NULL;
+    PSTR                pszDN = NULL;
+    PLWCA_POST_HANDLE   pPostHandle = NULL;
+    long                statusCode = 0;
 
-    dwError = LwCADbPostCNFilterBuilder(pcszSerialNumber,
-                                        LWCA_POST_CERT_OBJ_CLASS,
-                                        &pszFilter
-                                        );
+    pPostHandle = (PLWCA_POST_HANDLE)pHandle;
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszFilter,
+                        LWCA_POST_CERT_SERIAL_FILTER,
+                        pcszSerialNumber);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCADbPostPluginGetCertDataImpl(pHandle,
-                                               pcszCAId,
-                                               LWCA_LDAP_CN,
-                                               pszFilter,
-                                               &pszResponse
-                                               );
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszSearchBaseDN,
+                        LWCA_POST_CA_DN,
+                        pPostHandle->pszDomain);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecuteGet(
+                        pPostHandle,
+                        pszSearchBaseDN,
+                        LWCA_SAFE_STRING(pszFilter),
+                        LWCA_POST_DN,
+                        &pszResponse,
+                        &statusCode);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCAGetDNFromResponse(pszResponse, &pszDN);
@@ -2543,6 +2427,7 @@ _LwCADbPostGetCertDN(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszFilter);
+    LWCA_SAFE_FREE_STRINGA(pszSearchBaseDN);
     LWCA_SAFE_FREE_STRINGA(pszResponse);
     return dwError;
 
@@ -2557,7 +2442,7 @@ error:
 
 static
 DWORD
-_LwCAAddCertContainerInCA(
+_LwCAAddContainersInCA(
     PLWCA_POST_HANDLE   pPostHandle,
     PCSTR               pcszCAId,
     PCSTR               pcszParentCA,
@@ -2565,10 +2450,14 @@ _LwCAAddCertContainerInCA(
     )
 {
     DWORD       dwError = 0;
-    PSTR        pszReqBody = NULL;
-    PSTR        pszResponse = NULL;
-    PSTR        pszCertDN = NULL;
-    PCSTR       pcszDnFormat = NULL;
+    PSTR        pszRootsReqBody = NULL;
+    PSTR        pszCertsReqBody = NULL;
+    PSTR        pszRootsDN = NULL;
+    PSTR        pszCertsDN = NULL;
+    PSTR        pszRootsResponse = NULL;
+    PSTR        pszCertsResponse = NULL;
+    PCSTR       pcszRootsDnFormat = NULL;
+    PCSTR       pcszCertsDnFormat = NULL;
     long        statusCode = 0;
 
     if (!pPostHandle || IsNullOrEmptyString(pcszCAId))
@@ -2579,40 +2468,138 @@ _LwCAAddCertContainerInCA(
 
     if (IsNullOrEmptyString(pcszParentCA))
     {
-        pcszDnFormat = LWCA_POST_ROOT_CERTS_DN;
+        pcszRootsDnFormat = LWCA_POST_ROOT_ROOTS_DN;
+        pcszCertsDnFormat = LWCA_POST_ROOT_CERTS_DN;
     }
     else
     {
-        pcszDnFormat = LWCA_POST_INTR_CERTS_DN;
+        pcszRootsDnFormat = LWCA_POST_INTR_ROOTS_DN;
+        pcszCertsDnFormat = LWCA_POST_INTR_CERTS_DN;
     }
 
-    dwError = LwCAAllocateStringPrintfA(&pszCertDN,
-                                        pcszDnFormat,
+    dwError = LwCAAllocateStringPrintfA(&pszRootsDN,
+                                        pcszRootsDnFormat,
                                         pcszCAId,
                                         pcszDN
                                         );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCASerializeContainerToJSON(pszCertDN,
+    dwError = LwCAAllocateStringPrintfA(&pszCertsDN,
+                                        pcszCertsDnFormat,
+                                        pcszCAId,
+                                        pcszDN
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASerializeContainerToJSON(pszRootsDN,
+                                           LWCA_POST_ROOTS_CN,
+                                           &pszRootsReqBody
+                                           );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCASerializeContainerToJSON(pszCertsDN,
                                            LWCA_POST_CERTS_CN,
-                                           &pszReqBody
+                                           &pszCertsReqBody
                                            );
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCARestExecutePut(pPostHandle,
-                                  pszReqBody,
-                                  &pszResponse,
+                                  pszRootsReqBody,
+                                  &pszRootsResponse,
+                                  &statusCode
+                                  );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCARestExecutePut(pPostHandle,
+                                  pszCertsReqBody,
+                                  &pszCertsResponse,
                                   &statusCode
                                   );
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LWCA_SAFE_FREE_STRINGA(pszCertDN);
-    LWCA_SAFE_FREE_STRINGA(pszReqBody);
-    LWCA_SAFE_FREE_STRINGA(pszResponse);
+    LWCA_SAFE_FREE_STRINGA(pszRootsDN);
+    LWCA_SAFE_FREE_STRINGA(pszCertsDN);
+    LWCA_SAFE_FREE_STRINGA(pszRootsReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszCertsReqBody);
+    LWCA_SAFE_FREE_STRINGA(pszRootsResponse);
+    LWCA_SAFE_FREE_STRINGA(pszCertsResponse);
     return dwError;
 
 error:
     goto cleanup;
 }
 
+static
+DWORD
+_LwCADbPostGetCACertsDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PSTR                *ppszCACertsDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszCADN = NULL;
+    PSTR                pszCACertsDN = NULL;
+
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszCACertsDN,
+                        LWCA_POST_CERTS_DN,
+                        pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszCACertsDN = pszCACertsDN;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszCADN);
+
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCACertsDN);
+    if (ppszCACertsDN)
+    {
+        *ppszCACertsDN = NULL;
+    }
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCADbPostGetCARootCertsDN(
+    PLWCA_DB_HANDLE     pHandle,
+    PCSTR               pcszCAId,
+    PSTR                *ppszCARootCertsDN
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszCADN = NULL;
+    PSTR                pszCARootCertsDN = NULL;
+
+    dwError = _LwCADbPostGetCADN(pHandle, pcszCAId, &pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringPrintfA(
+                        &pszCARootCertsDN,
+                        LWCA_POST_ROOT_CERTS_DN,
+                        pszCADN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszCARootCertsDN = pszCARootCertsDN;
+
+cleanup:
+    LWCA_SAFE_FREE_STRINGA(pszCADN);
+
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszCARootCertsDN);
+    if (ppszCARootCertsDN)
+    {
+        *ppszCARootCertsDN = NULL;
+    }
+    goto cleanup;
+}

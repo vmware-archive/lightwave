@@ -158,6 +158,18 @@ LwCAX509ReqGetKeyUsage(
     );
 
 DWORD
+LwCAX509GetSubjectKeyIdentifier(
+    X509        *pCert,
+    PSTR        *ppszSKI
+    );
+
+DWORD
+LwCAX509GetAuthorityKeyIdentifier(
+    X509        *pCert,
+    PSTR        *ppszAKI
+    );
+
+DWORD
 LwCAX509GetSerialNumber(
     X509    *pCert,
     PSTR    *ppszSerialNumber

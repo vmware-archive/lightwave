@@ -137,113 +137,6 @@ error:
 }
 
 DWORD
-LwCADbCreateCAData(
-    PCSTR                       pcszSubjectName,
-    PLWCA_CERTIFICATE_ARRAY     pCertificates,
-    PLWCA_KEY                   pEncryptedPrivateKey,
-    PCSTR                       pcszCRLNumber,
-    PCSTR                       pcszLastCRLUpdate,
-    PCSTR                       pcszNextCRLUpdate,
-    PCSTR                       pcszAuthBlob,
-    LWCA_CA_STATUS              status,
-    PLWCA_DB_CA_DATA            *ppCAData
-    )
-{
-    DWORD dwError = 0;
-    PLWCA_DB_CA_DATA pCAData = NULL;
-
-    if (!ppCAData)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID*)&pCAData);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    if (pCertificates)
-    {
-        dwError = LwCACopyCertArray(pCertificates, &pCAData->pCertificates);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pcszSubjectName))
-    {
-        dwError = LwCAAllocateStringA(pcszSubjectName,
-                                      &pCAData->pszSubjectName
-                                      );
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (pEncryptedPrivateKey)
-    {
-        dwError = LwCACopyKey(pEncryptedPrivateKey,
-                              &pCAData->pEncryptedPrivateKey
-                              );
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pcszCRLNumber))
-    {
-        dwError = LwCAAllocateStringA(pcszCRLNumber, &pCAData->pszCRLNumber);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pcszLastCRLUpdate))
-    {
-        dwError = LwCAAllocateStringA(pcszLastCRLUpdate,
-                                      &pCAData->pszLastCRLUpdate
-                                      );
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    if (!IsNullOrEmptyString(pcszNextCRLUpdate))
-    {
-        dwError = LwCAAllocateStringA(pcszNextCRLUpdate,
-                                      &pCAData->pszNextCRLUpdate
-                                      );
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-    if (!IsNullOrEmptyString(pcszAuthBlob))
-    {
-        dwError = LwCAAllocateStringA(pcszAuthBlob, &pCAData->pszAuthBlob);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    pCAData->status = status;
-
-    *ppCAData = pCAData;
-
-cleanup:
-    return dwError;
-
-error:
-    LwCADbFreeCAData(pCAData);
-    if (ppCAData)
-    {
-        *ppCAData = NULL;
-    }
-    goto cleanup;
-}
-
-VOID
-LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
-    )
-{
-    if (pCAData)
-    {
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszSubjectName);
-        LwCAFreeCertificates(pCAData->pCertificates);
-        LwCAFreeKey(pCAData->pEncryptedPrivateKey);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszCRLNumber);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszLastCRLUpdate);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszNextCRLUpdate);
-        LWCA_SAFE_FREE_STRINGA(pCAData->pszAuthBlob);
-        LWCA_SAFE_FREE_MEMORY(pCAData);
-    }
-}
-
-DWORD
 LwCACreateStringArrayFromCertArray(
     PLWCA_CERTIFICATE_ARRAY     pCertArray,
     PLWCA_STRING_ARRAY          *ppStrArray
@@ -467,30 +360,441 @@ LwCAFreeCertificate(
 }
 
 DWORD
+LwCADbCreateCAData(
+    PCSTR                       pcszSubjectName,
+    PCSTR                       pcszParentCAId,
+    PCSTR                       pcszActiveCertSKI,
+    PCSTR                       pcszAuthBlob,
+    LWCA_CA_STATUS              status,
+    PLWCA_DB_CA_DATA            *ppCAData
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_DB_CA_DATA            pCAData = NULL;
+
+    if (!ppCAData)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CA_DATA), (PVOID *)&pCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pcszSubjectName))
+    {
+        dwError = LwCAAllocateStringA(pcszSubjectName, &pCAData->pszSubjectName);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszParentCAId))
+    {
+        dwError = LwCAAllocateStringA(pcszParentCAId, &pCAData->pszParentCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszActiveCertSKI))
+    {
+        dwError = LwCAAllocateStringA(pcszActiveCertSKI, &pCAData->pszActiveCertSKI);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszAuthBlob))
+    {
+        dwError = LwCAAllocateStringA(pcszAuthBlob, &pCAData->pszAuthBlob);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    pCAData->status = status;
+
+    *ppCAData = pCAData;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pCAData);
+    if (ppCAData)
+    {
+        *ppCAData = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbCopyCAData(
+    PLWCA_DB_CA_DATA        pCADataSrc,
+    PLWCA_DB_CA_DATA        *ppCADataDst
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_DB_CA_DATA        pCAData = NULL;
+
+    if (!pCADataSrc || !ppCADataDst)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCADbCreateCAData(
+                        pCADataSrc->pszSubjectName,
+                        pCADataSrc->pszParentCAId,
+                        pCADataSrc->pszActiveCertSKI,
+                        pCADataSrc->pszAuthBlob,
+                        pCADataSrc->status,
+                        &pCAData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppCADataDst = pCAData;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeCAData(pCAData);
+    if (ppCADataDst)
+    {
+        *ppCADataDst = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+LwCADbFreeCAData(
+    PLWCA_DB_CA_DATA        pCAData
+    )
+{
+    if (pCAData)
+    {
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszSubjectName);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszParentCAId);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszActiveCertSKI);
+        LWCA_SAFE_FREE_STRINGA(pCAData->pszAuthBlob);
+        LWCA_SAFE_FREE_MEMORY(pCAData);
+    }
+}
+
+DWORD
+LwCADbCreateRootCertData(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA          pCertData,
+    PLWCA_CERTIFICATE           pRootCertPEM,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszChainOfTrust,
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    PLWCA_DB_ROOT_CERT_DATA     *ppRootCertData
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertData = NULL;
+
+    if (!ppRootCertData)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_ROOT_CERT_DATA), (PVOID*)&pRootCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pCertData)
+    {
+        dwError = LwCADbCopyCertData(pCertData, &pRootCertData->pRootCertData);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pcszCAId)
+    {
+        dwError = LwCAAllocateStringA(pcszCAId, &pRootCertData->pszCAId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pRootCertPEM)
+    {
+        dwError = LwCACreateCertificate((PSTR)pRootCertPEM, &pRootCertData->pRootCertPEM);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (pEncryptedPrivateKey)
+    {
+        dwError = LwCACopyKey(pEncryptedPrivateKey, &pRootCertData->pEncryptedPrivateKey);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszChainOfTrust))
+    {
+        dwError = LwCAAllocateStringA(pcszChainOfTrust, &pRootCertData->pszChainOfTrust);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszCRLNumber))
+    {
+        dwError = LwCAAllocateStringA(pcszCRLNumber, &pRootCertData->pszCRLNumber);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszLastCRLUpdate))
+    {
+        dwError = LwCAAllocateStringA(pcszLastCRLUpdate, &pRootCertData->pszLastCRLUpdate);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszNextCRLUpdate))
+    {
+        dwError = LwCAAllocateStringA(pcszNextCRLUpdate, &pRootCertData->pszNextCRLUpdate);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppRootCertData = pRootCertData;
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeRootCertData(pRootCertData);
+    if (ppRootCertData)
+    {
+        *ppRootCertData = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbCopyRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertDataSrc,
+    PLWCA_DB_ROOT_CERT_DATA     *ppRootCertDataDst
+    )
+{
+    DWORD                       dwError = 0;
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertData = NULL;
+
+    if (!pRootCertDataSrc || !ppRootCertDataDst)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCADbCreateRootCertData(
+                        pRootCertDataSrc->pszCAId,
+                        pRootCertDataSrc->pRootCertData,
+                        pRootCertDataSrc->pRootCertPEM,
+                        pRootCertDataSrc->pEncryptedPrivateKey,
+                        pRootCertDataSrc->pszChainOfTrust,
+                        pRootCertDataSrc->pszCRLNumber,
+                        pRootCertDataSrc->pszLastCRLUpdate,
+                        pRootCertDataSrc->pszNextCRLUpdate,
+                        &pRootCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppRootCertDataDst = pRootCertData;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeRootCertData(pRootCertData);
+    if (ppRootCertDataDst)
+    {
+        ppRootCertDataDst = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbCopyRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArraySrc,
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppRootCertDataArrayDst
+    )
+{
+    DWORD                           dwError = 0;
+    DWORD                           dwCount = 0;
+    DWORD                           dwIdx = 0;
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray = NULL;
+
+    if (!pRootCertDataArraySrc || !ppRootCertDataArrayDst)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwCount = pRootCertDataArraySrc->dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_ROOT_CERT_DATA_ARRAY), (PVOID *)&pRootCertDataArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pRootCertDataArray->dwCount = dwCount;
+
+    dwError = LwCAAllocateMemory(sizeof(PLWCA_DB_ROOT_CERT_DATA) * dwCount, (PVOID *)&pRootCertDataArray->ppRootCertData);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (; dwIdx < dwCount; ++dwIdx)
+    {
+        dwError = LwCADbCopyRootCertData(pRootCertDataArraySrc->ppRootCertData[dwIdx], &pRootCertDataArray->ppRootCertData[dwIdx]);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppRootCertDataArrayDst = pRootCertDataArray;
+
+
+cleanup:
+    return dwError;
+
+error:
+    LwCADbFreeRootCertDataArray(pRootCertDataArray);
+    if (ppRootCertDataArrayDst)
+    {
+        *ppRootCertDataArrayDst = NULL;
+    }
+    goto cleanup;
+}
+
+VOID
+LwCADbFreeRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertData
+    )
+{
+    if (pRootCertData)
+    {
+        LWCA_SAFE_FREE_STRINGA(pRootCertData->pszCAId);
+        LwCADbFreeCertData(pRootCertData->pRootCertData);
+        LwCAFreeCertificate(pRootCertData->pRootCertPEM);
+        LwCAFreeKey(pRootCertData->pEncryptedPrivateKey);
+        LWCA_SAFE_FREE_STRINGA(pRootCertData->pszChainOfTrust);
+        LWCA_SAFE_FREE_STRINGA(pRootCertData->pszCRLNumber);
+        LWCA_SAFE_FREE_STRINGA(pRootCertData->pszLastCRLUpdate);
+        LWCA_SAFE_FREE_STRINGA(pRootCertData->pszNextCRLUpdate);
+        LWCA_SAFE_FREE_MEMORY(pRootCertData);
+    }
+}
+
+VOID
+LwCADbFreeRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray
+    )
+{
+    DWORD                           dwIdx = 0;
+
+    if (pRootCertDataArray)
+    {
+        if (pRootCertDataArray->dwCount > 0 && pRootCertDataArray->ppRootCertData)
+        {
+            for (; dwIdx < pRootCertDataArray->dwCount; ++dwIdx)
+            {
+                LwCADbFreeRootCertData(pRootCertDataArray->ppRootCertData[dwIdx]);
+            }
+        }
+        LWCA_SAFE_FREE_MEMORY(pRootCertDataArray->ppRootCertData);
+        LWCA_SAFE_FREE_MEMORY(pRootCertDataArray);
+    }
+}
+
+DWORD
+LwCARootCertArrayToCertArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray,
+    PLWCA_CERTIFICATE_ARRAY         *ppCertArray
+    )
+{
+    DWORD                           dwError = 0;
+    DWORD                           dwIdx = 0;
+    DWORD                           dwCount = 0;
+    PLWCA_CERTIFICATE_ARRAY         pCertArray = NULL;
+
+    if (!pRootCertDataArray || pRootCertDataArray->dwCount < 1 || !ppCertArray)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_CERTIFICATE_ARRAY), (PVOID *)&pCertArray);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwCount = pRootCertDataArray->dwCount;
+
+    pCertArray->dwCount = dwCount;
+
+    dwError = LwCAAllocateMemory(
+                    sizeof(PLWCA_CERTIFICATE) * dwCount,
+                    (PVOID *)&pCertArray->ppCertificates);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    for (; dwIdx < dwCount; ++dwIdx)
+    {
+        dwError = LwCACreateCertificate(
+                        pRootCertDataArray->ppRootCertData[dwIdx]->pRootCertPEM,
+                        &pCertArray->ppCertificates[dwIdx]);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    *ppCertArray = pCertArray;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    LwCAFreeCertificates(pCertArray);
+    if (ppCertArray)
+    {
+        *ppCertArray = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
 LwCADbCreateCertData(
+    PCSTR                   pcszIssuer,
     PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszIssuerSerialNumber,
+    PCSTR                   pcszSKI,
+    PCSTR                   pcszAKI,
+    PCSTR                   pcszRevokedDate,
     PCSTR                   pcszTimeValidFrom,
     PCSTR                   pcszTimeValidTo,
-    DWORD                   revokedReason,
-    PCSTR                   pcszRevokedDate,
+    DWORD                   dwRevokedReason,
     LWCA_CERT_STATUS        status,
     PLWCA_DB_CERT_DATA      *ppCertData
     )
 {
-    DWORD dwError = 0;
-    PLWCA_DB_CERT_DATA pCertData = NULL;
+    DWORD                   dwError = 0;
+    PLWCA_DB_CERT_DATA      pCertData = NULL;
 
-    if (IsNullOrEmptyString(pcszSerialNumber) || !ppCertData)
+    if (!ppCertData)
     {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        BAIL_ON_LWCA_ERROR(dwError);
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
     dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pCertData);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateStringA(pcszSerialNumber, &(pCertData->pszSerialNumber));
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (!IsNullOrEmptyString(pcszIssuer))
+    {
+        dwError = LwCAAllocateStringA(pcszIssuer, &(pCertData->pszIssuer));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszSerialNumber))
+    {
+        dwError = LwCAAllocateStringA(pcszSerialNumber, &(pCertData->pszSerialNumber));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszIssuerSerialNumber))
+    {
+        dwError = LwCAAllocateStringA(pcszIssuerSerialNumber, &(pCertData->pszIssuerSerialNumber));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszSKI))
+    {
+        dwError = LwCAAllocateStringA(pcszSKI, &(pCertData->pszSKI));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszAKI))
+    {
+        dwError = LwCAAllocateStringA(pcszAKI, &(pCertData->pszAKI));
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     if (!IsNullOrEmptyString(pcszTimeValidFrom))
     {
@@ -509,7 +813,7 @@ LwCADbCreateCertData(
         dwError = LwCAAllocateStringA(pcszRevokedDate, &(pCertData->pszRevokedDate));
         BAIL_ON_LWCA_ERROR(dwError);
     }
-    pCertData->revokedReason = revokedReason;
+    pCertData->dwRevokedReason = dwRevokedReason;
     pCertData->status = status;
 
     *ppCertData = pCertData;
@@ -541,34 +845,19 @@ LwCADbCopyCertData(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateMemory(sizeof(LWCA_DB_CERT_DATA), (PVOID*)&pTempCertData);
+    dwError = LwCADbCreateCertData(
+                    pCertData->pszIssuer,
+                    pCertData->pszSerialNumber,
+                    pCertData->pszIssuerSerialNumber,
+                    pCertData->pszSKI,
+                    pCertData->pszAKI,
+                    pCertData->pszRevokedDate,
+                    pCertData->pszTimeValidFrom,
+                    pCertData->pszTimeValidTo,
+                    pCertData->dwRevokedReason,
+                    pCertData->status,
+                    &pTempCertData);
     BAIL_ON_LWCA_ERROR(dwError);
-
-    if (!IsNullOrEmptyString(pCertData->pszSerialNumber))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszSerialNumber, &pTempCertData->pszSerialNumber);
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pCertData->pszTimeValidFrom))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszTimeValidFrom, &(pTempCertData->pszTimeValidFrom));
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pCertData->pszTimeValidTo))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszTimeValidTo, &(pTempCertData->pszTimeValidTo));
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    if (!IsNullOrEmptyString(pCertData->pszRevokedDate))
-    {
-        dwError = LwCAAllocateStringA(pCertData->pszRevokedDate, &(pTempCertData->pszRevokedDate));
-        BAIL_ON_LWCA_ERROR(dwError);
-    }
-
-    pTempCertData->revokedReason = pCertData->revokedReason;
 
     *ppCertData = pTempCertData;
 
@@ -637,7 +926,11 @@ LwCADbFreeCertData(
 {
     if (pCertData != NULL)
     {
+        LWCA_SAFE_FREE_STRINGA(pCertData->pszIssuer);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszSerialNumber);
+        LWCA_SAFE_FREE_STRINGA(pCertData->pszIssuerSerialNumber);
+        LWCA_SAFE_FREE_STRINGA(pCertData->pszSKI);
+        LWCA_SAFE_FREE_STRINGA(pCertData->pszAKI);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidFrom);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszTimeValidTo);
         LWCA_SAFE_FREE_STRINGA(pCertData->pszRevokedDate);

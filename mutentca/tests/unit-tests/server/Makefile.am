@@ -2,7 +2,7 @@ SUBDIRS = \
     authz \
     common \
     plugin \
-    db \
+    #db \
     policy \
     security \
     api
