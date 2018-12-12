@@ -138,6 +138,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwDomainFunctionalLevel, VDIR_DFL_DEFAULT),
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
+        VMDIR_SF_INIT(.dwEfficientWriteOpTimeMS, 0),
         VMDIR_SF_INIT(.dwRESTWorker, 0),
         VMDIR_SF_INIT(.dwRESTLogLevelOverride, 0),
         VMDIR_SF_INIT(.bPromoted, 0),

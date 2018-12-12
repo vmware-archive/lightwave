@@ -399,4 +399,9 @@ VmDirInternalMetricsUpdate(
     PVDIR_OPERATION pOp
     );
 
+VOID
+VmDirInternalMetricsLogInefficientOp(
+    PVDIR_OPERATION pOperation
+    );
+
 #endif

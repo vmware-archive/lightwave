@@ -467,6 +467,7 @@ cleanup:
     // collect metrics
     VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
     VmDirInternalMetricsUpdate(pOperation);
+    VmDirInternalMetricsLogInefficientOp(pOperation);
 
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);

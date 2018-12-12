@@ -276,25 +276,45 @@ _VmDirRESTLogExpensiveOperation(
     uint64_t                iRespTime
     )
 {
-    PVDIR_SUPERLOG_RECORD pSupLog = &pRestOp->pConn->SuperLogRec;
-    PVDIR_REST_PERF_METRIC  pPerfMetric = &pRestOp->perfMetric;
+    PVDIR_SUPERLOG_RECORD       pSupLog = &pRestOp->pConn->SuperLogRec;
+    PVDIR_REST_PERF_METRIC      pPerfMetric = &pRestOp->perfMetric;
 
     if (operation == METRICS_LDAP_OP_SEARCH &&
-        iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
+            iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
     {
         VMDIR_LOG_WARNING(
-            VMDIR_LOG_MASK_ALL,
-            "Inefficient search %d/%d/%d/%d/%d MS - base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
-            iRespTime,
-            VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidateStartTime, pPerfMetric->iAuthTokenValidateEndTime),
-            VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidatePOPStartTime, pPerfMetric->iAuthTokenValidatePOPEndTime),
-            VMDIR_RESPONSE_TIME(pPerfMetric->iAccessTokenAcquireStartTime, pPerfMetric->iAccessTokenAcquireEndTime),
-            VMDIR_RESPONSE_TIME(pPerfMetric->iHandlerStartTime, pPerfMetric->iHandlerEndTime),
-            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszBaseDN),
-            VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszScope),
-            VDIR_SAFE_STRING(pSupLog->pszOperationParameters),
-            pSupLog->opInfo.searchInfo.dwScanned,
-            pSupLog->opInfo.searchInfo.dwReturned,
-            VDIR_SAFE_STRING(pRestOp->pConn->AccessInfo.pszBindedDn));
+                VMDIR_LOG_MASK_ALL,
+                "[REST] Inefficient search %d/%d/%d/%d/%d MS "
+                "- base=(%s), scope=%s, filter=%s, scan cnt=%d, return cnt=%d BindDN=(%s)",
+                iRespTime,
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidateStartTime,
+                    pPerfMetric->iAuthTokenValidateEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidatePOPStartTime,
+                    pPerfMetric->iAuthTokenValidatePOPEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAccessTokenAcquireStartTime,
+                    pPerfMetric->iAccessTokenAcquireEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iHandlerStartTime,
+                    pPerfMetric->iHandlerEndTime),
+                VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszBaseDN),
+                VDIR_SAFE_STRING(pSupLog->opInfo.searchInfo.pszScope),
+                VDIR_SAFE_STRING(pSupLog->pszOperationParameters),
+                pSupLog->opInfo.searchInfo.dwScanned,
+                pSupLog->opInfo.searchInfo.dwReturned,
+                VDIR_SAFE_STRING(pRestOp->pConn->AccessInfo.pszBindedDn));
+    }
+    else if (iRespTime > gVmdirServerGlobals.dwEfficientWriteOpTimeMS)
+    {
+        VMDIR_LOG_WARNING(
+                VMDIR_LOG_MASK_ALL,
+                "[REST] Inefficient write %d/%d/%d/%d/%d MS",
+                iRespTime,
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidateStartTime,
+                    pPerfMetric->iAuthTokenValidateEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAuthTokenValidatePOPStartTime,
+                    pPerfMetric->iAuthTokenValidatePOPEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iAccessTokenAcquireStartTime,
+                    pPerfMetric->iAccessTokenAcquireEndTime),
+                VMDIR_RESPONSE_TIME(pPerfMetric->iHandlerStartTime,
+                    pPerfMetric->iHandlerEndTime));
     }
 }

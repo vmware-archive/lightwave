@@ -357,6 +357,7 @@ cleanup:
     // collect metrics
     VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
     VmDirInternalMetricsUpdate(pOperation);
+    VmDirInternalMetricsLogInefficientOp(pOperation);
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {

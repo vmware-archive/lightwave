@@ -936,6 +936,7 @@ typedef enum
 #define VMDIR_REG_KEY_CURL_TIMEOUT_SEC        "CurlTimeoutSec"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+#define VMDIR_REG_KEY_EFFICIENT_WRITE_OP      "efficientWriteOpTimeMS"
 #define VMDIR_REG_KEY_REST_WORKER             "RESTWorker"
 #define VMDIR_REG_KEY_REST_LOG_LEVEL_OVERRIDE "RESTLogLevelOverride"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
