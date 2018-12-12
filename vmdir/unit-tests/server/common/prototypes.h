@@ -11,8 +11,8 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
-#ifndef METADATA_H_
-#define METADATA_H_
+#ifndef SERVER_COMMON_H_
+#define SERVER_COMMON_H_
 
 //////////////////
 // metadata.c
@@ -129,4 +129,5 @@ VOID
 VmDirValueMetaDataSerialize_InvalidInput(
     VOID    **state
     );
+
 #endif

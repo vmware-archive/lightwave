@@ -21,29 +21,24 @@ _VmDirReplPopulateAttrNewMetaData(
     USN            localUsn,
     PLW_HASHMAP    pMetaDataMap
     );
+
 /*
- * 1) Find the attribute that holds attribute meta data.
- * 2) Attributes for usnCreated/usnChanged are updated with current local USN
- * 3) If we are doing a modify/delete, attribute meta data is checked to see supplier/consumer wins.
- *        - If supplier attribute won, update its meta data with current local USN.
- *        - If consumer wins don't write corresponding attribute.
- *        - Special case: supplier lost for UsnChanged, replace the metaData with consumer's metaData.
- * 4) If no attribute metaData exists, create it.
+ * Convert AttributeMetaData to LinkedList
+ * Remove AttributeMetaData from pEntry
  */
 DWORD
-VmDirReplSetAttrNewMetaData(
-    PVDIR_OPERATION     pOperation,
-    PVDIR_ENTRY         pEntry,
-    PLW_HASHMAP*        ppMetaDataMap
+VmDirReplGetAttrMetaDataList(
+    PVDIR_ENTRY           pEntry,
+    PVDIR_LINKED_LIST*    ppMetaDataList
     )
 {
-    DWORD               dwError = LDAP_SUCCESS;
+    DWORD               dwError = 0;
     PVDIR_ATTRIBUTE     pCurrAttr = NULL;
     PVDIR_ATTRIBUTE     pPrevAttr = NULL;
     PVDIR_ATTRIBUTE     pAttrAttrMetaData = NULL;
-    PLW_HASHMAP         pMetaDataMap = NULL;
+    PVDIR_LINKED_LIST   pMetaDataList = NULL;
 
-    if (!pOperation || !pEntry || !ppMetaDataMap)
+    if (!pEntry || !ppMetaDataList)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -65,49 +60,52 @@ VmDirReplSetAttrNewMetaData(
 
             pAttrAttrMetaData = pCurrAttr;
 
-            dwError = VmDirAttributeMetaDataToHashMap(pAttrAttrMetaData, &pMetaDataMap);
+            dwError = VmDirAttributeMetaDataToList(pAttrAttrMetaData, &pMetaDataList);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            *ppMetaDataMap = pMetaDataMap;
-            continue;
-        }
-
-        if (VmDirStringCompareA(pCurrAttr->type.lberbv.bv_val, ATTR_USN_CREATED, FALSE) == 0 ||
-            VmDirStringCompareA(pCurrAttr->type.lberbv.bv_val, ATTR_USN_CHANGED, FALSE) == 0)
-        {
-            char      pszLocalUsn[VMDIR_MAX_USN_STR_LEN] = {'\0'};
-            size_t    localUsnStrlen = 0;
-
-            dwError = VmDirStringNPrintFA(
-                    pszLocalUsn,
-                    sizeof(pszLocalUsn),
-                    sizeof(pszLocalUsn) - 1,
-                    "%"PRId64,
-                    pOperation->pWriteQueueEle->usn);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            localUsnStrlen = VmDirStringLenA(pszLocalUsn);
-
-            VmDirFreeBervalContent(&pCurrAttr->vals[0]);
-
-            dwError = VmDirAllocateAndCopyMemory(pszLocalUsn, localUsnStrlen, (PVOID*)&pCurrAttr->vals[0].lberbv.bv_val);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            pCurrAttr->vals[0].lberbv.bv_len = localUsnStrlen;
-            pCurrAttr->vals[0].bOwnBvVal = TRUE;
-            continue;
+            break;
         }
     }
 
-    if (pAttrAttrMetaData == NULL)
+    *ppMetaDataList = pMetaDataList;
+
+cleanup:
+    VmDirFreeAttribute(pAttrAttrMetaData);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+/*
+ * 1) Find the attribute that holds attribute meta data.
+ * 2) Attributes for usnCreated/usnChanged are updated with current local USN
+ * 3) If we are doing a modify/delete, attribute meta data is checked to see supplier/consumer wins.
+ *        - If supplier attribute won, update its meta data with current local USN.
+ *        - If consumer wins don't write corresponding attribute.
+ *        - Special case: supplier lost for UsnChanged, replace the metaData with consumer's metaData.
+ * 4) If no attribute metaData exists, create it.
+ */
+DWORD
+VmDirReplSetAttrNewMetaData(
+    PVDIR_OPERATION     pOperation,
+    PVDIR_ENTRY         pEntry,
+    PLW_HASHMAP         pMetaDataMap
+    )
+{
+    DWORD               dwError = LDAP_SUCCESS;
+
+    if (!pOperation || !pEntry || !pMetaDataMap)
     {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: attrMetaData attribute not present in Entry: %s",
-                __FUNCTION__,
-                pEntry->dn.lberbv.bv_val);
-        BAIL_WITH_VMDIR_ERROR(dwError, LDAP_OPERATIONS_ERROR);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    dwError = VmDirEntryUpdateUsnChanged(pEntry, pOperation->pWriteQueueEle->usn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirEntryUpdateUsnCreated(pEntry, pOperation->pWriteQueueEle->usn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     if (pOperation->reqCode == LDAP_REQ_MODIFY)
     {
@@ -125,10 +123,10 @@ VmDirReplSetAttrNewMetaData(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VmDirFreeAttribute(pAttrAttrMetaData);
     return dwError;
 
 error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
     goto cleanup;
 }
 

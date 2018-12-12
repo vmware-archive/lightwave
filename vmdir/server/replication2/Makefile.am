@@ -3,10 +3,12 @@ noinst_LTLIBRARIES = libreplication.la
 
 libreplication_la_SOURCES = \
     conflictresolution.c \
-    deadlockdetectionvector.c \
+    consumer.c \
     dbcopy.c \
     dbswap.c \
+    deadlockdetectionvector.c \
     drrestore.c \
+    extractevents.c \
     firstreplcycle.c \
     globals.c \
     libmain.c \

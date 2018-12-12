@@ -482,9 +482,8 @@ VmDirGetUPNMemberships(
 
     searchOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
 
-    dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ);
+    dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = VmDirBuildMemberOfAttribute(&searchOp, entryArray.pEntry, &pMemberOf);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -508,6 +507,13 @@ VmDirGetUPNMemberships(
         }
     }
 
+    if (bHasTxn)
+    {
+        dwError = searchOp.pBEIF->pfnBETxnCommit(searchOp.pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     *pppszMemberships = ppszMemberships;
     *pdwMemberships = dwMemberships;
 
@@ -517,16 +523,16 @@ cleanup:
     {
         VmDirFreeAttribute(pMemberOf);
     }
-    if (bHasTxn)
-    {
-        searchOp.pBEIF->pfnBETxnCommit(searchOp.pBECtx);
-    }
     VmDirFreeOperationContent(&searchOp);
     VmDirFreeEntryArrayContent(&entryArray);
 
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        searchOp.pBEIF->pfnBETxnAbort(searchOp.pBECtx);
+    }
     VmDirFreeMemberships(ppszMemberships, dwMemberships);
 
     goto cleanup;

@@ -376,4 +376,38 @@ error:
     goto cleanup;
 }
 
+BOOLEAN
+VMCAStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    )
+{
+    BOOLEAN bStartsWith = FALSE;
+    PCSTR   pszRet      = NULL;
+
+    if (IsNullOrEmptyString(pszPrefix))
+    {
+        bStartsWith = TRUE;
+    }
+    else if (!IsNullOrEmptyString(pszStr))
+    {
+        if (bIsCaseSensitive)
+        {
+            pszRet = strstr(pszStr, pszPrefix);
+        }
+        else
+        {
+            pszRet = strcasestr(pszStr, pszPrefix);
+        }
+
+        if (pszRet == pszStr)
+        {
+            bStartsWith = TRUE;
+        }
+    }
+
+    return bStartsWith;
+}
+
 #endif

@@ -96,6 +96,39 @@ error:
 }
 
 DWORD
+VMCAReallocateMemoryWithInit(
+    PVOID         pMemory,
+    PVOID*        ppNewMemory,
+    size_t        dwNewSize,
+    size_t        dwOldSize
+    )
+{
+    DWORD   dwError = 0;
+    PVOID   pNewMemory = NULL;
+
+    if (dwNewSize <= dwOldSize || !ppNewMemory)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAReallocateMemory(pMemory, &pNewMemory, dwNewSize);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    memset(((char*)(pNewMemory)) + dwOldSize, 0, dwNewSize - dwOldSize);
+
+    *ppNewMemory = pNewMemory;
+
+cleanup:
+    return dwError;
+
+error:
+    VMCA_SAFE_FREE_MEMORY(pNewMemory);
+
+    goto cleanup;
+}
+
+DWORD
 VMCACopyMemory(
     PVOID       pDst,
     size_t      dstSize,
@@ -122,6 +155,39 @@ VMCACopyMemory(
 
 error:
     return dwError;
+}
+
+DWORD
+VMCAAllocateAndCopyMemory(
+    PVOID   pBlob,
+    size_t  iBlobSize,
+    PVOID*  ppOutBlob
+    )
+{
+    DWORD   dwError = 0;
+    PVOID   pMemory = NULL;
+
+    if (!pBlob || !ppOutBlob || iBlobSize < 1)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
+
+    dwError = VMCAAllocateMemory(iBlobSize, &pMemory);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VMCACopyMemory(pMemory, iBlobSize, pBlob, iBlobSize);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    *ppOutBlob = pMemory;
+
+cleanup:
+    return dwError;
+
+error:
+    VMCA_SAFE_FREE_MEMORY(pMemory);
+
+    goto cleanup;
 }
 
 VOID

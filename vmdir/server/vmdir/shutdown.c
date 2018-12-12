@@ -54,14 +54,11 @@ VmDirShutdown(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
 
-    if (!gVmdirGlobals.bPatchSchema)
-    {
-        VmDirRpcServerShutdown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
+    VmDirRpcServerShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
 
-        VmDirIpcServerShutDown();
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
-    }
+    VmDirIpcServerShutDown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
     VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);
@@ -214,6 +211,7 @@ VmDirCleanupGlobals(
 #else
     VmDirUTDVectorCacheShutdown();
 #endif
+    //TODO_REMOVE_REPLV2
     VmDirDDVectorShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
@@ -243,8 +241,11 @@ VmDirCleanupGlobals(
     VMDIR_SAFE_FREE_MUTEX(gVmdirIntegrityCheck.pMutex);
     VMDIR_SAFE_FREE_MEMORY(gVmdirIntegrityCheck.pJob);
 
+    VMDIR_SAFE_FREE_MUTEX(gVmdirDBCrossCheck.pMutex);
+
     // Free gVmdirdSDGlobals upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminGX);
+    VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminRPWPDE);
 
     VMDIR_SAFE_FREE_MUTEX(gVmDirServerOpsGlobals.pMutex);
     VmDirFreeLinkedList(gVmDirServerOpsGlobals.pWriteQueue->pList);

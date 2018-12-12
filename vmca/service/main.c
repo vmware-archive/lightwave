@@ -101,11 +101,13 @@ main(
 
     VMCA_LOG_INFO("VM Certificate Service started.");
 
+#if 0
 #ifdef REST_ENABLED
 #ifndef _WIN32
     dwError = VMCARestServiceStartup();
     BAIL_ON_VMCA_ERROR(dwError);
     VMCA_LOG_INFO("VM Certificate ReST Protocol started.");
+#endif
 #endif
 #endif
 

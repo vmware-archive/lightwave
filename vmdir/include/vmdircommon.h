@@ -173,6 +173,15 @@ typedef struct _VDIR_LINKED_LIST
 
 } VDIR_LINKED_LIST, *PVDIR_LINKED_LIST;
 
+typedef BOOLEAN (*PFN_SORTED_LINKEDLIST_INSERT_COMPARE) (const PVOID, const PVOID);
+
+typedef struct _VDIR_SORTED_LINKED_LIST
+{
+    PVDIR_LINKED_LIST                       pList;
+    PFN_SORTED_LINKEDLIST_INSERT_COMPARE    pCompareFunc;
+
+} VDIR_SORTED_LINKED_LIST, *PVDIR_SORTED_LINKED_LIST;
+
 typedef struct _VMDIR_TSSTACK
 {
     PVMDIR_MUTEX pMutex;
@@ -1126,6 +1135,7 @@ typedef enum
 
 #define VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC "WriteTimeoutInMilliSec"
 
+//TODO_REMOVE_REPLV2
 #define VMDIR_REG_KEY_EMPTY_PAGE_COUNT "ReplEmptyPageCnt"
 
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
@@ -1564,6 +1574,12 @@ VmDirLinkedListRemove(
     PVDIR_LINKED_LIST_NODE  pNode
     );
 
+DWORD
+VmDirLinkedListAppendListToTail(
+    PVDIR_LINKED_LIST    pDestList,
+    PVDIR_LINKED_LIST    pSrcList
+    );
+
 size_t
 VmDirLinkedListGetSize(
     PVDIR_LINKED_LIST   pLinkedList
@@ -1577,6 +1593,24 @@ VmDirLinkedListIsEmpty(
 VOID
 VmDirFreeLinkedList(
     PVDIR_LINKED_LIST   pLinkedList
+    );
+
+//sortedlinkedlist.c
+DWORD
+VmDirSortedLinkedListCreate(
+    PFN_SORTED_LINKEDLIST_INSERT_COMPARE    pCompareFunc,
+    PVDIR_SORTED_LINKED_LIST*               ppSortedLinkedList
+    );
+
+DWORD
+VmDirSortedLinkedListInsert(
+    PVDIR_SORTED_LINKED_LIST    pSortedList,
+    PVOID                       pElement
+    );
+
+VOID
+VmDirFreeSortedLinkedList(
+    PVDIR_SORTED_LINKED_LIST    pSortedList
     );
 
 DWORD
@@ -2791,6 +2825,15 @@ VmDirConfigSetSZKey(
     PCSTR pszKeyPath,
     PCSTR pszKeyName,
     PCSTR pszKeyValue
+    );
+
+// mergesort.c
+typedef int (*mergeSortCompareFunc) (const PVOID, const PVOID);
+
+DWORD
+VmDirMergeSort(
+    PVDIR_LINKED_LIST       pList,
+    mergeSortCompareFunc    pCompareFunc
     );
 
 #ifdef __cplusplus

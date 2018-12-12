@@ -40,6 +40,14 @@ VmDirSchemaModMutexAcquire(
     if (VmDirStringEndsWith(pszDN, SCHEMA_NAMING_CONTEXT_DN, FALSE) &&
         pszDN[SCHEMA_NAMING_CONTEXT_DN_LEN])
     {
+        if (VmDirIsInUserTxn(pOperation->pBECtx))
+        {
+            dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+              "%s: schema change not supported within user transaction %d", __func__, dwError);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
         if (pOperation->dwSchemaWriteOp == 0)
         {
             dwError = VmDirLockMutex(gVdirSchemaGlobals.cacheModMutex);

@@ -40,6 +40,8 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 
 #define UNKNOWN_STRING "UNKNOWN"
 
+#define VMCA_SUCCESS                        0
+
 #define VMCA_ROOT_CA_MISSING                70000
 #define VMCA_ROOT_CA_ALREADY_EXISTS         (VMCA_ROOT_CA_MISSING +  1)
 #define VMCA_INVALID_TIME_SPECIFIED         (VMCA_ROOT_CA_MISSING +  2)
@@ -117,6 +119,8 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_ERROR_CANNOT_LOAD_LIBRARY      (VMCA_ROOT_CA_MISSING + 73)
 #define VMCA_ERROR_NO_FILE_OR_DIRECTORY     (VMCA_ROOT_CA_MISSING + 74)
 #define VMCA_ERROR_AUTH_BAD_DATA            (VMCA_ROOT_CA_MISSING + 75)
+#define VMCA_ERROR_INVALID_REQUEST          (VMCA_ROOT_CA_MISSING + 76)
+#define VMCA_ERROR_UNAVAILABLE              (VMCA_ROOT_CA_MISSING + 77)
 
 // hashing
 #define VMCA_ERROR_EVP_DIGEST               (VMCA_ROOT_CA_MISSING + 80)
@@ -136,6 +140,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 
 #define VMCA_ERROR_TABLE_INITIALIZER \
 { \
+    { VMCA_SUCCESS                      ,   "VMCA_SUCCESS"                      ,   "The request succeded without any errors"}, \
     { VMCA_ROOT_CA_MISSING              ,   "VMCA_ROOT_CA_MISSING"              ,   "The Root CA certificate is missing or failed to Initialize" }, \
     { VMCA_ROOT_CA_ALREADY_EXISTS       ,   "VMCA_ROOT_CA_ALREADY_EXISTS"       ,   "Root CA Certificate is already present, Please use --force if you want to overwrite." }, \
     { VMCA_INVALID_TIME_SPECIFIED       ,   "VMCA_INVALID_TIME_SPECIFIED"       ,   "Invalid time specified for the Certififcate" }, \
@@ -217,6 +222,8 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_CANNOT_LOAD_LIBRARY    ,   "VMCA_ERROR_CANNOT_LOAD_LIBRARY"    ,   "Unable to load library" }, \
     { VMCA_ERROR_NO_FILE_OR_DIRECTORY   ,   "VMCA_ERROR_NO_FILE_OR_DIRECTORY"   ,   "Unable to find the specified file or directory" }, \
     { VMCA_ERROR_AUTH_BAD_DATA          ,   "VMCA_ERROR_AUTH_BAD_DATA"          ,   "Bad auth data presented" }, \
+    { VMCA_ERROR_INVALID_REQUEST        ,   "VMCA_ERROR_INVALID_REQUEST"        ,   "Bad request caused by client error"}, \
+    { VMCA_ERROR_UNAVAILABLE            ,   "VMCA_ERROR_UNAVAILABLE"            ,   "Server is unavailable/shutdown"}, \
     { VMCA_ERROR_EVP_DIGEST             ,   "VMCA_ERROR_EVP_DIGEST"             ,   "Error processing EVP digest" }, \
     { VMCA_JSON_FILE_LOAD_ERROR         ,   "VMCA_JSON_FILE_LOAD_ERROR"         ,   "Unable to load JSON file" }, \
     { VMCA_JSON_PARSE_ERROR             ,   "VMCA_JSON_PARSE_ERROR"             ,   "Failed to parse JSON file" }, \

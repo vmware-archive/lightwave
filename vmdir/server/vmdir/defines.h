@@ -24,9 +24,8 @@
 #define VMDIR_OPTION_LDAP_PORT              'p'
 #define VMDIR_OPTION_ENABLE_SYSLOG          's'
 #define VMDIR_OPTION_CONSOLE_MODE           'c'
-#define VMDIR_OPTION_PATCH_SCHEMA           'u'
 #define VMDIR_OPTION_RUN_MODE               'm' // Start server in restore or stand-alone mode
-#define VMDIR_OPTIONS_VALID                 "f:l:L:p:scum:"
+#define VMDIR_OPTIONS_VALID                 "f:l:L:p:scm:"
 
 #define VMDIR_IF_HANDLE_T rpc_if_handle_t
 #define VMDIR_RPC_BINDING_VECTOR_P_T rpc_binding_vector_p_t
@@ -52,7 +51,6 @@
 #define VMDIR_OPTION_LDAP_PORT              "-p"
 #define VMDIR_OPTION_ENABLE_SYSLOG          "-s"
 #define VMDIR_OPTION_CONSOLE_MODE           "-c"
-#define VMDIR_OPTION_PATCH_SCHEMA           "-u"
 #define VMDIR_OPTION_RUN_MODE               "-m" // Start server in restore or stand-alone mode
 
 #if defined(HAVE_DCERPC_WIN32)

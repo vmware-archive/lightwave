@@ -131,7 +131,8 @@ VmDirMDBGetAllAttrsMetaData(
 DWORD
 VmDirMDBTxnBegin(
     PVDIR_BACKEND_CTX        pBECtx,
-    VDIR_BACKEND_TXN_MODE    txnMode
+    VDIR_BACKEND_TXN_MODE    txnMode,
+    PBOOLEAN                 pBnewTxn
     );
 
 DWORD
@@ -142,6 +143,22 @@ VmDirMDBTxnAbort(
 DWORD
 VmDirMDBTxnCommit(
     PVDIR_BACKEND_CTX   pBECtx
+    );
+
+VOID
+VmDirMDBTxnAbortAll(
+    VOID
+    );
+
+BOOLEAN
+VmDirValidTxnState(
+    PVDIR_BACKEND_CTX pBECtx,
+    ber_tag_t reqCode
+    );
+
+BOOLEAN
+VmDirIsInUserTxn(
+    PVDIR_BACKEND_CTX pBECtx
     );
 
 // init.c
@@ -307,4 +324,11 @@ VmDirMDBConfigureFsync(
     BOOLEAN bFsyncOn
     );
 
+VOID
+VmDirMdbErrorLog(
+    int errnum,
+    int param,
+    const char *funname,
+    int lineno
+    );
 #endif /* MDB_STORE_INTERFACE_H_ */

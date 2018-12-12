@@ -837,7 +837,7 @@ VmDirIpcGeneratePassword(
                         NULL );
     BAIL_ON_VMDIR_ERROR (dwError);
 
-    dwError = VmDirGenerateRandomPasswordByDefaultPolicy((PSTR*)&dataContainer.data );
+    dwError = VmDirGenerateRandomInternalPassword(NULL, (PSTR*)&dataContainer.data );
     if ( dwError == ERROR_NOT_JOINED )
     {
         dwError = VmKdcGenerateRandomPassword(

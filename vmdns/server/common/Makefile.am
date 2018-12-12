@@ -12,6 +12,7 @@ noinst_LTLIBRARIES = libsrvcommon.la
 libsrvcommon_la_SOURCES = \
     cache.c               \
     dnsparser.c           \
+    dnsprotocol.c         \
     dnsutils.c            \
     forwarder.c           \
     globals.c             \
@@ -21,11 +22,12 @@ libsrvcommon_la_SOURCES = \
     metricsenums.c        \
     nameEntry.c           \
     packetlist.c          \
+    propertylist.c        \
+    propertyobject.c      \
     recordlist.c          \
     recordobject.c        \
     registry.c            \
     securityutils.c       \
-    dnsprotocol.c         \
     serviceapi.c          \
     sockinterface.c       \
     store.c               \

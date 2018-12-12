@@ -309,17 +309,19 @@ _VmDirBuildTokenGroups(
     searchOp.pBEIF = VmDirBackendSelect(ALIAS_MAIN);
 
     // begin txn
-    dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ);
+    dwError = searchOp.pBEIF->pfnBETxnBegin(searchOp.pBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     dwError = VmDirBuildMemberOfAttribute(&searchOp, pEntry, &pMemberOfAttr);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // commit txn
-    dwError = searchOp.pBEIF->pfnBETxnCommit(searchOp.pBECtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
+    if (bHasTxn)
+    {
+        dwError = searchOp.pBEIF->pfnBETxnCommit(searchOp.pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwDefaultGroupCount = VMDIR_ARRAY_SIZE(ppszDefaultGroups);
     dwEntryGroupCount = pMemberOfAttr ? pMemberOfAttr->numVals : 0;

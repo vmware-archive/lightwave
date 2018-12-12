@@ -157,6 +157,7 @@ VmDirSrvForceResetPassword(
     DWORD   dwAPIError = 0;
     PSTR    pszTargetUPN = NULL;
     PSTR    pLocalPassword = NULL;
+    PSTR    pszTargetDomain = NULL;
     DWORD   dwAPIErrorMap[] = { VMDIR_ERROR_INVALID_PARAMETER,
                                 VMDIR_ERROR_ENTRY_NOT_FOUND,
                                 VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND
@@ -168,11 +169,13 @@ VmDirSrvForceResetPassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirAllocateStringAFromW( pwszTargetUPN, &pszTargetUPN );
+    dwError = VmDirAllocateStringAFromW(pwszTargetUPN, &pszTargetUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // BUGBUG, only handle default policy now.  should to be per domain
-    dwError = VmDirGenerateRandomPasswordByDefaultPolicy(&pLocalPassword );
+    dwError = VmDirUPNToNameAndDomain(pszTargetUPN, NULL, &pszTargetDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGenerateRandomInternalPassword(pszTargetDomain, &pLocalPassword);
     BAIL_ON_VMDIR_ERROR( dwError );
 
     dwError = VmDirResetPassword( pszTargetUPN, pLocalPassword);
@@ -184,15 +187,14 @@ VmDirSrvForceResetPassword(
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s (%s)", __FUNCTION__, VDIR_SAFE_STRING(pszTargetUPN) );
 
 cleanup:
-
-    VMDIR_SAFE_FREE_MEMORY( pszTargetUPN );
+    VMDIR_SAFE_FREE_MEMORY(pszTargetUPN);
+    VMDIR_SAFE_FREE_MEMORY(pszTargetDomain);
 
     return dwAPIError;
 
 error:
-
-    VMDIR_SAFE_FREE_MEMORY( pLocalPassword );
-    VMDIR_API_ERROR_MAP( dwError, dwAPIError, dwAPIErrorMap);
+    VMDIR_SAFE_FREE_MEMORY(pLocalPassword);
+    VMDIR_API_ERROR_MAP(dwError, dwAPIError, dwAPIErrorMap);
 
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%u)(%u)(%s)",
         __FUNCTION__, dwError, dwAPIError, VDIR_SAFE_STRING(pszTargetUPN) );
@@ -249,8 +251,11 @@ Srv_RpcVmDirGeneratePassword(
     uint64_t uiStartTime = 0;
     uint64_t uiEndTime = 0;
     PSTR pszDomainDn = NULL;
+    PSTR pszDomainName = NULL;
 
     VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError);
+    dwError = VmDirDomainDNToName(pszDomainDn, &pszDomainName);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     uiStartTime = VmDirGetTimeInMilliSec();
 
@@ -263,7 +268,7 @@ Srv_RpcVmDirGeneratePassword(
     dwError = _VmDirRPCCheckAccess(hBinding, dwRpcFlags, pszDomainDn, &pAccessToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGenerateRandomPasswordByDefaultPolicy( (PSTR*)&pLocalByte );
+    dwError = VmDirGenerateRandomInternalPassword(pszDomainName,(PSTR*)&pLocalByte );
     BAIL_ON_VMDIR_ERROR( dwError );
     pwdLen = (int)VmDirStringLenA((PSTR)pLocalByte);
 
@@ -289,7 +294,8 @@ Srv_RpcVmDirGeneratePassword(
     VMDIR_LOG_DEBUG( LDAP_DEBUG_RPC, "RpcVmDirGeneratePassword passed");
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY( pLocalByte );
+    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
+    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
     if (pAccessToken)
     {
         VmDirSrvReleaseAccessToken(pAccessToken);
@@ -642,6 +648,7 @@ _RpcVmDirCreateUserInternal(
     PSTR pszDnUsers = NULL;
     PSTR pszDnDomain = NULL;
     PSTR pszDnUpn = NULL;
+    PSTR    pszPolicyDomainName = NULL;
 
     if ( IsNullOrEmptyString(pwszUserName)
      ||  IsNullOrEmptyString(pwszUPNName)
@@ -651,9 +658,24 @@ _RpcVmDirCreateUserInternal(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateStringAFromW(
+                    pwszUserName,
+                    &pszUserName
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringAFromW(
+                    pwszUPNName,
+                    &pszUPNName
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     if ( bRandKey )
     {
-        dwError = VmDirGenerateRandomPasswordByDefaultPolicy( &pszPassword);
+        dwError = VmDirUPNToNameAndDomain(pszUPNName, NULL, &pszPolicyDomainName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirGenerateRandomInternalPassword(pszPolicyDomainName, &pszPassword);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
@@ -669,18 +691,6 @@ _RpcVmDirCreateUserInternal(
                         );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-
-    dwError = VmDirAllocateStringAFromW(
-                    pwszUserName,
-                    &pszUserName
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateStringAFromW(
-                    pwszUPNName,
-                    &pszUPNName
-                    );
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     /* vdcpromo sets this key. */
     dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH,
@@ -735,6 +745,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszUserName);
     VMDIR_SAFE_FREE_MEMORY(pszPassword);
     VMDIR_SAFE_FREE_MEMORY(pszUPNName);
+    VMDIR_SAFE_FREE_MEMORY(pszPolicyDomainName);
     return dwError;
 
 error:

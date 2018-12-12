@@ -115,14 +115,38 @@ VMDNS_API
 DWORD
 VmDnsAddForwarderA(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR                    pszForwarders
+    PCSTR                   pszForwarder
     );
 
 VMDNS_API
 DWORD
 VmDnsDeleteForwarderA(
     PVMDNS_SERVER_CONTEXT   pServerContext,
-    PSTR                    pszForwarders
+    PCSTR                   pszForwarder
+    );
+
+VMDNS_API
+DWORD
+VmDnsGetZoneForwardersA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszZone,
+    PVMDNS_FORWARDERS*      ppForwarders
+    );
+
+VMDNS_API
+DWORD
+VmDnsAddZoneForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
+    );
+
+VMDNS_API
+DWORD
+VmDnsDeleteZoneForwarderA(
+    PVMDNS_SERVER_CONTEXT   pServerContext,
+    PCSTR                   pszForwarder,
+    PCSTR                   pszZone
     );
 
 VMDNS_API

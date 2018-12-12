@@ -69,6 +69,7 @@ VmDnsZoneCreate(
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
     PVMDNS_RECORD_OBJECT pSoaObject = NULL;
     PVMDNS_RECORD_LIST pRecordList = NULL;
+    PVMDNS_PROPERTY_LIST pPropertyList = NULL;
 
     dwError = VmDnsZoneCreateSoaRecord(pZoneInfo, &pSoaObject);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -79,9 +80,13 @@ VmDnsZoneCreate(
     dwError = VmDnsRecordListAdd(pRecordList, pSoaObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsStoreGetProperties(pZoneInfo->pszName, &pPropertyList);
+    BAIL_ON_VMDNS_ERROR_IF(dwError && dwError != ERROR_NOT_FOUND);
+
     dwError = VmDnsZoneCreateFromRecordList(
                         pZoneInfo->pszName,
                         pRecordList,
+                        pPropertyList,
                         &pZoneObject);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -89,6 +94,7 @@ VmDnsZoneCreate(
 
 cleanup:
     VmDnsRecordObjectRelease(pSoaObject);
+    VmDnsPropertyListRelease(pPropertyList);
     return dwError;
 
 error:
@@ -100,13 +106,18 @@ DWORD
 VmDnsZoneCreateFromRecordList(
     PCSTR szZoneName,
     PVMDNS_RECORD_LIST  pRecordList,
+    PVMDNS_PROPERTY_LIST pPropertyList,
     PVMDNS_ZONE_OBJECT  *ppZoneObject
     )
 {
     DWORD dwError = 0;
     PVMDNS_ZONE_OBJECT pZoneObject = NULL;
+    DWORD dwIndex = 0;
+    PVMDNS_PROPERTY_OBJECT pPropertyObject = NULL;
+    VMDNS_PROPERTY_ID propertyId = 0;
+    VMDNS_ZONE_ID zoneId = VMDNS_ZONE_ID_PRIMARY;
 
-    if (pRecordList->dwCurrentSize <= 0)
+    if (pRecordList && pRecordList->dwCurrentSize < 0)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -142,6 +153,28 @@ VmDnsZoneCreateFromRecordList(
                     pRecordList);
     BAIL_ON_VMDNS_ERROR(dwError);
 
+    dwError = VmDnsForwarderInit(&pZoneObject->pForwarderContext);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    if (pPropertyList)
+    {
+        for (dwIndex = 0; dwIndex < pPropertyList->dwCurrentSize; ++dwIndex)
+        {
+            pPropertyObject = VmDnsPropertyListGetProperty(pPropertyList, dwIndex);
+            if (pPropertyObject)
+            {
+                propertyId = pPropertyObject->pProperty->Id;
+                if (propertyId == VMDNS_PROPERTY_ID_ZONE_ID)
+                {
+                    zoneId = pPropertyObject->pProperty->Data.ZoneId;
+                }
+                VmDnsPropertyObjectRelease(pPropertyObject);
+            }
+        }
+    }
+
+    pZoneObject->zoneId = zoneId;
+
     *ppZoneObject = pZoneObject;
 
 cleanup:
@@ -174,6 +207,8 @@ VmDnsZoneObjectRelease(
         VMDNS_SAFE_FREE_MEMORY(pZoneObject->pszName);
 
         VmDnsUnlockWrite(pZoneObject->pLock);
+
+        VmDnsForwarderCleanup(pZoneObject->pForwarderContext);
 
         VmDnsFreeRWLock(pZoneObject->pLock);
         VMDNS_SAFE_FREE_MEMORY(pZoneObject);
@@ -252,11 +287,30 @@ VmDnsZoneCopyZoneInfo(
 
     VmDnsLockRead(pZoneObject->pLock);
 
-    dwError = VmDnsZoneGetSoaRecord(pZoneObject, &pSoaObject);
+    dwError = VmDnsAllocateStringA(pZoneObject->pszName, &pZoneInfo->pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsZoneCopySoaInfo(pZoneObject, pSoaObject, pZoneInfo);
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (pZoneObject->zoneId == VMDNS_ZONE_ID_PRIMARY)
+    {
+        dwError = VmDnsZoneGetSoaRecord(pZoneObject, &pSoaObject);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        dwError = VmDnsZoneCopySoaInfo(pZoneObject, pSoaObject, pZoneInfo);
+        BAIL_ON_VMDNS_ERROR(dwError);
+
+        if (VmDnsIsReverseZoneName(pZoneObject->pszName))
+        {
+            pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_REVERSE;
+        }
+        else
+        {
+            pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_FORWARD;
+        }
+    }
+    else if (pZoneObject->zoneId == VMDNS_ZONE_ID_FORWARDER)
+    {
+        pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_FORWARDER;
+    }
 
 cleanup:
     VmDnsUnlockRead(pZoneObject->pLock);
@@ -267,7 +321,6 @@ cleanup:
 error:
 
     goto cleanup;
-
 }
 
 DWORD
@@ -413,7 +466,7 @@ VmDnsZoneGetRecords(
     BOOLEAN             *pbNameInZone
     )
 {
-    DWORD dwError;
+    DWORD dwError = 0;
     PVMDNS_NAME_ENTRY pNameEntry = NULL;
     PVMDNS_RECORD_LIST pRecordList = NULL;
     BOOLEAN bNameInZone = FALSE;
@@ -592,13 +645,22 @@ VmDnsZoneCopySoaInfo(
     pZoneInfo->serial = pSoa->Data.SOA.dwSerialNo;
     pZoneInfo->dwFlags = pZoneObject->dwFlags;
 
-    if (VmDnsIsReverseZoneName(pZoneObject->pszName))
+    switch (pZoneObject->zoneId)
     {
-        pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_REVERSE;
-    }
-    else
-    {
-        pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_FORWARD;
+    case VMDNS_ZONE_ID_FORWARDER:
+        pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_FORWARDER;
+        break;
+    case VMDNS_ZONE_ID_PRIMARY:
+    default:
+        if (VmDnsIsReverseZoneName(pZoneObject->pszName))
+        {
+            pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_REVERSE;
+        }
+        else
+        {
+            pZoneInfo->dwZoneType = VMDNS_ZONE_TYPE_FORWARD;
+        }
+        break;
     }
 
 cleanup:

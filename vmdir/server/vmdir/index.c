@@ -16,7 +16,7 @@
 
 DWORD
 VmDirLoadIndex(
-    BOOLEAN bFirstboot
+    VOID
     )
 {
     DWORD   dwError = 0;
@@ -24,13 +24,6 @@ VmDirLoadIndex(
     PVDIR_SCHEMA_CTX        pSchemaCtx = NULL;
     PVDIR_SCHEMA_AT_DESC*   ppATDescList = NULL;
     PVDIR_INDEX_CFG         pIndexCfg = NULL;
-
-    if (bFirstboot)
-    {
-        // Firstboot should use only the default indices
-        // Nothing to load
-        goto cleanup;
-    }
 
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);

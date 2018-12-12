@@ -109,6 +109,7 @@ typedef UINT16  VMDNS_SERVICE_PROTOCOL;
 
 #define VMDNS_ZONE_TYPE_FORWARD 0
 #define VMDNS_ZONE_TYPE_REVERSE 1
+#define VMDNS_ZONE_TYPE_FORWARDER 2
 
 #define VMDNS_LABEL_LENGTH_MAX      63
 #define VMDNS_NAME_LENGTH_MAX       255
@@ -126,7 +127,7 @@ typedef UINT16  VMDNS_SERVICE_PROTOCOL;
 
 typedef struct _VMDNS_BLOB
 {
-    UINT16      unSize;  // size in octects
+    UINT16      unSize;  // size in octets
     PBYTE       pData;
 } VMDNS_BLOB, *PVMDNS_BLOB;
 
@@ -684,6 +685,68 @@ typedef struct _VMDNS_INIT_SITE_INFO
     WORD                        wPad;
 } VMDNS_INIT_SITE_INFO, *PVMDNS_INIT_SITE_INFO;
 
+#define VMDNS_ZONE_ID_CACHE             0x00
+#define VMDNS_ZONE_ID_PRIMARY           0x01
+#define VMDNS_ZONE_ID_SECONDARY         0x02
+#define VMDNS_ZONE_ID_STUB              0x03
+#define VMDNS_ZONE_ID_FORWARDER         0x04
+#define VMDNS_ZONE_ID_SECONDARY_CACHE   0x05
+
+typedef UINT8  VMDNS_ZONE_ID;
+
+#define VMDNS_PROPERTY_ID_ZONE_ID                     0x01
+#define VMDNS_PROPERTY_ID_ZONE_ALLOW_UPDATE           0x02
+#define VMDNS_PROPERTY_ID_ZONE_SECURE_TIME            0x08
+#define VMDNS_PROPERTY_ID_ZONE_NOREFRESH_INTERVAL     0x10
+#define VMDNS_PROPERTY_ID_ZONE_REFRESH_INTERVAL       0x20
+#define VMDNS_PROPERTY_ID_ZONE_AGING_STATE            0x40
+#define VMDNS_PROPERTY_ID_ZONE_SCAVENGING_SERVERS     0x11
+#define VMDNS_PROPERTY_ID_ZONE_AGING_ENABLED_TIME     0x12
+#define VMDNS_PROPERTY_ID_ZONE_DELETED_FROM_HOSTNAME  0x80
+#define VMDNS_PROPERTY_ID_ZONE_MASTER_SERVERS         0x81
+#define VMDNS_PROPERTY_ID_ZONE_AUTO_NS_SERVERS        0x82
+#define VMDNS_PROPERTY_ID_ZONE_DCPROMO_CONVERT        0x83
+#define VMDNS_PROPERTY_ID_ZONE_SCAVENGING_SERVERS_DA  0x90
+#define VMDNS_PROPERTY_ID_FORWARDERS                  0xc0
+
+typedef UINT8  VMDNS_PROPERTY_ID;
+
+typedef
+#ifdef _DCE_IDL_
+[switch_type(UINT8)]
+#endif
+union _VMDNS_PROPERTY_DATA
+{
+#ifdef _DCE_IDL_
+    [case(VMDNS_PROPERTY_ID_ZONE_ID)]
+#endif
+    VMDNS_ZONE_ID ZoneId;
+#ifdef _DCE_IDL_
+    [case(VMDNS_PROPERTY_ID_FORWARDERS)]
+#endif
+    VMDNS_FORWARDERS Forwarders;
+} VMDNS_PROPERTY_DATA;
+
+typedef VMDNS_PROPERTY_DATA* PVMDNS_PROPERTY_DATA;
+
+typedef struct _VMDNS_PROPERTY
+{
+    UINT8 DataLength;
+    VMDNS_PROPERTY_ID Id;
+#ifdef _DCE_IDL_
+    [switch_is(Id)]
+#endif
+    VMDNS_PROPERTY_DATA Data;
+} VMDNS_PROPERTY, *PVMDNS_PROPERTY;
+
+typedef struct _VMDNS_PROPERTY_ARRAY
+{
+    DWORD dwCount;
+#ifdef _DCE_IDL_
+    [size_is(dwCount)]
+#endif
+    PVMDNS_PROPERTY Properties;
+} VMDNS_PROPERTY_ARRAY, *PVMDNS_PROPERTY_ARRAY;
 
 #ifdef _DCE_IDL_
     cpp_quote("#endif")

@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libvmcasrvcommon.la
 libvmcasrvcommon_la_SOURCES = \
     config.c \
     cnpolicy.c \
+    jsonutils.c \
     ldap.c \
     opensslutil.c \
     policy.c \

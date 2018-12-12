@@ -73,6 +73,19 @@ extern "C" {
 
 typedef enum
 {
+    VDIR_BACKEND_RECORD_WRITE_CREATE = 0,
+    VDIR_BACKEND_RECORD_WRITE_UPDATE,
+    VDIR_BACKEND_RECORD_WRITE_DELETE
+} VDIR_BACKEND_RECORD_WRITE_TYPE;
+
+typedef enum
+{
+    VDIR_BACKEND_KEY_ORDER_FORWARD = 0,
+    VDIR_BACKEND_KEY_ORDER_REVERSE
+} VDIR_BACKEND_KEY_ORDER;
+
+typedef enum
+{
     VDIR_BACKEND_ENTRY_LOCK_READ = 0,
     VDIR_BACKEND_ENTRY_LOCK_WRITE
 
@@ -506,6 +519,45 @@ typedef DWORD (*PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA)(
                     );
 
 /*
+ * Function to read or validate an index table record by normalized key.
+ * if pBVValue->lberbv_val is set, this function will validate if this pBVKey/pBBValue
+ *    record exists.
+ * otherwise, it reutrns copy content of first record matches pBVKey.
+ */
+typedef DWORD (*PFN_BACKEND_INDEX_TBL_READ_RECORD)(
+                    PVDIR_BACKEND_CTX       pBECtx,
+                    VDIR_BACKEND_KEY_ORDER  keyOrder,
+                    PCSTR                   pszIndexName,
+                    PVDIR_BERVALUE          pBVKey,  // normalize key
+                    PVDIR_BERVALUE          pBVValue
+                    );
+
+/*
+ * Function to write (create/update/delete) record in backend table.
+ */
+typedef DWORD (*PFN_BACKEND_TBL_WRITE_RECORD)(
+                    PVDIR_BACKEND_CTX       pBECtx,
+                    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+                    PCSTR                   pszTableName,
+                    PVDIR_BERVALUE          pBVKey,      // normalize key
+                    PVDIR_BERVALUE          pCurrBVValue,// existing value (update/delete)
+                    PVDIR_BERVALUE          pNewBVValue  // new value      (create/update)
+                    );
+
+/*
+ * Function to write (create/update/delete) record in index table.
+ */
+typedef DWORD (*PFN_BACKEND_INDEX_TBL_WRITE_RECORD)(
+                    PVDIR_BACKEND_CTX       pBECtx,
+                    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+                    PVDIR_BERVALUE          pBVDN,       // normalized dn
+                    PCSTR                   pszIndexName,
+                    PVDIR_BERVALUE          pBVCurrentKey,  // current normalize key
+                    PVDIR_BERVALUE          pBVNewKey,      // new normalize key
+                    PVDIR_BERVALUE          pBVEID          // entry id
+                    );
+
+/*
  * Apply new matching rules to indices during schema upgrade
  * return error -
  * ERROR_BACKEND_ERROR:             all others
@@ -777,6 +829,21 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Set Max Originating USN
      */
     PFN_BACKEND_SET_MAX_ORIGINATING_USN   pfnBESetMaxOriginatingUSN;
+
+    /*
+     * read an index table by normalized key value.
+     */
+    PFN_BACKEND_INDEX_TBL_READ_RECORD     pfnBEIndexTableRead;
+
+    /*
+     * write operation to index table.
+     */
+    PFN_BACKEND_INDEX_TBL_WRITE_RECORD     pfnBEIndexTableWrite;
+
+    /*
+     * write operation to other table.
+     */
+    PFN_BACKEND_TBL_WRITE_RECORD           pfnBEBackendTableWrite;
 
 } VDIR_BACKEND_INTERFACE;
 

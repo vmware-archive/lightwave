@@ -17,6 +17,50 @@
 
 static
 DWORD
+_VmHttpClientInitTest();
+
+static
+DWORD
+_VmHttpClientSetParamTest();
+
+static
+DWORD
+_VmHttpClientChangeValueTest();
+
+static
+DWORD
+_VmHttpClientUrlEncodeTest();
+
+static
+DWORD
+_VmHttpClientStatusCodeTest();
+
+static
+DWORD
+_VmHttpClientHeaderTest();
+
+static
+DWORD
+_VmHttpClientSetBodyTest();
+
+DWORD
+VmHttpClientTest()
+{
+    DWORD dwError = 0;
+
+    dwError = _VmHttpClientInitTest();
+    dwError += _VmHttpClientSetParamTest();
+    dwError += _VmHttpClientChangeValueTest();
+    dwError += _VmHttpClientUrlEncodeTest();
+    dwError += _VmHttpClientStatusCodeTest();
+    dwError += _VmHttpClientHeaderTest();
+    dwError += _VmHttpClientSetBodyTest();
+
+    return dwError;
+}
+
+static
+DWORD
 _VmHttpClientInitTest()
 {
     DWORD dwError = 0;
@@ -143,14 +187,141 @@ error:
     goto cleanup;
 }
 
+static
 DWORD
-VmHttpClientTest()
+_VmHttpClientUrlEncodeTest()
+{
+    DWORD           dwError = 0;
+    PVM_HTTP_CLIENT pClient = NULL;
+    PCSTR           pcszDecoded = "(&(cn=testId)(objectClass=vmwCertificationAuthority))";
+    PCSTR           pcszExpectedEncoded = "%28%26%28cn%3DtestId%29%28objectClass%3DvmwCertificationAuthority%29%29";
+    PSTR            pszActualEncoded = NULL;
+
+    dwError = VmHttpClientInit(&pClient, NULL);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpUrlEncodeString(pClient, pcszDecoded, &pszActualEncoded);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (VmStringCompareA(pszActualEncoded, pcszExpectedEncoded, TRUE))
+    {
+        fprintf(stderr, "FAIL: Encode URL Expected '%s'. Got '%s'\n",
+            pcszExpectedEncoded, pszActualEncoded);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: httpclient encode URL test\n");
+
+cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszActualEncoded);
+    VmHttpClientFreeHandle(pClient);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpClientStatusCodeTest()
 {
     DWORD dwError = 0;
+    PVM_HTTP_CLIENT pClient = NULL;
+    long statusCode = 200;
+    long expectedStatusCode = 200;
+    long actualStatusCode = 0;
 
-    dwError = _VmHttpClientInitTest();
-    dwError += _VmHttpClientSetParamTest();
-    dwError += _VmHttpClientChangeValueTest();
+    dwError = VmHttpClientInit(&pClient, NULL);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
+    pClient->nStatus = statusCode;
+
+    dwError = VmHttpClientGetStatusCode(pClient, &actualStatusCode);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (actualStatusCode != expectedStatusCode)
+    {
+        fprintf(stderr, "FAIL: Status Code - Expected: %ld, Actual: %ld\n",
+            expectedStatusCode, actualStatusCode);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: httpclient status code test\n");
+
+cleanup:
+    VmHttpClientFreeHandle(pClient);
     return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpClientHeaderTest()
+{
+    DWORD           dwError = 0;
+    PVM_HTTP_CLIENT pClient = NULL;
+    PCSTR           pcszKey = "Content-Type";
+    PCSTR           pcszValue = "application/json";
+    PCSTR           pcszExpectedHeader = "Content-Type: application/json";
+    PCSTR           pcszActualHeader = NULL;
+
+    dwError = VmHttpClientInit(&pClient, NULL);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetHeader(pClient, pcszKey, pcszValue);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pcszActualHeader = pClient->pHeaders[0].data;
+    if (VmStringCompareA(pcszActualHeader, pcszExpectedHeader, TRUE))
+    {
+        fprintf(stderr, "FAIL: Set header test: Expected %s, Actual %s\n",
+            pcszExpectedHeader, pcszActualHeader);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: httpclient set header test\n");
+
+cleanup:
+    VmHttpClientFreeHandle(pClient);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+DWORD
+_VmHttpClientSetBodyTest()
+{
+    DWORD               dwError = 0;
+    PVM_HTTP_CLIENT     pClient = NULL;
+    PCSTR               pcszBody = "some random body";
+
+    dwError = VmHttpClientInit(&pClient, NULL);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmHttpClientSetBody(pClient, pcszBody);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (VmStringCompareA(pcszBody, pClient->pszBody, TRUE))
+    {
+        fprintf(stderr, "FAIL: Set body test: Expected: '%s', Actual: '%s'\n",
+            pcszBody, pClient->pszBody);
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    fprintf(stdout, "PASS: httpclient set body test\n");
+
+cleanup:
+    VmHttpClientFreeHandle(pClient);
+    return dwError;
+
+error:
+    goto cleanup;
 }

@@ -381,9 +381,8 @@ VmDirIndexingTaskRecordProgress(
     }
 
     beCtx.pBE = VmDirBackendSelect(NULL);
-    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE);
+    dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = TRUE;
 
     // record offset to continue from in case of restart
     dwError = VmDirAllocateStringPrintf(
@@ -483,21 +482,24 @@ VmDirIndexingTaskRecordProgress(
         pNode = pNode->pNext;
     }
 
-    dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
-    BAIL_ON_VMDIR_ERROR(dwError);
-    bHasTxn = FALSE;
-
-cleanup:
     if (bHasTxn)
     {
-        beCtx.pBE->pfnBETxnAbort(&beCtx);
+        dwError = beCtx.pBE->pfnBETxnCommit(&beCtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+cleanup:
     VmDirBackendCtxContentFree(&beCtx);
     VMDIR_SAFE_FREE_MEMORY(pszOffset);
     VMDIR_SAFE_FREE_MEMORY(pszStatus);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        beCtx.pBE->pfnBETxnAbort(&beCtx);
+    }
     if (dwError == VMDIR_ERROR_BACKEND_ERROR &&
             VmDirdState() != VMDIRD_STATE_NORMAL)
     {

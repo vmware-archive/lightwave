@@ -119,11 +119,7 @@ VdcSchemaFreeConn(
 {
     if (pConn)
     {
-        if (pConn->pLd)
-        {
-            ldap_unbind_ext_s(pConn->pLd, NULL, NULL);
-            pConn->pLd = NULL;
-        }
+        VDIR_SAFE_LDAP_UNBIND_EXT_S(pConn->pLd);
         VMDIR_SAFE_FREE_MEMORY(pConn->pszDomain);
         VMDIR_SAFE_FREE_MEMORY(pConn->pszHostName);
         VMDIR_SAFE_FREE_MEMORY(pConn->pszUserName);

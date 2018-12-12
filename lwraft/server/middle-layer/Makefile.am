@@ -31,7 +31,8 @@ libmiddle_layer_la_SOURCES = \
     specialsearch.c \
     srputil.c \
     libmain.c \
-    util.c
+    util.c \
+    txn.c
 
 libmiddle_layer_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \

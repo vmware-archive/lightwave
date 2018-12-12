@@ -1,11 +1,15 @@
 noinst_PROGRAMS = vmcommon_test
 
+check_PROGRAMS = vmcommon_test
+TESTS = $(check_PROGRAMS)
+
 vmcommon_test_SOURCES = \
     countertest.c \
     gaugetest.c \
     histogramtest.c \
     mixedtest.c \
     vmhttpclienttest.c \
+    vmsignaturetest.c \
     vmjsonresulttest.c \
     main.c
 

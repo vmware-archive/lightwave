@@ -62,6 +62,7 @@ typedef struct _VDIR_SCHEMA_AT_DESC
     BOOLEAN     bCollective;
     BOOLEAN     bNoUserModifiable;
     BOOLEAN     bObsolete;
+    BOOLEAN     bBlobType;
 
     VDIR_LDAP_ATTRIBUTE_TYPE_USAGE  usage;
 
@@ -221,8 +222,9 @@ VmDirPatchLocalSchemaObjects(
     );
 
 DWORD
-VmDirWriteSchemaObjects(
-    VOID
+VmDirEntryGetAllMustAttrs(
+    PVDIR_ENTRY     pEntry,
+    PLW_HASHMAP*    ppAllMustAttrMap
     );
 
 ///////////////////////////////////////////////////////////////////////////////

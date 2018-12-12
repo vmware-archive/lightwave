@@ -21,7 +21,7 @@ case "${host_os}:${host_cpu}" in
         PLATFORM_LIB_PREFIX=lib64
         ;;
     linux*:aarch64)
-        PLATFORM_LIB_PREFIX=lib
+        PLATFORM_LIB_PREFIX=lib64
         ;;
     darwin*:x86_64)
         PLATFORM_LIB_PREFIX=lib
@@ -162,6 +162,27 @@ fi
 AM_CONDITIONAL(REST_ENABLED, [$REST_ENABLED])
 
 #--------------------------------------------------------------------
+# v2 rest head flag
+
+REST_V2_ENABLED=false
+AC_ARG_ENABLE([restv2],
+    [AC_HELP_STRING([--enable-rest-v2],
+                    [enable v2 rest heads (default: disabled)])],
+    [
+        if test x"$enableval" = x"yes"
+        then
+            REST_V2_ENABLED=true
+        fi
+    ])
+
+if $REST_V2_ENABLED
+then
+AC_DEFINE_UNQUOTED(REST_V2_ENABLED, 1, [ Enable v2 rest heads ])
+fi
+
+AM_CONDITIONAL(REST_V2_ENABLED, [$REST_V2_ENABLED])
+
+#--------------------------------------------------------------------
 # datastore flag
 
 AC_ARG_WITH([datastore],
@@ -198,7 +219,7 @@ AM_CONDITIONAL(LIGHTWAVE_BUILD, [$LIGHTWAVE_BUILD])
 #--------------------------------------------------------------------
 # replication v2 flag
 
-REPLICATION_V2=false
+REPLICATION_V2=true
 AC_ARG_ENABLE([replicationv2],
     [AC_HELP_STRING([--enable-replication-v2],
                     [enable replication v2 (default: disabled)])],
@@ -266,7 +287,7 @@ case "${host_os}:${host_cpu}" in
     OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
     ;;
     linux*:aarch64)
-    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib
+    OPEN_SSL_DEFAULT_PATH=/opt/vmware/lib64
     ;;
     *)
     AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
@@ -487,7 +508,7 @@ case "${host_os}:${host_cpu}" in
     LIKEWISE_DEFAULT_PATH=$LW_BASE_PATH/lib
     ;;
     linux*:aarch64)
-    LIKEWISE_DEFAULT_PATH=$LW_BASE_PATH/lib
+    LIKEWISE_DEFAULT_PATH=$LW_BASE_PATH/lib64
     ;;
     *)
     AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
@@ -1675,6 +1696,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
                  vmdir/server/vmdir/Makefile
+                 vmdir/server/main/Makefile
                  vmdir/client/Makefile
                  vmdir/config/vmdir.reg
                  vmdir/testing/Makefile
@@ -1722,8 +1744,10 @@ AC_CONFIG_FILES([Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile
                  vmdir/unit-tests/Makefile
+                 vmdir/unit-tests/common/Makefile
                  vmdir/unit-tests/server/Makefile
                  vmdir/unit-tests/server/common/Makefile
+                 vmdir/unit-tests/server/replication2/Makefile
                  vmdns/Makefile
                  vmdns/include/Makefile
                  vmdns/include/public/Makefile
@@ -1786,6 +1810,8 @@ AC_CONFIG_FILES([Makefile
                  vmca/common/Makefile
                  vmca/service/Makefile
                  vmca/service/common/Makefile
+                 vmca/service/config/Makefile
+                 vmca/service/rest-head/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile

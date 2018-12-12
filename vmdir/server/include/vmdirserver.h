@@ -89,6 +89,7 @@ typedef struct _VMDIR_UTDVECTOR_CACHE
 
 } VMDIR_UTDVECTOR_CACHE, *PVMDIR_UTDVECTOR_CACHE;
 
+//TODO_REMOVE_REPLV2
 typedef struct _VMDIR_REPL_DEADLOCKDETECTION_VECTOR
 {
     PSTR          pszInvocationId;
@@ -135,6 +136,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // 2) At the end of LoadServerGlobals for other nodes
     BOOLEAN              bPromoted;
 
+    //TODO_REMOVE_REPLV2
     PVMDIR_REPL_DEADLOCKDETECTION_VECTOR  pReplDeadlockDetectionVector;
 
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
@@ -144,6 +146,8 @@ extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
 typedef struct _VMDIRD_SD_GLOBALS
 {
     PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminGX;
+    PSECURITY_DESCRIPTOR_RELATIVE pSDdcAdminRPWPDE;
+    ber_len_t                     ulSDdcAdminRPWPDELen;
 } VMDIRD_SD_GLOBALS;
 
 extern VMDIRD_SD_GLOBALS gVmdirdSDGlobals;
@@ -164,7 +168,6 @@ typedef struct _VMDIR_GLOBALS
     // static fields initialized during server startup.
     // their values never change, so no access protection necessary.
     PSTR                            pszBootStrapSchemaFile;
-    BOOLEAN                         bPatchSchema;
     PSTR                            pszBDBHome;
 
     BOOLEAN                         bAllowInsecureAuth;
@@ -188,7 +191,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapConnectTimeoutSec;
     DWORD                           dwOperationsThreadTimeoutInMilliSec;
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
-    DWORD                           dwEmptyPageCnt;
+    DWORD                           dwEmptyPageCnt; //TODO_REMOVE_REPLV2
     DWORD                           dwSupplierThrTimeoutInMilliSec;
     DWORD                           dwWriteTimeoutInMilliSec;
 
@@ -285,6 +288,16 @@ typedef struct _VMDIR_INTEGRITY_CHECK_GLOBALS
 } VMDIR_INTEGRITY_CHECK_GLOBALS, *PVMDIR_INTEGRITY_CHECK_GLOBALS;
 
 extern VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck;
+
+
+typedef struct _VMDIR_DB_CROSS_CHECK_GLOBALS
+{
+    PVMDIR_MUTEX    pMutex;
+    BOOLEAN         bInProgress;
+
+} VMDIR_DB_CROSS_CHECK_GLOBALS, *PVMDIR_DB_CROSS_CHECK_GLOBALS;
+
+extern VMDIR_DB_CROSS_CHECK_GLOBALS gVmdirDBCrossCheck;
 
 typedef struct _VMDIR_WRITE_QUEUE
 {

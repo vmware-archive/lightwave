@@ -103,6 +103,71 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirUTDVectorUpdateNew(
+    PVMDIR_UTDVECTOR_CACHE    pNewUTDVectorCache
+    )
+{
+    USN                origUsnInDB = 0;
+    USN                newOrigUsn = 0;
+    DWORD              dwError = 0;
+    PSTR               pszInvocationId = NULL;
+    PSTR               pszKey = NULL;
+    LW_HASHMAP_ITER    iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR    pair = {NULL, NULL};
+
+    if (!pNewUTDVectorCache)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    while (LwRtlHashMapIterate(pNewUTDVectorCache->pUtdVectorMap, &iter, &pair))
+    {
+        origUsnInDB = 0;
+        pszInvocationId = (PSTR) pair.pKey;
+        newOrigUsn = (USN) pair.pValue;
+
+        dwError = VmDirUTDVectorGlobalCacheLookup(pszInvocationId, &origUsnInDB);
+        if (dwError == LW_STATUS_NOT_FOUND)
+        {
+            dwError = 0;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (origUsnInDB > newOrigUsn)
+        {
+            dwError = VmDirAllocateStringA(pszInvocationId, &pszKey);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = LwRtlHashMapInsert(
+                    pNewUTDVectorCache->pUtdVectorMap,
+                    pszKey,
+                    (PVOID)origUsnInDB,
+                    &pair);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pszKey = NULL;
+            VmDirSimpleHashMapPairFreeKeyOnly(&pair, NULL);
+
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: smaller origUsn InvoId: %s origUsnInDB: %"PRId64 "newOrigUsn: %" PRId64,
+                    __FUNCTION__,
+                    VDIR_SAFE_STRING(pszInvocationId),
+                    origUsnInDB,
+                    newOrigUsn);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszKey);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
 VOID
 VmDirFreeUTDVectorGlobalCache(
     VOID

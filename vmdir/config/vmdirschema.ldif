@@ -209,6 +209,18 @@ objectClasses: (
          )
     )
 
+objectClasses: (
+    VMWare.DIR.objectclass.14
+    NAME 'deletedObject'
+    DESC 'Tombstone entry'
+    SUP top
+    STRUCTURAL
+    MUST ( lastKnownDn
+         $ objectGUID
+         $ nTSecurityDescriptor
+         )
+    )
+
 attributeTypes: (
     VMWare.DIR.attribute.0.1
     NAME 'vmwAttributeToIdMap'
@@ -12939,6 +12951,7 @@ objectClasses: (
         $ dnsNotifySecondaries
         $ managedBy
         $ dNSProperty
+        $ vmwDNSForwarders
         )
     )
 
@@ -21676,7 +21689,24 @@ ditstructurerules: (
 # next structurerule id = 17
 
 ############################################################
-# Indexes
+# Attribute Indices
+#
+# This file contains user application indices only.
+# Directory operational indices are maintained in
+# lwraft/server/indexcfg/defines.h.
+#
+# Attribute index definition in ABNF:
+#
+#   AttributeIndexDescription = LPAREN WSP
+#       [ SP "NAME" SP qdescrs ]      ; attribute type name
+#       [ SP "GLOBALLY-UNIQUE" ]      ; value uniqueness
+#
+# Example:
+#
+#   attributeIndices: (
+#       NAME 'example'
+#       GLOBALLY-UNIQUE
+#       )
 ############################################################
 
 attributeIndices: (

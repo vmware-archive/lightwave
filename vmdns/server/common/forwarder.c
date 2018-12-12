@@ -161,6 +161,9 @@ VmDnsGetForwarders(
     DWORD dwError = 0;
     BOOL bLocked = FALSE;
 
+    BAIL_ON_VMDNS_INVALID_POINTER(pForwarder, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(pppszForwarders, dwError);
+
     VMDNS_LOCKREAD(pForwarder->pLock);
     bLocked = TRUE;
 
@@ -234,6 +237,7 @@ error:
 DWORD
 VmDnsSetForwarders(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
+    PCSTR                       pszZone,
     DWORD                       dwCount,
     PSTR*                       ppszForwarders
     )
@@ -277,11 +281,11 @@ error:
     goto cleanup;
 }
 
-
 DWORD
 VmDnsAddForwarder(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    PCSTR                       pszForwarder
+    PCSTR                       pszForwarder,
+    PCSTR                       pszZone
     )
 {
     DWORD dwError = 0;
@@ -321,6 +325,7 @@ VmDnsAddForwarder(
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmDnsStoreSaveForwarders(
+                        pszZone,
                         pForwarder->dwCount,
                         ppszForwarders);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -353,7 +358,8 @@ error:
 DWORD
 VmDnsDeleteForwarder(
     PVMDNS_FORWARDER_CONTEXT    pForwarder,
-    PCSTR                       pszForwarder
+    PCSTR                       pszForwarder,
+    PCSTR                       pszZone
     )
 {
     DWORD dwError = 0;
@@ -385,6 +391,7 @@ VmDnsDeleteForwarder(
         BAIL_ON_VMDNS_ERROR(dwError);
 
         dwError = VmDnsStoreSaveForwarders(
+                            pszZone,
                             pForwarder->dwCount,
                             ppszForwarders);
         BAIL_ON_VMDNS_ERROR(dwError);
@@ -634,6 +641,7 @@ VmDnsReleaseForwarderPacketContext(
 
 DWORD
 VmDnsForwardRequest(
+    PVMDNS_FORWARDER_CONTEXT             pForwarderContext,
     PVMDNS_FORWARDER_PACKET_CONTEXT      pForwarderPacketContext,
     PVM_SOCK_EVENT_QUEUE                 pEventQueue,
     BOOL                                 bUseUDP
@@ -656,11 +664,8 @@ VmDnsForwardRequest(
     PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry = NULL;
     UINT64 uiExpirationTime = 0;
 
-    if (!pForwarderPacketContext)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDNS_ERROR(dwError);
-    }
+    BAIL_ON_VMDNS_INVALID_POINTER(pForwarderContext, dwError);
+    BAIL_ON_VMDNS_INVALID_POINTER(pForwarderPacketContext, dwError);
 
     pCurrentContext = VmDnsAcquireForwarderPacketContext(pForwarderPacketContext);
 
@@ -678,7 +683,7 @@ VmDnsForwardRequest(
     }
 
     dwError = VmDnsGetForwarderAtIndex(
-                                gpSrvContext->pForwarderContext,
+                                pForwarderContext,
                                 pCurrentContext->dwCurrentIndex++,
                                 &pszForwarder
                                 );

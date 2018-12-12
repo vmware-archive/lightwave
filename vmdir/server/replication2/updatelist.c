@@ -98,6 +98,7 @@ VmDirReplUpdateListFetch(
             LDAP_NO_LIMIT,
             &pSearchRes);
 
+    //TODO_REMOVE_REPLV2, busy is valid only in role exclusion case
     if (retVal == LDAP_BUSY)
     {
         VMDIR_LOG_INFO(
@@ -203,6 +204,8 @@ cleanup:
         ldap_msgfree(pSearchRes);
     }
 
+    VmDirFreeCtrlContent(&syncReqCtrl);
+    VMDIR_SAFE_FREE_MEMORY(pszFilter);
     VMDIR_SAFE_FREE_MEMORY(pszUtdVector);
     return retVal;
 
@@ -233,7 +236,7 @@ ldaperror:
  * Perform Add/Modify/Delete on entries in page
  */
 VOID
-VmDirReplUpdateListProcess(
+VmDirReplUpdateListApply(
     PVMDIR_REPLICATION_UPDATE_LIST pReplUpdateList
     )
 {
@@ -251,6 +254,68 @@ VmDirReplUpdateListProcess(
     }
 
     return;
+}
+
+DWORD
+VmDirReplUpdateListExpand(
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList
+    )
+{
+    DWORD                             dwError = 0;
+    PVDIR_SORTED_LINKED_LIST          pNewReplUpdateList = NULL;
+    PVDIR_LINKED_LIST_NODE            pCurrNode = NULL;
+    PVDIR_LINKED_LIST_NODE            pCachedPrevNode = NULL;
+
+    if (!pReplUpdateList || !pReplUpdateList->pLinkedList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirSortedLinkedListCreate(
+            VmDirSortedLinkedListInsertCompareReplUpdate, &pNewReplUpdateList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLinkedListGetTail(pReplUpdateList->pLinkedList, &pCurrNode);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (pCurrNode)
+    {
+        dwError = VmDirReplUpdateSplit(
+                (PVMDIR_REPLICATION_UPDATE) pCurrNode->pElement, pNewReplUpdateList);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        /*
+         * At this point pCurrNode->pElement (pCombinedUpdate) would have only changes
+         * wrt one USN (least USN in USN list)
+         */
+        dwError = VmDirSortedLinkedListInsert(pNewReplUpdateList, pCurrNode->pElement);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pCachedPrevNode = pCurrNode->pPrev;
+
+        dwError = VmDirLinkedListRemove(pReplUpdateList->pLinkedList, pCurrNode);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pCurrNode = pCachedPrevNode;
+    }
+
+    VmDirFreeReplUpdateListLinkedList(pReplUpdateList->pLinkedList);
+
+    pReplUpdateList->pLinkedList = pNewReplUpdateList->pList;
+    pNewReplUpdateList->pList = NULL;
+
+cleanup:
+    VmDirFreeSortedLinkedList(pNewReplUpdateList);
+    return dwError;
+
+error:
+    if (pNewReplUpdateList)
+    {
+        VmDirFreeReplUpdateListLinkedList(pNewReplUpdateList->pList);
+        pNewReplUpdateList->pList = NULL;
+    }
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
 }
 
 DWORD
@@ -292,22 +357,9 @@ VmDirFreeReplUpdateList(
     PVMDIR_REPLICATION_UPDATE_LIST pUpdateList
     )
 {
-    PVDIR_LINKED_LIST_NODE    pNode = NULL;
-    PVMDIR_REPLICATION_UPDATE pUpdate = NULL;
-
     if (pUpdateList)
     {
-        if (pUpdateList->pLinkedList)
-        {
-            pNode = pUpdateList->pLinkedList->pHead;
-            while (pNode)
-            {
-                pUpdate = (PVMDIR_REPLICATION_UPDATE) pNode->pElement;
-                VmDirFreeReplUpdate(pUpdate);
-                pNode = pNode->pNext;
-            }
-            VmDirFreeLinkedList(pUpdateList->pLinkedList);
-        }
+        VmDirFreeReplUpdateListLinkedList(pUpdateList->pLinkedList);
 
         if (pUpdateList->pNewUtdVector)
         {
@@ -329,7 +381,6 @@ VmDirReplUpdateListParseSyncDoneCtl(
     PSTR    pszStart = NULL;
     PSTR    pszEnd = NULL;
     DWORD   dwVectorLen = 0;
-    PSTR    pszOldUTDVector = NULL;
 
     retVal = VmDirStringToINT64(
                         ppSearchResCtrls[0]->ldctl_value.bv_val,
@@ -353,22 +404,11 @@ VmDirReplUpdateListParseSyncDoneCtl(
     retVal = VmDirAllocateAndCopyMemory((PVOID)pszStart, dwVectorLen, (PVOID*)&pszUTDVector);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
-    retVal = VmDirUTDVectorGlobalCacheToString(&pszOldUTDVector);
-    BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-
-    VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Updating Old UTD Vector = (%s) to New UTD Vector = (%s)",
-                __FUNCTION__,
-                pszOldUTDVector,
-                pszUTDVector);
-
     retVal = VmDirUTDVectorCacheReplace(pReplUpdateList->pNewUtdVector, pszUTDVector);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszUTDVector);
-    VMDIR_SAFE_FREE_MEMORY(pszOldUTDVector);
     return retVal;
 
 ldaperror:
@@ -378,4 +418,25 @@ ldaperror:
             __FUNCTION__,
             retVal);
     goto cleanup;
+}
+
+VOID
+VmDirFreeReplUpdateListLinkedList(
+    PVDIR_LINKED_LIST    pUpdateLinkedList
+    )
+{
+    PVDIR_LINKED_LIST_NODE       pNode = NULL;
+    PVMDIR_REPLICATION_UPDATE    pUpdate = NULL;
+
+    if (pUpdateLinkedList)
+    {
+        VmDirLinkedListGetHead(pUpdateLinkedList, &pNode);
+        while (pNode)
+        {
+            pUpdate = (PVMDIR_REPLICATION_UPDATE) pNode->pElement;
+            VmDirFreeReplUpdate(pUpdate);
+            pNode = pNode->pNext;
+        }
+        VmDirFreeLinkedList(pUpdateLinkedList);
+    }
 }

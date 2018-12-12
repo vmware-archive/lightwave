@@ -74,6 +74,7 @@ extern "C" {
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 #define INTEGRITY_CHECK_STATUS_DN               "cn=integritycheckstatus"
+#define DB_CROSS_CHECK_STATUS_DN                "cn=dbcrosscheckstatus"
 #define LDAPRPC_PING_DN                         "cn=ping,cn=ldaprpc"
 #define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
@@ -432,6 +433,8 @@ extern "C" {
 #define OC_CLUSTER_STATE_LEN            sizeof(OC_CLUSTER_STATE)-1
 #define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
+#define OC_DELETED_OBJECT               "deletedObject"
+#define OC_DELETED_OBJECT_LEN           sizeof(OC_DELETED_OBJECT)-1
 
 #define OC_TRUSTED_DOMAIN               "trustedDomain"
 #define OC_TRUSTED_DOMAIN_LEN           sizeof(OC_TRUSTED_DOMAIN)-1
@@ -524,7 +527,12 @@ extern "C" {
 #define LDAP_STATE_PING_CONTROL                 "1.3.6.1.4.1.6876.40.10.7"
 // vmw OID for password export/import. This does NOT apply to srp/krb secrets.
 #define VDIR_LDAP_CONTROL_PASSWD_BLOB           "1.3.6.1.4.1.6876.40.10.8"
+// vmw LDAP control for copying DB over LDAP
 #define LDAP_DB_COPY_CONTROL                    "1.3.6.1.4.1.6876.40.10.9"
+// vmw LDAP control for disabling a replication agreement
+#define LDAP_REPL_AGR_DISABLE_CONTROL           "1.3.6.1.4.1.6876.40.10.10"
+// vmw LDAP control for enabling a replication agreement
+#define LDAP_REPL_AGR_ENABLE_CONTROL            "1.3.6.1.4.1.6876.40.10.11"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

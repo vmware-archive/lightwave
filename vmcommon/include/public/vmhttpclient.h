@@ -27,6 +27,12 @@ typedef enum _VM_HTTP_METHOD
     VMHTTP_METHOD_PATCH
 }VM_HTTP_METHOD;
 
+typedef enum _VM_HTTP_TOKEN_TYPE
+{
+    VMHTTP_TOKEN_TYPE_BEARER,
+    VMHTTP_TOKEN_TYPE_HOTK_PK
+} VM_HTTP_TOKEN_TYPE;
+
 /*
  * Initialize http client
  */
@@ -58,6 +64,7 @@ VmHttpClientPerform(
 DWORD
 VmHttpClientSetToken(
     PVM_HTTP_CLIENT pClient,
+    VM_HTTP_TOKEN_TYPE tokenType,
     PCSTR pszToken
     );
 
@@ -70,6 +77,48 @@ DWORD
 VmHttpClientGetResult(
     PVM_HTTP_CLIENT pClient,
     PCSTR *ppszResult
+    );
+
+DWORD
+VmHttpGetRequestMethodInString(
+    VM_HTTP_METHOD  httpMethod,
+    PCSTR           *ppcszHttpMethod
+    );
+
+DWORD
+VmHttpClientRequestPOPSignature(
+    VM_HTTP_METHOD  httpMethod,
+    PCSTR           pcszRequestURI,
+    PCSTR           pcszRequestBody,
+    PCSTR           pcszPEM,
+    PCSTR           pcszRequestTime,
+    PSTR            *ppszSignature
+    );
+
+DWORD
+VmHttpClientGetStatusCode(
+    PVM_HTTP_CLIENT     pClient,
+    long                *pStatusCode
+    );
+
+DWORD
+VmHttpUrlEncodeString(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszString,
+    PSTR                *ppszEncodedString
+    );
+
+DWORD
+VmHttpClientSetHeader(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszKey,
+    PCSTR               pcszValue
+    );
+
+DWORD
+VmHttpClientSetBody(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszBody
     );
 
 /*

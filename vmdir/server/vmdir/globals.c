@@ -38,7 +38,6 @@ VMDIR_GLOBALS gVmdirGlobals =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pszBootStrapSchemaFile, NULL),
-        VMDIR_SF_INIT(.bPatchSchema, FALSE),
         VMDIR_SF_INIT(.pszBDBHome, NULL),
         VMDIR_SF_INIT(.bAllowInsecureAuth, 0),
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),
@@ -59,7 +58,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
-        VMDIR_SF_INIT(.dwEmptyPageCnt, 0),
+        VMDIR_SF_INIT(.dwEmptyPageCnt, 0),//TODO_REMOVE_REPLV2
         VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwWriteTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
@@ -149,12 +148,14 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
-        VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),
+        VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),//TODO_REMOVE_REPLV2
     };
 
 VMDIRD_SD_GLOBALS gVmdirdSDGlobals =
     {
         VMDIR_SF_INIT(.pSDdcAdminGX, NULL),
+        VMDIR_SF_INIT(.pSDdcAdminRPWPDE, NULL),
+        VMDIR_SF_INIT(.ulSDdcAdminRPWPDELen, 0),
     };
 
 VMDIR_REPLICATION_AGREEMENT * gVmdirReplAgrs = NULL;
@@ -172,6 +173,13 @@ VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
         // NOTE: order of fields MUST stay in sync with struct definition...
         VMDIR_SF_INIT(.pMutex, NULL),
         VMDIR_SF_INIT(.pJob, NULL)
+    };
+
+VMDIR_DB_CROSS_CHECK_GLOBALS gVmdirDBCrossCheck =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.bInProgress, FALSE)
     };
 
 VMDIR_BKGD_GLOBALS gVmdirBkgdGlobals =

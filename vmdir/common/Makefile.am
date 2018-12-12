@@ -21,6 +21,7 @@ libcommon_la_SOURCES = \
     logging.c \
     marshalutil.c \
     memory.c  \
+    mergesort.c \
     networkutil.c \
     networkutiluniximpl.c \
     opensslclient.c  \
@@ -30,6 +31,7 @@ libcommon_la_SOURCES = \
     rpcmemory.c  \
     securityutil.c \
     securityutiluniximpl.c \
+    sortedlinkedlist.c \
     string.c  \
     stringlist.c \
     superlogutil.c \
@@ -52,12 +54,8 @@ libcommon_la_SOURCES = \
     schema/patch.c \
     schema/resolve.c \
     schema/schema.c \
-    schema/verify.c \
-    schema/legacy/legacyload.c \
-    schema/legacy/legacypatch.c \
-    schema/legacy/legacyschema.c \
-    schema/legacy/legacyschemamod.c \
-    schema/legacy/legacyutil.c
+    schema/util.c \
+    schema/verify.c
 
 libcommon_la_CPPFLAGS = \
     -DOPENSSL_NO_KRB5 \

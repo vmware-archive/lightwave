@@ -61,10 +61,12 @@ typedef struct _VMDIR_JOIN_FLOW_INFO
 
 typedef struct _VMDIR_REPLICATION_UPDATE
 {
-    int         syncState;
-    USN         partnerUsn;
-    PSTR        pszPartner;
-    PVDIR_ENTRY pEntry;
+    int                  syncState;
+    USN                  partnerUsn;
+    PSTR                 pszPartner;
+    PVDIR_ENTRY          pEntry;
+    PVDIR_LINKED_LIST    pMetaDataList;
+    PVDIR_LINKED_LIST    pValueMetaDataList;
 } VMDIR_REPLICATION_UPDATE, *PVMDIR_REPLICATION_UPDATE;
 
 typedef struct _VMDIR_REPLICATION_UPDATE_LIST

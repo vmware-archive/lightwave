@@ -145,6 +145,8 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwHTTPListenPort;
     DWORD                           dwHTTPSListenPort;
     DWORD                           dwLdapRecvTimeoutSec;
+    DWORD                           dwLdapUserTxnRecvTimeoutMS;
+    DWORD                           dwLdapUserTxnMaxtimeMS;
     DWORD                           dwLdapConnectTimeoutSec;
     BOOLEAN                         bIsLDAPPortOpen;
     // following fields are protected by mutex
@@ -207,8 +209,6 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwRaftKeeplogs;
 
     SSL_CTX*                        gpVdirSslCtx;
-    /* write raft logs to log db if set. requires postd restart to take effect. */
-    BOOLEAN                         bUseLogDB;
 } VMDIR_GLOBALS, *PVMDIR_GLOBALSS;
 
 extern VMDIR_GLOBALS gVmdirGlobals;

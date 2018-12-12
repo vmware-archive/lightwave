@@ -91,6 +91,8 @@ typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
+typedef VOID* PVDIR_TXN_HANDLE;
+typedef VOID* PVDIR_GENERIC_BACKEND_INTERFACE;
 
 typedef struct _VMDIR_IPC_DATA_CONTAINER
 {
@@ -909,6 +911,8 @@ typedef enum
 #define VMDIR_REG_KEY_HTTP_LISTEN_PORT        "RestListenHTTPPort"
 #define VMDIR_REG_KEY_HTTPS_LISTEN_PORT       "RestListenHTTPSPort"
 #define VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC   "LdapRecvTimeoutSec"
+#define VMDIR_REG_KEY_LDAP_USER_TXN_RECV_TIMEOUT_MS "LdapUserTxnRecvTimeoutMS"
+#define VMDIR_REG_KEY_LDAP_USER_TXN_MAXTIME_MS "LdapUserTxnMaxtimeMS"
 #define VMDIR_REG_KEY_LDAP_CONNECT_TIMEOUT_SEC  "LdapConnectTimeoutSec"
 #define VMDIR_REG_KEY_ALLOW_ADMIN_LOCKOUT     "AllowAdminLockout"
 #define VMDIR_REG_KEY_MAX_OP_THREADS          "MaxLdapOpThrs"
@@ -939,7 +943,6 @@ typedef enum
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT 10
 #define VMDIR_REG_KEY_WTXN_OUTSTANDING_THRESH "WtxnOutstandingThresh"
 #define VMDIR_REG_KEY_BACKUP_TIME_TAKEN       "BackupTimeTaken"
-#define VMDIR_REG_KEY_RAFT_USE_LOGDB          "RaftUseLogDB"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -2334,6 +2337,7 @@ VmDirHexStringToBytes(
 typedef struct _VMDIR_THREAD_CONTEXT
 {
     pthread_key_t   threadLogContext;
+    pthread_key_t   threadTxnContext;
     pthread_once_t  threadContextOnce;
 } VMDIR_THREAD_CONTEXT, *PVMDIR_THREAD_CONTEXT;
 
@@ -2345,6 +2349,38 @@ typedef struct _VMDIR_THREAD_LOG_CONTEXT
     PCSTR   pszFuncName;  // we do not own this ptr
     DWORD   dwFuncLine;
 } VMDIR_THREAD_LOG_CONTEXT, *PVMDIR_THREAD_LOG_CONTEXT;
+
+typedef enum _TXN_STATE
+{
+    TXN_NONE = 0,
+    TXN_PENDING_START, //received txn start, but have not started the backend txn.
+    TXN_USER_IN_PROGRESS, //a user defined transaction in progress on the thread.
+    TXN_OP_IN_PROGRESS //transaction in progress at individual LDAP operation scope on the thread.
+} TXN_STATE, *PTXN_STATE;
+
+typedef struct _VMDIR_TXN_CONTEXT
+{
+    TXN_STATE txnState;
+    PVDIR_GENERIC_BACKEND_INTERFACE pBE; //Backend interface (mapped to the underlining DBENV)
+    PSTR pszTxnId; //Global txn identifier (RFC 5805)
+    PVDIR_TXN_HANDLE pTxnParent; //the backend transaction handle on the parent transaction
+    PVDIR_TXN_HANDLE pTxnChild; //the backend transaction handle on the child transaction
+    UINT64 txnStartTime; //the timestamp (MS) the user txn starts.
+    UINT32 txnMode; //either VDIR_BACKEND_TXN_READ(0) or VDIR_BACKEND_TXN_WRITE(1)
+} VMDIR_TXN_CONTEXT, *PVMDIR_TXN_CONTEXT;
+
+typedef struct _VMDIR_THREAD_TXN_CONTEXT
+{
+    //A thread only has one current mainDbTxnCtx, and one logDbTxnCtx.
+    // This means that we don't allow a MDB transaction to start on more than one Main DBs,
+    // and on more than one Log DBs either.
+    VMDIR_TXN_CONTEXT mainDbTxnCtx;
+    VMDIR_TXN_CONTEXT logDbTxnCtx;
+    //One or more VDIR_RAFT_LOG(s) in chgLogs which will be used to create
+    //  a single (composit) VDIR_RAFT_LOG at transaction (pre)commit.
+    // For user transaction, those logs are for the same backend.
+    DEQUE chgLogs;
+} VMDIR_THREAD_TXN_CONTEXT, *PVMDIR_THREAD_TXN_CONTEXT;
 
 DWORD
 VmDirInitThreadContext(
@@ -2367,8 +2403,18 @@ VmDirGetThreadLogContextValue(
     );
 
 DWORD
+VmDirGetThreadTxnContextValue(
+    PVMDIR_THREAD_TXN_CONTEXT*  ppThreadTxnContext
+    );
+
+DWORD
 VmDirSetThreadLogContextValue(
     PVMDIR_THREAD_LOG_CONTEXT  pThreadLogContext
+    );
+
+DWORD
+VmDirSetThreadTxnContextValue(
+    PVMDIR_THREAD_TXN_CONTEXT  pThreadTxnContext
     );
 
 VOID
@@ -2379,6 +2425,16 @@ VmDirUnsetAndFreeThrLogCtx(
 DWORD
 VmDirAllocAndSetThrLogCtx(
     PVMDIR_THREAD_LOG_CONTEXT*  ppThrLogCtx
+    );
+
+VOID
+VmDirUnsetAndFreeThrTxnCtx(
+    PVMDIR_THREAD_TXN_CONTEXT   pThrTxnCtx
+    );
+
+DWORD
+VmDirAllocAndSetThrTxnCtx(
+    PVMDIR_THREAD_TXN_CONTEXT*  ppThrTxnCtx
     );
 
 VOID

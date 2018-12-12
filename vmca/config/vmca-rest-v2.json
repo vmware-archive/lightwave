@@ -1,0 +1,45 @@
+{
+    "swagger": "2.0",
+    "info": {
+        "title": "Lightwave VMCA V2 API",
+        "version": "1.3.1"
+    },
+    "schemes": [
+        "https"
+    ],
+    "host": "IPADDRESS_MARKER",
+    "basePath": "/v2",
+    "produces": [
+        "application/json",
+        "text/plain"
+    ],
+    "paths": {
+        "/vmca": {
+            "get": {
+                "summary": "Certificate authority version",
+                "description": "Certificate authority version",
+                "produces": [
+                    "application/json"
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Returns Certificate authority version",
+                        "schema": {
+                            "$ref": "#/definitions/version"
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "definitions": {
+        "version": {
+            "type": "object",
+            "properties": {
+                "version": {
+                    "type": "string"
+                }
+            }
+        }
+    }
+}

@@ -6128,12 +6128,11 @@ _VmDirJoinPreCondition(
     PSTR    pszVersion = NULL;
     PSTR    pszSchemaFile = NULL;
     PVMDIR_CONNECTION   pConnection = NULL;
-    PVDIR_LDAP_SCHEMA   pFileSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pCurSchema = NULL;
+    PVDIR_LDAP_SCHEMA   pNewSchema = NULL;
+    PVDIR_LDAP_SCHEMA_DIFF  pSchemaDiff = NULL;
     PSTR    pszErrMsg = NULL;
     DWORD   dwDfl = 0;
-#ifndef LIGHTWAVE_BUILD
-    int     iVerCmp65 = 0;
-#endif
 
     // open connection to remote node
     dwError = VmDirConnectionOpenByHost(
@@ -6159,54 +6158,38 @@ _VmDirJoinPreCondition(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_FUNC_LVL);
     }
 
-    // get file schema
+    // get remote schema (tree)
+    dwError = VmDirLdapSchemaInit(&pCurSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirLdapSchemaLoadRemoteSchema(pCurSchema, pConnection->pLd);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // try loading file
+    dwError = VmDirLdapSchemaCopy(pCurSchema, &pNewSchema);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirGetDefaultSchemaFile(&pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaInit(&pFileSchema);
+    dwError = VmDirLdapSchemaLoadFile(pNewSchema, pszSchemaFile);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaLoadFile(pFileSchema, pszSchemaFile);
+    // compute diff
+    dwError = VmDirLdapSchemaGetDiff(pCurSchema, pNewSchema, &pSchemaDiff);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // get PSC version of remote node
-    dwError = VmDirGetPSCVersionInternal(pConnection->pLd, &pszVersion);
+    // perform patch
+    dwError = VmDirPatchRemoteSchemaObjects(pConnection->pLd, pSchemaDiff);
     BAIL_ON_VMDIR_ERROR(dwError);
-
-#ifndef LIGHTWAVE_BUILD
-    // For PSC build 6.5 and before.
-    // patch remote node so its schema is union of itself and file
-    iVerCmp65 = VmDirCompareVersion(pszVersion, "6.5");
-    if (iVerCmp65 < 0)
-    {
-        dwError = VmDirAllocateStringPrintf(&pszErrMsg,
-                "Partner version %s < 6.5.0. "
-                "Join time schema upgrade is not supported",
-                pszVersion);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VMDIR_ERROR_SCHEMA_NOT_COMPATIBLE;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else if (iVerCmp65 == 0)
-    {
-        dwError = VmDirPatchRemoteSubSchemaSubEntry(
-                pConnection->pLd, pFileSchema);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-    else
-#endif
-    {   // Lightwave or PSC(>=6.6) with new schema object model to support down an up version join
-        dwError = VmDirPatchRemoteSchemaObjects(
-                pConnection->pLd, pFileSchema);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
 cleanup:
     VmDirConnectionClose(pConnection);
     VMDIR_SAFE_FREE_MEMORY(pszSchemaFile);
     VMDIR_SAFE_FREE_MEMORY(pszVersion);
-    VmDirFreeLdapSchema(pFileSchema);
+    VmDirFreeLdapSchema(pCurSchema);
+    VmDirFreeLdapSchema(pNewSchema);
+    VmDirFreeLdapSchemaDiff(pSchemaDiff);
     return dwError;
 
 error:

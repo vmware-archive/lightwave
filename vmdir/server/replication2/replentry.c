@@ -28,8 +28,8 @@
 static
 int
 SetupReplModifyRequest(
-    PVDIR_OPERATION    modOp,
-    PVDIR_ENTRY        pEntry
+    PVDIR_OPERATION              pModOp,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
     );
 
 static
@@ -104,6 +104,7 @@ ReplAddEntry(
     retVal = VmDirInitStackOperation(&op, VDIR_OPERATION_TYPE_REPL, LDAP_REQ_ADD, NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    VMDIR_SAFE_FREE_MEMORY(op.request.addReq.pEntry);
     pEntry = op.request.addReq.pEntry = pUpdate->pEntry;
     pUpdate->pEntry = NULL;
 
@@ -138,14 +139,18 @@ ReplAddEntry(
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "%s: next generated USN: %" PRId64, __FUNCTION__, localUsn);
 
-    retVal = VmDirValueMetaDataDetachFromEntry(pEntry, &valueMetaDataQueue);
-    BAIL_ON_VMDIR_ERROR( retVal );
+    retVal = VmDirAttributeValueMetaDataListConvertToDequeue(
+            pUpdate->pValueMetaDataList, &valueMetaDataQueue);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     // need these before DetectAndResolveAttrsConflicts
     op.pszPartner = pUpdate->pszPartner;
     op.ulPartnerUSN = pUpdate->partnerUsn;
 
-    retVal = VmDirReplSetAttrNewMetaData(&op, pEntry, &pMetaDataMap);
+    retVal = VmDirAttributeMetaDataListConvertToHashMap(pUpdate->pMetaDataList, &pMetaDataMap);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirReplSetAttrNewMetaData(&op, pEntry, pMetaDataMap);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // Creating deleted object scenario: Create attributes just with attribute meta data, and no values.
@@ -232,8 +237,8 @@ cleanup:
         LwRtlFreeHashMap(&pMetaDataMap);
     }
     // pAttrAttrMetaData is local, needs to be freed within the call
-    VmDirFreeAttribute( pAttrAttrMetaData );
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttribute(pAttrAttrMetaData);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
     VmDirFreeOperationContent(&op);
 
     return retVal;
@@ -300,7 +305,7 @@ ReplDeleteEntry(
     }
 
     // SJ-TBD: What about if one or more attributes were meanwhile added to the entry? How do we purge them?
-    retVal = SetupReplModifyRequest(&delOp, pUpdate->pEntry);
+    retVal = SetupReplModifyRequest(&delOp, pUpdate);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
@@ -376,116 +381,59 @@ ReplModifyEntry(
     VDIR_OPERATION      modOp = {0};
     ModifyReq *         mr = &(modOp.request.modifyReq);
     BOOLEAN             bHasTxn = FALSE;
-    int                 deadLockRetries = 0;
-    PVDIR_ENTRY         pEntry = NULL;
     VDIR_BERVALUE       bvParentDn = VDIR_BERVALUE_INIT;
     ENTRYID             entryId = 0;
     DEQUE               valueMetaDataQueue = {0};
 
     _VmDirLogReplModifyEntryContent(pUpdate);
 
-    retVal = VmDirInitStackOperation( &modOp,
-                                      VDIR_OPERATION_TYPE_REPL,
-                                      LDAP_REQ_MODIFY,
-                                      NULL );
+    retVal = VmDirInitStackOperation(&modOp,
+                                     VDIR_OPERATION_TYPE_REPL,
+                                     LDAP_REQ_MODIFY,
+                                     NULL);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    pEntry = pUpdate->pEntry;
-    pUpdate->pEntry = NULL;
-
-    retVal = VmDirGetParentDN(&pEntry->dn, &bvParentDn);
+    retVal = VmDirGetParentDN(&pUpdate->pEntry->dn, &bvParentDn);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // Do not allow modify to tombstone entries
-    if (VmDirIsDeletedContainer(bvParentDn.lberbv.bv_val))
-    {
-        VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s: Modify Tombstone entries, dn: %s",
-            __FUNCTION__,
-            pEntry->dn.lberbv.bv_val);
-
-        if (pEntry->attrs != NULL)
-        {
-            _VmDirLogReplEntryContent(pEntry);
-        }
-        BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
-    }
-
-    retVal = ReplFixUpEntryDn(pEntry);
+    retVal = ReplFixUpEntryDn(pUpdate->pEntry);
     BAIL_ON_VMDIR_ERROR( retVal );
 
-    if (VmDirBervalContentDup( &pEntry->dn, &mr->dn ) != 0)
+    retVal = VmDirBervalContentDup(&pUpdate->pEntry->dn, &mr->dn);
+    if (retVal)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: BervalContentDup failed." );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL, "%s: BervalContentDup failed, Error: %d", __FUNCTION__, retVal);
+        BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
     }
 
     // This is strict locking order:
     // Must acquire schema modification mutex before backend write txn begins
     retVal = VmDirSchemaModMutexAcquire(&modOp);
-    BAIL_ON_VMDIR_ERROR( retVal );
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     modOp.pBEIF = VmDirBackendSelect(mr->dn.lberbv.bv_val);
     assert(modOp.pBEIF);
 
-    if((retVal = VmDirWriteQueuePush(
+    retVal = VmDirWriteQueuePush(
                     modOp.pBECtx,
                     gVmDirServerOpsGlobals.pWriteQueue,
-                    modOp.pWriteQueueEle)) != 0)
-    {
-        VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s: failed with error code: %d, error string: %s",
-            __FUNCTION__,
-            retVal,
-            VDIR_SAFE_STRING(modOp.pBEErrorMsg));
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
+                    modOp.pWriteQueueEle);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, modOp.pWriteQueueEle);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    // ************************************************************************************
-    // transaction retry loop begin.  make sure all function within are retry agnostic.
-    // ************************************************************************************
-txnretry:
-    {
-    if (bHasTxn)
-    {
-        modOp.pBEIF->pfnBETxnAbort( modOp.pBECtx );
-        bHasTxn = FALSE;
-    }
+    //Transaction needed to process existing/local attribute meta data.
+    dbRetVal = modOp.pBEIF->pfnBETxnBegin(modOp.pBECtx, VDIR_BACKEND_TXN_WRITE);
+    BAIL_ON_VMDIR_ERROR(dbRetVal);
 
-    deadLockRetries++;
-    if (deadLockRetries > MAX_DEADLOCK_RETRIES)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: Ran out of deadlock retries." );
-        retVal = LDAP_LOCK_DEADLOCK;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-
-    // Transaction needed to process existing/local attribute meta data.
-    if ((dbRetVal = modOp.pBEIF->pfnBETxnBegin( modOp.pBECtx, VDIR_BACKEND_TXN_WRITE)) != 0)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: pfnBETxnBegin failed with error code: %d, error string: %s",
-                  dbRetVal, VDIR_SAFE_STRING(modOp.pBEErrorMsg) );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
     bHasTxn = TRUE;
 
     if (mr->dn.bvnorm_val == NULL)
     {
-        if ((retVal = VmDirNormalizeDN(&mr->dn, modOp.pSchemaCtx)) != 0)
-        {
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "SetupReplModifyRequest: VmDirNormalizeDN failed on dn %s ",
-                    VDIR_SAFE_STRING(mr->dn.lberbv.bv_val));
-            retVal = LDAP_OPERATIONS_ERROR;
-            BAIL_ON_VMDIR_ERROR( retVal );
-        }
+        retVal = VmDirNormalizeDN(&mr->dn, modOp.pSchemaCtx);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
     // Get EntryId
@@ -495,59 +443,71 @@ txnretry:
         switch (retVal)
         {
             case ERROR_BACKEND_ENTRY_NOTFOUND:
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: entry %s doesn't exist error code %d",
-                                VDIR_SAFE_STRING(mr->dn.bvnorm_val), retVal);
+                VMDIR_LOG_ERROR(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: entry %s doesn't exist error code %d",
+                        __FUNCTION__,
+                        VDIR_SAFE_STRING(mr->dn.bvnorm_val),
+                        retVal);
                 break;
-            case LDAP_LOCK_DEADLOCK:
-                goto txnretry;
             default:
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: pfnBEDNToEntryId failed dn %s error code %d",
-                                VDIR_SAFE_STRING(mr->dn.bvnorm_val), retVal);
+                VMDIR_LOG_ERROR(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: pfnBEDNToEntryId failed dn %s error code %d",
+                        __FUNCTION__,
+                        VDIR_SAFE_STRING(mr->dn.bvnorm_val),
+                        retVal);
                 break;
         }
     }
-    BAIL_ON_VMDIR_ERROR( retVal );
+    BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirValueMetaDataDetachFromEntry(pEntry, &valueMetaDataQueue);
+    retVal = VmDirAttributeValueMetaDataListConvertToDequeue(
+            pUpdate->pValueMetaDataList, &valueMetaDataQueue);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     // need these before DetectAndResolveAttrsConflicts
     modOp.pszPartner = pUpdate->pszPartner;
     modOp.ulPartnerUSN = pUpdate->partnerUsn;
 
-    pEntry->eId = entryId;
-    if ((retVal = SetupReplModifyRequest(&modOp, pEntry)) != LDAP_SUCCESS)
+    pUpdate->pEntry->eId = entryId;
+
+    retVal = SetupReplModifyRequest(&modOp, pUpdate);
+    if (retVal != LDAP_SUCCESS)
     {
         PSZ_METADATA_BUF    pszMetaData = {'\0'};
 
         //Ignore error - used only for logging
-        VmDirMetaDataSerialize(pEntry->attrs[0].pMetaData, pszMetaData);
+        VmDirMetaDataSerialize(pUpdate->pEntry->attrs[0].pMetaData, pszMetaData);
 
         switch (retVal)
         {
             case LDAP_NO_SUCH_OBJECT:
-                VMDIR_LOG_WARNING(LDAP_DEBUG_REPL,
-                          "ReplModifyEntry/SetupReplModifyRequest: %d (Object does not exist). "
-                          "DN: %s, first attribute: %s, it's meta data: '%s'. "
-                          "Possible replication CONFLICT. Object will get deleted from the system. "
-                          "Partner USN %" PRId64,
-                          retVal, pEntry->dn.lberbv.bv_val, pEntry->attrs[0].type.lberbv.bv_val,
-                          pszMetaData, pUpdate->partnerUsn);
+                VMDIR_LOG_WARNING(
+                        LDAP_DEBUG_REPL,
+                        "%s: %d (Object does not exist). "
+                        "DN: %s, first attribute: %s, it's meta data: '%s'. "
+                        "Possible replication CONFLICT. Object will get deleted from the system."
+                        "Partner USN %" PRId64,
+                        __FUNCTION__,
+                        retVal,
+                        pUpdate->pEntry->dn.lberbv.bv_val,
+                        pUpdate->pEntry->attrs[0].type.lberbv.bv_val,
+                        pszMetaData,
+                        pUpdate->partnerUsn);
                 break;
-
-            case LDAP_LOCK_DEADLOCK:
-                VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
-                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). ",
-                          retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ));
-                goto txnretry; // Possible retry.
 
             default:
-                VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                          "ReplModifyEntry/SetupReplModifyRequest: %d (%s). Partner USN %" PRId64,
-                          retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ), pUpdate->partnerUsn);
+                VMDIR_LOG_ERROR(
+                        VMDIR_LOG_MASK_ALL,
+                        "%s: %d (%s). Partner USN %" PRId64,
+                        __FUNCTION__,
+                        retVal,
+                        VDIR_SAFE_STRING(modOp.ldapResult.pszErrMsg),
+                        pUpdate->partnerUsn);
                 break;
-       }
-        BAIL_ON_VMDIR_ERROR( retVal );
+        }
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
 
     // If some mods left after conflict resolution
@@ -558,25 +518,23 @@ txnretry:
 
         _VmDirLogReplModifyModContent(&modOp.request.modifyReq);
 
-        // SJ-TBD: What happens when DN of the entry has changed in the meanwhile? => conflict resolution.
+        // SJ-TBD: What happens when DN of the entry has changed in the meanwhile?
+        // =>conflict resolution.
         // Should objectGuid, instead of DN, be used to uniquely identify an object?
-        if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
+        retVal = VmDirInternalModifyEntry(&modOp);
+        if (retVal != LDAP_SUCCESS)
         {
             // If VmDirInternall call failed, reset retVal to LDAP level error space (for B/C)
             retVal = modOp.ldapResult.errCode;
 
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: InternalModifyEntry failed. Error: %d, error string %s",
-                      retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ));
+            VMDIR_LOG_ERROR(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: InternalModifyEntry Error: %d, error string %s",
+                    __FUNCTION__,
+                    retVal,
+                    VDIR_SAFE_STRING(modOp.ldapResult.pszErrMsg));
 
-            switch (retVal)
-            {
-                case LDAP_LOCK_DEADLOCK:
-                    goto txnretry; // Possible retry.
-
-                default:
-                    break;
-            }
-            BAIL_ON_VMDIR_ERROR( retVal );
+            BAIL_ON_VMDIR_ERROR(retVal);
         }
     }
 
@@ -601,34 +559,25 @@ txnretry:
         {
             _VmDirLogReplModifyModContent(&modOp.request.modifyReq);
 
-            if ((retVal = VmDirInternalModifyEntry( &modOp )) != LDAP_SUCCESS)
+            retVal = VmDirInternalModifyEntry(&modOp);
+            if (retVal != LDAP_SUCCESS)
             {
                 retVal = modOp.ldapResult.errCode;
-                switch (retVal)
-                {
-                    case LDAP_LOCK_DEADLOCK:
-                        goto txnretry;
-                    default:
-                        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: InternalModifyEntry failed. Error: %d, error string %s",
-                                        retVal, VDIR_SAFE_STRING( modOp.ldapResult.pszErrMsg ));
-                        break;
-                }
-                BAIL_ON_VMDIR_ERROR( retVal );
+                BAIL_ON_VMDIR_ERROR(retVal);
             }
         }
     }
 
-    if ((dbRetVal = modOp.pBEIF->pfnBETxnCommit( modOp.pBECtx)) != 0)
+    dbRetVal = modOp.pBEIF->pfnBETxnCommit(modOp.pBECtx);
+    if (dbRetVal)
     {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ReplModifyEntry: pfnBETxnCommit failed with error code: %d, error string: %s",
-                  dbRetVal, VDIR_SAFE_STRING(modOp.pBEErrorMsg) );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_VMDIR_ERROR( retVal );
-    }
-    bHasTxn = FALSE;
-    // ************************************************************************************
-    // transaction retry loop end.
-    // ************************************************************************************
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: pfnBETxnCommit error: %d, error string: %s",
+                __FUNCTION__,
+                dbRetVal,
+                VDIR_SAFE_STRING(modOp.pBEErrorMsg));
+        BAIL_WITH_VMDIR_ERROR(retVal, LDAP_OPERATIONS_ERROR);
     }
 
 cleanup:
@@ -638,15 +587,14 @@ cleanup:
     VmDirFreeBervalContent(&bvParentDn);
     (VOID)VmDirSchemaModMutexRelease(&modOp);
     VmDirFreeOperationContent(&modOp);
-    VmDirFreeEntry(pEntry);
-    VmDirFreeAttrValueMetaDataContent(&valueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(&valueMetaDataQueue);
 
     return retVal;
 
 error:
     if (bHasTxn)
     {
-        modOp.pBEIF->pfnBETxnAbort( modOp.pBECtx );
+        modOp.pBEIF->pfnBETxnAbort(modOp.pBECtx);
     }
 
     goto cleanup;
@@ -810,8 +758,8 @@ error:
 static
 int
 SetupReplModifyRequest(
-    VDIR_OPERATION *    pOperation,
-    PVDIR_ENTRY         pEntry
+    PVDIR_OPERATION              pOperation,
+    PVMDIR_REPLICATION_UPDATE    pUpdate
     )
 {
     int                 retVal = LDAP_SUCCESS;
@@ -829,6 +777,9 @@ SetupReplModifyRequest(
     LW_HASHMAP_ITER     iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR     pair = {NULL, NULL};
     PVMDIR_ATTRIBUTE_METADATA    pSupplierMetaData = NULL;
+    PVDIR_ENTRY         pEntry = NULL;
+
+    pEntry = pUpdate->pEntry;
 
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL, "SetupReplModifyRequest: next entry being replicated/Modified is: %s",
               pEntry->dn.lberbv.bv_val );
@@ -843,7 +794,10 @@ SetupReplModifyRequest(
     retVal = VmDirSchemaCheckSetAttrDesc(pEntry->pSchemaCtx, pEntry);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    retVal = VmDirReplSetAttrNewMetaData(pOperation, pEntry, &pMetaDataMap);
+    retVal = VmDirAttributeMetaDataListConvertToHashMap(pUpdate->pMetaDataList, &pMetaDataMap);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirReplSetAttrNewMetaData(pOperation, pEntry, pMetaDataMap);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     for (currAttr = pEntry->attrs; currAttr; currAttr = currAttr->next)
@@ -988,7 +942,8 @@ _VmDirLogReplEntryContent(
     {
         for (iCnt=0; iCnt < pAttr->numVals; iCnt++)
         {
-            PCSTR pszLogValue = (0 == VmDirStringCompareA( pAttr->type.lberbv.bv_val, ATTR_USER_PASSWORD, FALSE)) ?
+            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pAttr->type.lberbv.bv_val) ||
+                                 (pAttr->pATDesc && pAttr->pATDesc->bBlobType)) ?
                                   "XXX" : pAttr->vals[iCnt].lberbv_val;
 
             if (iCnt < MAX_NUM_CONTENT_LOG)
@@ -1071,7 +1026,8 @@ _VmDirLogReplModifyModContent(
     {
         for (iCnt=0; iCnt < pMod->attr.numVals; iCnt++)
         {
-            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val)) ?
+            PCSTR pszLogValue = (VmDirIsSensitiveAttr(pMod->attr.type.lberbv.bv_val) ||
+                                 (pMod->attr.pATDesc && pMod->attr.pATDesc->bBlobType)) ?
                                   "XXX" : pMod->attr.vals[iCnt].lberbv_val;
 
             if (iCnt < MAX_NUM_CONTENT_LOG)

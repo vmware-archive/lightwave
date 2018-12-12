@@ -139,6 +139,27 @@ VmDirMDBGetAllAttrValueMetaData(
     PDEQUE              metaValueData
     );
 
+DWORD
+VmDirMDBIndexTableReadRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_KEY_ORDER  keyOrder,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVKey,  // normalize key
+    PVDIR_BERVALUE          pBVValue // output copy of value
+    );
+
+DWORD
+VmDirBVToEntryId(
+    PVDIR_BERVALUE  pBV,
+    ENTRYID*        pEID
+    );
+
+DWORD
+VmDirEntryIdToBV(
+    ENTRYID         eId,
+    PVDIR_BERVALUE  pBV
+    );
+
 // writeutil.c
 DWORD
 VmDirMdbUpdateAttrValueMetaData(
@@ -159,6 +180,27 @@ VmDirMdbDeleteAllAttrValueMetaData(
 DWORD
 VmDirMdbApplyIndicesNewMR(
     VOID
+    );
+
+DWORD
+VmDirMDBBackendTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PCSTR                   pszTableName,
+    PVDIR_BERVALUE          pBVKey,     // normalize key
+    PVDIR_BERVALUE          pBVValue,   // existing value (update/delete)
+    PVDIR_BERVALUE          pNewBVValue // new value (create/update)
+    );
+
+DWORD
+VmDirMDBIndexTableWriteRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_RECORD_WRITE_TYPE  opType,
+    PVDIR_BERVALUE          pBVDN,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVCurrentKey,  // current normalize key
+    PVDIR_BERVALUE          pBVNewKey,      // new normalize key
+    PVDIR_BERVALUE          pBVEID          // entry id
     );
 
 // txn.c

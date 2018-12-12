@@ -227,6 +227,14 @@ extern "C" {
         }                                       \
     } while(0)
 
+#define VDIR_SAFE_FREE_LDAPDN(pLdapDN)          \
+    do {                                        \
+        if (pLdapDN) {                          \
+            ldap_dnfree(pLdapDN);               \
+            (pLdapDN) = NULL;                   \
+        }                                       \
+    } while(0)
+
 #define VMDIR_SAFE_FREE_STRINGA(PTR)      \
     do {                                  \
         if ((PTR)) {                      \
@@ -496,6 +504,36 @@ extern "C" {
                             errMsg);                \
     } while (0)
 
+#define VDIR_SAFE_LDAP_VALUE_FREE_LEN(ppVals)       \
+    do                                              \
+    {                                               \
+        if (ppVals)                                 \
+        {                                           \
+            ldap_value_free_len(ppVals);            \
+            (ppVals) = NULL;                        \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_MSGFREE(pResult)             \
+    do                                              \
+    {                                               \
+        if (pResult)                                \
+        {                                           \
+            ldap_msgfree(pResult);                  \
+            (pResult) = NULL;                       \
+        }                                           \
+    } while(0)
+
+#define VDIR_SAFE_LDAP_UNBIND_EXT_S(pLd)            \
+    do                                              \
+    {                                               \
+        if (pLd)                                    \
+        {                                           \
+            ldap_unbind_ext_s(pLd, NULL, NULL);     \
+            (pLd) = NULL;                           \
+        }                                           \
+    } while(0)
+
 // LBER call return -1 if error
 #define BAIL_ON_LBER_ERROR(dwError) \
     do                                                                          \
@@ -646,6 +684,14 @@ extern "C" {
         }                                           \
     } while(0)
 
+#define VMDIR_SAFE_LDAP_MEMFREE(pLDAPMem)           \
+    do {                                            \
+        if (pLDAPMem) {                             \
+            ldap_memfree(pLDAPMem);                 \
+            pLDAPMem = NULL;                        \
+        }                                           \
+    } while(0)
+
 #define VMDIR_GET_SYSTEM_DOMAIN_DN(pszDomainDn, dwError)                  \
     do {                                                                  \
         (pszDomainDn) = gVmdirServerGlobals.systemDomainDN.lberbv.bv_val; \
@@ -766,6 +812,17 @@ extern "C" {
                                   (c) == '.' ||   \
                                   (c) == '?' ||   \
                                   (c) == '/' )
+
+// exclude special char in auto generated password
+#define VMDIR_PASSWD_EXCLUDE_SP_CHAR(c) (  \
+                                  (c) == '!' ||   \
+                                  (c) == '$' ||   \
+                                  (c) == '%' ||   \
+                                  (c) == '&' ||   \
+                                  (c) == '\\' ||  \
+                                  (c) == '"' ||   \
+                                  (c) == '\'' ||  \
+                                  (c) == '`' )
 
 #define VMDIR_ASCII_SPACE(c) \
     ( (c) == ' ' || (c) == '\t' || (c) == '\n' || (c) == '\r' )

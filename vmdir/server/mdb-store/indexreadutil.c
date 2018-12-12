@@ -27,6 +27,22 @@ MdbScanIndex(
     ENTRYID             eStartingId
     );
 
+static
+VOID
+_MdbKeyToForwardKey(
+    PCSTR   pszKey,
+    DWORD   pszKeyLen,
+    PSTR    pszForwardKey
+    );
+
+static
+VOID
+_MdbKeyToReverseKey(
+    PCSTR   pszKey,
+    DWORD   pszKeyLen,
+    PSTR    pszReverseKey
+    );
+
 /*
  * BdbCheckIfALeafNode(): From parentid.db, check if the entryId has children.
  *
@@ -443,7 +459,7 @@ error:
     VMDIR_LOG_ERROR( LDAP_DEBUG_REPL_ATTR, "VmDirMDBGetAttrValueMetaData: error (%d),(%s)",
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "VmDirMDBGetAttrValueMetaData");
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
     VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
     goto cleanup;
 }
@@ -556,7 +572,7 @@ error:
               dwError, mdb_strerror(dwError) );
     dwError = MDBToBackendError(dwError, 0, ERROR_BACKEND_ERROR, pBECtx, "GetAttrValueMetaData");
     VMDIR_SAFE_FREE_MEMORY(pValueMetaData);
-    VmDirFreeAttrValueMetaDataContent(pValueMetaDataQueue);
+    VmDirFreeAttrValueMetaDataDequeueContent(pValueMetaDataQueue);
     goto cleanup;
 }
 
@@ -889,6 +905,166 @@ error:
     goto cleanup;
 }
 
+/*
+ * Function to read or validate record in an index table.
+ *
+ */
+DWORD
+VmDirMDBIndexTableReadRecord(
+    PVDIR_BACKEND_CTX       pBECtx,
+    VDIR_BACKEND_KEY_ORDER  keyOrder,
+    PCSTR                   pszIndexName,
+    PVDIR_BERVALUE          pBVKey,  // normalize key
+    PVDIR_BERVALUE          pBVValue // if empty, copy of first match record; otherwise, value should exists.
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bFoundRecord = FALSE;
+    PVDIR_INDEX_CFG     pIndexCfg = NULL;
+    VDIR_DB             mdbDBi = {0};
+    VDIR_DB_DBT         key = {0};
+    VDIR_DB_DBT         value = {0};
+    PVDIR_DB_DBC        pCursor = NULL;
+    unsigned int        cursorFlags = 0;
+    size_t              iKeySize = 0;
+    PSTR                pszKeyData = NULL;
+    PSTR                pszLocal = NULL;
+
+    if (!pBECtx || !pBECtx->pBEPrivate || !pszIndexName || !pBVKey || !pBVKey->bvnorm_val || !pBVValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirIndexCfgAcquire(
+        pszIndexName, VDIR_INDEX_READ, &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (!pIndexCfg)
+    {
+        goto cleanup;
+    }
+
+    dwError = VmDirMDBIndexGetDBi(pIndexCfg, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    iKeySize = pBVKey->bvnorm_len + 1;
+    dwError = VmDirAllocateMemory(iKeySize, (PVOID *)&pszKeyData);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (keyOrder == VDIR_BACKEND_KEY_ORDER_FORWARD)
+    {
+        _MdbKeyToForwardKey(pBVKey->bvnorm_val, pBVKey->bvnorm_len, pszKeyData);
+    }
+    else if (keyOrder == VDIR_BACKEND_KEY_ORDER_REVERSE)
+    {
+        _MdbKeyToReverseKey(pBVKey->bvnorm_val, pBVKey->bvnorm_len, pszKeyData);
+    }
+    else
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = mdb_cursor_open((PVDIR_DB_TXN)pBECtx->pBEPrivate, mdbDBi, &pCursor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    cursorFlags = MDB_SET_RANGE;
+    key.mv_size = iKeySize;
+    key.mv_data = pszKeyData;
+    do
+    {
+        dwError = mdb_cursor_get(pCursor, &key, &value, cursorFlags);
+        if (dwError == MDB_NOTFOUND)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_BACKEND_RECORD_NOTFOUND);
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (iKeySize != key.mv_size ||
+            memcmp(pszKeyData, key.mv_data, key.mv_size))
+        {   // key mismatch
+            break;
+        }
+
+        if (pBVValue->lberbv_val == NULL
+            ||
+            (pBVValue->lberbv_len == value.mv_size &&
+             memcmp(pBVValue->lberbv_val, value.mv_data, value.mv_size) == 0))
+        {
+            bFoundRecord = TRUE;
+            break;
+        }
+
+        cursorFlags = MDB_NEXT;
+    } while (TRUE);
+
+    if (!bFoundRecord)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_BACKEND_RECORD_NOTFOUND);
+    }
+
+    if (!pBVValue->lberbv_val)
+    {
+        dwError = VmDirAllocateAndCopyMemory(
+            value.mv_data, value.mv_size + 1, (PVOID*)&pszLocal);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pszLocal[value.mv_size] = '\0';
+        pBVValue->lberbv_val = pszLocal;
+        pBVValue->lberbv_len = value.mv_size;
+        pBVValue->bOwnBvVal = TRUE;
+        pszLocal = NULL;
+    }
+
+cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
+    if (pCursor != NULL)
+    {
+        mdb_cursor_close(pCursor);
+    }
+    VMDIR_SAFE_FREE_MEMORY(pszKeyData);
+    VMDIR_SAFE_FREE_MEMORY(pszLocal);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+static
+VOID
+_MdbKeyToForwardKey(
+    PCSTR   pszKey,
+    DWORD   pszKeyLen,
+    PSTR    pszForwardKey
+    )
+{
+    ber_len_t     j = 0;
+
+    pszForwardKey[0] = BE_INDEX_KEY_TYPE_FWD;
+    for (j=0; j<pszKeyLen; j++)
+    {
+        pszForwardKey[j+1] = pszKey[j];
+    }
+}
+
+static
+VOID
+_MdbKeyToReverseKey(
+    PCSTR   pszKey,
+    DWORD   pszKeyLen,
+    PSTR    pszReverseKey
+    )
+{
+    ber_len_t     j = 0;
+    ber_len_t     k = 0;
+
+    pszReverseKey[0] = BE_INDEX_KEY_TYPE_REV;
+    for (j=pszKeyLen, k=1; j > 0; j--, k++)
+    {
+        pszReverseKey[k] = pszKey[j-1];
+    }
+}
+
 /* MDBEntryIdToDBT: Convert EntryId (db_seq_t/long long) to sequence of bytes (going from high order bytes to lower
  * order bytes) to be stored in BDB.
  *
@@ -913,6 +1089,39 @@ MDBEntryIdToDBT(
     }
 }
 
+DWORD
+VmDirEntryIdToBV(
+    ENTRYID         eId,
+    PVDIR_BERVALUE  pBV
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_DB_DBT value = {0};
+    unsigned char   eIdBytes[sizeof(ENTRYID)] = {0};
+
+    if (!pBV || pBV->lberbv_len < sizeof(ENTRYID))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    value.mv_data =  &eIdBytes[0];
+    value.mv_size = sizeof(ENTRYID);
+    MDBEntryIdToDBT(eId, &value);
+
+    dwError = VmDirCopyMemory(
+        pBV->lberbv_val,
+        pBV->lberbv_len,
+        value.mv_data,
+        value.mv_size);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBV->bvnorm_len = pBV->lberbv_len = value.mv_size;
+    pBV->bvnorm_val = pBV->lberbv_val;
+
+error:
+    return dwError;
+}
+
 /* DBTToEntryId: Convert DBT data bytes sequence to EntryId (db_seq_t/long long).
  *
  */
@@ -929,6 +1138,29 @@ MDBDBTToEntryId(
         *pEID <<= 8;
         *pEID |= (unsigned char) ((unsigned char *)(pDBT->mv_data))[i];
     }
+}
+
+DWORD
+VmDirBVToEntryId(
+    PVDIR_BERVALUE  pBV,
+    ENTRYID*        pEID
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_DB_DBT value = {0};
+
+    if (!pBV || !pBV->lberbv_val || !pEID)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    value.mv_data = pBV->lberbv_val;
+    value.mv_size = pBV->lberbv_len;
+
+    MDBDBTToEntryId(&value, pEID);
+
+error:
+    return dwError;
 }
 
 /*

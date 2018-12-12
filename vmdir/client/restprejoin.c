@@ -255,7 +255,9 @@ _VmDirRestClientPrejoinAtomic(
                   &pszUrl);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmHttpClientSetToken(pHttpClient, pszToken);
+    dwError = VmHttpClientSetToken(pHttpClient,
+                                   VMHTTP_TOKEN_TYPE_BEARER,
+                                   pszToken);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmHttpClientPerform(pHttpClient, VMHTTP_METHOD_POST, pszUrl);

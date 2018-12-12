@@ -444,7 +444,34 @@ VmDnsRpcAddForwarder(
     dwError = VmDnsCheckAccess(hBinding, TRUE);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsSrvAddForwarder(pszForwarder);
+    dwError = VmDnsSrvAddForwarder(pszForwarder, NULL);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+UINT32
+VmDnsRpcAddZoneForwarder(
+    handle_t            hBinding,
+    PDNS_STRING         pszForwarder,
+    PDNS_STRING         pszZone
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+
+    BAIL_ON_VMDNS_EMPTY_STRING(pszForwarder, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszZone, dwError);
+
+    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvAddForwarder(pszForwarder, pszZone);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
@@ -461,7 +488,6 @@ VmDnsRpcFreeForwarders(
     PVMDNS_FORWARDERS   pDnsForwarders
     )
 {
-
     if (pDnsForwarders)
     {
         if (pDnsForwarders->ppszName)
@@ -555,6 +581,63 @@ VmDnsRpcGetForwarders(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSrvGetForwarders(
+                        NULL,
+                        &ppszForwarders,
+                        &dwCount);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsRpcAllocateForwarders(
+                    ppszForwarders,
+                    dwCount,
+                    &pDnsForwarders);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *ppDnsForwarders = pDnsForwarders;
+
+cleanup:
+
+    if (ppszForwarders)
+    {
+        VmDnsFreeStringCountedArrayA(ppszForwarders, dwCount);
+    }
+
+    return dwError;
+
+error:
+
+    if (ppDnsForwarders)
+    {
+        *ppDnsForwarders = NULL;
+    }
+
+    if (pDnsForwarders)
+    {
+        VmDnsRpcFreeForwarders(pDnsForwarders);
+    }
+
+    goto cleanup;
+}
+
+UINT32
+VmDnsRpcGetZoneForwarders(
+    handle_t hBinding,
+    PDNS_STRING pszZone,
+    PVMDNS_FORWARDERS* ppDnsForwarders
+    )
+{
+    DWORD dwError = 0;
+    PDNS_STRING* ppszForwarders = NULL;
+    DWORD dwCount = 0;
+    PVMDNS_FORWARDERS pDnsForwarders = NULL;
+
+    BAIL_ON_VMDNS_INVALID_POINTER(ppDnsForwarders, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszZone, dwError);
+
+    dwError = VmDnsCheckAccess(hBinding, FALSE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvGetForwarders(
+                        pszZone,
                         &ppszForwarders,
                         &dwCount);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -605,14 +688,44 @@ VmDnsRpcDeleteForwarder(
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsSrvDeleteForwarder(
-                        pszForwarder);
+                        pszForwarder,
+                        NULL);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
 
     return dwError;
+
 error:
 
     goto cleanup;
 }
 
+UINT32
+VmDnsRpcDeleteZoneForwarder(
+    handle_t hBinding,
+    PDNS_STRING     pszForwarder,
+    PDNS_STRING     pszZone
+    )
+{
+    DWORD dwError = 0;
+
+    BAIL_ON_VMDNS_EMPTY_STRING(pszForwarder, dwError);
+    BAIL_ON_VMDNS_EMPTY_STRING(pszForwarder, dwError);
+
+    dwError = VmDnsCheckAccess(hBinding, TRUE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmDnsSrvDeleteForwarder(
+                        pszForwarder,
+                        pszZone);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}

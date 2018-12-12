@@ -387,6 +387,42 @@ VmDirSASLSockbufRemove(
     Sockbuf*        pSockbuf
     );
 
+// schema.c
+DWORD
+VmDirPluginSchemaLibUpdatePreModify(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaEntryPreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePreAdd(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    );
+
+DWORD
+VmDirPluginSchemaLibUpdatePostAddCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwResult
+    );
+
 // srputil.c
 DWORD
 VmDirSRPSetSecret(
@@ -432,6 +468,11 @@ BOOLEAN
 VmDirIsSearchForIntegrityCheckStatus(
     PVDIR_OPERATION                     pOp,
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
+    );
+
+BOOLEAN
+VmDirIsSearchForDBCrossCheckStatus(
+    PVDIR_OPERATION                     pOp
     );
 
 // util.c

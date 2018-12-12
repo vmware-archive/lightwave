@@ -14,6 +14,19 @@
 
 #include "includes.h"
 
+
+static
+DWORD
+_BuildStringToSign(
+    PCSTR    pcszRequestMethod,
+    PCSTR    pcszRequestBody,
+    PCSTR    pcszContentType,
+    PCSTR    pcszRequestTime,
+    PCSTR    pcszRequestURI,
+    PSTR     *ppszHashedRawStr,
+    size_t   *pHashRawLen
+    );
+
 static
 DWORD
 _VmHttpClientSetCurlOptInt(
@@ -155,9 +168,8 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-_VmHttpUrlEncodeString(
+VmHttpUrlEncodeString(
     PVM_HTTP_CLIENT pClient,
     PCSTR pszString,
     PSTR *ppszEncodedString
@@ -216,10 +228,10 @@ VmHttpClientSetQueryParam(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    dwError = _VmHttpUrlEncodeString(pClient, pszKey, &pszEncodedKey);
+    dwError = VmHttpUrlEncodeString(pClient, pszKey, &pszEncodedKey);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    dwError = _VmHttpUrlEncodeString(pClient, pszValue, &pszEncodedValue);
+    dwError = VmHttpUrlEncodeString(pClient, pszValue, &pszEncodedValue);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = LwRtlHashMapInsert(
@@ -462,13 +474,90 @@ error:
 }
 
 DWORD
+VmHttpClientSetHeader(
+    PVM_HTTP_CLIENT pClient,
+    PCSTR           pcszKey,
+    PCSTR           pcszValue
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszHeader = NULL;
+
+    dwError = VmAllocateStringPrintf(&pszHeader,
+                                     "%s: %s",
+                                     pcszKey,
+                                     pcszValue
+                                     );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pClient->pHeaders = curl_slist_append(pClient->pHeaders, pszHeader);
+    if (!pClient->pHeaders)
+    {
+        dwError = VM_COMMON_ERROR_CURL_FAILURE;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pszHeader);
+
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientSetBody(
+    PVM_HTTP_CLIENT     pClient,
+    PCSTR               pcszBody
+    )
+{
+    DWORD       dwError = 0;
+
+    dwError = VmAllocateStringA(pcszBody, &(pClient->pszBody));
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pClient->pszBody);
+    goto cleanup;
+}
+
+DWORD
+VmHttpClientGetStatusCode(
+    PVM_HTTP_CLIENT pClient,
+    long    *pStatusCode
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pClient || !pStatusCode)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    *pStatusCode = pClient->nStatus;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmHttpClientSetToken(
     PVM_HTTP_CLIENT pClient,
+    VM_HTTP_TOKEN_TYPE tokenType,
     PCSTR pszToken
     )
 {
     DWORD dwError = 0;
     PSTR pszHeaderAuth = NULL;
+    PSTR pszHeaderAuthTokenType = NULL;
 
     if (!pClient || IsNullOrEmptyString(pszToken))
     {
@@ -476,9 +565,22 @@ VmHttpClientSetToken(
         BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
+    switch (tokenType)
+    {
+        case VMHTTP_TOKEN_TYPE_BEARER:
+            pszHeaderAuthTokenType = HEADER_BEARER_AUTH;
+            break;
+        case VMHTTP_TOKEN_TYPE_HOTK_PK:
+            pszHeaderAuthTokenType = HEADER_HOTK_PK_AUTH;
+            break;
+        default:
+            dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
     dwError = VmAllocateStringPrintf(
                         &pszHeaderAuth,
-                        "Authorization: Bearer %s",
+                        pszHeaderAuthTokenType,
                         pszToken);
     pClient->pHeaders = curl_slist_append(pClient->pHeaders, pszHeaderAuth);
 
@@ -533,6 +635,111 @@ error:
     return dwError;
 }
 
+DWORD
+VmHttpClientRequestPOPSignature(
+    VM_HTTP_METHOD  httpMethod,
+    PCSTR           pcszRequestURI,
+    PCSTR           pcszRequestBody,
+    PCSTR           pcszPEM,
+    PCSTR           pcszRequestTime,
+    PSTR            *ppszSignature
+    )
+{
+    DWORD           dwError = 0;
+    size_t          requestBodyLen = 0;
+    unsigned char   *pszHashedBody = NULL;
+    size_t          hashedBodyLen = 0;
+    PSTR            pszHashedBodyHex = NULL;
+    PCSTR           pszMethod = NULL;
+    PSTR            pszToSign = NULL;
+    PSTR            pszTrimBody = NULL;
+    size_t          toSignLen = 0;
+    unsigned char   *pszRSARaw = NULL;
+    size_t          rsaRawLen = 0;
+    PSTR            pszSignature = NULL;
+
+
+    if (IsNullOrEmptyString(pcszRequestURI) ||
+        IsNullOrEmptyString(pcszPEM) ||
+        IsNullOrEmptyString(pcszRequestTime) ||
+        !ppszSignature
+        )
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmHttpGetRequestMethodInString(httpMethod, &pszMethod);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmAllocateStringA(VM_COMMON_SAFE_STRING(pcszRequestBody),
+                                &pszTrimBody);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    VmStringTrimSpace(pszTrimBody);
+
+    if (!IsNullOrEmptyString(pszTrimBody))
+    {
+        requestBodyLen = VmStringLenA(pszTrimBody);
+        dwError = VmSignatureComputeMessageDigest(VMSIGN_DIGEST_METHOD_SHA256,
+                                                  pszTrimBody,
+                                                  requestBodyLen,
+                                                  &pszHashedBody,
+                                                  &hashedBodyLen
+                                                  );
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        dwError = VmSignatureEncodeHex(pszHashedBody,
+                                       hashedBodyLen,
+                                       &pszHashedBodyHex
+                                       );
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = _BuildStringToSign(pszMethod,
+                                 pszHashedBodyHex,
+                                 VM_COMMON_HTTP_CONTENT_TYPE_JSON,
+                                 pcszRequestTime,
+                                 pcszRequestURI,
+                                 &pszToSign,
+                                 &toSignLen
+                                 );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmSignatureComputeRSASignature(VMSIGN_DIGEST_METHOD_SHA256,
+                                             pszToSign,
+                                             toSignLen,
+                                             pcszPEM,
+                                             &pszRSARaw,
+                                             &rsaRawLen
+                                             );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    dwError = VmSignatureEncodeHex(pszRSARaw, rsaRawLen, &pszSignature);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    *ppszSignature = pszSignature;
+
+cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszHashedBody);
+    VM_COMMON_SAFE_FREE_STRINGA(pszTrimBody);
+    VM_COMMON_SAFE_FREE_STRINGA(pszHashedBodyHex);
+    VM_COMMON_SAFE_FREE_STRINGA(pszToSign);
+    VM_COMMON_SAFE_FREE_STRINGA(pszRSARaw);
+
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pszSignature);
+    if (ppszSignature)
+    {
+        *ppszSignature = NULL;
+    }
+
+    goto cleanup;
+
+}
+
 static
 VOID
 _VmCommonFreeStringMapPair(
@@ -572,4 +779,103 @@ VmHttpClientFreeHandle(
         }
         VmFreeMemory(pClient);
     }
+}
+
+DWORD
+VmHttpGetRequestMethodInString(
+    VM_HTTP_METHOD  httpMethod,
+    PCSTR           *ppcszHttpMethod
+    )
+{
+    DWORD   dwError = 0;
+    PCSTR    pcszHttpMethod = NULL;
+
+    switch (httpMethod)
+    {
+        case VMHTTP_METHOD_GET:
+            pcszHttpMethod = "GET";
+            break;
+
+        case VMHTTP_METHOD_POST:
+            pcszHttpMethod = "POST";
+            break;
+
+        case VMHTTP_METHOD_PUT:
+            pcszHttpMethod = "PUT";
+            break;
+
+        case VMHTTP_METHOD_DELETE:
+            pcszHttpMethod = "DELETE";
+            break;
+
+        case VMHTTP_METHOD_PATCH:
+            pcszHttpMethod = "PATCH";
+            break;
+
+        default:
+            dwError = VM_COMMON_UNSUPPORTED_HTTP_METHOD;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    *ppcszHttpMethod = pcszHttpMethod;
+
+error:
+    return dwError;
+}
+
+static
+DWORD
+_BuildStringToSign(
+    PCSTR   pcszRequestMethod,
+    PCSTR   pcszRequestBody,
+    PCSTR   pcszContentType,
+    PCSTR   pcszRequestTime,
+    PCSTR   pcszRequestURI,
+    PSTR    *ppszRaw,
+    size_t  *ppRawStrLen
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszRaw = NULL;
+
+    if (IsNullOrEmptyString(pcszRequestMethod) ||
+        IsNullOrEmptyString(pcszContentType) ||
+        IsNullOrEmptyString(pcszRequestTime) ||
+        IsNullOrEmptyString(pcszRequestURI) ||
+        !ppszRaw ||
+        !ppRawStrLen
+        )
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmAllocateStringPrintf(&pszRaw,
+                                     "%s\n%s\n%s\n%s\n%s",
+                                     pcszRequestMethod,
+                                     VM_COMMON_SAFE_STRING(pcszRequestBody),
+                                     pcszContentType,
+                                     pcszRequestTime,
+                                     pcszRequestURI
+                                    );
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    *ppszRaw = pszRaw;
+    *ppRawStrLen = VmStringLenA(pszRaw);
+
+cleanup:
+    return dwError;
+
+error:
+    VM_COMMON_SAFE_FREE_STRINGA(pszRaw);
+    if (ppszRaw)
+    {
+        *ppszRaw = NULL;
+    }
+    if (ppRawStrLen)
+    {
+        *ppRawStrLen = 0;
+    }
+
+    goto cleanup;
 }

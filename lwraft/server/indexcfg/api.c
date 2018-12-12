@@ -209,9 +209,8 @@ VmDirIndexUpdateBegin(
         PVDIR_BACKEND_INTERFACE pBE = VmDirBackendSelect(NULL);
         pIndexUpd->pBECtx->pBE = pBE;
 
-        dwError = pBE->pfnBETxnBegin(pIndexUpd->pBECtx, VDIR_BACKEND_TXN_WRITE);
+        dwError = pBE->pfnBETxnBegin(pIndexUpd->pBECtx, VDIR_BACKEND_TXN_WRITE, &(pIndexUpd->bHasBETxn));
         BAIL_ON_VMDIR_ERROR(dwError);
-        pIndexUpd->bHasBETxn = TRUE;
     }
 
     *ppIndexUpd = pIndexUpd;
@@ -264,8 +263,8 @@ VmDirIndexUpdateCommit(
         PVDIR_BACKEND_INTERFACE pBE = pIndexUpd->pBECtx->pBE;
 
         dwError = pBE->pfnBETxnCommit(pIndexUpd->pBECtx);
-        BAIL_ON_VMDIR_ERROR(dwError);
         pIndexUpd->bHasBETxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     VmDirIndexUpdFree(gVdirIndexGlobals.pIndexUpd);
@@ -473,6 +472,7 @@ VmDirIndexAddUniquenessScope(
     PVDIR_INDEX_CFG pCurCfg = NULL;
     PVDIR_INDEX_CFG pUpdCfg = NULL;
     PVDIR_INDEX_CFG pNewCfg = NULL;
+    PSTR pszLocalErrorMsg = NULL;
 
     if (!pIndexUpd || IsNullOrEmptyString(pszAttrName) || !ppszUniqScopes)
     {
@@ -505,7 +505,7 @@ VmDirIndexAddUniquenessScope(
          pUpdCfg->status == VDIR_INDEXING_VALIDATING_SCOPES)
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "validating scope in progress");
     }
 
     for (i = 0; ppszUniqScopes[i]; i++)
@@ -518,11 +518,12 @@ VmDirIndexAddUniquenessScope(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return dwError;
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+            "%s failed, error (%d) - %s", __FUNCTION__, dwError, VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     VmDirFreeIndexCfg(pNewCfg);
     goto cleanup;
@@ -542,6 +543,7 @@ VmDirIndexDeleteUniquenessScope(
     PVDIR_INDEX_CFG pCurCfg = NULL;
     PVDIR_INDEX_CFG pUpdCfg = NULL;
     PVDIR_INDEX_CFG pNewCfg = NULL;
+    PSTR pszLocalErrorMsg = NULL;
 
     if (!pIndexUpd || IsNullOrEmptyString(pszAttrName) || !ppszUniqScopes)
     {
@@ -574,7 +576,7 @@ VmDirIndexDeleteUniquenessScope(
          pUpdCfg->status == VDIR_INDEXING_VALIDATING_SCOPES)
     {
         dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, (pszLocalErrorMsg), "validating scope in progress");
     }
 
     for (i = 0; ppszUniqScopes[i]; i++)
@@ -587,11 +589,12 @@ VmDirIndexDeleteUniquenessScope(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszLocalErrorMsg);
     return dwError;
 
 error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+            "%s failed, error (%d) - %s", __FUNCTION__, dwError, VDIR_SAFE_STRING(pszLocalErrorMsg));
 
     VmDirFreeIndexCfg(pNewCfg);
     goto cleanup;

@@ -37,4 +37,9 @@ VmStringCompareA(
     BOOLEAN bIsCaseSensitive
     );
 
+VOID
+VmStringTrimSpace(
+    PSTR pszStr
+    );
+
 #endif /* __VM_COMMON_STRING_H__ */

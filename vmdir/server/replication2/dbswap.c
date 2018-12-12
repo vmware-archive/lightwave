@@ -56,24 +56,14 @@ VmDirSwapDB(
     )
 {
     DWORD       dwError = LDAP_SUCCESS;
-    BOOLEAN     bLegacyDataLoaded = FALSE;
 
     dwError = _VmDirSwapDBInternal(dbHomeDir, LIGHTWAVE_TMP_DIR);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VmDirdStateSet(VMDIRD_STATE_STARTUP);
 
-    dwError = VmDirInitBackend(&bLegacyDataLoaded);
+    dwError = VmDirInitBackend();
     BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (bLegacyDataLoaded)
-    {
-        dwError = VmDirPatchLocalSubSchemaSubEntry();
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirWriteSchemaObjects();
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
 
     VmDirSetACLMode();
 

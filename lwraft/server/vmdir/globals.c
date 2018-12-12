@@ -47,6 +47,8 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwHTTPListenPort, 0),
         VMDIR_SF_INIT(.dwHTTPSListenPort, 0),
         VMDIR_SF_INIT(.dwLdapRecvTimeoutSec, 0),
+        VMDIR_SF_INIT(.dwLdapUserTxnRecvTimeoutMS, DEFAULT_LDAP_USER_TXN_RECV_TIMEOUT_MS),
+        VMDIR_SF_INIT(.dwLdapUserTxnMaxtimeMS, DEFAULT_LDAP_USER_TXN_MAXTIME_MS),
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.bIsLDAPPortOpen, FALSE),
         VMDIR_SF_INIT(.mutex, NULL),
@@ -87,7 +89,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwRaftElectionTimeoutMS, 2100),
         VMDIR_SF_INIT(.dwRaftPingIntervalMS, 1000),
         VMDIR_SF_INIT(.gpVdirSslCtx, NULL),
-        VMDIR_SF_INIT(.bUseLogDB, FALSE),
     };
 
 VMDIR_KRB_GLOBALS gVmdirKrbGlobals =

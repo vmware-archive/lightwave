@@ -49,10 +49,11 @@ VmDirMLAdd(
                 "Not bind/authenticate yet");
     }
 
-    if (VmDirRaftDisallowUpdates("Add"))
+    if (!VmDirValidTxnState(pOperation->pBECtx, pOperation->reqCode))
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR(dwError);
+       dwError = LDAP_UNWILLING_TO_PERFORM;
+       BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+               "%s: invaid request for transaction state", __func__);
     }
 
     dwError = VmDirInternalAddEntry(pOperation);
@@ -139,6 +140,20 @@ VmDirInternalAddEntry(
             "Get ParentDn failed - (%u)",
             retVal);
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
+    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
+            retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
+
+    if (bHasTxn)
+    {
+       retVal = VmDirValidateOp(pOperation, __func__);
+       BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
+
     VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
 
     retVal = VmDirExecutePreAddPlugins(pOperation, pEntry, retVal);
@@ -180,18 +195,6 @@ VmDirInternalAddEntry(
                 "Invalid or duplicate (%s)",
                 VDIR_SAFE_STRING(pszDupAttributeName));
     }
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
-
-    retVal = pOperation->pBEIF->pfnBETxnBegin(pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal, pszLocalErrMsg,
-            "txn begin (%u)(%s)",
-            retVal,
-            VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
-
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
-    bHasTxn = TRUE;
 
     // get parent entry
     if (pEntry->pdn.lberbv.bv_val)
@@ -269,10 +272,6 @@ VmDirInternalAddEntry(
                 VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
 
-    // add vmwRaftLogChanged attribute
-    retVal = VmDirUpdateRaftLogChangedAttr(pOperation, pEntry);
-    BAIL_ON_VMDIR_ERROR(retVal);
-
     retVal = pOperation->pBEIF->pfnBEEntryAdd(pOperation->pBECtx, pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
@@ -280,23 +279,29 @@ VmDirInternalAddEntry(
             retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-    retVal = VmDirAddRaftPreCommit(pEntry, pOperation);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+    if (pOperation->bNoRaftLog == FALSE)
+    {
+        retVal = VmDirAddRaftPreCommit(pEntry, pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "VmDirAddRaftPreCommit error (%u)",
             retVal);
+    }
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+    if (bHasTxn)
+    {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
-    retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+        retVal = pOperation->pBEIF->pfnBETxnCommit(pOperation->pBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
             "txn commit (%u)(%s)",
             retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
-    bHasTxn = FALSE;
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
+    }
 
     if (!pOperation->bSuppressLogInfo)
     {
@@ -307,6 +312,7 @@ VmDirInternalAddEntry(
     }
 
 cleanup:
+    if (retVal == 0)
     {
         int iPostCommitPluginRtn = 0;
 
@@ -341,9 +347,7 @@ error:
 
     if (bHasTxn)
     {
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);

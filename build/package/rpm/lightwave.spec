@@ -1143,6 +1143,7 @@ Lightwave Samples
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
+%{_datadir}/config/vmca-rest-v2.json
 %{_datadir}/config/vmca-telegraf.conf
 
 %{_datadir}/config/saslvmdird.conf
@@ -1305,6 +1306,9 @@ Lightwave Samples
 %{_includedir}/vmdns.h
 %{_includedir}/vmdnstypes.h
 %{_includedir}/vmmetrics.h
+%{_includedir}/vmhttpclient.h
+%{_includedir}/vmmemory.h
+%{_includedir}/vmutil.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la

@@ -100,23 +100,20 @@ VmDirCopyRemoteDB(
     retVal = _VmDirCopyPartnerDB(hServer, "");
     BAIL_ON_VMDIR_ERROR(retVal);
 
-    if (gVmdirGlobals.bUseLogDB)
+    /*
+     * copy log database. tolerate error when remote server
+     * does not have a log db.
+     */
+    retVal = _VmDirCopyPartnerDB(hServer, LOG1_DB_DIR);
+    if (retVal == VMDIR_ERROR_NO_SUCH_DB)
     {
-        /*
-         * copy log database. tolerate error when remote server
-         * does not have a log db.
-         */
-        retVal = _VmDirCopyPartnerDB(hServer, LOG1_DB_DIR);
-        if (retVal == VMDIR_ERROR_NO_SUCH_DB)
-        {
-            retVal = 0;
-            VMDIR_LOG_INFO(
-                VMDIR_LOG_MASK_ALL,
-                "%s: Remote server does not have log db",
-                __FUNCTION__);
-        }
-        BAIL_ON_VMDIR_ERROR( retVal );
+        retVal = 0;
+        VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s: Remote server does not have log db",
+            __FUNCTION__);
     }
+    BAIL_ON_VMDIR_ERROR( retVal );
 
 cleanup:
     if (hServer)

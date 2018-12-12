@@ -107,7 +107,7 @@ VmDirFreeMemberships(
 
 DWORD
 VmDirLoadIndex(
-    BOOLEAN bFirstboot
+    VOID
     );
 
 // background.c
@@ -221,8 +221,7 @@ VmDirRpcAllocateStringW(
 
 DWORD
 VmDirLoadSchema(
-    PBOOLEAN    pbWriteSchemaEntry,
-    PBOOLEAN    pbLegacyDataLoaded
+    PBOOLEAN    pbWriteSchemaEntry
     );
 
 DWORD
@@ -233,16 +232,6 @@ VmDirSchemaInitializeSubtree(
 DWORD
 VmDirSchemaSetSystemDefaultSecurityDescriptors(
     VOID
-    );
-
-DWORD
-VmDirSchemaPatchViaFile(
-    PCSTR       pszSchemaFilePath
-    );
-
-DWORD
-VmDirSchemaPatchLegacyViaFile(
-    PCSTR       pszSchemaFilePath
     );
 
 /* service.c */
@@ -389,8 +378,7 @@ VmDirParseArgs(
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode,
-    PBOOLEAN    pbPatchSchema
+    PBOOLEAN    pbConsoleMode
     );
 
 VOID

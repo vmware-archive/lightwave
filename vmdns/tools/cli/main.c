@@ -539,6 +539,10 @@ ParseArgsAddZone(
             {
                 pContext->dwZoneType = VMDNS_ZONE_TYPE_FORWARD;
             }
+            else if (VmDnsStringCompareA(pszArg, "forwarder", FALSE) == 0)
+            {
+                pContext->dwZoneType = VMDNS_ZONE_TYPE_FORWARDER;
+            }
             else
             {
                 fprintf(stdout, "Invalid zone type %s.\n", pszArg);
@@ -589,62 +593,90 @@ ParseArgsAddZone(
 
         case PARSE_MODE_ADD_ZONE_MBOX_DOMAIN:
 
-                if (pContext->pszMboxDomain)
-                {
-                    dwError = ERROR_INVALID_PARAMETER;
-                    BAIL_ON_VMDNS_ERROR(dwError);
-                }
-
-                dwError = VmDnsAllocateStringA(pszArg, &pContext->pszMboxDomain);
+            if (pContext->pszMboxDomain)
+            {
+                dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDNS_ERROR(dwError);
+            }
 
-                parseMode = PARSE_MODE_ADD_ZONE_OPEN;
+            dwError = VmDnsAllocateStringA(pszArg, &pContext->pszMboxDomain);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                break;
+            parseMode = PARSE_MODE_ADD_ZONE_OPEN;
 
-            case PARSE_MODE_ADD_ZONE_USERNAME:
+            break;
 
-                dwError = VmDnsCopyStringArg(pszArg, ppszUserName);
-                BAIL_ON_VMDNS_ERROR(dwError);
+        case PARSE_MODE_ADD_ZONE_USERNAME:
 
-                parseMode = PARSE_MODE_ADD_ZONE_OPEN;
+            dwError = VmDnsCopyStringArg(pszArg, ppszUserName);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                break;
+            parseMode = PARSE_MODE_ADD_ZONE_OPEN;
 
-            case PARSE_MODE_ADD_ZONE_DOMAIN:
+            break;
 
-                dwError = VmDnsCopyStringArg(pszArg, ppszDomain);
-                BAIL_ON_VMDNS_ERROR(dwError);
+        case PARSE_MODE_ADD_ZONE_DOMAIN:
 
-                parseMode = PARSE_MODE_ADD_ZONE_OPEN;
+            dwError = VmDnsCopyStringArg(pszArg, ppszDomain);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                break;
+            parseMode = PARSE_MODE_ADD_ZONE_OPEN;
 
-            case PARSE_MODE_ADD_ZONE_PASSWORD:
+            break;
 
-                dwError = VmDnsCopyStringArg(pszArg, ppszPassword);
-                BAIL_ON_VMDNS_ERROR(dwError);
+        case PARSE_MODE_ADD_ZONE_PASSWORD:
 
-                parseMode = PARSE_MODE_ADD_ZONE_OPEN;
+            dwError = VmDnsCopyStringArg(pszArg, ppszPassword);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                break;
+            parseMode = PARSE_MODE_ADD_ZONE_OPEN;
 
-            case PARSE_MODE_ADD_ZONE_SERVER:
+            break;
 
-                dwError = VmDnsCopyStringArg(pszArg, &pContext->pszServer);
-                BAIL_ON_VMDNS_ERROR(dwError);
+        case PARSE_MODE_ADD_ZONE_SERVER:
 
-                parseMode = PARSE_MODE_ADD_ZONE_OPEN;
+            dwError = VmDnsCopyStringArg(pszArg, &pContext->pszServer);
+            BAIL_ON_VMDNS_ERROR(dwError);
 
-                break;
+            parseMode = PARSE_MODE_ADD_ZONE_OPEN;
 
-            default:
+            break;
 
-                dwError = ERROR_INTERNAL_ERROR;
-                BAIL_ON_VMDNS_ERROR(dwError);
+        default:
 
-                break;
+            dwError = ERROR_INTERNAL_ERROR;
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            break;
         }
+    }
+
+    switch (pContext->dwZoneType)
+    {
+    case VMDNS_ZONE_TYPE_FORWARD:
+        if (!pContext->pszNSHost || !pContext->pszNSIp ||
+            VmDnsIsReverseZoneName(pContext->pszZone))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+        break;
+    case VMDNS_ZONE_TYPE_REVERSE:
+        if (!pContext->pszNSHost || !pContext->pszNSIp ||
+            !VmDnsIsReverseZoneName(pContext->pszZone))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+        break;
+    case VMDNS_ZONE_TYPE_FORWARDER:
+        if (pContext->pszNSHost || pContext->pszNSIp ||
+            VmDnsIsReverseZoneName(pContext->pszZone))
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMDNS_ERROR(dwError);
+        }
+        break;
     }
 
 error:
@@ -2109,7 +2141,8 @@ ParseArgsForwardersList(
         PARSE_MODE_FORWARDER_USERNAME,
         PARSE_MODE_FORWARDER_DOMAIN,
         PARSE_MODE_FORWARDER_PASSWORD,
-        PARSE_MODE_FORWARDER_SERVER
+        PARSE_MODE_FORWARDER_SERVER,
+        PARSE_MODE_FORWARDER_ZONE
     } PARSE_MODE_FORWARDER;
     PARSE_MODE_FORWARDER parseMode = PARSE_MODE_FORWARDER_OPEN;
 
@@ -2136,6 +2169,10 @@ ParseArgsForwardersList(
             else if (!strcmp(pszArg, "--server"))
             {
                 parseMode = PARSE_MODE_FORWARDER_SERVER;
+            }
+            else if (!strcmp(pszArg, "--zone"))
+            {
+                parseMode = PARSE_MODE_FORWARDER_ZONE;
             }
             else
             {
@@ -2183,6 +2220,15 @@ ParseArgsForwardersList(
 
             break;
 
+        case PARSE_MODE_FORWARDER_ZONE:
+
+            dwError = VmDnsCopyStringArg(pszArg, &pContext->pszZone);
+            BAIL_ON_VMDNS_ERROR(dwError);
+
+            parseMode = PARSE_MODE_FORWARDER_OPEN;
+
+            break;
+
         default:
 
             dwError = ERROR_INTERNAL_ERROR;
@@ -2219,11 +2265,10 @@ ShowUsage(
         "Usage: vmdns-cli { arguments }\n\n"
         "Arguments:\n\n"
         "\tadd-zone <zone name | network id>\n"
-        "\t\t--ns-host <hostname>\n"
-        "\t\t--ns-ip <ip address>\n"
+        "\t\t[--ns-host <hostname>]\n"
+        "\t\t[--ns-ip <ip address>]\n"
         "\t\t[--admin-email <admin-email>]\n"
-        "\t\t[--type <forward | reverse>]\n"
-        /*"\t\t[--type <forward|reverse>]\n"*/
+        "\t\t[--type <forward | reverse | forwarder>]\n"
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
         "\t\t--domain <domain>\n"
@@ -2320,16 +2365,19 @@ ShowUsage(
         "\t\t--domain <domain>\n"
         "\t\t--password <pwd>\n\n"
         "\tadd-forwarder <forwarder ip>\n"
+        "\t\t[--zone <zone name>]\n"
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
         "\t\t--domain <domain>\n"
         "\t\t--password <pwd>\n\n"
         "\tdel-forwarder <forwarder ip>\n"
+        "\t\t[--zone <zone name>]\n"
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
         "\t\t--domain <domain>\n"
         "\t\t--password <pwd>\n\n"
         "\tlist-forwarders\n"
+        "\t\t[--zone <zone name>]\n"
         "\t\t--server <server>\n"
         "\t\t--username <user>\n"
         "\t\t--domain <domain>\n"

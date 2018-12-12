@@ -877,6 +877,33 @@ VmDnsDeserializeDnsRecord(
     );
 
 DWORD
+VmDnsSerializeDnsProperty(
+    PVMDNS_PROPERTY     pDnsProperty,
+    PBYTE*              ppBytes,
+    DWORD*              pdwSize
+    );
+
+DWORD
+VmDnsDeserializeDnsProperty(
+    PBYTE               pBytes,
+    DWORD               dwBytes,
+    PVMDNS_PROPERTY     *ppDnsProperty
+    );
+
+DWORD
+VmDnsCreateZoneIdProperty(
+    VMDNS_ZONE_ID zoneId,
+    PVMDNS_PROPERTY* ppProperty
+    );
+
+#define VMDNS_FREE_PROPERTY(pProperty) \
+    if (pProperty) \
+    { \
+        VmDnsFreeMemory(pProperty); \
+        pProperty = NULL; \
+    }
+
+DWORD
 VmDnsParseRecordType(
     PSTR            pszRecordType,
     VMDNS_RR_TYPE*  pType

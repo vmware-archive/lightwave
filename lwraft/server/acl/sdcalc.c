@@ -153,6 +153,7 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
         dwError = 0;
         goto cleanup;
     }
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pAttr = VmDirFindAttrByName(pOCEntry, ATTR_DEFAULT_SECURITY_DESCRIPTOR);
     if (pAttr)

@@ -137,9 +137,10 @@ VmDirMDBIndexExist(
     size_t  i = 0;
     BOOLEAN bExist = FALSE;
     PSTR    pszDBName = NULL;
-    MDB_txn*    pTxn = NULL;
     VDIR_DB     mdbDBi  = 0;
     PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+    BOOLEAN bHasTxn = FALSE;
+    VDIR_BACKEND_CTX mdbBECtx = {0};
 
     if (pDB && pIndexCfg)
     {
@@ -151,10 +152,11 @@ VmDirMDBIndexExist(
             pszDBName[i] = tolower(pszDBName[i]);
         }
 
-        iError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
-        BAIL_ON_VMDIR_ERROR(iError);
 
-        iError = mdb_open(pTxn, pszDBName, 0, &mdbDBi);
+        mdbBECtx.pBE = pBE;
+        iError = VmDirMDBTxnBegin(&mdbBECtx, VDIR_BACKEND_TXN_READ, &bHasTxn);
+
+        iError = mdb_open(mdbBECtx.pBEPrivate, pszDBName, 0, &mdbDBi);
         if (iError == 0)
         {
             bExist = TRUE;
@@ -162,9 +164,9 @@ VmDirMDBIndexExist(
     }
 
 error:
-    if (pTxn)
+    if (bHasTxn)
     {
-        mdb_txn_abort(pTxn);
+        VmDirMDBTxnAbort(&mdbBECtx);
     }
     VMDIR_SAFE_FREE_MEMORY(pszDBName);
     return bExist;
@@ -221,11 +223,11 @@ VmDirMDBIndicesPopulate(
     DWORD   dwError = 0;
     DWORD   dwCnt = 0;
 
-    PVDIR_DB_TXN        pTxn = NULL;
     PVDIR_ENTRY         pEntry = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     VDIR_BACKEND_CTX    mdbBECtx = {0};
     PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+    BOOLEAN bHasTxn = FALSE;
 
     if (!pDB || !pIndexCfgs)
     {
@@ -235,12 +237,10 @@ VmDirMDBIndicesPopulate(
     dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = mdb_txn_begin(pDB->mdbEnv, BE_DB_PARENT_TXN_NULL, BE_DB_FLAGS_ZERO, &pTxn);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
-    // use mdbBECtx just to make VmDirMDBEIdToEntry happy
-    mdbBECtx.pBEPrivate = pTxn;
     mdbBECtx.pBE = pBE;
+    dwError = VmDirMDBTxnBegin(&mdbBECtx, BE_DB_FLAGS_ZERO, &bHasTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwCnt = 0; dwCnt < dwBatchSize; dwCnt ++)
     {
@@ -274,7 +274,7 @@ VmDirMDBIndicesPopulate(
             {
                 // create indices
                 dwError = MdbUpdateIndicesForAttr(  pBE,
-                                                    pTxn,
+                                                    mdbBECtx.pBEPrivate,
                                                     &pEntry->dn,
                                                     &pAttr->type,
                                                     pAttr->vals,
@@ -289,18 +289,25 @@ VmDirMDBIndicesPopulate(
         pEntry = NULL;
     }
 
-    dwError = mdb_txn_commit(pTxn);
-    pTxn = NULL;
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (bHasTxn)
+    {
+        dwError = VmDirMDBTxnCommit(&mdbBECtx);
+        bHasTxn = FALSE;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
 cleanup:
     mdbBECtx.pBE = NULL;
-    mdbBECtx.pBEPrivate = NULL;
     VmDirBackendCtxContentFree(&mdbBECtx);
     VmDirSchemaCtxRelease(pSchemaCtx);
     return dwError;
 
 error:
+    if (bHasTxn)
+    {
+        VmDirMDBTxnAbort(&mdbBECtx);
+    }
+
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d)", __FUNCTION__, dwError );
 
@@ -313,7 +320,6 @@ error:
         dwError = VMDIR_ERROR_BACKEND_ERROR;
     }
 
-    mdb_txn_abort(pTxn);
     VmDirFreeEntryContent(pEntry);
     goto cleanup;
 }

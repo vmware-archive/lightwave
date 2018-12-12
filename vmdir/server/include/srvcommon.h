@@ -79,11 +79,12 @@ extern "C" {
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
 
+//TODO_REMOVE_REPLV2
 // Deadlock Detection (DD) vector indicator
 #define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
 #define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
 
-
+#define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
 
@@ -301,6 +302,12 @@ typedef struct _VMDIR_ATTRIBUTE_METADATA
     USN     origUsn;
 } VMDIR_ATTRIBUTE_METADATA, *PVMDIR_ATTRIBUTE_METADATA;
 
+typedef struct _VMDIR_REPL_ATTRIBUTE_METADATA
+{
+    PSTR                         pszAttrType;
+    PVMDIR_ATTRIBUTE_METADATA    pMetaData;
+} VMDIR_REPL_ATTRIBUTE_METADATA, *PVMDIR_REPL_ATTRIBUTE_METADATA;
+
 typedef struct _VMDIR_ATTRIBUTE_VALUE_METADATA
 {
     PSTR            pszAttrType;
@@ -352,12 +359,29 @@ typedef struct _ATTRIBUTE_META_DATA_NODE
 
 #define VDIR_DEFAULT_FORCE_VERSION_GAP  512
 
+/*
+ * MOD_IGNORE_ALL
+ *     Used internally, to skip processing a Delete mod when the attr
+ *     does not exist in the entry
+ * MOD_IGNORE_ATTR_VALUES
+ *     Used internally, in the repl scenario to commit attrMetaData only and ignore
+ *     attr value and attrValueMetaData update.
+ *     1) Attr was added and deleted on the supplier side (only attrMetaData will remain)
+ *     2) In the consumer side, attrMetaData has to be committed even though corresponding
+ *        attr does not exist, to avoid data discrepancy.
+ */
+typedef enum _VDIR_MOD_IGNORE
+{
+    MOD_IGNORE_NONE = 0,
+    MOD_IGNORE_ALL,
+    MOD_IGNORE_ATTR_VALUES
+} VDIR_MOD_IGNORE;
+
 typedef struct _VDIR_MODIFICATION
 {
     VDIR_LDAP_MOD_OP            operation;
     VDIR_ATTRIBUTE              attr;
-    BOOLEAN                     ignore; // Used internally, e.g. to skip processing a Delete modification when the attribute
-                                  // does not exist in the entry
+    VDIR_MOD_IGNORE             modIgnoreType;
     unsigned short              usForceVersionGap;  // to intentionally create gap between attribute version
     struct _VDIR_MODIFICATION * next;
 } VDIR_MODIFICATION, *PVDIR_MODIFICATION;
@@ -368,6 +392,14 @@ typedef enum _VDIR_ENTRY_ALLOCATION_TYPE
     ENTRY_STORAGE_FORMAT_NORMAL
 } VDIR_ENTRY_ALLOCATION_TYPE;
 
+typedef struct _VDIR_LDAP_DN
+{
+    // libldap data structure to handle DN parsing
+    LDAPDN                       internalDN;
+    VDIR_BERVALUE                dn;
+    PCSTR                        pszParentNormDN;   // in place into dn.bvnorm_val; otherwise, NULL if no parent.
+} VDIR_LDAP_DN, *PVDIR_LDAP_DN;
+
 typedef struct _VDIR_ENTRY
 {
 
@@ -376,6 +408,7 @@ typedef struct _VDIR_ENTRY
    // Internally constructed Entry (non-persist entry) has eId == 0
    ENTRYID                      eId;     // type must match BDB's db_seq_t
 
+   VDIR_LDAP_DN                 ldapDN; // will replace following dn later.
    // dn.bv_val is heap allocated; dn.bvnorm_bv follows BerValue rule
    VDIR_BERVALUE                dn;
    // pdn.bv_val is in-place into dn.bv_val.  pdn.bvnrom_val follows BerValue rule
@@ -613,6 +646,7 @@ typedef struct SyncDoneControlValue
     //   (done in result.c/VmDirSendSearchEntry)
     // 2. full page request sent and there could be more changes pending.
     BOOLEAN                 bContinue;
+    //TODO_REMOVE_REPLV2
     PSTR                    pszDeadlockDetectionVector;
 } SyncDoneControlValue;
 
@@ -700,21 +734,23 @@ typedef struct _VDIR_OPERATION
     PVDIR_CONNECTION    conn;        // Connection
     BOOLEAN             bOwnConn;    // true if own connection
 
-    VDIR_LDAP_CONTROL *       reqControls; // Request Controls, sent by client.
-    VDIR_LDAP_CONTROL *       syncReqCtrl; // Sync Request Control, points in reqControls list.
-    VDIR_LDAP_CONTROL *       syncDoneCtrl; // Sync Done Control.
-    VDIR_LDAP_CONTROL *       showDeletedObjectsCtrl; // points in reqControls list.
-    VDIR_LDAP_CONTROL *       showMasterKeyCtrl;
-    VDIR_LDAP_CONTROL *       showPagedResultsCtrl;
-    VDIR_LDAP_CONTROL *       digestCtrl;
-    VDIR_LDAP_CONTROL *       raftPingCtrl;
-    VDIR_LDAP_CONTROL *       raftVoteCtrl;
-    VDIR_LDAP_CONTROL *       statePingCtrl;
-    VDIR_LDAP_CONTROL *       passblobCtrl;
-    VDIR_LDAP_CONTROL *       dbCopyCtrl;
+    PVDIR_LDAP_CONTROL  reqControls; // Request Controls, sent by client.
+    PVDIR_LDAP_CONTROL  syncReqCtrl; // Sync Request Control, points in reqControls list.
+    PVDIR_LDAP_CONTROL  syncDoneCtrl; // Sync Done Control.
+    PVDIR_LDAP_CONTROL  showDeletedObjectsCtrl; // points in reqControls list.
+    PVDIR_LDAP_CONTROL  showMasterKeyCtrl;
+    PVDIR_LDAP_CONTROL  showPagedResultsCtrl;
+    PVDIR_LDAP_CONTROL  digestCtrl;
+    PVDIR_LDAP_CONTROL  raftPingCtrl;
+    PVDIR_LDAP_CONTROL  raftVoteCtrl;
+    PVDIR_LDAP_CONTROL  statePingCtrl;
+    PVDIR_LDAP_CONTROL  passblobCtrl;
+    PVDIR_LDAP_CONTROL  dbCopyCtrl;
+    PVDIR_LDAP_CONTROL  pReplAgrDisableCtrl;
+    PVDIR_LDAP_CONTROL  pReplAgrEnableCtrl;
 
-                                     // SJ-TBD: If we add quite a few controls, we should consider defining a
-                                     // structure to hold all those pointers.
+    // SJ-TBD: If we add quite a few controls, we should consider defining a
+    // structure to hold all those pointers.
     DWORD               dwSchemaWriteOp; // this operation is schema modification
 
     ///////////////////////////////////////////////////////////////////////////
@@ -835,10 +871,11 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
     PSTR                        pszHostname;
-    PSTR                        pszInvocationID;
+    PSTR                        pszInvocationID; //TODO_REMOVE_REPLV2
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
+    BOOLEAN                     isDisabled;
 
     struct _VMDIR_REPLICATION_AGREEMENT *   next;
 
@@ -919,13 +956,44 @@ VmDirInitDCConnThread(
     PVMDIR_DC_CONNECTION pDCConn
     );
 
+// schema/dn.c
+DWORD
+VmDirDNStrToInternalDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+DWORD
+VmDirNormDN(
+    PVDIR_LDAP_DN       pLdapDN,
+    PVDIR_SCHEMA_CTX    pSchemaCtx
+    );
+
+DWORD
+VmDirParentNormDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDNContent(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
+VOID
+VmDirFreeLDAPDN(
+    PVDIR_LDAP_DN   pLdapDN
+    );
+
 // vmdir/init.c
 
 DWORD
-VmDirInitBackend();
+VmDirInitBackend(
+    VOID
+    );
 
 DWORD
-VmDirSetSdGlobals();
+VmDirSetSdGlobals(
+    VOID
+    );
 
 // vmdirentry.c
 
@@ -946,6 +1014,19 @@ VmDirInitializeEntry(
 DWORD
 VmDirEntryUnpack(
     PVDIR_ENTRY  pEntry
+    );
+
+DWORD
+VmDirEntryAttributeAppendBervArray(
+    PVDIR_ATTRIBUTE    pAttr,
+    PVDIR_BERVALUE     pBervs,
+    USHORT             usBervSize
+    );
+
+DWORD
+VmDirEntryAttributeRemoveValue(
+    PVDIR_ATTRIBUTE    pAttr,
+    PCSTR              pszValue
     );
 
 /*
@@ -1039,11 +1120,6 @@ VmDirAttributeInitialize(
     USHORT  usBerSize,
     PVDIR_SCHEMA_CTX pCtx,
     PVDIR_ATTRIBUTE pAttr
-    );
-
-VOID
-VmDirFreeAttrValueMetaDataContent(
-    PDEQUE  pValueMetaData
     );
 
 VOID
@@ -1668,6 +1744,25 @@ VdirPasswordCheck(
     PVDIR_ENTRY         pEntry
     );
 
+// middle-layer usn.c
+DWORD
+VmDirEntryUpdateUsnChanged(
+    PVDIR_ENTRY    pEntry,
+    USN            localUSN
+    );
+
+DWORD
+VmDirEntryUpdateUsnCreated(
+    PVDIR_ENTRY    pEntry,
+    USN            localUSN
+    );
+
+DWORD
+VmDirAttributeUpdateUsnValue(
+    PVDIR_ATTRIBUTE    pAttr,
+    USN                localUSN
+    );
+
 // security-sd.c
 DWORD
 VmDirSetGroupSecurityDescriptor(
@@ -1971,6 +2066,18 @@ VmDirAttributeMetaDataToHashMap(
     );
 
 DWORD
+VmDirAttributeMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrMetaData,
+    PVDIR_LINKED_LIST*    ppMetaDataList
+    );
+
+DWORD
+VmDirAttributeMetaDataListConvertToHashMap(
+    PVDIR_LINKED_LIST    pMetaDataList,
+    PLW_HASHMAP         *ppMetaDataMap
+    );
+
+DWORD
 VmDirMetaDataCopyContent(
     PVMDIR_ATTRIBUTE_METADATA    pSrcMetaData,
     PVMDIR_ATTRIBUTE_METADATA    pDestMetaData
@@ -2019,6 +2126,34 @@ VmDirFreeMetaDataMapPair(
     PVOID               pUnused
     );
 
+//replmetadata.c
+VOID
+VmDirFreeReplMetaData(
+    PVMDIR_REPL_ATTRIBUTE_METADATA    pReplMetaData
+    );
+
+VOID
+VmDirFreeReplMetaDataList(
+    PVDIR_LINKED_LIST    pMetaDataList
+    );
+
+DWORD
+VmDirReplMetaDataDeserialize(
+    PCSTR                              pszReplMetaData,
+    PVMDIR_REPL_ATTRIBUTE_METADATA*    ppReplMetaData
+    );
+
+DWORD
+VmDirReplMetaDataCreate(
+    PCSTR                              pszAttrType,
+    USN                                localUsn,
+    UINT64                             version,
+    PCSTR                              pszOrigInvoId,
+    PCSTR                              pszOrigTime,
+    USN                                origUsn,
+    PVMDIR_REPL_ATTRIBUTE_METADATA*    ppReplMetaData
+    );
+
 //valuemetadata.c
 DWORD
 VmDirValueMetaDataDeserialize(
@@ -2030,12 +2165,6 @@ DWORD
 VmDirValueMetaDataSerialize(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
     PVDIR_BERVALUE                     pBervValueMetaData
-    );
-
-DWORD
-VmDirValueMetaDataMaxLen(
-    PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData,
-    PDWORD                             pdwLength
     );
 
 BOOLEAN
@@ -2051,6 +2180,28 @@ VmDirValueMetaDataIsEmpty(
 VOID
 VmDirFreeValueMetaData(
     PVMDIR_VALUE_ATTRIBUTE_METADATA    pValueMetaData
+    );
+
+DWORD
+VmDirAttributeValueMetaDataToList(
+    PVDIR_ATTRIBUTE       pAttrAttrValueMetaData,
+    PVDIR_LINKED_LIST*    ppValueMetaDataList
+    );
+
+DWORD
+VmDirAttributeValueMetaDataListConvertToDequeue(
+    PVDIR_LINKED_LIST    pValueMetaDataList,
+    PDEQUE               pValueMetaDataQueue
+    );
+
+VOID
+VmDirFreeValueMetaDataList(
+    PVDIR_LINKED_LIST    pValueMetaDataList
+    );
+
+VOID
+VmDirFreeAttrValueMetaDataDequeueContent(
+    PDEQUE  pValueMetaData
     );
 
 DWORD

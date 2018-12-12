@@ -230,3 +230,11 @@ VmFreeMemory(
 
     return;
 }
+
+VOID
+VmFreeStringA(
+    PSTR pszString
+    )
+{
+    VmFreeMemory((PVOID) pszString);
+}

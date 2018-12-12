@@ -41,16 +41,12 @@ VmDirSchemaLibInit(
 {
     DWORD   dwError = 0;
 
-    // legacy support
-    // - replace with VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER
-    //   when legacy support is no longer required
     VDIR_SCHEMA_BOOTSTRAP_TABLE ATTable[] =
-            VDIR_LEGACY_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
+            VDIR_SCHEMA_BOOTSTRP_ATTR_INITIALIZER;
 
     if (!ppModMutex)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VdirSyntaxLoad();
@@ -87,10 +83,6 @@ VmDirSchemaLibInit(
     dwError = VmDirSchemaLibLoadBootstrapTable(ATTable);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // legacy support
-    dwError = VmDirSchemaLibInitLegacy();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     // repl status globals
     dwError = VmDirSchemaReplStatusGlobalsInit();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -101,8 +93,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     goto cleanup;
 }
@@ -161,8 +156,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeLdapSchema(pNewLdapSchema);
     VmDirFreeSchemaInstance(pNewVdirSchema);
@@ -176,22 +174,22 @@ VmDirSchemaLibLoadFile(
 {
     DWORD   dwError = 0;
     PVDIR_LDAP_SCHEMA   pCurLdapSchema = NULL;
-    PVDIR_LDAP_SCHEMA   pTmpLdapSchema = NULL;
     PVDIR_LDAP_SCHEMA   pNewLdapSchema = NULL;
     PVDIR_SCHEMA_INSTANCE   pNewVdirSchema = NULL;
     LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR pair = {NULL, NULL};
 
+    if (IsNullOrEmptyString(pszSchemaFilePath))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
     pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
 
-    dwError = VmDirLdapSchemaInit(&pTmpLdapSchema);
+    dwError = VmDirLdapSchemaCopy(pCurLdapSchema, &pNewLdapSchema);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirLdapSchemaLoadFile(pTmpLdapSchema, pszSchemaFilePath);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirLdapSchemaMerge(
-            pCurLdapSchema, pTmpLdapSchema, &pNewLdapSchema);
+    dwError = VmDirLdapSchemaLoadFile(pNewLdapSchema, pszSchemaFilePath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     while (LwRtlHashMapIterate(pNewLdapSchema->attributeTypes, &iter, &pair))
@@ -220,12 +218,14 @@ VmDirSchemaLibLoadFile(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VmDirFreeLdapSchema(pTmpLdapSchema);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeLdapSchema(pNewLdapSchema);
     VmDirFreeSchemaInstance(pNewVdirSchema);
@@ -245,8 +245,7 @@ VmDirSchemaLibLoadAttributeSchemaEntries(
 
     if (!pAtEntries)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
@@ -284,8 +283,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeLdapSchema(pNewLdapSchema);
     VmDirFreeSchemaInstance(pNewVdirSchema);
@@ -305,8 +307,7 @@ VmDirSchemaLibLoadClassSchemaEntries(
 
     if (!pOcEntries)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     pCurLdapSchema = gVdirSchemaGlobals.pLdapSchema;
@@ -354,8 +355,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirFreeLdapSchema(pNewLdapSchema);
     VmDirFreeSchemaInstance(pNewVdirSchema);
@@ -382,14 +386,15 @@ VmDirSchemaLibPrepareUpdateViaModify(
 
     if (!pSchemaEntry || !pOperation)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     if (!VDIR_CUSTOM_SCHEMA_MODIFICATION_ENABLED)
     {
         dwError = VMDIR_ERROR_OPERATION_NOT_PERMITTED;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+                dwError,
+                pszLocalErrMsg,
                 "custom schema modification is not enabled");
     }
 
@@ -468,7 +473,9 @@ VmDirSchemaLibPrepareUpdateViaModify(
     }
 
     dwError = ERROR_INVALID_ENTRY;
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg,
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            dwError,
+            pszLocalErrMsg,
             "Not a schema object entry");
 
 updatelib:
@@ -483,9 +490,12 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
             "%s failed, error (%d) (%s)",
-            __FUNCTION__, dwError, pszLocalErrMsg );
+            __FUNCTION__,
+            dwError,
+            pszLocalErrMsg);
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult,
             dwError, pszLocalErrMsg);
@@ -551,8 +561,11 @@ cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)", __FUNCTION__, dwError );
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
 
     VmDirSchemaAttrIdMapRemoveAllPending(gVdirSchemaGlobals.pAttrIdMap);
     VmDirFreeSchemaInstance(pNewVdirSchema);

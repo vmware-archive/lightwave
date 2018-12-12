@@ -180,25 +180,56 @@ VmDnsStoreGetRecords(
 
     return dwError;
 }
+
 DWORD
 VmDnsStoreSaveForwarders(
+    PCSTR               pszZone,
     DWORD               dwCount,
     PSTR*               ppszForwarders
     )
 {
     DWORD dwError = 0;
-    dwError = VmDnsRegSaveForwarders(dwCount, (PCSTR*)ppszForwarders);
+
+    if (pszZone)
+    {
+        dwError = VmDnsDirSaveForwarders(
+                        pszZone,
+                        dwCount,
+                        (PSTR*)ppszForwarders);
+    }
+    else
+    {
+        dwError = VmDnsRegSaveForwarders(
+                        dwCount,
+                        (PCSTR*)ppszForwarders);
+    }
+
     return dwError;
 }
 
 DWORD
 VmDnsStoreGetForwarders(
+    PCSTR               pszZone,
     PDWORD              pdwCount,
     PSTR**              pppszForwarders
     )
 {
     DWORD dwError = 0;
-    dwError = VmDnsRegLoadForwarders(pdwCount, pppszForwarders);
+
+    if (pszZone)
+    {
+        dwError = VmDnsDirLoadForwarders(
+                        pszZone,
+                        pdwCount,
+                        pppszForwarders);
+    }
+    else
+    {
+        dwError = VmDnsRegLoadForwarders(
+                        pdwCount,
+                        pppszForwarders);
+    }
+
     return dwError;
 }
 
@@ -246,3 +277,20 @@ VmDnsStoreSyncNewObjects(
     return dwError;
 }
 
+DWORD
+VmDnsStoreGetProperties(
+    PCSTR               pszZone,
+    PVMDNS_PROPERTY_LIST *ppPropertyArray
+    )
+{
+    DWORD dwError = 0;
+
+    dwError = VmDnsDirGetProperties(
+                        pszZone,
+                        ppPropertyArray);
+
+    /* Translating LDAP error code to MS error code for use in serviceapi */
+    dwError = (dwError == LDAP_NO_SUCH_OBJECT) ? ERROR_NOT_FOUND : dwError;
+
+    return dwError;
+}

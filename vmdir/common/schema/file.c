@@ -95,10 +95,9 @@ VmDirGetDefaultSchemaFile(
     PCSTR   pszLinuxFile = VMDIR_CONFIG_DIR "/vmdirschema.ldif";
 #endif
 
-    if ( ppszSchemaFile==NULL)
+    if (!ppszSchemaFile)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
 #ifdef _WIN32
@@ -130,13 +129,15 @@ error:
  *  attributetypes
  *  objectclasses
  *  ditcontentrules
+ *  attributeindices
  */
 DWORD
 VmDirReadSchemaFile(
     PCSTR               pszSchemaFilePath,
     PVMDIR_STRING_LIST* ppAtStrList,
     PVMDIR_STRING_LIST* ppOcStrList,
-    PVMDIR_STRING_LIST* ppCrStrList
+    PVMDIR_STRING_LIST* ppCrStrList,
+    PVMDIR_STRING_LIST* ppIdxStrList
     )
 {
     DWORD dwError = 0;
@@ -146,11 +147,11 @@ VmDirReadSchemaFile(
     PVMDIR_STRING_LIST  pAtStrList = NULL;
     PVMDIR_STRING_LIST  pOcStrList = NULL;
     PVMDIR_STRING_LIST  pCrStrList = NULL;
+    PVMDIR_STRING_LIST  pIdxStrList = NULL;
 
-    if (!pszSchemaFilePath || !ppAtStrList || !ppOcStrList || !ppCrStrList)
+    if (!pszSchemaFilePath || !ppAtStrList || !ppOcStrList || !ppCrStrList || !ppIdxStrList)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
     dwError = VmDirStringListInitialize(&pAtStrList, 2048);
@@ -160,6 +161,9 @@ VmDirReadSchemaFile(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirStringListInitialize(&pCrStrList, 512);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringListInitialize(&pIdxStrList, 16);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 #ifndef _WIN32
@@ -205,6 +209,11 @@ VmDirReadSchemaFile(
             dwError = _VmDirReadOneDefFromFile(fp, pCrStrList);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
+        else if (IS_ATTRIBUTEINDICES_TAG(pbuf))
+        {
+            dwError = _VmDirReadOneDefFromFile(fp, pIdxStrList);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
         else
         {
             continue;
@@ -214,6 +223,7 @@ VmDirReadSchemaFile(
     *ppAtStrList = pAtStrList;
     *ppOcStrList = pOcStrList;
     *ppCrStrList = pCrStrList;
+    *ppIdxStrList = pIdxStrList;
 
 cleanup:
     if (fp)
@@ -226,5 +236,6 @@ error:
     VmDirStringListFree(pAtStrList);
     VmDirStringListFree(pOcStrList);
     VmDirStringListFree(pCrStrList);
+    VmDirStringListFree(pIdxStrList);
     goto cleanup;
 }

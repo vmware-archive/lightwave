@@ -26,7 +26,8 @@ libldap_head_la_SOURCES = \
     result.c        \
     search.c        \
     vecs.c          \
-    unbind.c
+    unbind.c        \
+    extended.c
 
 libldap_head_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \
