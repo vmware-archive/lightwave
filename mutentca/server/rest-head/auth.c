@@ -38,20 +38,23 @@ LwCARestAuth(
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
 
-    if (LwCARestAuthIsOpenAPI(pRestOp->pszURI, pRestOp->pszMethod))
-    {
-        bAuthenticated = TRUE;
-        goto ret;
-    }
-
     dwError = LwCARequestContextCreate(&pReqCtx);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pReqCtx->pszCAId, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pReqCtx->pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (!IsNullOrEmptyString(pRestOp->pszRequestId))
+    {
+        dwError = LwCAAllocateStringA(pRestOp->pszRequestId, &pReqCtx->pszRequestId);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    if (LwCARestAuthIsOpenAPI(pRestOp->pszURI, pRestOp->pszMethod))
+    {
+        bAuthenticated = TRUE;
+        goto ret;
+    }
 
     dwError = LwCAOIDCTokenAuthenticate(
                         pReqCtx,

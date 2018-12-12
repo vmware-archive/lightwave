@@ -228,7 +228,6 @@ LwCARestResultGenerateResponseBody(
 VOID
 LwCASetRestResult(
     PLWCA_REST_OPERATION    pRestOp,
-    PSTR                    pszRequestId,
     DWORD                   dwError
     );
 

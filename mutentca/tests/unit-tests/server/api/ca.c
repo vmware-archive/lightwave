@@ -1140,7 +1140,7 @@ Test_LwCAGetCACertificates_Valid(
     will_return(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCAGetCACertificates(TEST_ROOT_CA_ID, &pCertificates);
+    dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, 0);
     assert_non_null(pCertificates);
     assert_int_equal(pCertificates->dwCount, 1);
@@ -1163,14 +1163,14 @@ Test_LwCAGetCACertificates_Invalid(
 
     // Testcase 1: Invalid input
 
-    dwError = LwCAGetCACertificates(NULL, &pCertificates);
+    dwError = LwCAGetCACertificates(pReqCtx, NULL, &pCertificates);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
     assert_null(pCertificates);
 
     // Testcase 2: CA does not exist
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCAGetCACertificates(TEST_ROOT_CA_ID, &pCertificates);
+    dwError = LwCAGetCACertificates(pReqCtx, TEST_ROOT_CA_ID, &pCertificates);
     assert_int_equal(dwError, LWCA_CA_MISSING);
     assert_null(pCertificates);
 

@@ -68,7 +68,7 @@ LwCARestGetVersion(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, NULL, dwError);
+    LwCASetRestResult(pRestOp, dwError);
 
     return dwError;
 
@@ -92,7 +92,6 @@ LwCARestGetRootCACert(
 {
     DWORD                   dwError         = 0;
     PLWCA_REST_OPERATION    pRestOp         = NULL;
-    PSTR                    pszRequestId    = NULL;
     PSTR                    pszRootCAId     = NULL;
     BOOLEAN                 bDetail         = FALSE;
     PLWCA_CERTIFICATE_ARRAY pCACerts        = NULL;
@@ -108,16 +107,13 @@ LwCARestGetRootCACert(
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
 
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwError = LwCAGetRootCAId(&pszRootCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestGetBoolParam(pRestOp, LWCA_REST_PARAM_WITH_CRL, &bDetail, FALSE);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetCACertificates(pszRootCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(pRestOp->pReqCtx, pszRootCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     if (bDetail)
@@ -136,8 +132,7 @@ LwCARestGetRootCACert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError);
-    LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCASetRestResult(pRestOp, dwError);
     LwCAFreeCertificates(pCACerts);
     LwCAFreeCrl(pCrl);
     LwCAFreeStringArray(pCrls);

@@ -100,14 +100,16 @@ LwCAGetSignedCertificate(
 
 DWORD
 LwCAGetCACertificates(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,
     PLWCA_CERTIFICATE_ARRAY *ppCertificates
     );
 
 DWORD
 LwCAGetChainOfTrust(
-    PCSTR                       pcszCAId,
-    PSTR                        *ppszChainOfTrust
+    PLWCA_REQ_CONTEXT       pReqCtx,
+    PCSTR                   pcszCAId,
+    PSTR                    *ppszChainOfTrust
     );
 
 DWORD

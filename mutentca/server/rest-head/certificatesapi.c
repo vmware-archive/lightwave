@@ -52,7 +52,6 @@ LwCARestGetRootCASignedCert(
 {
     DWORD                       dwError         = 0;
     PLWCA_REST_OPERATION        pRestOp         = NULL;
-    PSTR                        pszRequestId    = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
     PLWCA_CERTIFICATE           pCert           = NULL;
     PSTR                        pszChainOfTrust = NULL;
@@ -65,9 +64,6 @@ LwCARestGetRootCASignedCert(
     }
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
-
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestGetSignCertInputSpec(pRestOp->pjBody, &pSignCertSpec);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -85,7 +81,7 @@ LwCARestGetRootCASignedCert(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetChainOfTrust(pszRootCAId, &pszChainOfTrust);
+    dwError = LwCAGetChainOfTrust(pRestOp->pReqCtx, pszRootCAId, &pszChainOfTrust);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
@@ -101,8 +97,7 @@ LwCARestGetRootCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError);
-    LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCASetRestResult(pRestOp, dwError);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     LwCAFreeCertificate(pCert);
     LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
@@ -130,7 +125,6 @@ LwCARestRevokeRootCASignedCert(
 {
     DWORD                   dwError         = 0;
     PLWCA_REST_OPERATION    pRestOp         = NULL;
-    PSTR                    pszRequestId    = NULL;
     PLWCA_CERTIFICATE       pCert           = NULL;
     PSTR                    pszRootCAId     = NULL;
 
@@ -142,9 +136,6 @@ LwCARestRevokeRootCASignedCert(
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
 
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwError = LwCARestGetCertificateInput(pRestOp->pjBody, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -155,8 +146,7 @@ LwCARestRevokeRootCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError);
-    LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCASetRestResult(pRestOp, dwError);
     LwCAFreeCertificate(pCert);
     LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
@@ -182,7 +172,6 @@ LwCARestGetIntermediateCASignedCert(
 {
     DWORD                       dwError         = 0;
     PLWCA_REST_OPERATION        pRestOp         = NULL;
-    PSTR                        pszRequestId    = NULL;
     PSTR                        pszCAId         = NULL;
     PSTR                        pszChainOfTrust = NULL;
     PLWCA_REST_SIGN_CERT_SPEC   pSignCertSpec   = NULL;
@@ -195,9 +184,6 @@ LwCARestGetIntermediateCASignedCert(
     }
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
-
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -215,7 +201,7 @@ LwCARestGetIntermediateCASignedCert(
                             );
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAGetChainOfTrust(pszCAId, &pszChainOfTrust);
+    dwError = LwCAGetChainOfTrust(pRestOp->pReqCtx, pszCAId, &pszChainOfTrust);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetStrData(
@@ -231,8 +217,7 @@ LwCARestGetIntermediateCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError);
-    LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCASetRestResult(pRestOp, dwError);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCARestFreeSignCertInputSpec(pSignCertSpec);
     LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
@@ -260,7 +245,6 @@ LwCARestRevokeIntermediateCASignedCert(
 {
     DWORD                   dwError         = 0;
     PLWCA_REST_OPERATION    pRestOp         = NULL;
-    PSTR                    pszRequestId    = NULL;
     PSTR                    pszCAId         = NULL;
     PLWCA_CERTIFICATE       pCert           = NULL;
 
@@ -272,9 +256,6 @@ LwCARestRevokeIntermediateCASignedCert(
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
 
-    dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_REQ_ID, &pszRequestId, FALSE);
-    BAIL_ON_LWCA_ERROR(dwError);
-
     dwError = LwCARestGetStrParam(pRestOp, LWCA_REST_PARAM_CA_ID, &pszCAId, TRUE);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -285,8 +266,7 @@ LwCARestRevokeIntermediateCASignedCert(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError);
-    LWCA_SAFE_FREE_STRINGA(pszRequestId);
+    LwCASetRestResult(pRestOp, dwError);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCAFreeCertificate(pCert);
 
