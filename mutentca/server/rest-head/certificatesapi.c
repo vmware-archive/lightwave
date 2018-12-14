@@ -142,7 +142,7 @@ LwCARestRevokeRootCASignedCert(
     dwError = LwCAGetRootCAId(&pszRootCAId);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszRootCAId, pCert);
+    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszRootCAId, pCert, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -262,7 +262,7 @@ LwCARestRevokeIntermediateCASignedCert(
     dwError = LwCARestGetCertificateInput(pRestOp->pjBody, &pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszCAId, pCert);
+    dwError = LwCARevokeCertificate(pRestOp->pReqCtx, pszCAId, pCert, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:

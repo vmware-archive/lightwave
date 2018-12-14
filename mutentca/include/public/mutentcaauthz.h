@@ -25,19 +25,31 @@ extern "C" {
 
 /*
  * Indicates the API which requires an authorization check
- *     - LWCA_AUTHZ_CA_CREATE_PERMISSION:    AuthZ check for CA creation API
- *     - LWCA_AUTHZ_CA_REVOKE_PERMISSION:    AuthZ check for CA revoke API
- *     - LWCA_AUTHZ_CSR_PERMISSION:          AuthZ check for CSR API
- *     - LWCA_AUTHZ_CRL_PERMISSION:          Authz check for CRL API
+ *     - LWCA_AUTHZ_CA_CREATE_PERMISSION:       AuthZ check for CA creation API
+ *     - LWCA_AUTHZ_CA_REVOKE_PERMISSION:       AuthZ check for CA revoke API
+ *     - LWCA_AUTHZ_CERT_SIGN_PERMISSION:       AuthZ check for CSR API
+ *     - LWCA_AUTHZ_CERT_REVOKE_PERMISSION:     Authz check for Cert revoke API
  */
 typedef enum _LWCA_AUTHZ_API_PERMISSION
 {
-    LWCA_AUTHZ_ALLOW_PERMISSION          = 0x0,
-    LWCA_AUTHZ_CA_CREATE_PERMISSION      = 0x1,
-    LWCA_AUTHZ_CA_REVOKE_PERMISSION      = 0x2,
-    LWCA_AUTHZ_CSR_PERMISSION            = 0x4,
-    LWCA_AUTHZ_CRL_PERMISSION            = 0x8
+    LWCA_AUTHZ_ALLOW_PERMISSION         = 0x0,
+    LWCA_AUTHZ_CA_CREATE_PERMISSION     = 0x1,
+    LWCA_AUTHZ_CA_REVOKE_PERMISSION     = 0x2,
+    LWCA_AUTHZ_CERT_SIGN_PERMISSION     = 0x4,
+    LWCA_AUTHZ_CERT_REVOKE_PERMISSION   = 0x8
 } LWCA_AUTHZ_API_PERMISSION;
+
+/*
+ * Wrapper to pass either X509, X509_REQ, or X509_CRL data to AuthZ APIs.
+ * This allows LwCAAuthZCheckAccess API call to be generic to all CA APIs
+ * which require an AuthZ check.
+ */
+typedef union _LWCA_AUTHZ_X509_DATA
+{
+    X509            *pX509Cert;
+    X509_REQ        *pX509Req;
+    X509_CRL        *pX509Crl;
+} LWCA_AUTHZ_X509_DATA;
 
 
 /**
@@ -97,7 +109,8 @@ typedef PCSTR
  *
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct.
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
  * @param    pbAuthorized will be filled with true/false notifying the caller if
@@ -109,7 +122,7 @@ typedef DWORD
 (*PFN_LWCA_AUTHZ_CHECK_ACCESS)(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    X509_REQ                        *pX509Request,          // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     );

@@ -127,9 +127,10 @@ LwCARevokeIntermediateCA(
 
 DWORD
 LwCARevokeCertificate(
-    PLWCA_REQ_CONTEXT       pReqCtx,
-    PCSTR                   pcszCAId,
-    PLWCA_CERTIFICATE       pCertificate
+    PLWCA_REQ_CONTEXT           pReqCtx,
+    PCSTR                       pcszCAId,
+    PLWCA_CERTIFICATE           pCertificate,
+    LWCA_AUTHZ_API_PERMISSION   apiType
     );
 
 VOID
