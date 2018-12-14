@@ -67,6 +67,17 @@ VmDirMLDelete(
     PVDIR_OPERATION    pOperation
     );
 
+int
+GenerateDeleteAttrsMods(
+    PVDIR_OPERATION pOperation,
+    VDIR_ENTRY *    pEntry
+    );
+
+int
+DeleteRefAttributesValue(
+    VDIR_OPERATION *    pOperation,
+    VDIR_BERVALUE *     dn);
+
 // modify.c
 
 int
@@ -107,6 +118,14 @@ VmDirNormalizeMods(
 DWORD
 VmDirInternalEntryAttributeReplace(
     PVDIR_SCHEMA_CTX    pSchemaCtx,
+    PCSTR               pszNormDN,
+    PCSTR               pszAttrName,
+    PVDIR_BERVALUE      pBervAttrValue
+    );
+
+DWORD
+VmDirAddModSingleAttributeReplace(
+    PVDIR_OPERATION     pLdapOp,
     PCSTR               pszNormDN,
     PCSTR               pszAttrName,
     PVDIR_BERVALUE      pBervAttrValue

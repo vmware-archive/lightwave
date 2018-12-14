@@ -98,6 +98,7 @@ int get_sp_salt(const char *username,
     char *encpwd = NULL;
     char *sp = NULL;
     int cur_uid = 0;
+    int error = 0;
     
     if (!username || !ret_salt || !ret_encpwd)
     {
@@ -108,7 +109,12 @@ int get_sp_salt(const char *username,
 
     /* Must be root to read shadow password file */
     cur_uid = getuid();
-    seteuid(0);
+    error = seteuid(0);
+    if (error != 0)
+    {
+        st = -1;
+        goto error;
+    }
 
     /* Obtain password file lock, and hold minimum amount of time */
     st = lckpwdf();
@@ -151,7 +157,13 @@ int get_sp_salt(const char *username,
         goto error;
     }
     ulckpwdf();
-    seteuid(cur_uid);
+    error = seteuid(cur_uid);
+    if (error != 0)
+    {
+        st = -1;
+        goto error;
+    }
+
     is_locked = 0;
    
     /* CRYPT_DES hash is not supported; how to test? */
@@ -191,7 +203,7 @@ error:
     if (is_locked)
     {
         ulckpwdf();
-        seteuid(cur_uid);
+        error = seteuid(cur_uid);
     }
     if (spbuf_str)
     {

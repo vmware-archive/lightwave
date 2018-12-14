@@ -30,6 +30,7 @@
 #define LWCA_POST_GET_PARENT_CA_ID          "LwCADbPostPluginGetParentCAId"
 #define LWCA_GET_STRING_FROM_RESPONSE       "LwCAGetStringAttrFromResponse"
 #define LWCA_POST_UPDATE_CERT               "LwCAGenerateCertPatchRequestBody"
+#define LWCA_POST_SERIALIZE_LOCK            "LwCAGenerateLockRequestBody"
 #define LWCA_CONFIG_DB_PLUGIN_KEY_NAME   "dbPlugin"
 #define LWCA_CONFIG_DB_PLUGIN_PATH       "dbPluginConfigPath"
 #define TEST_SUBJECT                "TEST_SUBJECT"
@@ -50,6 +51,10 @@
 #define TEST_CA_ID                  "testId"
 #define TEST_PARENT_CA_ID           "testParentId"
 #define DUMMY_DOMAIN                "dc=lw-testdom,dc=com"
+#define TEST_LOCK_OWNER             "8eb59f16-59fa-485e-9f3f-eab876c527f1"
+#define TEST_LOCK_EXPIRE            1542670730
+#define TEST_LOCK_NO_OWNER          "noOwner"
+#define TEST_LOCK_NO_EXPIRE         0
 
 #define TEST_SERIAL_NUMBER          "1500"
 #define TEST_REVOKED_REASON         1
@@ -68,7 +73,8 @@
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\n" \
     "                \"vmwCertificationAuthority\",\n" \
-    "                \"pkiCA\"\n" \
+    "                \"pkiCA\",\n" \
+    "                \"resourceLock\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -122,6 +128,18 @@
     "            ]\n" \
     "        },\n" \
     "        {\n" \
+    "            \"type\": \"resourceLockOwner\",\n" \
+    "            \"value\": [\n" \
+    "                \"noOwner\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"resourceLockExpirationTime\",\n" \
+    "            \"value\": [\n" \
+    "                \"0\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
     "            \"type\": \"cAStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
@@ -137,7 +155,8 @@
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\n" \
     "                \"vmwCertificationAuthority\",\n" \
-    "                \"pkiCA\"\n" \
+    "                \"pkiCA\",\n" \
+    "                \"resourceLock\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -194,6 +213,18 @@
     "            \"type\": \"cAAuthBlob\",\n" \
     "            \"value\": [\n" \
     "                \""TEST_AUTH_BLOB_ESCAPED"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"resourceLockOwner\",\n" \
+    "            \"value\": [\n" \
+    "                \"noOwner\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"resourceLockExpirationTime\",\n" \
+    "            \"value\": [\n" \
+    "                \"0\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -466,7 +497,8 @@
     "        {\n" \
     "            \"type\": \"objectClass\",\n" \
     "            \"value\": [\n" \
-    "                \"vmwCerts\"\n" \
+    "                \"vmwCerts\",\n" \
+    "                \"resourceLock\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -509,6 +541,18 @@
     "            \"type\": \"certTimeValidTo\",\n" \
     "            \"value\": [\n" \
     "                \""TEST_TIME_VALID_TO"\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"resourceLockOwner\",\n" \
+    "            \"value\": [\n" \
+    "                \"noOwner\"\n" \
+    "            ]\n" \
+    "        },\n" \
+    "        {\n" \
+    "            \"type\": \"resourceLockExpirationTime\",\n" \
+    "            \"value\": [\n" \
+    "                \"0\"\n" \
     "            ]\n" \
     "        },\n" \
     "        {\n" \
@@ -563,6 +607,48 @@
     "            \"type\": \"certStatus\",\n" \
     "            \"value\": [\n" \
     "                \"1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    }\n" \
+    "]")
+
+#define LOCK_SERIALIZED_BODY ("[\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"resourceLockOwner\",\n" \
+    "            \"value\": [\n" \
+    "                \"8eb59f16-59fa-485e-9f3f-eab876c527f1\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"resourceLockExpirationTime\",\n" \
+    "            \"value\": [\n" \
+    "                \"1542670730\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    }\n" \
+    "]")
+
+#define UNLOCK_SERIALIZED_BODY ("[\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"resourceLockOwner\",\n" \
+    "            \"value\": [\n" \
+    "                \"noOwner\"\n" \
+    "            ]\n" \
+    "        }\n" \
+    "    },\n" \
+    "    {\n" \
+    "        \"operation\": \"replace\",\n" \
+    "        \"attribute\": {\n" \
+    "            \"type\": \"resourceLockExpirationTime\",\n" \
+    "            \"value\": [\n" \
+    "                \"0\"\n" \
     "            ]\n" \
     "        }\n" \
     "    }\n" \

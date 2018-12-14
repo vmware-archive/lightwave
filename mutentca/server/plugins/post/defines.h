@@ -54,11 +54,29 @@
 #define LWCA_POST_CERT_STATUS           "certStatus"
 #define LWCA_POST_CERT_OBJ_FILTER       "(objectClass="LWCA_POST_CERT_OBJ_CLASS")"
 
+// Lock attributes on POST
+#define LWCA_POST_LOCK_OBJ_CLASS        "resourceLock"
+#define LWCA_POST_ATTR_LOCK_OWNER       "resourceLockOwner"
+#define LWCA_POST_ATTR_LOCK_EXPIRE      "resourceLockExpirationTime"
+#define LWCA_POST_ATTR_LOCK_TAGS        "resourceTags"
+#define LWCA_LOCK_MAX_DRIFT             60
+#define LWCA_LOCK_MAX_ATTEMPT           1000
+#define LWCA_LOCK_SLEEP_NS              (500 * 1000000L)
+#define LWCA_LOCK_UNOWNED               "noOwner"
+#define LWCA_LOCK_UNOWNED_EXPIRE_TIME   0
+#define LWCA_LOCK_CONDITION             ("(|"\
+                                         "(!(" LWCA_POST_ATTR_LOCK_OWNER "=*))" \
+                                         "(" LWCA_POST_ATTR_LOCK_OWNER "=" LWCA_LOCK_UNOWNED ")" \
+                                         "(" LWCA_POST_ATTR_LOCK_OWNER "=%s)" \
+                                         "(" LWCA_POST_ATTR_LOCK_EXPIRE "<=%d)" \
+                                         ")")
+
 #define LWCA_POST_JSON_ATTR             "attributes"
 
 #define LWCA_EXPIRATION_BUFFER_TIME     (3 * 60)
 #define LWCA_POST_REST_PORT             7578
 #define LWCA_POST_REST_HTTPS            "https"
+#define LWCA_POST_REST_IF_MATCH         "If-Match"
 #define LWCA_POST_URI_PREFIX            "/v1/post/ldap"
 #define LWCA_RESP_RESULT_COUNT          "result_count"
 #define LWCA_RESP_RESULT                "result"
@@ -79,6 +97,7 @@
 #define LWCA_HTTP_OK                    200
 #define LWCA_HTTP_NOT_FOUND             404
 #define LWCA_HTTP_CONFLICT              409
+#define LWCA_HTTP_LOCK_HELD             412
 #define LWCA_POST_OIDC_SCOPE            "openid id_groups at_groups rs_post"
 
 #define LWCA_SAFE_FREE_CURL_MEMORY(PTR)   \

@@ -428,7 +428,7 @@ VmDirPluginInit(
 
     dwError = _VmDirPluginInit(
                 &gVmdirPluginGlobals.pPreModApplyDeletePluginInfo,
-                &(initPreModApplyDeleteTbl[0]),
+                initPreModApplyDeleteTbl,
                 sizeof(initPreModApplyDeleteTbl)/sizeof(initPreModApplyDeleteTbl[0]));
     BAIL_ON_VMDIR_ERROR(dwError);
 

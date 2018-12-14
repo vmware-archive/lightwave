@@ -19,7 +19,8 @@ libmutentcaresthead_la_SOURCES += \
     param.c \
     resource.c \
     result.c \
-    rootcaapi.c
+    rootcaapi.c \
+    utils.c
 
 endif
 

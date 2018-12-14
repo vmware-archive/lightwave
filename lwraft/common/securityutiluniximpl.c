@@ -24,11 +24,11 @@ VmDirInitializeSecurityContextImpl(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext = NULL;
 #ifndef __MACH__
     struct ucred credentials = {0};
-    int credLength = sizeof (struct ucred);
+    socklen_t credLength = sizeof (struct ucred);
     int sockopt = SO_PEERCRED;
 #else
     struct xucred credentials = {0};
-    int credLength = sizeof (struct xucred);
+    socklen_t credLength = sizeof (struct xucred);
     int sockopt = LOCAL_PEERCRED;
 #endif
  

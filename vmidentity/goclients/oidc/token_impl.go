@@ -679,7 +679,7 @@ func parseTokenMulti(
 	var info ProviderInfo
 
 	for index, info = range providerInfo {
-		tok, err = parseToken(token, info.issuer, audience, nonce, info.signers, tokenType, logger)
+		tok, err = parseToken(token, info.Issuer, audience, nonce, info.Signers, tokenType, logger)
 		if err == nil {
 			break
 		}

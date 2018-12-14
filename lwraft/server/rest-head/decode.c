@@ -31,7 +31,7 @@ VmDirRESTDecodeAttributeNoAlloc(
     PSTR    pszDecoded = NULL;
     PVDIR_SCHEMA_CTX    pSchemaCtx = NULL;
     size_t  valLen = 0;
-    int     len = 0;
+    unsigned int  len = 0;
 
     if (!pAttr)
     {
@@ -481,7 +481,6 @@ VmDirRESTDecodeObjectFilter(
 {
     DWORD   dwError = 0;
     DWORD   i = 0, j = 0;
-    PSTR    pszFilType = NULL;
     PSTR    pszFilVal = NULL;
     PSTR    pszDecoded = NULL;
     PVDIR_FILTER    f = NULL;
@@ -521,7 +520,6 @@ VmDirRESTDecodeObjectFilter(
     case LDAP_FILTER_GE:
     case LDAP_FILTER_LE:
 
-        pszFilType = pFilter->filtComp.ava.type.lberbv.bv_val;
         pszFilVal = pFilter->filtComp.ava.value.lberbv.bv_val;
 
         if (VmDirSchemaAttrIsDN(pFilter->filtComp.ava.pATDesc))
@@ -537,8 +535,6 @@ VmDirRESTDecodeObjectFilter(
         break;
 
     case LDAP_FILTER_SUBSTRINGS:
-
-        pszFilType = pFilter->filtComp.subStrings.type.lberbv.bv_val;
 
         /*
          * TODO Only final works currently, fix initial and any

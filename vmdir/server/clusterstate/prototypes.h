@@ -64,8 +64,11 @@ VmDirPersistTerm(
     int term
     );
 
-// libmain.c
-
+// raftstate.c
+BOOLEAN
+VmDirSchemaSupportSingleMaster(
+    VOID
+    );
 
 #ifdef __cplusplus
 }

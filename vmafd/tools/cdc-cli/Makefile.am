@@ -1,5 +1,8 @@
 bin_PROGRAMS = cdc-cli
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 cdc_cli_SOURCES = \
     cli.c  \
     main.c

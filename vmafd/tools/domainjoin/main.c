@@ -425,7 +425,7 @@ ReadPassword(
 
     szPassword[strcspn(szPassword, "\n")] = '\0';
 
-    if (IsNullOrEmptyString(szPassword))
+    if (VmAfdStringLenA(szPassword) == 0)
     {
         dwError = ERROR_PASSWORD_RESTRICTION;
         BAIL_ON_VMAFD_ERROR(dwError);

@@ -186,7 +186,6 @@ _srpVerifierInit(
     unsigned char **ret_bytes_v,
     int *ret_len_v)
 {
-    int sts = 0;
     const unsigned char *bytes_s = NULL;
     int len_s = 0;
     const unsigned char *bytes_v = NULL;
@@ -194,7 +193,6 @@ _srpVerifierInit(
 
     if (!username || !password || !ret_bytes_s || !ret_bytes_v)
     {
-        sts = -1;
         goto error;
     }
 
@@ -893,6 +891,10 @@ error:
     ber_free(ber_resp, 1);
     if (maj)
     {
+        if (min)
+        {
+            *minor_status = min;
+        }
         /* Cleanup return memory stuff here */
     }
 

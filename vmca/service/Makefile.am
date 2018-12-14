@@ -2,6 +2,9 @@ sbin_PROGRAMS = vmcad
 
 idl_srcdir=$(top_srcdir)/vmca/idl
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 SUBDIRS = \
     common \
     config \

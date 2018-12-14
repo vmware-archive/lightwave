@@ -385,7 +385,7 @@ VmAfdAddDBSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDBEntry->pszDCName, &pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -394,7 +394,7 @@ VmAfdAddDBSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDBEntry->pszDomainName, &pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -403,7 +403,7 @@ VmAfdAddDBSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDBEntry->pszSiteName, &pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -464,7 +464,7 @@ VmAfdAddDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDCName, &pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -473,7 +473,7 @@ VmAfdAddDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDomainName, &pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -482,7 +482,7 @@ VmAfdAddDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDcSiteName, &pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -491,7 +491,7 @@ VmAfdAddDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDCAddress, &pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDCAddress, VMAFD_MAX_DN_LEN, pszDCAddress);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDCAddress, VMAFD_MAX_DN_LEN, pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -562,7 +562,7 @@ VmAfdAddCDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDCName, &pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDCName, VMAFD_MAX_DN_LEN, pszDCName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -571,7 +571,7 @@ VmAfdAddCDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDomainName, &pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDomainName, VMAFD_MAX_DN_LEN, pszDomainName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -580,7 +580,7 @@ VmAfdAddCDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDcSiteName, &pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszSiteName, VMAFD_MAX_DN_LEN, pszSiteName);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -589,7 +589,7 @@ VmAfdAddCDCSuperLogEntry(
         dwError = VmAfdAllocateStringAFromW(pDCEntry->pszDCAddress, &pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = VmAfdStringCpyA(pLogEntry->pszDCAddress, VMAFD_MAX_DN_LEN, pszDCAddress);
+        dwError = VmAfdStringCpyA((PSTR)pLogEntry->pszDCAddress, VMAFD_MAX_DN_LEN, pszDCAddress);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
@@ -1063,16 +1063,16 @@ CopyLogEntryCallback(
 
     row = LogContext->DestinationBuffer;
 
-    dwError = VmAfdStringCpyA((PSTR)&row->pszDCName, VMAFD_MAX_DN_LEN, Entry->pszDCName);
+    dwError = VmAfdStringCpyA((PSTR)&row->pszDCName, VMAFD_MAX_DN_LEN, (PCSTR)Entry->pszDCName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdStringCpyA((PSTR)&row->pszDomainName, VMAFD_MAX_DN_LEN, Entry->pszDomainName);
+    dwError = VmAfdStringCpyA((PSTR)&row->pszDomainName, VMAFD_MAX_DN_LEN, (PCSTR)Entry->pszDomainName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdStringCpyA((PSTR)&row->pszDCAddress, VMAFD_MAX_DN_LEN, Entry->pszDCAddress);
+    dwError = VmAfdStringCpyA((PSTR)&row->pszDCAddress, VMAFD_MAX_DN_LEN, (PCSTR)Entry->pszDCAddress);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdStringCpyA((PSTR)&row->pszSiteName, VMAFD_MAX_DN_LEN, Entry->pszSiteName);
+    dwError = VmAfdStringCpyA((PSTR)&row->pszSiteName, VMAFD_MAX_DN_LEN, (PCSTR)Entry->pszSiteName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     row->bCDCIsAlive = Entry->bCDCIsAlive;

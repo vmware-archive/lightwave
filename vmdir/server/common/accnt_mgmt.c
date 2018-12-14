@@ -316,7 +316,6 @@ VmDirSrvSetupComputerAccount(
     PSTR        pszComputerDN = NULL;
     PSTR        pszDomainDN = NULL;
     PSTR        pByteAccountPasswd = NULL;
-    DWORD       dwAccountPasswdSize = 0;
     PSTR        pszUPN = NULL;
     PSTR        pszUpperCaseDomainName = NULL;
     PSTR        pszLowerCaseComputerHostName = NULL;
@@ -335,8 +334,6 @@ VmDirSrvSetupComputerAccount(
     char* modv_machine[] = {(PSTR)NULL, NULL};
     char* modv_upn[] = {(PSTR)NULL, NULL};
     char* modv_passwd[] = {(PSTR)NULL, NULL};
-
-    BerValue    bvPasswd = {0};
 
     LDAPMod modObjectClass = {0};
     LDAPMod modCn = {0};
@@ -475,11 +472,6 @@ VmDirSrvSetupComputerAccount(
 
         modv_passwd[0] = pByteAccountPasswd;
 
-        dwAccountPasswdSize = (int)VmDirStringLenA((PSTR)pByteAccountPasswd);
-
-        bvPasswd.bv_val = pByteAccountPasswd;
-        bvPasswd.bv_len = dwAccountPasswdSize;
-
         if (!bAcctExists)
         {
             // add ComputerAccount
@@ -503,7 +495,6 @@ VmDirSrvSetupComputerAccount(
 
         // pasword LDAP_CONSTRAINT_VIOLATION retry again.
         VMDIR_SAFE_FREE_MEMORY(pByteAccountPasswd);
-        dwAccountPasswdSize = 0;
     }
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -596,7 +587,6 @@ VmDirSrvSetupServiceAccount(
     PSTR        pszMSADN = NULL;
     PSTR        pszDomainDN = NULL;
     PBYTE       pByteMSAPasswd = NULL;
-    DWORD       dwMSAPasswdSize = 0;
     PSTR        pszUPN = NULL;
     PSTR        pszName = NULL;
     PSTR        pszUpperCaseDomainName = NULL;
@@ -609,7 +599,6 @@ VmDirSrvSetupServiceAccount(
     char* modv_sam[] = {(PSTR)NULL, NULL};
     char* modv_upn[] = {(PSTR)NULL, NULL};
     char* modv_passwd[] = {(PSTR)NULL, NULL};
-    BerValue    bvPasswd = {0};
 
     LDAPMod modObjectClass = {0};
     LDAPMod modCn = {0};
@@ -687,12 +676,7 @@ VmDirSrvSetupServiceAccount(
             (PSTR*)&pByteMSAPasswd);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        modv_passwd[0] = pByteMSAPasswd;
-
-        dwMSAPasswdSize = (int)VmDirStringLenA((PSTR)pByteMSAPasswd);
-
-        bvPasswd.bv_val = pByteMSAPasswd;
-        bvPasswd.bv_len = dwMSAPasswdSize;
+        modv_passwd[0] = (PSTR) pByteMSAPasswd;
 
         // and the ldap_add_ext_s is a synchronous call
         dwError = _VmDirSrvLDAPAdd(pConnection, pszMSADN, pDCMods);
@@ -705,11 +689,10 @@ VmDirSrvSetupServiceAccount(
             bAcctExists = TRUE;
 
             // reset ServiceAccount password. NOTE pByteDCAccountPasswd is null terminted.
-            dwError = _VmDirSrvLDAPModReplaceAttribute( pConnection, pszMSADN, ATTR_USER_PASSWORD, pByteMSAPasswd );
+            dwError = _VmDirSrvLDAPModReplaceAttribute( pConnection, pszMSADN, ATTR_USER_PASSWORD, (PCSTR) pByteMSAPasswd );
             if (dwError == LDAP_CONSTRAINT_VIOLATION)
             {
                 VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);
-                dwMSAPasswdSize = 0;
                 continue;
             }
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -718,7 +701,6 @@ VmDirSrvSetupServiceAccount(
         else if (dwError == LDAP_CONSTRAINT_VIOLATION)
         {
             VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);
-            dwMSAPasswdSize = 0;
             continue;
         }
         else

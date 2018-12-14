@@ -17,6 +17,7 @@
 #include "vmhttpclienttest.h"
 #include "vmsignaturetest.h"
 #include "vmjsonresulttest.h"
+#include "vmjsonresultobjectmaptest.h"
 
 int main(int argc, char *argv[])
 {

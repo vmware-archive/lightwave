@@ -59,7 +59,10 @@ TestVmDirSASLClient(
     PSTR    pszLDAPSURI = NULL;
 
     printf( "Please entry LDAP server host:");
-    scanf("%s", pszServerHost);
+    if (scanf("%s", pszServerHost) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
 
     dwError = VmDirAllocateStringPrintf(    &pszLDAPURI,
                                                 "ldap://%s:389",
@@ -176,9 +179,16 @@ _VmDirClientTestSimpleSSLBind(
     printf("_VmDirClientTestSimpleSSLBind ldaps simple ANONYMOUS bind succeeded.\n");
 
     printf( "\n\nPlease entry LDAPS Bind DN:");
-    scanf("%s", pszDefaultBindDN);
+    if (scanf("%s", pszDefaultBindDN) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
     printf( "Please entry LDAPS Bind password:");
-    scanf("%s", pszDefaultPasswd);
+    if (scanf("%s", pszDefaultPasswd) < 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
 
     ldapBindPwd.bv_val = pszDefaultPasswd;
     ldapBindPwd.bv_len = strlen( pszDefaultPasswd );

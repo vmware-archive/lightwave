@@ -1881,7 +1881,7 @@ VmDirLdapSetupDCAccountOnPartner(
                                          &dwDCAccountPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteDCAccountPasswd;
+        bvPasswd.bv_val = (PSTR) pByteDCAccountPasswd;
         bvPasswd.bv_len = dwDCAccountPasswdSize;
 
         if (!bAcctExists)
@@ -1897,7 +1897,7 @@ VmDirLdapSetupDCAccountOnPartner(
         if (bAcctExists)
         {
             PCSTR pszModAttrAry[] = {ATTR_USER_PASSWORD,
-                                     pByteDCAccountPasswd,
+                                     (PCSTR) pByteDCAccountPasswd,
                                      ATTR_PSC_VERSION,
                                      VDIR_PSC_VERSION,
                                      ATTR_MAX_DOMAIN_FUNCTIONAL_LEVEL,
@@ -1929,7 +1929,7 @@ VmDirLdapSetupDCAccountOnPartner(
     dwError = VmDirConfigSetDCAccountInfo(
                     pszDCHostName,
                     pszDCDN,
-                    pByteDCAccountPasswd,
+                    (PCSTR) pByteDCAccountPasswd,
                     dwDCAccountPasswdSize,
                     pszMachineGUID );
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2194,7 +2194,7 @@ VmDirLdapSetupComputerAccount(
                                          &dwAccountPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteAccountPasswd;
+        bvPasswd.bv_val = (PSTR) pByteAccountPasswd;
         bvPasswd.bv_len = dwAccountPasswdSize;
 
         if (!bAcctExists)
@@ -2210,7 +2210,7 @@ VmDirLdapSetupComputerAccount(
         if (bAcctExists)
         {
             // reset ComputerAccount password. NOTE pByteDCAccountPasswd is null terminated.
-            dwError = VmDirLdapModReplaceAttribute( pLd, pszComputerDN, ATTR_USER_PASSWORD, pByteAccountPasswd );
+            dwError = VmDirLdapModReplaceAttribute( pLd, pszComputerDN, ATTR_USER_PASSWORD, (PCSTR) pByteAccountPasswd );
         }
 
         if (dwError == LDAP_SUCCESS || dwError != LDAP_CONSTRAINT_VIOLATION)
@@ -2238,7 +2238,7 @@ VmDirLdapSetupComputerAccount(
         dwError = VmDirConfigSetDCAccountInfo(
                         pszComputerHostName,
                         pszComputerDN,
-                        pByteAccountPasswd,
+                        (PCSTR) pByteAccountPasswd,
                         dwAccountPasswdSize,
                         pszMachineGUID);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -2486,7 +2486,7 @@ VmDirLdapSetupServiceAccount(
                                          &dwMSAPasswdSize );
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        bvPasswd.bv_val = pByteMSAPasswd;
+        bvPasswd.bv_val = (PSTR) pByteMSAPasswd;
         bvPasswd.bv_len = dwMSAPasswdSize;
 
         // and the ldap_add_ext_s is a synchronous call
@@ -2500,7 +2500,7 @@ VmDirLdapSetupServiceAccount(
             bAcctExists = TRUE;
 
             // reset ServiceAccount password. NOTE pByteDCAccountPasswd is null terminted.
-            dwError = VmDirLdapModReplaceAttribute( pLocalLd, pszMSADN, ATTR_USER_PASSWORD, pByteMSAPasswd );
+            dwError = VmDirLdapModReplaceAttribute(pLocalLd, pszMSADN, ATTR_USER_PASSWORD, (PCSTR) pByteMSAPasswd);
             if (dwError == LDAP_CONSTRAINT_VIOLATION)
             {
                 VMDIR_SAFE_FREE_MEMORY(pByteMSAPasswd);

@@ -24,13 +24,6 @@
 #define LEN_OF_LEN        (2)
 
 DWORD
-VmDirDecodeMods(
-   PVDIR_SCHEMA_CTX pSchemaCtx,
-   char * encodedmods,
-   PVDIR_MODIFICATION *ppmods
-   );
-
-DWORD
 VmDirComputeEncodedModsSize(
     PVDIR_MODIFICATION pmods,
     int *           nAttrs,
@@ -578,7 +571,6 @@ VmDirDecodeMods(
     int                 i = 0;
     int                 j = 0;
     int                 nAttrs = 0;
-    int                 nVals = 0;
     unsigned char *     strPtr = NULL;
     VDIR_BERVALUE *     bvPtr = NULL;
     PVDIR_MODIFICATION  pMods = NULL;
@@ -590,9 +582,9 @@ VmDirDecodeMods(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    strPtr = encodedmods;
+    strPtr = (unsigned char *) encodedmods;
     nAttrs = VmDirDecodeShort(&strPtr);
-    nVals = VmDirDecodeShort(&strPtr);
+    (VOID) VmDirDecodeShort(&strPtr);
 
     for (i=0; i<nAttrs; i++)
     {

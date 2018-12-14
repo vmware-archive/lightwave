@@ -228,6 +228,14 @@ VmDirGenerateRandomInternalPassword(
     PSTR*   ppszRandPwd
     );
 
+DWORD
+VmDirKrbCreateKeyBlob(
+    PVDIR_BERVALUE   pBervPrincipalName,
+    PVDIR_BERVALUE   pBervPasswd,
+    DWORD            dwKvno,
+    PVDIR_BERVALUE   pOutKeyBlob
+    );
+
 // util.c
 
 VOID
@@ -246,5 +254,16 @@ DWORD
 VmDirExecReplAgrEnableDisableCtrl(
     PCSTR   pszDn,
     BOOLEAN bFlag   /*TRUE: Enable, FALSE: Disable*/
+    );
+
+// usn.c
+USN
+VmDirGetMaxCommittedUSN(
+    VOID
+    );
+
+DWORD
+VmDirInitMaxCommittedUSN(
+    PVDIR_BACKEND_INTERFACE   pBE
     );
 #endif /* ML_INTERFACE_H_ */

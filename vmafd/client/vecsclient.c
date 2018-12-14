@@ -629,6 +629,7 @@ error:
         DCETHREAD_CATCH_ALL(THIS_CATCH)
         {
             dwError2 = VmAfdRpcGetErrorCode(THIS_CATCH);
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError2);
         }
         DCETHREAD_ENDTRY;
     }
@@ -825,6 +826,7 @@ error:
         DCETHREAD_CATCH_ALL(THIS_CATCH)
         {
             dwError2 = VmAfdRpcGetErrorCode(THIS_CATCH);
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError2);
         }
         DCETHREAD_ENDTRY;
     }
@@ -2281,6 +2283,7 @@ error:
         DCETHREAD_CATCH_ALL(THIS_CATCH)
         {
             dwError2 = VmAfdRpcGetErrorCode(THIS_CATCH);
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError2);
         }
         DCETHREAD_ENDTRY;
     }
@@ -3814,6 +3817,7 @@ VecsFreeEnumContext(
                 DCETHREAD_CATCH_ALL(THIS_CATCH)
                 {
                     dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+                    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
                 }
                 DCETHREAD_ENDTRY;
             }
@@ -3878,6 +3882,7 @@ VecsFreeCertStore(
                 DCETHREAD_CATCH_ALL(THIS_CATCH)
                 {
                     dwError = VmAfdRpcGetErrorCode(THIS_CATCH);
+                    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)", __FUNCTION__, dwError);
                 }
                 DCETHREAD_ENDTRY;
             }

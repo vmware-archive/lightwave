@@ -108,3 +108,9 @@ typedef DWORD (*PLUGIN_UPDATE_CERT_REQ_BODY)(
     PLWCA_DB_CERT_DATA,
     PSTR *
     );
+
+typedef DWORD (*PLUGIN_SERIALIZE_LOCK)(
+    PCSTR,
+    ULONG,
+    PSTR *
+    );

@@ -22,6 +22,7 @@ extern "C" {
 #ifndef _WIN32
 
 #include <sys/prctl.h>
+#include <arpa/inet.h>
 
 #include <config.h>
 #include <vmcasys.h>

@@ -623,7 +623,7 @@ VmDirIpcEnumerateTenants(
                     &dataContainer.dwCount);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dataContainer.data = pszMultiString;
+        dataContainer.data = (PUCHAR) pszMultiString;
         dwError = VmDirMarshalContainerLength(
                     (PVMDIR_IPC_DATA_CONTAINER)&dataContainer,
                     &dwContainerLength);

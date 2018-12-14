@@ -377,7 +377,7 @@ _VmDirDBCrossChkAttr(
     unsigned char   eIdBytes[sizeof(ENTRYID)] = {0};
     PCSTR    pszAttrCheckList[] = {ATTR_MEMBER};  // TODO, use registry key to configure this list
 
-    bvValue.lberbv_val = &eIdBytes[0];
+    bvValue.lberbv_val = (PSTR) &eIdBytes[0];
     bvValue.lberbv_len = sizeof(ENTRYID);
     dwError = VmDirEntryIdToBV(pEntry->eId, &bvValue); // encoded entry id stored in index table "record"
     if (dwError)

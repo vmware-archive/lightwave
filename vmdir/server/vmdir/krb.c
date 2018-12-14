@@ -260,7 +260,7 @@ VmDirGetKeyTabRecBlob(
                       pszUpnName,
                       pUPNKeyByte,
                       dwUPNKeySize,
-                      gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
+                      (PBYTE) gVmdirKrbGlobals.bervMasterKey.lberbv.bv_val,
                       (DWORD)gVmdirKrbGlobals.bervMasterKey.lberbv.bv_len,
                       &pBlob,
                       &dwBlobLen);
@@ -662,11 +662,11 @@ VmDirKrbFreeAuthzInfo(
     {
         if (pInfo->AccountName.Buffer)
         {
-            LwFreeUnicodeString(&pInfo->AccountName);
+            LwFreeUnicodeString((PUNICODE_STRING)&pInfo->AccountName);
         }
         if (pInfo->DomainName.Buffer)
         {
-            LwFreeUnicodeString(&pInfo->DomainName);
+            LwFreeUnicodeString((PUNICODE_STRING)&pInfo->DomainName);
         }
         if (pInfo->GroupIds)
         {
@@ -699,7 +699,7 @@ VmDirKrbFreeGroupIds(
         {
             if (pGroupIds[i].Name.Buffer)
             {
-                LwFreeUnicodeString(&pGroupIds[i].Name);
+                LwFreeUnicodeString((PUNICODE_STRING)&pGroupIds[i].Name);
             }
         }
         VmDirFreeMemory(pGroupIds);

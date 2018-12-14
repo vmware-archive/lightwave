@@ -171,3 +171,14 @@ METRICS_LDAP_ERRORS
 VmDirMetricsMapLdapErrorToEnum(
     int error
     );
+
+// vmdir/metrics.c
+DWORD
+VmDirLwGitHashMetricsInit(
+    VOID
+    );
+
+VOID
+VmDirLwGitHashMetricsShutdown(
+    VOID
+    );

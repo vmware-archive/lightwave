@@ -47,7 +47,7 @@ VMCARegisterAuthInfo(
                                         pszLowerCaseHostName);
 
     rpc_server_register_auth_info(
-        pszServerPrincipalName, // Server principal name
+        (UCHAR *)pszServerPrincipalName, // Server principal name
         rpc_c_authn_gss_negotiate, // Authentication service
         NULL, // Use default key function
         NULL,

@@ -49,6 +49,7 @@
 #include <indexcfg.h>
 #include <backend.h>
 #include <replication.h>
+#include <mdbstore.h>
 
 #include <ldaphead.h>
 

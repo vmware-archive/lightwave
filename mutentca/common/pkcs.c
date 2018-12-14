@@ -1007,6 +1007,56 @@ error:
 }
 
 DWORD
+LwCAX509GetIssuerCommonName(
+    X509                    *pCert,
+    PSTR                    *ppszIssuerCN
+    )
+{
+    DWORD                   dwError = 0;
+    X509_NAME               *pIssuer = NULL;
+    PLWCA_STRING_ARRAY      pIssuerEntries = NULL;
+    PSTR                    pszIssuerCN = NULL;
+
+    if (!pCert || !ppszIssuerCN)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = _LwCAX509GetIssuerNameRef(pCert, &pIssuer);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAX509NameGetValues(pIssuer, NID_commonName, &pIssuerEntries);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (pIssuerEntries->dwCount != 1)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_CERTIFICATE);
+    }
+
+    dwError = LwCAAllocateStringA(pIssuerEntries->ppData[0], &pszIssuerCN);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszIssuerCN = pszIssuerCN;
+
+
+cleanup:
+
+    LwCAFreeStringArray(pIssuerEntries);
+
+    return dwError;
+
+error:
+
+    LWCA_SAFE_FREE_STRINGA(pszIssuerCN);
+    if (ppszIssuerCN)
+    {
+        *ppszIssuerCN = NULL;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 LwCAX509GetOrganizations(
     X509                *pCert,
     PLWCA_STRING_ARRAY  *ppOrgList
@@ -1245,6 +1295,112 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCAGetLatestCertificateFromArray(
+    PLWCA_CERTIFICATE_ARRAY     pCerts,
+    PLWCA_CERTIFICATE           *ppCert
+    )
+{
+    DWORD                       dwError = 0;
+    DWORD                       dwIdx = 0;
+    DWORD                       dwCurrentIdx = 0;
+    int                         nDays = 0;
+    int                         nSecs = 0;
+    X509                        *pX509CurrentCert = NULL;
+    X509                        *pX509TmpCert = NULL;
+    ASN1_TIME                   *pASN1CurrentTime = NULL;
+    ASN1_TIME                   *pASN1TmpTime = NULL;
+    PLWCA_CERTIFICATE           pCert = NULL;
+
+    if (!pCerts || !ppCert || pCerts->dwCount < 1)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (pCerts->dwCount == 1)
+    {
+        dwError = LwCACreateCertificate(pCerts->ppCertificates[0], &pCert);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        goto cleanup;
+    }
+
+    dwError = LwCAPEMToX509(pCerts->ppCertificates[0], &pX509CurrentCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pASN1CurrentTime = X509_get_notBefore(pX509CurrentCert);
+    if (pASN1CurrentTime == NULL)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_CERTIFICATE);
+    }
+
+    for (dwIdx = 1; dwIdx < pCerts->dwCount; ++dwIdx)
+    {
+        dwError = LwCAPEMToX509(pCerts->ppCertificates[dwIdx], &pX509TmpCert);
+        BAIL_ON_LWCA_ERROR(dwError);
+
+        pASN1TmpTime = X509_get_notBefore(pX509TmpCert);
+        if (pASN1TmpTime == NULL)
+        {
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_CERTIFICATE);
+        }
+
+        if (!ASN1_TIME_diff(&nDays, &nSecs, pASN1TmpTime, pASN1CurrentTime))
+        {
+            BAIL_WITH_LWCA_ERROR(dwError, LWCA_SSL_TIME_ERROR);
+        }
+
+        if (nDays > 0 || nSecs > 0)
+        {
+            LwCAX509Free(pX509CurrentCert);
+            pX509CurrentCert = NULL;
+            pASN1CurrentTime = NULL;
+
+            dwCurrentIdx = dwIdx;
+            pX509CurrentCert = pX509TmpCert;
+            pASN1CurrentTime = pASN1TmpTime;
+
+            pX509TmpCert = NULL;
+            pASN1TmpTime = NULL;
+        }
+        else
+        {
+            // Either pASN1TmpTime is earlier than pASN1CurrentTime or
+            // the two times are equal.  Then use the current currentTime
+            // value.
+
+            LwCAX509Free(pX509TmpCert);
+            pX509TmpCert = NULL;
+            pASN1TmpTime = NULL;
+        }
+
+        nDays = 0;
+        nSecs = 0;
+    }
+
+    dwError = LwCACreateCertificate(pCerts->ppCertificates[dwCurrentIdx], &pCert);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+
+cleanup:
+
+    LwCAX509Free(pX509CurrentCert);
+    LwCAX509Free(pX509TmpCert);
+
+    if (ppCert)
+    {
+        *ppCert = pCert;
+    }
+
+    return dwError;
+
+error:
+
+    LwCAFreeCertificate(pCert);
+    pCert = NULL;
+
+    goto cleanup;
+}
 
 DWORD
 LwCACreateCertificateSignRequest(
@@ -1775,6 +1931,45 @@ error :
     }
 
     return dwError;
+}
+
+DWORD
+LwCAX509VerifyCertIssuer(
+    X509        *pIssuerCert,
+    X509        *pCert,
+    PBOOLEAN    pbVerified
+    )
+{
+    DWORD       dwError = 0;
+    BOOLEAN     bVerified = FALSE;
+
+    if (!pIssuerCert || !pCert || !pbVerified)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (!X509_check_issued(pIssuerCert, pCert))
+    {
+        LWCA_LOG_ERROR("cannot verify issuer of certificate");
+        BAIL_ON_SSL_ERROR(dwError, LWCA_SSL_CERT_VERIFY_ERR);
+    }
+
+    bVerified = TRUE;
+    *pbVerified = bVerified;
+
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pbVerified)
+    {
+        *pbVerified = FALSE;
+    }
+
+    goto cleanup;
 }
 
 DWORD

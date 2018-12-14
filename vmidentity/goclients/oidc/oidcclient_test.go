@@ -437,8 +437,8 @@ func TestParseTokenType(t *testing.T) {
 }
 
 func checkProviderInfo(t *testing.T, providerInfo ProviderInfo) {
-	assert.NotEmpty(t, providerInfo.issuer, "issuer check")
-	assert.NotEmpty(t, providerInfo.signers, "signers check")
+	assert.NotEmpty(t, providerInfo.Issuer, "issuer check")
+	assert.NotEmpty(t, providerInfo.Signers, "signers check")
 }
 
 func checkParseAndValidateAccessTokenMulti(t *testing.T, oidcClient Client, clientID, reqID string, logger Logger) {
@@ -463,7 +463,7 @@ func checkParseAndValidateAccessTokenMulti(t *testing.T, oidcClient Client, clie
 	checkProviderInfo(t, providerInfo[1])
 
 	accessToken, index, err := ParseAndValidateAccessTokenMulti(
-		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+		tokens.AccessToken(), clientID, providerInfo[:], logger)
 
 	require.Nil(t, err, "Error in parsing access token: %+v", err)
 	assert.Equal(t, index, 1, "index check")
@@ -493,7 +493,7 @@ func checkParseAndValidateAccessTokenMultiFail(t *testing.T, oidcClient Client, 
 	checkProviderInfo(t, providerInfo[1])
 
 	_, _, err = ParseAndValidateAccessTokenMulti(
-		tokens.AccessToken(), clientID, "", providerInfo[:], logger)
+		tokens.AccessToken(), clientID, providerInfo[:], logger)
 
 	require.NotNil(t, err, "Error expected when parsing access token")
 }

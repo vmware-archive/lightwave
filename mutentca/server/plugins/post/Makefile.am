@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libmutentcasrvpluginpost.la
 
 libmutentcasrvpluginpost_la_SOURCES = \
+    lockmanager.c \
     post.c \
     serializer.c
 

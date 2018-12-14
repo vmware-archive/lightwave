@@ -143,9 +143,9 @@ VmDirSRPCreateSecret(
         dwError = _VmdirSRPValidateVandSalt(
                       pszLowerCaseUPN,
                       pClearTextPasswd->lberbv_val,
-                      bervSaltBlob.lberbv_val,
+                      (PBYTE) bervSaltBlob.lberbv_val,
                       (DWORD) bervSaltBlob.lberbv_len,
-                      bervVBlob.lberbv_val,
+                      (PBYTE) bervVBlob.lberbv_val,
                       (DWORD) bervVBlob.lberbv_len);
         if (dwError == 0)
         {
@@ -279,14 +279,14 @@ _VmDirSRPMakeSecret(
     dwError = VmDirAllocateMemory( uiLocalEncodedBufferLen, (PVOID*)&pLocalEncodedByte );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = sasl_encode64(    pLocalByte,
+    dwError = sasl_encode64(    (PSTR) pLocalByte,
                                 uiLocalByteLen,
-                                pLocalEncodedByte,
+                                (PSTR) pLocalEncodedByte,
                                 uiLocalEncodedBufferLen,
                                 &uiLocalEncodedByteLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pBervSecretBlob->lberbv_val = pLocalEncodedByte;
+    pBervSecretBlob->lberbv_val = (PSTR) pLocalEncodedByte;
     pBervSecretBlob->lberbv_len = uiLocalEncodedByteLen;
     pBervSecretBlob->bOwnBvVal = TRUE;
 
@@ -317,11 +317,11 @@ _VmDirSRPCalculateX(
     BIGNUM*         pX
     )
 {
-    DWORD       dwError = SASL_OK;
-    char        hashBufOne[EVP_MAX_MD_SIZE]={0};
-    int	        iHashBufOneLen;
-    char        hashBufTwo[EVP_MAX_MD_SIZE]={0};
-    int	        iHashBufTwoLen;
+    DWORD         dwError = SASL_OK;
+    unsigned char hashBufOne[EVP_MAX_MD_SIZE]={0};
+    unsigned int  iHashBufOneLen;
+    unsigned char hashBufTwo[EVP_MAX_MD_SIZE]={0};
+    unsigned int  iHashBufTwoLen;
 
     EVP_MD_CTX  EVPMDCtxOne = {0};
     EVP_MD_CTX  EVPMDCtxTwo = {0};
@@ -475,7 +475,7 @@ _VmDirSRPMakeVandSalt(
     dwError = VmDirAllocateMemory( dwLocalSaltLen, (PVOID)&pLocalSalt);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (RAND_pseudo_bytes(pLocalSalt, dwLocalSaltLen) != 1)
+    if (RAND_pseudo_bytes((PUCHAR) pLocalSalt, dwLocalSaltLen) != 1)
     {
         dwError = VMDIR_ERROR_SRP;
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -492,7 +492,7 @@ _VmDirSRPMakeVandSalt(
     dwLocalVLen = BN_num_bytes( &srp_v );
     dwError = VmDirAllocateMemory( dwLocalVLen, (PVOID)&pLocalV);
     BAIL_ON_VMDIR_ERROR(dwError);
-    BN_bn2bin( &srp_v, pLocalV);
+    BN_bn2bin( &srp_v, (PUCHAR) pLocalV);
 
     pBervV->lberbv_val = pLocalV;
     pBervV->lberbv_len = (ber_len_t)dwLocalVLen;

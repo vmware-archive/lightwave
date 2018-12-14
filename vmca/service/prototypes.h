@@ -780,6 +780,13 @@ VMCARESTFreeKrb(
     PVMCA_ACCESS_TOKEN pAccessToken
     );
 
+//auth.c
+DWORD
+VMCAIsAdministrator(
+    PCSTR       szAuthPrinc,
+    PBOOLEAN    pbHasAdminPrivilege
+    );
+
 #endif
 
 #ifdef __cplusplus

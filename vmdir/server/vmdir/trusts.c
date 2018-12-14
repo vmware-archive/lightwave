@@ -123,7 +123,6 @@ VmDirKrbSetTrustAuthInfo(
     PVDIR_ENTRY      pEntry = NULL;
     PVDIR_ATTRIBUTE  pAttrAuthInfo = NULL;
     VDIR_BERVALUE    bvUPN = VDIR_BERVALUE_INIT;
-    VDIR_BERVALUE    bvDN = VDIR_BERVALUE_INIT;
     VDIR_BERVALUE    bvPasswd = VDIR_BERVALUE_INIT;
     VDIR_BERVALUE    bvAuthInfoBlob = VDIR_BERVALUE_INIT;
 
@@ -137,9 +136,6 @@ VmDirKrbSetTrustAuthInfo(
 
     bvUPN.lberbv_val = (PSTR)pszUPN;
     bvUPN.lberbv_len = VmDirStringLenA(pszUPN);
-
-    bvDN.lberbv_val = (PSTR)pszDN;
-    bvDN.lberbv_len = VmDirStringLenA(pszDN);
 
     bvPasswd.lberbv_val = (PSTR)pszPasswd;
     bvPasswd.lberbv_len = VmDirStringLenA(pszPasswd);

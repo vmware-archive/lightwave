@@ -24,6 +24,9 @@
 #include <lw/hash.h>
 #include <sasl/sasl.h>
 #include <sasl/saslutil.h>
+#include <lw/ntstatus.h>
+#include <lw/rtlstring.h>
+#include <lw/atomic.h>
 
 #include <curl/curl.h>
 #include <jansson.h>

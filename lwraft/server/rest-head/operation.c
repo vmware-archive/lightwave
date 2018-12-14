@@ -89,7 +89,7 @@ VmDirRESTOperationReadRequest(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Get the client IP
-    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, &pRestOp->dwPort);
+    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, (INT32 *) &pRestOp->dwPort);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // read raw request URI as sent from client - for token POP validation

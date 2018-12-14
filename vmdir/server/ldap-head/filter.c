@@ -732,7 +732,6 @@ ParseFilter(
     VDIR_FILTER **    filter,
     VDIR_LDAP_RESULT *      lr )
 {
-    ber_tag_t    tag = LBER_ERROR;
     ber_len_t    len = 0;
     int          retVal = LDAP_SUCCESS;
     VDIR_FILTER *     f = NULL;
@@ -775,7 +774,7 @@ ParseFilter(
             break;
 
         case LDAP_FILTER_NOT:
-            tag = ber_skip_tag( ber, &len ); // Skip just peeked choice tag.
+            ber_skip_tag( ber, &len ); // Skip just peeked choice tag.
             retVal = ParseFilter( op, &f->filtComp.complex, lr );
             BAIL_ON_VMDIR_ERROR( retVal );
             if ( f->filtComp.complex == NULL )

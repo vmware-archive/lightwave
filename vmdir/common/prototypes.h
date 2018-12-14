@@ -220,10 +220,3 @@ DWORD
 VmDirGenRandomImpl(
     PDWORD pdwRandomNumber
     );
-
-DWORD
-VmDirInternalDeleteTree(
-    PCSTR   pBaseDN,
-    BOOLEAN bInclusive
-    );
-

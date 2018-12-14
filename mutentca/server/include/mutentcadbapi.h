@@ -75,6 +75,32 @@ LwCADbGetCACertificates(
     );
 
 DWORD
+LwCADbLockCA(
+    PCSTR   pcszCAId,
+    PSTR    *ppszUuid
+    );
+
+DWORD
+LwCADbUnlockCA(
+    PCSTR   pcszCAId,
+    PCSTR   pcszUuid
+    );
+
+DWORD
+LwCADbLockCert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PSTR    *ppszUuid
+    );
+
+DWORD
+LwCADbUnlockCert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PCSTR   pcszUuid
+    );
+
+DWORD
 LwCADbGetCertData(
     PCSTR                       pcszCAId,
     PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray

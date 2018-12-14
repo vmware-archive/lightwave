@@ -156,4 +156,10 @@ VmHttpClientFreeHandle(
     PVM_HTTP_CLIENT pClient
     );
 
+DWORD
+VmHttpClientSetQueryParam(
+    PVM_HTTP_CLIENT pClient,
+    PCSTR pszKey,
+    PCSTR pszValue
+    );
 #endif /* VM_HTTPCLIENT_H_ */

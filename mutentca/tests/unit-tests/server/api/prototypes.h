@@ -93,11 +93,11 @@ Test_LwCAGetCACrl_Invalid(
     );
 
 int
-TestLwCACreateRequestContext(
+Test_LwCAAPITests_Setup(
     VOID **state
     );
 
 int
-TestLwCAFreeRequestContext(
+Test_LwCAAPI_Teardown(
     VOID **state
     );

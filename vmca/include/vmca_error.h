@@ -138,6 +138,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_ERROR_INVALID_ENTRY            (VMCA_ROOT_CA_MISSING + 99)
 
 #define VMCA_UNKNOW_ERROR                   (VMCA_ROOT_CA_MISSING + 101)
+#define VMCA_SSL_BIO_READ_ERROR             (VMCA_ROOT_CA_MISSING + 102)
 
 
 #define VMCA_ERROR_TABLE_INITIALIZER \
@@ -237,6 +238,7 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_INVALID_STATE          ,   "VMCA_ERROR_INVALID_STATE"          ,   "Invalid state of service" }, \
     { VMCA_ERROR_INVALID_ENTRY          ,   "VMCA_ERROR_INVALID_ENTRY"          ,   "Requested entry is invalid" }, \
     { VMCA_UNKNOW_ERROR                 ,   "VMCA_UNKNOWN_ERROR"                ,   "Certificate Server Unknown Error" }, \
+    { VMCA_SSL_BIO_READ_ERROR           ,   "VMCA_SSL_BIO_READ_ERROR"           ,   "Failed to read data." }, \
 };
 
 

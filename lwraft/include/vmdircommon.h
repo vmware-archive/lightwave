@@ -1726,6 +1726,24 @@ VmDirMapLdapError(
     int ldapErrorCode
     );
 
+// client/client.c
+DWORD
+VmDirRaftFollowerInitiateVote(
+    PVMDIR_SERVER_CONTEXT   hBinding
+    );
+
+DWORD
+VmDirRaftStartVoteClient(
+    PCSTR   pszLogin,
+    PCSTR   pszPassword,
+    PCSTR   pszServerName
+    );
+
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    );
+
 // common/ldapcontrol.c
 int
 VmDirCreateCondWriteCtrlContent(
@@ -1849,6 +1867,18 @@ DWORD
 VmDirFQDNToDN(
     PCSTR pszFQDN,
     PSTR* ppszDN
+    );
+
+DWORD
+VmDirMkdir(
+    PCSTR path,
+    int mode
+    );
+
+DWORD
+VmDirDirectoryExists(
+    PCSTR       pszDirName,
+    PBOOLEAN    pbFound
     );
 
 //IPC
@@ -2467,6 +2497,22 @@ VmDirVerifyRSASignature(
     const unsigned char*    pSignature,
     size_t                  signatureSize,
     PBOOLEAN                pVerified
+    );
+
+// common/stringlist.c
+
+DWORD
+VmDirStringListFromMultiString(
+    PCSTR pszMultiString,
+    DWORD dwCountHint, // 0 if caller doesn't know
+    PVMDIR_STRING_LIST *ppStrList
+    );
+
+DWORD
+VmDirMultiStringFromStringList(
+    PVMDIR_STRING_LIST pStrList,
+    PSTR *ppszString,
+    PDWORD pdwByteCount // includes all nulls, including final double
     );
 
 #ifdef __cplusplus

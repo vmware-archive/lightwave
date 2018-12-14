@@ -271,7 +271,7 @@ VmDirRESTAuthTokenValidatePOP(
         // sha256 digest of body
         dwError = VmDirComputeMessageDigest(
                 EVP_sha256(),
-                pRestOp->pszBody,
+                (PUCHAR) pRestOp->pszBody,
                 VmDirStringLenA(pRestOp->pszBody),
                 &sha256Body,
                 &sha256BodySize);
@@ -297,7 +297,7 @@ VmDirRESTAuthTokenValidatePOP(
     dwError = VmDirVerifyRSASignature(
             pPubKey,
             EVP_sha256(),
-            pszBlob,
+            (PUCHAR) pszBlob,
             VmDirStringLenA(pszBlob),
             signature,
             signatureSize,

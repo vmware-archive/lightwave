@@ -85,5 +85,6 @@ typedef enum
 // padding to account for a large number of labels (values seperated by `.`).
 // The `+1`
 #define LWCA_LDAP_DC_DN_MAXLENGTH           sizeof(char)*512 + 1
+#define LWCA_UUID_LEN                       37
 
 #endif //__LWCA_COMMON_DEFINES_H__

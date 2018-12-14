@@ -45,8 +45,8 @@ func newProviderInfo(issuer string, signers IssuerSigners) (ProviderInfo, error)
 	}
 
 	providerInfo := ProviderInfo{
-		issuer:  issuer,
-		signers: signers,
+		Issuer:  issuer,
+		Signers: signers,
 	}
 
 	return providerInfo, nil

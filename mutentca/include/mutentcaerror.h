@@ -178,25 +178,25 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_ERRNO_EIO                      (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EIO)
 #define LWCA_ERRNO_ENXIO                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENXIO)
 #define LWCA_ERRNO_E2BIG                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + E2BIG)
-#define LWCA_ERRNO_ENOEXEC                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOEXE)
+#define LWCA_ERRNO_ENOEXEC                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOEXEC)
 #define LWCA_ERRNO_EBADF                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EBADF)
 #define LWCA_ERRNO_ECHILD                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ECHILD)
 #define LWCA_ERRNO_EAGAIN                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EAGAIN)
 #define LWCA_ERRNO_ENOMEM                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOMEM)
 #define LWCA_ERRNO_EACCES                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EACCES)
 #define LWCA_ERRNO_EFAULT                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EFAULT)
-#define LWCA_ERRNO_ENOTBLK                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTBL)
+#define LWCA_ERRNO_ENOTBLK                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTBLK)
 #define LWCA_ERRNO_EBUSY                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EBUSY)
 #define LWCA_ERRNO_EEXIST                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EEXIST)
 #define LWCA_ERRNO_EXDEV                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EXDEV)
 #define LWCA_ERRNO_ENODEV                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENODEV)
-#define LWCA_ERRNO_ENOTDIR                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTDI)
+#define LWCA_ERRNO_ENOTDIR                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTDIR)
 #define LWCA_ERRNO_EISDIR                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EISDIR)
 #define LWCA_ERRNO_EINVAL                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EINVAL)
 #define LWCA_ERRNO_ENFILE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENFILE)
 #define LWCA_ERRNO_EMFILE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EMFILE)
 #define LWCA_ERRNO_ENOTTY                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOTTY)
-#define LWCA_ERRNO_ETXTBSY                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ETXTBS)
+#define LWCA_ERRNO_ETXTBSY                  (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ETXTBSY)
 #define LWCA_ERRNO_EFBIG                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EFBIG)
 #define LWCA_ERRNO_ENOSPC                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ENOSPC)
 #define LWCA_ERRNO_ESPIPE                   (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + ESPIPE)
@@ -272,6 +272,8 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_COAPI_ERROR                    (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 6)
 #define LWCA_CREST_ENGINE_ERROR             (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 7)
 #define LWCA_ERROR_VMAFD_UNAVAILABLE        (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 9)
+#define LWCA_ERROR_UUID_GENERATE            (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 10)
+#define LWCA_LOCK_APPLY_FAILED              (LWCA_ERROR_BASE + LWCA_MISC_ERROR_BASE + 11)
 
 #define LWCA_ERRNO_TO_LWCAERROR(err)                                        \
     ((err) ? (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + (err)) : (LWCA_SUCCESS))
@@ -289,7 +291,7 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_INVALID_TIME_SPECIFIED       ,   "LWCA_INVALID_TIME_SPECIFIED"       ,   "Invalid time specified for the Certififcate" }, \
     { LWCA_ERROR_INVALID_PARAMETER      ,   "LWCA_ERROR_INVALID_PARAMETER"      ,   "Invalid parameter presented" }, \
     { LWCA_ERROR_TIME_OUT               ,   "LWCA_ERROR_TIME_OUT"               ,   "Time out occurred before specified Event." }, \
-    { LWCA_OUT_OF_MEMORY_ERR            ,   "LWCA_OUT_OF_MEMORY_ERR"            ,   "Unable to allocate Memory" }, \
+    { LWCA_OUT_OF_MEMORY_ERROR          ,   "LWCA_OUT_OF_MEMORY_ERROR"          ,   "Unable to allocate Memory" }, \
     { LWCA_REQUEST_ERROR                ,   "LWCA_REQUEST_ERROR"                ,   "Unable decode CSR" }, \
     { LWCA_KEY_CREATION_FAILURE         ,   "LWCA_KEY_CREATION_FAILURE"         ,   "Key Creation failure" }, \
     { LWCA_CERT_DECODE_FAILURE          ,   "LWCA_CERT_DECODE_FAILURE"          ,   "Cert Decode failure" }, \
@@ -455,6 +457,8 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_LDAP_UNKNOWN_OP              ,   "LWCA_LDAP_UNKNOWN_OP"              ,   "LDAP operation not known"}, \
     { LWCA_LDAP_DELETE_FAILED           ,   "LWCA_LDAP_DELETE_FAILED"           ,   "LDAP delete could not be completed"}, \
     { LWCA_ERROR_VMAFD_UNAVAILABLE      ,   "LWCA_ERROR_VMAFD_UNAVAILABLE"      ,   "Error calling libvmafdclient function" }, \
+    { LWCA_ERROR_UUID_GENERATE          ,   "LWCA_ERROR_UUID_GENERATE"          ,   "Error while generating UUID" }, \
+    { LWCA_LOCK_APPLY_FAILED            ,   "LWCA_LOCK_APPLY_FAILED"            ,   "Could not apply lock on DN" }, \
     { LWCA_REGEX_ERROR_NOMATCH          ,   "LWCA_REGEX_ERROR_NOMATCH"          ,   "regexec() failed to match" }, \
     { LWCA_REGEX_ERROR_BADPAT           ,   "LWCA_REGEX_ERROR_BADPAT"           ,   "Invalid regular expression" }, \
     { LWCA_REGEX_ERROR_ECOLLATE         ,   "LWCA_REGEX_ERROR_ECOLLATE"         ,   "Invalid collating element referenced" }, \
@@ -468,7 +472,12 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_REGEX_ERROR_ERANGE           ,   "LWCA_REGEX_ERROR_ERANGE"           ,   "Invalid endpoint in range expression" }, \
     { LWCA_REGEX_ERROR_ESPACE           ,   "LWCA_REGEX_ERROR_ESPACE"           ,   "Out of memory" }, \
     { LWCA_REGEX_ERROR_BADRPT           ,   "LWCA_REGEX_ERROR_BADRPT"           ,   "'?', '*', or '+' not preceded by valid regular expression" }, \
-    { LWCA_REGEX_ERROR_UNKNWON          ,   "LWCA_REGEX_ERROR_UNKNOWN"          ,   "Unknwown regex error" }, \
+    { LWCA_REGEX_ERROR_UNKNOWN          ,   "LWCA_REGEX_ERROR_UNKNOWN"          ,   "Unknwown regex error" }, \
 };
+
+PCSTR
+LwCAGetErrorDescription(
+    DWORD dwErrorCode
+    );
 
 #endif //__LWCA_ERROR_H__

@@ -8,7 +8,8 @@ libgssapi_ntlm_la_CPPFLAGS = \
    -I$(top_srcdir)/vmdir/include/public \
    -I$(top_srcdir)/vmdir/thirdparty \
     @OPENSSL_INCLUDES@ \
-    @LW_INCLUDES@
+    @LW_INCLUDES@ \
+    -Wno-pointer-sign
 
 libgssapi_ntlm_la_SOURCES = \
     gssapi_alloc.c \

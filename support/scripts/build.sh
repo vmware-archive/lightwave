@@ -3,4 +3,5 @@
 PROJECT_ROOT=$(pwd)
 
 cd $PROJECT_ROOT/build && \
-    make
+    make && \
+    make check

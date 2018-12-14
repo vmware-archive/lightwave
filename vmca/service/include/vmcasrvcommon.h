@@ -236,6 +236,20 @@ VMCAUtilIsValueInWhitelist(
     PBOOLEAN                        pbInWhitelist
     );
 
+DWORD
+VMCAGenerateX509Serial(
+    ASN1_INTEGER *pSerial
+);
+
+//../common/misc.h
+DWORD
+VMCAGetRegKeyValueDword(
+    PCSTR   pszConfigParamKeyPath,
+    PCSTR   pszKey,
+    PDWORD  pdwValue,
+    DWORD   dwDefaultValue
+    );
+
 #ifdef __cplusplus
 }
 #endif

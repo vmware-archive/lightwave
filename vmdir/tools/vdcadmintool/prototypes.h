@@ -56,4 +56,8 @@ VdcadminSetSRPAuthData(
     VOID
     );
 
+VOID
+VdcServerReset(
+    VOID
+    );
 #endif

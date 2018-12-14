@@ -109,14 +109,14 @@ VMCACheckAccess(
 
     if (bNeedAdminPrivilage)
     {
-        dwError = VMCALdapAccessCheck(authPrinc, VMCA_ADMINISTRATORS);
+        dwError = VMCALdapAccessCheck((PCSTR)authPrinc, VMCA_ADMINISTRATORS);
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
     if (ppReqContext)
     {
         dwError = VMCAAllocateReqContext(
-                            authPrinc,
+                            (PCSTR)authPrinc,
                             &pReqContext);
         BAIL_ON_VMCA_ERROR(dwError);
 
@@ -278,7 +278,7 @@ RpcVMCAGetServerVersion(
             (pTempServerVersion, &pTempVersion);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    strcpy(pTempVersion->pCert,pTempServerVersion);
+    strcpy((PSTR)pTempVersion->pCert,pTempServerVersion);
     *pServerVersion = pTempVersion;
 
 cleanup:
@@ -506,7 +506,7 @@ RpcVMCAGetSignedCertificate(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCARpcAllocateCertificateContainer(
-                        pTempCertContainer->pCert,
+                        (PSTR)pTempCertContainer->pCert,
                         &pCertContainer);
     BAIL_ON_VMCA_ERROR(dwError);
 
@@ -883,7 +883,7 @@ error:
 unsigned int
 VMCARpcRevokeCertificate(
     handle_t IDL_handle,
-    wchar16_t *pszServerName,
+    wchar16_t *pwszServerName,
     unsigned char *pszCertificate,
     unsigned int dwCertRevokeReason,
     wchar16_t *pszSharedSecret)
@@ -909,8 +909,8 @@ VMCARpcRevokeCertificate(
     /* TODO: Can the server be NULL? */
 
     dwError = VmcaSrvRevokeCertificate(
-                    pszServerName,
-                    pszCertificate,
+                    pwszServerName,
+                    (PVMCA_CERTIFICATE)pszCertificate,
                     certRevokeReason
                     );
     BAIL_ON_VMCA_ERROR(dwError);

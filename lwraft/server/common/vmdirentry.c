@@ -25,15 +25,6 @@ AttributeAppendBervArray(
     );
 
 DWORD
-AttrListToEntry(
-    PVDIR_SCHEMA_CTX    pSchemaCtx,
-    PSTR                pszDN,
-    PSTR*               ppszAttrList,
-    PVDIR_ENTRY         pEntry
-    );
-
-
-DWORD
 VmDirInitializeEntry(
    VDIR_ENTRY *               e,
    VDIR_ENTRY_ALLOCATION_TYPE allocType,

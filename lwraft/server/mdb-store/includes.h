@@ -45,6 +45,7 @@
 #include <backend.h>
 
 #include <mdbstore.h>
+#include <replication.h>
 
 #include "defines.h"
 #include "structs.h"

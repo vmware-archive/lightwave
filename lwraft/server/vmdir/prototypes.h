@@ -137,13 +137,6 @@ VmDirInit(
     );
 
 DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    );
-
-DWORD
 VmDirGetHostsInternal(
     PSTR**  pppszServerInfo,
     size_t* pdwInfoCount
@@ -531,6 +524,15 @@ VmDirIpcGetSRPSecret(
 
 DWORD
 VmDirIpcSetSRPSecret(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
+DWORD
+VmDirIpcServerReset(
     PVM_DIR_SECURITY_CONTEXT pSecurityContext,
     PBYTE pRequest,
     DWORD dwRequestSize,

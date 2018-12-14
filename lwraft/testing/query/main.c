@@ -48,7 +48,6 @@ int main(int argc, char* argv[])
     PVMDIR_QUERY_ARGS pArgs = NULL;
     PSTR              pszLdapURL = NULL;
     LDAP*             pLd = NULL;
-    BerValue          ldapBindPwd = {0};
     LDAPMessage*      pResult = NULL;
     PSTR              pszDN = NULL;
 
@@ -61,17 +60,12 @@ int main(int argc, char* argv[])
                     pArgs->pszHostname);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-#if 0
-    dwError = ldap_initialize(&pLd, pszLdapURL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#else
     pLd = ldap_open(pArgs->pszHostname, 389);
     if (!pLd)
     {
         dwError = VMDIR_ERROR_SERVER_DOWN;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-#endif
 
     dwError = ldap_set_option(pLd, LDAP_OPT_PROTOCOL_VERSION, &ldapVer);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -79,43 +73,13 @@ int main(int argc, char* argv[])
     dwError = ldap_set_option(pLd, LDAP_OPT_REFERRALS, LDAP_OPT_OFF);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    ldapBindPwd.bv_val = pArgs->pszPassword;
-    ldapBindPwd.bv_len = strlen(pArgs->pszPassword);
-
-#if 0
-    dwError = ldap_sasl_bind_s(
-                        pLd,
-                        pArgs->pszBindDN,
-                        LDAP_SASL_SIMPLE,
-                        &ldapBindPwd,
-                        NULL,
-                        NULL,
-                        NULL);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#else
     dwError = ldap_bind_s(
                         pLd,
                         pArgs->pszBindDN,
                         pArgs->pszPassword,
                         LDAP_AUTH_SIMPLE);
     BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
-#if 0
-    dwError = ldap_search_ext_s(
-                        pLd,
-                        pArgs->pszBaseDN,
-                        LDAP_SCOPE_SUBTREE,
-                        pArgs->pszFilter,
-                        NULL,
-                        TRUE,
-                        NULL,                       // server ctrls
-                        NULL,                       // client ctrls
-                        NULL,                       // timeout
-                        -1,                         // size limit,
-                        &pResult);
-    BAIL_ON_VMDIR_ERROR(dwError);
-#else
     dwError = ldap_search_s(
                         pLd,
                         pArgs->pszBaseDN,
@@ -125,7 +89,6 @@ int main(int argc, char* argv[])
                         TRUE,
                         &pResult);
     BAIL_ON_VMDIR_ERROR(dwError);
-#endif
 
     if (ldap_count_entries(pLd, pResult) > 0)
     {

@@ -21,81 +21,14 @@ _VmAfdOidcClientBuild(
     PCSTR           pcszDomain,
     PCSTR           pcszLocalCertsPath,
     POIDC_CLIENT*   ppClient
-    )
-{
-    DWORD           dwError         = 0;
-    DWORD           dwSSOError      = 0;
-    PSTR            pszServer       = NULL;
-    PSTR            pszDomain       = NULL;
-    POIDC_CLIENT    pClient         = NULL;
+    );
 
-    if (!ppClient)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
+static
+PCSTR
+_VmAfdGetOidcScope(
+    VMAFD_OIDC_SERVICE_SCOPE    scope
+    );
 
-    if (!IsNullOrEmptyString(pcszServer) || !IsNullOrEmptyString(pcszDomain))
-    {
-        if (!IsNullOrEmptyString(pcszServer) && !IsNullOrEmptyString(pcszDomain))
-        {
-            dwError = VmAfdAllocateStringA(pcszServer, &pszServer);
-            BAIL_ON_VMAFD_ERROR(dwError);
-
-            dwError = VmAfdAllocateStringA(pcszDomain, &pszDomain);
-            BAIL_ON_VMAFD_ERROR(dwError);
-        }
-        else
-        {
-            dwError = ERROR_INVALID_PARAMETER;
-            BAIL_ON_VMAFD_ERROR(dwError);
-        }
-    }
-    else
-    {
-        dwError = VmAfdGetDCNameA(
-                    VMAFD_DEFAULT_SERVER,
-                    &pszServer
-                    );
-        BAIL_ON_VMAFD_ERROR(dwError);
-
-        dwError = VmAfdGetDomainNameA(
-                    VMAFD_DEFAULT_SERVER,
-                    &pszDomain
-                    );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
-
-    dwSSOError = OidcClientBuild(
-                &pClient,
-                pszServer,
-                VMAFD_OIDC_PORT,
-                pszDomain,
-                NULL,
-                pcszLocalCertsPath
-                );
-    if (dwSSOError)
-    {
-        dwError = VmAfdOidcToVmafdError(dwSSOError);
-    }
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    *ppClient = pClient;
-
-cleanup:
-    VMAFD_SAFE_FREE_STRINGA(pszServer);
-    VMAFD_SAFE_FREE_STRINGA(pszDomain);
-
-    return dwError;
-
-error:
-    if (pClient)
-    {
-        VmAfdOidcClientDelete(pClient);
-    }
-
-    goto cleanup;
-}
 
 DWORD
 VmAfdOidcClientBuild(
@@ -256,18 +189,19 @@ VmAfdOidcClientDelete(
 }
 
 DWORD
-VmAfdAcquireTokenForVmDirREST(
-    PCSTR pszServer,
-    PCSTR pszDomain,
-    PCSTR pszUser,
-    PCSTR pszPass,
-    PCSTR pszLocalCertsPath,
-    PSTR *ppszToken
+VmAfdAcquireOIDCToken(
+    PCSTR                           pszServer,
+    PCSTR                           pszDomain,
+    PCSTR                           pszUser,
+    PCSTR                           pszPass,
+    PCSTR                           pszLocalCertsPath,
+    VMAFD_OIDC_SERVICE_SCOPE        oidcScope,
+    PSTR                            *ppszToken
     )
 {
-    DWORD dwError = 0;
-    PSTR pszToken = NULL;
-    POIDC_CLIENT pClient = NULL;
+    DWORD                           dwError = 0;
+    PSTR                            pszToken = NULL;
+    POIDC_CLIENT                    pClient = NULL;
 
     if (IsNullOrEmptyString(pszServer) ||
         IsNullOrEmptyString(pszDomain) ||
@@ -291,7 +225,7 @@ VmAfdAcquireTokenForVmDirREST(
                   pszDomain,
                   pszUser,
                   pszPass,
-                  "openid rs_vmdir",
+                  _VmAfdGetOidcScope(oidcScope),
                   &pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -304,4 +238,105 @@ cleanup:
 error:
     VMAFD_SAFE_FREE_STRINGA(pszToken);
     goto cleanup;
+}
+
+
+static
+DWORD
+_VmAfdOidcClientBuild(
+    PCSTR           pcszServer,
+    PCSTR           pcszDomain,
+    PCSTR           pcszLocalCertsPath,
+    POIDC_CLIENT*   ppClient
+    )
+{
+    DWORD           dwError         = 0;
+    DWORD           dwSSOError      = 0;
+    PSTR            pszServer       = NULL;
+    PSTR            pszDomain       = NULL;
+    POIDC_CLIENT    pClient         = NULL;
+
+    if (!ppClient)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (!IsNullOrEmptyString(pcszServer) || !IsNullOrEmptyString(pcszDomain))
+    {
+        if (!IsNullOrEmptyString(pcszServer) && !IsNullOrEmptyString(pcszDomain))
+        {
+            dwError = VmAfdAllocateStringA(pcszServer, &pszServer);
+            BAIL_ON_VMAFD_ERROR(dwError);
+
+            dwError = VmAfdAllocateStringA(pcszDomain, &pszDomain);
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+        else
+        {
+            dwError = ERROR_INVALID_PARAMETER;
+            BAIL_ON_VMAFD_ERROR(dwError);
+        }
+    }
+    else
+    {
+        dwError = VmAfdGetDCNameA(
+                    VMAFD_DEFAULT_SERVER,
+                    &pszServer
+                    );
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = VmAfdGetDomainNameA(
+                    VMAFD_DEFAULT_SERVER,
+                    &pszDomain
+                    );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwSSOError = OidcClientBuild(
+                &pClient,
+                pszServer,
+                VMAFD_OIDC_PORT,
+                pszDomain,
+                NULL,
+                pcszLocalCertsPath
+                );
+    if (dwSSOError)
+    {
+        dwError = VmAfdOidcToVmafdError(dwSSOError);
+    }
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppClient = pClient;
+
+cleanup:
+    VMAFD_SAFE_FREE_STRINGA(pszServer);
+    VMAFD_SAFE_FREE_STRINGA(pszDomain);
+
+    return dwError;
+
+error:
+    if (pClient)
+    {
+        VmAfdOidcClientDelete(pClient);
+    }
+
+    goto cleanup;
+}
+
+static
+PCSTR
+_VmAfdGetOidcScope(
+    VMAFD_OIDC_SERVICE_SCOPE    scope
+    )
+{
+    switch (scope)
+    {
+    case VMAFD_OIDC_VMDIR_SCOPE:
+        return VMAFD_OIDC_VMDIR_SCOPE_VALUE;
+    case VMAFD_OIDC_LWCA_SCOPE:
+        return VMAFD_OIDC_LWCA_SCOPE_VALUE;
+    default:
+        return VMAFD_OIDC_DEFAULT_SCOPE_VALUE;
+    }
 }

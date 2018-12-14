@@ -563,7 +563,7 @@ VecsAllocateFormatFingerPrintA(
     )
 {
     DWORD dwError = 0;
-    UCHAR mdString[EVP_MAX_MD_SIZE] = { 0 };
+    CHAR mdString[EVP_MAX_MD_SIZE] = { 0 };
     DWORD ndx = 0;
     PSTR pszHash = NULL;
 

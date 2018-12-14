@@ -56,9 +56,6 @@ VmKdcInitLoop(
     PVMKDC_GLOBALS pGlobals
     );
 
-int
-LoadServerGlobals();
-
 /* instance.c */
 
 DWORD

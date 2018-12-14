@@ -397,6 +397,13 @@ VmDirTestCanReadSingleEntry(
     PCSTR pszBaseDn
     );
 
+DWORD
+VmDirTestCreateSimpleContainer(
+    LDAP *pLd,
+    PCSTR pszCN,
+    PCSTR pszContainerDN
+    );
+
 #define TestAssertEquals(a, b) if (a != b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertNotEquals(a, b) if (a == b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
 

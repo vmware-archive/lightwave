@@ -72,7 +72,7 @@ VmAfdCreateAccessTokenFromSecurityContext(
     PACCESS_TOKEN pAccessToken = NULL;
     gid_t gid = 0;
     gid_t *pGidList = NULL;
-    int iGidListLen = 0;
+    unsigned int iGidListLen = 0;
     TOKEN_USER user = {{0}};
     TOKEN_OWNER owner = {0};
     PTOKEN_GROUPS pGroups = NULL;

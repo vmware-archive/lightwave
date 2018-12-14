@@ -69,5 +69,3 @@ the buffer size will always be adequate.
 
 #define VMAFD_DEFAULT_SERVER "localhost"
 #define VMAFD_OIDC_PORT 443
-
-#define VMAFD_OIDC_VMDIR_SCOPE "openid rs_vmdir"

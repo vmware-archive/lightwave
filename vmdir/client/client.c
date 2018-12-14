@@ -278,7 +278,7 @@ VmDirResetMachineActCred(
         }
 
         //set the new password in the machine registry
-        dwError = VmDirConfigSetDCAccountPassword(pszNewPassword,
+        dwError = VmDirConfigSetDCAccountPassword((PCSTR)pszNewPassword,
                                                   pszNewPasswordSize);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -728,6 +728,10 @@ VmDirSetupHostInstanceTrust(
     // Generate an initial DC account password and store it in the registry.
 
     err = RAND_pseudo_bytes(pszDCAccountPassword, VMDIR_KDC_RANDOM_PWD_LEN);
+    if (err != 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_HASH);
+    }
     for (i=0; i<VMDIR_KDC_RANDOM_PWD_LEN; i++)
     {
         pszDCAccountPassword[i] &= 0x7f;
@@ -739,8 +743,8 @@ VmDirSetupHostInstanceTrust(
     pszDCAccountPassword[VMDIR_KDC_RANDOM_PWD_LEN] = '\0';
 
     dwError = VmDirConfigSetDCAccountPassword(
-                        pszDCAccountPassword,
-                        (DWORD) VmDirStringLenA(pszDCAccountPassword));
+                        (PCSTR) pszDCAccountPassword,
+                        (DWORD) VmDirStringLenA((PCSTR) pszDCAccountPassword));
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Determine the name of lotus server
@@ -1987,7 +1991,7 @@ VmDirServerReset(
     }
 
     dwError = VmDirLocalServerReset(
-                    &pState
+                    pState
                     );
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2432,7 +2436,6 @@ VmDirAddReplicationAgreement(
 {
     DWORD       dwError                 = 0;
     PSTR        pszDomainName           = NULL;
-    PSTR        pszTopDomain            = NULL;
     PSTR        pszSrcServerName        = NULL;
     PSTR        pszTgtServerName        = NULL;
 
@@ -2472,8 +2475,6 @@ VmDirAddReplicationAgreement(
             "Domain name: %s\n",
             pszDomainName
             );
-
-    pszTopDomain = VmDirGetTopDomain( pszDomainName );
 
     // setup one way first
     dwError = VmDirLdapSetupRemoteHostRA(
@@ -2540,7 +2541,6 @@ VmDirRemoveReplicationAgreement(
 {
     DWORD       dwError                 = 0;
     PSTR        pszDomainName           = NULL;
-    PSTR        pszTopDomain            = NULL;
     PSTR        pszSrcServerName        = NULL;
     PSTR        pszTgtServerName        = NULL;
     PVMDIR_REPL_PARTNER_INFO    pReplPartnerInfo = NULL;
@@ -2622,7 +2622,6 @@ VmDirRemoveReplicationAgreement(
             pszDomainName
             );
 
-    pszTopDomain = VmDirGetTopDomain( pszDomainName );
 
     // Remove one way first
     dwError = VmDirLdapRemoveRemoteHostRA(
@@ -4538,7 +4537,8 @@ VmDirUpdateKeytabFile(
     DWORD                   dwError = 0;
     PVMDIR_KEYTAB_HANDLE    pKeyTabHandle = NULL;
     PSTR                    pszUpperCaseDomainName = NULL;
-    CHAR                    pszKeyTabFileName[VMDIR_MAX_FILE_NAME_LEN] = {0};
+    CHAR                    szKeyTabFileName[VMDIR_MAX_FILE_NAME_LEN] = {0};
+    PSTR                    pszKeyTabFileName = szKeyTabFileName;
     PSTR                    pszSRPUPN = NULL;
     PSTR                    pszMachineAccountUPN = NULL;
     PSTR                    pszServiceAccountUPN = NULL;
@@ -5441,7 +5441,7 @@ _VmDirModDcPassword(
     dwError = VmDirLdapModReplaceAttribute(pLD,
                                            pszMachineActDn,
                                            ATTR_USER_PASSWORD,
-                                           pszNewPassword);
+                                           (PCSTR) pszNewPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Update account (%s) password on node (%s)", pszMachineActDn, pszHostName);
@@ -6968,7 +6968,7 @@ _VmDirResetActPassword(
                                 pLD,
                                 pszActDN,
                                 ATTR_USER_PASSWORD,
-                                pByteDCAccountPasswd);
+                                (PCSTR) pByteDCAccountPasswd);
         if (dwError == LDAP_CONSTRAINT_VIOLATION)
         {
             continue;
@@ -6984,7 +6984,7 @@ _VmDirResetActPassword(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    *ppszNewPassword = pByteDCAccountPasswd;
+    *ppszNewPassword = (PSTR) pByteDCAccountPasswd;
     pByteDCAccountPasswd = NULL;
 
 cleanup:

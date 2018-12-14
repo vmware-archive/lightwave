@@ -1585,7 +1585,7 @@ _ConfigSetString(
                     pParamsKey,
                     pszValueName,
                     REG_SZ,
-                    pszValue,
+                    (PBYTE)pszValue,
                     (DWORD)strlen(pszValue) + 1);
     BAIL_ON_VMAFD_ERROR(dwError);
 

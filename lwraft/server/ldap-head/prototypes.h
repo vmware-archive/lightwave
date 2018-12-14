@@ -39,6 +39,12 @@ VmDirOPStatisticUpdate(
     uint64_t iThisTimeInMilliSecs
     );
 
+//connection.c
+int
+VmDirPerformExtended(
+   PVDIR_OPERATION pOperation
+   );
+
 #ifdef __cplusplus
 }
 #endif

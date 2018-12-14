@@ -129,14 +129,12 @@ MdbUpdateAttrMetaData(
     VDIR_BERVALUE         attrMetaDataAttr = { {ATTR_ATTR_META_DATA_LEN, ATTR_ATTR_META_DATA}, 0, 0, NULL };
     unsigned char *       pWriter = NULL;
     PVDIR_INDEX_CFG       pIndexCfg = NULL;
-    VDIR_BACKEND_CTX      beCtx = {0};
 
     if(1)
        return 0;
 
     assert(pBE);
 
-    beCtx.pBE = pBE;
     // E.g. while deleting a user, and therefore updating the member attribute of the groups to which the user belongs,
     // member attrMetaData of the group object is left unchanged (at least in the current design, SJ-TBD).
     if (ulOPMask == BE_INDEX_OP_TYPE_UPDATE && VmDirStringLenA( attr->metaData ) == 0)
@@ -328,7 +326,6 @@ MdbValidateAttrUniqueness(
     )
 {
     DWORD   dwError = 0;
-    size_t  entryDnLen = 0;
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator = NULL;
     PLW_HASHMAP             pOccupiedScopes = NULL;
     LW_HASHMAP_ITER         iter = LW_HASHMAP_ITER_INIT;
@@ -468,8 +465,6 @@ MdbValidateAttrUniqueness(
     }
 
     // check if the new entry dn matches any occupied scope
-    entryDnLen = VmDirStringLenA(pszEntryDN);
-
     LwRtlHashMapResetIter(&iter);
     while (LwRtlHashMapIterate(pOccupiedScopes, &iter, &pair))
     {

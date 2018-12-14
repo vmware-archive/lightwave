@@ -58,6 +58,9 @@
 #include <middlelayer.h>
 #include <replication.h>
 #include <vmacl.h>
+#include <vmkdcserver.h>
+#include <resthead.h>
+#include <clusterstate.h>
 
 #include <structs.h>
 #include <prototypes.h>

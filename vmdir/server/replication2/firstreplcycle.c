@@ -25,13 +25,6 @@
 
 #include "includes.h"
 
-
-/* Example of why you don't call public APIs internally */
-int
-LoadServerGlobals(
-    BOOLEAN *pbWriteInvocationId
-    );
-
 static
 int
 _VmDirWrapUpFirstReplicationCycle(

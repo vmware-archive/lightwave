@@ -32,6 +32,10 @@
 
 #define VDIR_OPEN_FILES_MAX 16384
 
+// TODO: Adding include to vmidentity.../public/oidc.h introduces numerous compilation errors
+DWORD
+OidcClientGlobalInit();
+
 static
 DWORD
 InitializeCFGEntries(
@@ -84,11 +88,6 @@ static
 DWORD
 _VmDirGenerateInvocationId(
     VOID
-    );
-
-int
-LoadServerGlobals(
-    BOOLEAN*    pbWriteInvocationId
     );
 
 static

@@ -507,14 +507,16 @@ VmAfdOidcClientDelete(
     );
 
 DWORD
-VmAfdAcquireTokenForVmDirREST(
-    PCSTR pszServer,
-    PCSTR pszDomain,
-    PCSTR pszUser,
-    PCSTR pszPass,
-    PCSTR pszLocalCertsPath,
-    PSTR *ppszToken
+VmAfdAcquireOIDCToken(
+    PCSTR                           pszServer,
+    PCSTR                           pszDomain,
+    PCSTR                           pszUser,
+    PCSTR                           pszPass,
+    PCSTR                           pszLocalCertsPath,
+    VMAFD_OIDC_SERVICE_SCOPE        oidcScope,
+    PSTR                            *ppszToken
     );
+
 // oidctoafderror.c
 
 DWORD

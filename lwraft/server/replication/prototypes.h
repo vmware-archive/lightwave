@@ -71,10 +71,6 @@ VmDirFirstReplicationCycle(
     );
 
 DWORD
-VmDirInitRaftPsState(
-    );
-
-DWORD
 VmDirLoadRaftState(
     VOID
     );
@@ -184,12 +180,6 @@ _VmDirDecodeUINT64(
     unsigned char ** ppbuf
     );
 
-VOID
-_VmDirChgLogFree(
-    PVDIR_RAFT_LOG chgLog,
-    BOOLEAN freeSelf
-    );
-
 DWORD
 _VmDirGetLogTerm(
     UINT64 index,
@@ -205,12 +195,6 @@ ENTRYID
 VmDirRaftLogEntryId(
     unsigned long long LogIndex
     );
-
-DWORD
-VmDirRaftStartVoteSrv(VOID);
-
-DWORD
-VmDirRaftFollowerInitiateVoteSrv(VOID);
 
 DWORD
 VmDirRaftMetricsInit(
@@ -268,10 +252,21 @@ VmDirSwapDBs(
     VOID
     );
 
-
 PVDIR_BACKEND_INTERFACE
 VmDirBackendForLogIndex(
     unsigned long long logIndex
+    );
+
+DWORD
+VmDirUnpackLogEntries(
+    PDEQUE pChglogs,
+    PVDIR_RAFT_LOG pLogEntry
+    );
+
+DWORD
+VmDirPackLogEntries(
+    PVDIR_RAFT_LOG pLogEntry,
+    PDEQUE pChglogs
     );
 
 // dbcopy.c

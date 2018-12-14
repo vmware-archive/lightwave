@@ -18,6 +18,19 @@
 #define strdup _strdup
 #endif
 
+DWORD
+VmDirServerReset(
+    DWORD*      pState
+    );
+
+DWORD
+VmDirSetupDefaultAccount(
+    PCSTR pszDomainName,
+    PCSTR pszPartnerServerName,
+    PCSTR pszLdapHostName,
+    PCSTR pszBindUserName,
+    PCSTR pszBindPassword
+    );
 
 /*
  * SRP parameters

@@ -134,6 +134,12 @@ LwCAX509GetIssuerName(
     );
 
 DWORD
+LwCAX509GetIssuerCommonName(
+    X509                    *pCert,
+    PSTR                    *ppszIssuerCN
+    );
+
+DWORD
 LwCAX509GetOrganizations(
     X509                *pCert,
     PLWCA_STRING_ARRAY  *ppOrgList
@@ -167,6 +173,12 @@ DWORD
 LwCAX509GetTimeValidTo(
     X509 *pCert,
     PSTR *ppszTimeValidTo
+    );
+
+DWORD
+LwCAGetLatestCertificateFromArray(
+    PLWCA_CERTIFICATE_ARRAY     pCerts,
+    PLWCA_CERTIFICATE           *ppCert
     );
 
 DWORD
@@ -230,6 +242,13 @@ LwCAX509CrlSign(
     X509_CRL    *pCrl,
     PCSTR       pcszPrivateKey,
     PCSTR       pcszPassPhrase
+    );
+
+DWORD
+LwCAX509VerifyCertIssuer(
+    X509        *pIssuerCert,
+    X509        *pCert,
+    PBOOLEAN    pbVerified
     );
 
 DWORD

@@ -3,6 +3,9 @@ lib_LTLIBRARIES = libvmcaclient.la
 
 idl_srcdir=$(top_srcdir)/vmca/idl
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 libvmcaclient_la_CPPFLAGS = \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \

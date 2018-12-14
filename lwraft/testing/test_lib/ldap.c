@@ -29,7 +29,7 @@ VmDirTestReplaceBinaryAttributeValues(
     LDAPMod *mods[2];
 
     /* Initialize the attribute, specifying 'modify' as the operation */
-    bvSecurityDescriptor.bv_val = pbAttributeValue;
+    bvSecurityDescriptor.bv_val = (PSTR)pbAttributeValue;
     bvSecurityDescriptor.bv_len = dwDataLength;
     ppBerValues[0] = &bvSecurityDescriptor;
     addReplace.mod_op     = LDAP_MOD_REPLACE | LDAP_MOD_BVALUES;

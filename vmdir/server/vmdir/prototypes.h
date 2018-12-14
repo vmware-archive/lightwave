@@ -56,12 +56,6 @@ VmDirCreateAccountEx(
 
 // auth.c
 
-DWORD
-VmDirSrvCreateAccessToken(
-    PCSTR pszUPN,
-    PVMDIR_SRV_ACCESS_TOKEN* ppAccessToken
-    );
-
 PVMDIR_SRV_ACCESS_TOKEN
 VmDirSrvAcquireAccessToken(
     PVMDIR_SRV_ACCESS_TOKEN pAccessToken
@@ -157,12 +151,6 @@ VmDirSrvBackupDB(
     PCSTR       pszBackupPath
     );
 
-// init.c
-DWORD
-VmDirInit(
-    VOID
-    );
-
 // instance.c
 
 DWORD
@@ -193,28 +181,10 @@ VmDirSrvSetupHostInstance(
 // regconfig.c
 
 DWORD
-VmDirSrvUpdateConfig(
-    VOID
-    );
-
-VOID
-VmDirSrvFreeConfig(
-    VOID
-    );
-
-DWORD
 VmDirRegGetMultiSZ(
     PCSTR   pszKeyPath,
     PCSTR   pszKeyName,
     PVMDIR_STRING_LIST* ppStrList
-    );
-
-// rpcstring.c
-
-ULONG
-VmDirRpcAllocateStringW(
-    PWSTR  pwszSrc,
-    PWSTR* ppwszDst
     );
 
 // schema.c
@@ -353,39 +323,6 @@ VmDirSrvServerReset(
     PDWORD pServerResetState
     );
 
-#ifndef _WIN32
-
-// signals.c
-VOID
-VmDirBlockSelectedSignals(
-    VOID
-    );
-
-DWORD
-VmDirHandleSignals(
-    VOID
-    );
-
-#endif
-
-/*parseargs.c*/
-
-DWORD
-VmDirParseArgs(
-    int         argc,
-    char*       argv[],
-    PCSTR*      ppszBootstrapSchemaFile,
-    int*        pLoggingLevel,
-    PCSTR*      ppszLogFileName,
-    PBOOLEAN    pbEnableSysLog,
-    PBOOLEAN    pbConsoleMode
-    );
-
-VOID
-ShowUsage(
-    PSTR pName
-    );
-
 /* krb.c */
 DWORD
 VmDirGetKrbMasterKey(
@@ -411,11 +348,9 @@ VmDirGetKeyTabRecBlob(
 // trusts.c
 
 DWORD
-VmDirKrbGetTrustAuthInfo(
-    PCSTR       pszDN,
-    DWORD       dwTrustDirection,
-    PBYTE       *ppByteSecret,
-    DWORD       *pdwSecretLen
+VmDirSrvCreateAccessToken(
+    PCSTR pszUPN,
+    PVMDIR_SRV_ACCESS_TOKEN* ppAccessToken
     );
 
 DWORD
@@ -482,13 +417,6 @@ VmDirGetLogMaximumLogSize(
 /* utils.c */
 
 DWORD
-VmDirAllocateBerValueAVsnprintf(
-    PVDIR_BERVALUE pbvValue,
-    PCSTR pszFormat,
-    ...
-    );
-
-DWORD
 VmDirGetHostsInternal(
     PSTR**  pppszServerInfo,
     size_t* pdwInfoCount
@@ -502,18 +430,6 @@ VmDirSrvValidateUserCreateParams(
 DWORD
 VmDirSetAdministratorPasswordNeverExpires(
     VOID
-    );
-
-DWORD
-VmDirPingReplyEntry(
-    PVDIR_RAFT_PING_CONTROL_VALUE pCscv,
-    PVDIR_ENTRY *ppEntry
-    );
-
-DWORD
-VmDirVoteReplyEntry(
-    PVDIR_RAFT_VOTE_CONTROL_VALUE pCvcv,
-    PVDIR_ENTRY *ppEntry
     );
 
 //IPC
@@ -633,6 +549,15 @@ VmDirIpcSetSRPSecret(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmDirIpcServerReset(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 // superlogging.h
 DWORD
 VmDirInitializeSuperLogging(
@@ -716,6 +641,24 @@ VmDirUpdateSrvStat(
     VOID
     );
 
+// integrityrpt.c
+DWORD
+VmDirIntegrityReportAddMismatch(
+    PVMDIR_INTEGRITY_REPORT pReport,
+    PCSTR                   pszDn
+    );
+
+DWORD
+VmDirIntegrityReportAddMissing(
+    PVMDIR_INTEGRITY_REPORT pReport,
+    PCSTR                   pszDn
+    );
+
+DWORD
+VmDirIntegrityReportSetPartner(
+    PVMDIR_INTEGRITY_REPORT pReport,
+    PCSTR                   pszPartner
+    );
 #ifdef __cplusplus
 }
 #endif

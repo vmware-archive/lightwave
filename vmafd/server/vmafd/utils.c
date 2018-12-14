@@ -201,7 +201,7 @@ VmAfdSrvIsValidGUID(
         dwError = VmAfdAllocateStringAFromW(pwszGUID, &pszGUID);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dce_uuid_from_string(pszGUID, &uuid, &status);
+        dce_uuid_from_string((UCHAR *)pszGUID, &uuid, &status);
 
         bResult =  (status == uuid_s_ok);
     }

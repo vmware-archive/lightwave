@@ -330,6 +330,10 @@ VmAfdAccessCheckWithHandle (
               break;
           }
         }
+        else
+        {
+            VmAfdLog(VMAFD_DEBUG_ANY, "%s log failed. error(%u)", __FUNCTION__, dwLogError);
+        }
         VMAFD_SAFE_FREE_MEMORY (paszAccountName);
     }
 

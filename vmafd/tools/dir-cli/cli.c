@@ -2461,7 +2461,7 @@ DirCliReadPassword(
         }
     }
 
-    if (IsNullOrEmptyString(szPassword))
+    if ( VmAfdStringLenA(szPassword) == 0)
     {
         dwError = ERROR_PASSWORD_RESTRICTION;
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -3912,13 +3912,7 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszUser);
     VMAFD_SAFE_FREE_STRINGA(pszDomain);
     VMAFD_SAFE_FREE_STRINGA(pszLoginUPN);
-
-    //
-    // NB -- This should be VMDIR_SAFE_FREE_STRINGA but that's unavailable.
-    // As things currently stand both routines are the same but this is a bit
-    // fragile.
-    //
-    VMAFD_SAFE_FREE_STRINGA(pBytePassword);
+    VMAFD_SAFE_FREE_MEMORY(pBytePassword);
 
     if (pConnection)
     {

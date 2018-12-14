@@ -182,9 +182,9 @@ VMCARESTWriteEnumCerts(
         for (nCounter = 0; nCounter < (int)pTempCertArray->dwCount; nCounter++)
         {
             dwError = VMCARemoveNewlineChars(
-                                    pTempCertArray->certificates[nCounter].pCert,
-                                    &pszTemp
-                                    );
+                          (PSTR)pTempCertArray->certificates[nCounter].pCert,
+                          &pszTemp
+                          );
             BAIL_ON_VMCA_ERROR(dwError);
 
             nCursor = nResponsePayloadSize;
@@ -386,7 +386,6 @@ VMCAParseQuery(
     int nSizeToAllocate = 0;
     int nNotDone = 1;
     int nIndex = 0;
-    PSTR pszUrl = NULL;
     PSTR pszRemaining = NULL;
     PSTR pszKey = NULL;
     PSTR pszVal = NULL;
@@ -410,7 +409,7 @@ VMCAParseQuery(
     dwError = VMCAAllocateMemory(nSizeToAllocate, (PVOID*) &ppszParams);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    pszUrl = VMCAStringTokA(pszQuery, "?", &pszRemaining);
+    VMCAStringTokA(pszQuery, "?", &pszRemaining);
     if (VMCAStringCompareA(pszRemaining, "", 0) == 0 )
     {
         dwError = VMCA_ERROR_INVALID_URI;
@@ -508,7 +507,7 @@ VMCARESTGetCRL(
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCARemoveNewlineChars(
-                            pTempCRLData->buffer,
+                            (PSTR)pTempCRLData->buffer,
                             &pszCRLJson
                             );
     BAIL_ON_VMCA_ERROR(dwError);
@@ -636,7 +635,7 @@ VMCARESTAddRootCertificate(
     unsigned char* pszRootCertificate = NULL;
     PWSTR pszPassPhrase = NULL;
     unsigned char* pszPrivateKey = NULL;
-    unsigned int dwOverWrite = 0;
+    int dwOverWrite = 0;
     json_t *pRoot = NULL;
     json_t *pJsonCert = NULL;
     json_t *pJsonPriv = NULL;
@@ -707,7 +706,7 @@ VMCARESTEnumCertificates(
     DWORD dwError = 0;
     PSTR  pszStatusCode = NULL;
     unsigned int dwStartIndex = 0;
-    unsigned int dwNumCertificates = 2;
+    int nNumCertificates = 2;
     VMCA_CERTIFICATE_ARRAY* pTempCertArray = NULL;
     CERTIFICATE_STATUS dwStatus = CERTIFICATE_ALL;
     //json_t *pRoot = NULL;
@@ -738,12 +737,12 @@ VMCARESTEnumCertificates(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VMCARESTStringToInt(pszNumber, &dwNumCertificates);
+    dwError = VMCARESTStringToInt(pszNumber, &nNumCertificates);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCAEnumCertificates(
                             dwStartIndex,
-                            dwNumCertificates,
+                            nNumCertificates,
                             dwStatus,
                             &pTempCertArray
                             );
@@ -778,9 +777,9 @@ VMCARESTGetSignedCertificate(
     PSTR                                pszResponsePayload = NULL;
     PSTR                                pszSignedCert = NULL;
     unsigned char                       *pszPEMEncodedCSRRequest = 0;
-    unsigned int                        dwNotBefore = 0;
-    unsigned int                        nDuration = 1000;
-    unsigned int                        dwNotAfter = 0;
+    int                                 nNotBefore = 0;
+    int                                 nDuration = 1000;
+    int                                 nNotAfter = 0;
     VMCA_CERTIFICATE_CONTAINER*         pTempCertContainer = NULL;
     PVMCA_REQ_CONTEXT                   pReqContext = NULL;
     json_t                              *pRoot = NULL;
@@ -801,12 +800,12 @@ VMCARESTGetSignedCertificate(
         BAIL_ON_VMCA_ERROR(dwError);
     }
     pszPEMEncodedCSRRequest = (unsigned char*) json_string_value(pJsonCSR);
-    dwError = VMCARESTStringToInt(json_string_value(pJsonNotBefore), &dwNotBefore);
+    dwError = VMCARESTStringToInt(json_string_value(pJsonNotBefore), &nNotBefore);
     BAIL_ON_VMCA_ERROR(dwError);
     dwError = VMCARESTStringToInt(json_string_value(pJsonDuration), &nDuration);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwNotAfter = dwNotBefore + nDuration;
+    nNotAfter = nNotBefore + nDuration;
 
     dwError = VMCAAllocateReqContext(
                         request.pAccessToken->pszSubjectName,
@@ -816,14 +815,14 @@ VMCARESTGetSignedCertificate(
 
     dwError = VMCAGetSignedCertificate(
                                 pszPEMEncodedCSRRequest,
-                                dwNotBefore,
-                                dwNotAfter,
+                                nNotBefore,
+                                nNotAfter,
                                 pReqContext,
                                 &pTempCertContainer
                                 );
     BAIL_ON_VMCA_ERROR(dwError);
 
-    dwError = VMCARemoveNewlineChars(pTempCertContainer->pCert, &pszSignedCert);
+    dwError = VMCARemoveNewlineChars((PSTR)pTempCertContainer->pCert, &pszSignedCert);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VMCARESTWritePayload(
@@ -878,7 +877,7 @@ VMCARESTRevokeCertificate(
 
     dwError = VmcaSrvRevokeCertificate(
                                 NULL,
-                                pszCertificate,
+                                (PVMCA_CERTIFICATE)pszCertificate,
                                 VMCA_CRL_REASON_UNSPECIFIED
                                 );
     BAIL_ON_VMCA_ERROR(dwError);

@@ -1496,7 +1496,7 @@ _ParseStatePingControlVal(
     }
 
     // decode payload
-    reader = berv.bv_val;
+    reader = (PUCHAR) berv.bv_val;
 
     // first read the number of elements in the payload
     n = VmDirDecodeShort(&reader);
@@ -1505,11 +1505,11 @@ _ParseStatePingControlVal(
     for (i = 0; i < n; i++)
     {
         len = VmDirDecodeShort(&reader);
-        pszKey = reader;
+        pszKey = (PSTR) reader;
         reader += (len + 1); // skipping \0
 
         len = VmDirDecodeShort(&reader);
-        pszVal = reader;
+        pszVal = (PSTR) reader;
         reader += (len + 1); // skipping \0
 
         if (VmDirStringCompareA(pszKey, pszHostnameKey, FALSE) == 0)
@@ -1798,7 +1798,7 @@ VmDirCreateStatePingControlContent(
     sizeRemain -= (lenMaxOrigUsnVal + 1);
 
     // write the encoded payload to ber
-    berVal.lberbv.bv_val = buffer;
+    berVal.lberbv.bv_val = (PSTR) buffer;
     berVal.lberbv.bv_len = sizeBuffer - sizeRemain;
 
     if (ber_printf(pBer, "{O}", &berVal) == -1)

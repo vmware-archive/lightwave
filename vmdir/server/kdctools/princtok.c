@@ -21,7 +21,7 @@ hexStringToBinary(char *hexStr, int len, unsigned char **ppBinaryBuf)
 {
     int i = 0;
     unsigned char *binaryBuf = NULL;
-    unsigned char twoHexChars[3];
+    char twoHexChars[3] = {'\0'};
 
     binaryBuf = (unsigned char *) calloc(1, len);
     if (!binaryBuf)

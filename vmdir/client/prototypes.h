@@ -580,6 +580,11 @@ VmDirLocalSetSRPSecret(
 );
 
 DWORD
+VmDirLocalServerReset(
+    UINT32  *pServerState
+);
+
+DWORD
 VmDirGetLastLocalUsnProcessedForHostFromRADN(
     LDAP *pLD,
     PCSTR pszRADN,

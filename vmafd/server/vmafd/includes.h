@@ -129,6 +129,14 @@
 #include <ldap.h>
 #include <vmhttpclient.h>
 #include <vmjsonresult.h>
+#include <vmnetworkutil.h>
+#include <vmstring.h>
+
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
+#include <oidc_types.h>
+#include <oidc.h>
 
 #include "defines.h"
 #include "structs.h"

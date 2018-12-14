@@ -328,7 +328,11 @@ VmDirEnableRedundantTopology(
 
     if (!bNoInteraction)
     {
-        scanf("%c", &flsh); // To read '\n' which was entered during last prompt
+        if (scanf("%c", &flsh) < 0) // To read '\n' which was entered during last prompt
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+
         dwContinueVal = _PromptForContinuation();
         if (!dwContinueVal)
         {
@@ -349,7 +353,11 @@ VmDirEnableRedundantTopology(
 
     if (!bNoInteraction)
     {
-        scanf("%c", &flsh); // To read '\n' which was entered during last prompt
+        if (scanf("%c", &flsh) < 0) // To read '\n' which was entered during last prompt
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+
         dwContinueVal = _PromptForContinuation();
         if (!dwContinueVal)
         {

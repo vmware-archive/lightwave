@@ -29,6 +29,7 @@ typedef struct _VMW_CA_PARAMS
 
     PSTR    pszPrivKeyFilePath;
     PSTR    pszCertFilePath;
+    PSTR    pszCertChainFilePath;
 
     BOOL    bInsecure;
 

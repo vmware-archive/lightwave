@@ -229,8 +229,7 @@ VOID
 LwCASetRestResult(
     PLWCA_REST_OPERATION    pRestOp,
     PSTR                    pszRequestId,
-    DWORD                   dwError,
-    PCSTR                   pcszErrMsg
+    DWORD                   dwError
     );
 
 VOID
@@ -328,6 +327,15 @@ DWORD
 LwCARestRevokeIntermediateCASignedCert(
     PVOID                   pIn,
     PVOID*                  pOut
+    );
+
+// utils.c
+DWORD
+LwCARestMakeGetCAJsonResponse(
+    PLWCA_CERTIFICATE_ARRAY     pCACerts,
+    PLWCA_STRING_ARRAY          pCRLs,
+    BOOLEAN                     bDetail,
+    PLWCA_JSON_OBJECT           *ppJsonRespArray
     );
 
 #ifdef __cplusplus

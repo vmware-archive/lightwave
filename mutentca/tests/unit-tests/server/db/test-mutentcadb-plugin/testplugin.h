@@ -160,3 +160,33 @@ VOID
 LwCADbTestPluginFreeHandle(
     PLWCA_DB_HANDLE pDbHandle
     );
+
+DWORD
+LwCADbTestPluginLockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PSTR            *ppszUuid
+    );
+
+DWORD
+LwCADbTestPluginUnlockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszUuid
+    );
+
+DWORD
+LwCADbTestPluginLockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PSTR            *ppszUuid
+    );
+
+DWORD
+LwCADbTestPluginUnlockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PCSTR           pcszUuid
+    );

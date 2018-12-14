@@ -676,6 +676,10 @@ VmwCaFreeParams(
     {
         VmwDeployFreeMemory(pParams->pszCertFilePath);
     }
+    if (pParams->pszCertChainFilePath)
+    {
+        VmwDeployFreeMemory(pParams->pszCertChainFilePath);
+    }
     if (pParams->pszServer)
     {
         VmwDeployFreeMemory(pParams->pszServer);
@@ -695,6 +699,14 @@ VmwCaFreeParams(
     if (pParams->pszCertDuration)
     {
         VmwDeployFreeMemory(pParams->pszCertDuration);
+    }
+    if (pParams->pszCAServer)
+    {
+        VmwDeployFreeMemory(pParams->pszCAServer);
+    }
+    if (pParams->pszCAId)
+    {
+        VmwDeployFreeMemory(pParams->pszCAId);
     }
 
     VmwDeployFreeMemory(pParams);

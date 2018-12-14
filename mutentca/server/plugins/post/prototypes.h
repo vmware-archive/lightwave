@@ -233,3 +233,64 @@ LwCAGenerateCertPatchRequestBody(
     PLWCA_DB_CERT_DATA  pCertData,
     PSTR                *ppszBody
     );
+
+DWORD
+LwCAGenerateLockRequestBody(
+    PCSTR           pcszUuid,
+    ULONG           expireTime,
+    PSTR            *ppszReqBody
+    );
+
+DWORD
+LwCARestExecutePatchImpl(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PCSTR               pcszReqBody,
+    PCSTR               pcszIfMatch,
+    PSTR                *ppszResponse,
+    long                *pStatusCode
+    );
+
+DWORD
+LwCADbPostPluginLockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PSTR            *ppszUuid
+    );
+
+DWORD
+LwCADbPostPluginUnlockCA(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszUuid
+    );
+
+DWORD
+LwCADbPostPluginLockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PSTR            *ppszUuid
+    );
+
+DWORD
+LwCADbPostPluginUnlockCert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PCSTR           pcszUuid
+    );
+
+DWORD
+LwCALockDN(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PSTR                *ppszUuid
+    );
+
+DWORD
+LwCAUnlockDN(
+    PLWCA_POST_HANDLE   pHandle,
+    PCSTR               pcszDN,
+    PCSTR               pcszUUID
+    );

@@ -91,6 +91,17 @@ typedef HINSTANCE   VMW_LIB_HANDLE;
 typedef VOID*       VMW_LIB_HANDLE;
 #endif
 
+#define VMAFD_OIDC_DEFAULT_SCOPE_VALUE  "openid at_groups id_groups"
+#define VMAFD_OIDC_VMDIR_SCOPE_VALUE    "openid rs_vmdir"
+#define VMAFD_OIDC_LWCA_SCOPE_VALUE     "openid at_groups id_groups rs_mutentca"
+
+typedef enum _VMAFD_OIDC_SERVICE_SCOPE
+{
+    VMAFD_OIDC_DEFAULT_SCOPE    = 0,
+    VMAFD_OIDC_VMDIR_SCOPE      = 1,
+    VMAFD_OIDC_LWCA_SCOPE       = 2
+} VMAFD_OIDC_SERVICE_SCOPE;
+
 VOID
 VmAfdFreeTypeSpecContent(
     PVMW_TYPE_SPEC typeSpec,

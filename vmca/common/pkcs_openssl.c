@@ -1595,7 +1595,7 @@ VMCACreateCertificateName(
 
             dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "CN", MBSTRING_UTF8,
-                    pszName, -1, -1, 0);
+                    (PBYTE)pszName, -1, -1, 0);
             ERR_print_errors_fp(stdout);
             BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
     }
@@ -1623,7 +1623,7 @@ VMCACreateCertificateName(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "C", MBSTRING_UTF8,
-                    pszCountry, -1, -1, 0);
+                    (PBYTE)pszCountry, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
 
 
@@ -1641,7 +1641,7 @@ VMCACreateCertificateName(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "ST", MBSTRING_UTF8,
-                    pszState, -1, -1, 0);
+                    (PBYTE)pszState, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
 
                 pszState = VMCAStringTokA(NULL, ",", &pszNextToken);
@@ -1658,7 +1658,7 @@ VMCACreateCertificateName(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "L", MBSTRING_UTF8,
-                    pszLocality, -1, -1, 0);
+                    (PBYTE)pszLocality, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
 
                 pszLocality = VMCAStringTokA(NULL, ",", &pszNextToken);
@@ -1675,7 +1675,7 @@ VMCACreateCertificateName(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "O", MBSTRING_UTF8,
-                    pszOrganization, -1, -1, 0);
+                    (PBYTE)pszOrganization, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
 
                 pszOrganization = VMCAStringTokA(NULL, ",", &pszNextToken);
@@ -1692,7 +1692,7 @@ VMCACreateCertificateName(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "OU", MBSTRING_UTF8,
-                    pszOU, -1, -1, 0);
+                    (PBYTE)pszOU, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
 
                 pszOU = VMCAStringTokA(NULL, ",", &pszNextToken);
@@ -2582,6 +2582,12 @@ VMCAGetCertificateSerial(
     i2a_ASN1_INTEGER(pBioMem, pSerialNumber);
 
     written = BIO_read(pBioMem, szSerialNumber, SERIAL_LEN-1);
+    if (written <= 0)
+    {
+        dwError = VMCA_SSL_BIO_READ_ERROR;
+        BAIL_ON_ERROR(dwError);
+    }
+
     dwError = VMCAAllocateStringA(szSerialNumber, ppszSerialNumber);
     BAIL_ON_ERROR(dwError);
 
@@ -2618,6 +2624,11 @@ VMCAGetCertificateTime(
     BAIL_ON_SSL_ERROR(dwError, VMCA_SSL_TIME_ERROR);
 
     written = BIO_read(pBioMem, buff, BUF_LEN-1);
+    if (written <= 0)
+    {
+        dwError = VMCA_SSL_BIO_READ_ERROR;
+        BAIL_ON_ERROR(dwError);
+    }
 
     dwError = VMCAAllocateStringA(buff,&tmpNotBefore);
     BAIL_ON_ERROR(dwError);
@@ -2626,6 +2637,11 @@ VMCAGetCertificateTime(
     BAIL_ON_SSL_ERROR(dwError, VMCA_SSL_TIME_ERROR);
 
     written = BIO_read(pBioMem, buff, BUF_LEN-1);
+    if (written <= 0)
+    {
+        dwError = VMCA_SSL_BIO_READ_ERROR;
+        BAIL_ON_ERROR(dwError);
+    }
 
     dwError = VMCAAllocateStringA(buff, &tmpNotAfter);
     BAIL_ON_ERROR(dwError);
@@ -3314,14 +3330,14 @@ VMCASetAddDCToX509Name(
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "DC", MBSTRING_UTF8,
-                    &pToken[3], -1, -1, 0);
+                    (PBYTE)&pToken[3], -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
             }
             else
             {
                 dwError = X509_NAME_add_entry_by_txt(pCertName,
                     "DC", MBSTRING_UTF8,
-                    pToken, -1, -1, 0);
+                    (PBYTE)pToken, -1, -1, 0);
                 BAIL_ON_SSL_ERROR(dwError, VMCA_INVALID_CSR_FIELD);
             }
            pToken = strtok(NULL, ",");

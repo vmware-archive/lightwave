@@ -11,7 +11,9 @@ libgssapi_srp_la_CPPFLAGS = \
    -I$(top_srcdir)/vmdir/thirdparty \
    -I$(top_builddir)/vmdir/client \
     @OPENSSL_INCLUDES@ \
-    @LW_INCLUDES@
+    @LW_INCLUDES@ \
+    -Wno-unused-but-set-variable \
+    -Wno-pointer-sign
 
 libgssapi_srp_la_SOURCES = \
         gssapi_alloc.c \

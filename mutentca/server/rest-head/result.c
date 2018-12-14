@@ -483,8 +483,7 @@ VOID
 LwCASetRestResult(
     PLWCA_REST_OPERATION    pRestOp,
     PSTR                    pszRequestId,
-    DWORD                   dwError,
-    PCSTR                   pcszErrDetail
+    DWORD                   dwError
     )
 {
     PLWCA_REST_RESOURCE pResource = NULL;
@@ -494,7 +493,7 @@ LwCASetRestResult(
     {
         pResource = ((PLWCA_REST_OPERATION)pRestOp)->pResource;
         pRestRslt = ((PLWCA_REST_OPERATION)pRestOp)->pResult;
-        pResource->pfnSetResult(pRestRslt, pszRequestId, dwError, pcszErrDetail);
+        pResource->pfnSetResult(pRestRslt, pszRequestId, dwError, LwCAGetErrorDescription(dwError));
     }
 }
 

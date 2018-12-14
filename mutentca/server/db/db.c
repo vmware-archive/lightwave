@@ -46,6 +46,10 @@ IsValidFunctionTable(
             && pFt->pFnGetParentCAId
             && pFt->pFnGetCAStatus
             && pFt->pFnGetCAAuthBlob
+            && pFt->pFnLockCA
+            && pFt->pFnUnlockCA
+            && pFt->pFnLockCert
+            && pFt->pFnUnlockCert
             && pFt->pFnUpdateCA
             && pFt->pFnUpdateCAStatus
             && pFt->pFnUpdateCACRLNumber
@@ -476,6 +480,177 @@ error:
     goto cleanup;
 }
 
+DWORD
+LwCADbLockCA(
+    PCSTR   pcszCAId,
+    PSTR    *ppszUuid
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+    PSTR    pszTmpUuid = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || !ppszUuid)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnLockCA(gDbCtx.pDbHandle, pcszCAId, &pszTmpUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pszTmpUuid, &pszUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszUuid = pszUuid;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeString(pszTmpUuid);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+    if (ppszUuid)
+    {
+        *ppszUuid = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbUnlockCA(
+    PCSTR   pcszCAId,
+    PCSTR   pcszUuid
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) || IsNullOrEmptyString(pcszUuid))
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUnlockCA(gDbCtx.pDbHandle, pcszCAId, pcszUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+LwCADbLockCert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PSTR    *ppszUuid
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUuid = NULL;
+    PSTR    pszTmpUuid = NULL;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszSerialNumber) ||
+        !ppszUuid
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnLockCert(gDbCtx.pDbHandle,
+                                      pcszCAId,
+                                      pcszSerialNumber,
+                                      &pszTmpUuid
+                                      );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAAllocateStringA(pszTmpUuid, &pszUuid);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    *ppszUuid = pszUuid;
+
+cleanup:
+    if (gDbCtx.isInitialized)
+    {
+        gDbCtx.pFt->pFnFreeString(pszTmpUuid);
+    }
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    LWCA_SAFE_FREE_STRINGA(pszUuid);
+    if (ppszUuid)
+    {
+        *ppszUuid = NULL;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCADbUnlockCert(
+    PCSTR   pcszCAId,
+    PCSTR   pcszSerialNumber,
+    PCSTR   pcszUuid
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bLocked = FALSE;
+
+    if (IsNullOrEmptyString(pcszCAId) ||
+        IsNullOrEmptyString(pcszSerialNumber) ||
+        IsNullOrEmptyString(pcszUuid)
+        )
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
+    LWCA_LOCK_MUTEX_SHARED(&gDbCtx.dbMutex, bLocked);
+
+    dwError = LwCADbValidateContext();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = gDbCtx.pFt->pFnUnlockCert(gDbCtx.pDbHandle,
+                                        pcszCAId,
+                                        pcszSerialNumber,
+                                        pcszUuid
+                                        );
+    BAIL_ON_LWCA_ERROR(dwError);
+
+cleanup:
+    LWCA_LOCK_MUTEX_UNLOCK(&gDbCtx.dbMutex, bLocked);
+    return dwError;
+
+error:
+    goto cleanup;
+}
 
 DWORD
 LwCADbGetCertData(

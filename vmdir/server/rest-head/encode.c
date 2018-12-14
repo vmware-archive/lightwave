@@ -20,12 +20,12 @@ VmDirRESTEncodeAttribute(
     json_t**        ppjOutput
     )
 {
-    DWORD   dwError = 0;
-    DWORD   i = 0;
-    json_t* pjVals = NULL;
-    json_t* pjAttr = NULL;
-    PSTR    pszEncoded = NULL;
-    int     len = 0;
+    DWORD        dwError = 0;
+    DWORD        i = 0;
+    json_t*      pjVals = NULL;
+    json_t*      pjAttr = NULL;
+    PSTR         pszEncoded = NULL;
+    unsigned int len = 0;
 
     if (!pAttr || !ppjOutput)
     {

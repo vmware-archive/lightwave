@@ -996,7 +996,6 @@ VmDirSendLdapReferralResult(
    BerElementBuffer berbuf;
    BerElement *     ber = (BerElement *) &berbuf;
    ber_int_t        msgId = 0;
-   PCSTR            pszSocketInfo = NULL;
    PSTR             pszLeader = NULL;
    PSTR             pszRef = NULL;
    PVDIR_BERVALUE   pBerv = NULL;
@@ -1009,14 +1008,9 @@ VmDirSendLdapReferralResult(
 
    ber_init2( ber, NULL, LBER_USE_DER );
 
-   if (op->conn)
-   {
-      pszSocketInfo = op->conn->szClientIP;
-   }
-
    dwError = VmDirRaftGetLeader(&pszLeader);
    BAIL_ON_VMDIR_ERROR(dwError);
-   
+
    if (pszLeader == NULL)
    {
        //server self is a raft leader or leader cannot determined (e.g. in voting stage).

@@ -1887,9 +1887,9 @@ VmDirSrvInitKrb(
                     &dwEncMasterKeyLen);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    bervMKey.lberbv.bv_val = pMasterKey;
+    bervMKey.lberbv.bv_val = (PSTR) pMasterKey;
     bervMKey.lberbv.bv_len = dwMasterKeyLen;
-    bervEncMKey.lberbv.bv_val = pEncMasterKey;
+    bervEncMKey.lberbv.bv_val = (PSTR) pEncMasterKey;
     bervEncMKey.lberbv.bv_len = dwEncMasterKeyLen;
 
     // add krb master key to domain entry

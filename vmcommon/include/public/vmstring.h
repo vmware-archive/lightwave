@@ -42,4 +42,8 @@ VmStringTrimSpace(
     PSTR pszStr
     );
 
+size_t
+VmStringLenA(
+    PCSTR pszStr
+    );
 #endif /* __VM_COMMON_STRING_H__ */

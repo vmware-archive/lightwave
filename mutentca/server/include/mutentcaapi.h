@@ -105,6 +105,12 @@ LwCAGetCACertificates(
     );
 
 DWORD
+LwCAGetChainOfTrust(
+    PCSTR                       pcszCAId,
+    PSTR                        *ppszChainOfTrust
+    );
+
+DWORD
 LwCAGetCACrl(
     PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,

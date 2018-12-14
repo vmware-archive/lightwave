@@ -1,5 +1,8 @@
 noinst_LTLIBRARIES = libvmcasrvcommon.la
 
+#remove after top level configure.ac sets the desired flags by default
+AM_CFLAGS=$(CFLAGS_DESIRED)
+
 libvmcasrvcommon_la_SOURCES = \
     config.c \
     cnpolicy.c \

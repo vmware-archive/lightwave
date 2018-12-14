@@ -92,7 +92,6 @@ _CreateKrbConfig(
     PCSTR pszKdcServer2)
 {
     DWORD dwError = 0;
-    DWORD dwError2 = 0;
     PVMAFD_KRB_CONFIG pKrbConfig = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pszConfigFileName, dwError);
@@ -131,7 +130,7 @@ _CreateKrbConfig(
 
 cleanup:
 
-    dwError2 = VmAfdDestroyKrbConfig(pKrbConfig);
+    VmAfdDestroyKrbConfig(pKrbConfig);
 
     return dwError;
 
@@ -1036,12 +1035,13 @@ _VmAfSrvRestClientPrejoinAtomic(
     }
 
     /* acquire token */
-    dwError = VmAfdAcquireTokenForVmDirREST(
+    dwError = VmAfdAcquireOIDCToken(
                   pszDCHostName,
                   pszDomainName,
                   pszUserName,
                   pszPassword,
                   pszCAPath,
+                  VMAFD_OIDC_VMDIR_SCOPE,
                   &pszToken);
     BAIL_ON_VMAFD_ERROR(dwError);
 

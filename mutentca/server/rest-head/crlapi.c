@@ -80,7 +80,7 @@ LwCARestGetRootCACRL(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LwCAFreeCrl(pCrl);
     LWCA_SAFE_FREE_STRINGA(pszRootCAId);
@@ -135,7 +135,7 @@ LwCARestGetIntermediateCACRL(
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
-    LwCASetRestResult(pRestOp, pszRequestId, dwError, NULL);
+    LwCASetRestResult(pRestOp, pszRequestId, dwError);
     LWCA_SAFE_FREE_STRINGA(pszRequestId);
     LWCA_SAFE_FREE_STRINGA(pszCAId);
     LwCAFreeCrl(pCrl);
