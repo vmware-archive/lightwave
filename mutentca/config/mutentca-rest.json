@@ -81,7 +81,7 @@
         "operationId": "getRootCA",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -120,7 +120,7 @@
         "operationId": "createIntermediateCA",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -190,7 +190,7 @@
         "operationId": "getIntermediateCA",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -258,7 +258,7 @@
         "operationId": "revokeIntermediateCA",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -324,7 +324,7 @@
         "operationId": "getRootCAChainOfTrust",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -356,7 +356,7 @@
         "operationId": "getIntermediateCAChainOfTrust",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -419,7 +419,7 @@
         "operationId": "getRootCACRL",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -451,7 +451,7 @@
         "operationId": "getIntermediateCACRL",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -514,7 +514,7 @@
         "operationId": "addCACertificate",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -570,7 +570,7 @@
         "operationId": "revokeCACertificate",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -631,7 +631,7 @@
         "operationId": "addIntermediateCACertificate",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false
@@ -700,7 +700,7 @@
         "operationId": "revokeIntermediateCACertificate",
         "parameters": [
           {
-            "name": "X-Request-ID",
+            "name": "X-Request-Id",
             "in": "header",
             "type": "string",
             "required": false

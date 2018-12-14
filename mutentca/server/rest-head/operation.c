@@ -148,16 +148,24 @@ LwCARestOperationReadRequest(
     dwError = VmRESTGetHttpHeader(pRestReq, LWCA_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    // request id can be a URI param or a header param
+    dwError = VmRESTGetHttpHeader(pRestReq, LWCA_REST_HEADER_REQUEST_ID, &pRestOp->pszRequestId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     // read request params
     for (dwIdx = 1; dwIdx <= dwParamCount; ++dwIdx)
     {
         dwError = VmRESTGetParamsByIndex(pRestReq, dwParamCount, dwIdx, &pszKey, &pszVal);
         BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get params from REST request");
 
+        // request id can be a URI param or a header param
         if (LwCAStringCompareA(pszKey, LWCA_REST_PARAM_REQ_ID, FALSE) == 0)
         {
-            dwError = LwCAAllocateStringA(pszVal, &pRestOp->pszRequestId);
-            BAIL_ON_LWCA_ERROR(dwError);
+            if (!pRestOp->pszRequestId)
+            {
+                dwError = LwCAAllocateStringA(pszVal, &pRestOp->pszRequestId);
+                BAIL_ON_LWCA_ERROR(dwError);
+            }
 
             LWCA_SAFE_FREE_STRINGA(pszKey);
             LWCA_SAFE_FREE_STRINGA(pszVal);
