@@ -62,3 +62,13 @@ VmDirJoinAtomic(
     PVMDIR_MACHINE_INFO_A *ppMachineInfo,
     PVMDIR_KRB_INFO *ppKrbInfo
     );
+
+// createcomputer.c
+DWORD
+VmDirCreateComputerAccountInternal(
+    PVDIR_CONNECTION pConn,
+    PCSTR pszMachineName,
+    PCSTR pszDomainName,
+    PCSTR pszOrgUnit,
+    PVMDIR_MACHINE_INFO_A *ppMachineInfo
+    );

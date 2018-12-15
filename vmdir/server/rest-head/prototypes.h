@@ -442,3 +442,9 @@ VmDirRESTJoinAtomic(
     void*   pIn,
     void**  ppOut
     );
+
+DWORD
+VmDirRESTCreateComputerAccount(
+    void*   pIn,
+    void**  ppOut
+    );
