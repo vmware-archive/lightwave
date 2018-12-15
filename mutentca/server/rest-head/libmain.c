@@ -24,15 +24,36 @@ REST_PROCESSOR sLwCARestApiHandlers =
     .pfnHandleOthers = &LwCARestApiRequestHandler
 };
 
+REST_PROCESSOR sLwCARestMetricsApiHandlers =
+{
+    .pfnHandleCreate = &LwCARestMetricsApiRequestHandler,
+    .pfnHandleRead   = &LwCARestMetricsApiRequestHandler,
+    .pfnHandleUpdate = &LwCARestMetricsApiRequestHandler,
+    .pfnHandleDelete = &LwCARestMetricsApiRequestHandler,
+    .pfnHandleOthers = &LwCARestMetricsApiRequestHandler
+};
+
 static
 DWORD
-_LwCARestServerInitHTTPS(
+_LwCARestServerInit(
+    VOID
+    );
+
+static
+DWORD
+_LwCARestMetricsServerInit(
     VOID
     );
 
 static
 VOID
-_LwCARestServerShutdownHTTPS(
+_LwCARestServerShutdown(
+    VOID
+    );
+
+static
+VOID
+_LwCARestMetricsServerShutdown(
     VOID
     );
 
@@ -65,6 +86,13 @@ LwCARestServerInit(
         {NULL, NULL}
     };
 
+    MODULE_REG_MAP stRegMapMetrics[] =
+    {
+        {"metrics", LwCARestMetricsModule},
+        {NULL, NULL}
+    };
+
+    // HTTPS Server for APIs
     dwError = coapi_load_from_file(LWCA_REST_API_SPEC, &gpLwCARestApiDef);
     BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, "Failed to load rest api spec file");
 
@@ -74,7 +102,7 @@ LwCARestServerInit(
     dwError = LwCAOpensslInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCARestServerInitHTTPS();
+    dwError = _LwCARestServerInit();
     if (dwError != 0)
     {
         /*
@@ -88,6 +116,16 @@ LwCARestServerInit(
                 dwError);
          dwError = 0;
     }
+
+    // HTTP Server for Metrics
+    dwError = coapi_load_from_file(LWCA_REST_METRICS_API_SPEC, &gpLwCARestMetricsApiDef);
+    BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, "Failed to load metrics rest api spec file");
+
+    dwError = coapi_map_api_impl(gpLwCARestMetricsApiDef, stRegMapMetrics);
+    BAIL_ON_COAPI_ERROR_WITH_MSG(dwError, "Failed to map metrics rest api implementations");
+
+    dwError = _LwCARestMetricsServerInit();
+    BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
     return dwError;
@@ -111,11 +149,13 @@ LwCARestServerStop(
     VOID
     )
 {
-    DWORD dwStopHttps = 0;
+    DWORD dwStopServer = 0;
+    DWORD dwStopMetricsServer = 0;
 
-    dwStopHttps = _LwCAStopRestHandle(gpLwCARestHTTPSHandle);
+    dwStopServer = _LwCAStopRestHandle(gpLwCARestHandle);
+    dwStopMetricsServer = _LwCAStopRestHandle(gpLwCARestMetricsHandle);
 
-    return dwStopHttps;
+    return dwStopServer | dwStopMetricsServer;
 }
 
 VOID
@@ -123,9 +163,11 @@ LwCARestServerShutdown(
     VOID
     )
 {
-    _LwCARestServerShutdownHTTPS();
+    _LwCARestServerShutdown();
+    _LwCARestMetricsServerShutdown();
 
     coapi_free_api_def(gpLwCARestApiDef);
+    coapi_free_api_def(gpLwCARestMetricsApiDef);
 
     LwCAOpensslShutdown();
 }
@@ -166,7 +208,7 @@ LwCAToCRestEngineLogLevel(
 
 static
 DWORD
-_LwCARestServerInitHTTPS(
+_LwCARestServerInit(
     VOID
     )
 {
@@ -174,7 +216,7 @@ _LwCARestServerInitHTTPS(
     REST_CONF           config          = {0};
     PREST_PROCESSOR     pHandlers       = &sLwCARestApiHandlers;
     PREST_API_MODULE    pModule         = NULL;
-    PVMREST_HANDLE      pHTTPSHandle    = NULL;
+    PVMREST_HANDLE      pHandle         = NULL;
 
     config.serverPort = LWCA_HTTPS_PORT_NUM;
     config.connTimeoutSec = LWCA_REST_CONN_TIMEOUT_SEC;
@@ -192,31 +234,94 @@ _LwCARestServerInitHTTPS(
     config.useSysLog = TRUE;
     config.debugLogLevel = LwCAToCRestEngineLogLevel();
 
-    dwError = VmRESTInit(&config, &pHTTPSHandle);
-    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to init REST server");
+    dwError = VmRESTInit(&config, &pHandle);
+    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to init REST API server");
 
     for (pModule = gpLwCARestApiDef->pModules; pModule; pModule = pModule->pNext)
     {
         PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
         for (; pEndPoint; pEndPoint = pEndPoint->pNext)
         {
-            dwError = VmRESTRegisterHandler(pHTTPSHandle, pEndPoint->pszName, pHandlers, NULL);
-            BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to register REST handler");
+            dwError = VmRESTRegisterHandler(pHandle, pEndPoint->pszName, pHandlers, NULL);
+            BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to register REST API handler");
         }
     }
 
-    dwError = VmRESTStart(pHTTPSHandle);
-    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to start REST server handle");
+    dwError = VmRESTStart(pHandle);
+    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to start REST API server handle");
 
-    gpLwCARestHTTPSHandle = pHTTPSHandle;
+    gpLwCARestHandle = pHandle;
 
 cleanup:
     return dwError;
 
 error:
-    if (_LwCAStopRestHandle(pHTTPSHandle) == 0)
+    if (_LwCAStopRestHandle(pHandle) == 0)
     {
-        _LwCAFreeRestHandle(pHTTPSHandle, gpLwCARestApiDef);
+        _LwCAFreeRestHandle(pHandle, gpLwCARestApiDef);
+    }
+
+    LWCA_LOG_ERROR(
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+static
+DWORD
+_LwCARestMetricsServerInit(
+    VOID
+    )
+{
+    DWORD               dwError         = 0;
+    REST_CONF           config          = {0};
+    PREST_PROCESSOR     pHandlers       = &sLwCARestMetricsApiHandlers;
+    PREST_API_MODULE    pModule         = NULL;
+    PVMREST_HANDLE      pHandle         = NULL;
+
+    config.serverPort = LWCA_HTTP_PORT_NUM;
+    config.connTimeoutSec = LWCA_REST_CONN_TIMEOUT_SEC;
+    config.maxDataPerConnMB = LWCA_MAX_DATA_PER_CONN_MB;
+    config.pSSLContext = NULL;
+    config.nWorkerThr = LWCA_REST_WORKERTHCNT;
+    config.nClientCnt = LWCA_REST_CLIENTCNT;
+    config.SSLCtxOptionsFlag = 0;
+    config.pszSSLCertificate = NULL;
+    config.pszSSLKey = NULL;
+    config.pszSSLCipherList = NULL;
+    config.pszDebugLogFile = NULL;
+    config.pszDaemonName = LWCA_DAEMON_NAME;
+    config.isSecure = FALSE;
+    config.useSysLog = TRUE;
+    config.debugLogLevel = LwCAToCRestEngineLogLevel();
+
+    dwError = VmRESTInit(&config, &pHandle);
+    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to init REST metrics server");
+
+    for (pModule = gpLwCARestMetricsApiDef->pModules; pModule; pModule = pModule->pNext)
+    {
+        PREST_API_ENDPOINT pEndPoint = pModule->pEndPoints;
+        for (; pEndPoint; pEndPoint = pEndPoint->pNext)
+        {
+            dwError = VmRESTRegisterHandler(pHandle, pEndPoint->pszName, pHandlers, NULL);
+            BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to register REST metrics handler");
+        }
+    }
+
+    dwError = VmRESTStart(pHandle);
+    BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to start REST metrics server handle");
+
+    gpLwCARestMetricsHandle = pHandle;
+
+cleanup:
+    return dwError;
+
+error:
+    if (_LwCAStopRestHandle(pHandle) == 0)
+    {
+        _LwCAFreeRestHandle(pHandle, gpLwCARestMetricsApiDef);
     }
 
     LWCA_LOG_ERROR(
@@ -229,12 +334,22 @@ error:
 
 static
 VOID
-_LwCARestServerShutdownHTTPS(
+_LwCARestServerShutdown(
     VOID
     )
 {
-    _LwCAFreeRestHandle(gpLwCARestHTTPSHandle, gpLwCARestApiDef);
-    gpLwCARestHTTPSHandle = NULL;
+    _LwCAFreeRestHandle(gpLwCARestHandle, gpLwCARestApiDef);
+    gpLwCARestHandle = NULL;
+}
+
+static
+VOID
+_LwCARestMetricsServerShutdown(
+    VOID
+    )
+{
+    _LwCAFreeRestHandle(gpLwCARestMetricsHandle, gpLwCARestMetricsApiDef);
+    gpLwCARestMetricsHandle = NULL;
 }
 
 static

@@ -280,7 +280,8 @@ error:
 
 DWORD
 LwCARestOperationProcessRequest(
-    PLWCA_REST_OPERATION    pRestOp
+    PLWCA_REST_OPERATION    pRestOp,
+    PREST_API_DEF           pRestApiDef
     )
 {
     DWORD                   dwError = 0;
@@ -302,7 +303,7 @@ LwCARestOperationProcessRequest(
     if (LwCAStringCompareA(pRestOp->pszMethod, LWCA_HTTP_METHOD_OPTIONS, FALSE) != 0)
     {
         dwError = coapi_find_handler(
-                    gpLwCARestApiDef,
+                    pRestApiDef,
                     pRestOp->pszPath,
                     pRestOp->pszMethod,
                     &pRestOp->pMethod);

@@ -14,6 +14,7 @@ libmutentcaresthead_la_SOURCES += \
     handler.c \
     httperror.c \
     intermediatecaapi.c \
+    metricsapi.c \
     openssl.c \
     operation.c \
     param.c \

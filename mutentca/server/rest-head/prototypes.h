@@ -35,28 +35,11 @@ LwCARestApiRequestHandler(
     );
 
 DWORD
-LwCARestRequestHandler(
-    PREST_API_DEF           pRestApiDef,
+LwCARestMetricsApiRequestHandler(
     PVMREST_HANDLE          pRESTHandle,
     PREST_REQUEST           pRequest,
     PREST_RESPONSE*         ppResponse,
     uint32_t                paramsCount
-    );
-
-DWORD
-LwCARestProcessRequest(
-    PREST_API_DEF           pRestApiDef,
-    PLWCA_REST_OPERATION    pRestOp,
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_REQUEST           pRequest,
-    uint32_t                paramsCount
-    );
-
-DWORD
-LwCARestWriteSimpleErrorResponse(
-    PVMREST_HANDLE          pRESTHandle,
-    PREST_RESPONSE*         ppResponse,
-    int                     httpStatus
     );
 
 // httperror.c
@@ -86,7 +69,8 @@ LwCARestOperationParseRequestPayload(
 
 DWORD
 LwCARestOperationProcessRequest(
-    PLWCA_REST_OPERATION    pRestOp
+    PLWCA_REST_OPERATION    pRestOp,
+    PREST_API_DEF           pRestApiDef
     );
 
 DWORD
@@ -326,6 +310,18 @@ DWORD
 LwCARestRevokeIntermediateCASignedCert(
     PVOID                   pIn,
     PVOID*                  pOut
+    );
+
+// metricsapi.c
+DWORD
+LwCARestMetricsModule(
+    PREST_MODULE*           ppRestModule
+    );
+
+DWORD
+LwCARestGetMetrics(
+    PVOID                   pIn,
+    PVOID*                  ppOut
     );
 
 // utils.c

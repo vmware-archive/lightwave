@@ -3,6 +3,7 @@ mutentcaconf_DATA = \
     mutentcaconfig.json \
     mutentca-policy.json \
     mutentca-rest.json \
+    mutentca-metrics-rest.json \
     mutentca-post.json \
     mutentca-schema.ldif \
     mutentcad-syslog-ng.conf \

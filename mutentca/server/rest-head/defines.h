@@ -17,6 +17,8 @@
 
 // C REST ENGINE CONFIG VALUES
 #define LWCA_REST_API_SPEC                      MUTENTCA_CONFIG_DIR "/mutentca-rest.json"
+#define LWCA_REST_METRICS_API_SPEC              MUTENTCA_CONFIG_DIR "/mutentca-metrics-rest.json"
+#define LWCA_HTTP_PORT_NUM                      7877
 #define LWCA_HTTPS_PORT_NUM                     7878
 #define LWCA_DAEMON_NAME                        "mutentcad"
 #define LWCA_REST_CONN_TIMEOUT_SEC              10
@@ -34,6 +36,9 @@
 #define LWCA_REST_OPENAPI_VERSION               "/v1/mutentca/version"
 #define LWCA_REST_OPENAPI_ROOTCA                "/v1/mutentca/root"
 #define LWCA_REST_OPENAPI_ROOTCA_CRL            "/v1/mutentca/crl"
+#define LWCA_REST_OPENAPI_METRICS               "/v1/mutentca/metrics"
+
+// Prefix used to get ca-id from URI
 #define LWCA_REST_INTERMEDIATE_URI_PREFIX       "/v1/mutentca/intermediate/"
 
 // REST Paramaeters

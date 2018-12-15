@@ -15,8 +15,10 @@
 #include "includes.h"
 
 PREST_API_DEF gpLwCARestApiDef = NULL;
+PREST_API_DEF gpLwCARestMetricsApiDef = NULL;
 
-PVMREST_HANDLE gpLwCARestHTTPSHandle = NULL;
+PVMREST_HANDLE gpLwCARestHandle = NULL;
+PVMREST_HANDLE gpLwCARestMetricsHandle = NULL;
 
 LWCA_SERVER_OPENSSL_GLOBALS gLwCAOpensslGlobals =
     {
