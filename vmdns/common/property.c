@@ -33,7 +33,7 @@ VmDnsReadPropertyDataFromBuffer(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    VmDnsReadCharFromBuffer(pVmDnsBuffer, &pDnsPropertyData->ZoneId);
+    VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&pDnsPropertyData->ZoneId);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     uiPropertyDataLen = 1;
@@ -205,12 +205,12 @@ VmDnsReadPropertyFromBuffer(
 
     /* DataLength (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &uiDataLength);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&uiDataLength);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     /* NameLength (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &uiNameLength);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&uiNameLength);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     if (uiNameLength != 0x01)
@@ -221,7 +221,7 @@ VmDnsReadPropertyFromBuffer(
 
     /* Flag (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &uiFlag);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&uiFlag);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     if (uiFlag != 0x00)
@@ -232,7 +232,7 @@ VmDnsReadPropertyFromBuffer(
 
     /* Version (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &uiVersion);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&uiVersion);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     if (uiVersion != 0x01)
@@ -243,7 +243,7 @@ VmDnsReadPropertyFromBuffer(
 
     /* Id (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &pDnsProperty->Id);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&pDnsProperty->Id);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     /* Data */
@@ -257,7 +257,7 @@ VmDnsReadPropertyFromBuffer(
 
     /* Name (1 byte) */
 
-    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, &uiName);
+    dwError = VmDnsReadCharFromBuffer(pVmDnsBuffer, (PCHAR)&uiName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppDnsProperty = pDnsProperty;

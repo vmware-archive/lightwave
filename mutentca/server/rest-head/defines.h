@@ -37,7 +37,7 @@
 #define LWCA_REST_INTERMEDIATE_URI_PREFIX       "/v1/mutentca/intermediate/"
 
 // REST Paramaeters
-#define LWCA_REST_PARAM_REQ_ID                  "X-Request-ID"
+#define LWCA_REST_PARAM_REQ_ID                  "X-Request-Id"
 #define LWCA_REST_PARAM_CA_ID                   "ca-id"
 #define LWCA_REST_PARAM_WITH_CRL                "detail"
 
@@ -68,6 +68,7 @@
 #define LWCA_REST_HEADER_CONNECTION             "Connection"
 #define LWCA_REST_HEADER_DATE                   "Date"
 #define LWCA_REST_HEADER_ORIGIN                 "Origin"
+#define LWCA_REST_HEADER_REQUEST_ID             "X-Request-Id"
 
 // HTTP method options
 #define LWCA_HTTP_METHOD_OPTIONS                "OPTIONS"

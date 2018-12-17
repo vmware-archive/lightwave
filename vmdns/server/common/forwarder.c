@@ -593,7 +593,7 @@ VmDnsAllocateForwarderPacketContext(
                           );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pForwarderContext->dwRefCount = 1;
+    pForwarderContext->nRefCount = 1;
 
     *ppForwarderContext = pForwarderContext;
 cleanup:
@@ -619,7 +619,7 @@ VmDnsAcquireForwarderPacketContext(
 {
     if (pForwarderContext)
     {
-        InterlockedIncrement(&pForwarderContext->dwRefCount);
+        InterlockedIncrement(&pForwarderContext->nRefCount);
     }
 
     return pForwarderContext;
@@ -632,7 +632,7 @@ VmDnsReleaseForwarderPacketContext(
 {
     if (pForwarderContext)
     {
-        if (InterlockedDecrement(&pForwarderContext->dwRefCount) == 0)
+        if (InterlockedDecrement(&pForwarderContext->nRefCount) == 0)
         {
             VmDnsFreeForwarderPacketContext(pForwarderContext);
         }

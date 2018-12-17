@@ -31,7 +31,14 @@
 #include <mutentcacommon.h>
 #include <mutentcaerror.h>
 
+#include <lw/types.h>
+#include <lw/hash.h>
+
+#include <curl/curl.h>
+
 #include <vmhttpclient.h>
+#include <vmnetworkutil.h>
+#include <vmutil.h>
 #include <ssotypes.h>
 #include <oidc_types.h>
 #include <oidc.h>

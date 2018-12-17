@@ -236,10 +236,8 @@ cleanup:
 error:
     if (pStore)
     {
-        DWORD dwError2 = 0;
-        dwError2 = VecsCloseCertStore(pStore);
+        VecsCloseCertStore(pStore);
         pStore = NULL;
-        // Need to log dwError2;
     }
     goto cleanup;
 }
@@ -314,9 +312,7 @@ cleanup:
 error:
     if (pStore)
     {
-        DWORD dwError2 = 0;
-        dwError2 = VecsCloseCertStore(pStore);
-        // Need to log dwError2;
+        VecsCloseCertStore(pStore);
     }
 
     goto cleanup;
@@ -677,9 +673,7 @@ cleanup:
 error:
     if (pEnumContext)
     {
-        DWORD dwError2 = 0;
-        dwError2 = VecsEndEnumEntries(pEnumContext);
-        //Need to log dwError2
+        VecsEndEnumEntries(pEnumContext);
     }
 
     goto cleanup;

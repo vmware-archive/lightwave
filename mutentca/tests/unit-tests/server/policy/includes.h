@@ -35,6 +35,8 @@ extern "C" {
 #include <mutentcasrvcommon.h>
 #include <mutentcaerror.h>
 #include <mutentcapolicy.h>
+#include <mutentcapkcs.h>
+#include <mutentcaapi.h>
 
 #include <jansson.h>
 

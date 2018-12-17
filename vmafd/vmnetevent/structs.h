@@ -34,7 +34,7 @@ typedef struct __VMNETEVENT_HANDLE
      pthread_t eventThread;
      pthread_t* peventThread;
      VMNETEVENT_FD  fd;
-     DWORD dwRefCount;
+     volatile int nRefCount;
 } VMNETEVENT_HANDLE;
 
 

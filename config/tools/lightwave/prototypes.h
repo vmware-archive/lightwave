@@ -30,3 +30,53 @@ LightwaveCa(
     int argc,
     char* argv[]
     );
+
+/* ca/ca.c */
+int
+LightwaveCaGetSignedCert(
+    int argc,
+    char* argv[]
+    );
+
+/* domain/domain.c */
+int
+LightwaveDomainPromote(
+    int argc,
+    char* argv[]
+    );
+
+int
+LightwaveDomainDemote(
+    int argc,
+    char* argv[]
+    );
+
+int
+LightwaveDomainJoin(
+    int argc,
+    char* argv[]
+    );
+
+int
+LightwaveDomainLeave(
+    int argc,
+    char* argv[]
+    );
+
+/* dns/dns.c */
+int
+LightwaveDnsDelete(
+    int argc,
+    char* argv[]
+    );
+
+int
+LightwaveInitDNS(
+    int argc,
+    char* argv[]
+    );
+
+int
+LightwaveDCDnsDelete(
+    int argc,
+    char* argv[]);

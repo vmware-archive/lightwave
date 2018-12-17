@@ -79,7 +79,7 @@ VmDirRESTProxyForwardRequest(
 {
     DWORD               dwError = 0;
     DWORD               dwCurlError = 0;
-    DWORD               statusCode = 0;
+    long                statusCode = 0;
     DWORD               dwNumRetry = 0;
     CURL*               pCurlHandle = NULL;
     PSTR                pszURL = NULL;

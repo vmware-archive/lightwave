@@ -755,7 +755,7 @@ LwCADeserializeJSONToCertData(
 
         dwError = _LwCAGetIntegerFromAttribute(pJson,
                                                LWCA_POST_CERT_REVOKED_REASON,
-                                               &dwRevokedReason
+                                               (int *)&dwRevokedReason
                                                );
         BAIL_ON_LWCA_ERROR(dwError);
 
@@ -1641,7 +1641,7 @@ _LwCAGetBytesFromAttribute(
     if (!IsNullOrEmptyString(pszJsonStr))
     {
         dwLen = LwCAStringLenA(pszJsonStr);
-        dwError = VmDecodeToBase64(pszJsonStr, dwLen, &pDecoded, &decodedLen);
+        dwError = VmDecodeToBase64((PBYTE)pszJsonStr, dwLen, &pDecoded, &decodedLen);
         BAIL_ON_LWCA_ERROR(dwError);
 
         dwError = LwCACreateKey(pDecoded, decodedLen, &pValue);

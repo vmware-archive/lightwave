@@ -732,6 +732,12 @@ VmDnsDirGetRecords(
     PVMDNS_RECORD_LIST  *ppRecordList
     );
 
+DWORD
+VmDnsDirGetProperties(
+    PCSTR               pszZone,
+    PVMDNS_PROPERTY_LIST  *ppPropertyList
+    );
+
 //Store
 
 DWORD

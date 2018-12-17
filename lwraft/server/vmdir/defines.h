@@ -418,6 +418,17 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_EFFICIENT_WRITE_OP, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 5,                                \
+        /*.dwMax          = */ 10000,                            \
+        /*.dwDefault      = */ 500,                              \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_REST_WORKER,        \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \

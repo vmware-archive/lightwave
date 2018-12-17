@@ -29,7 +29,7 @@ _Security_Storage_Put(
     VmFreeMemory(_gEncryptedData.pData);
     VmAllocateMemory(
         pEncryptedData->dwLength,
-        &_gEncryptedData.pData);
+        (PVOID)&_gEncryptedData.pData);
 
     memcpy(_gEncryptedData.pData, pEncryptedData->pData, pEncryptedData->dwLength);
     _gEncryptedData.dwLength = pEncryptedData->dwLength;

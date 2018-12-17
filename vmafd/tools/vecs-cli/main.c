@@ -223,6 +223,7 @@ VecsCliExecStoreRequest(
     PARSE_MODE mode = PARSE_MODE_OPEN;
     PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
     PVMAFD_SERVER pServer = NULL;
+    int nRead = 0;
 
     if (!argc)
     {
@@ -656,12 +657,9 @@ VecsCliExecStoreRequest(
                          "Do you wish to continue? Y/N [N] \n",
                          pszStoreName
                         );
-                scanf (
-                        "%c",
-                        &input
-                        );
+                nRead = scanf ("%c", &input);
 
-                if (input == 'Y' || input == 'y')
+                if (nRead  > 0 && (input == 'Y' || input == 'y'))
                 {
                     dwForceDelete = 1;
                 }
@@ -761,6 +759,7 @@ VecsCliExecEntryRequest(
     PARSE_MODE mode = PARSE_MODE_OPEN;
     PARSE_SUB_MODE submode = PARSE_SUB_MODE_OPEN;
     PVMAFD_SERVER pServer = NULL;
+    int nRead = 0;
 
     if (!argc)
     {
@@ -1278,12 +1277,9 @@ VecsCliExecEntryRequest(
                          pszAlias,
                          pszStoreName
                         );
-                scanf (
-                        "%c",
-                        &input
-                        );
+                nRead = scanf ("%c", &input);
 
-                if (input == 'Y' || input == 'y')
+                if (nRead > 0 && (input == 'Y' || input == 'y'))
                 {
                     dwForceDelete = 1;
                 }

@@ -200,7 +200,7 @@ cleanup:
     return dwError;
 
 error:
-    VM_COMMON_SAFE_FREE_STRINGA(pRSASignature);
+    VM_COMMON_SAFE_FREE_MEMORY(pRSASignature);
     if (ppRSASignature)
     {
         *ppRSASignature = NULL;

@@ -36,7 +36,7 @@ VmDnsRecordObjectCreate(
                     (PVOID*)&pRecordObj);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pRecordObj->lRefCount = 1;
+    pRecordObj->nRefCount = 1;
     pRecordObj->pRecord = pRecord;
 
     *ppRecordObj = pRecordObj;
@@ -63,7 +63,7 @@ VmDnsRecordObjectAddRef(
     DWORD dwError = 0;
     if (pRecordObj)
     {
-        dwError = InterlockedIncrement(&pRecordObj->lRefCount);
+        dwError = InterlockedIncrement(&pRecordObj->nRefCount);
     }
     return dwError;
 }
@@ -75,7 +75,7 @@ VmDnsRecordObjectRelease(
 {
     if (pRecordObj)
     {
-        if (0 == InterlockedDecrement(&pRecordObj->lRefCount))
+        if (0 == InterlockedDecrement(&pRecordObj->nRefCount))
         {
             VMDNS_FREE_RECORD(pRecordObj->pRecord);
             VMDNS_SAFE_FREE_MEMORY(pRecordObj);

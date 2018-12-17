@@ -169,4 +169,9 @@ LwCAAuthTokenGetHOTK_InvalidInput(
     VOID **state
     );
 
+SSOERROR
+OidcTokenSuccessResponseParse(
+    POIDC_TOKEN_SUCCESS_RESPONSE* pp,
+    PCSTRING pszJsonResponse);
+
 #endif /* _LWCA_SRV_COMMON_PROTOTYPES_H_ */

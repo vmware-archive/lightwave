@@ -1055,7 +1055,7 @@ VmDnsDirCreateChildZone(
     dwError = VmDnsDirBuildPropertyEntry(pProperty, &pPropertyEntry, &propertyLength);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dnsPropertyEntry.bv_val = pPropertyEntry;
+    dnsPropertyEntry.bv_val = (PSTR)pPropertyEntry;
     dnsPropertyEntry.bv_len = propertyLength;
 
     dnsZoneProperty.mod_op     = LDAP_MOD_ADD | LDAP_MOD_BVALUES;
@@ -1155,7 +1155,7 @@ VmDnsDirCreateRecord(
     dwError = VmDnsDirBuildRecordEntry(pRecord, &pRecordEntry, &recordLength);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dnsRecordEntry.bv_val = pRecordEntry;
+    dnsRecordEntry.bv_val = (PSTR)pRecordEntry;
     dnsRecordEntry.bv_len = recordLength;
 
     dwError = VmDnsDirBuildRecordDN(
@@ -1887,7 +1887,7 @@ VmDnsDirGetRecordsByName(
         for (i = 0; i < dwCount; ++i)
         {
             dwError = VmDnsDeserializeDnsRecord(
-                                ppValues[i]->bv_val,
+                                (PBYTE)ppValues[i]->bv_val,
                                 (DWORD)ppValues[i]->bv_len,
                                 &pRecord,
                                 FALSE);
@@ -2140,7 +2140,7 @@ VmDnsDirGetAllRecords(
             while (ppValues[i])
             {
                 dwError = VmDnsDeserializeDnsRecord(
-                                    ppValues[i]->bv_val,
+                                    (PBYTE)ppValues[i]->bv_val,
                                     ppValues[i]->bv_len,
                                     &pRecord,
                                     FALSE
@@ -2233,7 +2233,7 @@ VmDnsDirProcessRecord(
     dwError = VmDnsDirBuildRecordEntry(pRecord, &pRecordEntry, &recordLength);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dnsRecordEntry.bv_val = pRecordEntry;
+    dnsRecordEntry.bv_val = (PSTR)pRecordEntry;
     dnsRecordEntry.bv_len = recordLength;
 
     dwError = VmDnsDirBuildRecordDN(
@@ -3343,7 +3343,7 @@ VmDnsDirGetPropertiesEx(
         for (i = 0; i < dwCount; ++i)
         {
             dwError = VmDnsDeserializeDnsProperty(
-                                ppValues[i]->bv_val,
+                                (PBYTE)ppValues[i]->bv_val,
                                 (DWORD)ppValues[i]->bv_len,
                                 &pProperty);
             BAIL_ON_VMDNS_ERROR(dwError);

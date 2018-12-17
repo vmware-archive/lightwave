@@ -159,29 +159,54 @@ VMAFD_ERROR_CODE_NAME_MAP gVmAfdErrorMap[] =
     {ERROR_CANNOT_CONNECT_VMAFD, "Cannot connect to vmafd service."}
 };
 
+static
+BOOL
+_IsVmAfdLocalError(
+    DWORD dwError
+    )
+{
+    return (dwError >= (DWORD)ERROR_INVALID_CONFIGURATION) &&
+           (dwError <= (DWORD)ERROR_CANNOT_CONNECT_VMAFD);
+}
+
+static
+BOOL
+_IsVmAfdCurlError(
+    DWORD dwError
+    )
+{
+    return (dwError > (DWORD)VMAFD_SSOERROR_CURL_START) &&
+           (dwError < (DWORD)VMAFD_SSOERROR_CURL_END);
+}
+
 BOOL IsVmAfdError(DWORD dwError)
 {
-    if ((dwError >= (DWORD)ERROR_INVALID_CONFIGURATION) &&
-        (dwError <= (DWORD)ERROR_CANNOT_CONNECT_VMAFD))
-    {
-        return TRUE;
-    }
-    return FALSE;
+    return _IsVmAfdLocalError(dwError) ||
+           _IsVmAfdCurlError(dwError);
 }
 
 PCSTR
 VmAfdGetVmAfdErrorString(DWORD dwError)
 {
     unsigned int i;
+    DWORD dwSSOError = 0;
     PCSTR szError = NULL;
 
-    for (i = 0; i < sizeof(gVmAfdErrorMap)/sizeof(gVmAfdErrorMap[0]); i++)
+    if (_IsVmAfdLocalError(dwError))
     {
-        if (gVmAfdErrorMap[i].code == dwError)
+        for (i = 0; i < sizeof(gVmAfdErrorMap)/sizeof(gVmAfdErrorMap[0]); i++)
         {
-            szError = gVmAfdErrorMap[i].desc;
-            break;
+            if (gVmAfdErrorMap[i].code == dwError)
+            {
+                szError = gVmAfdErrorMap[i].desc;
+                break;
+            }
         }
+    }
+    else
+    {
+        dwSSOError = (dwError - VMAFD_SSOERROR_CURL_START) + SSOERROR_CURL_START;
+        szError = SSOErrorToString(dwSSOError);
     }
 
     return szError;

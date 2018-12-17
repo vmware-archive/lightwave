@@ -226,7 +226,7 @@ public class AuthenticationRequestProcessor {
                 personUser = this.userInfoRetriever.getUPN(personUser); // use upn from ldap
                 AuthenticationSuccessResponse authnSuccessResponse = (this.authnRequest.getResponseType().contains(ResponseTypeValue.AUTHORIZATION_CODE)) ?
                         processAuthzCodeResponse(personUser, sessionId) :
-                        processIDTokenResponse(personUser, sessionId);
+                        processIDTokenResponse(personUser, sessionId, this.httpRequest.getURI());
                 if (loginMethod == null) {
                     this.sessionManager.update(sessionId, this.clientInfo);
                 } else {
@@ -267,7 +267,7 @@ public class AuthenticationRequestProcessor {
                 (AccessToken) null);
     }
 
-    private AuthenticationSuccessResponse processIDTokenResponse(PersonUser personUser, SessionID sessionId) throws ServerException {
+    private AuthenticationSuccessResponse processIDTokenResponse(PersonUser personUser, SessionID sessionId, URI requestURI) throws ServerException {
         Set<ResourceServerInfo> resourceServerInfos = this.serverInfoRetriever.retrieveResourceServerInfos(this.tenant, this.authnRequest.getScope());
         UserInfo userInfo = this.userInfoRetriever.retrieveUserInfo(personUser, this.authnRequest.getScope(), resourceServerInfos);
 
@@ -279,7 +279,8 @@ public class AuthenticationRequestProcessor {
                 this.authnRequest.getScope(),
                 this.authnRequest.getNonce(),
                 this.authnRequest.getClientID(),
-                sessionId);
+                sessionId,
+                requestURI);
 
         IDToken idToken = tokenIssuer.issueIDToken();
         AccessToken accessToken = null;

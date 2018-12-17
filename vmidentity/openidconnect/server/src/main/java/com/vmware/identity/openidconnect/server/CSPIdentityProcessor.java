@@ -272,7 +272,8 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     // Get the Token corresponding to the code
     Pair<CSPToken, CSPToken> token = getToken(authenticode, relayState, idpConfig, session);
     // Process the response
-    return processResponse(token, idpConfig, relayState, session);
+    URI requestURI = new URI(request.getRequestURL().toString());
+    return processResponse(token, idpConfig, relayState, session, requestURI);
   }
 
   private Pair<CSPToken, CSPToken>
@@ -309,7 +310,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
   private HttpResponse
-  processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState relayState, SessionID session) throws Exception {
+  processResponse(Pair<CSPToken, CSPToken> token, IDPConfig idpConfig, FederationRelayState relayState, SessionID session, URI requestURI) throws Exception {
     Validate.notNull(token, "Token must not be null.");
     Validate.notNull(relayState, "Relay state must not be null.");
     Validate.notNull(idpConfig, "IDPConfig must not be null.");
@@ -394,7 +395,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
     HttpResponse httpResponse;
     if (StringUtils.isNotEmpty(relayState.getSPInitiatedState())) {
         AuthenticationSuccessResponse authnSuccessResponse = processIDTokenResponse(tenantInfo,
-                userInfoRetriever, relayState, personUser, session);
+                userInfoRetriever, relayState, personUser, session, requestURI);
         httpResponse = authnSuccessResponse.toHttpResponse();
     } else {
         URI redirectURI = new URI(StringUtils.replace(relayState.getRedirectURI(), TENANT_TEMPLATE, tenantName));
@@ -408,7 +409,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
   }
 
     private AuthenticationSuccessResponse processIDTokenResponse(TenantInfo tenantInfo, UserInfoRetriever userInfoRetriever,
-            FederationRelayState state, PersonUser personUser, SessionID sessionId) throws Exception {
+            FederationRelayState state, PersonUser personUser, SessionID sessionId, URI requestURI) throws Exception {
         Validate.notNull(tenantInfo, "TenantInfo must not be null.");
         Validate.notNull(state, "Relay state must not be null.");
         Validate.notNull(personUser, "Person user must not be null.");
@@ -420,7 +421,7 @@ public class CSPIdentityProcessor implements FederatedIdentityProcessor {
         UserInfo userInfo = userInfoRetriever.retrieveUserInfo(personUser, scope, resourceServerInfos);
 
         TokenIssuer tokenIssuer = new TokenIssuer(personUser, (SolutionUser) null, userInfo, tenantInfo, scope,
-                new Nonce(state.getSPInitiatedNonce()), new ClientID(state.getClientId()), sessionId);
+                new Nonce(state.getSPInitiatedNonce()), new ClientID(state.getClientId()), sessionId, requestURI);
 
         IDToken idToken = tokenIssuer.issueIDToken();
         AccessToken accessToken = null;

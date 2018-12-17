@@ -15,6 +15,11 @@
 #ifndef _DEFINES_H_
 #define _DEFINES_H_
 
+#define LOG_ERROR(x, str) \
+    do { \
+        fprintf(stderr, "error [%u] in file [%s] function [%s] at line [%d] with message [%s]\n", x, __FILE__, __FUNCTION__, __LINE__, str); \
+    } while(0)
+
 #define BAIL_ON_ERROR(x) \
     { if ((x) != 0) { fprintf(stderr, "error [%u] in function [%s] at line [%d]\n", x, __FUNCTION__, __LINE__); goto error; } }
 
@@ -22,6 +27,14 @@
     if ((x) != 0)                                            \
     {                                                        \
         fprintf(stderr, "error [%u] in file [%s] function [%s] at line [%d] with message [%s]\n", x, __FILE__, __FUNCTION__, __LINE__, str); \
+        goto error;                                          \
+    }
+
+#define BAIL_AND_LOG_ON_CURL_ERROR(e, x) \
+    if ((x) != 0)                                            \
+    {                                                        \
+        fprintf(stderr, "curl error [%u] in file [%s] function [%s] at line [%d] with message [%s]\n", x, __FILE__, __FUNCTION__, __LINE__, curl_easy_strerror(x)); \
+        e = SSOERROR_CURL_START + x;                         \
         goto error;                                          \
     }
 

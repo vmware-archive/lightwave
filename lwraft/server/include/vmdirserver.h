@@ -110,6 +110,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwDomainFunctionalLevel;
     DWORD                dwMaxInternalSearchLimit;
     DWORD                dwEfficientReadOpTimeMS;
+    DWORD                dwEfficientWriteOpTimeMS;
     DWORD                dwRESTWorker;
     DWORD                dwRESTLogLevelOverride;
     BOOLEAN              bPromoted;

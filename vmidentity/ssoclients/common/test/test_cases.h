@@ -23,6 +23,9 @@
 #include <stddef.h>
 #include <pthread.h>
 
+#include <openssl/rand.h>
+#include <openssl/err.h>
+
 #include "ssotypes.h"
 #include "defines.h"
 #include "common_types.h"

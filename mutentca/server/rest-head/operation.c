@@ -92,7 +92,7 @@ LwCARestOperationReadRequest(
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get REST http request method");
 
     // Get the client IP
-    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, &pRestOp->dwPort);
+    dwError = VmRESTGetConnectionInfo(pRestReq, &pRestOp->pszClientIP, (int *)&pRestOp->dwPort);
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get REST connection info");
 
     // read raw request URI as sent from client - for token POP validation
@@ -148,14 +148,33 @@ LwCARestOperationReadRequest(
     dwError = VmRESTGetHttpHeader(pRestReq, LWCA_REST_HEADER_ORIGIN, &pRestOp->pszOrigin);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    // request id can be a URI param or a header param
+    dwError = VmRESTGetHttpHeader(pRestReq, LWCA_REST_HEADER_REQUEST_ID, &pRestOp->pszRequestId);
+    BAIL_ON_LWCA_ERROR(dwError);
+
     // read request params
     for (dwIdx = 1; dwIdx <= dwParamCount; ++dwIdx)
     {
         dwError = VmRESTGetParamsByIndex(pRestReq, dwParamCount, dwIdx, &pszKey, &pszVal);
         BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to get params from REST request");
 
-        dwError = LwRtlHashMapInsert(pRestOp->pParamMap, pszKey, pszVal, NULL);
-        BAIL_ON_LWCA_ERROR(dwError);
+        // request id can be a URI param or a header param
+        if (LwCAStringCompareA(pszKey, LWCA_REST_PARAM_REQ_ID, FALSE) == 0)
+        {
+            if (!pRestOp->pszRequestId)
+            {
+                dwError = LwCAAllocateStringA(pszVal, &pRestOp->pszRequestId);
+                BAIL_ON_LWCA_ERROR(dwError);
+            }
+
+            LWCA_SAFE_FREE_STRINGA(pszKey);
+            LWCA_SAFE_FREE_STRINGA(pszVal);
+        }
+        else
+        {
+            dwError = LwRtlHashMapInsert(pRestOp->pParamMap, pszKey, pszVal, NULL);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
 
         pszKey = NULL;
         pszVal = NULL;
@@ -190,10 +209,11 @@ LwCARestOperationReadRequest(
     pRestOp->pszBody = pszBody;
 
     LWCA_LOG_INFO(
-            "Received REST request from: (%s), request type: (%s), request URI: (%s)",
-            LWCA_SAFE_STRING(pRestOp->pszClientIP),
-            LWCA_SAFE_STRING(pRestOp->pszMethod),
-            LWCA_SAFE_STRING(pRestOp->pszPath));
+        "Received REST request from: (%s), request type: (%s), request URI: (%s), requestID: (%s)",
+        LWCA_SAFE_STRING(pRestOp->pszClientIP),
+        LWCA_SAFE_STRING(pRestOp->pszMethod),
+        LWCA_SAFE_STRING(pRestOp->pszPath),
+        LWCA_SAFE_STRING(pRestOp->pszRequestId));
 
 cleanup:
     return dwError;
@@ -293,11 +313,11 @@ LwCARestOperationProcessRequest(
     }
 
     LWCA_LOG_INFO(
-            "Locally processed REST request from: %s request type: %s request URI: %s",
-            LWCA_SAFE_STRING(pRestOp->pszClientIP),
-            LWCA_SAFE_STRING(pRestOp->pszMethod),
-            LWCA_SAFE_STRING(pRestOp->pszPath));
-
+        "Locally processed REST request from: (%s), request type: (%s), request URI: (%s), requestID: (%s)",
+        LWCA_SAFE_STRING(pRestOp->pszClientIP),
+        LWCA_SAFE_STRING(pRestOp->pszMethod),
+        LWCA_SAFE_STRING(pRestOp->pszPath),
+        LWCA_SAFE_STRING(pRestOp->pszRequestId));
 
 cleanup:
 
@@ -306,10 +326,11 @@ cleanup:
 error:
 
     LWCA_LOG_ERROR(
-            "%s failed, error (%d) for client: %s",
+            "%s failed, error (%d) for client: (%s), requestID: (%s)",
             __FUNCTION__,
             dwError,
-            LWCA_SAFE_STRING(pRestOp->pszClientIP));
+            LWCA_SAFE_STRING(pRestOp->pszClientIP),
+            LWCA_SAFE_STRING(pRestOp->pszRequestId));
 
     goto cleanup;
 }
@@ -389,20 +410,22 @@ LwCARestOperationWriteResponse(
     BAIL_ON_CREST_ERROR_WITH_MSG(dwError, "Failed to set REST http response data");
 
     LWCA_LOG_INFO(
-            "Responded to REST request from: (%s), request type: (%s), request URI: (%s), response status: (%d)",
-            LWCA_SAFE_STRING(pRestOp->pszClientIP),
-            LWCA_SAFE_STRING(pRestOp->pszMethod),
-            LWCA_SAFE_STRING(pRestOp->pszPath),
-            pHttpError->httpStatus);
+        "Responded to REST request from: (%s), request type: (%s), request URI: (%s), requestID: (%s), response status: (%d)",
+        LWCA_SAFE_STRING(pRestOp->pszClientIP),
+        LWCA_SAFE_STRING(pRestOp->pszMethod),
+        LWCA_SAFE_STRING(pRestOp->pszPath),
+        LWCA_SAFE_STRING(pRestOp->pszRequestId),
+        pHttpError->httpStatus);
 
     if (pHttpError->httpStatus != HTTP_OK)
     {
         LWCA_LOG_WARNING(
-                "%s HTTP response status (%d), body (%.*s)",
-                __FUNCTION__,
-                pHttpError->httpStatus,
-                LWCA_MIN(sentLen, LWCA_MAX_LOG_OUTPUT_LEN),
-                pResult->pszBody);
+            "%s HTTP response status (%d), body (%.*s), requestID: (%s)",
+            __FUNCTION__,
+            pHttpError->httpStatus,
+            LWCA_MIN(sentLen, LWCA_MAX_LOG_OUTPUT_LEN),
+            pResult->pszBody,
+            LWCA_SAFE_STRING(pRestOp->pszRequestId));
     }
 
 cleanup:
@@ -446,6 +469,7 @@ LwCAFreeRESTOperation(
         LwCAFreeRESTResult(pRestOp->pResult);
 
         LwCARequestContextFree(pRestOp->pReqCtx);
+        LWCA_SAFE_FREE_STRINGA(pRestOp->pszRequestId);
 
         LWCA_SAFE_FREE_MEMORY(pRestOp);
     }

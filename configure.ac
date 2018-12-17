@@ -45,7 +45,8 @@ CFLAGS_ORIGINAL="$AM_CFLAGS"
 CFLAGS_COMPAT="-Wno-unused-but-set-variable -Wno-pointer-sign -Wno-implicit-function-declaration -Wno-address -Wno-enum-compare"
 CFLAGS_DESIRED="$CFLAGS_ORIGINAL -fno-strict-aliasing -Wformat -Wformat-security -Werror=format-security -fstack-protector-all"
 #reset cflags to not break existing
-AM_CFLAGS="$AM_CFLAGS $CFLAGS_COMPAT"
+#AM_CFLAGS="$AM_CFLAGS $CFLAGS_COMPAT"
+AM_CFLAGS="$AM_CFLAGS $CFLAGS_DESIRED"
 
 AC_SUBST(AM_CPPFLAGS)
 AC_SUBST(AM_CFLAGS)
@@ -662,6 +663,7 @@ AC_CHECK_HEADERS(lw/base.h lw/types.h uuid/uuid.h lwrpcrt/lwrpcrt.h dce/rpc.h)
 AC_CHECK_HEADERS(lwsm/lwsm.h)
 AC_CHECK_HEADERS(reg/lwreg.h)
 AC_CHECK_HEADERS(reg/regutil.h)
+AC_CHECK_HEADERS(lwmem.h)
 CPPFLAGS="$saved_CPPFLAGS"
 
 #--------------------------------------------------------------------

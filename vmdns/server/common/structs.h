@@ -241,7 +241,7 @@ typedef DWORD(*LPVMDNS_PURGE_RECORD_PROC)(
 
 typedef struct _VMDNS_ZONE_OBJECT
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     PSTR                pszName;
     VMDNS_ZONE_FLAGS    dwFlags;
     PVMDNS_HASH_TABLE   pNameEntries;
@@ -271,7 +271,7 @@ typedef struct _VMDNS_ZONE_LIST
 
 typedef struct _VMDNS_NAME_ENTRY
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     LIST_ENTRY          LruList;
     PSTR                pszName;
     PVMDNS_RECORD_LIST  pRecords;
@@ -281,13 +281,13 @@ typedef struct _VMDNS_NAME_ENTRY
 
 typedef struct _VMDNS_RECORD_OBJECT
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     PVMDNS_RECORD       pRecord;
 } VMDNS_RECORD_OBJECT;
 
 typedef struct _VMDNS_RECORD_LIST
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     DWORD               dwMaxSize;
     DWORD               dwCurrentSize;
     PVMDNS_RECORD_OBJECT *ppRecords;
@@ -295,13 +295,13 @@ typedef struct _VMDNS_RECORD_LIST
 
 typedef struct _VMDNS_PROPERTY_OBJECT
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     PVMDNS_PROPERTY     pProperty;
 } VMDNS_PROPERTY_OBJECT;
 
 typedef struct _VMDNS_PROPERTY_LIST
 {
-    volatile ULONG      lRefCount;
+    volatile int        nRefCount;
     DWORD               dwMaxSize;
     DWORD               dwCurrentSize;
     PVMDNS_PROPERTY_OBJECT *ppProperties;
@@ -369,7 +369,7 @@ typedef struct _VMDNS_FORWARDER_PACKET_CONTEXT
     PVM_SOCK_IO_BUFFER            pQueryBuffer;
     PVM_SOCKET                    pClientSocket;
     PVMDNS_FORWARDER_PACKET_ENTRY pForwarderPacketEntry;
-    DWORD                         dwRefCount;
+    volatile int                  nRefCount;
 } VMDNS_FORWARDER_PACKET_CONTEXT, *PVMDNS_FORWARDER_PACKET_CONTEXT;
 
 typedef struct _VMDNS_FORWARDER_PACKET_LIST
@@ -381,7 +381,7 @@ typedef struct _VMDNS_FORWARDER_PACKET_LIST
 
 typedef struct _VMDNS_FORWARDER_PACKET_ENTRY
 {
-    volatile ULONG                  lRefCount;
+    volatile int                    nRefCount;
     LIST_ENTRY                      ForwarderPacketList;
     PVMDNS_FORWARDER_PACKET_CONTEXT pForwarderPacketContext;
     PVM_SOCKET                      pSocket;

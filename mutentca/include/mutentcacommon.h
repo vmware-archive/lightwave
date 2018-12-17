@@ -174,6 +174,22 @@ typedef struct _LWCA_CFG_KEY*        PLWCA_CFG_KEY;
         }                               \
     } while(0)
 
+#define LWCA_SAFE_FREE_MUTEX(mutex)      \
+    do {                                  \
+        if ((mutex)) {                    \
+            LwCAFreeMutex(mutex);        \
+            (mutex) = NULL;               \
+        }                                 \
+    } while(0)
+
+#define LWCA_SAFE_FREE_CONDITION(cond)   \
+    do {                                  \
+        if ((cond)) {                     \
+            LwCAFreeCondition(cond);     \
+            (cond) = NULL;                \
+        }                                 \
+    } while(0)
+
 typedef enum
 {
     LWCA_LOG_TYPE_CONSOLE = 0,
@@ -690,6 +706,13 @@ LwCAReadFileToString(
     PSTR    *ppszData
     );
 
+BOOLEAN
+LwCAStringStartsWith(
+    PCSTR   pszStr,
+    PCSTR   pszPrefix,
+    BOOLEAN bIsCaseSensitive
+    );
+
 // misc.c
 
 typedef VOID*       LWCA_LIB_HANDLE;
@@ -1097,6 +1120,12 @@ LwCAJsonLoadObjectFromFile(
     );
 
 DWORD
+LwCAJsonLoadObjectFromString(
+    PCSTR               pcszJsonStr,
+    PLWCA_JSON_OBJECT   *ppJsonConfig
+    );
+
+DWORD
 LwCAJsonGetObjectFromKey(
     PLWCA_JSON_OBJECT       pJson,
     BOOLEAN                 bOptional,
@@ -1222,6 +1251,20 @@ LwCAJsonAppendJsonToArray(
 VOID
 LwCAJsonCleanupObject(
     PLWCA_JSON_OBJECT       pJson
+    );
+
+DWORD
+LwCAJsonDumps(
+    PLWCA_JSON_OBJECT   pJson,
+    size_t              flags,
+    PSTR                *ppszDest
+    );
+
+DWORD
+LwCAJsonArrayGetStringAtIndex(
+    PLWCA_JSON_OBJECT   pArray,
+    int                 index,
+    PSTR                *ppszValue
     );
 
 // token_util.c

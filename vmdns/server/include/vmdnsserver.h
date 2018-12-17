@@ -78,6 +78,12 @@ VmDnsShutdown(
     VOID
     );
 
+//metrics.c
+DWORD
+VmDnsMetricsInit(
+    VOID
+    );
+
 #ifdef __cplusplus
 }
 #endif

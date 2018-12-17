@@ -36,7 +36,7 @@ VmDnsPropertyListCreate(
                         (PVOID*)&pList->ppProperties);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pList->lRefCount = 1;
+    pList->nRefCount = 1;
     *ppList = pList;
 
 cleanup:
@@ -185,7 +185,7 @@ VmDnsPropertyListAddRef(
     DWORD dwError = 0;
     if (pList)
     {
-        dwError = InterlockedIncrement(&pList->lRefCount);
+        dwError = InterlockedIncrement(&pList->nRefCount);
     }
     return dwError;
 }
@@ -197,7 +197,7 @@ VmDnsPropertyListRelease(
 {
     if (pList)
     {
-        if (0 == InterlockedDecrement(&pList->lRefCount))
+        if (0 == InterlockedDecrement(&pList->nRefCount))
         {
             VmDnsPropertyListFree(pList);
         }

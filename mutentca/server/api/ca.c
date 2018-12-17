@@ -472,11 +472,19 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to create root CA. requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     goto cleanup;
 }
 
 DWORD
 LwCAGetCACertificates(
+    PLWCA_REQ_CONTEXT       pReqCtx,
     PCSTR                   pcszCAId,
     PLWCA_CERTIFICATE_ARRAY *ppCertificates
     )
@@ -484,7 +492,7 @@ LwCAGetCACertificates(
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
 
-    if (IsNullOrEmptyString(pcszCAId) || !ppCertificates )
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCertificates )
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -502,6 +510,14 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to get CA certificates. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     LwCAFreeCertificates(pCertArray);
     if (ppCertificates)
     {
@@ -512,6 +528,7 @@ error:
 
 DWORD
 LwCAGetChainOfTrust(
+    PLWCA_REQ_CONTEXT           pReqCtx,
     PCSTR                       pcszCAId,
     PSTR                        *ppszChainOfTrust
     )
@@ -531,7 +548,7 @@ LwCAGetChainOfTrust(
     PSTR                        pszTmpChain = NULL;
     PSTR                        pszChainOfTrust = NULL;
 
-    if (IsNullOrEmptyString(pcszCAId) || !ppszChainOfTrust)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppszChainOfTrust)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -547,7 +564,7 @@ LwCAGetChainOfTrust(
     // Get the current cert of the specified CA and:
     //     * Append the PEM blob to the tmp buffer
     //     * Get the issuer common name
-    dwError = LwCAGetCACertificates(pcszCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(pReqCtx, pcszCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAGetLatestCertificateFromArray(pCACerts, &pCACert);
@@ -582,7 +599,7 @@ LwCAGetChainOfTrust(
     while (LwCAStringCompareA(pszRootCAId, pszIssuerCAId, FALSE) != 0)
     {
         // Get issuing CA certificate
-        dwError = LwCAGetCACertificates(pszIssuerCAId, &pIssuerCACerts);
+        dwError = LwCAGetCACertificates(pReqCtx, pszIssuerCAId, &pIssuerCACerts);
         BAIL_ON_LWCA_ERROR(dwError);
 
         dwError = LwCAGetLatestCertificateFromArray(pIssuerCACerts, &pIssuerCACert);
@@ -639,7 +656,7 @@ LwCAGetChainOfTrust(
     pCACerts = NULL;
 
     // Append root CA cert PEM blob after chain has been added up to this point
-    dwError = LwCAGetCACertificates(pszRootCAId, &pCACerts);
+    dwError = LwCAGetCACertificates(pReqCtx, pszRootCAId, &pCACerts);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCAGetLatestCertificateFromArray(pCACerts, &pCACert);
@@ -683,6 +700,13 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to get chain of trust. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
 
     LWCA_SAFE_FREE_STRINGA(pszChainOfTrust);
     if (ppszChainOfTrust)
@@ -809,6 +833,14 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to sign certificate. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     LwCAFreeCertificate(pCert);
     if (ppCertifcate)
     {
@@ -1020,6 +1052,15 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to create intermedidate CA. caID: (%s), parentcaID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        pcszParentCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     LwCAFreeCertificates(pCACerts);
     if (ppCACerts)
     {
@@ -1160,6 +1201,14 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to revoke certificate. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     if (dwError == LWCA_SSL_CERT_VERIFY_ERR ||
         dwError == LWCA_CERT_IO_FAILURE)
     {
@@ -1207,6 +1256,14 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to revoke CA. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     if (dwError == LWCA_CRL_CERT_ALREADY_REVOKED
         || dwError == LWCA_CA_REVOKED)
     {
@@ -1230,7 +1287,7 @@ LwCAGetCACrl(
     X509 *pX509CACert = NULL;
     X509_CRL *pX509Crl = NULL;
 
-    if (IsNullOrEmptyString(pcszCAId) || !ppCrl)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCrl)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -1278,6 +1335,14 @@ cleanup:
     return dwError;
 
 error:
+    LWCA_LOG_ERROR(
+        "[%s:%d] Failed to get CRL. caID: (%s), requestID: (%s), error: (%d)",
+        __FUNCTION__,
+        __LINE__,
+        pcszCAId,
+        LWCA_SAFE_STRING(pReqCtx->pszRequestId),
+        dwError);
+
     LwCAFreeCrl(pCrl);
     if (ppCrl)
     {

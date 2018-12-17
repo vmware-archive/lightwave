@@ -100,6 +100,7 @@ typedef struct _LWCA_REST_OPERATION
 
     // context
     PLWCA_REQ_CONTEXT           pReqCtx;
+    PSTR                        pszRequestId;
 } LWCA_REST_OPERATION, *PLWCA_REST_OPERATION;
 
 typedef struct _LWCA_SERVER_OPENSSL_GLOBALS

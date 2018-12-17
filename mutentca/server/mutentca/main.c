@@ -25,11 +25,13 @@ LwCAParseArgs(
     int argc,
     char* argv[],
     PBOOL pbEnableSysLog,
-    PBOOL pbConsoleLogging
+    PBOOL pbConsoleLogging,
+    LWCA_LOG_LEVEL  *pSyslogLevel
 )
 {
     DWORD dwError = LWCA_SUCCESS;
     int opt = 0;
+    LWCA_LOG_LEVEL syslogLevel = LWCA_LOG_LEVEL_INFO;
     BOOL bEnableSysLog = FALSE;
     BOOL bEnableConsoleLogging = FALSE;
 
@@ -42,6 +44,9 @@ LwCAParseArgs(
             break;
         case LWCA_OPTION_CONSOLE_LOGGING:
             bEnableConsoleLogging = TRUE;
+            break;
+        case LWCA_OPTION_LOGGING_LEVEL:
+            syslogLevel = atoi( optarg );
             break;
         default:
             dwError = LWCA_ERROR_INVALID_PARAMETER;
@@ -59,6 +64,11 @@ LwCAParseArgs(
         *pbConsoleLogging = bEnableConsoleLogging;
     }
 
+    if (pSyslogLevel)
+    {
+        *pSyslogLevel = syslogLevel;
+    }
+
 error:
     return dwError;
 }
@@ -74,6 +84,7 @@ main(
     int notifyFd = -1;
     int notifyCode = 0;
     int ret = -1;
+    LWCA_LOG_LEVEL syslogLevel = LWCA_LOG_LEVEL_INFO;
     BOOL bEnableSysLog = FALSE;
     BOOL bConsoleLogging = FALSE;
 
@@ -81,9 +92,10 @@ main(
 
     LwCABlockSelectedSignals();
 
-    dwError = LwCAParseArgs(argc, argv, &bEnableSysLog, &bConsoleLogging);
+    dwError = LwCAParseArgs(argc, argv, &bEnableSysLog, &bConsoleLogging, &syslogLevel);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    LwCALogSetLevel(syslogLevel);
     if (bEnableSysLog)
     {
         gLwCALogType = LWCA_LOG_TYPE_SYSLOG;

@@ -14,6 +14,7 @@ vmafd_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmafd/common \
     -I$(top_srcdir)/vmafd/interop/python \
+    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     @BOOST_INCLUDES@ \
     @LW_INCLUDES@ \
     @PYTHON_INCLUDES@ \

@@ -20,6 +20,7 @@ extern "C" {
 #endif
 
 #include <sys/prctl.h>
+#include <arpa/inet.h>
 
 #include <config.h>
 #include <mutentcasys.h>

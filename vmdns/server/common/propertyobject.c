@@ -31,7 +31,7 @@ VmDnsPropertyObjectCreate(
                     (PVOID*)&pPropertyObj);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pPropertyObj->lRefCount = 1;
+    pPropertyObj->nRefCount = 1;
     pPropertyObj->pProperty = pProperty;
 
     *ppPropertyObj = pPropertyObj;
@@ -58,7 +58,7 @@ VmDnsPropertyObjectAddRef(
     DWORD dwError = 0;
     if (pPropertyObj)
     {
-        dwError = InterlockedIncrement(&pPropertyObj->lRefCount);
+        dwError = InterlockedIncrement(&pPropertyObj->nRefCount);
     }
     return dwError;
 }
@@ -70,7 +70,7 @@ VmDnsPropertyObjectRelease(
 {
     if (pPropertyObj)
     {
-        if (0 == InterlockedDecrement(&pPropertyObj->lRefCount))
+        if (0 == InterlockedDecrement(&pPropertyObj->nRefCount))
         {
             VMDNS_FREE_PROPERTY(pPropertyObj->pProperty);
             VMDNS_SAFE_FREE_MEMORY(pPropertyObj);

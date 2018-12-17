@@ -38,7 +38,7 @@ VmDnsForwarderPacketEntryCreate(
                     (VOID*)&pForwarderPacketEntry);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    pForwarderPacketEntry->lRefCount = 1;
+    pForwarderPacketEntry->nRefCount = 1;
 
     pForwarderPacketEntry->pForwarderPacketContext = VmDnsAcquireForwarderPacketContext(pForwarderPacketContext);
     pForwarderPacketEntry->uiExpirationTime = uiExpirationTime;
@@ -62,7 +62,7 @@ VmDnsForwarderPacketEntryAcquire(
 {
     if (pForwarderPacketEntry)
     {
-        InterlockedIncrement(&pForwarderPacketEntry->lRefCount);
+        InterlockedIncrement(&pForwarderPacketEntry->nRefCount);
     }
     return pForwarderPacketEntry;
 }
@@ -72,7 +72,7 @@ VmDnsForwarderPacketEntryRelease(
     PVMDNS_FORWARDER_PACKET_ENTRY   pForwarderPacketEntry
     )
 {
-    if (pForwarderPacketEntry && InterlockedDecrement(&pForwarderPacketEntry->lRefCount) == 0)
+    if (pForwarderPacketEntry && InterlockedDecrement(&pForwarderPacketEntry->nRefCount) == 0)
     {
         VmDnsForwarderPacketEntryDelete(pForwarderPacketEntry);
     }

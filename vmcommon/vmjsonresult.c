@@ -279,7 +279,7 @@ VmJsonResultIterateArrayAt(
 
     if (!pPosition ||
         !pfnCB ||
-        json_typeof((json_t *)pPosition) != JSON_RESULT_ARRAY)
+        json_typeof((json_t *)pPosition) != JSON_ARRAY)
     {
         dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
         BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -315,7 +315,7 @@ VmJsonResultIterateAndGetValueFromArrayAt(
 
     if (!pPosition ||
         !pfnCB ||
-        json_typeof((json_t *)pPosition) != JSON_RESULT_ARRAY)
+        json_typeof((json_t *)pPosition) != JSON_ARRAY)
     {
         dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
         BAIL_ON_VM_COMMON_ERROR(dwError);

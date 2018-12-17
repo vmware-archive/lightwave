@@ -44,6 +44,10 @@ extern "C" {
 
 #include <gssapi/gssapi.h>
 
+#include <ssotypes.h>
+#include <oidc_types.h>
+#include <oidc.h>
+
 #include <mutentca.h>
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
@@ -53,6 +57,10 @@ extern "C" {
 #include <mutentcaauthz.h>
 #include <mutentcasrvauthz.h>
 #include <mutentcapolicy.h>
+#include <mutentcaresthead.h>
+#include <mutentcapkcs.h>
+#include <mutentcaapi.h>
+#include <mutentcadbapi.h>
 
 #include "defines.h"
 #include "structs.h"

@@ -126,3 +126,38 @@ VmDirInternalMetricsUpdate(
         }
     }
 }
+
+VOID
+VmDirInternalMetricsLogInefficientOp(
+    PVDIR_OPERATION pOperation
+    )
+{
+    uint64_t                  iRespTime = 0;
+    PVDIR_OPERATION_ML_METRIC pMLMetrics = NULL;
+    METRICS_LDAP_OPS          op = VmDirMetricsMapLdapOperationToEnum(pOperation->reqCode);
+
+    if (pOperation)
+    {
+        pMLMetrics = &pOperation->MLMetrics;
+        iRespTime = VMDIR_RESPONSE_TIME(pMLMetrics->iMLStartTime, pMLMetrics->iMLEndTime);
+
+        if ((op == METRICS_LDAP_OP_SEARCH && iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
+                || iRespTime > gVmdirServerGlobals.dwEfficientWriteOpTimeMS)
+        {
+            VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "[Middle Layer] Inefficient operation of type %s"
+                    " total time(%d) Preplugin(%d) BETxnBegin(%d) BETxnCommit(%d) PostPlugin(%d)",
+                    VmDirMetricsLdapOperationString(op),
+                    VMDIR_RESPONSE_TIME(pMLMetrics->iMLStartTime, pMLMetrics->iMLEndTime),
+                    VMDIR_RESPONSE_TIME(
+                        pMLMetrics->iPrePluginsStartTime, pMLMetrics->iPrePlugunsEndTim),
+                    VMDIR_RESPONSE_TIME(
+                        pMLMetrics->iBETxnBeginStartTime, pMLMetrics->iBETxnBeginEndTime),
+                    VMDIR_RESPONSE_TIME(
+                        pMLMetrics->iBETxnCommitStartTime, pMLMetrics->iBETxnCommitEndTime),
+                    VMDIR_RESPONSE_TIME(
+                        pMLMetrics->iPostPluginsStartTime, pMLMetrics->iPostPlugunsEndTime));
+        }
+    }
+}

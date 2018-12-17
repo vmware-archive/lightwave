@@ -182,6 +182,30 @@ VmDnsSockEventQueueRearm(
     );
 
 /**
+ * @brief Remove a socket from the event queue
+ *
+ * @param[in] pQueue   Pointer to Event queue
+ * @param[in] pSocket  Pointer to Socket
+ *
+ * @return 0 on success
+ */
+DWORD
+VmDnsSockEventQueueRemove(
+    PVM_SOCK_EVENT_QUEUE pQueue,
+    PVM_SOCKET           pSocket
+    );
+
+VOID
+VmDnsSockShutdownEventQueue(
+    PVM_SOCK_EVENT_QUEUE pQueue
+    );
+
+VOID
+VmDnsSockFreeEventQueue(
+    PVM_SOCK_EVENT_QUEUE pQueue
+    );
+
+/**
  * @brief Waits for an event on the event queue
  *
  * @param[in] pQueue   Pointer to event queue

@@ -56,7 +56,7 @@ LwCARestApiRequestHandler(
 
 cleanup:
     // write response
-    LwCASetRestResult(pRestOp, NULL, dwError);
+    LwCASetRestResult(pRestOp, dwError);
     dwRspErr = LwCARestOperationWriteResponse(pRestOp, pRESTHandle, ppResponse);
 
     // free memory
@@ -68,10 +68,11 @@ cleanup:
 
 error:
     LWCA_LOG_ERROR(
-            "%s failed, error (%d) for client %s",
+            "%s failed, error (%d) for client: (%s), requestID: (%s)",
             __FUNCTION__,
             dwError,
-            pRestOp ? LWCA_SAFE_STRING(pRestOp->pszClientIP) : "");
+            pRestOp ? LWCA_SAFE_STRING(pRestOp->pszClientIP) : "",
+            pRestOp ? LWCA_SAFE_STRING(pRestOp->pszRequestId) : "");
 
     goto cleanup;
 }

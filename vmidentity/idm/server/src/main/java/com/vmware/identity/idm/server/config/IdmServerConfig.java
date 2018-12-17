@@ -67,6 +67,7 @@ public class IdmServerConfig implements IIdmConfig
    // settings for system domain identity store
    private final String CONFIG_SYSTEM_DOMAIN_ATTRIBUTES_MAP = "SystemDomainAttributesMap";
    private final String CONFIG_SYSTEM_DOMAIN_SEARCH_TIMEOUT = "SystemDomainSearchTimeout";
+   private final String CONFIG_SECONDARY_OIDC_ENTITY = "StsSecondaryOidcEntityID";
 
    // multi-tenancy configuration
    private final String CONFIG_SYSTEM_MULTI_TENANT = "MultiTenant";
@@ -118,6 +119,7 @@ public class IdmServerConfig implements IIdmConfig
    private boolean _isServiceProviderSystemDomainInBackCompatMode;
    private String _serviceProviderSystemDomainAlias;
    private Map<String, String> _serviceProviderSystemDomainUserAliases;
+   private String _secondaryOIDCEntity;
 
    private final List<Attribute> _defaultAttributes;
 
@@ -291,6 +293,10 @@ public class IdmServerConfig implements IIdmConfig
        return this._idmAuthStatsSummarizeLdapQueries;
    }
 
+   public String getSecondaryOIDCEntity() {
+      return this._secondaryOIDCEntity;
+   }
+
    public boolean isLdapsCertValidationEnabled()
    {
       IRegistryAdapter regAdapter = RegistryAdapterFactory.getInstance().getRegistryAdapter();
@@ -445,6 +451,7 @@ public class IdmServerConfig implements IIdmConfig
          loadSystemDomainProperties( regAdapter, rootKey );
          loadTenancyConfig(regAdapter, rootKey);
          loadIdmAuthStatsConfig(regAdapter, rootKey);
+         loadStsConfig(regAdapter, rootKey);
 
          ArrayList<Attribute> attributesList = new ArrayList<Attribute>();
          Attribute attr = new Attribute(ATTRIBUTE_GROUPS);
@@ -765,4 +772,20 @@ public class IdmServerConfig implements IIdmConfig
             this._idmAuthStatsSummarizeLdapQueries = false;
         }
     }
+
+   // Contains configuration specific to STS
+   private
+   void loadStsConfig(IRegistryAdapter regAdapter, IRegistryKey regKey) {
+      String secondaryOIDCEntity = regAdapter.getStringValue(
+              regKey,
+              CONFIG_ROOT_KEY,
+              CONFIG_SECONDARY_OIDC_ENTITY,
+              true);
+
+      if (secondaryOIDCEntity != null && secondaryOIDCEntity.isEmpty()) {
+         secondaryOIDCEntity = null;
+      }
+
+      _secondaryOIDCEntity = secondaryOIDCEntity;
+   }
 }

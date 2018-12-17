@@ -12,12 +12,6 @@
  * under the License.
  */
 
-int
-LightwaveCaGetSignedCert(
-    int argc,
-    char* argv[]
-    );
-
 DWORD
 VmwCaAcquireOidcToken(
     PVMW_CA_PARAMS pCaParams,
