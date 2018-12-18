@@ -33,6 +33,20 @@ VMCAPluginDeinitialize(
     PVMCA_PLUGIN_HANDLE     pPluginHandle
     );
 
+DWORD
+VMCAPluginInitializeCustom(
+    PCSTR                   pcszPluginPath,
+    PCSTR                   pcszLoadFnName,
+    PVOID                   pPluginVTable,
+    PVOID                   *ppPluginHandle
+    );
+
+VOID
+VMCAPluginDeinitializeCustom(
+    PVMCA_PLUGIN_HANDLE     pPluginHandle,
+    PCSTR                   pcszUnloadFnName
+    );
+
 #ifdef __cplusplus
 }
 #endif

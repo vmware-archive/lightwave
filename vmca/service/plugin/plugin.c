@@ -14,6 +14,22 @@
 
 #include "includes.h"
 
+static
+DWORD
+_VMCAPluginInitialize(
+    PCSTR                   pcszPluginPath,
+    PCSTR                   pcszLoadFnName,
+    PVOID                   pPluginVTable,
+    PVMCA_PLUGIN_HANDLE     *ppPluginHandle
+    );
+
+static
+VOID
+_VMCAPluginDeinitialize(
+    PVMCA_PLUGIN_HANDLE     pPluginHandle,
+    PCSTR                   pcszUnloadFnName
+    );
+
 DWORD
 VMCAPluginInitialize(
     PCSTR                   pcszPluginPath,
@@ -21,8 +37,24 @@ VMCAPluginInitialize(
     PVMCA_PLUGIN_HANDLE     *ppPluginHandle
     )
 {
+    return _VMCAPluginInitialize(
+               pcszPluginPath,
+               VMCA_PLUGIN_LOAD_FUNC,
+               pPluginVTable,
+               ppPluginHandle);
+}
+
+static
+DWORD
+_VMCAPluginInitialize(
+    PCSTR                   pcszPluginPath,
+    PCSTR                   pcszLoadFnName,
+    PVOID                   pPluginVTable,
+    PVMCA_PLUGIN_HANDLE     *ppPluginHandle
+    )
+{
     DWORD                   dwError = 0;
-    PSTR                    pszDLError = NULL;
+    PCSTR                    pszDLError = NULL;
     PVMCA_PLUGIN_HANDLE     pPluginHandle = NULL;
     PFN_VMCA_PLUGIN_LOAD    pfnPluginLoad = NULL;
 
@@ -35,8 +67,9 @@ VMCAPluginInitialize(
     dwError = VMCALoadLibrary(pcszPluginPath, &pPluginHandle);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    pfnPluginLoad = (PFN_VMCA_PLUGIN_LOAD)VMCAGetLibSym(pPluginHandle, VMCA_PLUGIN_LOAD_FUNC);
-    pszDLError = VMCA_SAFE_STRING(dlerror());
+    pfnPluginLoad = (PFN_VMCA_PLUGIN_LOAD)VMCAGetLibSym(pPluginHandle, pcszLoadFnName);
+
+    pszDLError = VMCAGetLibError();
     if (!IsNullOrEmptyString(pszDLError))
     {
         VMCA_LOG_ERROR(
@@ -45,9 +78,10 @@ VMCAPluginInitialize(
             __LINE__,
             VMCA_PLUGIN_LOAD_FUNC,
             pcszPluginPath,
-            VMCA_SAFE_STRING(dlerror()));
+            pszDLError);
         dwError = VMCA_ERROR_DLL_SYMBOL_NOTFOUND;
     }
+
     if (!pfnPluginLoad)
     {
         VMCA_LOG_ERROR(
@@ -85,16 +119,50 @@ VMCAPluginDeinitialize(
     PVMCA_PLUGIN_HANDLE         pPluginHandle
     )
 {
+    return _VMCAPluginDeinitialize(pPluginHandle, VMCA_PLUGIN_UNLOAD_FUNC);
+}
+
+static
+VOID
+_VMCAPluginDeinitialize(
+    PVMCA_PLUGIN_HANDLE     pPluginHandle,
+    PCSTR                   pcszUnloadFnName
+    )
+{
     PFN_VMCA_PLUGIN_UNLOAD      pfnPluginUnload = NULL;
 
     if (pPluginHandle)
     {
-        pfnPluginUnload = (PFN_VMCA_PLUGIN_UNLOAD)VMCAGetLibSym(pPluginHandle, VMCA_PLUGIN_UNLOAD_FUNC);
-        if (!IsNullOrEmptyString(VMCA_SAFE_STRING(dlerror())) && pfnPluginUnload)
+        pfnPluginUnload = (PFN_VMCA_PLUGIN_UNLOAD)VMCAGetLibSym(pPluginHandle, pcszUnloadFnName);
+        if (!IsNullOrEmptyString(VMCAGetLibError()) && pfnPluginUnload)
         {
             pfnPluginUnload();
         }
 
         VMCACloseLibrary(pPluginHandle);
     }
+}
+
+DWORD
+VMCAPluginInitializeCustom(
+    PCSTR                   pcszPluginPath,
+    PCSTR                   pcszLoadFnName,
+    PVOID                   pPluginVTable,
+    PVOID                   *ppPluginHandle
+    )
+{
+    return _VMCAPluginInitialize(
+               pcszPluginPath,
+               pcszLoadFnName,
+               pPluginVTable,
+               ppPluginHandle);
+}
+
+VOID
+VMCAPluginDeinitializeCustom(
+    PVMCA_PLUGIN_HANDLE     pPluginHandle,
+    PCSTR                   pcszUnloadFnName
+    )
+{
+    return _VMCAPluginDeinitialize(pPluginHandle, pcszUnloadFnName);
 }

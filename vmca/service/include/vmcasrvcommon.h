@@ -41,6 +41,27 @@ extern "C" {
 #define VMCA_SF_INIT( fieldName, fieldValue ) fieldValue
 #endif
 
+#define VMCA_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
+if (! (bLocked) ) \
+{ \
+  pthread_rwlock_wrlock (pmutex); \
+  (bLocked) = TRUE; \
+}
+
+#define VMCA_LOCK_MUTEX_SHARED(pmutex, bLocked) \
+if (! (bLocked) ) \
+{ \
+  pthread_rwlock_rdlock (pmutex); \
+  (bLocked) = TRUE; \
+}
+
+#define VMCA_LOCK_MUTEX_UNLOCK(pmutex, bLocked) \
+if (bLocked) \
+{ \
+  pthread_rwlock_unlock (pmutex); \
+  (bLocked) = FALSE; \
+}
+
 typedef DWORD VMCA_FUNC_LEVEL;
 
 #define VMCA_UNKNOWN                0x00000001
@@ -139,6 +160,12 @@ typedef struct _VMCA_SERVER_GLOBALS
 } VMCA_SERVER_GLOBALS, *PVMCA_SERVER_GLOBALS;
 
 extern VMCA_SERVER_GLOBALS gVMCAServerGlobals;
+
+typedef struct _VMCA_BINARY_DATA
+{
+    PBYTE pData;
+    DWORD dwLength;
+} VMCA_BINARY_DATA, *PVMCA_BINARY_DATA;
 
 /* ../common/config.c */
 
@@ -248,6 +275,47 @@ VMCAGetRegKeyValueDword(
     PCSTR   pszKey,
     PDWORD  pdwValue,
     DWORD   dwDefaultValue
+    );
+
+/* security/security.c */
+
+DWORD
+VMCASecurityInitCtx(
+    PVMCA_JSON_OBJECT pConfig
+    );
+
+DWORD
+VMCASecurityAddKeyPair(
+    PCSTR pszKeyId,
+    PCSTR pszPrivateKey
+    );
+
+DWORD
+VMCASecurityCreateKeyPair(
+    PCSTR pszKeyId,
+    PSTR *ppszPublicKey
+    );
+
+VOID
+VMCASecurityFreeCtx(
+   VOID
+   );
+
+/* security/storage.c */
+DWORD
+VMCASecurityGetEncryptedKey(
+    PVMCA_BINARY_DATA *ppEncryptedKey
+    );
+
+/*
+ * normally there is no need to call this
+ * but if there was an error during create key pair,
+ * call this at error handling to make sure cache is
+ * cleared
+*/
+DWORD
+VMCASecurityRemoveEncryptedKeyFromCache(
+    VOID
     );
 
 #ifdef __cplusplus

@@ -1422,6 +1422,11 @@ VMCAGetLibSym(
     PCSTR           pszFunctionName
     );
 
+PCSTR
+VMCAGetLibError(
+    VOID
+    );
+
 DWORD
 VMCABytesToHexString(
     PUCHAR  pData,

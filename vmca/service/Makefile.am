@@ -6,7 +6,8 @@ SUBDIRS = \
     common \
     config \
     plugin \
-    rest-head
+    rest-head \
+    security
 
 vmcad_SOURCES = \
     auth.c \
@@ -61,6 +62,7 @@ vmcad_LDADD = \
     $(top_builddir)/vmca/service/common/libvmcasrvcommon.la \
     $(top_builddir)/vmca/service/config/libvmcasrvconfig.la \
     $(top_builddir)/vmca/service/rest-head/libvmcaresthead.la \
+    $(top_builddir)/vmca/service/security/libvmcasecurity.la \
     $(top_builddir)/vmca/common/libcommon.la \
     $(top_builddir)/vmca/vmcadb/libvmcadb.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
