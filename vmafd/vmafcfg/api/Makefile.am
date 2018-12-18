@@ -4,9 +4,6 @@
 
 lib_LTLIBRARIES = libvmafcfgapi.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvmafcfgapi_la_SOURCES = \
     config.c \
     globals.c \

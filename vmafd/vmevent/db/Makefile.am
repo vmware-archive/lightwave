@@ -1,9 +1,6 @@
 
 noinst_LTLIBRARIES = libvmeventdb.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvmeventdb_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/vmevent/include \
     -I$(top_srcdir)/vmafd/vmevent/include/public \
