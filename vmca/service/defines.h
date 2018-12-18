@@ -248,24 +248,3 @@
 
 #define VMCA_VALIDITY_SYNC_BACK_DATE        (VMCA_TIME_SECS_PER_WEEK * 2)
 #define VMCA_MAX_CERT_DURATION              (VMCA_TIME_SECS_PER_YEAR * 10)
-
-#define VMCA_LOCK_MUTEX_EXCLUSIVE(pmutex, bLocked) \
-if (! (bLocked) ) \
-{ \
-  pthread_rwlock_wrlock (pmutex); \
-  (bLocked) = TRUE; \
-}
-
-#define VMCA_LOCK_MUTEX_SHARED(pmutex, bLocked) \
-if (! (bLocked) ) \
-{ \
-  pthread_rwlock_rdlock (pmutex); \
-  (bLocked) = TRUE; \
-}
-
-#define VMCA_LOCK_MUTEX_UNLOCK(pmutex, bLocked) \
-if (bLocked) \
-{ \
-  pthread_rwlock_unlock (pmutex); \
-  (bLocked) = FALSE; \
-}

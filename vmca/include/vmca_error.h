@@ -140,6 +140,13 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
 #define VMCA_UNKNOW_ERROR                   (VMCA_ROOT_CA_MISSING + 101)
 #define VMCA_SSL_BIO_READ_ERROR             (VMCA_ROOT_CA_MISSING + 102)
 
+//security offset 110 to 130
+#define VMCA_SECURITY_NOT_INITIALIZED       (VMCA_ROOT_CA_MISSING + 110)
+#define VMCA_SECURITY_ALREADY_INITIALIZED   (VMCA_ROOT_CA_MISSING + 111)
+#define VMCA_SECURITY_INVALID_PLUGIN        (VMCA_ROOT_CA_MISSING + 112)
+#define VMCA_SECURITY_KEY_ALREADY_IN_CACHE  (VMCA_ROOT_CA_MISSING + 113)
+#define VMCA_SECURITY_KEY_NOT_IN_CACHE      (VMCA_ROOT_CA_MISSING + 114)
+#define VMCA_SECURITY_KEY_NOT_IN_DB         (VMCA_ROOT_CA_MISSING + 115)
 
 #define VMCA_ERROR_TABLE_INITIALIZER \
 { \
@@ -239,6 +246,12 @@ typedef struct _VMCA_ERROR_CODE_NAME_MAP
     { VMCA_ERROR_INVALID_ENTRY          ,   "VMCA_ERROR_INVALID_ENTRY"          ,   "Requested entry is invalid" }, \
     { VMCA_UNKNOW_ERROR                 ,   "VMCA_UNKNOWN_ERROR"                ,   "Certificate Server Unknown Error" }, \
     { VMCA_SSL_BIO_READ_ERROR           ,   "VMCA_SSL_BIO_READ_ERROR"           ,   "Failed to read data." }, \
+    { VMCA_SECURITY_ALREADY_INITIALIZED ,   "VMCA_SECURITY_ALREADY_INITIALIZED" ,   "Initialize of security plugin is not allowed when already initialized." }, \
+    { VMCA_SECURITY_NOT_INITIALIZED     ,   "VMCA_SECURITY_NOT_INITIALIZED"     ,   "Error initializing security plugin." }, \
+    { VMCA_SECURITY_INVALID_PLUGIN      ,   "VMCA_SECURITY_INVALID_PLUGIN"      ,   "Loaded security plugin is invalid. Check plugin init state." }, \
+    { VMCA_SECURITY_KEY_ALREADY_IN_CACHE,   "VMCA_SECURITY_KEY_ALREADY_IN_CACHE",   "An encrypted key is already present in local cache for this ca id." }, \
+    { VMCA_SECURITY_KEY_NOT_IN_CACHE    ,   "VMCA_SECURITY_KEY_NOT_IN_CACHE"    ,   "An encrypted key is not present in local cache for this ca id." }, \
+    { VMCA_SECURITY_KEY_NOT_IN_DB       ,   "VMCA_SECURITY_KEY_NOT_IN_DB"       ,   "An encrypted key is not present in db for this ca id." }, \
 };
 
 

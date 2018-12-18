@@ -788,3 +788,11 @@ error:
     VMCA_SAFE_FREE_MEMORY(pData);
     goto cleanup;
 }
+
+PCSTR
+VMCAGetLibError(
+    VOID
+    )
+{
+    return VMCA_SAFE_STRING(dlerror());
+}

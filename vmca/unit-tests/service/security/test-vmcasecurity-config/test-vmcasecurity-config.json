@@ -1,0 +1,7 @@
+{
+  "security":
+  {
+    "securityPlugin": "./test-vmcasecurity-plugin/.libs/vmcasecuritytestplugin.so",
+    "securityPluginConfig": "./test-vmcasecurity-config/test-vmcasecurity-data.json"
+  }
+}

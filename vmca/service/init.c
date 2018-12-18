@@ -184,6 +184,11 @@ VMCASrvInitCA(
     }
     BAIL_ON_VMCA_ERROR(dwError);
 
+#ifdef SECURITY_PLUGIN_ENABLED
+    dwError = VMCASecurityInitCtx(pJsonConfig);
+    BAIL_ON_VMCA_ERROR(dwError);
+#endif
+
     dwError = VMCAPolicyInit(VMCA_POLICY_FILE_PATH, &ppPolicies);
     if (dwError == VMCA_JSON_FILE_LOAD_ERROR)
     {

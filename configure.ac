@@ -1934,6 +1934,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/service/config/Makefile
                  vmca/service/rest-head/Makefile
                  vmca/service/plugin/Makefile
+                 vmca/service/security/Makefile
                  vmca/client/Makefile
                  vmca/vmcadb/Makefile
                  vmca/certool/Makefile
@@ -1947,6 +1948,9 @@ AC_CONFIG_FILES([Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-invalidvtable/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-valid/Makefile
                  vmca/unit-tests/service/plugin/test-plugins/testplugin-noentry/Makefile
+                 vmca/unit-tests/service/security/Makefile
+                 vmca/unit-tests/service/security/test-vmcasecurity-config/Makefile
+                 vmca/unit-tests/service/security/test-vmcasecurity-plugin/Makefile
                  vmca/python/Makefile
                  vmca/jdepends/Makefile
                  vmca/java/Makefile
@@ -2054,6 +2058,9 @@ AC_CONFIG_FILES([Makefile
 
 AC_CONFIG_LINKS([
                 vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json:vmca/unit-tests/service/common/test-policy-configs/test-snpolicy-valid.json
+                ])
+AC_CONFIG_LINKS([
+                vmca/unit-tests/service/security/test-vmcasecurity-config/test-vmcasecurity-config.json:vmca/unit-tests/service/security/test-vmcasecurity-config/test-vmcasecurity-config.json
                 ])
 AC_CONFIG_LINKS([
                 mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json:mutentca/tests/unit-tests/server/api/test-mutentca-config/test-mutentca-config.json

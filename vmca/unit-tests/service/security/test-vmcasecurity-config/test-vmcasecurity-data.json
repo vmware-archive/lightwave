@@ -1,0 +1,6 @@
+{
+    "kms": {
+        "cmk_id": "@@ARN@@",
+        "key_spec": "@@KEYSPEC@@"
+    }
+}

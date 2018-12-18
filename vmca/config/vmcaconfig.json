@@ -1,0 +1,6 @@
+{
+    "security": {
+        "securityPlugin": "@@SECURITY_PLUGIN_PATH@@",
+        "securityPluginConfig": "@@SECURITY_PLUGIN_CONFIG@@"
+    }
+}
