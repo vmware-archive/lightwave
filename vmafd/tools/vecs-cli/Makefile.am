@@ -1,8 +1,5 @@
 bin_PROGRAMS = vecs-cli
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 vecs_cli_SOURCES = \
     cli.c  \
     main.c \

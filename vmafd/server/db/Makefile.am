@@ -1,9 +1,6 @@
 
 lib_LTLIBRARIES = libvecsdb.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvecsdb_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
     -I$(top_srcdir)/vmafd/include \

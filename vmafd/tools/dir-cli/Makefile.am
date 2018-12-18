@@ -1,8 +1,5 @@
 bin_PROGRAMS = dir-cli
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 dir_cli_SOURCES = \
     cert.c \
     cli.c  \

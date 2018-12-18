@@ -1,8 +1,5 @@
 sbin_PROGRAMS = vmafdd
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 idl_srcdir=$(top_srcdir)/vmafd/idl
 
 vmafdd_SOURCES = \

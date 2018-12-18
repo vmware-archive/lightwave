@@ -1,8 +1,5 @@
 bin_PROGRAMS = sl-cli
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 sl_cli_SOURCES = \
     superlogWrapper.c \
     parseargs.c \

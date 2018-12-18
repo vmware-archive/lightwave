@@ -1,8 +1,5 @@
 noinst_LTLIBRARIES = libvmcaresthead.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvmcaresthead_la_SOURCES = \
     libmain.c
 

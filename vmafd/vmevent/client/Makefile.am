@@ -3,9 +3,6 @@ lib_LTLIBRARIES = libvmeventclient.la
 
 idl_srcdir=$(top_srcdir)/vmafd/vmevent/idl
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvmeventclient_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/vmevent/include \
     -I$(top_srcdir)/vmafd/vmevent/include/public \

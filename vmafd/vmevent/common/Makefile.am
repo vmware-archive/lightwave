@@ -9,9 +9,6 @@
 
 noinst_LTLIBRARIES = libvmeventcommon.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libvmeventcommon_la_SOURCES = \
     globals.c \
     memory.c  \

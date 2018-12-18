@@ -9,9 +9,6 @@
 
 noinst_LTLIBRARIES = libcommon.la
 
-#remove after top level configure.ac sets the desired flags by default
-AM_CFLAGS=$(CFLAGS_DESIRED)
-
 libcommon_la_SOURCES = \
     acl.c \
     buffer.c \
