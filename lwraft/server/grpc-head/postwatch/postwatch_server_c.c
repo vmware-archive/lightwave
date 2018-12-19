@@ -14,7 +14,7 @@
 #include "includes.h"
 
 typedef struct _VMDIR_GRPC_THREAD_CONTEXT {
-    DWORD argc;
+    int argc;
     PSTR *argv;
 } VMDIR_GRPC_THREAD_CONTEXT, *PVMDIR_GRPC_THREAD_CONTEXT;
 
@@ -39,7 +39,7 @@ DWORD
 VmDirGrpcPostWatchServerInitialize(void)
 {
     DWORD dwError = 0;
-    DWORD argc = 2;
+    int argc = 2;
     VMDIR_THREAD thread = {0};
     PVMDIR_GRPC_THREAD_CONTEXT pGrpcContext = NULL;
     PSTR *ppArgv = NULL;
@@ -55,7 +55,7 @@ VmDirGrpcPostWatchServerInitialize(void)
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMemory(
-                sizeof(PSTR) * argc,
+                sizeof(PSTR) * (size_t) argc,
                 (PVOID*)&ppArgv);
     BAIL_ON_VMDIR_ERROR(dwError);
 

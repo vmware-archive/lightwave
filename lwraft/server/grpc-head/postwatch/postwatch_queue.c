@@ -34,8 +34,8 @@ void *fake_queue_thread(void *ctx)
      * v[n] = number of values per attribute
      */
 
-    int response_size = sizeof(postwatch_response_t) +
-                               (sizeof(postwatch_event_t) * events_count);
+    size_t response_size = sizeof(postwatch_response_t) +
+                               (sizeof(postwatch_event_t) * (unsigned) events_count);
 
     /* Make response */
     response = (ppostwatch_response_t) calloc(1, response_size);
@@ -124,8 +124,9 @@ int MyCreateRequestCallback(watch_create_request_t *ctx)
 #if 1
 {
     pthread_t thr;
-    thr = pthread_create(&thr, NULL, fake_queue_thread, NULL);
-    if (thr)
+    int sts = 0;
+    sts = pthread_create(&thr, NULL, fake_queue_thread, NULL);
+    if (sts == 0)
     {
         pthread_detach(thr);
     }

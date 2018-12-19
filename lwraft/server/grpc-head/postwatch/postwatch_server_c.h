@@ -80,17 +80,33 @@ typedef struct _POSTWATCH_EVENT_T
 
 typedef struct _POSTWATCH_RESPONSE_T
 {
-    int64_t watch_id;
+    int64_t watch_id; // From Notify
     uint8_t created;
     uint8_t canceled;
-    int64_t compact_revision;
+    int64_t compact_revision; // From Notify
     int64_t events_count;
     postwatch_event_t events[];
 } postwatch_response_t, *ppostwatch_response_t;
 
+#if 0
+// located in lwraft/server/include/common.h ??
+typedef struct _VDIR_EVENT_RESPONSE
+{
+    int64_t watch_id; // From Notify
+    int64_t compact_revision; // From Notify
+    VDIR_EVENT_DATA *watched_events; // From Notify
+} VDIR_EVENT_RESPONSE;
+#endif
+
 void PostWatchRunServer(int argc, char **argv);
 
-uint32_t WatchSendEvents(void *grpc_stream, postwatch_response_t *watch_response);
+#if 0
+uint32_t WatchSendEvents(void *grpc_stream,
+                         VDIR_EVENT_RESPONSE *watch_response);
+#else
+uint32_t WatchSendEvents(void *grpc_stream,
+                         postwatch_response_t *watch_response);
+#endif
 
 postwatch_callbacks_t *PostWatchGetCallbacks(void);
 
