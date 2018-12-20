@@ -3,6 +3,10 @@
 #1. env file is available at $LIGHTWAVE_ENV_FILE
 #2. topsrcdir is mounted as /src
 #3. ca tests need a lightwave server with policy config loaded
+#How to run this test
+#1. Pre-requisites: docker, hmake docker-compose
+#2. Invoke test: hmake test-ca
+#3. To skip build and run with built rpms: hmake -S pack -S build -S build-lightwave-photon2 test-ca
 
 #source env variables
 source $LIGHTWAVE_ENV_FILE
@@ -20,6 +24,8 @@ rpm -Uvh --nodeps /src/build/rpmbuild/RPMS/x86_64/lightwave-client*.rpm
 
 primary=caserver.$LIGHTWAVE_DOMAIN
 THIS_HOST_NAME=`hostname`
+carestport=7778
+capath=/etc/ssl/certs
 
 /opt/likewise/bin/lwsm autostart
 sleep 1
@@ -44,11 +50,15 @@ if [ $response -eq $http_ok ]; then
   echo "Lightwave up in $elapsed seconds. Joining a node and acquiring token.."
 else
   echo "Waited $elapsed seconds. Giving up. Expected $http_ok. Got $response"
+  exit 1
 fi
+
+#
+mkdir -p /etc/vmware/vmware-vmafd
 
 #this join is going to use ldap to communicate to directory
 #for the join process but it will use rest for
-#cert refresh and pass refresh.
+#certficate and password refresh.
 /opt/vmware/bin/ic-join \
   --domain-controller $primary \
   --domain $LIGHTWAVE_DOMAIN \
@@ -61,7 +71,7 @@ fi
 --server-name $primary
 
 #set up csr for a get-cert call that should pass
-cat > csr_should_pass.json << EOF
+cat > /tmp/csr_should_pass.json << EOF
 {
   "common_name":    "${THIS_HOST_NAME}",
   "country":        "US",
@@ -71,10 +81,44 @@ cat > csr_should_pass.json << EOF
 }
 EOF
 
+#make sure we have certificates installed to trust the server
+#ca get-cert command uses REST to talk to the ca server.
+#note that curl does not use -k this time.
+max_attempts=5
+attempts=1
+exit_code=1
+
+while [ $exit_code -ne 0 ] && [ $attempts -lt $max_attempts ]; do
+  response=$(curl --capath $capath --write-out %{http_code} --silent --output /dev/null https://$primary:$carestport)
+  exit_code=$?
+  echo "$exit_code : waiting for certificate refresh, response=$response [ $attempts/$max_attempts ]"
+  sleep $wait_seconds
+  attempts=$[attempts+1]
+done
+
+elapsed=$[$attempts*$wait_seconds]
+
+if [ $exit_code -eq 0 ]; then
+  echo "Certificates refreshed in $elapsed seconds. running cert tests.."
+else
+  echo "Waited $elapsed seconds. Giving up. Expected curl to pass with exit code 0. Got $exit_code ."
+  exit 1
+fi
+
 #get-cert call should pass
 /opt/vmware/bin/lightwave \
 ca get-cert \
---config csr_should_pass.json \
---privkey keys\csr.key > csr_should_pass.crt
+--config /tmp/csr_should_pass.json \
+--privkey /tmp/csr.key \
+--cert /tmp/csr_should_pass.crt
 
-openssl x509 -noout -text -in csr_should_pass.crt
+openssl x509 -noout -text -in /tmp/csr_should_pass.crt
+
+#read an existing key. get-cert call should pass
+/opt/vmware/bin/lightwave \
+ca get-cert \
+--config /tmp/csr_should_pass.json \
+--privkey /tmp/csr.key \
+--cert /tmp/csr_should_pass2.crt
+
+openssl x509 -noout -text -in /tmp/csr_should_pass2.crt
