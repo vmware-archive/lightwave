@@ -554,7 +554,7 @@ VmwCaReadFromFile(
     BAIL_ON_DEPLOY_ERROR(dwError);
 
     size_read = fread(pszContents, size, 1, pFile);
-    if (size_read != size)
+    if (size_read != 1)
     {
         dwError = VMW_CA_DEFAULT_ERROR;
         BAIL_ON_DEPLOY_ERROR(dwError);
