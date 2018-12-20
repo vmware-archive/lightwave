@@ -140,6 +140,12 @@ static
 BOOLEAN
 _VmDirSkipReplicationCycle();
 
+static
+VOID
+_VmDirSanitizeSyncDoneCookies(
+    struct berval*  pBVCookie
+    );
+
 DWORD
 VmDirGetReplCycleCounter(
     VOID
@@ -890,6 +896,26 @@ _VmDirContinueReplicationCycle(
     return retVal;
 }
 
+/*
+ * in mix mode, for example with 1.3.1-36, we observed cookies with "continue:1," transient value.
+ * make absolute sure to trim transient value before persisting and updating cache value of vector.
+ */
+static
+VOID
+_VmDirSanitizeSyncDoneCookies(
+    struct berval*  pBVCookie
+    )
+{
+    PSTR    pszContinue = NULL;
+
+    pszContinue = VmDirStringStrA(pBVCookie->bv_val, VMDIR_REPL_CONT_INDICATOR);
+    if (pszContinue)
+    {
+        *pszContinue = '\0';
+        pBVCookie->bv_len = VmDirStringLenA(pBVCookie->bv_val);
+    }
+}
+
 static
 VOID
 _VmDirConsumePartner(
@@ -976,6 +1002,9 @@ _VmDirConsumePartner(
         // If page fetch return 0 entry, bervalSyncDoneCtrl.bv_val could be NULL. Do not update cookies in this case.
         if (pPage && bervalSyncDoneCtrl.bv_val)
         {
+            // make sure cookies is in valid format.
+            _VmDirSanitizeSyncDoneCookies(&bervalSyncDoneCtrl);
+
             retVal = VmDirReplUpdateCookies(
                     pContext->pSchemaCtx, &bervalSyncDoneCtrl, pReplAgr);
             BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
