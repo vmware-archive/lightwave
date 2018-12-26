@@ -16,5 +16,4 @@
 typedef struct _LWCA_API_GLOBALS
 {
     pthread_rwlock_t  mutex;
-    PSTR              pszRootCAId;
 } LWCA_API_GLOBALS, *PLWCA_API_GLOBALS;

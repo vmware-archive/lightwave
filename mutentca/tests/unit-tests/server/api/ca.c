@@ -445,6 +445,8 @@
 #define LWCA_CA_CONFIG_INVALID "./test-mutentca-config/test-mutentca-config-invalid.json"
 #define LWCA_LOCK_CA_UUID "8eb59f16-59fa-485e-9f3f-eab876c527f1"
 #define LWCA_LOCK_CERT_UUID "9fc6a027-6a0b-596f-a040-fbc987d63802"
+#define LWCA_SRV_CONFIG_JSON "{\"host\":\"localhost\", \
+                          \"config\":{\"name\":\"LightwaveCA\"}}"
 
 // defines output value of __wrap_LwCADbCheckCA
 PBOOLEAN pbExistsMockArray =  NULL;
@@ -468,6 +470,8 @@ Test_LwCAAPITests_Setup(
     )
 {
     DWORD dwError = 0;
+    json_error_t            jsonError = { 0 };
+    PLWCA_JSON_OBJECT       pJsonConfig = NULL;
 
     if (!pReqCtx)
     {
@@ -477,6 +481,14 @@ Test_LwCAAPITests_Setup(
 
     dwError = LwCAAuthZInitialize(NULL);
     assert_int_equal(dwError, 0);
+
+    pJsonConfig = json_loads(LWCA_SRV_CONFIG_JSON, JSON_DECODE_ANY, &jsonError);
+    assert_non_null(pJsonConfig);
+
+    dwError =  LwCASrvInitCtx(pJsonConfig);
+    assert_int_equal(dwError, 0);
+
+    LwCAJsonCleanupObject(pJsonConfig);
 
     return 0;
 }
@@ -1032,18 +1044,9 @@ Test_LwCAInitCA_Invalid(
     )
 {
     DWORD dwError = 0;
-    PLWCA_JSON_OBJECT pJson =  NULL;
 
     dwError = LwCAInitCA(NULL);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
-
-    dwError = LwCAJsonLoadObjectFromFile(LWCA_CA_CONFIG_INVALID, &pJson);
-    assert_int_equal(dwError, 0);
-
-    dwError = LwCAInitCA(pJson);
-    assert_int_equal(dwError, LWCA_JSON_PARSE_ERROR);
-
-    LwCAJsonCleanupObject(pJson);
 }
 
 VOID

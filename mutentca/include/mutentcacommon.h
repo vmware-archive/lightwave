@@ -873,6 +873,12 @@ LwCAGetTimeInMilliSec(
     VOID
     );
 
+DWORD
+LwCAGetCanonicalHostName(
+    PCSTR pszHostname,
+    PSTR* ppszCanonicalHostname
+    );
+
 // regexutil.c
 
 typedef regex_t REGEX, *PREGEX;

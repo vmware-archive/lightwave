@@ -59,11 +59,6 @@ LwCAInitCA(
     PLWCA_JSON_OBJECT pConfig
     );
 
-DWORD
-LwCAGetRootCAId(
-    PSTR *ppszRootCAId
-    );
-
 VOID
 LwCAFreeCACtx(
     );

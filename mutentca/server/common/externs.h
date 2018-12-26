@@ -12,13 +12,4 @@
  * under the License.
  */
 
-#include "includes.h"
-
-PLWCA_POLICY_CONTEXT gpPolicyCtx = NULL;
-
-LWCA_SERVER_CONTEXT gSrvCtx =
-{
-    LWCA_SF_INIT(.pszHost, NULL),
-    LWCA_SF_INIT(.mutex, PTHREAD_MUTEX_INITIALIZER),
-    LWCA_SF_INIT(.pszRootCAId, NULL)
-};
+extern LWCA_SERVER_CONTEXT gSrvCtx;

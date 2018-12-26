@@ -203,6 +203,7 @@ LwCAGenerateX509Certificate(
     X509_REQ*               pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
     PLWCA_CERTIFICATE       pCACert,
+    PCSTR                   pcszCAIssuers,
     X509                    **ppCert
     );
 
@@ -210,6 +211,7 @@ DWORD
 LwCAGenerateSelfSignX509Certificate(
     X509_REQ                *pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
+    PCSTR                   pcszCAIssuers,
     X509                    **ppCert
     );
 
@@ -220,6 +222,7 @@ LwCAGenerateX509Crl(
     PCSTR                       pcszNextCRLUpdate,
     PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray,
     X509                        *pCACert,
+    PCSTR                       pcszCAIssuers,
     X509_CRL                    **ppCrl
     );
 

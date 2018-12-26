@@ -167,6 +167,33 @@ LwCASrvGetMachineAccountInfoA(
     PSTR* ppszPassword
     );
 
+/* ../common/api.c */
+
+DWORD
+LwCAGetRootCAId(
+    PSTR *ppszRootCAId
+    );
+
+DWORD
+LwCAGetCAEndpoint(
+    PCSTR   pcszCAId,
+    PSTR    *ppszUri
+    );
+
+DWORD
+LwCASrvInitCtx(
+    );
+
+VOID
+LwCASrvFreeCtx(
+   VOID
+   );
+
+DWORD
+LwCASrvGetHost(
+    PSTR *ppszHost
+    );
+
 /* ../common/util.c */
 
 BOOLEAN

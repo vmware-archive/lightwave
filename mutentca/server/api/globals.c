@@ -16,5 +16,4 @@
 LWCA_API_GLOBALS gApiGlobals =
 {
     LWCA_SF_INIT(.mutex, PTHREAD_RWLOCK_INITIALIZER),
-    LWCA_SF_INIT(.pszRootCAId, NULL),
 };

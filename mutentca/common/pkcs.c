@@ -167,7 +167,7 @@ _LwCAAddExtension(
     STACK_OF(X509_EXTENSION)    *pStack,
     X509V3_CTX                  *pCtx,
     int                         NID,
-    PSTR                        pszValue
+    PCSTR                       pcszValue
     );
 
 static
@@ -219,7 +219,9 @@ DWORD
 _LwCASetAuthorityInfoAccess(
     STACK_OF(X509_EXTENSION)    *pStack,
     X509                        *pCert,
-    X509                        *pIssuer
+    X509                        *pIssuer,
+    X509_CRL                    *pCrl,
+    PCSTR                       pcszAIA
     );
 
 static
@@ -1472,6 +1474,7 @@ LwCAGenerateX509Certificate(
     X509_REQ                *pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
     PLWCA_CERTIFICATE       pCACert,
+    PCSTR                   pcszCAIssuers,
     X509                    **ppCert
     )
 {
@@ -1533,8 +1536,11 @@ LwCAGenerateX509Certificate(
     dwError = _LwCASetAuthorityKeyIdentifier(pStack, pCert, pIssuer);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = _LwCASetAuthorityInfoAccess(pStack, pCert, pIssuer);
-    BAIL_ON_LWCA_ERROR(dwError);
+    if (!IsNullOrEmptyString(pcszCAIssuers))
+    {
+        dwError = _LwCASetAuthorityInfoAccess(pStack, pCert, pIssuer, NULL, pcszCAIssuers);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     dwError = _LwCAAddExtensionsToX509Cert(pStack, pCert);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -1569,6 +1575,7 @@ DWORD
 LwCAGenerateSelfSignX509Certificate(
     X509_REQ                *pRequest,
     PLWCA_CERT_VALIDITY     pValidity,
+    PCSTR                   pcszCAIssuers,
     X509                    **ppCert
     )
 {
@@ -1626,6 +1633,12 @@ LwCAGenerateSelfSignX509Certificate(
         }
     }
 
+    if (!IsNullOrEmptyString(pcszCAIssuers))
+    {
+        dwError = _LwCASetAuthorityInfoAccess(pStack, pCert, pCert, NULL, pcszCAIssuers);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
+
     dwError = _LwCAAddExtensionsToX509Cert(pStack, pCert);
     BAIL_ON_LWCA_ERROR(dwError);
 
@@ -1661,6 +1674,7 @@ LwCAGenerateX509Crl(
     PCSTR                       pcszNextCRLUpdate,
     PLWCA_DB_CERT_DATA_ARRAY    pCertDataArray,
     X509                        *pCACert,
+    PCSTR                       pcszCAIssuers,
     X509_CRL                    **ppCrl
     )
 {
@@ -1725,6 +1739,12 @@ LwCAGenerateX509Crl(
 
     dwError = _LwCAX509CrlSetAuthorityKeyIdentifier(pStack, pCACert, pCrl);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    if (!IsNullOrEmptyString(pcszCAIssuers))
+    {
+        dwError = _LwCASetAuthorityInfoAccess(pStack, NULL, pCACert, pCrl, pcszCAIssuers);
+        BAIL_ON_LWCA_ERROR(dwError);
+    }
 
     dwError = _LwCAAddExtensionsToX509Crl(pStack, pCrl);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -3424,11 +3444,15 @@ _LwCAAddExtension(
     STACK_OF(X509_EXTENSION)    *pStack,
     X509V3_CTX                  *pCtx,
     int                         NID,
-    PSTR                        pszValue
+    PCSTR                       pcszValue
     )
 {
     DWORD dwError = 0;
     X509_EXTENSION *pExtension = NULL;
+    PSTR pszValue = NULL;
+
+    dwError = LwCAAllocateStringA(pcszValue, &pszValue);
+    BAIL_ON_LWCA_ERROR(dwError);
 
     pExtension = X509V3_EXT_conf_nid(NULL, pCtx, NID, pszValue);
     if (pExtension == NULL)
@@ -3440,6 +3464,7 @@ _LwCAAddExtension(
     sk_X509_EXTENSION_push(pStack, pExtension);
 
 error:
+    LWCA_SAFE_FREE_STRINGA(pszValue);
     return dwError;
 }
 
@@ -3666,33 +3691,26 @@ DWORD
 _LwCASetAuthorityInfoAccess(
     STACK_OF(X509_EXTENSION)    *pStack,
     X509                        *pCert,
-    X509                        *pIssuer
+    X509                        *pIssuer,
+    X509_CRL                    *pCrl,
+    PCSTR                       pcszCAIssuers
     )
 {
     DWORD dwError = 0;
     X509V3_CTX ctx;
-    PSTR pszIPAddress = NULL;
-    PSTR pszAIAString = NULL;
+    PSTR pszAIA = NULL;
 
     X509V3_set_ctx_nodb(&ctx);
-    X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, NULL, 0);
+    X509V3_set_ctx(&ctx, pIssuer, pCert, NULL, pCrl, 0);
 
-    //TODO: pszIPAddress must be set to CA address
-    dwError = LwCAAllocateStringA("localhost", &pszIPAddress);
+    dwError = LwCAAllocateStringPrintfA(&pszAIA, AIA_DATA_FORMAT, pcszCAIssuers);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCAAllocateStringPrintfA(
-                                &pszAIAString,
-                                "caIssuers;URI:https://%s/afd/vecs/ssl",
-                                pszIPAddress);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = _LwCAAddExtension(pStack, &ctx, NID_info_access, pszAIAString);
+    dwError = _LwCAAddExtension(pStack, &ctx, NID_info_access, pszAIA);
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:
-    LWCA_SAFE_FREE_MEMORY(pszIPAddress);
-    LWCA_SAFE_FREE_MEMORY(pszAIAString);
+    LWCA_SAFE_FREE_MEMORY(pszAIA);
     return dwError;
 }
 

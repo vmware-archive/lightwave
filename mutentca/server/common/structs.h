@@ -12,13 +12,10 @@
  * under the License.
  */
 
-#include "includes.h"
-
-PLWCA_POLICY_CONTEXT gpPolicyCtx = NULL;
-
-LWCA_SERVER_CONTEXT gSrvCtx =
+typedef struct _LWCA_SERVER_CONTEXT
 {
-    LWCA_SF_INIT(.pszHost, NULL),
-    LWCA_SF_INIT(.mutex, PTHREAD_MUTEX_INITIALIZER),
-    LWCA_SF_INIT(.pszRootCAId, NULL)
-};
+    PSTR            pszHost;
+    pthread_mutex_t mutex;
+    PSTR            pszRootCAId;
+
+} LWCA_SERVER_CONTEXT, *PLWCA_SERVER_CONTEXT;

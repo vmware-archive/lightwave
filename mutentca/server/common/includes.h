@@ -54,6 +54,7 @@ extern "C" {
 #include <mutentcapkcs.h>
 #include <mutentcaapi.h>
 #include <mutentcapolicy.h>
+#include <mutentcaresthead.h>
 #include <vmafdclient.h>
 #include <vmafdtypes.h>
 #include <vecsclient.h>
@@ -62,6 +63,8 @@ extern "C" {
 #include <oidc.h>
 
 #include "defines.h"
+#include "structs.h"
+#include "externs.h"
 
 #include <stdio.h>
 #include <stdlib.h>

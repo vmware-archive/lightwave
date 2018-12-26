@@ -28,6 +28,7 @@ extern "C" {
 #include <lwrpcrt/lwrpcrt.h>
 
 #include <cmocka.h>
+#include <jansson.h>
 
 #include <mutentca.h>
 #include <mutentcadb.h>

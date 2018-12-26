@@ -19,6 +19,11 @@
 extern "C" {
 #endif
 
+#define LWCA_REST_ENDPOINT_ROOTCA               "/v1/mutentca/root"
+#define LWCA_REST_ENDPOINT_INTERMEDIATECA       "/v1/mutentca/intermediate/%s"
+
+#define LWCA_HTTPS_PORT_NUM                     7878
+
 // rest-head/libmain.c
 DWORD
 LwCARestServerInit(

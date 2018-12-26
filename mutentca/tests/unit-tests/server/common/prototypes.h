@@ -174,4 +174,46 @@ OidcTokenSuccessResponseParse(
     POIDC_TOKEN_SUCCESS_RESPONSE* pp,
     PCSTRING pszJsonResponse);
 
+// init.c
+
+int
+Test_LwCASrvInitTests_Valid_Setup(
+    VOID **state
+    );
+
+int
+Test_LwCASrvInitTests_Valid_Teardown(
+    VOID **state
+    );
+
+int
+Test_LwCASrvInitTests_Invalid_Setup(
+    VOID **state
+    );
+
+int
+Test_LwCASrvInitTests_Invalid_Teardown(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetRootCAId_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetRootCAId_Invalid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCAEndpoint_Valid(
+    VOID **state
+    );
+
+VOID
+Test_LwCAGetCAEndpoint_Invalid(
+    VOID **state
+    );
+
 #endif /* _LWCA_SRV_COMMON_PROTOTYPES_H_ */

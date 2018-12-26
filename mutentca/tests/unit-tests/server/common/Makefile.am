@@ -4,6 +4,7 @@ check_PROGRAMS = testmutentcasrvcommon
 TESTS = testmutentcasrvcommon
 
 testmutentcasrvcommon_SOURCES = \
+    init.c \
     jsonutils.c \
     main.c \
     mock.c \
