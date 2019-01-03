@@ -617,14 +617,13 @@ users.
             # New Installation
             #
             stop_lwsmd=0
-            if [ -f /.dockerenv ]; then
-                if [ -z "`pidof lwsmd`" ]; then
-                    echo "Starting lwsmd"
-                    %{_likewise_open_sbindir}/lwsmd &
-                    sleep 1
-                    stop_lwsmd=1
-                fi
+            if [ -z "`pidof lwsmd`" ]; then
+                echo "Starting lwsmd"
+                %{_likewise_open_sbindir}/lwsmd &
+                sleep 1
+                stop_lwsmd=1
             fi
+
 
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
@@ -657,8 +656,13 @@ users.
             #
             # Upgrade
             #
-
-            # Note: Upgrades are not handled in container
+            stop_lwsmd=0
+            if [ -z "`pidof lwsmd`" ]; then
+                echo "Starting lwsmd"
+                %{_likewise_open_sbindir}/lwsmd &
+                sleep 1
+                stop_lwsmd=1
+            fi
 
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
             %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
@@ -674,6 +678,13 @@ users.
             fi
             %{_likewise_open_bindir}/lwsm restart vmafd
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+
+            if [ $stop_lwsmd -eq 1 ]; then
+                %{_likewise_open_bindir}/lwsm shutdown
+                while [ `pidof lwsmd` ];  do
+                    sleep 1
+                done
+            fi
 
             ;;
     esac
