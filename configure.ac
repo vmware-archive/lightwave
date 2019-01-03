@@ -1971,6 +1971,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/server/plugins/post/Makefile
                  mutentca/server/policy/Makefile
                  mutentca/server/rest-head/Makefile
+                 mutentca/server/metrics/Makefile
                  mutentca/server/mutentca/Makefile
                  mutentca/tests/Makefile
                  mutentca/tests/unit-tests/Makefile

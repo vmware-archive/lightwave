@@ -386,6 +386,10 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_SAFE_STRING(str) ((str) ? (str) : "")
 #endif /* LWCA_SAFE_STRING */
 
+#ifndef LWCA_RESPONSE_TIME
+#define LWCA_RESPONSE_TIME(val) ((val) ? (val) : 1)
+#endif /* LWCA_RESPONSE_TIME */
+
 // Event logs related constants.
 
 #define LWCA_EVENT_SOURCE   "Lightwave MutentCA Service"
@@ -418,6 +422,9 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_HTTP_RESP_OK                    200
 #define LWCA_HTTP_RESP_NOT_FOUND             404
 
+// misc
+#define MSECS_PER_SEC   1000
+#define NSECS_PER_MSEC  1000000
 
 typedef struct _LWCA_CERT_VALIDITY
 {
@@ -859,6 +866,11 @@ LwCADbFreeCertDataArray(
 DWORD
 LwCAUuidGenerate(
     PSTR    *ppszUuid
+    );
+
+uint64_t
+LwCAGetTimeInMilliSec(
+    VOID
     );
 
 // regexutil.c

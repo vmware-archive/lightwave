@@ -69,6 +69,15 @@ typedef struct _LWCA_REST_RESOURCE
     PCSTR                       pszContentType;
 } LWCA_REST_RESOURCE, *PLWCA_REST_RESOURCE;
 
+typedef struct _LWAC_REST_METRICS
+{
+    uint64_t                    iStartTime;
+    uint64_t                    iEndTime;
+    LWCA_METRICS_REQ_URLS       reqUrl;
+    LWCA_METRICS_HTTP_METHODS   method;
+    LWCA_METRICS_HTTP_CODES     httpCode;
+} LWCA_REST_METRICS, *PLWCA_REST_METRICS;
+
 typedef struct _LWCA_REST_OPERATION
 {
     // basic
@@ -101,6 +110,9 @@ typedef struct _LWCA_REST_OPERATION
     // context
     PLWCA_REQ_CONTEXT           pReqCtx;
     PSTR                        pszRequestId;
+
+    // metrics
+    PLWCA_REST_METRICS          pMetrics;
 } LWCA_REST_OPERATION, *PLWCA_REST_OPERATION;
 
 typedef struct _LWCA_SERVER_OPENSSL_GLOBALS

@@ -49,6 +49,13 @@ LwCARestOperationCreate(
 
     pRestOp->pResource = LwCARestGetResource(NULL);
 
+    dwError = LwCAAllocateMemory(sizeof(LWCA_REST_METRICS), (PVOID*)&pRestOp->pMetrics);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    pRestOp->pMetrics->reqUrl = LWCA_METRICS_REQ_URL_UNKNOWN;
+    pRestOp->pMetrics->method = LWCA_METRICS_HTTP_METHOD_UNKNOWN;
+    pRestOp->pMetrics->iStartTime = LwCAGetTimeInMilliSec();
+
     *ppRestOp = pRestOp;
 
 cleanup:
@@ -430,6 +437,13 @@ LwCARestOperationWriteResponse(
     }
 
 cleanup:
+    if (pRestOp->pMetrics)
+    {
+        pRestOp->pMetrics->httpCode = LwCARestMetricsGetHttpCode(pHttpError->httpStatus);
+        pRestOp->pMetrics->reqUrl = LwCARestMetricsGetReqUrl(pRestOp->pszPath);
+        pRestOp->pMetrics->method = LwCARestMetricsGetHttpMethod(pRestOp->pszMethod);
+        pRestOp->pMetrics->iEndTime = LwCAGetTimeInMilliSec();
+    }
     LWCA_SAFE_FREE_STRINGA(pszBodyLen);
 
     return dwError;
@@ -471,6 +485,8 @@ LwCAFreeRESTOperation(
 
         LwCARequestContextFree(pRestOp->pReqCtx);
         LWCA_SAFE_FREE_STRINGA(pRestOp->pszRequestId);
+
+        LWCA_SAFE_FREE_MEMORY(pRestOp->pMetrics);
 
         LWCA_SAFE_FREE_MEMORY(pRestOp);
     }

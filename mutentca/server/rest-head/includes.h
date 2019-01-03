@@ -37,6 +37,9 @@ extern "C" {
 #include <mutentcaoidc.h>
 #include <mutentcaresthead.h>
 
+#include <vmmetrics.h>
+#include <mutentcametrics.h>
+
 #include <vmutil.h>
 
 #ifdef REST_ENABLED

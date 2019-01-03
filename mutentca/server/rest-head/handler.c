@@ -107,6 +107,19 @@ cleanup:
     LwCASetRestResult(pRestOp, dwError);
     dwRspErr = LwCARestOperationWriteResponse(pRestOp, pRESTHandle, ppResponse);
 
+    // update metrics
+    if (pRestOp && pRestOp->pMetrics
+        && pRestOp->pMetrics->reqUrl != LWCA_METRICS_REQ_URL_UNKNOWN
+        && pRestOp->pMetrics->method != LWCA_METRICS_HTTP_METHOD_UNKNOWN)
+    {
+        LwCARestMetricsUpdate(
+            pRestOp->pMetrics->reqUrl,
+            pRestOp->pMetrics->method,
+            pRestOp->pMetrics->httpCode,
+            pRestOp->pMetrics->iStartTime,
+            pRestOp->pMetrics->iEndTime);
+    }
+
     // free memory
     LwCAFreeRESTOperation(pRestOp);
 

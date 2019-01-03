@@ -333,6 +333,20 @@ LwCARestMakeGetCAJsonResponse(
     PLWCA_JSON_OBJECT           *ppJsonRespArray
     );
 
+LWCA_METRICS_REQ_URLS
+LwCARestMetricsGetReqUrl(
+    PCSTR                   pcszPath
+    );
+
+LWCA_METRICS_HTTP_METHODS
+LwCARestMetricsGetHttpMethod(
+    PCSTR                   pcszMethod
+    );
+
+LWCA_METRICS_HTTP_CODES
+LwCARestMetricsGetHttpCode(
+    int                     httpStatus
+    );
 #ifdef __cplusplus
 }
 #endif
