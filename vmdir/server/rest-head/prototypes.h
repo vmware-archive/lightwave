@@ -12,6 +12,12 @@
  * under the License.
  */
 
+// accountapi.c
+DWORD
+VmDirRESTGetAccountModule(
+    PREST_MODULE*   ppRestModule
+    );
+
 // auth.c
 DWORD
 VmDirRESTAuth(

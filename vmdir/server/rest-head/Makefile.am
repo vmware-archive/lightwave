@@ -7,6 +7,7 @@ librest_head_la_SOURCES = \
 if REST_ENABLED
 
 librest_head_la_SOURCES += \
+    accountapi.c \
     auth.c \
     authtoken.c \
     cache.c \
