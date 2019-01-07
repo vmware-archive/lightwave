@@ -7,11 +7,11 @@
     doc = ""
 }
 "Path" = {
-    default = "@LWRAFT_SBIN_DIR@/postd"
+    default = "@LWRAFT_SBIN_DIR@/postmd"
     doc = ""
 }
 "Arguments" = {
-    default = "@LWRAFT_SBIN_DIR@/postd -s -l 0 -f @LWRAFT_CONFIG_DIR@/postschema.ldif"
+    default = "@LWRAFT_SBIN_DIR@/postmd -s -l 0"
     doc = ""
 }
 "Environment" = {

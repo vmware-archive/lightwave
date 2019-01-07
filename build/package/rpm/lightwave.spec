@@ -1418,6 +1418,7 @@ users.
 %defattr(-,root,root)
 
 %{_sbindir}/postd
+%{_sbindir}/postmd
 
 %{_bindir}/postadmintool
 %{_bindir}/postaclmgr

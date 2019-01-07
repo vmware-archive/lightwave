@@ -13,7 +13,8 @@ SUBDIRS += \
     server \
     tools \
     config \
-    testing
+    testing \
+    post-manager
 
 endif
 
