@@ -42,6 +42,9 @@
 #include <mutentcapkcs.h>
 #include <mutentcapolicy.h>
 
+#include <vmmetrics.h>
+#include <mutentcametrics.h>
+
 #include "defines.h"
 #include "structs.h"
 #include "externs.h"

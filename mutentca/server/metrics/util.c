@@ -66,3 +66,37 @@ LwCAMetricsHttpStatusCodeString(
 
     return pszHttpCodes[code];
 }
+
+PSTR
+LwCAMetricsApiNameString(
+    LWCA_METRICS_API_NAMES api
+    )
+{
+    static PSTR pszApiNames[LWCA_METRICS_API_COUNT] =
+    {
+        "CreateRootCA",
+        "CreateIntermediateCA",
+        "GetCACertificates",
+        "GetSignedCertificate",
+        "GetChainOfTrust",
+        "GetCACrl",
+        "RevokeIntermediateCA",
+        "RevokeCertificate"
+    };
+
+    return pszApiNames[api];
+}
+
+PSTR
+LwCAMetricsResponseString(
+    LWCA_METRICS_RESPONSE_CODES code
+    )
+{
+    static PSTR pszResponseCodes[LWCA_METRICS_RESPONSE_COUNT] =
+    {
+        "Success",
+        "Error"
+    };
+
+    return pszResponseCodes[code];
+}

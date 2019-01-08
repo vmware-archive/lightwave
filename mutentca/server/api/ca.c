@@ -373,6 +373,9 @@ LwCACreateRootCA(
     PLWCA_CERTIFICATE pCACert =  NULL;
     BOOLEAN bIsCA = FALSE;
     PLWCA_KEY pEncryptedKey = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszRootCAId) ||
         !((pCertificate && !IsNullOrEmptyString(pcszPrivateKey)) || pCARequest)
@@ -469,9 +472,17 @@ cleanup:
     LwCAX509Free(pX509CACert);
     LwCAFreeKey(pEncryptedKey);
 
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_CREATE_ROOT_CA,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to create root CA. requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -491,6 +502,9 @@ LwCAGetCACertificates(
 {
     DWORD dwError = 0;
     PLWCA_CERTIFICATE_ARRAY pCertArray = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCertificates )
     {
@@ -507,9 +521,17 @@ LwCAGetCACertificates(
     *ppCertificates = pCertArray;
 
 cleanup:
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_GET_CA_CERTIFICATES,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to get CA certificates. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -547,6 +569,9 @@ LwCAGetChainOfTrust(
     X509                        *pX509IssuerCACert = NULL;
     PSTR                        pszTmpChain = NULL;
     PSTR                        pszChainOfTrust = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t                    iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t                    iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppszChainOfTrust)
     {
@@ -697,9 +722,17 @@ cleanup:
     LWCA_SAFE_FREE_STRINGA(pszIssuerCAId);
     LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_GET_CHAIN_OF_TRUST,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to get chain of trust. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -739,6 +772,9 @@ LwCAGetSignedCertificate(
     DWORD dwDuration = 0;
     BOOLEAN bAuthorized = FALSE;
     BOOLEAN bIsCA = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) ||
         !pCertRequest || !ppCertifcate)
@@ -835,9 +871,18 @@ LwCAGetSignedCertificate(
 cleanup:
     LwCAX509Free(pX509Cert);
     LwCAX509ReqFree(pRequest);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_GET_SIGNED_CERTIFICATE,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to sign certificate. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -885,6 +930,9 @@ LwCACreateIntermediateCA(
     PLWCA_CERTIFICATE           pCACert =  NULL;
     PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
     PLWCA_CERT_VALIDITY         pTempValidity = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCACerts || !pCARequest)
     {
@@ -1058,9 +1106,17 @@ cleanup:
     LwCAFreeCertValidity(pTempValidity);
     LwCAFreeKey(pEncryptedKey);
 
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_CREATE_INTERMEDIATE_CA,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to create intermedidate CA. caID: (%s), parentcaID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -1104,6 +1160,9 @@ LwCARevokeCertificate(
     LWCA_AUTHZ_X509_DATA x509Data = { 0 };
     BOOLEAN bAuthorized = FALSE;
     BOOLEAN bExists = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pCertificate)
     {
@@ -1225,9 +1284,18 @@ cleanup:
     LwCADbFreeCAData(pCAData);
     LwCAX509Free(pX509Cert);
     LwCAX509Free(pX509CACert);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_REVOKE_CERTIFICATE,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to revoke certificate. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -1253,6 +1321,9 @@ LwCARevokeIntermediateCA(
     DWORD dwError = 0;
     PSTR pszParentCAId = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId))
     {
@@ -1280,9 +1351,18 @@ LwCARevokeIntermediateCA(
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszParentCAId);
     LwCAFreeCertificate(pCACert);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_REVOKE_INTERMEDIATE_CA,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to revoke CA. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,
@@ -1313,6 +1393,9 @@ LwCAGetCACrl(
     PLWCA_CRL pCrl = NULL;
     X509 *pX509CACert = NULL;
     X509_CRL *pX509Crl = NULL;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !ppCrl)
     {
@@ -1359,9 +1442,18 @@ cleanup:
     LwCADbFreeCAData(pCAData);
     LwCAX509Free(pX509CACert);
     LwCAX509CrlFree(pX509Crl);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCAApiMetricsUpdate(LWCA_METRICS_API_GET_CA_CRL,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
+
     LWCA_LOG_ERROR(
         "[%s:%d] Failed to get CRL. caID: (%s), requestID: (%s), error: (%d)",
         __FUNCTION__,

@@ -23,6 +23,7 @@ testmutentcaapi_LDADD = \
     $(top_builddir)/mutentca/server/authz/libmutentcaauthz.la \
     $(top_builddir)/mutentca/server/policy/libmutentcapolicy.la \
     $(top_builddir)/mutentca/server/api/libmutentcaapi.la \
+    $(top_builddir)/mutentca/server/metrics/libmutentcametrics.la \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @CRYPTO_LIBS@ \

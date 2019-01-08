@@ -19,17 +19,27 @@ extern "C" {
 // util.c
 PSTR
 LwCAMetricsReqUrlString(
-    LWCA_METRICS_REQ_URLS reqUrl
+    LWCA_METRICS_REQ_URLS           reqUrl
     );
 
 PSTR
 LwCAMetricsHttpMethodString(
-    LWCA_METRICS_HTTP_METHODS method
+    LWCA_METRICS_HTTP_METHODS       method
     );
 
 PSTR
 LwCAMetricsHttpStatusCodeString(
-    LWCA_METRICS_HTTP_CODES code
+    LWCA_METRICS_HTTP_CODES         code
+    );
+
+PSTR
+LwCAMetricsApiNameString(
+    LWCA_METRICS_API_NAMES          api
+    );
+
+PSTR
+LwCAMetricsResponseString(
+    LWCA_METRICS_RESPONSE_CODES     code
     );
 
 #ifdef __cplusplus

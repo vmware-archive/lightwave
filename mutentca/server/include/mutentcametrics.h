@@ -55,6 +55,26 @@ typedef enum
     LWCA_METRICS_HTTP_CODE_COUNT
 } LWCA_METRICS_HTTP_CODES;
 
+typedef enum
+{
+    LWCA_METRICS_API_CREATE_ROOT_CA = 0,
+    LWCA_METRICS_API_CREATE_INTERMEDIATE_CA,
+    LWCA_METRICS_API_GET_CA_CERTIFICATES,
+    LWCA_METRICS_API_GET_SIGNED_CERTIFICATE,
+    LWCA_METRICS_API_GET_CHAIN_OF_TRUST,
+    LWCA_METRICS_API_GET_CA_CRL,
+    LWCA_METRICS_API_REVOKE_INTERMEDIATE_CA,
+    LWCA_METRICS_API_REVOKE_CERTIFICATE,
+    LWCA_METRICS_API_COUNT
+} LWCA_METRICS_API_NAMES;
+
+typedef enum
+{
+    LWCA_METRICS_RESPONSE_SUCCESS = 0,
+    LWCA_METRICS_RESPONSE_ERROR,
+    LWCA_METRICS_RESPONSE_COUNT
+} LWCA_METRICS_RESPONSE_CODES;
+
 // metrics/libmain.c
 DWORD
 LwCAMetricsInitialize(
@@ -72,6 +92,14 @@ LwCARestMetricsUpdate(
     LWCA_METRICS_REQ_URLS       reqUrl,
     LWCA_METRICS_HTTP_METHODS   method,
     LWCA_METRICS_HTTP_CODES     httpCode,
+    uint64_t                    iStartTime,
+    uint64_t                    iEndTime
+    );
+
+VOID
+LwCAApiMetricsUpdate(
+    LWCA_METRICS_API_NAMES      api,
+    LWCA_METRICS_RESPONSE_CODES code,
     uint64_t                    iStartTime,
     uint64_t                    iEndTime
     );

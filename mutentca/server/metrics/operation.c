@@ -31,3 +31,20 @@ LwCARestMetricsUpdate(
         VmMetricsHistogramUpdate(pHistogram, LWCA_RESPONSE_TIME(iEndTime - iStartTime));
     }
 }
+
+VOID
+LwCAApiMetricsUpdate(
+    LWCA_METRICS_API_NAMES      api,
+    LWCA_METRICS_RESPONSE_CODES code,
+    uint64_t                    iStartTime,
+    uint64_t                    iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM pHistogram = NULL;
+
+    pHistogram = gpApiMetrics[api][code];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(pHistogram, LWCA_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}

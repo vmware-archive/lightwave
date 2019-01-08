@@ -16,6 +16,8 @@
 
 PVM_METRICS_CONTEXT gpmContext = NULL;
 
+static uint64_t buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
+
 static
 DWORD
 _LwCARestMetricsInit(
@@ -23,8 +25,20 @@ _LwCARestMetricsInit(
     );
 
 static
+DWORD
+_LwCAApiMetricsInit(
+    VOID
+    );
+
+static
 VOID
 _LwCARestMetricsShutdown(
+    VOID
+    );
+
+static
+VOID
+_LwCAApiMetricsShutdown(
     VOID
     );
 
@@ -39,6 +53,9 @@ LwCAMetricsInitialize(
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = _LwCARestMetricsInit();
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = _LwCAApiMetricsInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:
@@ -56,6 +73,7 @@ LwCAMetricsShutdown(
     )
 {
     _LwCARestMetricsShutdown();
+    _LwCAApiMetricsShutdown();
     VmMetricsDestroy(gpmContext);
 }
 
@@ -67,8 +85,6 @@ _LwCARestMetricsInit(
 {
     DWORD dwError = 0;
     DWORD i = 0, j = 0, k = 0;
-
-    uint64_t buckets[8] = {50, 100, 250, 500, 1000, 2500, 3000, 4000};
 
     VM_METRICS_LABEL labels[3] =
         {
@@ -109,6 +125,48 @@ error:
 }
 
 static
+DWORD
+_LwCAApiMetricsInit(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0, j = 0;
+
+    VM_METRICS_LABEL labels[2] =
+        {
+            {"api", NULL},
+            {"response", NULL}
+        };
+
+    for (i = 0; i < LWCA_METRICS_API_COUNT; i++)
+    {
+        for (j = 0; j < LWCA_METRICS_RESPONSE_COUNT; j++)
+        {
+            labels[0].pszValue = LwCAMetricsApiNameString(i);
+            labels[1].pszValue = LwCAMetricsResponseString(j);
+
+            dwError = VmMetricsHistogramNew(
+                        gpmContext,
+                        "mutentca_api_duration",
+                        labels, 2,
+                        "Histogram for Backend API request duration",
+                        buckets, 8,
+                        &gpApiMetrics[i][j]);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_LOG_ERROR("Failed to initialize Backend API Metrics. Error %d", dwError);
+
+    goto cleanup;
+}
+
+static
 VOID
 _LwCARestMetricsShutdown(
     VOID
@@ -125,6 +183,24 @@ _LwCARestMetricsShutdown(
                 // Cleanup is done in VmMetricsDestroy
                 gpRestMetrics[i][j][k] = NULL;
             }
+        }
+    }
+}
+
+static
+VOID
+_LwCAApiMetricsShutdown(
+    VOID
+    )
+{
+    DWORD i = 0, j = 0;
+
+    for (i = 0; i < LWCA_METRICS_API_COUNT; i++)
+    {
+        for (j = 0; j < LWCA_METRICS_RESPONSE_COUNT; j++)
+        {
+            // Cleanup is done in VmMetricsDestroy
+            gpApiMetrics[i][j] = NULL;
         }
     }
 }
