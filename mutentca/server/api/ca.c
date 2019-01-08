@@ -732,6 +732,7 @@ LwCAGetSignedCertificate(
     X509 *pX509Cert = NULL;
     PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_CERTIFICATE pCert = NULL;
+    LWCA_AUTHZ_X509_DATA x509Data = { 0 };
     time_t tmNotBefore;
     time_t tmNotAfter;
     PLWCA_CERT_VALIDITY pTempValidity = NULL;
@@ -749,20 +750,24 @@ LwCAGetSignedCertificate(
     dwError = LwCAPEMToX509Req(pCertRequest, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    x509Data.pX509Req = pRequest;
+
     dwError = LwCAAuthZCheckAccess(
                     pReqCtx,
                     pcszCAId,
-                    pRequest,
-                    LWCA_AUTHZ_CSR_PERMISSION,
+                    &x509Data,
+                    LWCA_AUTHZ_CERT_SIGN_PERMISSION,
                     &bAuthorized);
     BAIL_ON_LWCA_ERROR(dwError);
     if (!bAuthorized)
     {
         LWCA_LOG_ALERT(
-                "[%s:%d] UPN (%s) is unauthorized to obtain a signed certificate!",
+                "[%s:%d] UPN (%s) is unauthorized to obtain a signed certificate! CA ID: (%s) Req ID: (%s)",
                 __FUNCTION__,
                 __LINE__,
-                pReqCtx->pszBindUPN);
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+                pcszCAId,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
     }
 
@@ -875,6 +880,7 @@ LwCACreateIntermediateCA(
     X509                        *pX509ParentCACert = NULL;
     X509_REQ                    *pRequest = NULL;
     PLWCA_PKCS_10_REQ_DATA      pPKCSReq = NULL;
+    LWCA_AUTHZ_X509_DATA        x509Data = { 0 };
     PLWCA_CERTIFICATE           pParentCACert = NULL;
     PLWCA_CERTIFICATE           pCACert =  NULL;
     PLWCA_CERTIFICATE_ARRAY     pCACerts = NULL;
@@ -946,21 +952,24 @@ LwCACreateIntermediateCA(
     dwError =  LwCACreateCertificateSignRequest(pPKCSReq, pszPublicKey, &pRequest);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    x509Data.pX509Req = pRequest;
+
     dwError = LwCAAuthZCheckAccess(
                     pReqCtx,
                     pszParentCAId,
-                    pRequest,
+                    &x509Data,
                     LWCA_AUTHZ_CA_CREATE_PERMISSION,
                     &bAuthorized);
     BAIL_ON_LWCA_ERROR(dwError);
     if (!bAuthorized)
     {
         LWCA_LOG_ALERT(
-                "[%s:%d] UPN (%s) is unauthorized to create an intermediate CA (%s)!",
+                "[%s:%d] UPN (%s) is unauthorized to create an intermediate! CA ID (%s) Req ID: (%s)",
                 __FUNCTION__,
                 __LINE__,
-                pReqCtx->pszBindUPN,
-                pcszCAId);
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+                pcszCAId,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
     }
 
@@ -1071,9 +1080,10 @@ error:
 
 DWORD
 LwCARevokeCertificate(
-    PLWCA_REQ_CONTEXT       pReqCtx,
-    PCSTR                   pcszCAId,
-    PLWCA_CERTIFICATE       pCertificate
+    PLWCA_REQ_CONTEXT           pReqCtx,
+    PCSTR                       pcszCAId,
+    PLWCA_CERTIFICATE           pCertificate,
+    LWCA_AUTHZ_API_PERMISSION   apiType
     )
 {
     DWORD dwError = 0;
@@ -1091,6 +1101,8 @@ LwCARevokeCertificate(
     PLWCA_CERTIFICATE pCACert = NULL;
     PLWCA_DB_CA_DATA pCAData = NULL;
     PLWCA_DB_CERT_DATA pCertData = NULL;
+    LWCA_AUTHZ_X509_DATA x509Data = { 0 };
+    BOOLEAN bAuthorized = FALSE;
     BOOLEAN bExists = FALSE;
 
     if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pCertificate)
@@ -1110,6 +1122,27 @@ LwCARevokeCertificate(
 
     dwError = LwCAPEMToX509(pCertificate, &pX509Cert);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    x509Data.pX509Cert = pX509Cert;
+
+    dwError = LwCAAuthZCheckAccess(
+                    pReqCtx,
+                    pcszCAId,
+                    &x509Data,
+                    apiType,
+                    &bAuthorized);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "[%s:%d] UPN (%s) is unauthorized to revoke a certificate! CA ID: (%s) Req ID: (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+                pcszCAId,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
+    }
 
     dwError = LwCAVerifyCertificateSign(pX509Cert, pX509CACert);
     BAIL_ON_LWCA_ERROR(dwError);
@@ -1190,14 +1223,8 @@ cleanup:
     LwCAFreeCertificate(pCACert);
     LwCADbFreeCertData(pCertData);
     LwCADbFreeCAData(pCAData);
-    if (pX509Cert)
-    {
-        X509_free(pX509Cert);
-    }
-    if (pX509CACert)
-    {
-        X509_free(pX509CACert);
-    }
+    LwCAX509Free(pX509Cert);
+    LwCAX509Free(pX509CACert);
     return dwError;
 
 error:
@@ -1242,7 +1269,7 @@ LwCARevokeIntermediateCA(
     dwError = _LwCAGetCurrentCACertificate(pcszCAId, &pCACert);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARevokeCertificate(pReqCtx, pszParentCAId, pCACert);
+    dwError = LwCARevokeCertificate(pReqCtx, pszParentCAId, pCACert, LWCA_AUTHZ_CA_REVOKE_PERMISSION);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCADbUpdateCAStatus(pcszCAId, LWCA_CA_STATUS_INACTIVE);

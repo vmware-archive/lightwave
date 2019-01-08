@@ -25,7 +25,8 @@ extern "C" {
  *
  * @param    pReqCtx holds information about the requestor
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
@@ -36,7 +37,7 @@ DWORD
 LwCAAuthZLWCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    X509_REQ                        *pX509Request,          // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     );
@@ -50,17 +51,18 @@ LwCAAuthZLWCheckAccess(
  *
  * @param    pReqCtx holds information about the requestor
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure
  */
 DWORD
 LwCAAuthZLWCheckCACreate(
-    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
-    PCSTR                   pcszCAId,               // IN
-    X509_REQ                *pX509Request,          // IN
-    PBOOLEAN                pbAuthorized            // OUT
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    PBOOLEAN                    pbAuthorized            // OUT
     );
 
 /**
@@ -72,61 +74,64 @@ LwCAAuthZLWCheckCACreate(
  *
  * @param    pReqCtx holds information about the requestor
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure
  */
 DWORD
 LwCAAuthZLWCheckCARevoke(
-    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
-    PCSTR                   pcszCAId,               // IN
-    X509_REQ                *pX509Request,          // IN
-    PBOOLEAN                pbAuthorized            // OUT
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    PBOOLEAN                    pbAuthorized            // OUT
     );
 
 /**
  * @brief    Default Lightwave Access Check for CSR
  *
- * @details  LwCAAuthZLWCheckCSR will determine if a requestor is allowed to
+ * @details  LwCAAuthZLWCheckCertSign will determine if a requestor is allowed to
  *           submit a CSR.  The default Lightwave rules are:
  *               - Any Lightwave user in the same tenant as requested in the request
  *
  * @param    pReqCtx holds information about the requestor
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure*
  */
 DWORD
-LwCAAuthZLWCheckCSR(
-    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
-    PCSTR                   pcszCAId,               // IN
-    X509_REQ                *pX509Request,          // IN
-    PBOOLEAN                pbAuthorized            // OUT
+LwCAAuthZLWCheckCertSign(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    PBOOLEAN                    pbAuthorized            // OUT
     );
 
 /**
- * @brief    Default Lightwave Access Check for CRL
+ * @brief    Default Lightwave Access Check for Revoke Certificate
  *
- * @details  LwCAAuthZLWCheckCRL will determine if a requestor is allowed to
- *           submit a CRL.  The default Lightwave rules are:
+ * @details  LwCAAuthZLWCheckCertRevoke will determine if a requestor is allowed to
+ *           revoke a certificate.  The default Lightwave rules are:
  *               - Must be a member of CAAdmins
  *
  * @param    pReqCtx holds information about the requestor
  * @param    pcszCAId is CA that the request is for.
- * @param    pX509Request is the request represented as the openssl X509_REQ struct
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
  * @param    pbAuthorized returns a boolean to indicate if the user is authorized
  *
  * @return   DWORD indicating function success/failure*
  */
 DWORD
-LwCAAuthZLWCheckCRL(
-    PLWCA_REQ_CONTEXT       pReqCtx,                // IN
-    PCSTR                   pcszCAId,               // IN
-    X509_REQ                *pX509Request,          // IN
-    PBOOLEAN                pbAuthorized            // OUT
+LwCAAuthZLWCheckCertRevoke(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    PBOOLEAN                    pbAuthorized            // OUT
     );
 
 

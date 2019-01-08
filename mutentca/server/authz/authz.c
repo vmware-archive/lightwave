@@ -130,7 +130,7 @@ DWORD
 LwCAAuthZCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    X509_REQ                        *pX509Request,          // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     )
@@ -139,7 +139,7 @@ LwCAAuthZCheckAccess(
     BOOLEAN                         bLocked = FALSE;
     BOOLEAN                         bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Request || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -154,7 +154,7 @@ LwCAAuthZCheckAccess(
     dwError = gAuthZCtx.pFT->pfnAuthZCheckAccess(
                              pReqCtx,
                              pcszCAId,
-                             pX509Request,
+                             pX509Data,
                              apiPermissions,
                              &bAuthorized);
     if (dwError)

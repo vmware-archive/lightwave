@@ -500,14 +500,14 @@ DWORD
 __wrap_LwCAAuthZCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,
     PCSTR                           pcszCAId,
-    X509_REQ                        *pX509Request,
+    LWCA_AUTHZ_X509_DATA            *px509Data,
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,
     PBOOLEAN                        pbAuthorized
     )
 {
     assert_non_null(pReqCtx);
     assert_non_null(pcszCAId);
-    assert_non_null(pX509Request);
+    assert_non_null(px509Data);
     assert_non_null(pbAuthorized);
 
     *pbAuthorized = TRUE;
@@ -1474,6 +1474,7 @@ Test_LwCARevokeCertificate_Valid(
 
     will_return(__wrap_LwCADbCheckCA, 0);
     will_return(__wrap_LwCADbCheckCertData, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return(__wrap_LwCADbGetCACRLNumber, 0);
     will_return(__wrap_LwCADbUpdateCA, 0);
     will_return(__wrap_LwCADbAddCertData, 0);
@@ -1481,7 +1482,7 @@ Test_LwCARevokeCertificate_Valid(
     will_return(__wrap_LwCADbGetCAStatus, 0);
 
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_CLIENT_CERTIFICATE, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
     assert_int_equal(dwError, 0);
 }
 
@@ -1494,17 +1495,18 @@ Test_LwCARevokeCertificate_Invalid(
     BOOLEAN bCheckCAMockValues[] = {TRUE};
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return(__wrap_LwCADbGetCACertificates, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
 
     // Testcase1: Invalid input
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, NULL);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, NULL, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_PARAMETER);
 
     // Testcase2: Certificate not issued by requested CA
     _Initialize_Output_LwCADbCheckCA(bCheckCAMockValues, 1);
-    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE);
+    dwError = LwCARevokeCertificate(pReqCtx, TEST_ROOT_CA_ID, TEST_DUMMY_CERTIFICATE, LWCA_AUTHZ_CERT_REVOKE_PERMISSION);
     assert_int_equal(dwError, LWCA_ERROR_INVALID_REQUEST);
 }
 
@@ -1518,6 +1520,7 @@ Test_LwCARevokeIntermediateCA_Valid(
 
     will_return_always(__wrap_LwCADbCheckCA, 0);
     will_return_always(__wrap_LwCADbGetCAStatus, 0);
+    will_return_always(__wrap_LwCAAuthZCheckAccess, 0);
     will_return(__wrap_LwCADbCheckCertData, 0);
     will_return(__wrap_LwCADbGetCACRLNumber, 0);
     will_return(__wrap_LwCADbUpdateCA, 0);

@@ -17,8 +17,10 @@ extern "C" {
 #endif
 
 extern PREST_API_DEF gpLwCARestApiDef;
+extern PREST_API_DEF gpLwCARestMetricsApiDef;
 
-extern PVMREST_HANDLE gpLwCARestHTTPSHandle;
+extern PVMREST_HANDLE gpLwCARestHandle;
+extern PVMREST_HANDLE gpLwCARestMetricsHandle;
 
 extern LWCA_SERVER_OPENSSL_GLOBALS gLwCAOpensslGlobals;
 

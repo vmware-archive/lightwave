@@ -14,6 +14,16 @@
 
 #include "includes.h"
 
+static
+DWORD
+_LwCARestApiRequestHandler(
+    PREST_API_DEF       pRestApiDef,
+    PVMREST_HANDLE      pRESTHandle,
+    PREST_REQUEST       pRequest,
+    PREST_RESPONSE*     ppResponse,
+    uint32_t            paramsCount
+    );
+
 /*
  * We provide this function as callback to c-rest-engine,
  * c-rest-engine will use this callback upon receiving a request
@@ -26,11 +36,49 @@ LwCARestApiRequestHandler(
     uint32_t            paramsCount
     )
 {
+    return _LwCARestApiRequestHandler(
+                gpLwCARestApiDef,
+                pRESTHandle,
+                pRequest,
+                ppResponse,
+                paramsCount);
+}
+
+/*
+ * We provide this function as callback to c-rest-engine,
+ * c-rest-engine will use this callback upon receiving a request
+ */
+DWORD
+LwCARestMetricsApiRequestHandler(
+    PVMREST_HANDLE      pRESTHandle,
+    PREST_REQUEST       pRequest,
+    PREST_RESPONSE*     ppResponse,
+    uint32_t            paramsCount
+    )
+{
+    return _LwCARestApiRequestHandler(
+                gpLwCARestMetricsApiDef,
+                pRESTHandle,
+                pRequest,
+                ppResponse,
+                paramsCount);
+}
+
+static
+DWORD
+_LwCARestApiRequestHandler(
+    PREST_API_DEF       pRestApiDef,
+    PVMREST_HANDLE      pRESTHandle,
+    PREST_REQUEST       pRequest,
+    PREST_RESPONSE*     ppResponse,
+    uint32_t            paramsCount
+    )
+{
     DWORD                   dwError     = 0;
     DWORD                   dwRspErr    = 0;
     PLWCA_REST_OPERATION    pRestOp     = NULL;
 
-    if (!pRESTHandle || !pRequest || !ppResponse)
+    if (!pRestApiDef || !pRESTHandle || !pRequest || !ppResponse)
     {
         dwError = LWCA_ERROR_INVALID_PARAMETER;
         BAIL_ON_LWCA_ERROR(dwError);
@@ -51,7 +99,7 @@ LwCARestApiRequestHandler(
     dwError = LwCARestOperationParseRequestPayload(pRestOp);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    dwError = LwCARestOperationProcessRequest(pRestOp);
+    dwError = LwCARestOperationProcessRequest(pRestOp, pRestApiDef);
     BAIL_ON_LWCA_ERROR(dwError);
 
 cleanup:

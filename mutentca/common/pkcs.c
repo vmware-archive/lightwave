@@ -760,6 +760,7 @@ LwCAX509Free(
     if (pX509)
     {
         X509_free(pX509);
+        pX509 = NULL;
     }
 }
 
@@ -771,6 +772,7 @@ LwCAX509ReqFree(
     if (pX509Req)
     {
         X509_REQ_free(pX509Req);
+        pX509Req = NULL;
     }
 }
 
@@ -782,6 +784,7 @@ LwCAX509CrlFree(
     if (pX509Crl)
     {
         X509_CRL_free(pX509Crl);
+        pX509Crl = NULL;
     }
 }
 

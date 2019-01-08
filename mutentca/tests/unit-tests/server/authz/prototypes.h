@@ -57,21 +57,21 @@ Test_LwCAAuthZLWCheckCARevoke_InValid(
     );
 
 VOID
-Test_LwCAAuthZLWCheckCSR_Valid(
+Test_LwCAAuthZLWCheckCertSign_Valid(
     VOID        **state
     );
 
 VOID
-Test_LwCAAuthZLWCheckCSR_InValid(
+Test_LwCAAuthZLWCheckCertSign_InValid(
     VOID        **state
     );
 
 VOID
-Test_LwCAAuthZLWCheckCRL_Valid(
+Test_LwCAAuthZLWCheckCertRevoke_Valid(
     VOID        **state
     );
 
 VOID
-Test_LwCAAuthZLWCheckCRL_InValid(
+Test_LwCAAuthZLWCheckCertRevoke_InValid(
     VOID        **state
     );

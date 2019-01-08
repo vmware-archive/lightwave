@@ -121,8 +121,11 @@ LwCARestAuthIsOpenAPI(
 
     BOOLEAN         bIsOpenAPI = FALSE;
 
-    if (!LwCAStringCompareA(LWCA_REST_OPENAPI_VERSION, pcszPath, FALSE) &&
-        !LwCAStringCompareA("GET", pcszMethod, FALSE))
+    if (!LwCAStringCompareA(LWCA_REST_OPENAPI_METRICS, pcszPath, FALSE))
+    {
+        bIsOpenAPI = TRUE;
+    }
+    else if (!LwCAStringCompareA(LWCA_REST_OPENAPI_VERSION, pcszPath, FALSE))
     {
         bIsOpenAPI = TRUE;
     }

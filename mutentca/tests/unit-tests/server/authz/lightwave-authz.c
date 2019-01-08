@@ -69,19 +69,16 @@ Test_LwCAAuthZLWCheckCACreate_Valid(
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CA Creation with a user who belongs to both CAAdmins and CAOperators
     _Create_ReqCtx_FullPower_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_CREATE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
@@ -93,7 +90,7 @@ Test_LwCAAuthZLWCheckCACreate_Valid(
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_CREATE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
@@ -105,14 +102,12 @@ Test_LwCAAuthZLWCheckCACreate_Valid(
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_CREATE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_true(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
@@ -121,26 +116,21 @@ Test_LwCAAuthZLWCheckCACreate_InValid(
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CA Creation fails with a regular user
     _Create_ReqCtx_Regular_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_CREATE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_false(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
@@ -149,19 +139,16 @@ Test_LwCAAuthZLWCheckCARevoke_Valid(
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CA Revocation with a user who belongs to both CAAdmins and CAOperators
     _Create_ReqCtx_FullPower_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
@@ -173,14 +160,12 @@ Test_LwCAAuthZLWCheckCARevoke_Valid(
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_true(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
@@ -189,19 +174,16 @@ Test_LwCAAuthZLWCheckCARevoke_InValid(
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CA Revocation with a user who belongs to CAOperators
     _Create_ReqCtx_CAOperator_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
@@ -213,150 +195,128 @@ Test_LwCAAuthZLWCheckCARevoke_InValid(
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
+                        &x509Data,
                         LWCA_AUTHZ_CA_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_false(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
-Test_LwCAAuthZLWCheckCSR_Valid(
+Test_LwCAAuthZLWCheckCertSign_Valid(
     VOID                    **state
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CSR with a user who's requesting from the same CA as their tenant
     _Create_ReqCtx_Regular_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CSR_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_SIGN_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_true(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
-Test_LwCAAuthZLWCheckCSR_InValid(
+Test_LwCAAuthZLWCheckCertSign_InValid(
     VOID                    **state
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
-
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
 
     // Test CSR fails with a user who's requesting from a CA that is not their tenant's
     _Create_ReqCtx_Regular_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example2.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CSR_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_SIGN_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_false(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
-Test_LwCAAuthZLWCheckCRL_Valid(
+Test_LwCAAuthZLWCheckCertRevoke_Valid(
     VOID                    **state
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
 
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
-
-    // Test CRL with a user who belongs to both CAAdmins and CAOperators
+    // Test revoke cert with a user who belongs to both CAAdmins and CAOperators
     _Create_ReqCtx_FullPower_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CRL_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_true(bAuthorized);
     LwCARequestContextFree(pReqCtx);
 
-    // Test CRL with a user who belongs to CAAdmins
+    // Test revoke cert with a user who belongs to CAAdmins
     _Create_ReqCtx_CAAdmin_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CRL_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_true(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 VOID
-Test_LwCAAuthZLWCheckCRL_InValid(
+Test_LwCAAuthZLWCheckCertRevoke_InValid(
     VOID                    **state
     )
 {
     DWORD                   dwError = 0;
-    X509_REQ                *pX509Request = NULL;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
     PLWCA_REQ_CONTEXT       pReqCtx = NULL;
     BOOLEAN                 bAuthorized = FALSE;
 
-    pX509Request = X509_REQ_new();
-    assert_non_null(pX509Request);
-
-    // Test CRL with a user who belongs to CAOperators
+    // Test revoke cert with a user who belongs to CAOperators
     _Create_ReqCtx_CAOperator_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CRL_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_false(bAuthorized);
     LwCARequestContextFree(pReqCtx);
 
-    // Test CRL fails with a regular user
+    // Test revoke cert fails with a regular user
     _Create_ReqCtx_Regular_User(&pReqCtx);
     dwError = LwCAAuthZCheckAccess(
                         pReqCtx,
                         "example.com",
-                        pX509Request,
-                        LWCA_AUTHZ_CRL_PERMISSION,
+                        &x509Data,
+                        LWCA_AUTHZ_CERT_REVOKE_PERMISSION,
                         &bAuthorized);
     assert_int_equal(dwError, 0);
     assert_false(bAuthorized);
     LwCARequestContextFree(pReqCtx);
-
-    X509_REQ_free(pX509Request);
 }
 
 

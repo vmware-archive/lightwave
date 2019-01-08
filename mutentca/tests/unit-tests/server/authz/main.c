@@ -34,10 +34,10 @@ int main(VOID)
         cmocka_unit_test(Test_LwCAAuthZLWCheckCACreate_InValid),
         cmocka_unit_test(Test_LwCAAuthZLWCheckCARevoke_Valid),
         cmocka_unit_test(Test_LwCAAuthZLWCheckCARevoke_InValid),
-        cmocka_unit_test(Test_LwCAAuthZLWCheckCSR_Valid),
-        cmocka_unit_test(Test_LwCAAuthZLWCheckCSR_InValid),
-        cmocka_unit_test(Test_LwCAAuthZLWCheckCRL_Valid),
-        cmocka_unit_test(Test_LwCAAuthZLWCheckCRL_InValid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCertSign_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCertSign_InValid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCertRevoke_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckCertRevoke_InValid),
     };
 
     ret = cmocka_run_group_tests(LwCAAuthZLWTests, Test_LwCAAuthZLW_Setup, Test_LwCAAuthZLW_Teardown);

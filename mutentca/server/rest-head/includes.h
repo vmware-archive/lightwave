@@ -28,6 +28,7 @@ extern "C" {
 
 #include <mutentca.h>
 #include <mutentcadb.h>
+#include <mutentcaauthz.h>
 #include <mutentcaerror.h>
 #include <mutentcacommon.h>
 #include <mutentcapkcs.h>

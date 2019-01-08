@@ -1,0 +1,44 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "title": "Lightwave Multi Tenant CA Metrics API",
+    "version": "v1"
+  },
+  "host": "localhost:7877",
+  "schemes": [
+    "http"
+  ],
+  "basePath": "/v1",
+  "produces": [
+    "text/plain"
+  ],
+  "tags": [
+    {
+      "name": "metrics"
+    }
+  ],
+  "paths": {
+    "/mutentca/metrics": {
+      "get": {
+        "tags": [
+          "metrics"
+        ],
+        "summary": "Get metrics data",
+        "description": "Get metrics data",
+        "produces": [
+          "text/plain"
+        ],
+        "responses": {
+          "200": {
+            "description": "Metrics response",
+            "schema": {
+              "type": "object",
+              "properties": {
+              }
+            }
+          }
+        }
+      }
+    }
+  }
+}
