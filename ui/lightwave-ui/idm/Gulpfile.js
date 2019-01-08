@@ -102,27 +102,13 @@ gulp.task('lightwave-ui-vendor-js-minify', function(done) {
     var dest_js_folder = './dist/idm/js';
 
     gulp.src([
-            './app/bower_components/jquery/dist/jquery.min.js',
-            './app/bower_components/angular/angular.js',
-            './app/bower_components/angular-bootstrap/ui-bootstrap.min.js',
-            './app/bower_components/angular-bootstrap/ui-bootstrap-tpls.min.js',
-            './app/bower_components/angular-cookies/angular-cookies.js',
-            './app/bower_components/ng-dialog/js/ngDialog.min.js',
-            './app/bower_components/angular-route/angular-route.js',
-            './app/bower_components/cryptojslib/components/core-min.js',
-            './app/bower_components/cryptojslib/components/sha1-min.js',
-            './app/bower_components/kjur-jsrsasign/min/base64x-1.1.min.js',
-            './app/bower_components/kjur-jsrsasign/min/jws-3.2.min.js',
-            './app/bower_components/kjur-jsrsasign/ext/jsbn.js',
-            './app/bower_components/kjur-jsrsasign/ext/jsbn2.js',
-            './app/bower_components/kjur-jsrsasign/ext/rsa.js',
-            './app/bower_components/kjur-jsrsasign/ext/rsa2.js',
-            './app/bower_components/kjur-jsrsasign/ext/base64.js',
-            './app/bower_components/kjur-jsrsasign/min/crypto-1.1.min.js',
-            './app/bower_components/kjur-jsrsasign/min/asn1hex-1.1.min.js',
-            './app/bower_components/kjur-jsrsasign/min/rsapem-1.1.min.js',
-            './app/bower_components/kjur-jsrsasign/min/rsasign-1.2.min.js',
-            './app/bower_components/kjur-jsrsasign/min/x509-1.1.min.js'
+            './node_modules/jquery/dist/jquery.min.js',
+            './node_modules/angular/angular.js',
+            './node_modules/angular-bootstrap/ui-bootstrap.min.js',
+            './node_modules/angular-bootstrap/ui-bootstrap-tpls.min.js',
+            './node_modules/angular-cookies/angular-cookies.js',
+            './node_modules/ng-dialog/js/ngDialog.min.js',
+            './node_modules/angular-route/angular-route.js',
         ])
         .pipe(concat(app_js))
         //.pipe(uglify())
@@ -156,8 +142,8 @@ gulp.task('lightwave-ui-css-minify', function(done) {
 gulp.task('lightwave-ui-vendor-css-minify', function(done) {
     var app_vendor_css = 'lightwave-ui-vendor.' + version + '.css';
     gulp.src([
-            './app/bower_components/ng-dialog/css/ngDialog.min.css',
-            './app/bower_components/ng-dialog/css/ngDialog-theme-default.min.css'
+            './node_modules/ng-dialog/css/ngDialog.min.css',
+            './node_modules/ng-dialog/css/ngDialog-theme-default.min.css'
         ])
         .pipe(concat(app_vendor_css))
         .pipe(cleanCSS({compatibility: 'ie8'}))
