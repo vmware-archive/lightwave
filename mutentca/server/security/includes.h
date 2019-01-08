@@ -37,6 +37,8 @@ extern "C" {
 #include <mutentcadbapi.h>
 
 #include <vmmemory.h>
+#include <vmmetrics.h>
+#include <mutentcametrics.h>
 
 #include <lw/types.h>
 #include <lw/hash.h>

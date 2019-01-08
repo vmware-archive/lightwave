@@ -23,6 +23,7 @@ testmutentcasecurity_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/security/libmutentcasecurity.la \
+    $(top_builddir)/mutentca/server/metrics/libmutentcametrics.la \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @CRYPTO_LIBS@ \

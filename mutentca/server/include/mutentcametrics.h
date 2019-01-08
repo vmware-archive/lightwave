@@ -70,6 +70,16 @@ typedef enum
 
 typedef enum
 {
+    LWCA_METRICS_SECURITY_ADD_KEYPAIR = 0,
+    LWCA_METRICS_SECURITY_CREATE_KEYPAIR,
+    LWCA_METRICS_SECURITY_SIGN_X509_CERTIFICATE,
+    LWCA_METRICS_SECURITY_SIGN_X509_REQUEST,
+    LWCA_METRICS_SECURITY_SIGN_X509_CRL,
+    LWCA_METRICS_SECURITY_COUNT
+} LWCA_METRICS_SECURITY_APIS;
+
+typedef enum
+{
     LWCA_METRICS_RESPONSE_SUCCESS = 0,
     LWCA_METRICS_RESPONSE_ERROR,
     LWCA_METRICS_RESPONSE_COUNT
@@ -99,6 +109,14 @@ LwCARestMetricsUpdate(
 VOID
 LwCAApiMetricsUpdate(
     LWCA_METRICS_API_NAMES      api,
+    LWCA_METRICS_RESPONSE_CODES code,
+    uint64_t                    iStartTime,
+    uint64_t                    iEndTime
+    );
+
+VOID
+LwCASecurityMetricsUpdate(
+    LWCA_METRICS_SECURITY_APIS  api,
     LWCA_METRICS_RESPONSE_CODES code,
     uint64_t                    iStartTime,
     uint64_t                    iEndTime

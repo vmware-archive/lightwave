@@ -38,6 +38,11 @@ LwCAMetricsApiNameString(
     );
 
 PSTR
+LwCAMetricsSecurityApiNameString(
+    LWCA_METRICS_SECURITY_APIS api
+    );
+
+PSTR
 LwCAMetricsResponseString(
     LWCA_METRICS_RESPONSE_CODES     code
     );

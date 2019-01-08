@@ -138,6 +138,9 @@ LwCASecurityAddKeyPair(
 {
     DWORD dwError = 0;
     BOOLEAN bLocked = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (IsNullOrEmptyString(pszKeyId) || IsNullOrEmptyString(pszPrivateKey))
     {
@@ -162,9 +165,17 @@ LwCASecurityAddKeyPair(
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCASecurityMetricsUpdate(LWCA_METRICS_SECURITY_ADD_KEYPAIR,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
     goto cleanup;
 }
 
@@ -177,6 +188,9 @@ LwCASecurityCreateKeyPair(
     DWORD dwError = 0;
     PSTR pszPublicKey = NULL;
     BOOLEAN bLocked = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (IsNullOrEmptyString(pszKeyId) || !ppszPublicKey)
     {
@@ -204,9 +218,17 @@ LwCASecurityCreateKeyPair(
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCASecurityMetricsUpdate(LWCA_METRICS_SECURITY_CREATE_KEYPAIR,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
     VmFreeMemory(pszPublicKey);
     goto cleanup;
 }
@@ -220,6 +242,9 @@ LwCASecuritySignX509Cert(
     DWORD dwError = 0;
     LWCA_SECURITY_SIGN_DATA signData = {0};
     BOOLEAN bLocked = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (IsNullOrEmptyString(pcszKeyId) || !pCert)
     {
@@ -248,9 +273,17 @@ LwCASecuritySignX509Cert(
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCASecurityMetricsUpdate(LWCA_METRICS_SECURITY_SIGN_X509_CERTIFICATE,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
     goto cleanup;
 }
 
@@ -263,6 +296,9 @@ LwCASecuritySignX509Request(
     DWORD dwError = 0;
     LWCA_SECURITY_SIGN_DATA signData = {0};
     BOOLEAN bLocked = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (IsNullOrEmptyString(pcszKeyId) || !pReq)
     {
@@ -291,9 +327,17 @@ LwCASecuritySignX509Request(
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCASecurityMetricsUpdate(LWCA_METRICS_SECURITY_SIGN_X509_REQUEST,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
     goto cleanup;
 }
 
@@ -306,6 +350,9 @@ LwCASecuritySignX509Crl(
     DWORD dwError = 0;
     LWCA_SECURITY_SIGN_DATA signData = {0};
     BOOLEAN bLocked = FALSE;
+    LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
+    uint64_t iStartTime = LwCAGetTimeInMilliSec();
+    uint64_t iEndTime = iStartTime;
 
     if (IsNullOrEmptyString(pcszKeyId) || !pCrl)
     {
@@ -334,9 +381,17 @@ LwCASecuritySignX509Crl(
 
 cleanup:
     LWCA_LOCK_MUTEX_UNLOCK(&gSecurityCtx.securityMutex, bLocked);
+
+    iEndTime = LwCAGetTimeInMilliSec();
+    LwCASecurityMetricsUpdate(LWCA_METRICS_SECURITY_SIGN_X509_CRL,
+                        responseCode,
+                        iStartTime,
+                        iEndTime);
+
     return dwError;
 
 error:
+    responseCode = LWCA_METRICS_RESPONSE_ERROR;
     goto cleanup;
 }
 

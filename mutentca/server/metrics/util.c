@@ -88,6 +88,23 @@ LwCAMetricsApiNameString(
 }
 
 PSTR
+LwCAMetricsSecurityApiNameString(
+    LWCA_METRICS_SECURITY_APIS api
+    )
+{
+    static PSTR pszSecurityApiNames[LWCA_METRICS_SECURITY_COUNT] =
+    {
+        "AddKeyPair",
+        "CreateKeyPair",
+        "SignX509Cert",
+        "SignX509Request",
+        "SignX509CRL"
+    };
+
+    return pszSecurityApiNames[api];
+}
+
+PSTR
 LwCAMetricsResponseString(
     LWCA_METRICS_RESPONSE_CODES code
     )

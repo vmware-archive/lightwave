@@ -20,3 +20,6 @@ extern PVM_METRICS_HISTOGRAM gpRestMetrics[LWCA_METRICS_REQ_URL_COUNT]
 
 extern PVM_METRICS_HISTOGRAM gpApiMetrics[LWCA_METRICS_API_COUNT]
                                           [LWCA_METRICS_RESPONSE_COUNT];
+
+extern PVM_METRICS_HISTOGRAM gpSecurityMetrics[LWCA_METRICS_SECURITY_COUNT]
+                                               [LWCA_METRICS_RESPONSE_COUNT];
