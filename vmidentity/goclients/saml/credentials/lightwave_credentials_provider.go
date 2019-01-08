@@ -4,82 +4,34 @@ import (
 	"fmt"
 	"io/ioutil"
 	"net/http"
-	"strings"
 	"time"
 
+	"crypto/rsa"
+	"crypto/x509"
 	"encoding/base64"
+	"encoding/pem"
 	"github.com/aws/aws-sdk-go/aws"
 	awscreds "github.com/aws/aws-sdk-go/aws/credentials"
 	"github.com/aws/aws-sdk-go/aws/session"
 	"github.com/aws/aws-sdk-go/service/sts"
+	"github.com/beevik/etree"
+	"strings"
 )
 
 const (
 	// lightwaveSamlMetaDataUrlFormat for creating url to retrieve SAML metadata document from lightwave
-	// https://<lw-fqdn>/websso/SAML2/Metadata/<tenant>
-	lightwaveEntityIdFormat = "https://%s/websso/SAML2/Metadata/%s"
+	lightwaveEntityIDFormat = "https://%s/websso/SAML2/Metadata/%s"
 
 	// lightwaveSTSUrlFormat for creating url to retrive SAML token
-	// https://<lw fqdn>/sts/STSService/<tenant>
 	lightwaveSTSUrlFormat = "https://%s/sts/STSService/%s"
 
-	getSAMLTokenRequestTemplate = `<soapenv:Envelope xmlns:soapenv="http://schemas.xmlsoap.org/soap/envelope/">
-  <soapenv:Header>
-    <wsse:Security xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
-      <wsu:Timestamp xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-        <wsu:Created>%s</wsu:Created>
-        <wsu:Expires>%s</wsu:Expires>
-      </wsu:Timestamp>
-      <wsse:UsernameToken xmlns:wsse="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-secext-1.0.xsd">
-        <wsse:Username>%s</wsse:Username>
-        <wsse:Password Type="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-username-token-profile-1.0#PasswordText"><![CDATA[%s]]></wsse:Password>
-      </wsse:UsernameToken>
-    </wsse:Security>
-  </soapenv:Header>
-  <soapenv:Body xmlns:wst="http://docs.oasis-open.org/ws-sx/ws-trust/200512">
-    <wst:RequestSecurityToken xmlns:wst="http://docs.oasis-open.org/ws-sx/ws-trust/200512" xmlns:wsa="http://www.w3.org/2005/08/addressing">
-      <wst:TokenType>urn:oasis:names:tc:SAML:2.0:assertion</wst:TokenType>
-      <wst:RequestType>http://docs.oasis-open.org/ws-sx/ws-trust/200512/Issue</wst:RequestType>
-      <wst:KeyType>http://docs.oasis-open.org/ws-sx/ws-trust/200512/Bearer</wst:KeyType>
-      <wst:Lifetime xmlns:wsu="http://docs.oasis-open.org/wss/2004/01/oasis-200401-wss-wssecurity-utility-1.0.xsd">
-        <wsu:Created>%s</wsu:Created>
-        <wsu:Expires>%s</wsu:Expires>
-      </wst:Lifetime>
-      <wst:Renewing Allow="false" OK="false"/>
-      <wst:Delegatable>false</wst:Delegatable>
-      <wst:Participants>
-      	<wst:Primary>
-      		<wsa:EndpointReference>
-      			<wsa:Address>https://signin.aws.amazon.com/saml</wsa:Address>
-      		</wsa:EndpointReference>
-      	</wst:Primary>
-      </wst:Participants>
-      <wst:Claims xmlns:auth="http://docs.oasis-open.org/wsfed/authorization/200706" Dialect="http://schemas.xmlsoap.org/ws/2005/05/fedclaims">
-      	<auth:ClaimType Uri="https://aws.amazon.com/SAML/Attributes/Role" />
-      	<auth:ClaimType Uri="https://aws.amazon.com/SAML/Attributes/RoleSessionName" />
-      </wst:Claims>
-    </wst:RequestSecurityToken>
-  </soapenv:Body>
-</soapenv:Envelope>`
-
-	beginSamlAssertionTag = `<saml2:Assertion`
-	endSamlAssertionTag   = `</saml2:Assertion>`
-
-        SAMLResponseTemplate = `<samlp:Response xmlns:samlp="urn:oasis:names:tc:SAML:2.0:protocol" xmlns:saml="urn:oasis:names:tc:SAML:2.0:assertion">
-<saml:Issuer>%s</saml:Issuer>
-<samlp:Status>
-    <samlp:StatusCode Value="urn:oasis:names:tc:SAML:2.0:status:Success"/>
-</samlp:Status>
-%s
-</samlp:Response>`
+	// DefaultDuration is the default amount of time in minutes that the credentials
+	// will be valid for.
+	DefaultDuration = time.Duration(1) * time.Hour
 )
 
-// DefaultDuration is the default amount of time in minutes that the credentials
-// will be valid for.
-var DefaultDuration = time.Duration(1) * time.Hour
-
-var netClient = &http.Client{
-  Timeout: time.Second * 10,
+var defaultClient = &http.Client{
+	Timeout: time.Second * 10,
 }
 
 // AssumeWithSAMLRoler represents the minimal subset of the STS client API used by this provider.
@@ -96,6 +48,9 @@ type AssumeWithSAMLRoler interface {
 type LightwaveProvider struct {
 	expiration time.Time
 
+	// Flag to mark if the credentials are from a solution user
+	IsSolutionUser bool
+
 	// STS client to make assume role request with.
 	Client AssumeWithSAMLRoler
 
@@ -108,35 +63,72 @@ type LightwaveProvider struct {
 	// Expiry duration of the STS credentials. Defaults to 15 minutes if not set.
 	Duration time.Duration
 
-        // Lightwave FQDN to send the requests.
+	// Lightwave FQDN to send the requests.
 	LightwaveFQDN string
 
-        // aws region
-        Region string
+	// aws region
+	Region string
 
-        // Lightwave tenant name.
+	// Lightwave tenant name.
 	Tenant string
 
-        // Lightwave account's username in UPN format.
+	// Lightwave account's username in UPN format.
 	Username string
 
-        // Lightwav account's password.
+	// Lightwav account's password.
 	Password string
+
+	// Certificate of the solution user
+	Certificate *x509.Certificate
+
+	// Private key of the solution user
+	PrivateKey *rsa.PrivateKey
+
+	// HTTPClient is the http client to use to get credentials
+	HTTPClient *http.Client
 }
 
-// NewLightwavevCredentials returns a pointer to a new Credentials object
+// NewLightwaveCredentials returns a pointer to a new Credentials object
 // wrapping the environment variable provider.
-func NewLightwavevCredentials(lwFqdn, region, tenant, username, password, principalARN, roleARN string) *awscreds.Credentials {
-	provider := &LightwaveProvider{
-		LightwaveFQDN: lwFqdn,
-                Region:        region,
-		Tenant:        tenant,
-		Username:      username,
-		Password:      password,
-                PrincipalARN:  principalARN,
-                RoleARN:       roleARN,
+func NewLightwaveCredentials(lwFqdn, region, tenant, username, password,
+	principalARN, roleARN, certPath, privateKeyPath string, isSolutionUser bool) (*awscreds.Credentials, error) {
+	var privateKey *rsa.PrivateKey = nil
+	var cert *x509.Certificate = nil
+	var err error = nil
+
+	if isSolutionUser {
+		privateKey, err = ParsePrivateKey(privateKeyPath)
+		if err != nil {
+			return nil, err
+		}
+
+		cert, err = ParseCertificate(certPath)
+		if err != nil {
+			return nil, err
+		}
 	}
-	return awscreds.NewCredentials(provider)
+
+	provider := &LightwaveProvider{
+		LightwaveFQDN:  lwFqdn,
+		Region:         region,
+		Tenant:         tenant,
+		PrincipalARN:   principalARN,
+		RoleARN:        roleARN,
+		Username:       username,
+		Password:       password,
+		Certificate:    cert,
+		PrivateKey:     privateKey,
+		IsSolutionUser: isSolutionUser,
+		HTTPClient:     defaultClient,
+	}
+
+	return awscreds.NewCredentials(provider), nil
+}
+
+// IsExpired returns if the credentials have been expired.
+func (e *LightwaveProvider) IsExpired() bool {
+	curTime := time.Now()
+	return e.expiration.Before(curTime)
 }
 
 // Retrieve retrieves the keys from the AWS using SAML federation.
@@ -146,28 +138,49 @@ func (e *LightwaveProvider) Retrieve() (awscreds.Value, error) {
 		e.Duration = DefaultDuration
 	}
 
-        s, err := session.NewSession(&aws.Config{Region: aws.String(e.Region)})
+	s, err := session.NewSession(&aws.Config{Region: aws.String(e.Region)})
 	if err != nil {
 		return awscreds.Value{}, err
 	}
 
-	creds, err := GetAssumeRoleWithSAMLCreds(s, e.LightwaveFQDN, e.Tenant, e.Username, e.Password, e.PrincipalARN, e.RoleARN, e.Duration)
-        // set expiration for the credentials
-        e.expiration = time.Now().Add(e.Duration)
-        return *creds, err
+	var creds *awscreds.Value
+	if e.IsSolutionUser {
+		creds, err = e.getAssumeRoleWithSAMLByCert(s)
+	} else {
+		creds, err = e.getAssumeRoleWithSAMLByPassword(s)
+	}
+
+	// set expiration for the credentials
+	e.expiration = time.Now().Add(e.Duration)
+	return *creds, err
 }
 
-// Get AWS temparory credentials by calling AWS AssumeRoleWithSAML API with Lightwave SAML token.
-func GetAssumeRoleWithSAMLCreds(s *session.Session, lwFqdn, tenant, username, password, principalARN, roleARN string, duration time.Duration) (*awscreds.Value, error) {
-        issuer := fmt.Sprintf(lightwaveEntityIdFormat, lwFqdn, tenant)
+// Get AWS temporary credentials by calling AWS AssumeRoleWithSAML API with Lightwave SAML token.
+func (e *LightwaveProvider) getAssumeRoleWithSAMLByPassword(s *session.Session) (*awscreds.Value, error) {
+	issuer := fmt.Sprintf(lightwaveEntityIDFormat, e.LightwaveFQDN, e.Tenant)
 
-	token, err := GetSamlToken(lwFqdn, tenant, username, password)
+	token, err := GetSamlTokenByPassword(e.LightwaveFQDN, e.Tenant, e.Username, e.Password, e.HTTPClient)
 	if err != nil {
 		return &awscreds.Value{ProviderName: issuer}, err
 	}
 
+	return getAssumeRoleWithSAML(s, token, issuer, e.PrincipalARN, e.RoleARN, e.Duration)
+}
+
+func (e *LightwaveProvider) getAssumeRoleWithSAMLByCert(s *session.Session) (*awscreds.Value, error) {
+	issuer := fmt.Sprintf(lightwaveEntityIDFormat, e.LightwaveFQDN, e.Tenant)
+
+	token, err := GetSamlTokenByCert(e.LightwaveFQDN, e.Tenant, e.Certificate, e.PrivateKey, e.HTTPClient)
+	if err != nil {
+		return &awscreds.Value{ProviderName: issuer}, err
+	}
+
+	return getAssumeRoleWithSAML(s, token, issuer, e.PrincipalARN, e.RoleARN, e.Duration)
+}
+
+func getAssumeRoleWithSAML(s *session.Session, token, issuer, principalARN, roleARN string, duration time.Duration) (*awscreds.Value, error) {
 	// The base-64 encoded SAML response
-        samlResponse := fmt.Sprintf(SAMLResponseTemplate, issuer, token)
+	samlResponse := fmt.Sprintf(samlResponseTemplate, issuer, token)
 	base64SamlResponse := base64.StdEncoding.EncodeToString([]byte(samlResponse))
 
 	input := &sts.AssumeRoleWithSAMLInput{
@@ -193,17 +206,16 @@ func GetAssumeRoleWithSAMLCreds(s *session.Session, lwFqdn, tenant, username, pa
 	}, nil
 }
 
-// IsExpired returns if the credentials have been expired.
-func (e *LightwaveProvider) IsExpired() bool {
-	curTime := time.Now()
-	return e.expiration.Before(curTime)
-}
-
 // GetSamlMetaData retrieve the SAML metadata document from lightwave.
 // The result is used to upload to AWS to register lightwave as IdP.
-func GetSamlMetaData(lwFqdn, tenant string) (string, error) {
-	url := fmt.Sprintf(lightwaveEntityIdFormat, lwFqdn, tenant)
-	response, err := netClient.Get(url)
+func GetSamlMetaData(lwFqdn, tenant string, httpClient *http.Client) (string, error) {
+	if httpClient == nil {
+		// use default client
+		httpClient = defaultClient
+	}
+
+	url := fmt.Sprintf(lightwaveEntityIDFormat, lwFqdn, tenant)
+	response, err := httpClient.Get(url)
 	if err != nil {
 		return "", err
 	}
@@ -214,19 +226,47 @@ func GetSamlMetaData(lwFqdn, tenant string) (string, error) {
 		return "", err
 	}
 
-        if response.StatusCode != http.StatusOK {
+	if response.StatusCode != http.StatusOK {
 		err = SAMLMetadataRetrievalError.MakeError(
 			fmt.Sprintf("Failed to retrieve metadata from lightwave [%s] with tenant [%s]", lwFqdn, tenant), string(contents), nil)
 		return "", err
-        }
+	}
 
 	return string(contents), nil
 }
 
-// GetSamlToken to retrieve saml token from lightwave STS
-func GetSamlToken(lwFqdn, tenant, username, password string) (string, error) {
+// GetSamlTokenByPassword retrieves saml token from lightwave STS with username/password auth. HttpClient param can be nil
+func GetSamlTokenByPassword(lwFqdn, tenant, username, password string, httpClient *http.Client) (string, error) {
+	if lwFqdn == "" || tenant == "" || username == "" || password == "" {
+		return "", SAMLInvalidArgError.MakeError("Invalid arguments", "Function: GetSamlTokenByPassword", nil)
+	}
+
+	body := getSoapRequestWithPassword(username, password)
+	return getSamlToken(lwFqdn, tenant, &body, httpClient)
+}
+
+// GetSamlTokenByCert retrieves a saml token using a solution user's certificate and private key
+func GetSamlTokenByCert(lwFqdn, tenant string, cert *x509.Certificate, privateKey *rsa.PrivateKey, httpClient *http.Client) (string, error) {
+	if lwFqdn == "" || tenant == "" || cert == nil || privateKey == nil {
+		return "", SAMLInvalidArgError.MakeError("Invalid arguments", "", nil)
+	}
+
+	body, err := getSoapRequestWithCert(cert, privateKey)
+	if err != nil {
+		return "", SAMLInvalidRequestError.MakeError("Failed to construct SOAP request", "", err)
+	}
+
+	return getSamlToken(lwFqdn, tenant, &body, httpClient)
+}
+
+func getSamlToken(lwFqdn, tenant string, body *string, httpClient *http.Client) (string, error) {
+	errMsg := fmt.Sprintf("Failed to get SAML token from url [%s]", lwFqdn)
+	if httpClient == nil {
+		// use default client
+		httpClient = defaultClient
+	}
+
 	url := fmt.Sprintf(lightwaveSTSUrlFormat, lwFqdn, tenant)
-	body := makeSamlTokenRequest(username, password)
 	req, err := http.NewRequest("POST", url, strings.NewReader(*body))
 	if err != nil {
 		return "", err
@@ -235,9 +275,9 @@ func GetSamlToken(lwFqdn, tenant, username, password string) (string, error) {
 	req.Header.Set("SOAPAction", "http://docs.oasis-open.org/ws-sx/ws-trust/200512/RST/Issue")
 	req.Header.Set("Method", "GetSamlToken")
 
-	response, err := netClient.Do(req)
+	response, err := httpClient.Do(req)
 	if err != nil {
-		return "", err
+		return "", SAMLGetTokenError.MakeError(errMsg, "Request failed to send", err)
 	}
 
 	defer response.Body.Close()
@@ -246,27 +286,31 @@ func GetSamlToken(lwFqdn, tenant, username, password string) (string, error) {
 		return "", err
 	}
 
-        if response.StatusCode != http.StatusOK {
-		err = SAMLGetTokenError.MakeError(
-			fmt.Sprintf("Failed to get SAML token from lightwave [%s] with tenant [%s]", lwFqdn, tenant), string(contents), nil)
-
+	if response.StatusCode != http.StatusOK {
+		details := parseXmlError(string(contents))
+		err = SAMLGetTokenError.MakeError(fmt.Sprintf("HTTP %d: %s", response.StatusCode, errMsg), details, nil)
 		return "", err
-        }
+	}
 
 	return extractSamlAssertion(contents), nil
 }
 
-func makeSamlTokenRequest(username, password string) *string {
-	start := time.Now()
-	end := start.Add(time.Duration(24) * time.Hour)
+func parseXmlError(xml string) string {
+	doc := etree.NewDocument()
+	err := doc.ReadFromString(xml)
+	if err != nil {
+		// If error cant be parsed, return xml to keep old behavior
+		return xml
+	}
 
-	// 2018-05-02T19:35:00.000Z
-	// RFC3339     = "2006-01-02T15:04:05Z07:00"
-	startTime := start.UTC().Format(time.RFC3339)
-	endTime := end.UTC().Format(time.RFC3339)
+	xmlCode := doc.FindElement("//faultcode")
+	xmlMessage := doc.FindElement("//faultstring")
 
-	req := fmt.Sprintf(getSAMLTokenRequestTemplate, startTime, endTime, username, password, startTime, endTime)
-	return &req
+	if xmlCode != nil && xmlMessage != nil {
+		return fmt.Sprintf("[%s]: %s", xmlCode.Text(), xmlMessage.Text())
+	}
+
+	return xml
 }
 
 // extractSamlAssertion to take the content around <saml2:Assertion> and </saml2:Assertion>
@@ -275,4 +319,54 @@ func extractSamlAssertion(data []byte) string {
 	start := strings.Index(s, beginSamlAssertionTag)
 	end := strings.Index(s, endSamlAssertionTag) + len(endSamlAssertionTag)
 	return s[start:end]
+}
+
+// ParseCertificate parses the x509 cert from the path
+func ParseCertificate(filename string) (*x509.Certificate, error) {
+	pemBytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	pemBlock, _ := pem.Decode(pemBytes)
+	if pemBlock != nil {
+		cert, err := x509.ParseCertificate(pemBlock.Bytes)
+		if err != nil {
+			return nil, err
+		}
+
+		return cert, nil
+	}
+
+	return nil, fmt.Errorf("Unable to parse certificate")
+}
+
+// ParsePrivateKey parses the private key from the pem file
+func ParsePrivateKey(filename string) (*rsa.PrivateKey, error) {
+	pemBytes, err := ioutil.ReadFile(filename)
+	if err != nil {
+		return nil, err
+	}
+
+	keyDERBlock, _ := pem.Decode(pemBytes)
+	if keyDERBlock != nil &&
+		(keyDERBlock.Type == "PRIVATE KEY" || strings.HasSuffix(keyDERBlock.Type, " PRIVATE KEY")) {
+
+	} else {
+		return nil, fmt.Errorf("Unable to get privateKey from pem")
+	}
+
+	if key, err := x509.ParsePKCS1PrivateKey(keyDERBlock.Bytes); err == nil {
+		return key, nil
+	}
+	if key, err := x509.ParsePKCS8PrivateKey(keyDERBlock.Bytes); err == nil {
+		switch key := key.(type) {
+		case *rsa.PrivateKey:
+			return (*rsa.PrivateKey)(key), nil
+		default:
+			return nil, fmt.Errorf("Unable to get privateKey from pem")
+		}
+	}
+
+	return nil, fmt.Errorf("Unable to get privateKey from pem")
 }
