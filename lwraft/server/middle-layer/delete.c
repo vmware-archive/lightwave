@@ -89,6 +89,7 @@ VmDirInternalDeleteEntry(
     BOOLEAN     bIsDomainObject = FALSE;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
+    PVDIR_EVENT pEvent = NULL;
     PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
     extern DWORD VmDirDeleteRaftPreCommit(PVDIR_SCHEMA_CTX, EntryId, char *, PVDIR_OPERATION);
 
@@ -281,6 +282,12 @@ VmDirInternalDeleteEntry(
     retVal = VmDirApplyModsToEntryStruct(pOperation->pSchemaCtx, modReq, pEntry, NULL, &pszLocalErrMsg);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    retVal = VmDirMLGetCurrentEvent(&pEvent);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirMLAddEventData(pEvent, bHasTxn, pEntry, VDIR_EVENT_DEL);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
     // Update Entry
     retVal = pOperation->pBEIF->pfnBEEntryDelete(pOperation->pBECtx, modReq->mods, pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -375,6 +382,7 @@ cleanup:
         DeleteMods(modReq);
     }
 
+    VmDirMLMarkEventReady(pEvent, bHasTxn, (retVal == 0));
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
@@ -485,7 +493,8 @@ DeleteRefAttributesValue(
         for (i = 0; i < cl->size; i++)
         {
             pGroupEntry = &groupEntry;
-            if ((retVal = VmDirModifyEntryCoreLogic(pOperation, &mr, cl->eIds[i], TRUE, pGroupEntry)) != 0)
+            if ((retVal = VmDirModifyEntryCoreLogic(
+                            pOperation, &mr, cl->eIds[i], TRUE, FALSE,  pGroupEntry)) != 0)
             {
                 switch (retVal)
                 {

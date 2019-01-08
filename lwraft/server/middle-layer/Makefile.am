@@ -15,6 +15,7 @@ libmiddle_layer_la_SOURCES = \
     computedattribute.c \
     delete.c \
     dn.c \
+    eventapi.c \
     globals.c \
     group.c \
     index.c \

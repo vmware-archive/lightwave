@@ -87,6 +87,7 @@ VmDirInternalAddEntry(
     PVDIR_ENTRY pEntry = pOperation->request.addReq.pEntry;
     PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
     extern DWORD    VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp);
+    PVDIR_EVENT pEvent = NULL;
 
     assert(pOperation && pOperation->pBECtx->pBE);
 
@@ -272,6 +273,14 @@ VmDirInternalAddEntry(
                 VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
 
+    retVal = VmDirMLGetCurrentEvent(&pEvent);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = VmDirMLAddEventData(pEvent, bHasTxn, pEntry, VDIR_EVENT_ADD);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    pOperation->request.addReq.pEntry = NULL;
+
     retVal = pOperation->pBEIF->pfnBEEntryAdd(pOperation->pBECtx, pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
@@ -332,6 +341,9 @@ cleanup:
 
         VMDIR_COLLECT_TIME(pMLMetrics->iPostPlugunsEndTime);
     }
+
+    // Mark event Ready and successful
+    VmDirMLMarkEventReady(pEvent, bHasTxn, (retVal == 0));
 
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);

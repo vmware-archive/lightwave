@@ -45,6 +45,7 @@
 #include <ldaphead.h>
 #include <vmacl.h>
 #include <replication.h>
+#include <watchnotify.h>
 
 #include <middlelayer.h>
 
@@ -98,6 +99,7 @@
 #include <ldaphead.h>
 #include <vmacl.h>
 #include <replication.h>
+#include <watchnotify.h>
 
 #include <middlelayer.h>
 

@@ -12,4 +12,4 @@
  */
 
 extern PVDIR_WATCH_SESSION_MANAGER gpWatchSessionManager;
-extern PVDIR_EVENT_REPO            gpEventRepo;
+extern PVDIR_EVENT_REPO gpEventRepo;

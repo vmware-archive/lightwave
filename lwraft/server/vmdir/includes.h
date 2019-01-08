@@ -73,6 +73,7 @@
 #include <resthead.h>
 #include <vmevent.h>
 #include <metricscommon.h>
+#include <watchnotify.h>
 
 #include "defines.h"
 #include "structs.h"

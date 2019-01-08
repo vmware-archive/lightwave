@@ -11,40 +11,6 @@
  * License for the specific language governing permissions and limitations
  */
 
-typedef enum
-{
-    VDIR_EVENT_MOD = 0,
-    VDIR_EVENT_ADD,
-    VDIR_EVENT_DEL
-}VDIR_EVENT_TYPE;
-
-typedef struct _VDIR_EVENT_DATA
-{
-    BOOL                        bIsGroupUpdate;
-    PVDIR_ENTRY                 pCurEntry;
-    PVDIR_ENTRY                 pPrevEntry;
-    VDIR_EVENT_TYPE             eventType;
-}VDIR_EVENT_DATA, *PVDIR_EVENT_DATA;
-
-typedef struct _VDIR_EVENT_DATA_NODE
-{
-    PVDIR_EVENT_DATA                pEventData;
-    struct _VDIR_EVENT_DATA_NODE*   pNext;
-}VDIR_EVENT_DATA_NODE, *PVDIR_EVENT_DATA_NODE;
-
-typedef struct _VDIR_EVENT
-{
-    DWORD                       refCount;
-    DWORD                       revision;
-    PVMDIR_MUTEX                pMutex;
-    PVMDIR_COND                 pCond;
-    PVDIR_EVENT_DATA_NODE       pEventDataHead;
-    PVDIR_EVENT_DATA_NODE       pEventDataTail;
-    BOOL                        bIsEventReady;
-    BOOL                        bIsSuccessful;
-    PVDIR_LINKED_LIST_NODE      pListNode;
-}VDIR_EVENT, *PVDIR_EVENT;
-
 typedef struct _VDIR_EVENT_REPO
 {
     PVDIR_LINKED_LIST   pReadyEventList;

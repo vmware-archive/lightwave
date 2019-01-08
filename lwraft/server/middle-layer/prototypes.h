@@ -35,6 +35,27 @@ VmDirBuildComputedAttribute(
     PVDIR_ENTRY         pEntry
     );
 
+// eventapi.c
+DWORD
+VmDirMLGetCurrentEvent(
+    PVDIR_EVENT*    ppEvent
+    );
+
+DWORD
+VmDirMLAddEventData(
+    PVDIR_EVENT     pEvent,
+    BOOLEAN         bHasTxn,
+    PVDIR_ENTRY     pCurEntry,
+    VDIR_EVENT_TYPE eventType
+    );
+
+DWORD
+VmDirMLMarkEventReady(
+    PVDIR_EVENT     pEvent,
+    BOOLEAN         bHasTxn,
+    BOOLEAN         bSuccesful
+    );
+
 // password.c
 
 VOID
@@ -238,6 +259,17 @@ VmDirKrbUPNKeySet(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     PVDIR_BERVALUE   pBervPasswd
+    );
+
+// modify.c
+int
+VmDirModifyEntryCoreLogic(
+    VDIR_OPERATION *    pOperation, /* IN */
+    ModifyReq *         modReq, /* IN */
+    ENTRYID             entryId, /* IN */
+    BOOLEAN             bRaftLog,
+    BOOLEAN             bHasTxn,
+    VDIR_ENTRY *        pEntry  /* OUT */
     );
 
 // sasl.c

@@ -16,11 +16,6 @@
  */
 
 DWORD
-VmDirEventInit(
-    PVDIR_EVENT*   ppEvent
-    );
-
-DWORD
 VmDirEventAddEventData(
     PVDIR_EVENT         pEvent,
     PVDIR_EVENT_DATA    pEventData
@@ -34,11 +29,6 @@ VmDirEventRelease(
 DWORD
 VmDirEventAcquire(
     PVDIR_EVENT   pEvent
-    );
-
-VOID
-VmDirEventFree(
-    PVDIR_EVENT    pEvent
     );
 
 /* eventrepo.c

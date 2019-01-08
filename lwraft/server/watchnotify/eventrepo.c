@@ -156,6 +156,30 @@ error:
 }
 
 DWORD
+VmDirEventRepoAddPendingEventExternal(
+    PVDIR_EVENT pEvent,
+    BOOL        bInLock
+    )
+{
+    DWORD   dwError = 0;
+
+    if (!pEvent)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirEventRepoAddPendingEvent(gpEventRepo, pEvent, bInLock);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
 VmDirEventRepoSync(
     PVDIR_EVENT_REPO    pEventRepo,
     int64_t             iTimeoutMs
@@ -209,6 +233,10 @@ VmDirEventRepoSync(
         dwError = VmDirLinkedListInsertTail(
                 pEventRepo->pReadyEventList, (PVOID)pEvent, &pEvent->pListNode);
         BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        VmDirEventFree(pEvent);
     }
 
 cleanup:

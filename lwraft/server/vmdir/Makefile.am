@@ -72,6 +72,7 @@ postd_LDADD = \
     $(top_builddir)/lwraft/server/schema/libschema.la \
     $(top_builddir)/lwraft/server/acl/libvmacl.la \
     $(top_builddir)/lwraft/server/backend/libbackend.la \
+    $(top_builddir)/lwraft/server/watchnotify/libwatchnotify.la \
     $(VMDIRD_BACKEND_STORE) \
     $(top_builddir)/lwraft/server/replication/libreplication.la \
     $(top_builddir)/lwraft/client/libpostclient.la \

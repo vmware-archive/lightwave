@@ -211,6 +211,11 @@ VmDirEntryUnpack(
     newEntry.pParentEntry = pEntry->pParentEntry;
     pEntry->pParentEntry = NULL;
 
+    // take over encoded entry
+    newEntry.encodedEntry = pEntry->encodedEntry;
+    newEntry.encodedEntrySize = pEntry->encodedEntrySize;
+    pEntry->encodedEntry = NULL;
+
     // fee resources
     VmDirFreeEntryContent(pEntry);
 

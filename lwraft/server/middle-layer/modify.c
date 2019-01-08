@@ -82,6 +82,7 @@ VmDirModifyEntryCoreLogic(
     ModifyReq *         modReq, /* IN */
     ENTRYID             entryId, /* IN */
     BOOLEAN             bNoRaftLog, /* IN */
+    BOOLEAN             bHasTxn, /* IN */
     VDIR_ENTRY *        pEntry  /* OUT */
     )
 {
@@ -89,6 +90,8 @@ VmDirModifyEntryCoreLogic(
     PSTR      pszLocalErrMsg = NULL;
     BOOLEAN   bDnModified = FALSE;
     BOOLEAN   bLeafNode = FALSE;
+    BOOLEAN   bCollectEvent = bNoRaftLog && pOperation->reqCode == LDAP_REQ_MODIFY;
+    PVDIR_EVENT pEvent = NULL;
     PVDIR_ATTRIBUTE pAttrMemberOf = NULL;
     extern DWORD VmDirModifyRaftPreCommit(PVDIR_SCHEMA_CTX, ENTRYID, char *, PVDIR_MODIFICATION, PVDIR_OPERATION);
 
@@ -185,6 +188,15 @@ VmDirModifyEntryCoreLogic(
                 VDIR_SAFE_STRING(pOperation->pBECtx->pszBEErrorMsg));
     }
 
+    if (bCollectEvent)
+    {
+        retVal = VmDirMLGetCurrentEvent(&pEvent);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirMLAddEventData(pEvent, bHasTxn, pEntry, VDIR_EVENT_MOD);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // Execute plugin logic that require final entry image.  (Do this for both normal and repl routes)
     retVal = VmDirExecutePreModifyPlugins(pOperation, pEntry, retVal);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -216,6 +228,7 @@ VmDirModifyEntryCoreLogic(
 
 cleanup:
 
+    VmDirMLMarkEventReady(pEvent, bHasTxn, (retVal == 0));
     VmDirFreeAttribute(pAttrMemberOf);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
 
@@ -309,12 +322,12 @@ VmDirInternalModifyEntry(
     )
 {
     int         retVal = LDAP_SUCCESS;
-    VDIR_ENTRY  entry = {0};
     PVDIR_ENTRY pEntry = NULL;
     ModifyReq*  modReq = NULL;
     ENTRYID     entryId = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
+    PVDIR_EVENT pEvent = NULL;
     PVDIR_OPERATION_ML_METRIC   pMLMetrics = NULL;
 
     assert(pOperation && pOperation->pBEIF);
@@ -395,6 +408,12 @@ VmDirInternalModifyEntry(
     retVal = VmDirNormalizeMods(pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg);
     BAIL_ON_VMDIR_ERROR(retVal);
 
+    if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
+    {
+        retVal = VmDirMLGetCurrentEvent(&pEvent);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
     // Read current entry from DB
     retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(modReq->dn), &entryId);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
@@ -403,13 +422,15 @@ VmDirInternalModifyEntry(
             retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
-    pEntry = &entry;
+    retVal = VmDirAllocateMemory(sizeof(VDIR_ENTRY), (PVOID*)&pEntry);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     retVal = VmDirModifyEntryCoreLogic(
             pOperation,
             &pOperation->request.modifyReq,
             entryId,
             pOperation->bNoRaftLog,
+            bHasTxn,
             pEntry);
     BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
@@ -448,7 +469,7 @@ cleanup:
         VMDIR_COLLECT_TIME(pMLMetrics->iPostPluginsStartTime);
 
         // Execute post modify plugin logic
-        iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, &entry, retVal);
+        iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, pEntry, retVal);
         if (iPostCommitPluginRtn != LDAP_SUCCESS &&
             iPostCommitPluginRtn != pOperation->ldapResult.errCode) // pass through
         {
@@ -464,11 +485,11 @@ cleanup:
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
 
+
     // collect metrics
     VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
     VmDirInternalMetricsUpdate(pOperation);
 
-    VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 

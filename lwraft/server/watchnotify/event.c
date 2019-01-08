@@ -93,6 +93,46 @@ error:
 }
 
 DWORD
+VmDirEventDecodeEventData(
+    PVDIR_EVENT pEvent
+    )
+{
+    DWORD                   dwError = 0;
+    PVDIR_ENTRY             pPrevEntry = NULL;
+    PVDIR_EVENT_DATA_NODE   pTemp = NULL;
+    PVDIR_SCHEMA_CTX        pSchemaCtx = NULL;
+
+    if (!pEvent)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pTemp = pEvent->pEventDataHead;
+
+    while (pTemp)
+    {
+        pPrevEntry = pTemp->pEventData->pPrevEntry;
+        if (pPrevEntry)
+        {
+            dwError = VmDirDecodeEntry(pSchemaCtx, pPrevEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        pTemp = pTemp->pNext;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed, error (%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
 VmDirEventRelease(
     PVDIR_EVENT pEvent
     )
