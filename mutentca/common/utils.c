@@ -725,3 +725,19 @@ error:
     }
     goto cleanup;
 }
+
+uint64_t
+LwCAGetTimeInMilliSec(
+    VOID
+    )
+{
+    uint64_t iTimeInMSec = 0;
+    struct timespec timeValue = {0};
+
+    if (clock_gettime(CLOCK_MONOTONIC, &timeValue) == 0)
+    {
+        iTimeInMSec = timeValue.tv_sec * MSECS_PER_SEC + timeValue.tv_nsec / NSECS_PER_MSEC;
+    }
+
+    return iTimeInMSec;
+}

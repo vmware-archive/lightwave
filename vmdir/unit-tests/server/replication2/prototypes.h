@@ -17,62 +17,66 @@
 //////////////////
 // updatelist.c
 //////////////////
-
-//unit test functions
 int
-VmDirSetupReplUpdateListTest(
-    VOID    **state
-    );
-
-int
-VmDirTeardownReplUpdateListTest(
+VmDirTestSetupReplUpdateListParseSyncDoneCtl(
     VOID    **state
     );
 
 VOID
-VmDirReplUpdateListParseSyncDoneCtl_ValidInput(
+VmDirTestReplUpdateListParseSyncDoneCtl(
     VOID    **state
     );
 
 int
-VmDirSetupReplUpdateListExpand_ModifyTest(
+VmDirTestTeardownReplUpdateListParseSyncDoneCtl(
     VOID    **state
     );
 
 int
-VmDirSetupReplUpdateListExpand_AddTest(
+VmDirTestSetupUpdateListExpand_AddWithDelAttr(
     VOID    **state
     );
 
 int
-VmDirSetupReplUpdateListExpand_DeleteTest(
+VmDirTestSetupUpdateListExpand_AddWithMultiValueAttr(
     VOID    **state
     );
 
 int
-VmDirSetupReplUpdateListExpand_AddTombstoneTest(
+VmDirTestSetupUpdateListExpand_AddWithDelValue(
+    VOID    **state
+    );
+
+int
+VmDirTestSetupUpdateListExpand_AddWithMustAttr(
+    VOID    **state
+    );
+
+int
+VmDirTestSetupUpdateListExpand_AddWithDelMustAttr(
+    VOID    **state
+    );
+
+int
+VmDirTestSetupUpdateListExpand_AddTombstone(
+    VOID    **state
+    );
+
+int
+VmDirTestSetupUpdateListExpand_AddWithModifyAndTombstone(
     VOID    **state
     );
 
 VOID
-VmDirReplUpdateListExpand_ModifyTest(
+VmDirTestReplUpdateListExpand(
     VOID    **state
     );
 
-VOID
-VmDirReplUpdateListExpand_AddTest(
+int
+VmDirTestTeardownUpdateListExpand(
     VOID    **state
     );
 
-VOID
-VmDirReplUpdateListExpand_DeleteTest(
-    VOID    **state
-    );
-
-VOID
-VmDirReplUpdateListExpand_AddTombstoneTest(
-    VOID    **state
-    );
 //////////////////
 // update.c
 //////////////////
@@ -175,6 +179,7 @@ VmDirAllocateAttrMetaData(
     USN                          localUsn,
     USN                          origUsn,
     UINT64                       version,
+    PCSTR                        pcszOrigInvoId,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     );
 
@@ -185,6 +190,7 @@ VmDirAllocateAttrAndMetaData(
     USN                          localUsn,
     USN                          origUsn,
     UINT64                       version,
+    PCSTR                        pcszOrigInvoId,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     );
 
@@ -199,6 +205,9 @@ VmDirAllocateMultiValueAttr(
     PSTR                         pszAttrType,
     USN                          localUSN,
     USN                          origUSN,
+    PCSTR                        pcszOrigInvoId,
+    VDIR_BERVARRAY               pbvVals,
+    DWORD                        dwVals,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     );
 
@@ -239,5 +248,11 @@ VmDirTestCompareAttr(
 DWORD
 VmDirTestAllocateReplUpdate(
     PVMDIR_REPLICATION_UPDATE   *ppReplUpdate
+    );
+
+BOOLEAN
+VmDirTestCompareReplUpdateList(
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList1,
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList2
     );
 #endif

@@ -49,6 +49,7 @@ VmDirAllocateAttrMetaData(
     USN                          localUsn,
     USN                          origUsn,
     UINT64                       version,
+    PCSTR                        pcszOrigInvoId,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     )
 {
@@ -64,7 +65,7 @@ VmDirAllocateAttrMetaData(
     dwError = VmDirMetaDataCreate(
             localUsn,
             version,
-            "7ef77c0f-cff1-4239-b293-39a2b302d5bd",
+            pcszOrigInvoId,
             "20180702222545.584",
             origUsn,
             &pReplMetaData->pMetaData);
@@ -81,6 +82,7 @@ VmDirAllocateAttrAndMetaData(
     USN                          localUsn,
     USN                          origUsn,
     UINT64                       version,
+    PCSTR                        pcszOrigInvoId,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     )
 {
@@ -88,7 +90,8 @@ VmDirAllocateAttrAndMetaData(
     PVDIR_ATTRIBUTE    pAttr = NULL;
 
     //Populate Attr MetaData
-    VmDirAllocateAttrMetaData(pszAttrType, localUsn, origUsn, version, pUpdate);
+    VmDirAllocateAttrMetaData(
+            pszAttrType, localUsn, origUsn, version, pcszOrigInvoId, pUpdate);
 
     //Populate pAttr
     dwError = VmDirAllocateMemory(sizeof(VDIR_ATTRIBUTE), (PVOID*)&pAttr);
@@ -115,6 +118,9 @@ VmDirAllocateMultiValueAttr(
     PSTR                         pszAttrType,
     USN                          localUSN,
     USN                          origUSN,
+    PCSTR                        pcszOrigInvoId,
+    VDIR_BERVARRAY               pbvVals,
+    DWORD                        dwVals,
     PVMDIR_REPLICATION_UPDATE    pUpdate
     )
 {
@@ -127,24 +133,11 @@ VmDirAllocateMultiValueAttr(
     dwError = VmDirStringToBervalContent(pszAttrType, &pAttr->type);
     assert_int_equal(dwError, 0);
 
-    VmDirAllocateAttrMetaData(pszAttrType, localUSN, origUSN, 1, pUpdate);
+    VmDirAllocateAttrMetaData(
+            pszAttrType, localUSN, origUSN, 1, pcszOrigInvoId, pUpdate);
 
-    dwError = VmDirAllocateMemory(sizeof(VDIR_BERVALUE) * (4), (PVOID*)&pAttr->vals);
-    assert_int_equal(dwError, 0);
-
-    dwError = VmDirStringToBervalContent(
-            "cn=administrator@test-20002,cn=Users,dc=test-20002", &pAttr->vals[0]);
-    assert_int_equal(dwError, 0);
-
-    dwError = VmDirStringToBervalContent(
-            "cn=administrator@test-20004,cn=Users,dc=test-20004", &pAttr->vals[1]);
-    assert_int_equal(dwError, 0);
-
-    dwError = VmDirStringToBervalContent(
-            "cn=administrator@test-20005,cn=Users,dc=test-20005", &pAttr->vals[2]);
-    assert_int_equal(dwError, 0);
-
-    pAttr->numVals = 3;
+    pAttr->vals = pbvVals;
+    pAttr->numVals = dwVals;
 
     //Insert pAttr to pEntry
     pAttr->next = pUpdate->pEntry->attrs;
@@ -353,6 +346,51 @@ error:
     {
         VmDirFreeReplUpdate(pReplUpdate);
     }
-
     goto cleanup;
+}
+
+BOOLEAN
+VmDirTestCompareReplUpdateList(
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList1,
+    PVMDIR_REPLICATION_UPDATE_LIST    pReplUpdateList2
+    )
+{
+    DWORD                     dwError = 0;
+    PVDIR_LINKED_LIST_NODE    pNode1 = NULL;
+    PVDIR_LINKED_LIST_NODE    pNode2 = NULL;
+
+    if (!pReplUpdateList1 && !pReplUpdateList2)
+    {
+        return TRUE;
+    }
+
+    if (!pReplUpdateList1 || !pReplUpdateList2)
+    {
+        return FALSE;
+    }
+
+    if (VmDirLinkedListGetSize(pReplUpdateList1->pLinkedList) !=
+        VmDirLinkedListGetSize(pReplUpdateList2->pLinkedList))
+    {
+        return FALSE;
+    }
+
+    dwError = VmDirLinkedListGetHead(pReplUpdateList1->pLinkedList, &pNode1);
+    assert_int_equal(dwError, 0);
+
+    dwError = VmDirLinkedListGetHead(pReplUpdateList2->pLinkedList, &pNode2);
+    assert_int_equal(dwError, 0);
+
+    while (pNode1 && pNode2)
+    {
+        if (!VmDirTestCompareReplUpdate(pNode1->pElement, pNode2->pElement))
+        {
+            return FALSE;
+        }
+
+        pNode1 = pNode1->pNext;
+        pNode2 = pNode2->pNext;
+    }
+
+    return TRUE;
 }

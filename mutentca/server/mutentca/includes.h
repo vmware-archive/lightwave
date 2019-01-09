@@ -62,6 +62,9 @@ extern "C" {
 #include <mutentcaapi.h>
 #include <mutentcadbapi.h>
 
+#include <vmmetrics.h>
+#include <mutentcametrics.h>
+
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"

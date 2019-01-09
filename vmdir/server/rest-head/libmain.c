@@ -94,6 +94,7 @@ VmDirRESTServerInit(
     {
         {"ldap", VmDirRESTGetLdapModule},
         {"metrics", VmDirRESTGetMetricsModule},
+        {"account", VmDirRESTGetAccountModule},
         {NULL, NULL}
     };
 

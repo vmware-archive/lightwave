@@ -18,33 +18,41 @@ int main(VOID)
 {
     int    retVal = 0;
 
-    retVal = VmDirStringToBervalContent(
-            "7ef77c0f-cff1-4239-b293-39a2b302d5bd", &gVmdirServerGlobals.invocationId);
-    assert_int_equal(retVal, 0);
-
     const struct CMUnitTest updatelist_tests[] =
     {
         //updatelist.c
         cmocka_unit_test_setup_teardown(
-                VmDirReplUpdateListParseSyncDoneCtl_ValidInput,
-                VmDirSetupReplUpdateListTest,
-                VmDirTeardownReplUpdateListTest),
+                VmDirTestReplUpdateListParseSyncDoneCtl,
+                VmDirTestSetupReplUpdateListParseSyncDoneCtl,
+                VmDirTestTeardownReplUpdateListParseSyncDoneCtl),
         cmocka_unit_test_setup_teardown(
-                VmDirReplUpdateListExpand_AddTest,
-                VmDirSetupReplUpdateListExpand_AddTest,
-                VmDirTeardownReplUpdateListTest),
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithDelAttr,
+                VmDirTestTeardownUpdateListExpand),
         cmocka_unit_test_setup_teardown(
-                VmDirReplUpdateListExpand_ModifyTest,
-                VmDirSetupReplUpdateListExpand_ModifyTest,
-                VmDirTeardownReplUpdateListTest),
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithMultiValueAttr,
+                VmDirTestTeardownUpdateListExpand),
         cmocka_unit_test_setup_teardown(
-                VmDirReplUpdateListExpand_DeleteTest,
-                VmDirSetupReplUpdateListExpand_DeleteTest,
-                VmDirTeardownReplUpdateListTest),
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithDelValue,
+                VmDirTestTeardownUpdateListExpand),
         cmocka_unit_test_setup_teardown(
-                VmDirReplUpdateListExpand_AddTombstoneTest,
-                VmDirSetupReplUpdateListExpand_AddTombstoneTest,
-                VmDirTeardownReplUpdateListTest),
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithMustAttr,
+                VmDirTestTeardownUpdateListExpand),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithDelMustAttr,
+                VmDirTestTeardownUpdateListExpand),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddTombstone,
+                VmDirTestTeardownUpdateListExpand),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestReplUpdateListExpand,
+                VmDirTestSetupUpdateListExpand_AddWithModifyAndTombstone,
+                VmDirTestTeardownUpdateListExpand),
     };
 
     const struct CMUnitTest update_tests[] =
@@ -123,7 +131,6 @@ int main(VOID)
     }
 
 cleanup:
-    VmDirFreeBervalContent(&gVmdirServerGlobals.invocationId);
     return retVal;
 
 error:

@@ -14,13 +14,6 @@
 
 #include "includes.h"
 
-static
-DWORD
-_VmDirGetCreateComputerAccountResultJson(
-    PVMDIR_MACHINE_INFO_A pMachineInfo,
-    json_t **ppjResult
-    );
-
 /*
  * REST_MODULE (from copenapitypes.h)
  * callback indices must correspond to:
@@ -31,10 +24,6 @@ REST_MODULE _api_join_rest_module[] =
     {
         "/v1/vmdir/api/join/joinatomic",
         {NULL, NULL, VmDirRESTJoinAtomic, NULL, NULL}
-    },
-    {
-        "/v1/vmdir/api/join/createcomputeraccount",
-        {NULL, NULL, VmDirRESTCreateComputerAccount, NULL, NULL}
     },
     {0}
 };
@@ -334,165 +323,6 @@ error:
     if (pjJoinResponse)
     {
         json_decref(pjJoinResponse);
-    }
-    goto cleanup;
-}
-
-/*
- * make json result out of create computer account response
-*/
-static
-DWORD
-_VmDirGetCreateComputerAccountResultJson(
-    PVMDIR_MACHINE_INFO_A pMachineInfo,
-    json_t **ppjResult
-    )
-{
-    DWORD dwError = 0;
-    json_t *pjResult = NULL;
-
-    if (!pMachineInfo || !ppjResult)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    pjResult = json_object();
-    if (!pjResult)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
-    }
-
-    dwError = json_object_set_new(
-                  pjResult,
-                  "computer_dn",
-                  json_string(pMachineInfo->pszComputerDN));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = json_object_set_new(
-                  pjResult,
-                  "password",
-                  json_string(pMachineInfo->pszPassword));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = json_object_set_new(
-                  pjResult,
-                  "sitename",
-                  json_string(pMachineInfo->pszSiteName));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = json_object_set_new(
-                  pjResult,
-                  "machine_guid",
-                  json_string(pMachineInfo->pszMachineGUID));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *ppjResult = pjResult;
-
-cleanup:
-    return dwError;
-
-error:
-    if (pjResult)
-    {
-        json_decref(pjResult);
-    }
-    goto cleanup;
-}
-
-/*
- * call create computer account
- * return pass or fail
- */
-DWORD
-VmDirRESTCreateComputerAccount(
-    void*   pIn,
-    void**  ppOut
-    )
-{
-    DWORD dwError = 0;
-    PVDIR_REST_OPERATION pRestOp = NULL;
-    PSTR pszMachineAccountName = NULL;
-    PSTR pszDomainName = NULL;
-    PSTR pszOrgUnit = NULL;
-    PCSTR pszBaseDN = NULL;
-    PVMDIR_MACHINE_INFO_A pMachineInfo = NULL;
-    json_t *pjCreateComputerResult = NULL;
-
-    if (!pIn)
-    {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    pRestOp = (PVDIR_REST_OPERATION)pIn;
-
-    dwError = VmDirRESTGetStrParam(
-                  pRestOp,
-                  "machine_account_name",
-                  &pszMachineAccountName,
-                  TRUE);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTGetStrParam(
-                  pRestOp,
-                  "domain_name",
-                  &pszDomainName,
-                  FALSE);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTGetStrParam(
-                  pRestOp,
-                  "org_unit",
-                  &pszOrgUnit,
-                  FALSE);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pszBaseDN = VmDirSearchDomainDN(pRestOp->pConn->AccessInfo.pszNormBindedDn);
-    if (IsNullOrEmptyString(pszBaseDN))
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirCreateComputerAccountInternal(
-                  pRestOp->pConn,
-                  pszMachineAccountName,
-                  pszDomainName,
-                  pszOrgUnit,
-                  &pMachineInfo);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirGetCreateComputerAccountResultJson(
-                  pMachineInfo,
-                  &pjCreateComputerResult);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirRESTResultSetObjData(
-                  pRestOp->pResult,
-                  "createcomputeraccount",
-                  pjCreateComputerResult);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VMDIR_SET_REST_RESULT(pRestOp, NULL, dwError, NULL);
-    VMDIR_SAFE_FREE_MEMORY(pszMachineAccountName);
-    VMDIR_SAFE_FREE_MEMORY(pszDomainName);
-    VMDIR_SAFE_FREE_MEMORY(pszOrgUnit);
-    if (pMachineInfo)
-    {
-        VmDirFreeMachineInfoA(pMachineInfo);
-    }
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-    if (pjCreateComputerResult)
-    {
-        json_decref(pjCreateComputerResult);
     }
     goto cleanup;
 }

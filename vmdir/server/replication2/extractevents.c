@@ -483,9 +483,9 @@ VmDirExtractEventPopulateOperationAttributes(
                     pReplMetaData->pszAttrType,
                     pIndividualUpdate->partnerUsn,
                     pReplMetaData->pMetaData->version,
-                    gVmdirServerGlobals.invocationId.lberbv.bv_val,
+                    pReplMetaData->pMetaData->pszOrigInvoId,
                     pReplMetaData->pMetaData->pszOrigTime,
-                    pIndividualUpdate->partnerUsn,
+                    pReplMetaData->pMetaData->origUsn,
                     &pNewReplMetaData);
             BAIL_ON_VMDIR_ERROR(dwError);
 

@@ -57,6 +57,12 @@ LwCARestGetMetrics(
 
     pRestOp = (PLWCA_REST_OPERATION)pIn;
 
+    dwError = VmMetricsGetPrometheusData(
+                gpmContext,
+                &pRestOp->pResult->pszBody,
+                &pRestOp->pResult->dwBodyLen);
+    BAIL_ON_LWCA_ERROR(dwError);
+
 cleanup:
     LwCASetRestResult(pRestOp, dwError);
 

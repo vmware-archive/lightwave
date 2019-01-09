@@ -12,8 +12,8 @@
  * under the License.
  */
 
-#ifndef _LWCA_SERVICE_SECURITY_INCLUDES_H_
-#define _LWCA_SERVICE_SECURITY_INCLUDES_H_
+#ifndef _LWCA_METRICS_INCLUDES_H_
+#define _LWCA_METRICS_INCLUDES_H_
 
 #ifdef __cplusplus
 extern "C" {
@@ -22,34 +22,19 @@ extern "C" {
 #include <config.h>
 #include <mutentcasys.h>
 
-#ifndef OPENSSL_NO_ENGINE
-#include <openssl/engine.h>
-#include <openssl/x509v3.h>
-#endif
-
-#include <lwca_security.h>
 #include <mutentca.h>
 #include <mutentcadb.h>
 #include <mutentcacommon.h>
-#include <mutentcasrvcommon.h>
-#include <mutentcaplugin.h>
 #include <mutentcaerror.h>
-#include <mutentcadbapi.h>
 
-#include <vmmemory.h>
 #include <vmmetrics.h>
 #include <mutentcametrics.h>
 
-#include <lw/types.h>
-#include <lw/hash.h>
-
-#include "structs.h"
 #include "externs.h"
-#include "defines.h"
 #include "prototypes.h"
 
 #ifdef __cplusplus
 }
 #endif
 
-#endif /* _LWCA_SERVICE_SECURITY_INCLUDES_H_ */
+#endif /* _LWCA_POLICY_INCLUDES_H_ */

@@ -132,46 +132,6 @@
                     "join"
                 ]
             }
-        },
-        "/vmdir/api/join/createcomputeraccount": {
-            "post": {
-                "summary": "create computer account",
-                "description": "create computer account",
-                "produces": [
-                    "text/plain"
-                ],
-                "parameters": [
-                    {
-                        "name": "machine_account_name",
-                        "in": "query",
-                        "required": true,
-                        "type": "string"
-                    },
-                    {
-                        "name": "domain_name",
-                        "in": "query",
-                        "required": false,
-                        "type": "string"
-                    },
-                    {
-                        "name": "org_unit",
-                        "in": "query",
-                        "required": false,
-                        "type": "string"
-                    }
-                ],
-                "responses": {
-                    "200": {
-                        "description": "Create computer account response",
-                        "schema": {
-                            "$ref": "#/definitions/CreateComputerAccountResponse"
-                        }
-                    }
-                },
-                "tags": [
-                    "join"
-                ]
-            }
         }
     },
     "definitions": {
@@ -235,17 +195,6 @@
                             "$ref": "#/definitions/KrbInfo"
                         }
                     }
-                }
-            }
-        },
-        "CreateComputerAccountResponse": {
-            "type": "object",
-            "properties": {
-                "computer_account": {
-                    "computer_dn": {"type": "string"},
-                    "password":    {"type": "string"},
-                    "sitename":    {"type": "string"},
-                    "machine_guid":{"type": "string"}
                 }
             }
         }

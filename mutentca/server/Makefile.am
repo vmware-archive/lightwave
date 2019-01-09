@@ -5,6 +5,7 @@ SUBDIRS = \
     plugin \
     authz \
     plugins \
+    metrics \
     db \
     security \
     policy \

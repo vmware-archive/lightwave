@@ -17,6 +17,7 @@ mutentcad_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
     -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @POPT_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
@@ -31,6 +32,7 @@ mutentcad_LDADD = \
     $(top_builddir)/mutentca/server/authz/libmutentcaauthz.la \
     $(top_builddir)/mutentca/server/security/libmutentcasecurity.la \
     $(top_builddir)/mutentca/server/policy/libmutentcapolicy.la \
+    $(top_builddir)/mutentca/server/metrics/libmutentcametrics.la \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
     @LWIO_LIBS@ \
