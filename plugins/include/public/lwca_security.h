@@ -308,7 +308,7 @@ typedef DWORD
     PVOID pUserData,
     PLWCA_SECURITY_SIGN_DATA pSignData,
     PLWCA_BINARY_DATA pKey,
-    BOOLEAN **ppbValid
+    BOOLEAN *pbValid
     );
 
 typedef struct _LWCA_SECURITY_CAP_OVERRIDE_
