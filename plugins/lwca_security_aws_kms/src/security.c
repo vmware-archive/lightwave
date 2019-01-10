@@ -39,6 +39,14 @@ LwCASecurityGetVersion(
            LWCA_SECURITY_VERSION_RELEASE;
 }
 
+PCSTR
+LwCASecurityGetName(
+    VOID
+    )
+{
+    return LWCA_SECURITY_AWS_KMS;
+}
+
 DWORD
 LwSecurityAwsKmsInitialize(
     PCSTR pszConfigFile,

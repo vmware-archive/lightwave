@@ -13,6 +13,7 @@ security_aws_kms_test_SOURCES = \
     main.c \
     security_aws_kms_test_global.c \
     security_aws_kms_test_check_version.c \
+    security_aws_kms_test_check_name.c \
     security_aws_kms_test_validate_interface.c \
     security_aws_kms_test_create_key_pair.c \
     security_aws_kms_test_config_parse.c

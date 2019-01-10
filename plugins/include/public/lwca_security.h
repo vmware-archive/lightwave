@@ -154,12 +154,19 @@ typedef struct _LWCA_SECURITY_SIGN_DATA_
 
 /* function names */
 #define LWCA_FN_NAME_SECURITY_GET_VERSION       "LwCASecurityGetVersion"
+#define LWCA_FN_NAME_SECURITY_GET_NAME          "LwCASecurityGetName"
 #define LWCA_FN_NAME_SECURITY_LOAD_INTERFACE    "LwCASecurityLoadInterface"
 #define LWCA_FN_NAME_SECURITY_UNLOAD_INTERFACE  "LwCASecurityUnloadInterface"
 
 /* version of the plugin interface */
 typedef PCSTR
 (*PFN_LWCA_SECURITY_GET_VERSION)(
+    VOID
+    );
+
+/* name of the plugin interface */
+typedef PCSTR
+(*PFN_LWCA_SECURITY_GET_NAME)(
     VOID
     );
 
