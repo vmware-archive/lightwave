@@ -294,7 +294,7 @@ LwCADbPostPluginInitialize(
 
 cleanup:
     LWCA_SAFE_FREE_STRINGA(pszDomain);
-    LwCAJsonCleanupObject(pJson);
+    LWCA_SAFE_JSON_DECREF(pJson);
     return dwError;
 
 error:

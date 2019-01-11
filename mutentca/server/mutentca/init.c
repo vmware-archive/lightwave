@@ -207,7 +207,8 @@ LwCASrvInitCA(
 
 error:
     LWCA_SAFE_FREE_STRINGA(pszHost);
-    LwCAJsonCleanupObject(pJsonConfig);
+    LWCA_SAFE_JSON_DECREF(pJsonConfig);
+    LWCA_SAFE_JSON_DECREF(pPolicyConfigContent);
 
     return dwError;
 }

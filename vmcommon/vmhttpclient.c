@@ -498,11 +498,10 @@ VmHttpClientSetHeader(
     }
 
 cleanup:
+    VM_COMMON_SAFE_FREE_STRINGA(pszHeader);
     return dwError;
 
 error:
-    VM_COMMON_SAFE_FREE_STRINGA(pszHeader);
-
     goto cleanup;
 }
 
@@ -609,14 +608,14 @@ DWORD
 VmHttpClientSetToken(
     PVM_HTTP_CLIENT pClient,
     VM_HTTP_TOKEN_TYPE tokenType,
-    PCSTR pszToken
+    PCSTR pcszToken
     )
 {
     DWORD dwError = 0;
     PSTR pszHeaderAuth = NULL;
-    PSTR pszHeaderAuthTokenType = NULL;
+    PCSTR pcszHeaderAuthTokenType = NULL;
 
-    if (!pClient || IsNullOrEmptyString(pszToken))
+    if (!pClient || IsNullOrEmptyString(pcszToken))
     {
         dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
         BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -625,10 +624,10 @@ VmHttpClientSetToken(
     switch (tokenType)
     {
         case VMHTTP_TOKEN_TYPE_BEARER:
-            pszHeaderAuthTokenType = HEADER_BEARER_AUTH;
+            pcszHeaderAuthTokenType = HEADER_BEARER_AUTH;
             break;
         case VMHTTP_TOKEN_TYPE_HOTK_PK:
-            pszHeaderAuthTokenType = HEADER_HOTK_PK_AUTH;
+            pcszHeaderAuthTokenType = HEADER_HOTK_PK_AUTH;
             break;
         default:
             dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
@@ -637,8 +636,8 @@ VmHttpClientSetToken(
 
     dwError = VmAllocateStringPrintf(
                         &pszHeaderAuth,
-                        pszHeaderAuthTokenType,
-                        pszToken);
+                        pcszHeaderAuthTokenType,
+                        pcszToken);
     pClient->pHeaders = curl_slist_append(pClient->pHeaders, pszHeaderAuth);
 
     if(!pClient->pHeaders)
@@ -648,10 +647,10 @@ VmHttpClientSetToken(
     }
 
 cleanup:
+    VM_COMMON_SAFE_FREE_MEMORY(pszHeaderAuth);
     return dwError;
 
 error:
-    VM_COMMON_SAFE_FREE_MEMORY(pszHeaderAuth);
     goto cleanup;
 }
 

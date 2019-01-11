@@ -478,7 +478,7 @@ LwCAFreeRESTOperation(
         LWCA_SAFE_FREE_MEMORY(pRestOp->pszOrigin);
 
         LWCA_SAFE_FREE_MEMORY(pRestOp->pszBody);
-        LwCAJsonCleanupObject(pRestOp->pjBody);
+        LWCA_SAFE_JSON_DECREF(pRestOp->pjBody);
         LwRtlHashMapClear(pRestOp->pParamMap, VmSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestOp->pParamMap);
         LwCAFreeRESTResult(pRestOp->pResult);

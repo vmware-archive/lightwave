@@ -319,8 +319,8 @@ LwSecurityAwsKmsSign(
     }
 
 error:
-    /* TODO: properly free pEncryptedData as it is allocated by cap override */
     LwAwsKmsFreeBinaryData(pDecryptedData);
+    LwAwsKmsFreeBinaryData(pEncryptedData);
     return dwError;
 }
 
@@ -381,8 +381,8 @@ LwSecurityAwsKmsVerify(
     *pbValid = bValid;
 
 error:
-    /* TODO: properly free pEncryptedData as it is allocated by cap override */
     LwAwsKmsFreeBinaryData(pDecryptedData);
+    LwAwsKmsFreeBinaryData(pEncryptedData);
     return dwError;
 }
 

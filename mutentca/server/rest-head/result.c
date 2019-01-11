@@ -449,7 +449,7 @@ LwCARestResultGenerateResponseBody(
     }
 
 cleanup:
-    LwCAJsonCleanupObject(pjBody);
+    LWCA_SAFE_JSON_DECREF(pjBody);
 
     return dwError;
 
@@ -475,7 +475,7 @@ _DataMapPairFree(
     if (pPair->pValue)
     {
         pjData = (PLWCA_JSON_OBJECT)pPair->pValue;
-        LwCAJsonCleanupObject(pjData);
+        LWCA_SAFE_JSON_DECREF(pjData);
     }
 }
 

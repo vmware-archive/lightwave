@@ -40,7 +40,7 @@ cleanup:
 
 error:
 
-    LwCAJsonCleanupObject(pJsonConfig);
+    LWCA_SAFE_JSON_DECREF(pJsonConfig);
     if (ppJsonConfig)
     {
         *ppJsonConfig = NULL;

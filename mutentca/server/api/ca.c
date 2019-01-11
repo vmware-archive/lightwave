@@ -832,6 +832,7 @@ cleanup:
     LwCAX509Free(pX509Cert);
     LwCAX509ReqFree(pRequest);
     LWCA_SAFE_FREE_STRINGA(pszCAIssuers);
+    LwCAFreeCertificate(pCACert);
 
     iEndTime = LwCAGetTimeInMilliSec();
     LwCAApiMetricsUpdate(LWCA_METRICS_API_GET_SIGNED_CERTIFICATE,

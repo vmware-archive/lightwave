@@ -68,8 +68,8 @@ cleanup:
     return dwError;
 
 error:
-    LwCAJsonCleanupObject(pCAPolicyJson);
-    LwCAJsonCleanupObject(pCertPolicyJson);
+    LWCA_SAFE_JSON_DECREF(pCAPolicyJson);
+    LWCA_SAFE_JSON_DECREF(pCertPolicyJson);
     LWCA_SAFE_FREE_MEMORY(pPolicyCtx);
     if (ppPolicyCtx)
     {
