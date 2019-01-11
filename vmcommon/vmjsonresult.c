@@ -473,3 +473,106 @@ VmJsonResultFreeHandle(
         VmFreeMemory(pResult);
     }
 }
+
+/*
+ * construct json from key value array
+ * fill in new types as needed. implements string.
+*/
+DWORD
+VmJsonResultFromObjectMap(
+    PVM_JSON_OBJECT_MAP pObjectMap,
+    PVM_JSON_RESULT *ppResult
+    )
+{
+    DWORD dwError = 0;
+    PVM_JSON_OBJECT_MAP pMapEntry = NULL;
+    PVM_JSON_RESULT pResult = NULL;
+    json_t *pJsonValue = NULL;
+
+    if (!pObjectMap || !ppResult)
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmJsonResultInit(&pResult);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    pResult->pJsonRoot = json_object();
+    if (!pResult->pJsonRoot)
+    {
+        dwError = VM_COMMON_ERROR_NO_MEMORY;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    for (pMapEntry = pObjectMap; pMapEntry->pszName; ++pMapEntry)
+    {
+        switch(pMapEntry->type)
+        {
+            case JSON_RESULT_STRING:
+                if (!pMapEntry->value.ppszValue)
+                {
+                    dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
+                }
+                pJsonValue = json_string(*pMapEntry->value.ppszValue);
+            break;
+            default:
+                    dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+                    BAIL_ON_VM_COMMON_ERROR(dwError);
+            break;
+        }
+
+        if (!pJsonValue)
+        {
+            dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+
+        if (json_object_set(
+                pResult->pJsonRoot,
+                pMapEntry->pszName,
+                pJsonValue) != 0)
+        {
+            dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+    }
+
+    *ppResult = pResult;
+
+cleanup:
+    return dwError;
+
+error:
+    VmJsonResultFreeHandle(pResult);
+    goto cleanup;
+}
+
+DWORD
+VmJsonResultDumpObjectMapToFile(
+    PVM_JSON_OBJECT_MAP pMap,
+    PCSTR pszFileName
+    )
+{
+    DWORD dwError = 0;
+    PVM_JSON_RESULT pResult = NULL;
+
+    if (!pMap || IsNullOrEmptyString(pszFileName))
+    {
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+
+    dwError = VmJsonResultFromObjectMap(pMap, &pResult);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    if (json_dump_file(pResult->pJsonRoot, pszFileName, JSON_INDENT(4)) != 0)
+    {
+        dwError = VM_COMMON_ERROR_JSON_WRITE_FILE;
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+    }
+error:
+    VmJsonResultFreeHandle(pResult);
+    return dwError;
+}

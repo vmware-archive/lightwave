@@ -57,6 +57,7 @@ typedef struct _VM_JSON_OBJECT_MAP_
         PSTR *ppszValue;
         int *pnValue;
         double *pdValue;
+        PSTR pszValue;
         struct _VM_JSON_OBJECT_MAP_ *pObjectValue;
     }value;
 }VM_JSON_OBJECT_MAP, *PVM_JSON_OBJECT_MAP;
@@ -129,6 +130,17 @@ VmJsonResultIterateAndGetValueFromArrayAt(
     PFN_JSON_RESULT_ARRAYVALUE_CB pfnCB
     );
 
+DWORD
+VmJsonResultFromObjectMap(
+    PVM_JSON_OBJECT_MAP pObjectMap,
+    PVM_JSON_RESULT *ppResult
+    );
+
+DWORD
+VmJsonResultDumpObjectMapToFile(
+    PVM_JSON_OBJECT_MAP pMap,
+    PCSTR pszFileName
+    );
 /*
  * Free handle
  */

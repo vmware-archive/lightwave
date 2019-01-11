@@ -18,6 +18,7 @@
 #include "vmsignaturetest.h"
 #include "vmjsonresulttest.h"
 #include "vmjsonresultobjectmaptest.h"
+#include "vmjsonresultfromobjectmaptest.h"
 
 int main(int argc, char *argv[])
 {
@@ -31,6 +32,7 @@ int main(int argc, char *argv[])
     dwError += VmSignatureTest();
     dwError += VmJsonResultTest();
     dwError += VmJsonResultObjectMapTest();
+    dwError += VmJsonResultFromObjectMapTest();
 
     if (dwError == 0)
     {
