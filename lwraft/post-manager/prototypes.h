@@ -34,3 +34,39 @@ DWORD
 VmDirHandleSignals(
     VOID
     );
+
+//process.c
+
+DWORD
+VmDirStartProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirStopProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirStopAllProcesses(
+    VOID
+    );
+
+//processtable.c
+
+DWORD
+VmDirProcessTableInit(
+    VOID
+    );
+
+DWORD
+VmDirProcessTableRead(
+    DWORD           dwGroupId,
+    PVMDIR_PROCESS  *ppProcessOut
+    );
+
+DWORD
+VmDirProcessTableUpdate(
+    DWORD           dwGroupId,
+    PVMDIR_PROCESS  pProcess
+    );

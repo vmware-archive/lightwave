@@ -2,6 +2,8 @@ sbin_PROGRAMS = postmd
 
 postmd_SOURCES = \
     signal.c \
+    process.c \
+    processtable.c \
     main.c
 
 postmd_CPPFLAGS = \

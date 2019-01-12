@@ -18,16 +18,29 @@
 #define VMDIR_OPTION_CONSOLE_MODE           'c'
 #define VMDIR_OPTIONS_VALID                 "l:L:sc:"
 
-/*
- * Table to define and initialize VMDIR configuration data.
- *
- * To add a new configuration key,
- * 1. define its name in vmdircommon.h
- * 2. define its entry in the table below and init default/cfg Value
- *
- * VMDIR_CONFIG_VALUE_TYPE_STRING <-> REG_SZ
- * VMDIR_CONFIG_VALUE_TYPE_MULTISTRING <-> REG_MULI_SZ
- * VMDIR_CONFIG_VALUE_TYPE_DWORD  <-> REG_DWORD
- * VMDIR_CONFIG_VALUE_TYPE_BOOLEAN <-> REG_DWORD
- *
- */
+#define SIZE_512    512
+
+#define VMDIR_STATE_STARTING    1
+#define VMDIR_STATE_RUNNING     2
+#define VMDIR_STATE_STOPPING    3
+#define VMDIR_STATE_STOPPED     4
+#define VMDIR_STATE_DEAD        5
+
+#define VMDIR_POSTD_PATH    "PostdPath"
+#define VMDIR_POSTD_ARGS    "PostdArgs"
+
+typedef struct _VMDIR_PROCESS
+{
+    pid_t   pid;
+    DWORD   dwState;
+} VMDIR_PROCESS, *PVMDIR_PROCESS;
+
+typedef struct _VMDIR_PROCESS_TABLE
+{
+    PLW_HASHMAP     pProcessMap;
+    PVMDIR_RWLOCK   pProcessTableLock;
+} VMDIR_PROCESS_TABLE, *PVMDIR_PROCESS_TABLE;
+
+PVMDIR_PROCESS_TABLE gpProcessTable;
+PSTR                 gpszPostdPath;
+PSTR                 *gppszPostdArgs;

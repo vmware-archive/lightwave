@@ -30,6 +30,14 @@
     default = dword:00000001
     doc = ""
 }
+"PostdPath" = {
+    default = "@LWRAFT_SBIN_DIR@/postd"
+    doc = ""
+}
+"PostdArgs" = {
+    default = "@LWRAFT_SBIN_DIR@/postd -s -l 0 -f @LWRAFT_CONFIG_DIR@/postschema.ldif"
+    doc = ""
+}
 
 [HKEY_THIS_MACHINE\Services\post\Parameters]
 "DefaultSchema" = {

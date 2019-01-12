@@ -23,6 +23,7 @@
  *
  */
 
+#include <sys/wait.h>
 #include <config.h>
 
 #include <vmdirsys.h>
@@ -30,6 +31,7 @@
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
 #include <vmdircommon.h>
+#include <vmdirerrors.h>
 
 #include "defines.h"
 #include "prototypes.h"

@@ -75,6 +75,47 @@ error:
     return dwError;
 }
 
+DWORD
+VmDirPostMgrInit(
+    VOID
+    )
+{
+    DWORD               dwError = 0;
+    PSTR                pszPostdArgs = NULL;
+    PVMDIR_STRING_LIST  pList = NULL;
+
+    dwError = VmDirInitThreadContext();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirProcessTableInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(SIZE_512, (PVOID*) &gpszPostdPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(SIZE_512, (PVOID*) &pszPostdArgs);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_POSTD_PATH, gpszPostdPath, SIZE_512);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_POSTD_ARGS, pszPostdArgs, SIZE_512);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirStringToTokenList(pszPostdArgs, " ", &pList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    gppszPostdArgs = (PSTR*) pList->pStringList;
+    //TODO: Start IPC server
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%d", dwError);
+    goto cleanup;
+}
+
 int
 main(
     int     argc,
@@ -82,7 +123,7 @@ main(
     )
 {
     DWORD        dwError = 0;
-    const char * logFileName = NULL;
+    const char   *logFileName = NULL;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bConsoleMode = FALSE;
     int          iLocalLogMask = 0;
@@ -104,6 +145,9 @@ main(
 
     VmDirBlockSelectedSignals();
 
+    dwError = VmDirPostMgrInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirRegReadDCAccount(&pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "DC Account: %s", pszDCAccount);
@@ -111,12 +155,18 @@ main(
     dwError = _VmDirNotifyLikewiseServiceManager();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    //TODO: Start IPC server
+    /*Start group 0 process. This is temporary. Will be moved once promote flow is implemented*/
+    dwError = VmDirStartProcess(0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirHandleSignals();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "POST manager: exiting..." );
+
+    /*Stop all post processes before exiting*/
+    dwError = VmDirStopAllProcesses();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     VmDirLogTerminate();
