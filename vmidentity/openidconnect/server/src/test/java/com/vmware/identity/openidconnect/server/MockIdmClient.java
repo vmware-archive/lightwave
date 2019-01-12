@@ -66,6 +66,7 @@ public class MockIdmClient extends CasIdmClient {
     private final Certificate tenantCertificate;
     private final AuthnPolicy authnPolicy;
     private final String issuer; // this maps to entityid
+    private final String secondaryIssuer;
     private final String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
     private final String clientId;
@@ -111,6 +112,7 @@ public class MockIdmClient extends CasIdmClient {
         this.tenantCertificate       = builder.tenantCertificate;
         this.authnPolicy             = builder.authnPolicy;
         this.issuer                  = builder.issuer;
+        this.secondaryIssuer         = builder.secondaryIssuer;
         this.tenantIssuer            = builder.tenantIssuer;
 
         this.clientId                = builder.clientId;
@@ -377,6 +379,12 @@ public class MockIdmClient extends CasIdmClient {
     }
 
     @Override
+    public String getSecondaryOIDCEntity(String tenantName) throws Exception {
+        validateTenant(tenantName);
+        return this.secondaryIssuer;
+    }
+
+    @Override
     public OIDCClient getOIDCClient(String tenantName, String clientId) throws Exception {
         validateTenant(tenantName);
         Validate.notEmpty(clientId, "clientId");
@@ -503,6 +511,7 @@ public class MockIdmClient extends CasIdmClient {
         private Certificate tenantCertificate;
         private AuthnPolicy authnPolicy;
         private String issuer; // this maps to entityid
+        private String secondaryIssuer;
         private String tenantIssuer; // this maps to vmwStsIssuer set on tenant
 
         private String clientId;
@@ -565,6 +574,11 @@ public class MockIdmClient extends CasIdmClient {
 
         public Builder issuer(String issuer) {
             this.issuer = issuer;
+            return this;
+        }
+
+        public Builder secondaryIssuer(String secondaryIssuer) {
+            this.secondaryIssuer = secondaryIssuer;
             return this;
         }
 
