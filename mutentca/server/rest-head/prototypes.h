@@ -130,7 +130,7 @@ LwCARestGetResource(
 DWORD
 LwCARestUnknownSetResult(
     PLWCA_REST_RESULT       pRestRslt,
-    PSTR                    pszRequestId,
+    PCSTR                   pcszRequestId,
     DWORD                   dwErr,
     PCSTR                   pcszErrMsg
     );

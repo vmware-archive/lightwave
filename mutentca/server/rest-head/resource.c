@@ -71,7 +71,7 @@ LwCARestGetResource(
 DWORD
 LwCARestUnknownSetResult(
     PLWCA_REST_RESULT   pRestRslt,
-    PSTR                pszRequestId,
+    PCSTR               pcszRequestId,
     DWORD               dwErr,
     PCSTR               pcszErrDetail
     )
@@ -84,7 +84,7 @@ LwCARestUnknownSetResult(
         BAIL_ON_LWCA_ERROR(dwError);
     }
 
-    dwError = LwCAAllocateStringA(LWCA_SAFE_STRING(pszRequestId), &pRestRslt->pszRequestId);
+    dwError = LwCAAllocateStringA(LWCA_SAFE_STRING(pcszRequestId), &pRestRslt->pszRequestId);
     BAIL_ON_LWCA_ERROR(dwError);
 
     dwError = LwCARestResultSetError(pRestRslt, (int)dwErr, pcszErrDetail);

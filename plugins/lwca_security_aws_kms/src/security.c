@@ -406,6 +406,7 @@ LwSecurityAwsKmsCloseHandle(
     {
         LwAwsKmsShutdown(pHandle->pContext);
         pHandle->pContext = NULL;
+        VmFreeMemory(pHandle);
     }
 }
 
