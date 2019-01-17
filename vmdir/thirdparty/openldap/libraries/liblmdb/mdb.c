@@ -10185,6 +10185,60 @@ mdb_reader_check0(MDB_env *env, int rlocked, int *dead)
 	return rc;
 }
 
+void mdb_set_error_log_func(MDB_error_log_func  *error_log_func)
+{
+    //Placehold for extensive log
+    return;
+}
+
+int mdb_env_set_chkpt_interval(MDB_env *env, int interval)
+{
+    //Placehold for future WAL support
+    return 0;
+}
+
+/** @brief set, clear or query MDB state for database file cold or hot copy.
+ * Refer its description in lmdb.h for parameters.
+ */
+int
+mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                  unsigned long *dbMapSizeMb, char *db_path, int db_path_size)
+{
+    MDB_envinfo env_stats = {0};
+    int ret = 0;
+
+    if (env == NULL)
+        return EINVAL;
+
+    if (LOCK_MUTEX(ret, env, env->me_wmutex))
+       return ret;
+
+    if (((env->me_flags & MDB_RDONLY) && op == MDB_STATE_READONLY))
+        //Already in read-only state while trying to set to read-only
+         ret = EINVAL;
+    else if ( op == MDB_STATE_READONLY)
+         env->me_flags |= MDB_RDONLY;
+    else if ( op == MDB_STATE_CLEAR)
+         env->me_flags &= ~MDB_RDONLY;
+    else
+        ret = EINVAL;
+
+    mdb_env_sync(env, 1);
+    mdb_env_info(env, &env_stats);
+
+    //dbSizeMb is used as a hint so that there is no need to transfer the bytes beyond this value.
+    *dbSizeMb = 1 + (unsigned long)(((unsigned long long)env_stats.me_last_pgno * (unsigned long long)env->me_psize) >> 20);
+    *dbMapSizeMb = (unsigned long)((unsigned long long)env->me_mapsize >> 20);
+    if (db_path == NULL || db_path_size <= 0 || strlen(env->me_path) >= db_path_size)
+        ret = EOVERFLOW;
+    else
+        strcpy(db_path, env->me_path);
+
+    UNLOCK_MUTEX(env->me_wmutex);
+
+    return ret;
+}
+
 #ifdef MDB_ROBUST_SUPPORTED
 /** Handle #LOCK_MUTEX0() failure.
  * Try to repair the lock file if the mutex owner died.

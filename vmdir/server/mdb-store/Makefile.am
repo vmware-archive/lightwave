@@ -32,7 +32,7 @@ libmdb_store_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblmdb \
     -I$(top_srcdir)/vmdir/server/include \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
@@ -41,5 +41,5 @@ libmdb_store_la_CPPFLAGS = \
 
 libmdb_store_la_LDFLAGS = \
     -static \
-    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/libvmdirmdb.la \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/libvmdirmdb.la \
     @LW_LDFLAGS@

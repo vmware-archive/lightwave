@@ -1711,7 +1711,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/thirdparty/Makefile
                  vmdir/thirdparty/openldap/Makefile
                  vmdir/thirdparty/openldap/libraries/Makefile
-                 vmdir/thirdparty/openldap/libraries/mdb/Makefile
+                 vmdir/thirdparty/openldap/libraries/liblmdb/Makefile
                  vmdir/thirdparty/heimdal/Makefile
                  vmdir/thirdparty/heimdal/asn1/Makefile
                  vmdir/thirdparty/heimdal/krb5-crypto/Makefile

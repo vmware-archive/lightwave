@@ -278,6 +278,11 @@ typedef int  (MDB_cmp_func)(const MDB_val *a, const MDB_val *b);
  */
 typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *relctx);
 
+/** @brief A callback to log error info
+ *
+ */
+typedef void  (MDB_error_log_func)(int errnum, int param, const char* funcname, int lineno);
+
 /** @defgroup	mdb_env	Environment Flags
  *	@{
  */
@@ -303,6 +308,14 @@ typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *rel
 #define MDB_NORDAHEAD	0x800000
 	/** don't initialize malloc'd memory before writing to datafile */
 #define MDB_NOMEMINIT	0x1000000
+        /**
+          * keep WAL files after checkpoint -- this version of MDB doesn't support WAL,
+          * and the flag is for forward-compatability
+          */
+#define MDB_KEEPXLOGS   0x2000000
+        /** Enable WAL (Write Ahead Logging) feature */
+#define MDB_WAL   0x4000000
+
 /** @} */
 
 /**	@defgroup	mdb_dbi_open	Database Flags
@@ -472,6 +485,21 @@ typedef struct MDB_envinfo {
 	unsigned int me_maxreaders;		/**< max reader slots in the environment */
 	unsigned int me_numreaders;		/**< max reader slots used in the environment */
 } MDB_envinfo;
+
+#define MDB_STATE_OP
+/** @brief set, clear or query MDB env state for database file transfer
+ * MDB_STATE_CLEAR clear MDB_KEEPXLOGS or READONLY state
+ * MDB_STATE_READONLY - set mdb to READONLY state
+ * MDB_STATE_KEEPXLOGS - set mdb to keep xlogs state
+ * MDB_STATE_GETXLOGNUM - query current xlog number
+ */
+typedef enum MDB_state_op {
+        MDB_STATE_CLEAR = 0,
+        MDB_STATE_READONLY,
+        MDB_STATE_KEEPXLOGS,
+        MDB_STATE_GETXLOGNUM
+} MDB_state_op;
+
 
 	/** @brief Return the LMDB library version information.
 	 *
@@ -1588,6 +1616,23 @@ int	mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx);
 	 * @return 0 on success, non-zero on failure.
 	 */
 int	mdb_reader_check(MDB_env *env, int *dead);
+
+        /** @brief set, clear or query MDB state for database file cold or hop copy.
+         * @param[in] env - environment handle returned by #mdb_env_create()
+         * @param[in] op - MDB_state_op
+         * @param[out] last_xlog_num - set to the current WAL log numbern if MDB supports WAL
+         *             otherwise set to 0.
+         * @param[out] dbSizeMb - allocated database size in MB (round to the next MB).
+         * @param[out] dbMapSizeMb - the database map size in MB.
+         * @param[out] db_path - the path of the database home where data.mdb and lock.mdb resides
+         * @param[in]  db_path_size - the memory size of db_path.
+         * @return      0 success
+         *              EINVAL invalid environment handle, input parameter or state
+         *              EOVERFLOW db_path buffer too small
+         */
+int     mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                          unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+
 /**	@} */
 
 #ifdef __cplusplus
