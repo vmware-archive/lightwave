@@ -2,11 +2,13 @@
     "knownServers":[
         {
          "server": "<server url>",
-	 "oidcClientId": "<OIDC client id>"
+	     "oidcClientId": "<OIDC client id>",
+         "restEndPoint": "<Rest Endpoint URL>"
         },
         {
-	 "server": "<server url>",
-         "oidcClientId": "<OIDC client id>"
+	     "server": "<server url>",
+         "oidcClientId": "<OIDC client id>",
+         "restEndPoint": "<server url>"
         }
     ]
 }

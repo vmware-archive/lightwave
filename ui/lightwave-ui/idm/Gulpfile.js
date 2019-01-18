@@ -109,6 +109,10 @@ gulp.task('lightwave-ui-vendor-js-minify', function(done) {
             './node_modules/angular-cookies/angular-cookies.js',
             './node_modules/ng-dialog/js/ngDialog.min.js',
             './node_modules/angular-route/angular-route.js',
+            './node_modules/jsrsasign/lib/jsrsasign.js',
+            './node_modules/jsrsasign/lib/header.js',
+            './node_modules/jsrsasign/lib/footer.js',
+            './node_modules/jsrsasign/lib/lib.js'
         ])
         .pipe(concat(app_js))
         //.pipe(uglify())
