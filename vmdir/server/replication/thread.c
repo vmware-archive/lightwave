@@ -1111,7 +1111,8 @@ _VmDirProcessReplicationPage(
         {
             pPage->iEntriesProcessed++;
         }
-        else
+        else if (errVal != LDAP_ALREADY_EXISTS &&
+                 errVal != LDAP_CONSTRAINT_VIOLATION)
         {
             VmDirReplicationPushFailedEntriesToQueue(pContext, pPage->pEntries+i);
         }
