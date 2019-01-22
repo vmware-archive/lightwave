@@ -564,13 +564,13 @@ VmwDeployBuildParams(
 
     if (!pszUsername)
     {
-        pszUsername = "administrator";
+        pszUsername = (bUseMachineAccount && !IsNullOrEmptyString(pszMachineAccount))
+                            ? pszMachineAccount : VMW_ADMIN_NAME;
     }
 
     if (!pszPassword)
     {
-        pszUserNamePrompt = (bUseMachineAccount && pszMachineAccount)
-                                ? pszMachineAccount : pszUsername;
+        pszUserNamePrompt = pszUsername;
 
         dwError = VmwDeployReadPassword(
                         pszUserNamePrompt,
