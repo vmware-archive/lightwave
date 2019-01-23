@@ -40,12 +40,7 @@ export class AuthService {
     }
     
     getServer() {
-        if(this.server){
-            return this.server;
-        }else{
-            this.server = this.configService.currentUser.rest_server;
-            return this.configService.currentUser.rest_server;
-        }
+        return this.configService.currentUser.rest_server;
     }
     
     getOIDCServer() {
