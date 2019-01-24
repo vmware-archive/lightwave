@@ -1268,6 +1268,8 @@ _VmDirAppendEntriesRpc(PVMDIR_PEER_PROXY pProxySelf, int cmd)
     unsigned long long startLogIndex = 0;
     VDIR_RAFT_LOG curChgLog = {0};
     VDIR_RAFT_LOG preChgLog = {0};
+    uint64_t rpcStartTime = 0;
+    uint64_t rpcEndTime = 0;
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
     if (gRaftState.role != VDIR_RAFT_ROLE_LEADER)
@@ -1340,11 +1342,22 @@ ReplicateLog:
       "%s: startLogIdx %llu term %u preLogIdx %llu preLogTerm %u entSize %u peer %s",
       __func__, startLogIndex, args.term, args.preLogIndex, args.preLogTerm, args.entriesSize, pPeerHostName);
 
+    rpcStartTime = VmDirGetTimeInMilliSec();
     dwError = VmDirRaftLdapRpcAppendEntries(pProxySelf, args.term, args.leader,
                                    args.preLogIndex, args.preLogTerm,
                                    args.leaderCommit,
                                    args.entriesSize, args.entries,
                                    (INT32 *) &args.currentTerm, &args.status);
+    rpcEndTime = VmDirGetTimeInMilliSec();
+
+    if ((rpcEndTime - rpcStartTime) > (gVmdirGlobals.dwRaftElectionTimeoutMS >>1))
+    {
+       VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+         "%s: [Raft Proxy] Inefficient RaftLdapRpcAppendEntries (%llu ms) peer %s startLog %llu preLog %llu curTerm %d priTerm %d error=%d",
+         __func__, (rpcEndTime - rpcStartTime), pPeerHostName, startLogIndex,
+         args.preLogIndex, gRaftState.currentTerm, args.term, dwError);
+    }
+
     if (dwError)
     {
         if (pProxySelf->proxy_state == RPC_DISCONN)
@@ -1699,7 +1712,7 @@ int VmDirRaftPrepareCommit(void **ppCtx)
     /* Use very large timeout value for new leader replicating no-op log entry so that a far
      * behind peer can catch up with the leader if that peer is needed for reaching consensus.
      */
-    waitTimeout = gLogEntry.requestCode == RAFT_NOOP?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<5);
+    waitTimeout = gLogEntry.requestCode == RAFT_NOOP?LARGE_TIMEOUT_VALUE_MS:(gVmdirGlobals.dwRaftElectionTimeoutMS<<1);
 
     VMDIR_LOCK_MUTEX(bLock, gRaftStateMutex);
 
@@ -1708,6 +1721,7 @@ int VmDirRaftPrepareCommit(void **ppCtx)
         //This is a standalone server or QuorumOverride is set
         goto raft_commit_done;
     }
+
 get_consensus_begin:
     do
     {
@@ -1725,9 +1739,9 @@ get_consensus_begin:
         if (_VmDirPeersIdleInLock() < (gRaftState.clusterSize/2))
         {
             //Fewer than half of peer threads are idle
-            if (getConsensusRetry >= 2)
+            if (getConsensusRetry >= 32)
             {
-                /* Cannot get half of peer threads to service in twice of election timeout.
+                /* Cannot get half of peer threads to service in 32x2x(election timeout).
                  * Switch to follower to prevent reusing raft the same logindex/term
                  */
                 gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
@@ -1766,7 +1780,7 @@ get_consensus_begin:
     currentTerm = gRaftState.currentTerm;
     _VmDirClearProxyLogReplicatedInLock();
 
-    //Wait for majority peers to replicate the log.
+    //Wait for half or more peers having replicated the log.
     VMDIR_LOG_DEBUG(LDAP_DEBUG_REPL,
       "%s: wait gRaftAppendEntryReachConsensusCond; role %d term %d",
       __func__, gRaftState.role, gRaftState.currentTerm);
@@ -1790,9 +1804,9 @@ get_consensus_begin:
           "%s: no consensus reached on log entry: logIndex %lu role %d term %d, will retry",
           __func__, gLogEntry.index, gRaftState.role, gRaftState.currentTerm);
 
-        if (getConsensusRetry >= 2)
+        if (getConsensusRetry >= 32)
         {
-            /* Cannot get consensus in twice of election timeout.
+            /* Cannot get consensus in 32x2x(election timeout).
              * Switch to follower to prevent reusing raft the same logindex/term
              */
             gRaftState.role = VDIR_RAFT_ROLE_FOLLOWER;
@@ -1954,6 +1968,8 @@ DWORD VmDirAddRaftPreCommit(PVDIR_ENTRY pEntry, PVDIR_OPERATION pAddOp)
     pChgLog->chglog.lberbv_val = encodedEntry.lberbv.bv_val;
     pChgLog->chglog.bOwnBvVal = TRUE;
 
+    pAddOp->logIndex = pChgLog->index;
+
     dwError = _VmDirRaftAddLog(pAddOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2017,6 +2033,8 @@ DWORD VmDirModifyRaftPreCommit(
     encodedMods.lberbv.bv_val = NULL;
     encodedMods.lberbv.bv_len = 0;
 
+    pModifyOp->logIndex = pChgLog->index;
+
     dwError = _VmDirRaftAddLog(pModifyOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -2073,6 +2091,8 @@ DWORD VmDirDeleteRaftPreCommit(
     pChgLog->term = gRaftState.currentTerm;
     pChgLog->entryId = eid;
     pChgLog->requestCode = LDAP_REQ_DELETE;
+
+    pDeleteOp->logIndex = pChgLog->index;
 
     dwError = _VmDirRaftAddLog(pDeleteOp, pChgLog);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -2298,6 +2318,7 @@ _VmDirApplyOneLogEntry(PVDIR_RAFT_LOG pLogEntry, unsigned long long indexToApply
         ldapOp.pBEIF = pBEMain;
         ldapOp.pBECtx->pBE = pBEMain;
         ldapOp.bNoRaftLog = TRUE;
+        ldapOp.logIndex = indexToApply;
         assert(ldapOp.pBEIF);
 
         dwError = VmDirEntryAttrValueNormalize(ldapOp.pBECtx, &entry, FALSE /*all attributes*/);
@@ -2329,6 +2350,7 @@ _VmDirApplyOneLogEntry(PVDIR_RAFT_LOG pLogEntry, unsigned long long indexToApply
         ldapOp.pBEIF = pBEMain;
         ldapOp.pBECtx->pBE = pBEMain;
         ldapOp.bNoRaftLog = TRUE;
+        ldapOp.logIndex = indexToApply;
         assert(ldapOp.pBEIF);
 
         modReq = &(ldapOp.request.modifyReq);
@@ -2375,6 +2397,7 @@ _VmDirApplyOneLogEntry(PVDIR_RAFT_LOG pLogEntry, unsigned long long indexToApply
         ldapOp.pBEIF = pBEMain;
         ldapOp.pBECtx->pBE = pBEMain;
         ldapOp.bNoRaftLog = TRUE;
+        ldapOp.logIndex = indexToApply;
         assert(ldapOp.pBEIF);
 
         dwError = ldapOp.pBEIF->pfnBETxnBegin(ldapOp.pBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);

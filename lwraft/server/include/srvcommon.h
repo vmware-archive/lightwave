@@ -664,6 +664,7 @@ typedef struct _VDIR_OPERATION
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log
+    uint64_t            logIndex; //Raft log index associated with this OP
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
