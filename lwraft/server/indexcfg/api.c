@@ -76,14 +76,13 @@ VmDirIndexCfgAcquire(
     else if (pIndexCfg->status == VDIR_INDEXING_IN_PROGRESS &&
             usage == VDIR_INDEX_READ)
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        goto cleanup;
     }
     else if (pIndexCfg->status == VDIR_INDEXING_DISABLED ||
             pIndexCfg->status == VDIR_INDEXING_DELETED)
     {
         goto cleanup;
     }
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     pIndexCfg->usRefCnt++;
     *ppIndexCfg = pIndexCfg;
