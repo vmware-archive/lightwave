@@ -54,6 +54,8 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
 
     private ILdapClientLibrary _ldapClientLibrary;
 
+    private final int latencyToleranceMS = 3 * 1000;
+
     /**
      * @deprecated  replaced by {@link #LdapConnection(URI, List<LdapSetting>, boolean) LdapConnection}
      * @param hostname
@@ -316,19 +318,35 @@ class LdapConnection implements ILdapConnectionExWithGetConnectionString
                 "search context: base=[%s], scope: [%s], filter: [%s], attributes: [%s], attributesOnly: [%s]",
                 base, scope, filter, Arrays.toString(attrs), Boolean.toString(attributesOnly)));
         }
-        Pointer p = execute(
+
+        Pointer p;
+        long startTime = System.currentTimeMillis();
+        try
+        {
+            p = execute(
                 new Callable<Pointer>() {
                     @Override
                     public Pointer call() {
                         return ldapClientLibrary.ldap_search_s(
-                              LdapConnection.this.getRawConnection(),
-                              base,
-                              scope.getCode(),
-                              filter,
-                              attrs,
-                              attributesOnly ? 1 : 0);
+                                LdapConnection.this.getRawConnection(),
+                                base,
+                                scope.getCode(),
+                                filter,
+                                attrs,
+                                attributesOnly ? 1 : 0);
                     }
                 });
+        }
+        finally
+        {
+            long elapsedTime = System.currentTimeMillis() - startTime;
+            if (elapsedTime > latencyToleranceMS)
+            {
+                log.error(
+                        String.format("[SLOW LDAP SEARCH] %d ms, base=%s, scope=%s, filter=%s, attrs=%s, attributesOnly=%s",
+                                elapsedTime, base, scope, filter, Arrays.toString(attrs), Boolean.toString(attributesOnly)));
+            }
+        }
 
        Set<String> requestedAttributes = new HashSet<String>();
        if ( ( attributes != null ) && (attributes.size() > 0) )
