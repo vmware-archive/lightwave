@@ -5,12 +5,14 @@ libmutentcadb_la_SOURCES = \
     db.c
 
 libmutentcadb_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/mutentca/include \
     -I$(top_srcdir)/mutentca/include/public \
     -I$(top_srcdir)/mutentca/server/include \
     @LW_INCLUDES@
 
 libmutentcadb_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/plugin/libmutentcasrvplugin.la \

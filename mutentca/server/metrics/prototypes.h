@@ -39,7 +39,12 @@ LwCAMetricsApiNameString(
 
 PSTR
 LwCAMetricsSecurityApiNameString(
-    LWCA_METRICS_SECURITY_APIS api
+    LWCA_METRICS_SECURITY_APIS      api
+    );
+
+PSTR
+LwCAMetricsDbApiNameString(
+    LWCA_METRICS_DB_APIS            api
     );
 
 PSTR

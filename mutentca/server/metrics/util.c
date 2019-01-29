@@ -105,6 +105,36 @@ LwCAMetricsSecurityApiNameString(
 }
 
 PSTR
+LwCAMetricsDbApiNameString(
+    LWCA_METRICS_DB_APIS api
+    )
+{
+    static PSTR pszDbApiNames[LWCA_METRICS_DB_COUNT] =
+    {
+        "AddCA",
+        "GetCA",
+        "UpdateCA",
+        "LockCA",
+        "UnlockCA",
+        "AddCACert",
+        "GetCACert",
+        "GetCACerts",
+        "UpdateCACert",
+        "LockCACert",
+        "UnlockCACert",
+        "AddCert",
+        "GetCert",
+        "GetCerts",
+        "GetRevokedCerts",
+        "UpdateCerts",
+        "LockCert",
+        "UnlockCert"
+    };
+
+    return pszDbApiNames[api];
+}
+
+PSTR
 LwCAMetricsResponseString(
     LWCA_METRICS_RESPONSE_CODES code
     )
