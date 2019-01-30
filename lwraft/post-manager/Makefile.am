@@ -4,6 +4,10 @@ postmd_SOURCES = \
     signal.c \
     process.c \
     processtable.c \
+    ipcapihandler.c \
+    ipclocalapi.c \
+    ipcserver.c \
+    globals.c \
     main.c
 
 postmd_CPPFLAGS = \

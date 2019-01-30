@@ -16,7 +16,8 @@
 
 DWORD
 VmDirOpenServerConnection(
-	PVM_DIR_CONNECTION *ppConnection
+	PVM_DIR_CONNECTION *ppConnection,
+	PSTR               pszSocketPath
 	)
 {
 	DWORD dwError = 0;
@@ -24,7 +25,7 @@ VmDirOpenServerConnection(
 		dwError = ERROR_INVALID_PARAMETER;
 		BAIL_ON_VMDIR_ERROR (dwError);
 	}
-	dwError = VmDirOpenServerConnectionImpl(ppConnection);
+	dwError = VmDirOpenServerConnectionImpl(ppConnection, pszSocketPath);
 	BAIL_ON_VMDIR_ERROR (dwError);
 cleanup:
 	return dwError;
@@ -72,7 +73,8 @@ VmDirFreeServerConnection(
 
 DWORD
 VmDirOpenClientConnection(
-	PVM_DIR_CONNECTION *ppConnection
+	PVM_DIR_CONNECTION *ppConnection,
+	PSTR               pszSocketPath
 	)
 {
 	DWORD dwError = 0;
@@ -80,7 +82,7 @@ VmDirOpenClientConnection(
 		dwError = ERROR_INVALID_PARAMETER;
 		BAIL_ON_VMDIR_ERROR (dwError);
 	}
-	dwError = VmDirOpenClientConnectionImpl(ppConnection);
+	dwError = VmDirOpenClientConnectionImpl(ppConnection, pszSocketPath);
 	BAIL_ON_VMDIR_ERROR (dwError);
 cleanup:
 	return dwError;

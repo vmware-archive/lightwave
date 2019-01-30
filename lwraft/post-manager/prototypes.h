@@ -70,3 +70,58 @@ VmDirProcessTableUpdate(
     DWORD           dwGroupId,
     PVMDIR_PROCESS  pProcess
     );
+
+DWORD
+VmDirProcessTableGetList(
+    PVMDIR_PROCESS_LIST  *ppProcessList,
+    PDWORD               pdwProcessCount
+    );
+
+//ipcserver.c
+
+DWORD
+VmDirIpcServerInit(
+    VOID
+    );
+
+VOID
+VmDirIpcServerShutDown(
+    VOID
+    );
+
+//ipcapihandler.c
+
+DWORD
+VmDirLocalAPIHandler(
+    PVM_DIR_SECURITY_CONTEXT    pSecurityContext,
+    PBYTE                       pRequest,
+    DWORD                       dwRequestSize,
+    PBYTE                       *ppResponse,
+    DWORD                       *pdwResponseSize
+    );
+
+//ipclocalapi.c
+
+DWORD
+VmDirIpcGetProcessList(
+    PBYTE   pRequest,
+    DWORD   dwRequestSize,
+    PBYTE   *ppResponse,
+    PDWORD  pdwResponseSize
+    );
+
+DWORD
+VmDirIpcServerStart(
+    PBYTE   pRequest,
+    DWORD   dwRequestSize,
+    PBYTE   *ppResponse,
+    PDWORD  pdwResponseSize
+    );
+
+DWORD
+VmDirIpcServerStop(
+    PBYTE   pRequest,
+    DWORD   dwRequestSize,
+    PBYTE   *ppResponse,
+    PDWORD  pdwResponseSize
+    );

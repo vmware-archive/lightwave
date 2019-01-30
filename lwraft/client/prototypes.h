@@ -586,6 +586,31 @@ VmDirLocalSetSRPSecret(
     PCWSTR      pwszSecret
 );
 
+// postmgrlocalclient.c
+DWORD
+VmDirLocalStopPostProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirLocalStartPostProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirLocalListPostProcesses(
+    PVMDIR_DATA_CONTAINER  pContainer
+    );
+
+DWORD
+VmDirLocalPostMgrIPCRequest(
+    UINT32 apiType,
+    DWORD noOfArgsIn,
+    DWORD noOfArgsOut,
+    VMW_TYPE_SPEC *input_spec,
+    VMW_TYPE_SPEC *output_spec
+    );
+
 DWORD
 VmDirGetLastLocalUsnProcessedForHostFromRADN(
     LDAP *pLD,

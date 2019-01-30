@@ -135,6 +135,22 @@ VmDirGetDomainName(
     );
 
 DWORD
+VmDirStopPostProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirStartPostProcess(
+    DWORD   dwGroupId
+    );
+
+DWORD
+VmDirListPostProcesses(
+    PVMDIR_PROCESS_LIST *ppProcessList,
+    PDWORD              pdwProcessCount
+    );
+
+DWORD
 VmDirGetWin32ErrorDesc(
     DWORD dwErrorCode,
     PSTR* ppszErrorMessage

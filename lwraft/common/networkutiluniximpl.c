@@ -21,13 +21,19 @@
 
 DWORD
 VmDirOpenServerConnectionImpl(
-	PVM_DIR_CONNECTION *ppConnection
+	PVM_DIR_CONNECTION *ppConnection,
+	PSTR               pszSocketPath
 	)
 {
 	DWORD dwError = 0;
 	int socket_fd = -1, on = 1;
 	struct sockaddr_un address = {0};
 	PVM_DIR_CONNECTION pConnection = NULL;
+
+    if (!pszSocketPath || !ppConnection)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
 
 	socket_fd = socket(PF_UNIX,SOCK_STREAM, 0);
 
@@ -41,10 +47,10 @@ VmDirOpenServerConnectionImpl(
 		BAIL_ON_VMDIR_ERROR(dwError);
 	}
 
-	unlink (SOCKET_FILE_PATH);
+	unlink (pszSocketPath);
 
 	address.sun_family = AF_UNIX;
-	snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH);
+	snprintf (address.sun_path, sizeof(address.sun_path), "%s", pszSocketPath);
 
 	if (bind (socket_fd, (struct sockaddr *)&address, sizeof(struct sockaddr_un)) < 0){
 		dwError = LwErrnoToWin32Error(errno);
@@ -97,13 +103,19 @@ VmDirShutdownServerConnectionImpl(
 
 DWORD
 VmDirOpenClientConnectionImpl(
-	PVM_DIR_CONNECTION *ppConnection
+	PVM_DIR_CONNECTION *ppConnection,
+	PSTR               pszSocketPath
 	)
 {
 	DWORD dwError = 0;
 	int socket_fd = 0;
 	struct sockaddr_un address;
 	PVM_DIR_CONNECTION pConnection = NULL;
+
+	if (!pszSocketPath || !ppConnection)
+	{
+	    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+	}
 
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
 	if (socket_fd < 0){
@@ -112,7 +124,7 @@ VmDirOpenClientConnectionImpl(
 	}
 	memset (&address, 0, sizeof(struct sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH);
+	snprintf (address.sun_path, sizeof(address.sun_path), "%s", pszSocketPath);
 
 	if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) <0)
     {

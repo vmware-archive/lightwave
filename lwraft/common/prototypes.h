@@ -106,7 +106,8 @@ VmDirFreeConditionContent2003(
 //IPC
 DWORD
 VmDirOpenServerConnectionImpl(
-	PVM_DIR_CONNECTION *ppConection
+    PVM_DIR_CONNECTION *ppConection,
+    PSTR               pszSocketPath
 	);
 
 VOID
@@ -122,7 +123,8 @@ VmDirShutdownServerConnectionImpl(
 
 DWORD
 VmDirOpenClientConnectionImpl(
-	PVM_DIR_CONNECTION *ppConnection
+    PVM_DIR_CONNECTION *ppConnection,
+    PSTR               pszSocketPath
 	);
 
 VOID

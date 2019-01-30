@@ -31,7 +31,8 @@ libpostclient_la_SOURCES = \
     vmdirlocalclient.c \
     srp_verifier_cstub.c \
     vmdirraft_cstub.c \
-    vmdirsuperlog_cstub.c
+    vmdirsuperlog_cstub.c \
+    postmgrlocalclient.c
 
 libpostclient_la_LIBADD = \
     @top_builddir@/lwraft/common/libcommon.la \

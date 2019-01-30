@@ -662,7 +662,7 @@ VmDirSetupHostInstance(
     int     i = 0;
     PVM_DIR_CONNECTION pIPCConnection = NULL;
 
-    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    if (VmDirOpenClientConnection(&pIPCConnection, SOCKET_FILE_PATH) != 0)
     {   // POST is not listen on IPC port
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
@@ -763,7 +763,7 @@ VmDirJoin(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (VmDirOpenClientConnection(&pIPCConnection) != 0)
+    if (VmDirOpenClientConnection(&pIPCConnection, SOCKET_FILE_PATH) != 0)
     {   // POST is not listen on IPC port
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
@@ -2941,5 +2941,87 @@ cleanup:
     return dwError;
 
 error:
+    goto cleanup;
+}
+
+DWORD
+VmDirStopPostProcess(
+    DWORD   dwGroupId
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError =  VmDirLocalStopPostProcess(dwGroupId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirStopPostProcess failed. Error(%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirStartPostProcess(
+    DWORD   dwGroupId
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError =  VmDirLocalStartPostProcess(dwGroupId);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirStartPostProcess failed. Error(%u)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirListPostProcesses(
+    PVMDIR_PROCESS_LIST *ppProcessList,
+    PDWORD              pdwProcessCount
+    )
+{
+    DWORD                dwError = 0;
+    VMDIR_DATA_CONTAINER dataContainer = {0};
+    PBYTE                pLocalByte = NULL;
+
+    if (!ppProcessList || !ppProcessList)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError =  VmDirLocalListPostProcesses(&dataContainer);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(
+                    dataContainer.dwCount,
+                    (PVOID*)&pLocalByte
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyMemory (
+                    pLocalByte,
+                    dataContainer.dwCount,
+                    dataContainer.data,
+                    dataContainer.dwCount
+                    );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppProcessList = (PVMDIR_PROCESS_LIST) pLocalByte;
+    *pdwProcessCount = dataContainer.dwCount / sizeof(VMDIR_PROCESS_LIST);
+    pLocalByte = NULL;
+
+cleanup:
+    VMDIR_RPC_FREE_MEMORY(dataContainer.data);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "VmDirStartPostProcess failed. Error(%u)", dwError);
+    VMDIR_SAFE_FREE_MEMORY(pLocalByte);
     goto cleanup;
 }

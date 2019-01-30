@@ -1886,7 +1886,8 @@ VmDirDirectoryExists(
 //networkutil.c
 DWORD
 VmDirOpenServerConnection(
-	PVM_DIR_CONNECTION * ppConnection
+    PVM_DIR_CONNECTION  *ppConnection,
+    PSTR                 pszSocketPath
 	);
 
 VOID
@@ -1907,7 +1908,8 @@ VmDirFreeServerConnection(
 
 DWORD
 VmDirOpenClientConnection(
-	PVM_DIR_CONNECTION *ppConnection
+    PVM_DIR_CONNECTION *ppConnection,
+    PSTR                pszSocketPath
 	);
 
 VOID

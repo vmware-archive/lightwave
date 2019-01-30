@@ -66,3 +66,6 @@ VmDirConnectLDAPServerWithMachineAccount
 VmDirBackupDB
 VmDirServerReset
 VmDirSetupDefaultAccount
+VmDirStopPostProcess
+VmDirStartPostProcess
+VmDirListPostProcesses

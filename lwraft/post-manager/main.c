@@ -90,13 +90,13 @@ VmDirPostMgrInit(
     dwError = VmDirProcessTableInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateMemory(SIZE_512, (PVOID*) &gpszPostdPath);
+    dwError = VmDirAllocateMemory(SIZE_512, (PVOID*) &gPostMgrGlobals.pszPostdPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateMemory(SIZE_512, (PVOID*) &pszPostdArgs);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_POSTD_PATH, gpszPostdPath, SIZE_512);
+    dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_POSTD_PATH, gPostMgrGlobals.pszPostdPath, SIZE_512);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetRegKeyValue(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_POSTD_ARGS, pszPostdArgs, SIZE_512);
@@ -105,8 +105,10 @@ VmDirPostMgrInit(
     dwError = VmDirStringToTokenList(pszPostdArgs, " ", &pList);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gppszPostdArgs = (PSTR*) pList->pStringList;
-    //TODO: Start IPC server
+    gPostMgrGlobals.ppszPostdArgs = (PSTR*) pList->pStringList;
+
+    dwError = VmDirIpcServerInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     return dwError;

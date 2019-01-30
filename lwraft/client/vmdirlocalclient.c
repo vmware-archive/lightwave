@@ -493,7 +493,7 @@ VmDirLocalIPCRequest(
                             );
     BAIL_ON_VMDIR_ERROR (dwError);
 
-    dwError = VmDirOpenClientConnection ( &pConnection);
+    dwError = VmDirOpenClientConnection ( &pConnection, SOCKET_FILE_PATH);
     BAIL_ON_VMDIR_ERROR (dwError);
 
     dwError = VmDirMakeServerRequest (

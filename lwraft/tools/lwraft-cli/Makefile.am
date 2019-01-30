@@ -4,6 +4,7 @@ post_cli_SOURCES = \
     clinode.c \
     clibackup.c \
     clidr.c \
+    cliprocess.c \
     main.c
 
 post_cli_CPPFLAGS = \

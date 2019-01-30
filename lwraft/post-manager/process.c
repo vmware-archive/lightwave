@@ -131,8 +131,8 @@ VmDirStopAllProcesses(
     LW_HASHMAP_PAIR pair = {NULL, NULL};
     DWORD           dwGroupId = 0;
 
-    while (gpProcessTable->pProcessMap &&
-           LwRtlHashMapIterate(gpProcessTable->pProcessMap, &iter, &pair))
+    while (gPostMgrGlobals.pProcessTable->pProcessMap &&
+           LwRtlHashMapIterate(gPostMgrGlobals.pProcessTable->pProcessMap, &iter, &pair))
     {
         dwGroupId = atoi(pair.pKey);
 
@@ -237,9 +237,9 @@ _VmDirExecProgram(
     dwError = pthread_sigmask(SIG_SETMASK, &set, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (execve(gpszPostdPath, gppszPostdArgs, NULL) < 0)
+    if (execve(gPostMgrGlobals.pszPostdPath, gPostMgrGlobals.ppszPostdArgs, NULL) < 0)
     {
-        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "errno=%d, path=%s", errno, gpszPostdPath);
+        VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL, "errno=%d, path=%s", errno, gPostMgrGlobals.pszPostdPath);
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_GENERIC);
     }
 

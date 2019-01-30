@@ -247,4 +247,32 @@ typedef struct _VMW_TYPE_SPEC_
     },\
 }
 
+#define PROCESS_START_STOP_INPUT_PARAMS \
+{\
+    {\
+        "Group Number",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+}
+
+#define PROCESS_LIST_OUTPUT_PARAMS \
+{\
+    {\
+        "Return Code",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Process List Size",\
+        VMW_IPC_TYPE_UINT32,\
+        {NULL}\
+    },\
+    {\
+        "Process List",\
+        VMW_IPC_TYPE_BLOB,\
+        {NULL}\
+    },\
+}
+
 #endif /* __TYPE_SPEC_H__ */

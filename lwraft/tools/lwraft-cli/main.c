@@ -48,6 +48,13 @@ RaftCliExecDisasterRecoveryRequest(
     char* argv[]
     );
 
+static
+DWORD
+_RaftCliExecProcessRequest(
+    int   argc,
+    char* argv[]
+    );
+
 int
 main(int argc, char* argv[])
 {
@@ -206,6 +213,12 @@ ParseArgs(
                         dwArgsLeft,
                         dwArgsLeft > 0 ? &argv[iArg] : NULL);
     }
+    else if (!VmDirStringNCompareA(pszArg, "process", VmDirStringLenA("process"), TRUE))
+    {
+        dwError = _RaftCliExecProcessRequest(
+                        dwArgsLeft,
+                        dwArgsLeft > 0 ? &argv[iArg] : NULL);
+    }
     else
     {
         dwError = VMDIR_ERROR_OPTION_UNKNOWN;
@@ -238,7 +251,6 @@ RaftCliExecNodeRequest(
 {
     DWORD dwError= 0;
     DWORD idx = 0;
-
     PSTR pszServerName = NULL;
     PSTR pszLogin = NULL;
     PSTR pszPassword = NULL;
@@ -891,6 +903,154 @@ error:
 }
 
 static
+DWORD
+_RaftCliExecProcessRequest(
+    int   argc,
+    char* argv[]
+    )
+{
+    DWORD   dwError= 0;
+    DWORD   idx = 0;
+    DWORD   dwGroupId = -1;
+
+    typedef enum
+    {
+        PARSE_MODE_OPEN = 0,
+        PARSE_MODE_STOP_PROCESS,
+        PARSE_MODE_START_PROCESS,
+        PARSE_MODE_LIST_PROCESSES
+    } PARSE_MODE;
+
+    typedef enum
+    {
+        PARSE_SUB_MODE_OPEN = 0,
+        PARSE_SUB_MODE_GROUP_ID
+    } PARSE_SUB_MODE;
+
+    /*
+     * Initializing to default values
+     */
+    PARSE_MODE          mode    = PARSE_MODE_OPEN;
+    PARSE_SUB_MODE      submode = PARSE_SUB_MODE_OPEN;
+    LWRAFT_NODE_COMMAND command = LWRAFT_DIR_COMMAND_UNKNOWN;
+
+    if (!argc)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    /*
+     * Iterate over all arguments recursively.
+     *  1. Scan the first level - start, stop, list
+     *  2. Gather required sub-arguments
+     */
+    for (; idx < argc; idx++)
+    {
+        PSTR pszArg = argv[idx];
+
+        switch (mode)
+        {
+            case PARSE_MODE_OPEN:
+
+                if (!VmDirStringCompareA(pszArg, "start", TRUE))
+                {
+                    command = LWRAFT_DIR_COMMAND_PROCESS_START;
+                    mode = PARSE_MODE_START_PROCESS;
+                }
+                else if (!VmDirStringCompareA(pszArg, "stop", TRUE))
+                {
+                    command = LWRAFT_DIR_COMMAND_PROCESS_STOP;
+                    mode = PARSE_MODE_STOP_PROCESS;
+                }
+                else if (!VmDirStringCompareA(pszArg, "list", TRUE))
+                {
+                    command = LWRAFT_DIR_COMMAND_PROCESS_LIST;
+                    mode = PARSE_MODE_LIST_PROCESSES;
+                }
+                else
+                {
+                    BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_OPTION_INVALID);
+                }
+                break;
+
+            case PARSE_MODE_STOP_PROCESS:
+            case PARSE_MODE_START_PROCESS:
+
+                switch (submode)
+                {
+                    case PARSE_SUB_MODE_OPEN:
+
+                        if (!VmDirStringCompareA(pszArg, "--group", TRUE))
+                        {
+                            submode = PARSE_SUB_MODE_GROUP_ID;
+                        }
+                        else
+                        {
+                            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+                        }
+                        break;
+
+                    case PARSE_SUB_MODE_GROUP_ID:
+
+                        dwGroupId = atoi(pszArg);
+                        submode = PARSE_SUB_MODE_OPEN;
+                        break;
+
+                    default:
+
+                        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_OPTION_INVALID);
+                        break;
+                }
+                break;
+
+            default:
+                dwError = VMDIR_ERROR_INVALID_STATE;
+                BAIL_ON_VMDIR_ERROR(dwError);
+                break;
+        }
+    }
+
+    switch (command)
+    {
+        case LWRAFT_DIR_COMMAND_PROCESS_STOP:
+
+            dwError = RaftCliStopProcessA(dwGroupId);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            printf("Process stopped successfully\n");
+            break;
+
+        case LWRAFT_DIR_COMMAND_PROCESS_START:
+
+            dwError = RaftCliStartProcessA(dwGroupId);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            printf("Process started successfully\n");
+            break;
+
+        case LWRAFT_DIR_COMMAND_PROCESS_LIST:
+
+            dwError = RaftCliListProcessesA();
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            break;
+
+        default:
+
+            dwError = VMDIR_ERROR_INVALID_STATE;
+            break;
+    }
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    goto cleanup;
+}
+
+static
 void
 ShowUsage(
     VOID
@@ -929,6 +1089,8 @@ ShowUsage(
         "\t                 [ --login          <admin user id> ]\n"
         "\t                 [ --password       <password> ]\n"
         "\t                 --backuppath       <ABS path to store backup>\n\n"
+        "\tprocess start    --group            <group id>\n\n"
+        "\tprocess stop     --group            <group id>\n\n"
+        "\tprocess list\n\n"
         "\thelp\n");
 }
-

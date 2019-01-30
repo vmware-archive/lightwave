@@ -18,8 +18,6 @@
 #define VMDIR_MAX_SCHEMACHECK_ATTR_COUNT 4
 
 #ifndef _WIN32
-//#define SOCKET_FILE_PATH "/var/lib/vmware/ipc/vmdir_socket"
-#define SOCKET_FILE_PATH "/tmp/vmdir_socket"
 #define EVERYONE_UID -1
 #endif
 #if defined _WIN32

@@ -38,13 +38,13 @@ VmDirProcessTableInit(
             &pProcessTable->pProcessTableLock);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    gpProcessTable = pProcessTable;
+    gPostMgrGlobals.pProcessTable = pProcessTable;
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%d", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed with error (%u)", __FUNCTION__, dwError);
     VMDIR_SAFE_FREE_MEMORY(pProcessTable);
     LwRtlFreeHashMap(&pProcessTable->pProcessMap);
     VMDIR_SAFE_FREE_RWLOCK(pProcessTable->pProcessTableLock);
@@ -70,21 +70,21 @@ VmDirProcessTableRead(
     dwError = VmDirAllocateStringPrintf(&pszKey, "%d", dwGroupId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_RWLOCK_READLOCK(bInLock, gpProcessTable->pProcessTableLock, 0);
+    VMDIR_RWLOCK_READLOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock, 0);
 
-    dwError = LwRtlHashMapFindKey(gpProcessTable->pProcessMap, (PVOID*) &pProcess, (PVOID) pszKey);
+    dwError = LwRtlHashMapFindKey(gPostMgrGlobals.pProcessTable->pProcessMap, (PVOID*) &pProcess, (PVOID) pszKey);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateAndCopyMemory(pProcess, sizeof(VMDIR_PROCESS), (PVOID*) ppProcess);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpProcessTable->pProcessTableLock);
+    VMDIR_RWLOCK_UNLOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock);
     VMDIR_SAFE_FREE_STRINGA(pszKey);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%d", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed with error (%u)", __FUNCTION__, dwError);
     VMDIR_SAFE_FREE_MEMORY(*ppProcess);
     goto cleanup;
 }
@@ -109,15 +109,15 @@ VmDirProcessTableUpdate(
     dwError = VmDirAllocateStringPrintf(&pszKey, "%d", dwGroupId);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_RWLOCK_WRITELOCK(bInLock, gpProcessTable->pProcessTableLock, 0);
+    VMDIR_RWLOCK_WRITELOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock, 0);
 
-    dwError = LwRtlHashMapFindKey(gpProcessTable->pProcessMap, (PVOID*) &pExistingProcessEntry, (PVOID) pszKey);
+    dwError = LwRtlHashMapFindKey(gPostMgrGlobals.pProcessTable->pProcessMap, (PVOID*) &pExistingProcessEntry, (PVOID) pszKey);
     if (dwError == LW_STATUS_NOT_FOUND)
     {
         dwError = VmDirAllocateAndCopyMemory(pProcess, sizeof(VMDIR_PROCESS), (PVOID*) &pNewProcessEntry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        dwError = LwRtlHashMapInsert(gpProcessTable->pProcessMap, (PVOID) pszKey, (PVOID) pNewProcessEntry, NULL);
+        dwError = LwRtlHashMapInsert(gPostMgrGlobals.pProcessTable->pProcessMap, (PVOID) pszKey, (PVOID) pNewProcessEntry, NULL);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pszKey = NULL;
@@ -131,12 +131,65 @@ VmDirProcessTableUpdate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
-    VMDIR_RWLOCK_UNLOCK(bInLock, gpProcessTable->pProcessTableLock);
+    VMDIR_RWLOCK_UNLOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock);
     VMDIR_SAFE_FREE_STRINGA(pszKey);
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%d", dwError);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed with error (%u)", __FUNCTION__, dwError);
     VMDIR_SAFE_FREE_MEMORY(pNewProcessEntry);
+    goto cleanup;
+}
+
+DWORD
+VmDirProcessTableGetList(
+    PVMDIR_PROCESS_LIST *ppProcessList,
+    PDWORD              pdwProcessCount
+    )
+{
+    DWORD               dwError = 0;
+    PVMDIR_PROCESS_LIST pProcessList = NULL;
+    DWORD               dwCount = 0;
+    DWORD               dwLoopCount = 0;
+    BOOLEAN             bInLock = FALSE;
+    LW_HASHMAP_ITER     iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR     pair = {NULL, NULL};
+
+    if (!ppProcessList || !pdwProcessCount)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    VMDIR_RWLOCK_READLOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock, 0);
+
+    dwCount = LwRtlHashMapGetCount(gPostMgrGlobals.pProcessTable->pProcessMap);
+
+    *pdwProcessCount = dwCount;
+
+    dwError = VmDirAllocateMemory(sizeof(VMDIR_PROCESS_LIST) * dwCount, (PVOID*)&pProcessList);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(gPostMgrGlobals.pProcessTable->pProcessMap, &iter, &pair))
+    {
+        pProcessList[dwLoopCount].dwGroupId = atoi(pair.pKey);
+        pProcessList[dwLoopCount].dwState = ((PVMDIR_PROCESS)pair.pValue)->dwState;
+
+        dwLoopCount++;
+
+        if (dwLoopCount == dwCount)
+        {
+            break;
+        }
+    }
+
+    *ppProcessList = pProcessList;
+
+cleanup:
+    VMDIR_RWLOCK_UNLOCK(bInLock, gPostMgrGlobals.pProcessTable->pProcessTableLock);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed with error (%u)", __FUNCTION__, dwError);
+    VMDIR_SAFE_FREE_MEMORY(pProcessList);
     goto cleanup;
 }

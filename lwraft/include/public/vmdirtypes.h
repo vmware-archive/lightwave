@@ -408,6 +408,18 @@ typedef enum MDB_state_op {
 #define VMDIR_MDB_LOCK_FILE_NAME "lock.mdb"
 #define VMDIR_MDB_XLOGS_DIR_NAME "xlogs"
 
+/* Post Manager related defines */
+#define VMDIR_STATE_STARTING    1
+#define VMDIR_STATE_RUNNING     2
+#define VMDIR_STATE_STOPPING    3
+#define VMDIR_STATE_STOPPED     4
+#define VMDIR_STATE_DEAD        5
+
+typedef struct _VMDIR_PROCESS_LIST {
+    DWORD   dwGroupId;
+    DWORD   dwState;
+} VMDIR_PROCESS_LIST, *PVMDIR_PROCESS_LIST;
+
 #ifdef _DCE_IDL_
 cpp_quote("#endif")
 #endif

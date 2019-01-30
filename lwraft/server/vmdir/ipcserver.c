@@ -36,7 +36,7 @@ VmDirIpcServerInit (
   int status = 0;
   PVM_DIR_CONNECTION pConnection = NULL;
 
-  dwError = VmDirOpenServerConnection(&pConnection);
+  dwError = VmDirOpenServerConnection(&pConnection, SOCKET_FILE_PATH);
   BAIL_ON_VMDIR_ERROR(dwError);
   VMDIR_LOCK_MUTEX(bInLock, gVmdirGlobals.pMutexIPCConnection);
   gVmdirGlobals.pConnection = pConnection;

@@ -802,7 +802,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
      (pAttr->vals[0].lberbv.bv_val != NULL))
 
 
-//IPC API
+//Post IPC API
 
 #define VMDIR_IPC_INITIALIZE_HOST      0
 #define VMDIR_IPC_INITIALIZE_TENANT    1
@@ -812,6 +812,15 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_GENERATE_PASSWORD    5
 #define VMDIR_IPC_GET_SERVER_STATE     6
 #define VMDIR_IPC_SERVER_RESET         10
+
+//Post Manager IPC API
+#define VMDIR_IPC_PROCESS_START  0
+#define VMDIR_IPC_PROCESS_STOP   1
+#define VMDIR_IPC_PROCESS_LIST   2
+
+// IPC socket file paths
+#define SOCKET_FILE_PATH          "/var/lib/vmware/ipc/post_socket"
+#define POST_MGR_SOCKET_FILE_PATH "/var/lib/vmware/ipc/postm_socket"
 
 //VERSIONS
 #define VER1_INPUT 0

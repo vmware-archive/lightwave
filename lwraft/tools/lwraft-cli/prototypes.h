@@ -65,6 +65,21 @@ RaftCliStartVoteA(
     PCSTR   pszServerName
     );
 
+DWORD
+RaftCliStopProcessA(
+    DWORD   dwGroupId
+    );
+
+DWORD
+RaftCliStartProcessA(
+    DWORD   dwGroupId
+    );
+
+DWORD
+RaftCliListProcessesA(
+    VOID
+    );
+
 // clibackup.c
 DWORD
 RaftCliDBBackup(
