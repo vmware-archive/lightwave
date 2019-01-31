@@ -4,7 +4,7 @@
  * https://github.com/cocagne/csrp
  *
  * The MIT License (MIT)
- * 
+ *
  * Copyright (c) 2013 Tom Cocagne
  * 
  * Permission is hereby granted, free of charge, to any person obtaining a copy of
@@ -35,6 +35,7 @@
 #    include <Wincrypt.h>
 #else
 #    include <sys/time.h>
+#    include <pthread.h>
 #endif
 
 #include <stdlib.h>
@@ -50,6 +51,7 @@
 
 #include "srp.h"
 
+static pthread_mutex_t g_initialized_mutex = PTHREAD_MUTEX_INITIALIZER;
 static int g_initialized = 0;
 
 typedef struct
@@ -531,8 +533,12 @@ static void init_random()
     size_t lread = 0;
 #endif
 
+    pthread_mutex_lock(&g_initialized_mutex);
     if (g_initialized)
+    {
+        pthread_mutex_unlock(&g_initialized_mutex);
         return;
+    }
 
     OpenSSL_add_all_digests();
 #ifdef _WIN32
@@ -558,6 +564,7 @@ static void init_random()
 
     if (g_initialized)
        RAND_seed( buff, sizeof(buff) );
+    pthread_mutex_unlock(&g_initialized_mutex);
 }
 
 
@@ -569,11 +576,13 @@ static void init_random()
 
 void srp_random_seed( const unsigned char * random_data, int data_length )
 {
+    pthread_mutex_lock(&g_initialized_mutex);
     if (!g_initialized)
     {
         OpenSSL_add_all_digests();
         g_initialized = 1;
     }
+    pthread_mutex_unlock(&g_initialized_mutex);
 
     if (random_data)
         RAND_seed( random_data, data_length );

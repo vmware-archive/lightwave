@@ -904,7 +904,10 @@
       "type": "object",
       "properties": {
         "crl": {
-          "type": "string",
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
           "description": "Certificate Revocation List"
         }
       }

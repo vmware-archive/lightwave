@@ -86,6 +86,17 @@ public class AuthenticationController implements FederatedIdentityProcessorProvi
     }
 
     @RequestMapping(
+            value = { Endpoints.BASE + Endpoints.AUTHENTICATION, Endpoints.AUTHENTICATION_CAC_RPROXY, Endpoints.AUTHENTICATION_CAC_TOMCAT },
+            method = { RequestMethod.GET, RequestMethod.POST })
+    public ModelAndView authenticate(
+            Model model,
+            Locale locale,
+            HttpServletRequest request,
+            HttpServletResponse response) throws IOException {
+        return authenticate(model, locale, request, response, null);
+    }
+
+    @RequestMapping(
             value = { Endpoints.BASE + Endpoints.AUTHENTICATION + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_RPROXY + "/{tenant:.*}", Endpoints.AUTHENTICATION_CAC_TOMCAT + "/{tenant:.*}" },
             method = { RequestMethod.GET, RequestMethod.POST })
     public ModelAndView authenticate(

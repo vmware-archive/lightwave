@@ -792,19 +792,100 @@ LwCAFreeKey(
 DWORD
 LwCADbCreateCAData(
     PCSTR                       pcszSubjectName,
-    PLWCA_CERTIFICATE_ARRAY     pCertificates,
-    PLWCA_KEY                   pEncryptedPrivateKey,
-    PCSTR                       pcszCRLNumber,
-    PCSTR                       pcszLastCRLUpdate,
-    PCSTR                       pcszNextCRLUpdate,
+    PCSTR                       pcszParentCAId,
+    PCSTR                       pcszActiveCertSKI,
     PCSTR                       pcszAuthBlob,
     LWCA_CA_STATUS              status,
     PLWCA_DB_CA_DATA            *ppCAData
     );
 
+DWORD
+LwCADbCopyCAData(
+    PLWCA_DB_CA_DATA        pCADataSrc,
+    PLWCA_DB_CA_DATA        *ppCADataDst
+    );
+
 VOID
 LwCADbFreeCAData(
-    PLWCA_DB_CA_DATA pCAData
+    PLWCA_DB_CA_DATA        pCAData
+    );
+
+DWORD
+LwCADbCreateRootCertData(
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA          pCertData,
+    PLWCA_CERTIFICATE           pRootCertPEM,
+    PLWCA_KEY                   pEncryptedPrivateKey,
+    PCSTR                       pcszChainOfTrust,
+    PCSTR                       pcszCRLNumber,
+    PCSTR                       pcszLastCRLUpdate,
+    PCSTR                       pcszNextCRLUpdate,
+    PLWCA_DB_ROOT_CERT_DATA     *ppRootCertData
+    );
+
+DWORD
+LwCADbCopyRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertDataSrc,
+    PLWCA_DB_ROOT_CERT_DATA     *ppRootCertDataDst
+    );
+
+DWORD
+LwCADbCopyRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArraySrc,
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppRootCertDataArrayDst
+    );
+
+VOID
+LwCADbFreeRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertData
+    );
+
+VOID
+LwCADbFreeRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray
+    );
+
+DWORD
+LwCARootCertArrayToCertArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray,
+    PLWCA_CERTIFICATE_ARRAY         *ppCertArray
+    );
+
+DWORD
+LwCADbCreateCertData(
+    PCSTR                   pcszIssuer,
+    PCSTR                   pcszSerialNumber,
+    PCSTR                   pcszIssuerSerialNumber,
+    PCSTR                   pcszSKI,
+    PCSTR                   pcszAKI,
+    PCSTR                   pcszRevokedDate,
+    PCSTR                   pcszTimeValidFrom,
+    PCSTR                   pcszTimeValidTo,
+    DWORD                   dwRevokedReason,
+    LWCA_CERT_STATUS        status,
+    PLWCA_DB_CERT_DATA      *ppCertData
+    );
+
+DWORD
+LwCADbCopyCertData(
+    PLWCA_DB_CERT_DATA pCertData,
+    PLWCA_DB_CERT_DATA *ppCertData
+    );
+
+DWORD
+LwCADbCopyCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray,
+    PLWCA_DB_CERT_DATA_ARRAY *ppCertDataArray
+    );
+
+VOID
+LwCADbFreeCertData(
+    PLWCA_DB_CERT_DATA pCertData
+    );
+
+VOID
+LwCADbFreeCertDataArray(
+    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
     );
 
 DWORD
@@ -843,27 +924,6 @@ LwCAFreeCertificate(
     );
 
 DWORD
-LwCADbCreateCertData(
-    PCSTR                   pcszSerialNumber,
-    PCSTR                   pcszTimeValidFrom,
-    PCSTR                   pcszTimeValidTo,
-    DWORD                   revokedReason,
-    PCSTR                   pcszRevokedDate,
-    LWCA_CERT_STATUS        status,
-    PLWCA_DB_CERT_DATA      *ppCertData
-    );
-
-VOID
-LwCADbFreeCertData(
-    PLWCA_DB_CERT_DATA pCertData
-    );
-
-VOID
-LwCADbFreeCertDataArray(
-    PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    );
-
-DWORD
 LwCAUuidGenerate(
     PSTR    *ppszUuid
     );
@@ -871,6 +931,12 @@ LwCAUuidGenerate(
 uint64_t
 LwCAGetTimeInMilliSec(
     VOID
+    );
+
+DWORD
+LwCAGetCanonicalHostName(
+    PCSTR pszHostname,
+    PSTR* ppszCanonicalHostname
     );
 
 // regexutil.c

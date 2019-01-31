@@ -33,3 +33,10 @@
 
 #define LWCA_IS_IP_IN_LOCAL_NETWORK(ip)                                 \
     (LWCA_IS_IP_IN_NETWORK((ip), LWCA_LOCAL_NET, LWCA_NETMASK_8))
+
+#define LOCALHOST                       "localhost"
+
+#define LWCA_HOST_CONFIG_KEY            "host"
+#define LWCA_CA_CONFIG_KEY              "config"
+#define LWCA_CA_NAME_KEY                "name"
+#define HTTPS_URI_FORMAT                "https://%s:%d%s"

@@ -48,7 +48,7 @@ typedef struct _LWCA_REST_RESULT
 
 typedef DWORD (*PFN_SET_RESULT)(
         PLWCA_REST_RESULT       pRestRslt,
-        PSTR                    pRequestId,
+        PCSTR                   pcszRequestId,
         DWORD                   dwErr,
         PCSTR                   pcszErrDetail
         );

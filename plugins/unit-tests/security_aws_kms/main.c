@@ -28,6 +28,10 @@ int main(VOID)
                 Security_Aws_Kms_Tests_Check_Version,
                 Security_Aws_Kms_Tests_Get_Version),
 
+        cmocka_unit_test_setup(
+                Security_Aws_Kms_Tests_Check_Name,
+                Security_Aws_Kms_Tests_Get_Name),
+
         /* load and validate interface - this interface is used in all tests */
         cmocka_unit_test_setup(
                 Security_Aws_Kms_Tests_Validate_Interface,

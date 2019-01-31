@@ -17,29 +17,6 @@
                </p>
            </div>
            <p style="text-align:center;" class='w3-xlarge'><clr-icon size="25" shape="organization"></clr-icon>{{tenantName}}</p>
-           <div *ngIf="isSysTenantAdmin">
-               <p> <clr-icon shape="key" style="margin-right:5px" class="is-inverse is-solid"></clr-icon>Sign-in To...</p>
-               <button (click)="toggleTenants()" class="btn btn-inverse" style="width:100%;">
-                   Tenants
-                   <clr-icon *ngIf="!showOtherTenants" dir="down" shape="caret"></clr-icon>
-                   <clr-icon *ngIf="showOtherTenants" dir="up" shape="caret"></clr-icon>
-               </button>
-               <div *ngIf="showOtherTenants" class="w3-container w3-center">
-                   <a style="color:white;" href="#" (click)="openOtherTenant(tenant)" *ngFor="let tenant of allTenants" class="w3-button w3-block w3-left-align"><clr-icon shape="organization" class="is-inverse is-solid" style="margin-right:5px"></clr-icon>{{tenant.displayName}}</a>
-               </div>
-           </div>
-           <div *ngIf="isSysTenantAdmin">
-               <button (click)="togglePostNodes()" class="btn btn-inverse" style="width:100%;">
-                   Lightwave Post
-                   <clr-icon *ngIf="!showPostNodes" dir="down" shape="caret"></clr-icon>
-                   <clr-icon *ngIf="showPostNodes" dir="up" shape="caret"></clr-icon>
-               </button>
-               <div *ngIf="showPostNodes" class="w3-container w3-center">
-                   <a style="color:white;" href="#" (click)="openLwPost(node)" *ngFor="let node of postOIDCs" class="w3-button w3-block w3-left-align">
-                       <clr-icon shape="storage" class="is-inverse is-solid" style="margin-right:5px;"></clr-icon>{{node.host}}
-                   </a>
-               </div>
-           </div>
            <div class="fixed-bottom">
                <button class="btn btn-outline" (click)="handleLogout()" style="background-color:white;width:85%;">Logout</button>
            </div>

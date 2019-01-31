@@ -18,10 +18,7 @@ cd  ../../lightwave-ui/idm
 mkdir -p ~/.npm-global
 export NPM_CONFIG_PREFIX=~/.npm-global
 export PATH=$NPM_CONFIG_PREFIX/bin:$PATH
-npm i -g bower@1.8.4
 npm i -g gulp-cli@2.0.1
-bower install --allow-root
-npm install
 npm install
 gulp
 
@@ -35,9 +32,9 @@ install -dm755 %{buildroot}/opt/vmware/lightwaveui
 install -dm755 %{buildroot}/opt/vmware/config
 install -dm755 %{buildroot}/opt/vmware/lightwaveui/directory
 mkdir -p %{buildroot}/opt/vmware/tools
-
 cd ../../lightwave-ui/idm
 cp -a dist/* %{buildroot}/opt/vmware/lightwaveui/
+
 find %{buildroot}/opt/vmware/lightwaveui -type d -exec chmod 755 {} \;
 find %{buildroot}/opt/vmware/lightwaveui -type f -exec chmod 644 {} \;
 
@@ -66,6 +63,7 @@ then
 else
     mv /etc/nginx/nginx.conf /etc/nginx/nginx_orig.conf
 fi
+
 ln -s /opt/vmware/config/nginx_lightwaveui.conf /etc/nginx/nginx.conf
 systemctl restart nginx
 echo "Please register this lightwave UI instance as OIDC client on lightwave server as shown below:"

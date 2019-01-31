@@ -15,7 +15,6 @@
 #ifndef _LWCA_SERVICE_API_DEFINES_H_
 #define _LWCA_SERVICE_API_DEFINES_H_
 
-#define LWCA_CA_CONFIG_KEY_NAME                     "name"
 #define LWCA_CA_CONFIG_KEY_DOMAIN_NAME              "domain"
 #define LWCA_CA_CONFIG_KEY_ORGANIZATION             "organization"
 #define LWCA_CA_CONFIG_KEY_ORGANIZATION_UNIT        "organizationUnit"

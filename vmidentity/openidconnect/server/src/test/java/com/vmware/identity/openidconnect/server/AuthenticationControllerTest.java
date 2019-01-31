@@ -592,7 +592,7 @@ public class AuthenticationControllerTest {
         // request with no session and no login string results in login form
         MockHttpServletRequest request = TestUtil.createGetRequest(params);
         MockHttpServletResponse response = new MockHttpServletResponse();
-        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response, null);
+        ModelAndView modelView = authnController.authenticate(new ExtendedModelMap(), Locale.ENGLISH, request, response);
         Assert.assertEquals("status", 302, response.getStatus());
         Assert.assertTrue("ModelAndView==null", modelView == null); // redirect to external idp
         Assert.assertEquals("redirect target", EXTERNAL_IDP_AUTHORIZE, extractAuthnResponseTarget(response, Flow.AUTHZ_CODE, true, false));

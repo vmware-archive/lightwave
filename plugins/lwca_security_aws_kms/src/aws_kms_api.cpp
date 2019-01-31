@@ -286,7 +286,7 @@ LwAwsKmsFreeBinaryData(
     if (pBinaryData)
     {
         memset(pBinaryData->pData, 0, pBinaryData->dwLength);
-        delete pBinaryData->pData;
+        delete [] pBinaryData->pData;
         delete pBinaryData;
     }
 }

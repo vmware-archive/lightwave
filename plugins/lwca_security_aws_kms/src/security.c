@@ -39,6 +39,14 @@ LwCASecurityGetVersion(
            LWCA_SECURITY_VERSION_RELEASE;
 }
 
+PCSTR
+LwCASecurityGetName(
+    VOID
+    )
+{
+    return LWCA_SECURITY_AWS_KMS;
+}
+
 DWORD
 LwSecurityAwsKmsInitialize(
     PCSTR pszConfigFile,
@@ -296,12 +304,23 @@ LwSecurityAwsKmsSign(
                   &pDecryptedData);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwX509Sign(pSignData, pDecryptedData, md);
-    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    if (pHandle->pCapOverride->pFnSignVerifySign)
+    {
+        dwError = pHandle->pCapOverride->pFnSignVerifySign(
+                      pUserData,
+                      pDecryptedData,
+                      pSignData);
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwX509Sign(pSignData, pDecryptedData, md);
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
 error:
-    /* TODO: properly free pEncryptedData as it is allocated by cap override */
     LwAwsKmsFreeBinaryData(pDecryptedData);
+    LwAwsKmsFreeBinaryData(pEncryptedData);
     return dwError;
 }
 
@@ -344,14 +363,26 @@ LwSecurityAwsKmsVerify(
                   &pDecryptedData);
     BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
 
-    dwError = LwX509Verify(pSignData, pDecryptedData, &bValid);
-    BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    if (pHandle->pCapOverride->pFnSignVerifyVerify)
+    {
+        dwError = pHandle->pCapOverride->pFnSignVerifyVerify(
+                      pUserData,
+                      pSignData,
+                      pDecryptedData,
+                      &bValid);
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
+    else
+    {
+        dwError = LwX509Verify(pSignData, pDecryptedData, &bValid);
+        BAIL_ON_SECURITY_AWS_KMS_ERROR(dwError);
+    }
 
     *pbValid = bValid;
 
 error:
-    /* TODO: properly free pEncryptedData as it is allocated by cap override */
     LwAwsKmsFreeBinaryData(pDecryptedData);
+    LwAwsKmsFreeBinaryData(pEncryptedData);
     return dwError;
 }
 
@@ -375,6 +406,7 @@ LwSecurityAwsKmsCloseHandle(
     {
         LwAwsKmsShutdown(pHandle->pContext);
         pHandle->pContext = NULL;
+        VmFreeMemory(pHandle);
     }
 }
 

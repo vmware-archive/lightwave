@@ -38,13 +38,13 @@ export class AuthService {
             return this.header;
         }
     }
-
+    
     getServer() {
-        if(this.server){
-            return this.server;
-        }else{
-            return this.configService.currentUser.server.host;
-        }
+        return this.configService.currentUser.rest_server;
+    }
+    
+    getOIDCServer() {
+        return this.configService.currentUser.server.host;
     }
 
     getRootDnQuery() {
@@ -61,13 +61,12 @@ export class AuthService {
     }
 
     getLogoutUri():string{
-        let logoutUri = "/lightwaveui/Logout?id_token="
-            + this.configService.currentUser.token.id_token
-            + "&state="
-            + this.configService.currentUser.token.state
-            + "&tenant="
-            + this.configService.currentUser.tenant;
-        return logoutUri;
+        let clientHost = this.configService.currentUser.client.host;
+        let postLogoutRedirectUri =  "https://" + clientHost + "/lightwaveui";
+        let openIdConnectUri =  "https://" + this.configService.currentUser.server.host + "/openidconnect/logout/" + this.configService.currentUser.tenant;
+        let args = "?id_token_hint=" + this.configService.currentUser.token.id_token + "&post_logout_redirect_uri=" + postLogoutRedirectUri + 
+        "&state=" + this.configService.currentUser.token.id_token.state;
+        return openIdConnectUri + args;
     }
 
     logout() {

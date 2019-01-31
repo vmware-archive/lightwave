@@ -169,6 +169,9 @@ typedef struct _LWCA_ERRNO_MAP
 #define LWCA_SSL_CERT_VERIFY_ERR            (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 63)
 #define LWCA_SSL_INVALID_NID                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 64)
 #define LWCA_SSL_NO_EXTENSIONS              (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 65)
+#define LWCA_SSL_INVALID_SKI                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 66)
+#define LWCA_SSL_INVALID_AKI                (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 67)
+#define LWCA_INVALID_CA_FOR_CERT_REVOKE     (LWCA_ERROR_BASE + LWCA_SSL_ERROR_BASE + 68)
 
 // ERRNO to LwCA Codes (80800 - 80899)
 #define LWCA_ERRNO_EPERM                    (LWCA_ERROR_BASE + LWCA_ERRNO_BASE + EPERM)
@@ -371,6 +374,9 @@ typedef struct _LWCA_ERRNO_MAP
     { LWCA_SSL_STORE_CTX_INIT_FAIL      ,   "LWCA_SSL_STORE_CTX_INIT_FAIL"      ,   "Init SSL store context failed" }, \
     { LWCA_SSL_CERT_VERIFY_ERR          ,   "LWCA_SSL_CERT_VERIFY_ERR"          ,   "Unable to verify certficate" }, \
     { LWCA_SSL_INVALID_NID              ,   "LWCA_SSL_INVALID_NID"              ,   "NID doesn't correspond to a valid OID" }, \
+    { LWCA_SSL_INVALID_SKI              ,   "LWCA_SSL_INVALID_SKI"              ,   "Invalid Subject Key Identifier value" }, \
+    { LWCA_SSL_INVALID_AKI              ,   "LWCA_SSL_INVALID_AKI"              ,   "Invalid Authority Key Identifier value" }, \
+    { LWCA_INVALID_CA_FOR_CERT_REVOKE   ,   "LWCA_INVALID_CA_FOR_CERT_REVOKE"   ,   "Unable to revoke a cert from a different issuer" }, \
     { LWCA_SSL_NO_EXTENSIONS            ,   "LWCA_SSL_NO_EXTENSIONS"            ,   "Could not get any extensions" }, \
     { LWCA_ERROR_INVALID_URI            ,   "LWCA_ERROR_INVALID_URI"            ,   "Unknown request URI" }, \
     { LWCA_ERROR_MISSING_PARAMETER      ,   "LWCA_ERROR_MISSING_PARAMETER"      ,   "Missing expected parameter" }, \

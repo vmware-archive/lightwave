@@ -15,15 +15,15 @@ const (
 	SAMLTokenInvalidError          ErrorCode = 105
 	SAMLGetTokenError              ErrorCode = 106
 
-	SAMLInvalidRequestError        ErrorCode = 107
-	SAMLInvalidClientError         ErrorCode = 108
-	SAMLUnauthorizedClientError    ErrorCode = 109
-	SAMLUnsupportedOperation       ErrorCode = 110
-	SAMLAccessDeniedError          ErrorCode = 111
-	SAMLServerError                ErrorCode = 112
-	SAMLInvalidArgError            ErrorCode = 113
-	SAMLMetadataRetrievalError     ErrorCode = 114
-	SAMLParseError                 ErrorCode = 115
+	SAMLInvalidRequestError     ErrorCode = 107
+	SAMLInvalidClientError      ErrorCode = 108
+	SAMLUnauthorizedClientError ErrorCode = 109
+	SAMLUnsupportedOperation    ErrorCode = 110
+	SAMLAccessDeniedError       ErrorCode = 111
+	SAMLServerError             ErrorCode = 112
+	SAMLInvalidArgError         ErrorCode = 113
+	SAMLMetadataRetrievalError  ErrorCode = 114
+	SAMLParseError              ErrorCode = 115
 )
 
 var errorText = map[ErrorCode]string{
@@ -47,8 +47,8 @@ var errorText = map[ErrorCode]string{
 // Error is unified error
 type Error struct {
 	ErrorCode
-	Msg string
-        Detail string
+	Msg    string
+	Detail string
 }
 
 // Error implements error
@@ -83,7 +83,7 @@ func (e *Error) WithCause(err error) *Error {
 			e.Detail += ", cause: " + err.Error()
 		}
 	}
-        return e
+	return e
 }
 
 // Name returns the string name of the error code
@@ -96,9 +96,9 @@ func (c ErrorCode) MakeError(msg string, detail string, err error) *Error {
 	e := &Error{
 		ErrorCode: c,
 		Msg:       msg,
-                Detail:    detail,
+		Detail:    detail,
 	}
-        return e.WithCause(err)
+	return e.WithCause(err)
 }
 
 // IsErrorWithCode checks whether the specified error is SAML error with specifier ErrorCode

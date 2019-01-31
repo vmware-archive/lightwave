@@ -394,8 +394,12 @@ LwCARestResultGenerateResponseBody(
         if (pRestRslt->errCode)
         {
             pjReqId = json_string(LWCA_SAFE_STRING(pRestRslt->pszRequestId));
-            dwError = json_object_set_new(pjBody, "requestId", pjReqId);
-            BAIL_ON_JSON_ERROR_WITH_MSG(dwError, "Failed to set new json object 'requestId'");
+            iJsonErr = json_object_set_new(pjBody, "requestId", pjReqId);
+            if (iJsonErr)
+            {
+                dwError = LWCA_JSON_ERROR;
+                BAIL_ON_JSON_ERROR_WITH_MSG(dwError, "Failed to set new json object 'requestId'");
+            }
 
             pjStrErrCode = json_string(pHttpError->pszHttpStatus);
             iJsonErr = json_object_set_new(pjBody, "code", pjStrErrCode);
@@ -449,7 +453,7 @@ LwCARestResultGenerateResponseBody(
     }
 
 cleanup:
-    LwCAJsonCleanupObject(pjBody);
+    LWCA_SAFE_JSON_DECREF(pjBody);
 
     return dwError;
 
@@ -475,7 +479,7 @@ _DataMapPairFree(
     if (pPair->pValue)
     {
         pjData = (PLWCA_JSON_OBJECT)pPair->pValue;
-        LwCAJsonCleanupObject(pjData);
+        LWCA_SAFE_JSON_DECREF(pjData);
     }
 }
 
@@ -504,7 +508,7 @@ LwCAFreeRESTResult(
     if (pRestRslt)
     {
         LWCA_SAFE_FREE_STRINGA(pRestRslt->pszRequestId);
-        LWCA_SAFE_FREE_MEMORY(pRestRslt->pszErrDetail);
+        LWCA_SAFE_FREE_STRINGA(pRestRslt->pszErrDetail);
         LwRtlHashMapClear(pRestRslt->pDataMap, _DataMapPairFree, NULL);
         LwRtlFreeHashMap(&pRestRslt->pDataMap);
         LWCA_SAFE_FREE_STRINGA(pRestRslt->pszBody);

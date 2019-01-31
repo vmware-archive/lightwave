@@ -60,6 +60,18 @@ int main(VOID)
         cmocka_unit_test_setup_teardown(LwCAAuthTokenGetHOTK_InvalidInput, NULL, NULL),
     };
 
+    const struct CMUnitTest LwCASrvInit_Valid_Tests[] =
+    {
+        cmocka_unit_test(Test_LwCAGetRootCAId_Valid),
+        cmocka_unit_test(Test_LwCAGetCAEndpoint_Valid),
+    };
+
+    const struct CMUnitTest LwCASrvInit_Invalid_Tests[] =
+    {
+        cmocka_unit_test(Test_LwCAGetRootCAId_Invalid),
+        cmocka_unit_test(Test_LwCAGetCAEndpoint_Invalid),
+    };
+
     ret = cmocka_run_group_tests_name("MutentCA server common JSON Util Tests", LwCASrvJSONUtils_Tests, NULL, NULL);
     if (ret)
     {
@@ -76,6 +88,18 @@ int main(VOID)
     if (ret)
     {
         fail_msg("%s", "MutentCA server common Auth Token tests failed");
+    }
+
+    ret = cmocka_run_group_tests_name("MutentCA server common init tests", LwCASrvInit_Valid_Tests, Test_LwCASrvInitTests_Valid_Setup, Test_LwCASrvInitTests_Valid_Teardown);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA server common init tests failed");
+    }
+
+    ret = cmocka_run_group_tests_name("MutentCA server common init tests", LwCASrvInit_Invalid_Tests, Test_LwCASrvInitTests_Invalid_Setup, Test_LwCASrvInitTests_Invalid_Teardown);
+    if (ret)
+    {
+        fail_msg("%s", "MutentCA server common init tests failed");
     }
 
     return 0;

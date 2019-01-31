@@ -87,4 +87,5 @@ typedef enum
 #define LWCA_LDAP_DC_DN_MAXLENGTH           sizeof(char)*512 + 1
 #define LWCA_UUID_LEN                       37
 
+#define AIA_DATA_FORMAT "caIssuers;URI:%s"
 #endif //__LWCA_COMMON_DEFINES_H__

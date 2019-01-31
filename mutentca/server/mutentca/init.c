@@ -92,6 +92,7 @@ LwCAShutdown(
     LwCAPolicyFreeCtx(gpPolicyCtx);
     LwCADbFreeCtx();
     LwCAFreeCACtx();
+    LwCASrvFreeCtx();
     //LwCAServiceShutdown();
     LwCATerminateLogging();
     //LwCASrvCleanupGlobalState();
@@ -114,6 +115,7 @@ LwCASrvInitCA(
     )
 {
     DWORD dwError = 0;
+    PSTR pszHost = NULL;
     PLWCA_JSON_OBJECT pJsonConfig = NULL;
     PLWCA_JSON_OBJECT pAuthZConfig = NULL;
     PLWCA_JSON_OBJECT pSecurityConfig = NULL;
@@ -132,6 +134,9 @@ LwCASrvInitCA(
                 __LINE__,
                 LWCA_CONFIG_FILE_PATH);
     }
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError =  LwCASrvInitCtx(pJsonConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
     /* get the authorization config section */
@@ -201,8 +206,9 @@ LwCASrvInitCA(
     BAIL_ON_LWCA_ERROR(dwError);
 
 error:
-
-    LwCAJsonCleanupObject(pJsonConfig);
+    LWCA_SAFE_FREE_STRINGA(pszHost);
+    LWCA_SAFE_JSON_DECREF(pJsonConfig);
+    LWCA_SAFE_JSON_DECREF(pPolicyConfigContent);
 
     return dwError;
 }

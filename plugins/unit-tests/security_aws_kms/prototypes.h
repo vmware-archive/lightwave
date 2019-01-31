@@ -67,6 +67,17 @@ Security_Aws_Kms_Tests_Check_Version (
     void **state
     );
 
+/* get name */
+int
+Security_Aws_Kms_Tests_Get_Name (
+    void **state
+    );
+
+VOID
+Security_Aws_Kms_Tests_Check_Name (
+    void **state
+    );
+
 /* config parse */
 VOID
 Security_Aws_Kms_Tests_Config_Parse_Good(

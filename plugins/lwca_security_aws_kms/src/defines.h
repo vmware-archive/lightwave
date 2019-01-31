@@ -31,4 +31,6 @@
 #define KEY_CMK_ID         "cmk_id"
 #define KEY_KEY_SPEC       "key_spec"
 
+#define LWCA_SECURITY_AWS_KMS "lwca_security_aws_kms"
+
 #endif /* _LWCA_SECURITY_AWS_KMS_DEFINES_H_ */

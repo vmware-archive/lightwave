@@ -22,9 +22,7 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
 
         $scope.vm = this;
         $scope.vm.summary = {};
-
         init();
-
         function init() {
             var errAlert = document.getElementById("errorAlert")
             errAlert.style.display = 'none'
@@ -82,6 +80,7 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                     }
                     else {
                         $rootScope.globals.currentUser = JSON.parse($window.sessionStorage.currentUser);
+                        getRestEndPoint();
                         redirectToSsoHome();
                     }
                 }
@@ -93,6 +92,24 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
             getIdentitySources();
             getRelyingParties();
             getIdentityProviders();
+        }
+
+        function getRestEndPoint() {
+            var jsonData;
+            readConfigFile("config/lightwaveui.json", function(data){
+                jsonData = JSON.parse(data);
+                for (var i = 0; i < jsonData.knownServers.length; i ++){
+                    if (jsonData.knownServers[i].server.toUpperCase() === $rootScope.globals.currentUser.server.host.toUpperCase()){
+                        if(typeof jsonData.knownServers[i].restEndPoint === undefined){
+                            $rootScope.globals.currentUser.rest_server = jsonData.knownServers[i].server;
+                        }else{
+                            $rootScope.globals.currentUser.rest_server = jsonData.knownServers[i].restEndPoint;
+                        }
+                        $window.sessionStorage.currentUser = JSON.stringify($rootScope.globals.currentUser)
+                        return;
+                    }
+                }
+            })
         }
 
         function authenticateUser(tenant, server, localLogin) {
@@ -112,8 +129,8 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
                 }
                 for (var i = 0; i < jsonData.knownServers.length; i ++){
                     if (jsonData.knownServers[i].server === server ||
-                       (jsonData.knownServers[i].tenant === undefined || (jsonData.knownServers[i].tenant && jsonData.knownServers[i].tenant === tenant))){
-			var OIDCClientID = jsonData.knownServers[i].oidcClientId;
+                       (typeof jsonData.knownServers[i].tenant === undefined || (jsonData.knownServers[i].tenant && jsonData.knownServers[i].tenant === tenant))){
+			           var OIDCClientID = jsonData.knownServers[i].oidcClientId;
                         redirectToAuthorizeUrl(server, OIDCClientID, tenant, localLogin);
                         return;
                     }
@@ -324,6 +341,7 @@ module.controller('HomeCntrl', ['$rootScope', '$cookies', '$location', '$scope',
             var decodedAccessJwt = Util.decodeJWT(access_token);
             var serverHostName = getHostName(decodedJwt.header.iss);
             var clientHostName = getHostName(location.href);
+
             $rootScope.globals = {
                 currentUser: {
                     server:  { host: serverHostName, port: $location.port(), protocol: $location.protocol() },

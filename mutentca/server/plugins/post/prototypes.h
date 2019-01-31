@@ -19,83 +19,32 @@ LwCADbPostPluginInitialize(
     PLWCA_DB_HANDLE     *ppHandle
     );
 
+PCSTR
+LwCADbPostPluginGetVersion(
+    VOID
+    );
+
 DWORD
 LwCADbPostPluginAddCA(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PLWCA_DB_CA_DATA    pCAData,
-    PCSTR               pcszParentCA
+    PLWCA_DB_HANDLE             pHandle,            // IN
+    PCSTR                       pcszCAId,           // IN
+    PLWCA_DB_CA_DATA            pCAData,            // IN
+    PLWCA_DB_ROOT_CERT_DATA     pCARootCertData     // IN
     );
 
 DWORD
-LwCADbPostPluginAddCertData(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_DB_CERT_DATA      pCertData
-);
-
-DWORD
-LwCADbPostPluginCheckCA(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PBOOLEAN            pbExists
-    );
-
-DWORD
-LwCADbPostPluginCheckCertData(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszSerialNumber,
-    PBOOLEAN            pbExists
+LwCADbPostPluginAddCA(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CA_DATA            pCAData,
+    PLWCA_DB_ROOT_CERT_DATA     pCARootCertData
     );
 
 DWORD
 LwCADbPostPluginGetCA(
-    PLWCA_DB_HANDLE          pHandle,
-    PCSTR                    pcszCAId,
-    PLWCA_DB_CA_DATA         *ppCAData
-    );
-
-DWORD
-LwCADbPostPluginGetCACertificates(
-    PLWCA_DB_HANDLE              pHandle,
-    PCSTR                        pcszCAId,
-    PLWCA_CERTIFICATE_ARRAY      *ppCertArray
-    );
-
-DWORD
-LwCADbPostPluginGetCertData(
-    PLWCA_DB_HANDLE             pHandle,
-    PCSTR                       pcszCAId,
-    PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
-    );
-
-DWORD
-LwCADbPostPluginGetCACRLNumber(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PSTR                *ppszCRLNumber
-    );
-
-DWORD
-LwCADbPostPluginGetParentCAId(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PSTR                *ppszParentCAId
-    );
-
-DWORD
-LwCADbPostPluginGetCAAuthBlob(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
-    PSTR                    *ppszAuthBlob
-    );
-
-DWORD
-LwCADbPostPluginGetCAStatus(
-    PLWCA_DB_HANDLE         pHandle,
-    PCSTR                   pcszCAId,
-    PLWCA_CA_STATUS         pStatus
+    PLWCA_DB_CA_DATA        *ppCAData
     );
 
 DWORD
@@ -105,11 +54,78 @@ LwCADbPostPluginUpdateCA(
     PLWCA_DB_CA_DATA        pCAData
     );
 
+VOID
+LwCADbPostPluginFreeCAData(
+    PLWCA_DB_CA_DATA  pCAData
+    );
+
 DWORD
-LwCADbPostPluginUpdateCAStatus(
+LwCADbPostPluginAddCACert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    );
+
+DWORD
+LwCADbPostPluginGetCACerts(
+    PLWCA_DB_HANDLE                 pHandle,
+    PCSTR                           pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppCACerts
+    );
+
+DWORD
+LwCADbPostPluginGetCACert(
+    PLWCA_DB_HANDLE                 pHandle,
+    PCSTR                           pcszCAId,   // UNUSED
+    PCSTR                           pcszSKI,    // REQUIRED
+    PLWCA_DB_ROOT_CERT_DATA         *ppCACert
+    );
+
+DWORD
+LwCADbPostPluginUpdateCACert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_ROOT_CERT_DATA     pCACert
+    );
+
+VOID
+LwCADbPostPluginFreeRootCertData(
+    PLWCA_DB_ROOT_CERT_DATA         pRootCertData
+    );
+
+VOID
+LwCADbPostPluginFreeRootCertDataArray(
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   pRootCertDataArray
+    );
+
+DWORD
+LwCADbPostPluginAddCertData(
     PLWCA_DB_HANDLE         pHandle,
     PCSTR                   pcszCAId,
-    LWCA_CA_STATUS          status
+    PLWCA_DB_CERT_DATA      pCertData
+    );
+
+DWORD
+LwCADbPostPluginGetCerts(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCerts
+    );
+
+DWORD
+LwCADbPostPluginGetCert(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,           // UNUSED
+    PCSTR                       pcszSerialNumber,   // REQUIRED
+    PLWCA_DB_CERT_DATA          *ppCert
+    );
+
+DWORD
+LwCADbPostPluginGetRevokedCerts(
+    PLWCA_DB_HANDLE             pHandle,
+    PCSTR                       pcszCAId,
+    PCSTR                       pcszAKI,
+    PLWCA_DB_CERT_DATA_ARRAY    *ppCerts
     );
 
 DWORD
@@ -119,26 +135,14 @@ LwCADbPostPluginUpdateCertData(
     PLWCA_DB_CERT_DATA      pCertData
     );
 
-DWORD
-LwCADbPostPluginUpdateCACRLNumber(
-    PLWCA_DB_HANDLE     pHandle,
-    PCSTR               pcszCAId,
-    PCSTR               pcszCRLNumber
-    );
-
 VOID
-LwCADbPostPluginFreeCAData(
-    PLWCA_DB_CA_DATA  pCAData
+LwCADbPostPluginFreeCertData(
+    PLWCA_DB_CERT_DATA      pCertData
     );
 
 VOID
 LwCADbPostPluginFreeCertDataArray(
     PLWCA_DB_CERT_DATA_ARRAY pCertDataArray
-    );
-
-VOID
-LwCADbPostPluginFreeCertificates(
-    PLWCA_CERTIFICATE_ARRAY pCertArray
     );
 
 VOID
@@ -159,11 +163,11 @@ LwCADbPostCNFilterBuilder(
     );
 
 // serializer.c
+
 DWORD
 LwCASerializeCAToJSON(
     PCSTR               pcszCAId,
     PLWCA_DB_CA_DATA    pCAData,
-    PCSTR               pcszParentCA,
     PCSTR               pcszDN,
     PSTR                *ppszReqBody
     );
@@ -210,22 +214,46 @@ LwCAGetStringArrayAttrFromResponse(
 
 DWORD
 LwCASerializeCertDataToJSON(
-    PCSTR               pcszCAId,
     PLWCA_DB_CERT_DATA  pCertData,
-    PCSTR               pcszCADN,
+    PCSTR               pcszDN,
     PSTR                *ppszResponse
     );
 
 DWORD
 LwCADeserializeJSONToCertData(
+    PCSTR                   pcszResponse,
+    PLWCA_DB_CERT_DATA      *ppCertData
+    );
+
+DWORD
+LwCADeserializeJSONToCertDataArray(
     PCSTR                       pcszResponse,
     PLWCA_DB_CERT_DATA_ARRAY    *ppCertDataArray
     );
 
 DWORD
-LwCAGetCertArrayFromEncodedStringArray(
-    PLWCA_STRING_ARRAY          pEncodedStrArray,
-    PLWCA_CERTIFICATE_ARRAY     *ppCertArray
+LwCADeserializeJSONToRootCertData(
+    PCSTR                           pcszResponse,
+    PLWCA_DB_ROOT_CERT_DATA         *ppRootCertData
+    );
+
+DWORD
+LwCADeserializeJSONToRootCertDataArray(
+    PCSTR                           pcszResponse,
+    PLWCA_DB_ROOT_CERT_DATA_ARRAY   *ppRootCertDataArray
+    );
+
+DWORD
+LwCASerializeRootCertDataToJSON(
+    PLWCA_DB_ROOT_CERT_DATA     pRootCertData,
+    PCSTR                       pcszDN,
+    PSTR                        *ppszReqBody
+    );
+
+DWORD
+LwCAGenerateRootCertPatchRequestBody(
+    PLWCA_DB_ROOT_CERT_DATA     pCertData,
+    PSTR                        *ppszBody
     );
 
 DWORD
@@ -262,6 +290,22 @@ DWORD
 LwCADbPostPluginUnlockCA(
     PLWCA_DB_HANDLE pHandle,
     PCSTR           pcszCAId,
+    PCSTR           pcszUuid
+    );
+
+DWORD
+LwCADbPostPluginLockCACert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
+    PSTR            *ppszUuid
+    );
+
+DWORD
+LwCADbPostPluginUnlockCACert(
+    PLWCA_DB_HANDLE pHandle,
+    PCSTR           pcszCAId,
+    PCSTR           pcszSerialNumber,
     PCSTR           pcszUuid
     );
 
