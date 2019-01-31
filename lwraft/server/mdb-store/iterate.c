@@ -233,3 +233,176 @@ VmDirMDBIndexIteratorFree(
         VMDIR_SAFE_FREE_MEMORY(pIterator);
     }
 }
+
+DWORD
+VmDirMDBEntryBlobIteratorInit(
+    PVDIR_BACKEND_INTERFACE             pBE,
+    ENTRYID                             EId,
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR*   ppIterator
+    )
+{
+    DWORD   dwError = 0;
+    VDIR_DB mdbDBi = 0;
+    PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB_DBT     value = {0};
+    PVDIR_DB_TXN    pTxn = NULL;
+    PVDIR_DB_DBC    pCursor = NULL;
+    unsigned char   EIdBytes[sizeof( ENTRYID )] = {0};
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator = NULL;
+    PVDIR_MDB_ENTRYBLOB_ITERATOR      pMdbIterator = NULL;
+
+    if (!pBE || !pDB || !ppIterator)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_BACKEND_ENTRYBLOB_ITERATOR),
+            (PVOID*)&pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_MDB_ENTRYBLOB_ITERATOR),
+            (PVOID*)&pMdbIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIterator->pIterator = (PVOID)pMdbIterator;
+
+    mdbDBi = pDB->mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+
+    dwError = mdb_txn_begin(pDB->mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMdbIterator->pTxn = pTxn;
+
+    dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMdbIterator->pCursor = pCursor;
+
+    // get the last record - max eid
+    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_LAST);
+    if (dwError != 0)
+    {
+        pIterator->bHasNext = FALSE;
+        dwError = MDB_NOTFOUND;
+        pMdbIterator->bAbort = TRUE;
+    }
+    MDBDBTToEntryId(&key, &pIterator->maxEID);
+
+    key.mv_data = &EIdBytes[0];
+    MDBEntryIdToDBT(EId, &key);
+
+    // locate next record that is >= key
+    dwError = mdb_cursor_get(pCursor, &key, &value, MDB_SET_RANGE);
+    if (dwError == 0)
+    {
+        MDBDBTToEntryId(&key, &pMdbIterator->entryId);
+        pIterator->startEID = pMdbIterator->entryId;
+        pIterator->bHasNext = TRUE;
+    }
+    else
+    {
+        pIterator->bHasNext = FALSE;
+        dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+        pMdbIterator->bAbort = dwError ? TRUE : FALSE;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppIterator = pIterator;
+
+cleanup:
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    VmDirMDBEntryBlobIteratorFree(pIterator);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBEntryBlobIterate(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR    pIterator,
+    ENTRYID*                            pEntryId
+    )
+{
+    DWORD   dwError = 0;
+    PVDIR_MDB_ENTRYBLOB_ITERATOR  pMdbIterator = NULL;
+    PVDIR_DB_DBC    pCursor = NULL;
+    VDIR_DB_DBT     key = {0};
+    VDIR_DB_DBT     value = {0};
+
+    if (!pIterator || !pEntryId)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pMdbIterator = (PVDIR_MDB_ENTRYBLOB_ITERATOR)pIterator->pIterator;
+
+    pCursor = pMdbIterator->pCursor;
+    if (pIterator->bHasNext)
+    {
+        *pEntryId = pMdbIterator->entryId;
+
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_NEXT);
+        if (dwError == 0)
+        {
+            MDBDBTToEntryId(&key, &pMdbIterator->entryId);
+            pIterator->bHasNext = TRUE;
+        }
+        else
+        {
+            pIterator->bHasNext = FALSE;
+            dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+            pMdbIterator->bAbort = dwError ? TRUE : FALSE;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)", __FUNCTION__, dwError );
+
+    goto cleanup;
+}
+
+VOID
+VmDirMDBEntryBlobIteratorFree(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator
+    )
+{
+    PVDIR_MDB_ENTRYBLOB_ITERATOR  pMdbIterator = NULL;
+
+    if (pIterator)
+    {
+        pMdbIterator = (PVDIR_MDB_ENTRYBLOB_ITERATOR)pIterator->pIterator;
+        if (pMdbIterator)
+        {
+            if (pMdbIterator->pCursor)
+            {
+                mdb_cursor_close(pMdbIterator->pCursor);
+            }
+            if (pMdbIterator->pTxn)
+            {
+                if (pMdbIterator->bAbort)
+                {
+                    mdb_txn_abort(pMdbIterator->pTxn);
+                }
+                else
+                {
+                    mdb_txn_commit(pMdbIterator->pTxn);
+                }
+            }
+            VMDIR_SAFE_FREE_MEMORY(pMdbIterator);
+        }
+        VMDIR_SAFE_FREE_MEMORY(pIterator);
+    }
+}

@@ -110,6 +110,15 @@ typedef struct _VDIR_BACKEND_INDEX_ITERATOR
 
 } VDIR_BACKEND_INDEX_ITERATOR, *PVDIR_BACKEND_INDEX_ITERATOR;
 
+typedef struct _VDIR_BACKEND_ENTRYBLOB_ITERATOR
+{
+    PVOID   pIterator;
+    BOOLEAN bHasNext;
+    ENTRYID startEID;
+    ENTRYID maxEID;
+
+} VDIR_BACKEND_ENTRYBLOB_ITERATOR, *PVDIR_BACKEND_ENTRYBLOB_ITERATOR;
+
 typedef struct _VDIR_BACKEND_USN_LIST*          PVDIR_BACKEND_USN_LIST;
 
 /*
@@ -355,8 +364,7 @@ typedef DWORD (*PFN_BACKEND_INDEX_DELETE)(
 typedef DWORD (*PFN_BACKEND_INDEX_POPULATE)(
                     PVDIR_BACKEND_INTERFACE pBE,
                     PLW_HASHMAP             pIndexCfgs,
-                    ENTRYID                 startEntryId,
-                    DWORD                   dwBatchSize
+                    PVMDIR_INDEXING_BATCH   pIndexingBatch
                     );
 /*
  * Initialize index table iterator
@@ -387,6 +395,35 @@ typedef DWORD (*PFN_BACKEND_INDEX_ITERATE)(
 typedef VOID (*PFN_BACKEND_INDEX_ITERATOR_FREE)(
                     PVDIR_BACKEND_INDEX_ITERATOR    pIterator
                     );
+
+/*
+ * Initialize blob table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_ENTRYBLOB_ITERATOR_INIT)(
+                    PVDIR_BACKEND_INTERFACE             pBE,
+                    ENTRYID                             eId,
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR*   ppIterator
+                    );
+/*
+ * Iterate eid in the blob table
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef DWORD (*PFN_BACKEND_ENTRYBLOB_ITERATE)(
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR    pIterator,
+                    ENTRYID*                            pEntryId
+                    );
+/*
+ * Free blob table iterator
+ * return error -
+ * ERROR_BACKEND_ERROR:             all others
+ */
+typedef VOID (*PFN_BACKEND_ENTRYBLOB_ITERATOR_FREE)(
+                    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator
+                    );
+
 /*
  * Shutdown backend
  * return error -
@@ -503,6 +540,22 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Free index table enumerator
      */
     PFN_BACKEND_INDEX_ITERATOR_FREE pfnBEIndexIteratorFree;
+
+    //////////////////////////////////////////////////////////////////////
+    // EntryBlob iterator
+    //////////////////////////////////////////////////////////////////////
+    /*
+     * initialize blob table enumerator
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATOR_INIT   pfnBEEntryBlobIteratorInit;
+    /*
+     * enumerate eid  in the blob table
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATE         pfnBEEntryBlobIterate;
+    /*
+     * Free blob table enumerator
+     */
+    PFN_BACKEND_ENTRYBLOB_ITERATOR_FREE   pfnBEEntryBlobIteratorFree;
 
     //////////////////////////////////////////////////////////////////////
     // transaction related functions

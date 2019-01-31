@@ -387,7 +387,7 @@ VmDirIndexingTaskRecordProgress(
 
     // record offset to continue from in case of restart
     dwError = VmDirAllocateStringPrintf(
-            &pszOffset, "%u",  gVdirIndexGlobals.offset);
+            &pszOffset, "%lld",  gVdirIndexGlobals.offset);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = beCtx.pBE->pfnBEUniqKeySetValue(

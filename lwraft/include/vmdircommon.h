@@ -500,6 +500,20 @@ int VmDirStringToIA(
 );
 
 DWORD
+VmDirStringToUINT64(
+    PCSTR      pszString,
+    PSTR*      ppEndPtr,
+    UINT64*    pOutVal
+    );
+
+DWORD
+VmDirStringToINT64(
+    PCSTR      pszString,
+    PSTR*      ppEndPtr,
+    INT64*     pOutVal
+    );
+
+DWORD
 VmDirStringErrorA(
    PSTR buffer,
    size_t numberOfElements,

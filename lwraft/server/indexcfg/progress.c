@@ -172,7 +172,8 @@ VmDirIndexCfgRestoreProgress(
                 pBECtx, pszInitOffsetKey, &pszInitOffsetVal);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        pIndexCfg->initOffset = VmDirStringToIA(pszInitOffsetVal);
+        dwError = VmDirStringToINT64(pszInitOffsetVal, NULL, &pIndexCfg->initOffset);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
         dwError = pBECtx->pBE->pfnBEUniqKeyGetValue(
                 pBECtx, pszScopesKey, &pszScopesVal);
@@ -409,7 +410,7 @@ _BuildAllValStrs(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(
-            &pszInitOffsetVal, "%u", pIndexCfg->initOffset);
+            &pszInitOffsetVal, "%lld", pIndexCfg->initOffset);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     while (LwRtlHashMapIterate(pIndexCfg->pUniqScopes, &iter, &pair))

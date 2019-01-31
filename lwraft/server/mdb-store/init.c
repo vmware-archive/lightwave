@@ -161,6 +161,9 @@ VmDirMDBBEInterface (
     pInterface->pfnBEIndexIteratorInit   = VmDirMDBIndexIteratorInit;
     pInterface->pfnBEIndexIterate        = VmDirMDBIndexIterate;
     pInterface->pfnBEIndexIteratorFree   = VmDirMDBIndexIteratorFree;
+    pInterface->pfnBEEntryBlobIteratorInit = VmDirMDBEntryBlobIteratorInit;
+    pInterface->pfnBEEntryBlobIterate      = VmDirMDBEntryBlobIterate;
+    pInterface->pfnBEEntryBlobIteratorFree = VmDirMDBEntryBlobIteratorFree;
     pInterface->pfnBETxnBegin            = VmDirMDBTxnBegin;
     pInterface->pfnBETxnAbort            = VmDirMDBTxnAbort;
     pInterface->pfnBETxnCommit           = VmDirMDBTxnCommit;

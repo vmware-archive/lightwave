@@ -751,6 +751,14 @@ typedef struct _VDIR_RAFT_LOG
     VDIR_BACKEND_CTX beCtx;
 } VDIR_RAFT_LOG, *PVDIR_RAFT_LOG;
 
+typedef struct _VMDIR_INDEXING_BATCH
+{
+    ENTRYID  startEID;
+    ENTRYID  endEID;
+    DWORD    dwBatchSize;
+    DWORD    dwNumEntryIndexed;
+} VMDIR_INDEXING_BATCH, *PVMDIR_INDEXING_BATCH;
+
 DWORD
 VmDirInitBackend();
 

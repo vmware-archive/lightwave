@@ -48,6 +48,9 @@ typedef struct _VDIR_INDEX_GLOBALS
     // current indexing offset
     ENTRYID             offset;
 
+    // number of entry indexed
+    DWORD               dwNumEntryIndexed;
+
     // indexing thread info
     PVDIR_THREAD_INFO   pThrInfo;
 

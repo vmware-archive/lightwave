@@ -86,7 +86,6 @@ VmDirIndexingTaskCompute(
         dwError = pBE->pfnBEMaxEntryId(pBE, &maxEId);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        gVdirIndexGlobals.offset += INDEXING_BATCH_SIZE;
         if (gVdirIndexGlobals.offset > maxEId)
         {
             gVdirIndexGlobals.offset = NEW_ENTRY_EID_PREFIX;
@@ -195,6 +194,7 @@ VmDirIndexingTaskPopulateIndices(
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
     PVDIR_BACKEND_INTERFACE pBE = NULL;
     PLW_HASHMAP pIndexCfgs  = NULL;
+    VMDIR_INDEXING_BATCH   indexingBatch = {0};
 
     if (!pTask)
     {
@@ -204,6 +204,12 @@ VmDirIndexingTaskPopulateIndices(
 
     pBE = VmDirBackendSelect(NULL);
 
+    pNode = pTask->pIndicesToPopulate->pTail;
+    if (!pNode)
+    {
+        goto cleanup;
+    }
+
     dwError = LwRtlCreateHashMap(
             &pIndexCfgs,
             LwRtlHashDigestPstrCaseless,
@@ -211,7 +217,6 @@ VmDirIndexingTaskPopulateIndices(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    pNode = pTask->pIndicesToPopulate->pTail;
     while (pNode)
     {
         PVDIR_INDEX_CFG pIndexCfg = (PVDIR_INDEX_CFG)pNode->pElement;
@@ -231,13 +236,23 @@ VmDirIndexingTaskPopulateIndices(
         pNode = pNode->pNext;
     }
 
+    indexingBatch.dwBatchSize = INDEXING_BATCH_SIZE;
+    indexingBatch.startEID = gVdirIndexGlobals.offset;
+    indexingBatch.endEID = gVdirIndexGlobals.offset;
+
     dwError = pBE->pfnBEIndexPopulate(
-            pBE, pIndexCfgs,  gVdirIndexGlobals.offset, INDEXING_BATCH_SIZE);
+        pBE, pIndexCfgs, &indexingBatch);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    gVdirIndexGlobals.offset = indexingBatch.endEID + 1;
+    gVdirIndexGlobals.dwNumEntryIndexed += indexingBatch.dwNumEntryIndexed;
+
 cleanup:
-    LwRtlHashMapClear(pIndexCfgs, VmDirNoopHashMapPairFree, NULL);
-    LwRtlFreeHashMap(&pIndexCfgs);
+    if (pIndexCfgs)
+    {
+        LwRtlHashMapClear(pIndexCfgs, VmDirNoopHashMapPairFree, NULL);
+        LwRtlFreeHashMap(&pIndexCfgs);
+    }
     return dwError;
 
 error:
@@ -386,7 +401,7 @@ VmDirIndexingTaskRecordProgress(
 
     // record offset to continue from in case of restart
     dwError = VmDirAllocateStringPrintf(
-            &pszOffset, "%u",  gVdirIndexGlobals.offset);
+            &pszOffset, "%lld",  gVdirIndexGlobals.offset);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = beCtx.pBE->pfnBEUniqKeySetValue(
@@ -408,7 +423,7 @@ VmDirIndexingTaskRecordProgress(
         }
 
         // log populate progress every 10000
-        if (gVdirIndexGlobals.offset % 10000 == 0 &&
+        if (gVdirIndexGlobals.dwNumEntryIndexed % 10000 == 0 &&
             (!pUpdCfg || pUpdCfg->status == VDIR_INDEXING_IN_PROGRESS))
         {
             VMDIR_SAFE_FREE_MEMORY(pszStatus);

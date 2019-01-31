@@ -209,6 +209,39 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirGetEIDBatch(
+    PVDIR_BACKEND_INTERFACE pBE,
+    ENTRYID     eId,
+    DWORD       dwBatchSize,
+    ENTRYID*    pEidArray
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR pIterator = NULL;
+
+    dwError = pBE->pfnBEEntryBlobIteratorInit(pBE, eId, &pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (pIterator->bHasNext && dwCnt < dwBatchSize)
+    {
+        dwError = pBE->pfnBEEntryBlobIterate(pIterator, &(pEidArray[dwCnt]));
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwCnt++;
+    }
+
+cleanup:
+    pBE->pfnBEEntryBlobIteratorFree(pIterator);
+
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 /*
  * Create indices start from dwStartEntryId and next dwBatchSize entries.
  */
@@ -216,8 +249,7 @@ DWORD
 VmDirMDBIndicesPopulate(
     PVDIR_BACKEND_INTERFACE pBE,
     PLW_HASHMAP             pIndexCfgs,
-    ENTRYID                 startEntryId,
-    DWORD                   dwBatchSize
+    PVMDIR_INDEXING_BATCH   pIndexingBatch
     )
 {
     DWORD   dwError = 0;
@@ -228,28 +260,40 @@ VmDirMDBIndicesPopulate(
     VDIR_BACKEND_CTX    mdbBECtx = {0};
     PVDIR_MDB_DB pDB = VmDirSafeDBFromBE(pBE);
     BOOLEAN bHasTxn = FALSE;
+    ENTRYID*            pEidArray = NULL;
 
-    if (!pDB || !pIndexCfgs)
+    if (!pDB || !pIndexCfgs || !pIndexingBatch)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    dwError = VmDirAllocateMemory(
+        sizeof(ENTRYID)*pIndexingBatch->dwBatchSize,
+        (PVOID) &pEidArray);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = _VmDirGetEIDBatch(
+        pBE,
+        pIndexingBatch->startEID,
+        pIndexingBatch->dwBatchSize,
+        pEidArray);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSchemaCtxAcquire(&pSchemaCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     mdbBECtx.pBE = pBE;
     dwError = VmDirMDBTxnBegin(&mdbBECtx, BE_DB_FLAGS_ZERO, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    for (dwCnt = 0; dwCnt < dwBatchSize; dwCnt ++)
+    for (dwCnt = 0; dwCnt < pIndexingBatch->dwBatchSize && pEidArray[dwCnt] != 0; dwCnt ++)
     {
         VDIR_ENTRY entry = {0};
         PVDIR_ATTRIBUTE pAttr = NULL;
 
         dwError = VmDirMDBEIdToEntry(   &mdbBECtx,
                                         pSchemaCtx,
-                                        startEntryId + dwCnt,
+                                        pEidArray[dwCnt],
                                         &entry,
                                         VDIR_BACKEND_ENTRY_LOCK_WRITE);  // acquire write lock
 
@@ -289,6 +333,12 @@ VmDirMDBIndicesPopulate(
         pEntry = NULL;
     }
 
+    if (dwCnt > 0)
+    {
+        pIndexingBatch->endEID = pEidArray[dwCnt-1];
+        pIndexingBatch->dwNumEntryIndexed = dwCnt;
+    }
+
     if (bHasTxn)
     {
         dwError = VmDirMDBTxnCommit(&mdbBECtx);
@@ -300,6 +350,8 @@ cleanup:
     mdbBECtx.pBE = NULL;
     VmDirBackendCtxContentFree(&mdbBECtx);
     VmDirSchemaCtxRelease(pSchemaCtx);
+    VMDIR_SAFE_FREE_MEMORY(pEidArray);
+
     return dwError;
 
 error:

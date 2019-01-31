@@ -292,8 +292,7 @@ DWORD
 VmDirMDBIndicesPopulate(
     PVDIR_BACKEND_INTERFACE pBE,
     PLW_HASHMAP             pIndexCfgs,
-    ENTRYID                 startEntryId,
-    DWORD                   dwBatchSize
+    PVMDIR_INDEXING_BATCH   pIndexingBatch
     );
 
 // iterate.c
@@ -315,6 +314,24 @@ VmDirMDBIndexIterate(
 VOID
 VmDirMDBIndexIteratorFree(
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator
+    );
+
+DWORD
+VmDirMDBEntryBlobIteratorInit(
+    PVDIR_BACKEND_INTERFACE             pBE,
+    ENTRYID                             EId,
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR*   ppIterator
+    );
+
+DWORD
+VmDirMDBEntryBlobIterate(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR    pIterator,
+    ENTRYID*                            pEntryId
+    );
+
+VOID
+VmDirMDBEntryBlobIteratorFree(
+    PVDIR_BACKEND_ENTRYBLOB_ITERATOR  pIterator
     );
 
 // config.c
