@@ -3,8 +3,9 @@ package oidc
 import (
 	"crypto/rsa"
 	"crypto/x509"
-	"gopkg.in/square/go-jose.v2"
 	"time"
+
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 // Client represents an oidc client
@@ -71,6 +72,12 @@ func ParseAndValidateIDTokenMulti(
 // ** This api is exposed temporarily, for a short transition period **
 func ParseTenantInToken(token string) (string, error) {
 	return parseTenantInToken(token)
+}
+
+// ParseSignedToken parses a token string and returns an unvalidated JWT.
+func ParseSignedToken(token string) (JWT, error) {
+	jwt, err := parseSignedToken(token, nil)
+	return jwt, err
 }
 
 // Tokens represents successful acquire token response

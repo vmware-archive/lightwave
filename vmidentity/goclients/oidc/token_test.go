@@ -1,10 +1,11 @@
 package oidc
 
 import (
-	"github.com/stretchr/testify/assert"
-	"github.com/stretchr/testify/require"
 	"testing"
 	"time"
+
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
 
 func TestValidateExpiration(t *testing.T) {
@@ -61,13 +62,13 @@ func TestValidateAudienceClaim(t *testing.T) {
 
 func TestParseSignedToken(t *testing.T) {
 	token := "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJodHRwczovL2V4YW1wbGUuY29tIiwic3ViIjoic3ViSjEiLCJuYmYiOjE1MjE3NzMwOTgsImV4cCI6MTUyMTc3NjY5OCwiaWF0IjoxNTIxNzczMDk4LCJqdGkiOiJpZDEyMzQ1NiJ9.wf8E82CGm_saE8gGnoz7aX1COSzkc5ZbcO2H7xJSgIQ"
-	jwt, err := parseSignedToken(token, "issuer1", nil, defaultClockToleranceSecs)
+	jwt, err := parseAndValidateSignedToken(token, "issuer1", nil, defaultClockToleranceSecs)
 	assert.Nil(t, jwt, "Token should be nil")
 	if assert.NotNil(t, err, "Error is expected when using unsupported signature algo") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name())
 	}
 
-	jwt, err = parseSignedToken("", "issuer1", nil, defaultClockToleranceSecs)
+	jwt, err = parseAndValidateSignedToken("", "issuer1", nil, defaultClockToleranceSecs)
 	assert.Nil(t, jwt, "Token should be nil")
 	if assert.NotNil(t, err, "Error is expected when using bad token") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name())
@@ -85,21 +86,21 @@ func TestParseSignedToken(t *testing.T) {
 	require.True(t, ok, "Error when getting keyset from IssuerSigners")
 	require.NotNil(t, s, "KeySet is nil")
 
-	jwt, err = parseSignedToken(strTok, client.Issuer(), s.signers, defaultClockToleranceSecs)
+	jwt, err = parseAndValidateSignedToken(strTok, client.Issuer(), s.signers, defaultClockToleranceSecs)
 	assert.Nil(t, err, "No error expected: %+v", err)
 	assert.NotNil(t, jwt, "Token should not be nil")
 
-	jwt, err = parseSignedToken("  "+strTok+" ", client.Issuer(), s.signers, defaultClockToleranceSecs)
+	jwt, err = parseAndValidateSignedToken("  "+strTok+" ", client.Issuer(), s.signers, defaultClockToleranceSecs)
 	assert.Nil(t, err, "No error expected: %+v", err)
 	assert.NotNil(t, jwt, "Token should not be nil")
 
-	jwt, err = parseSignedToken(strTok+"a", client.Issuer(), s.signers, defaultClockToleranceSecs)
+	jwt, err = parseAndValidateSignedToken(strTok+"a", client.Issuer(), s.signers, defaultClockToleranceSecs)
 	if assert.NotNil(t, err, "Error expected when parsing malformed token") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidSignatureError.Name(), "Wrong Error code: %+v", err)
 	}
 	assert.Nil(t, jwt, "No token expected")
 
-	jwt, err = parseSignedToken(strTok, "wrongIssuer", s.signers, defaultClockToleranceSecs)
+	jwt, err = parseAndValidateSignedToken(strTok, "wrongIssuer", s.signers, defaultClockToleranceSecs)
 	if assert.NotNil(t, err, "Error expected when token from incorrect issuer") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name(), "Wrong Error code: %+v", err)
 	}
@@ -147,7 +148,7 @@ func TestParseHotkClaim(t *testing.T) {
 func testInvalidTokens(t *testing.T, token string) {
 	testInvalidTenantInToken(t, token)
 
-	jwt, err := parseSignedToken(token, "issuer1", nil, defaultClockToleranceSecs)
+	jwt, err := parseAndValidateSignedToken(token, "issuer1", nil, defaultClockToleranceSecs)
 	assert.Nil(t, jwt, "Token should be nil")
 	if assert.NotNil(t, err, "Error is expected when using bad token") {
 		assert.Contains(t, err.Error(), OIDCTokenInvalidError.Name())
