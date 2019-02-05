@@ -69,7 +69,7 @@ DWORD
 LwCAAuthZCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     );

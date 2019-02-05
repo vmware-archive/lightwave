@@ -139,51 +139,9 @@ LwCASrvInitCA(
     dwError =  LwCASrvInitCtx(pJsonConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    /* get the authorization config section */
-    dwError = LwCAJsonGetObjectFromKey(
-                  pJsonConfig,
-                  TRUE,
-                  LWCA_CONFIG_AUTHZ_KEY,
-                  &pAuthZConfig);
-    BAIL_ON_LWCA_ERROR(dwError);
+    /* 1. initialize the DB layer */
 
-    dwError = LwCAAuthZInitialize(pAuthZConfig);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    /* get the security config section */
-    dwError = LwCAJsonGetObjectFromKey(
-                  pJsonConfig,
-                  FALSE,
-                  LWCA_SECURITY_PLUGIN_KEY,
-                  &pSecurityConfig);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCASecurityInitCtx(pSecurityConfig);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    /* get the policy config section */
-    dwError = LwCAJsonGetObjectFromKey(
-                  pJsonConfig,
-                  FALSE,
-                  LWCA_CONFIG_POLICY_KEY,
-                  &pPolicyConfig);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAJsonGetConstStringFromKey(
-                  pPolicyConfig,
-                  FALSE,
-                  LWCA_CONFIG_POLICY_CONFIG_PATH_KEY,
-                  &pcszPolicyConfigPath);
-
-    dwError = LwCAJsonLoadObjectFromFile(
-                  pcszPolicyConfigPath,
-                  &pPolicyConfigContent);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    dwError = LwCAPolicyInitCtx(pPolicyConfigContent, &gpPolicyCtx);
-    BAIL_ON_LWCA_ERROR(dwError);
-
-    /* get the db config section */
+    // get the db config section
     dwError = LwCAJsonGetObjectFromKey(
                   pJsonConfig,
                   FALSE,
@@ -191,10 +149,27 @@ LwCASrvInitCA(
                   &pDbConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    // initialize the DB context
     dwError = LwCADbInitCtx(pDbConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
-    /* get the root CA config section */
+    /* 2. initialize the secure key management layer */
+
+    // get the security config section
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  LWCA_SECURITY_PLUGIN_KEY,
+                  &pSecurityConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // initialize the security context
+    dwError = LwCASecurityInitCtx(pSecurityConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* 3. initialize the CA -- create the root CA if it is first init */
+
+    // get the root CA config section
     dwError = LwCAJsonGetObjectFromKey(
                   pJsonConfig,
                   FALSE,
@@ -202,8 +177,51 @@ LwCASrvInitCA(
                   &pCAConfig);
     BAIL_ON_LWCA_ERROR(dwError);
 
+    // initialize CA
     dwError = LwCAInitCA(pCAConfig);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    /* 4. initialize authorization layer */
+
+    // get the authorization config section
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  TRUE,
+                  LWCA_CONFIG_AUTHZ_KEY,
+                  &pAuthZConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // initialize authorization context
+    dwError = LwCAAuthZInitialize(pAuthZConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    /* 5. initialize policy layer */
+
+    // get the policy config section
+    dwError = LwCAJsonGetObjectFromKey(
+                  pJsonConfig,
+                  FALSE,
+                  LWCA_CONFIG_POLICY_KEY,
+                  &pPolicyConfig);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // load the policy definitions file
+    dwError = LwCAJsonGetConstStringFromKey(
+                  pPolicyConfig,
+                  FALSE,
+                  LWCA_CONFIG_POLICY_CONFIG_PATH_KEY,
+                  &pcszPolicyConfigPath);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonLoadObjectFromFile(
+                  pcszPolicyConfigPath,
+                  &pPolicyConfigContent);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    // initialize policy engine
+    dwError = LwCAPolicyInitCtx(pPolicyConfigContent, &gpPolicyCtx);
+    BAIL_ON_LWCA_ERROR(dwError);
+
 
 error:
     LWCA_SAFE_FREE_STRINGA(pszHost);

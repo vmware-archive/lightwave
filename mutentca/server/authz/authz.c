@@ -35,6 +35,7 @@ LwCAAuthZInitialize(
     DWORD                           dwError = 0;
     PSTR                            pszPluginPath = NULL;
     PSTR                            pszPluginConfigPath = NULL;
+    PSTR                            pszRootCAId = NULL;
     PLWCA_PLUGIN_HANDLE             pPluginHandle = NULL;
     PLWCA_AUTHZ_FUNCTION_TABLE      pFT = NULL;
     BOOLEAN                         bLocked = FALSE;
@@ -75,7 +76,10 @@ LwCAAuthZInitialize(
 
         if (pFT->pfnAuthZPluginInit)
         {
-            dwError = pFT->pfnAuthZPluginInit(pszPluginConfigPath);
+            dwError = LwCAGetRootCAId(&pszRootCAId);
+            BAIL_ON_LWCA_ERROR(dwError);
+
+            dwError = pFT->pfnAuthZPluginInit(pszRootCAId, pszPluginConfigPath);
             if (dwError)
             {
                 LWCA_LOG_ERROR(
@@ -106,6 +110,7 @@ cleanup:
 
     LWCA_SAFE_FREE_STRINGA(pszPluginPath);
     LWCA_SAFE_FREE_STRINGA(pszPluginConfigPath);
+    LWCA_SAFE_FREE_STRINGA(pszRootCAId);
 
     LWCA_LOCK_MUTEX_UNLOCK(&gAuthZCtx.pMutex, bLocked);
 
@@ -139,7 +144,7 @@ LwCAAuthZCheckAccess(
     BOOLEAN                         bLocked = FALSE;
     BOOLEAN                         bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }

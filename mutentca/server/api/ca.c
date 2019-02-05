@@ -529,6 +529,7 @@ LwCAGetCACertificates(
     PLWCA_CERTIFICATE_ARRAY         pCertArray = NULL;
     BOOLEAN                         bDoesCAExist = FALSE;
     BOOLEAN                         bIsCAActive = FALSE;
+    BOOLEAN                         bAuthorized = FALSE;
     LWCA_METRICS_RESPONSE_CODES     responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
     uint64_t                        iStartTime = LwCAGetTimeInMilliSec();
     uint64_t                        iEndTime = iStartTime;
@@ -549,6 +550,25 @@ LwCAGetCACertificates(
     if (!bIsCAActive)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_CA_REVOKED);
+    }
+
+    dwError = LwCAAuthZCheckAccess(
+                    pReqCtx,
+                    pcszCAId,
+                    NULL,
+                    LWCA_AUTHZ_GET_CA_CERT_PERMISSION,
+                    &bAuthorized);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "[%s:%d] UPN (%s) is unauthorized to get the root cert of CA ID: (%s) Req ID: (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+                pcszCAId,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
     }
 
     dwError = LwCADbGetCACerts(certsToGet, pcszCAId, pcszSKI, &pCACertArray);
@@ -1471,11 +1491,13 @@ LwCAGetCACrl(
     DWORD dwError = 0;
     BOOLEAN bDoesCAExist = FALSE;
     BOOLEAN bIsCAActive = FALSE;
+    BOOLEAN bAuthorized = FALSE;
     PLWCA_DB_ROOT_CERT_DATA_ARRAY pCACertArray = NULL;
     PLWCA_DB_CERT_DATA_ARRAY pCertDataArray = NULL;
     X509 *pX509CACert = NULL;
     X509_CRL *pX509Crl = NULL;
     PSTR pszCAIssuers = NULL;
+    LWCA_AUTHZ_X509_DATA x509Data = { 0 };
     LWCA_METRICS_RESPONSE_CODES responseCode = LWCA_METRICS_RESPONSE_SUCCESS;
     uint64_t iStartTime = LwCAGetTimeInMilliSec();
     uint64_t iEndTime = iStartTime;
@@ -1534,6 +1556,27 @@ LwCAGetCACrl(
 
     dwError =  LwCASecuritySignX509Crl(pcszCAId, pX509Crl);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    x509Data.pX509Crl = pX509Crl;
+
+    dwError = LwCAAuthZCheckAccess(
+                    pReqCtx,
+                    pcszCAId,
+                    &x509Data,
+                    LWCA_AUTHZ_GET_CA_CRL_PERMISSION,
+                    &bAuthorized);
+    BAIL_ON_LWCA_ERROR(dwError);
+    if (!bAuthorized)
+    {
+        LWCA_LOG_ALERT(
+                "[%s:%d] UPN (%s) is unauthorized to get the crl of CA ID: (%s) Req ID: (%s)",
+                __FUNCTION__,
+                __LINE__,
+                LWCA_SAFE_STRING(pReqCtx->pszBindUPN),
+                pcszCAId,
+                LWCA_SAFE_STRING(pReqCtx->pszRequestId));
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_AUTHZ_UNAUTHORIZED);
+    }
 
     dwError = LwCAX509CrlToPEM(pX509Crl, &pCrl);
     BAIL_ON_LWCA_ERROR(dwError);

@@ -38,6 +38,12 @@ _Create_ReqCtx_Regular_User(
     PLWCA_REQ_CONTEXT       *ppReqCtx
     );
 
+static
+VOID
+_Create_ReqCtx_OpenAPI_User(
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    );
+
 
 int
 Test_LwCAAuthZLW_Setup(
@@ -62,6 +68,80 @@ Test_LwCAAuthZLW_Teardown(
     return 0;
 }
 
+
+// No need to have invalid case as LW AuthZ rules allow anyone to get CA cert
+VOID
+Test_LwCAAuthZLWCheckGetCACert_Valid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
+    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
+    BOOLEAN                 bAuthorized = FALSE;
+
+    // Test get root CA cert with empty reqCtx (this is an open API and reqCtx will be empty)
+    _Create_ReqCtx_OpenAPI_User(&pReqCtx);
+    dwError = LwCAAuthZCheckAccess(
+                        pReqCtx,
+                        "root-ca",
+                        &x509Data,
+                        LWCA_AUTHZ_GET_CA_CERT_PERMISSION,
+                        &bAuthorized);
+    assert_int_equal(dwError, 0);
+    assert_true(bAuthorized);
+    LwCARequestContextFree(pReqCtx);
+
+    // Test get intermediate CA cert with populated reqCtx (this is not an open API)
+    // LW AuthZ rules do not restrict anyone from getting CA cert
+    _Create_ReqCtx_Regular_User(&pReqCtx);
+    dwError = LwCAAuthZCheckAccess(
+                        pReqCtx,
+                        "some-random-ca",
+                        &x509Data,
+                        LWCA_AUTHZ_GET_CA_CERT_PERMISSION,
+                        &bAuthorized);
+    assert_int_equal(dwError, 0);
+    assert_true(bAuthorized);
+    LwCARequestContextFree(pReqCtx);
+}
+
+// No need to have invalid case as LW AuthZ rules allow anyone to get CA CRL
+VOID
+Test_LwCAAuthZLWCheckGetCACRL_Valid(
+    VOID                    **state
+    )
+{
+    DWORD                   dwError = 0;
+    LWCA_AUTHZ_X509_DATA    x509Data = { 0 };
+    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
+    BOOLEAN                 bAuthorized = FALSE;
+
+    // Test get root CA CRL with empty reqCtx (this is an open API and reqCtx will be empty)
+    _Create_ReqCtx_OpenAPI_User(&pReqCtx);
+    dwError = LwCAAuthZCheckAccess(
+                        pReqCtx,
+                        "root-ca",
+                        &x509Data,
+                        LWCA_AUTHZ_GET_CA_CRL_PERMISSION,
+                        &bAuthorized);
+    assert_int_equal(dwError, 0);
+    assert_true(bAuthorized);
+    LwCARequestContextFree(pReqCtx);
+
+    // Test get intermediate CA CRL with populated reqCtx (this is not an open API)
+    // LW AuthZ rules do not restrict anyone from getting CA CRL
+    _Create_ReqCtx_Regular_User(&pReqCtx);
+    dwError = LwCAAuthZCheckAccess(
+                        pReqCtx,
+                        "some-random-ca",
+                        &x509Data,
+                        LWCA_AUTHZ_GET_CA_CRL_PERMISSION,
+                        &bAuthorized);
+    assert_int_equal(dwError, 0);
+    assert_true(bAuthorized);
+    LwCARequestContextFree(pReqCtx);
+}
 
 VOID
 Test_LwCAAuthZLWCheckCACreate_Valid(
@@ -484,6 +564,22 @@ _Create_ReqCtx_Regular_User(
     LWCA_SAFE_FREE_STRINGA(ppszGroups[1]);
     LWCA_SAFE_FREE_STRINGA(ppszGroups[2]);
     LWCA_SAFE_FREE_MEMORY(ppszGroups);
+
+    *ppReqCtx = pReqCtx;
+}
+
+static
+VOID
+_Create_ReqCtx_OpenAPI_User(
+    PLWCA_REQ_CONTEXT       *ppReqCtx
+    )
+{
+    DWORD                   dwError = 0;
+    PLWCA_REQ_CONTEXT       pReqCtx = NULL;
+
+    dwError = LwCAAllocateMemory(sizeof(LWCA_REQ_CONTEXT), (PVOID *)&pReqCtx);
+    assert_int_equal(dwError, 0);
+    assert_non_null(pReqCtx);
 
     *ppReqCtx = pReqCtx;
 }

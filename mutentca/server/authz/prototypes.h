@@ -37,9 +37,56 @@ DWORD
 LwCAAuthZLWCheckAccess(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
+    );
+
+/**
+ * @brief    Default Lightwave Access Check for Get CA Trusted Root Cert
+ *
+ * @details  LwCAAuthZLWCheckGetCACert will determine if a requestor is allowed
+ *           to get a CA's trusted root certificate.  The default Lightwave
+ *           rules are:
+ *               - Anyone can obtain a CA's trusted root certificate
+ *
+ * @param    pReqCtx holds information about the requestor
+ * @param    pcszCAId is CA that the request is for.
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
+ * @param    pbAuthorized returns a boolean to indicate if the user is authorized
+ *
+ * @return   DWORD indicating function success/failure
+ */
+DWORD
+LwCAAuthZLWCheckGetCACert(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
+    PBOOLEAN                    pbAuthorized            // OUT
+    );
+
+/**
+ * @brief    Default Lightwave Access Check for Create CA
+ *
+ * @details  LwCAAuthZLWCheckGetCACRL will determine if a requestor is allowed to
+ *           get a CA's CRL.  The default Lightwave rules are:
+ *               - Anyone can obtain a CA's CRL
+ *
+ * @param    pReqCtx holds information about the requestor
+ * @param    pcszCAId is CA that the request is for.
+ * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
+ *           to authorize the API
+ * @param    pbAuthorized returns a boolean to indicate if the user is authorized
+ *
+ * @return   DWORD indicating function success/failure
+ */
+DWORD
+LwCAAuthZLWCheckGetCACRL(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
+    PBOOLEAN                    pbAuthorized            // OUT
     );
 
 /**
@@ -61,7 +108,7 @@ DWORD
 LwCAAuthZLWCheckCACreate(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     );
 
@@ -84,7 +131,7 @@ DWORD
 LwCAAuthZLWCheckCARevoke(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     );
 
@@ -107,7 +154,7 @@ DWORD
 LwCAAuthZLWCheckCertSign(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     );
 
@@ -130,7 +177,7 @@ DWORD
 LwCAAuthZLWCheckCertRevoke(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     );
 

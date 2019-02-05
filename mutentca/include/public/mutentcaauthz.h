@@ -25,6 +25,8 @@ extern "C" {
 
 /*
  * Indicates the API which requires an authorization check
+ *     - LWCA_AUTHZ_GET_CA_CERT_PERMISSION:     AuthZ check for get CA cert API
+ *     - LWCA_AUTHZ_GET_CA_CRL_PERMISSION:      AuthZ check for get CA crl API
  *     - LWCA_AUTHZ_CA_CREATE_PERMISSION:       AuthZ check for CA creation API
  *     - LWCA_AUTHZ_CA_REVOKE_PERMISSION:       AuthZ check for CA revoke API
  *     - LWCA_AUTHZ_CERT_SIGN_PERMISSION:       AuthZ check for CSR API
@@ -32,11 +34,13 @@ extern "C" {
  */
 typedef enum _LWCA_AUTHZ_API_PERMISSION
 {
-    LWCA_AUTHZ_ALLOW_PERMISSION         = 0x0,
-    LWCA_AUTHZ_CA_CREATE_PERMISSION     = 0x1,
-    LWCA_AUTHZ_CA_REVOKE_PERMISSION     = 0x2,
-    LWCA_AUTHZ_CERT_SIGN_PERMISSION     = 0x4,
-    LWCA_AUTHZ_CERT_REVOKE_PERMISSION   = 0x8
+    LWCA_AUTHZ_ALLOW_PERMISSION         = 0x00,
+    LWCA_AUTHZ_GET_CA_CERT_PERMISSION   = 0x01,
+    LWCA_AUTHZ_GET_CA_CRL_PERMISSION    = 0x02,
+    LWCA_AUTHZ_CA_CREATE_PERMISSION     = 0x04,
+    LWCA_AUTHZ_CA_REVOKE_PERMISSION     = 0x08,
+    LWCA_AUTHZ_CERT_SIGN_PERMISSION     = 0x10,
+    LWCA_AUTHZ_CERT_REVOKE_PERMISSION   = 0x20
 } LWCA_AUTHZ_API_PERMISSION;
 
 /*
@@ -62,12 +66,14 @@ typedef union _LWCA_AUTHZ_X509_DATA
  *           in a plugin, the MutentCA AuthZ service context will not call it during
  *           plugin load.
  *
+ * @param    pcszRootCAId is the name of the root CA
  * @param    pcszConfigPath is the path to the JSON config file for the plugin.
  *
  * @return   DWORD indicating function success/failure
  */
 typedef DWORD
 (*PFN_LWCA_AUTHZ_PLUGIN_INIT)(
+    PCSTR       pcszRootCAId,
     PCSTR       pcszConfigPath
     );
 
@@ -110,7 +116,15 @@ typedef PCSTR
  * @param    pReqCtx is the MutentCA request context, which holds requestor info.
  * @param    pcszCAId is CA that the request is for.
  * @param    pX509Data is a wrapper which holds a pointer to the X509 data to use
- *           to authorize the API
+ *           to authorize the API.
+ *           This value is optional. Some authorization plugin implementations might
+ *           not require this value. If the plugin implementation does, these are
+ *           the X.509 fields that must be set:
+ *              * LWCA_AUTHZ_GET_CA_CRL_PERMISSION requires the pX509Crl field set
+ *              * LWCA_AUTHZ_CA_CREATE_PERMISSION requires the pX509Req field set
+ *              * LWCA_AUTHZ_CA_REVOKE_PERMISSION requires pX509Cert field set
+ *              * LWCA_AUTHZ_CERT_SIGN_PERMISSION requires the pX509Req field set
+ *              * LWCA_AUTHZ_CERT_REVOKE_PERMISSION requires the pX509Cert field set
  * @param    apiPermissions indicates what API permissions to authorize the request
  *           against.
  * @param    pbAuthorized will be filled with true/false notifying the caller if
@@ -122,7 +136,7 @@ typedef DWORD
 (*PFN_LWCA_AUTHZ_CHECK_ACCESS)(
     PLWCA_REQ_CONTEXT               pReqCtx,                // IN
     PCSTR                           pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA            *pX509Data,             // IN OPTIONAL
     LWCA_AUTHZ_API_PERMISSION       apiPermissions,         // IN
     PBOOLEAN                        pbAuthorized            // OUT
     );
