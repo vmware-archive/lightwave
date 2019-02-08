@@ -62,7 +62,7 @@ collectmetrics:
         {
             VmMetricsHistogramUpdate(
                     pReplMetrics->pTimeCycleSucceeded,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+                    VMDIR_RESPONSE_TIME(uiStartTime, uiEndTime));
         }
         // avoid collecting benign error counts
         else if (retVal != LDAP_UNAVAILABLE &&  // server in mid-shutdown
@@ -71,7 +71,7 @@ collectmetrics:
         {
             VmMetricsHistogramUpdate(
                     pReplMetrics->pTimeCycleFailed,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+                    VMDIR_RESPONSE_TIME(uiStartTime, uiEndTime));
         }
     }
 

@@ -20,7 +20,8 @@
 #include <vmmetrics.h>
 extern PVM_METRICS_CONTEXT pmContext;
 
-#define VMDIR_RESPONSE_TIME(val) ((val) ? (val) : 1)
+#define VMDIR_COLLECT_TIME(time) (time = time ? time : VmDirGetTimeInMilliSec())
+#define VMDIR_RESPONSE_TIME(start, end) ((start < end) ? (end - start) : 0)
 
 #ifdef __cplusplus
 extern "C" {
@@ -714,6 +715,24 @@ typedef enum
 
 } VDIR_OPERATION_PROTOCOL;
 
+typedef struct _VDIR_OPERATION_ML_METRIC
+{
+    // Times will be collected in this following order
+    uint64_t    iMLStartTime;
+    uint64_t    iPrePluginsStartTime;
+    uint64_t    iPrePluginsEndTime;
+    uint64_t    iWriteQueueWaitStartTime;
+    uint64_t    iWriteQueueWaitEndTime;
+    uint64_t    iBETxnBeginStartTime;
+    uint64_t    iBETxnBeginEndTime;
+    uint64_t    iBETxnCommitStartTime;
+    uint64_t    iBETxnCommitEndTime;
+    uint64_t    iPostPluginsStartTime;
+    uint64_t    iPostPluginsEndTime;
+    uint64_t    iMLEndTime;
+
+} VDIR_OPERATION_ML_METRIC, *PVDIR_OPERATION_ML_METRIC;
+
 typedef struct _VMDIR_WRITE_QUEUE
 {
     PVDIR_LINKED_LIST  pList;
@@ -727,8 +746,9 @@ typedef struct _VMDIR_WRITE_QUEUE_ELEMENT
 
 typedef struct _VDIR_OPERATION
 {
-    VDIR_OPERATION_TYPE     opType;
-    VDIR_OPERATION_PROTOCOL protocol;
+    VDIR_OPERATION_TYPE       opType;
+    VDIR_OPERATION_PROTOCOL   protocol;
+    VDIR_OPERATION_ML_METRIC  MLMetrics;
 
     ///////////////////////////////////////////////////////////////////////////
     // fields valid only for EXTERNAL operation

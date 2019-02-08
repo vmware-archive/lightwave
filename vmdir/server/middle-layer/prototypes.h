@@ -291,6 +291,17 @@ VmDirPluginGroupMemberPreModApplyDelete(
     DWORD            dwPriorResult
     );
 
+// metrics.c
+VOID
+VmDirInternalMetricsUpdate(
+    PVDIR_OPERATION pOp
+    );
+
+VOID
+VmDirInternalMetricsLogInefficientOp(
+    PVDIR_OPERATION pOperation
+    );
+
 // pscache.c
 DWORD
 VmDirPagedSearchCacheInit(
@@ -468,18 +479,6 @@ VmDirIsSearchForDBCrossCheckStatus(
     );
 
 // util.c
-VOID
-VmDirInternalMetricsUpdate(
-    METRICS_LDAP_OPS        operation,
-    VDIR_OPERATION_PROTOCOL protocol,
-    VDIR_OPERATION_TYPE     opType,
-    int                     errCode,
-    uint64_t                iMLStartTime,
-    uint64_t                iMLEndTime,
-    uint64_t                iBEStartTime,
-    uint64_t                iBEEndTime
-    );
-
 BOOLEAN
 VmDirIsSearchForRaftPing(
     PVDIR_OPERATION     pOp

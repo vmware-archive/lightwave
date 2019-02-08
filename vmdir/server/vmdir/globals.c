@@ -147,6 +147,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwTombstoneThreadFrequency, 0),
         VMDIR_SF_INIT(.dwMaxInternalSearchLimit, 0),
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
+        VMDIR_SF_INIT(.dwEfficientWriteOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
         VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),//TODO_REMOVE_REPLV2
     };
