@@ -95,6 +95,35 @@ typedef enum _LWCA_DB_GET_CERTS_FLAGS
 } LWCA_DB_GET_CERTS_FLAGS;
 
 /*
+ * Defines filters for GetCAs API which retrieve CA's based on the data.
+ */
+typedef enum _LWCA_DB_CA_FILTER_TYPE
+{
+    LWCA_DB_CA_NONE         = 0,
+    LWCA_DB_CA_SUBJECT_NAME = 1,
+    LWCA_DB_CA_PARENT_CA_ID = 2,
+    LWCA_DB_CA_STATUS       = 3
+} LWCA_DB_CA_FILTER_TYPE, *PLWCA_DB_CA_FILTER_TYPE;
+
+/*
+ * Defines CA DB filter
+ */
+typedef struct _LWCA_DB_CA_FILTER
+{
+    LWCA_DB_CA_FILTER_TYPE  filter;
+    VOID*                   pData;
+} LWCA_DB_CA_FILTER, *PLWCA_DB_CA_FILTER;
+
+/*
+ * Defines CA DB filter array
+ */
+typedef struct _LWCA_DB_CA_FILTER_ARRAY
+{
+    PLWCA_DB_CA_FILTER  *ppFilter;
+    DWORD               dwCount;
+} LWCA_DB_CA_FILTER_ARRAY, *PLWCA_DB_CA_FILTER_ARRAY;
+
+/*
  * Plugin handle stores plugin context
  */
 typedef struct _LWCA_DB_HANDLE *PLWCA_DB_HANDLE;
@@ -136,6 +165,16 @@ typedef DWORD
     PLWCA_DB_HANDLE          pHandle,        //IN
     PCSTR                    pcszCAId,       //IN
     PLWCA_DB_CA_DATA         *ppCAData       //OUT
+    );
+
+/*
+ * Get CA Id's
+ */
+typedef DWORD
+(*PFN_LWCA_DB_GET_CA_IDS)(
+    PLWCA_DB_HANDLE          pHandle,        //IN
+    PLWCA_DB_CA_FILTER_ARRAY pFilter,        //IN
+    PLWCA_STRING_ARRAY       *ppCAIds        //OUT
     );
 
 /*
@@ -350,6 +389,14 @@ typedef VOID
     );
 
 /*
+ * Free memory allocated to string
+ */
+typedef VOID
+(*PFN_LWCA_DB_FREE_STRING_ARRAY)(
+    PLWCA_STRING_ARRAY  pStrArray   //IN
+    );
+
+/*
  * Free memory allocated to plugin handle
  */
 typedef VOID
@@ -372,6 +419,8 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_UNLOCK_CA                   pFnUnlockCA;
     PFN_LWCA_DB_FREE_CA_DATA                pFnFreeCAData;
 
+    PFN_LWCA_DB_GET_CA_IDS                  pFnGetCAIds;
+
     PFN_LWCA_DB_ADD_CA_CERT                 pFnAddCACert;
     PFN_LWCA_DB_GET_CA_CERTS                pFnGetCACerts;
     PFN_LWCA_DB_GET_CA_CERT                 pFnGetCACert;
@@ -392,6 +441,7 @@ typedef struct _LWCA_DB_FUNCTION_TABLE
     PFN_LWCA_DB_UNLOCK_CERT                 pFnUnlockCert;
 
     PFN_LWCA_DB_FREE_STRING                 pFnFreeString;
+    PFN_LWCA_DB_FREE_STRING_ARRAY           pFnFreeStringArray;
     PFN_LWCA_DB_FREE_HANDLE                 pFnFreeHandle;
 } LWCA_DB_FUNCTION_TABLE, *PLWCA_DB_FUNCTION_TABLE;
 
