@@ -115,13 +115,7 @@ export class VmdirComponent  {
         this.cardHeight = (85/100*this.containerHeight);
         this.datagridHeight = (90/100*this.cardHeight);
         this.treeHeight = (80/100*this.containerHeight);
-        /*if(window.outerHeight < 900){
-            this.cardHeight = (75/100*window.outerHeight);
-        }*/
-        console.log(this.cardHeight);
-        this.getUsersAndGroups();
     }
-
 
     getRootAttributes(){
         this.selectedDN = this.authService.getRootDnQuery();
@@ -170,50 +164,11 @@ export class VmdirComponent  {
         console.log(this.updatedAttributesArr);
     }
 
-    constructUsersArr(usersObjArr:any[]){
-       for(var i = 0; i < usersObjArr.length; ){
-           for(var j = 0; j < usersObjArr[i].attributes.length; j ++){
-               if(usersObjArr[i].attributes[j].type == 'cn'){
-                   usersObjArr[i].cn = usersObjArr[i].attributes[j].value[0];
-               }else if(usersObjArr[i].attributes[j].type == 'objectClass'){
-                   usersObjArr[i].objectClass = usersObjArr[i].attributes[j].value;
-               }else if(usersObjArr[i].attributes[j].type == 'objectSid'){
-                   usersObjArr[i].objectSid = usersObjArr[i].attributes[j].value;
-               }
-           }
-           if(usersObjArr[i].cn){
-               if(usersObjArr[i].objectClass[0] == 'group'){
-                   this.groupsArr.push(usersObjArr[i]);
-               }else{
-                   this.usersArr.push(usersObjArr[i]);
-               }
-           }
-           i ++;
-       }
-       console.log(this.usersArr);
-       console.log(this.groupsArr);
-    }
-
     handleEdit(){
        this.setSchemaMustAttribsArr = this.setSchemaMustAttribsArr.concat(this.schemaMustAttribsArr);
        this.setSchemaMayAttribsArr = this.setSchemaMayAttribsArr.concat(this.schemaMayAttribsArr);
     }
-    getUsersAndGroups(){
-        let result:any;
-        // get all user and group accounts
-        this.vmdirService.getAllUsersAndGroups().
-            subscribe(
-               result => {
-                  result.result.splice(0,1);
-                  console.log(result);
-                  this.constructUsersArr(result.result);
-               },
-               error => {
-                  console.log(error);
-               }
-            );
-    }
-
+    
     handleUpdateError(error) {
         console.log(error);
         this.errorMsg = "Unknown error";

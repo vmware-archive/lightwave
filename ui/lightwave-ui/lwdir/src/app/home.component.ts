@@ -207,36 +207,6 @@ export class HomeComponent  {
                error => this.error = <any>error);
      }
 
-    getAllOIDCClients() {
-        let tlist:any;
-        let arrList:any[];
-        this.vmdirService.getOIDCClients(this.configService.currentUser.tenant)
-        .subscribe(
-            listing => {
-               tlist = JSON.stringify(listing);
-               arrList = JSON.parse(tlist).result;
-               arrList.shift();
-               for(let oidcClient of arrList){
-                   let attribsArr = oidcClient.attributes;
-                   let oidcObj:any = {};
-                   for (let attr of attribsArr){
-                       if(attr.type == 'vmwOidcRedirectURIs'){
-                           oidcObj.redirectURI = attr.value[0];
-                       }
-                       if(attr.type == 'vmwOidcClientID'){
-                           oidcObj.clientId = attr.value[0];
-                       }
-                   }
-                   let parts:string[] = oidcObj.redirectURI.split('/');
-                   if(parts[parts.length - 1] == 'ui'){
-                       oidcObj.host = parts[parts.length - 2];
-                       this.postOIDCs.push(oidcObj);
-                   }
-               }
-               },
-               error => this.error = <any>error);
-     }
-
      checkForSystemTenant() {
         let res;
         this.identitySourceService
@@ -256,7 +226,6 @@ export class HomeComponent  {
                        }
                        if(this.isSystemTenant && this.isSysTenantAdmin){
                            this.getAllTenants();
-                           this.getAllOIDCClients();
                        }
                  },
                  error => {

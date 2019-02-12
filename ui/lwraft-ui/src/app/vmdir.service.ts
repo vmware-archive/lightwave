@@ -248,18 +248,6 @@ export class VmdirService {
                .catch(err => this.utilsService.handleError(err))
     }
 
-    getAllUsersAndGroups(){
-        let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
-        let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid=*')+
-                  '&attrs=objectsid,cn,objectclass';
-        console.log(url);
-        return this.httpClient.get(url, {headers})
-           .share()
-           .map((res: Response) => res)
-           .catch(err => this.utilsService.handleError(err))
-    }
-
     getObjectByGUID(objectGuid:string): Observable<string[]> {
         let headers = this.authService.getAuthHeader();
         this.getUrl = 'https://' + this.postServer + ':' + this.postPort + '/v1/post/ldap';
