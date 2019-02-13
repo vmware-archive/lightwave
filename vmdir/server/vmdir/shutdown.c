@@ -67,8 +67,10 @@ VmDirShutdown(
     {
         //Cannot make a graceful shutdown
         VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: timeout while waiting for LDAP/REST operation threads to stop.", __func__);
-        goto done;
-    } else
+
+        // TODO: force shutdown may cause a coredump if there are a lot of long connections
+    }
+    else
     {
         *pbVmDirStopped = TRUE;
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: operation threads stopped gracefully", __func__);
@@ -88,11 +90,6 @@ VmDirShutdown(
     VmDirMiddleLayerLibShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown middle layer complete.", __func__);
 
-    /* ssalley: Fixme after beta2:
-       Can't call VmDirOpensslShutdown until all threads using it have exited.
-    VmDirOpensslShutdown();
-    */
-
     VmDirSASLShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: SASL shutdown complete.", __func__);
 
@@ -102,22 +99,13 @@ VmDirShutdown(
     VmDirSchemaLibShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown schema complete.", __func__ );
 
-    if ( pBE )
+    if (pBE)
     {
         pBE->pfnBEShutdown();
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s shutdown backend complete.", __func__);
     }
 
     VmDirCleanupGlobals();
-
-   /*
-    * TODO move curl_global_init/curl_global_cleanup out of OidcClient
-    * can't call OidcClientGlobalCleanup untill all threads have exited.
-    *
-    * #ifdef REST_ENABLED
-    *   OidcClientGlobalCleanup();
-    * #endif
-    */
 
     VmDirMetricsShutdown();
 
@@ -127,8 +115,6 @@ VmDirShutdown(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             FALSE);
-done:
-    return;
 }
 
 /*
