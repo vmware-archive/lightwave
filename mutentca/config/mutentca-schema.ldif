@@ -263,3 +263,25 @@ dITContentRules:  (
         $ trustedRootCertificate
         )
     )
+
+############################################################
+# Indexed Attributes
+############################################################
+
+attributeIndices: (
+    NAME 'certSerialNumber'
+    GLOBALLY-UNIQUE
+    )
+
+attributeIndices: (
+    NAME 'certSKI'
+    GLOBALLY-UNIQUE
+    )
+
+attributeIndices: (
+    NAME 'certAKI'
+    )
+
+attributeIndices: (
+    NAME 'caId'
+    )
