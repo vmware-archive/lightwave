@@ -283,7 +283,7 @@ VmDirMDBIndicesPopulate(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     mdbBECtx.pBE = pBE;
-    dwError = VmDirMDBTxnBegin(&mdbBECtx, BE_DB_FLAGS_ZERO, &bHasTxn);
+    dwError = VmDirMDBTxnBegin(&mdbBECtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     for (dwCnt = 0; dwCnt < pIndexingBatch->dwBatchSize && pEidArray[dwCnt] != 0; dwCnt ++)
