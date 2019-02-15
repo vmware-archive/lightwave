@@ -63,24 +63,29 @@ VmDirShutdown(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
     VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);
 
+    VmDirBkgdThreadShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
+
+    VmDirStopSrvThreads();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
+
+    VmDirVmAclShutdownFlush();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: Flush ACL complete.", __func__);
+
     if (!bRESTHeadStopped || !bLDAPHeadStopped)
     {
         //Cannot make a graceful shutdown
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: timeout while waiting for LDAP/REST operation threads to stop.", __func__);
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+            "%s: timeout while waiting for LDAP(%d)/REST(%d) operation threads to stop.",
+            __func__, bLDAPHeadStopped, bRESTHeadStopped);
 
-        // TODO: force shutdown may cause a coredump if there are a lot of long connections
+        goto done;
     }
     else
     {
         *pbVmDirStopped = TRUE;
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: operation threads stopped gracefully", __func__);
     }
-
-    VmDirBkgdThreadShutdown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
-
-    VmDirStopSrvThreads();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
 
     VmDirPasswordSchemeFree();
 
@@ -115,6 +120,9 @@ VmDirShutdown(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             FALSE);
+
+done:
+    return;
 }
 
 /*

@@ -247,7 +247,7 @@
         /*.pszName        = */ VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
+        /*.dwMin          = */ 3,                                \
         /*.dwMax          = */ 65535,                            \
         /*.dwDefault      = */ 180,                              \
         /*.dwValue        = */ 0,                                \

@@ -76,7 +76,7 @@ error:
 }
 
 VOID
-VmDirVmAclShutdown(
+VmDirVmAclShutdownFlush(
     VOID
     )
 {
@@ -97,6 +97,14 @@ VmDirVmAclShutdown(
         }
     }
 
+    return;
+}
+
+VOID
+VmDirVmAclShutdown(
+    VOID
+    )
+{
     if ( gSidGenState.pStack )
     {
         VmDirFreeTSStack( gSidGenState.pStack );
