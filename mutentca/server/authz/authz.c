@@ -184,6 +184,13 @@ LwCAAuthZCheckAccess(
                 pReqCtx->pszBindUPN,
                 apiPermissions);
     }
+    else
+    {
+        LWCA_LOG_DEBUG(
+                "Authorized UPN (%s) to call API (%d)",
+                pReqCtx->pszBindUPN,
+                apiPermissions);
+    }
 
     *pbAuthorized = bAuthorized;
 

@@ -2004,6 +2004,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/api/Makefile
                  mutentca/tests/unit-tests/server/api/test-mutentca-config/Makefile
+                 mutentca/tests/unit-tests/server/oidc-auth/Makefile
                  mutentca/tests/unit-tests/server/authz/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile

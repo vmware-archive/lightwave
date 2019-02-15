@@ -414,6 +414,7 @@ extern LWCA_LOG_LEVEL LwCALogGetLevel();
 #define LWCA_LDAP_FILTER                    "filter"
 #define LWCA_LDAP_FILTER_UPN_FMT            "("LWCA_LDAP_ATTR_UPN"=%s)"
 #define LWCA_VMDIR_RESP_RESULT              "result"
+#define LWCA_VMDIR_RESP_RESULT_COUNT        "result_count"
 #define LWCA_VMDIR_REST_LDAP_PORT           7478
 #define LWCA_VMDIR_REST_LDAP_URI_PREFIX     "/v1/vmdir/ldap"
 
