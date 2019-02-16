@@ -2083,8 +2083,10 @@ mdb_page_spill(MDB_cursor *m0, MDB_val *key, MDB_val *data)
 
 	if (!txn->mt_spill_pgs) {
 		txn->mt_spill_pgs = mdb_midl_alloc(MDB_IDL_UM_MAX);
-		if (!txn->mt_spill_pgs)
+		if (!txn->mt_spill_pgs) {
+			CALL_ERROR_LOG_FUNC(ENOMEM, 0, __func__, __LINE__);
 			return ENOMEM;
+		}
 	} else {
 		/* purge deleted slots */
 		MDB_IDL sl = txn->mt_spill_pgs;
@@ -2253,6 +2255,7 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 	/* If our dirty list is already full, we can't do anything */
 	if (txn->mt_dirty_room == 0) {
 		rc = MDB_TXN_FULL;
+		CALL_ERROR_LOG_FUNC(rc, num, __func__, __LINE__);
 		goto fail;
 	}
 
@@ -2328,6 +2331,7 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 		if (!mop) {
 			if (!(env->me_pghead = mop = mdb_midl_alloc(i))) {
 				rc = ENOMEM;
+				CALL_ERROR_LOG_FUNC(ENOMEM, i, __func__, __LINE__);
 				goto fail;
 			}
 		} else {
@@ -2352,6 +2356,7 @@ mdb_page_alloc(MDB_cursor *mc, int num, MDB_page **mp)
 	pgno = txn->mt_next_pgno;
 	if (pgno + num >= env->me_maxpg) {
 			DPUTS("DB size maxed out");
+			CALL_ERROR_LOG_FUNC(MDB_MAP_FULL, num, __func__, __LINE__);
 			rc = MDB_MAP_FULL;
 			goto fail;
 	}
@@ -2361,6 +2366,7 @@ search_done:
 		np = (MDB_page *)(env->me_map + env->me_psize * pgno);
 	} else {
 		if (!(np = mdb_page_malloc(txn, num))) {
+			CALL_ERROR_LOG_FUNC(ENOMEM, num, __func__, __LINE__);
 			rc = ENOMEM;
 			goto fail;
 		}
@@ -2441,8 +2447,10 @@ mdb_page_unspill(MDB_txn *txn, MDB_page *mp, MDB_page **ret)
 				np = mp;
 			} else {
 				np = mdb_page_malloc(txn, num);
-				if (!np)
+				if (!np) {
+					CALL_ERROR_LOG_FUNC(ENOMEM, num, __func__, __LINE__);
 					return ENOMEM;
+				}
 				if (num > 1)
 					memcpy(np, mp, num * env->me_psize);
 				else
@@ -2488,14 +2496,18 @@ mdb_page_touch(MDB_cursor *mc)
 		if (txn->mt_flags & MDB_TXN_SPILLS) {
 			np = NULL;
 			rc = mdb_page_unspill(txn, mp, &np);
-			if (rc)
+			if (rc) {
+				CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 				goto fail;
+			}
 			if (np)
 				goto done;
 		}
 		if ((rc = mdb_midl_need(&txn->mt_free_pgs, 1)) ||
-			(rc = mdb_page_alloc(mc, 1, &np)))
+			(rc = mdb_page_alloc(mc, 1, &np))) {
+			CALL_ERROR_LOG_FUNC(rc, 1, __func__, __LINE__);
 			goto fail;
+		}
 		pgno = np->mp_pgno;
 		DPRINTF(("touched db %d page %"Z"u -> %"Z"u", DDBI(mc),
 			mp->mp_pgno, pgno));
@@ -2521,6 +2533,7 @@ mdb_page_touch(MDB_cursor *mc)
 				if (mp != dl[x].mptr) { /* bad cursor? */
 					mc->mc_flags &= ~(C_INITIALIZED|C_EOF);
 					txn->mt_flags |= MDB_TXN_ERROR;
+					CALL_ERROR_LOG_FUNC(MDB_CORRUPTED, 0, __func__, __LINE__);
 					return MDB_CORRUPTED;
 				}
 				return 0;
@@ -2529,8 +2542,10 @@ mdb_page_touch(MDB_cursor *mc)
 		mdb_cassert(mc, dl[0].mid < MDB_IDL_UM_MAX);
 		/* No - copy it */
 		np = mdb_page_malloc(txn, 1);
-		if (!np)
+		if (!np) {
+			CALL_ERROR_LOG_FUNC(ENOMEM, 1, __func__, __LINE__);
 			return ENOMEM;
+		}
 		mid.mid = pgno;
 		mid.mptr = np;
 		rc = mdb_mid2l_insert(dl, &mid);
@@ -2618,8 +2633,10 @@ mdb_cursor_shadow(MDB_txn *src, MDB_txn *dst)
 				size += sizeof(MDB_xcursor);
 			for (; mc; mc = bk->mc_next) {
 				bk = malloc(size);
-				if (!bk)
+				if (!bk) {
+					CALL_ERROR_LOG_FUNC(ENOMEM, size, __func__, __LINE__);
 					return ENOMEM;
+				}
 				*bk = *mc;
 				mc->mc_backup = bk;
 				mc->mc_db = &dst->mt_dbs[i];
@@ -2922,6 +2939,7 @@ mdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **ret)
 	}
 	if ((txn = calloc(1, size)) == NULL) {
 		DPRINTF(("calloc: %s", strerror(errno)));
+		CALL_ERROR_LOG_FUNC(ENOMEM, size, __func__, __LINE__);
 		return ENOMEM;
 	}
 	txn->mt_dbxs = env->me_dbxs;	/* static */
@@ -2938,6 +2956,7 @@ mdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **ret)
 		if (!txn->mt_u.dirty_list ||
 			!(txn->mt_free_pgs = mdb_midl_alloc(MDB_IDL_UM_MAX)))
 		{
+			CALL_ERROR_LOG_FUNC(ENOMEM, MDB_IDL_UM_MAX, __func__, __LINE__);
 			free(txn->mt_u.dirty_list);
 			free(txn);
 			return ENOMEM;
@@ -2963,8 +2982,10 @@ mdb_txn_begin(MDB_env *env, MDB_txn *parent, unsigned int flags, MDB_txn **ret)
 			env->me_pghead = mdb_midl_alloc(env->me_pghead[0]);
 			if (env->me_pghead)
 				memcpy(env->me_pghead, ntxn->mnt_pgstate.mf_pghead, size);
-			else
+			else {
+				CALL_ERROR_LOG_FUNC(ENOMEM, size, __func__, __LINE__);
 				rc = ENOMEM;
+			}
 		}
 		if (!rc)
 			rc = mdb_cursor_shadow(parent, txn);
@@ -3497,8 +3518,10 @@ mdb_txn_commit(MDB_txn *txn)
 
 	if (txn->mt_child) {
 		rc = mdb_txn_commit(txn->mt_child);
-		if (rc)
+		if (rc) {
+			CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 			goto fail;
+		}
 	}
 
 	env = txn->mt_env;
@@ -3649,6 +3672,7 @@ mdb_txn_commit(MDB_txn *txn)
 	if (txn != env->me_txn) {
 		DPUTS("attempt to commit unknown transaction");
 		rc = EINVAL;
+		CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 		goto fail;
 	}
 
@@ -3678,15 +3702,19 @@ mdb_txn_commit(MDB_txn *txn)
 				data.mv_data = &txn->mt_dbs[i];
 				rc = mdb_cursor_put(&mc, &txn->mt_dbxs[i].md_name, &data,
 					F_SUBDATA);
-				if (rc)
+				if (rc) {
+					CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 					goto fail;
+				}
 			}
 		}
 	}
 
 	rc = mdb_freelist_save(txn);
-	if (rc)
+	if (rc) {
+		CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 		goto fail;
+	}
 
 	mdb_midl_free(env->me_pghead);
 	env->me_pghead = NULL;
@@ -3695,12 +3723,16 @@ mdb_txn_commit(MDB_txn *txn)
 #if (MDB_DEBUG) > 2
 	mdb_audit(txn);
 #endif
-	if ((rc = mdb_page_flush(txn, 0)))
+	if ((rc = mdb_page_flush(txn, 0))) {
+		CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 		goto fail;
+	}
 
 	if (!(env->me_flags & MDB_WAL)) {
-		if((rc = mdb_env_sync(env, 0)))
+		if((rc = mdb_env_sync(env, 0))) {
+			CALL_ERROR_LOG_FUNC(errno, rc, __func__, __LINE__);
 			goto fail;
+		}
 	}
 
 	if ((env->me_raft_prepare_commit_func &&
@@ -3961,6 +3993,7 @@ mdb_env_write_meta(MDB_txn *txn)
             np = mdb_page_malloc(txn, 1);
             if (np == NULL)
             {
+				CALL_ERROR_LOG_FUNC(ENOMEM, 1, __func__, __LINE__);
                 rc = ENOMEM;
                 goto fail;
             }
@@ -3975,12 +4008,14 @@ mdb_env_write_meta(MDB_txn *txn)
                     rc = ErrCode();
                 else
                     rc = ENOMEM;
+				CALL_ERROR_LOG_FUNC(errno, nw, __func__, __LINE__);
                 goto fail;
             }
             env->me_walstate.xlog_pages++;
 
             if (wal_sync_meta(env, txn->mt_txnid) != 0)
             {
+				CALL_ERROR_LOG_FUNC(errno, 0, __func__, __LINE__);
                 goto fail;
             }
         }
@@ -4014,6 +4049,7 @@ retry_write:
 			goto retry_write;
 #endif
 		DPUTS("write failed, disk error?");
+		CALL_ERROR_LOG_FUNC(errno, len, __func__, __LINE__);
 		/* On a failure, the pagecache still contains the new data.
 		 * Write some old data back, to prevent it from being used.
 		 * Use the non-SYNC fd; we know it will fail anyway.
@@ -4065,8 +4101,10 @@ mdb_env_create(MDB_env **env)
 	MDB_env *e;
 
 	e = calloc(1, sizeof(MDB_env));
-	if (!e)
+	if (!e) {
+		CALL_ERROR_LOG_FUNC(ENOMEM, sizeof(MDB_env), __func__, __LINE__);
 		return ENOMEM;
+	}
 
 	e->me_maxreaders = DEFAULT_READERS;
 	e->me_maxdbs = e->me_numdbs = CORE_DBS;
@@ -4138,6 +4176,7 @@ mdb_env_map(MDB_env *env, void *addr)
 		env->me_fd, 0);
 	if (env->me_map == MAP_FAILED) {
 		env->me_map = NULL;
+		CALL_ERROR_LOG_FUNC(errno, 0, __func__, __LINE__);
 		return ErrCode();
 	}
 
@@ -5062,6 +5101,7 @@ mdb_env_setup_locks(MDB_env *env, MDB_name *fname, int mode, int *excl)
 fail_errno:
 	rc = ErrCode();
 fail:
+	CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 	return rc;
 }
 
@@ -5104,8 +5144,10 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 		flags &= ~MDB_WRITEMAP;
 	} else {
 		if (!((env->me_free_pgs = mdb_midl_alloc(MDB_IDL_UM_MAX)) &&
-			  (env->me_dirty_list = calloc(MDB_IDL_UM_SIZE, sizeof(MDB_ID2)))))
+			  (env->me_dirty_list = calloc(MDB_IDL_UM_SIZE, sizeof(MDB_ID2))))) {
+			CALL_ERROR_LOG_FUNC(ENOMEM, 0, __func__, __LINE__);
 			rc = ENOMEM;
+		}
 	}
 	env->me_flags = flags |= MDB_ENV_ACTIVE;
 	if (rc)
@@ -5116,6 +5158,7 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 	env->me_dbflags = calloc(env->me_maxdbs, sizeof(uint16_t));
 	env->me_dbiseqs = calloc(env->me_maxdbs, sizeof(unsigned int));
 	if (!(env->me_dbxs && env->me_path && env->me_dbflags && env->me_dbiseqs)) {
+		CALL_ERROR_LOG_FUNC(ENOMEM, 0, __func__, __LINE__);
 		rc = ENOMEM;
 		goto leave;
 	}
@@ -5131,8 +5174,10 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 	rc = mdb_fopen(env, &fname,
 		(flags & MDB_RDONLY) ? MDB_O_RDONLY : MDB_O_RDWR,
 		mode, &env->me_fd);
-	if (rc)
+	if (rc) {
+		CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 		goto leave;
+	}
 
 	if ((flags & (MDB_RDONLY|MDB_NOLOCK)) == MDB_RDONLY) {
 		rc = mdb_env_setup_locks(env, &fname, mode, &excl);
@@ -5146,8 +5191,10 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 			 * MDB_NOSYNC/MDB_NOMETASYNC, in case these get reset.
 			 */
 			rc = mdb_fopen(env, &fname, MDB_O_META, mode, &env->me_mfd);
-			if (rc)
+			if (rc) {
+				CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
 				goto leave;
+			}
 		}
 		DPRINTF(("opened dbenv %p", (void *) env));
 		if (excl > 0) {
@@ -5171,23 +5218,26 @@ mdb_env_open(MDB_env *env, const char *path, unsigned int flags, mdb_mode_t mode
 				txn->mt_flags = MDB_TXN_FINISHED;
 				env->me_txn0 = txn;
 			} else {
+				CALL_ERROR_LOG_FUNC(ENOMEM, env->me_psize, __func__, __LINE__);
 				rc = ENOMEM;
 			}
 		}
 	}
 
-    if (env->me_flags & MDB_WAL)
-    {
-        if ((rc=mdb_rollxlogs(env, 0)) != MDB_SUCCESS)
-        {
-             goto done;
-        }
+	if (env->me_flags & MDB_WAL)
+	{
+		if ((rc=mdb_rollxlogs(env, 0)) != MDB_SUCCESS)
+		{
+			CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
+			goto done;
+		}
 
-        if ((rc=mdb_wal_init(env) != MDB_SUCCESS))
-        {
-            goto leave;
-        }
-    }
+		if ((rc=mdb_wal_init(env) != MDB_SUCCESS))
+		{
+			CALL_ERROR_LOG_FUNC(rc, 0, __func__, __LINE__);
+			goto leave;
+		}
+	}
 
 leave:
 	if (rc) {
@@ -7061,8 +7111,10 @@ current:
 					size_t sz = (size_t) env->me_psize * ovpages, off;
 					MDB_page *np = mdb_page_malloc(mc->mc_txn, ovpages);
 					MDB_ID2 id2;
-					if (!np)
+					if (!np) {
+						CALL_ERROR_LOG_FUNC(ENOMEM, ovpages, __func__, __LINE__);
 						return ENOMEM;
+					}
 					id2.mid = pg;
 					id2.mptr = np;
 					/* Note - this page is already counted in parent's dirty_room */
@@ -7832,6 +7884,7 @@ mdb_cursor_open(MDB_txn *txn, MDB_dbi dbi, MDB_cursor **ret)
 			mc->mc_flags |= C_UNTRACK;
 		}
 	} else {
+		CALL_ERROR_LOG_FUNC(ENOMEM, size, __func__, __LINE__);
 		return ENOMEM;
 	}
 
@@ -8900,6 +8953,7 @@ mdb_page_split(MDB_cursor *mc, MDB_val *newkey, MDB_val *newdata, pgno_t newpgno
 			/* grab a page to hold a temporary copy */
 			copy = mdb_page_malloc(mc->mc_txn, 1);
 			if (copy == NULL) {
+				CALL_ERROR_LOG_FUNC(ENOMEM, 1, __func__, __LINE__);
 				rc = ENOMEM;
 				goto done;
 			}
@@ -10357,8 +10411,10 @@ mdb_reader_check0(MDB_env *env, int rlocked, int *dead)
 
 	rdrs = env->me_txns->mti_numreaders;
 	pids = malloc((rdrs+1) * sizeof(MDB_PID_T));
-	if (!pids)
+	if (!pids) {
+		CALL_ERROR_LOG_FUNC(ENOMEM, (rdrs+1) * sizeof(MDB_PID_T), __func__, __LINE__);
 		return ENOMEM;
+	}
 	pids[0] = 0;
 	mr = env->me_txns->mti_readers;
 	for (i=0; i<rdrs; i++) {
@@ -10557,6 +10613,7 @@ int mdb_rollforward_file(MDB_env *env, char * xlog_file)
     xlog_pgs = calloc(MDB_IDL_UM_SIZE, sizeof(MDB_ID2));
     if (xlog_pgs == NULL)
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, MDB_IDL_UM_SIZE * sizeof(MDB_ID2), __func__, __LINE__);
         rc = ENOMEM;
         goto done;
     }
@@ -10574,6 +10631,7 @@ int mdb_rollforward_file(MDB_env *env, char * xlog_file)
     p = aligned_alloc(env->me_psize, env->me_psize);
     if (p == NULL)
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, env->me_psize, __func__, __LINE__);
         rc = ENOMEM;
         goto cleanup;
     }
@@ -10592,12 +10650,14 @@ int mdb_rollforward_file(MDB_env *env, char * xlog_file)
         rc = mdb_mid2l_append(xlog_pgs, &mid);
         if (rc)
         {
+	        CALL_ERROR_LOG_FUNC(ENOMEM, nr, __func__, __LINE__);
             rc = ENOMEM;
             goto cleanup;
         }
         p = aligned_alloc(env->me_psize, env->me_psize);
         if (p == NULL)
         {
+            CALL_ERROR_LOG_FUNC(ENOMEM, env->me_psize, __func__, __LINE__);
             rc = ENOMEM;
             goto cleanup;
         }
@@ -10693,6 +10753,7 @@ int mdb_rollxlogs(MDB_env *env, int purge)
     MDB_IDL xlog_ids = mdb_midl_alloc(MDB_IDL_UM_MAX);
     if(!xlog_ids)
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, MDB_IDL_UM_MAX, __func__, __LINE__);
         rc = ENOMEM;
         goto done;
     }
@@ -10745,6 +10806,7 @@ int mdb_rollxlogs(MDB_env *env, int purge)
        if(errno == ENOENT )
            rc = 0;
        else {
+           CALL_ERROR_LOG_FUNC(errno, 0, __func__, __LINE__);
            rc = ENOMEM;
        }
        goto done;
@@ -10758,6 +10820,7 @@ int mdb_rollxlogs(MDB_env *env, int purge)
         {
             if (xlog_ids[0] > (MDB_IDL_UM_MAX - 2))
             {
+                CALL_ERROR_LOG_FUNC(ENOMEM, 0, __func__, __LINE__);
                 rc = ENOMEM;
                 goto done;
             }
@@ -10878,6 +10941,7 @@ int mdb_wal_init(MDB_env *env)
     if(rc != 0 && mkdir(xlog_dir, 0700)!=0)
 #endif
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, 0, __func__, __LINE__);
         return ENOMEM;
     }
 
@@ -10929,6 +10993,7 @@ int wal_sync_meta(MDB_env *env, txnid_t tid)
         fd = open(xlog_file, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
         if (fd == INVALID_HANDLE_VALUE)
         {
+            CALL_ERROR_LOG_FUNC(ENOMEM, env->me_walstate.xlog_num, __func__, __LINE__);
             rc = ENOMEM;
             goto done;
         }
@@ -10988,6 +11053,7 @@ void *mdb_chkpt_main(void *param_ptr)
             }
             if (rc)
             {
+                CALL_ERROR_LOG_FUNC(errno, 0, __func__, __LINE__);
                 env->me_flags |= MDB_FATAL_ERROR;
                 fatal_error = 1;
                 mdb_eassert(env, 0);
@@ -11143,6 +11209,7 @@ int write_wal_pages(MDB_env *env, const struct iovec *iov, int n)
         fd = open(xlog_file, O_CREAT|O_WRONLY, S_IRUSR|S_IWUSR);
         if (fd == INVALID_HANDLE_VALUE)
         {
+            CALL_ERROR_LOG_FUNC(ENOMEM, env->me_walstate.xlog_num, __func__, __LINE__);
             rc = ENOMEM;
             goto fatal_error;
         }
@@ -11165,6 +11232,8 @@ int write_wal_pages(MDB_env *env, const struct iovec *iov, int n)
      */
     if((env->me_walstate.xlog_pages + (total_bytes/env->me_psize)) >= (MDB_IDL_UM_MAX - 2))
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, env->me_walstate.xlog_pages + (total_bytes/env->me_psize),
+                                              __func__, __LINE__);
         rc = ENOMEM;
         goto fatal_error;
     }
@@ -11172,12 +11241,14 @@ int write_wal_pages(MDB_env *env, const struct iovec *iov, int n)
     nw = writev(env->me_walstate.xlog_fd, iov, n);
     if (nw < 0)
     {
+        CALL_ERROR_LOG_FUNC(errno, nw, __func__, __LINE__);
         rc = ENOMEM;
         goto fatal_error;
     }
 
     if (total_bytes != nw)
     {
+        CALL_ERROR_LOG_FUNC(ENOMEM, total_bytes, __func__, __LINE__);
         rc = ENOMEM;
         goto fatal_error;
     }
