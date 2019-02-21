@@ -278,10 +278,30 @@ typedef int  (MDB_cmp_func)(const MDB_val *a, const MDB_val *b);
  */
 typedef void (MDB_rel_func)(MDB_val *item, void *oldptr, void *newptr, void *relctx);
 
+/** @brief A callback function invoked before committing a txn
+ * The transaction will be aborted if this callback return non zero
+ * Used for Raft implementation to commit a log
+ */
+typedef int (MDB_raft_prepare_commit_func)(void **raft_commit_ctx);
+
+
+/** @brief A callback function invoked when MDB transaction
+ * has been succeessfully committed (after obtaining raft consensus).
+ */
+typedef void (MDB_raft_post_commit_func)(void *raft_commit_ctx);
+
+/** @brief A callback function invoked when MDB transaction
+ * fail to flush WAL or write meta page (usually due to disk full/failure)
+ * The callback should put the server on Raft Follower state so that it will
+ * not reuse the same logIndex/logTerm for new client request.
+ */
+typedef void (MDB_raft_commit_fail_func)(void *raft_commit_ctx);
+
+
 /** @brief A callback to log error info
  *
  */
-typedef void  (MDB_error_log_func)(int errnum, int param, const char* funcname, int lineno);
+typedef void (MDB_error_log_func)(int errnum, int param, const char* funcname, int lineno);
 
 /** @defgroup	mdb_env	Environment Flags
  *	@{
@@ -308,14 +328,10 @@ typedef void  (MDB_error_log_func)(int errnum, int param, const char* funcname, 
 #define MDB_NORDAHEAD	0x800000
 	/** don't initialize malloc'd memory before writing to datafile */
 #define MDB_NOMEMINIT	0x1000000
-        /**
-          * keep WAL files after checkpoint -- this version of MDB doesn't support WAL,
-          * and the flag is for forward-compatability
-          */
+    /** keep WAL files after checkpoint*/
 #define MDB_KEEPXLOGS   0x2000000
-        /** Enable WAL (Write Ahead Logging) feature */
-#define MDB_WAL   0x4000000
-
+    /** Enable WAL (Write Ahead Logging) feature */
+#define MDB_WAL         0x4000000
 /** @} */
 
 /**	@defgroup	mdb_dbi_open	Database Flags
@@ -461,8 +477,14 @@ typedef enum MDB_cursor_op {
 #define MDB_BAD_VALSIZE		(-30781)
 	/** The specified DBI was changed unexpectedly */
 #define MDB_BAD_DBI		(-30780)
-	/** The last defined error code */
-#define MDB_LAST_ERRCODE	MDB_BAD_DBI
+    /** Corrupted meta page during WAL recover */
+#define MDB_WAL_INVALID_META    (-30779)
+    /** WAL recover failure pages in transaction mismatch */
+#define MDB_WAL_WRONG_TXN_PAGES (-30778)
+    /** Missing WAL file or invalid WAL file */
+#define MDB_WAL_FILE_ERROR (-30777)
+    /** The last defined error code */
+#define MDB_LAST_ERRCODE MDB_WAL_FILE_ERROR
 /** @} */
 
 /** @brief Statistics for a database in the environment */
@@ -475,16 +497,6 @@ typedef struct MDB_stat {
 	size_t		ms_overflow_pages;	/**< Number of overflow pages */
 	size_t		ms_entries;			/**< Number of data items */
 } MDB_stat;
-
-/** @brief Information about the environment */
-typedef struct MDB_envinfo {
-	void	*me_mapaddr;			/**< Address of map, if fixed */
-	size_t	me_mapsize;				/**< Size of the data memory map */
-	size_t	me_last_pgno;			/**< ID of the last used page */
-	size_t	me_last_txnid;			/**< ID of the last committed transaction */
-	unsigned int me_maxreaders;		/**< max reader slots in the environment */
-	unsigned int me_numreaders;		/**< max reader slots used in the environment */
-} MDB_envinfo;
 
 #define MDB_STATE_OP
 /** @brief set, clear or query MDB env state for database file transfer
@@ -500,6 +512,15 @@ typedef enum MDB_state_op {
         MDB_STATE_GETXLOGNUM
 } MDB_state_op;
 
+/** @brief Information about the environment */
+typedef struct MDB_envinfo {
+	void	*me_mapaddr;			/**< Address of map, if fixed */
+	size_t	me_mapsize;				/**< Size of the data memory map */
+	size_t	me_last_pgno;			/**< ID of the last used page */
+	size_t	me_last_txnid;			/**< ID of the last committed transaction */
+	unsigned int me_maxreaders;		/**< max reader slots in the environment */
+	unsigned int me_numreaders;		/**< max reader slots used in the environment */
+} MDB_envinfo;
 
 	/** @brief Return the LMDB library version information.
 	 *
@@ -890,6 +911,13 @@ int  mdb_env_set_mapsize(MDB_env *env, size_t size);
 	 * </ul>
 	 */
 int  mdb_env_set_maxreaders(MDB_env *env, unsigned int readers);
+
+    /** @brief set database checkpoint interval in WAL mode
+     *
+     * @param[in] the interval in seconds
+     * @return A non-zero error value on failure and 0 on success
+     */
+int mdb_env_set_chkpt_interval(MDB_env *env, int interval);
 
 	/** @brief Get the maximum number of threads/reader slots for the environment.
 	 *
@@ -1287,6 +1315,19 @@ int  mdb_set_relfunc(MDB_txn *txn, MDB_dbi dbi, MDB_rel_func *rel);
 	 */
 int  mdb_set_relctx(MDB_txn *txn, MDB_dbi dbi, void *ctx);
 
+        /** @brief Set commit hook func for Raft
+         *
+         */
+void mdb_set_raft_prepare_commit_func(MDB_env *env, MDB_raft_prepare_commit_func *raft_prepare_commit_func);
+
+        /** @brief callback for raft post commit - set raft volatle state with logIndex argument when commit succeeded
+         */
+void mdb_set_raft_post_commit_func(MDB_env *env, MDB_raft_post_commit_func  *raft_post_commit_func);
+
+        /** @brief Set MDB error log function to log errno, invoking function and lineno
+         */
+void mdb_set_error_log_func(MDB_error_log_func  *error_log_func);
+
 	/** @brief Get items from a database.
 	 *
 	 * This function retrieves key/data pairs from the database. The address
@@ -1617,21 +1658,27 @@ int	mdb_reader_list(MDB_env *env, MDB_msg_func *func, void *ctx);
 	 */
 int	mdb_reader_check(MDB_env *env, int *dead);
 
-        /** @brief set, clear or query MDB state for database file cold or hop copy.
-         * @param[in] env - environment handle returned by #mdb_env_create()
-         * @param[in] op - MDB_state_op
-         * @param[out] last_xlog_num - set to the current WAL log numbern if MDB supports WAL
-         *             otherwise set to 0.
-         * @param[out] dbSizeMb - allocated database size in MB (round to the next MB).
-         * @param[out] dbMapSizeMb - the database map size in MB.
-         * @param[out] db_path - the path of the database home where data.mdb and lock.mdb resides
-         * @param[in]  db_path_size - the memory size of db_path.
-         * @return      0 success
-         *              EINVAL invalid environment handle, input parameter or state
-         *              EOVERFLOW db_path buffer too small
-         */
-int     mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
-                          unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+    /** @brief set, clear or query MDB state for database file cold or hop copy.
+     * @param[in] env - environment handle returned by #mdb_env_create()
+     * @param[in] op - MDB_state_op
+     * @param[out] last_xlog_num - set to the current WAL log numbern if MDB supports WAL
+     *             otherwise set to 0.
+     * @param[out] dbSizeMb - allocated database size in MB (round to the next MB).
+     * @param[out] dbMapSizeMb - the database map size in MB.
+     * @param[out] db_path - the path of the database home where data.mdb and lock.mdb resides
+     * @param[in]  db_path_size - the memory size of db_path.
+     * @return      0 success
+     *              EINVAL invalid environment handle, input parameter or state
+     *              EOVERFLOW db_path buffer too small
+     */
+int mdb_env_set_state(MDB_env *env, MDB_state_op op, unsigned long *last_xlog_num, unsigned long *dbSizeMb,
+                      unsigned long *dbMapSizeMb, char *db_path, int db_path_size);
+
+    /** @brief callback for raft commit fail to write WAL or meta page (due to disk
+     * full/failure). The callback would set the server to Raft Follower role to avoid
+     * reusing the logIndex/log Term for new client requests.
+     */
+void mdb_set_raft_commit_fail_func(MDB_env *env, MDB_raft_commit_fail_func  *raft_commit_fail_func);
 
 /**	@} */
 
