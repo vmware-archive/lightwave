@@ -37,6 +37,16 @@ Test_LwCAAuthZLW_Teardown(
     );
 
 VOID
+Test_LwCAAuthZLWCheckGetCACert_Valid(
+    VOID        **state
+    );
+
+VOID
+Test_LwCAAuthZLWCheckGetCACRL_Valid(
+    VOID        **state
+    );
+
+VOID
 Test_LwCAAuthZLWCheckCACreate_Valid(
     VOID        **state
     );

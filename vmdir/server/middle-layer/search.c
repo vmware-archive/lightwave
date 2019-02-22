@@ -194,14 +194,12 @@ VmDirInternalSearch(
     ENTRYID     eId = 0;
     ENTRYID*    pValidatedEntries = NULL;
     PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
-    uint64_t    iMLStartTime = 0;
-    uint64_t    iMLEndTime = 0;
-    uint64_t    iBEStartTime = 0;
-    uint64_t    iBEEndTime = 0;
+    PVDIR_OPERATION_ML_METRIC  pMLMetrics = NULL;
 
     assert(pOperation && pOperation->pBEIF);
 
-    iMLStartTime = VmDirGetTimeInMilliSec();
+    pMLMetrics = &pOperation->MLMetrics;
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLStartTime);
 
     // compute required access for this search
     ComputeRequiredAccess(&pOperation->request.searchReq);
@@ -244,11 +242,14 @@ VmDirInternalSearch(
     // not get deleted during this search processing.
     if (pOperation->reqDn.lberbv.bv_len != 0)
     {
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_READ );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                 retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
 
         // Lookup in the DN index.
         retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
@@ -263,7 +264,6 @@ VmDirInternalSearch(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
     }
 
     retVal = AppendDNFilter( pOperation );
@@ -308,25 +308,21 @@ VmDirInternalSearch(
         BAIL_ON_VMDIR_ERROR(retVal);
     }
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+
     retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                   retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     bHasTxn = FALSE;
-    iBEEndTime = VmDirGetTimeInMilliSec();
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
 
 cleanup:
 
     // collect metrics
-    iMLEndTime = VmDirGetTimeInMilliSec();
-    VmDirInternalMetricsUpdate(
-            METRICS_LDAP_OP_SEARCH,
-            pOperation->protocol,
-            pOperation->opType,
-            pOperation->ldapResult.errCode,
-            iMLStartTime,
-            iMLEndTime,
-            iBEStartTime,
-            iBEEndTime);
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLEndTime);
+    VmDirInternalMetricsUpdate(pOperation);
+    VmDirInternalMetricsLogInefficientOp(pOperation);
 
     VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -337,7 +333,6 @@ error:
     if (bHasTxn)
     {
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);

@@ -102,6 +102,7 @@ VmDirDefaultIndexCfgInit(
     pIndexCfg->bGlobalUniq = pDefIdxCfg->bGlobalUniq;
     pIndexCfg->bIsNumeric = pDefIdxCfg->bIsNumeric;
     pIndexCfg->iTypes = pDefIdxCfg->iTypes;
+    pIndexCfg->initOffset = NEW_ENTRY_EID_PREFIX;
 
     beCtx.pBE = VmDirBackendSelect(NULL);
     dwError = beCtx.pBE->pfnBETxnBegin(&beCtx, VDIR_BACKEND_TXN_WRITE, &bHasTxn);

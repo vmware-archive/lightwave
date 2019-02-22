@@ -76,7 +76,8 @@ VmDirIndexLibInit(
     }
     else
     {
-        gVdirIndexGlobals.offset = VmDirStringToIA(pszLastOffset);
+        dwError = VmDirStringToINT64(pszLastOffset, NULL, &gVdirIndexGlobals.offset);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     if (bHasTxn)

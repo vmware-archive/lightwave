@@ -253,14 +253,12 @@ VmDirInternalModifyEntry(
     ENTRYID     entryId = 0;
     BOOLEAN     bHasTxn = FALSE;
     PSTR        pszLocalErrMsg = NULL;
-    uint64_t    iMLStartTime = 0;
-    uint64_t    iMLEndTime = 0;
-    uint64_t    iBEStartTime = 0;
-    uint64_t    iBEEndTime = 0;
+    PVDIR_OPERATION_ML_METRIC  pMLMetrics = NULL;
 
     assert(pOperation && pOperation->pBEIF);
 
-    iMLStartTime = VmDirGetTimeInMilliSec();
+    pMLMetrics = &pOperation->MLMetrics;
+    VMDIR_COLLECT_TIME(pMLMetrics->iMLStartTime);
 
     if (VmDirdState() == VMDIRD_STATE_READ_ONLY)
     {
@@ -294,9 +292,13 @@ VmDirInternalModifyEntry(
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "GenerateDeleteAttrsMods failed - (%u)", retVal);
     }
 
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsStartTime);
+
     // Execute pre modify plugin logic
     retVal = VmDirExecutePreModApplyModifyPlugins(pOperation, NULL, retVal);
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "PreModApplyModify plugin failed - (%u)",  retVal );
+
+    VMDIR_COLLECT_TIME(pMLMetrics->iPrePluginsEndTime);
 
     // Normalize attribute values in mods
     retVal = VmDirNormalizeMods( pOperation->pSchemaCtx, modReq->mods, &pszLocalErrMsg );
@@ -311,8 +313,12 @@ VmDirInternalModifyEntry(
 
     if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
     {
+        VMDIR_COLLECT_TIME(pMLMetrics->iWriteQueueWaitStartTime);
+
         retVal = VmDirWriteQueueWait(gVmDirServerOpsGlobals.pWriteQueue, pOperation->pWriteQueueEle);
         BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "Failed in waiting for USN dispatch");
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iWriteQueueWaitEndTime);
     }
 
     {
@@ -323,11 +329,13 @@ VmDirInternalModifyEntry(
             pEntry = NULL;
         }
 
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginStartTime);
+
         retVal = pOperation->pBEIF->pfnBETxnBegin( pOperation->pBECtx, VDIR_BACKEND_TXN_WRITE);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn begin (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = TRUE;
-        iBEStartTime = VmDirGetTimeInMilliSec();
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
 
         // Read current entry from DB
         retVal = pOperation->pBEIF->pfnBEDNToEntryId(pOperation->pBECtx, &(modReq->dn), &entryId);
@@ -358,11 +366,13 @@ VmDirInternalModifyEntry(
             "CoreLogicModifyEntry failed. (%u)",
             retVal);
 
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
+
         retVal = pOperation->pBEIF->pfnBETxnCommit( pOperation->pBECtx);
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "txn commit (%u)(%s)",
                                       retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
         bHasTxn = FALSE;
-        iBEEndTime = VmDirGetTimeInMilliSec();
+        VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
 
         if (pOperation->opType != VDIR_OPERATION_TYPE_REPL)
         {
@@ -385,32 +395,27 @@ cleanup:
     {
         int iPostCommitPluginRtn = 0;
 
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPluginsStartTime);
+
         // Execute post modify plugin logic
         iPostCommitPluginRtn = VmDirExecutePostModifyCommitPlugins(pOperation, &entry, retVal);
-        if ( iPostCommitPluginRtn != LDAP_SUCCESS
-             &&
-             iPostCommitPluginRtn != pOperation->ldapResult.errCode    // pass through
-           )
+        if (iPostCommitPluginRtn != LDAP_SUCCESS &&
+            iPostCommitPluginRtn != pOperation->ldapResult.errCode)
         {
-            VmDirLog( LDAP_DEBUG_ANY, "InternalModifyEntry: VdirExecutePostModifyCommitPlugins - code(%d)",
-                      iPostCommitPluginRtn);
+            VMDIR_LOG_INFO(
+                    LDAP_DEBUG_ANY,
+                    "%s: VdirExecutePostModifyCommitPlugins - code(%d)",
+                    __FUNCTION__,
+                    iPostCommitPluginRtn);
         }
+
+        VMDIR_COLLECT_TIME(pMLMetrics->iPostPluginsEndTime);
     }
 
     // Release schema modification mutex
     (VOID)VmDirSchemaModMutexRelease(pOperation);
-
-    // collect metrics
-    iMLEndTime = VmDirGetTimeInMilliSec();
-    VmDirInternalMetricsUpdate(
-            METRICS_LDAP_OP_MODIFY,
-            pOperation->protocol,
-            pOperation->opType,
-            pOperation->ldapResult.errCode,
-            iMLStartTime,
-            iMLEndTime,
-            iBEStartTime,
-            iBEEndTime);
+    VmDirInternalMetricsUpdate(pOperation);
+    VmDirInternalMetricsLogInefficientOp(pOperation);
 
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
@@ -421,7 +426,6 @@ error:
     if (bHasTxn)
     {
         pOperation->pBEIF->pfnBETxnAbort(pOperation->pBECtx);
-        iBEEndTime = VmDirGetTimeInMilliSec();
     }
 
     VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszLocalErrMsg);

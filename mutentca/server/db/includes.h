@@ -35,6 +35,9 @@ extern "C" {
 #include <mutentcaerror.h>
 #include <mutentcadbapi.h>
 
+#include <vmmetrics.h>
+#include <mutentcametrics.h>
+
 #include "structs.h"
 #include "externs.h"
 #include "defines.h"

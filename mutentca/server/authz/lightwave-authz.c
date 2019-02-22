@@ -34,37 +34,57 @@ LwCAAuthZLWCheckAccess(
     DWORD                           dwError = 0;
     BOOLEAN                         bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    if (apiPermissions & LWCA_AUTHZ_GET_CA_CERT_PERMISSION)
+    {
+        dwError = LwCAAuthZLWCheckGetCACert(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
+        BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
+    }
+
+    if (apiPermissions & LWCA_AUTHZ_GET_CA_CRL_PERMISSION)
+    {
+        dwError = LwCAAuthZLWCheckGetCACRL(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
+        BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
 
     if (apiPermissions & LWCA_AUTHZ_CA_CREATE_PERMISSION)
     {
         dwError = LwCAAuthZLWCheckCACreate(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
         BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
 
     if (apiPermissions & LWCA_AUTHZ_CA_REVOKE_PERMISSION)
     {
         dwError = LwCAAuthZLWCheckCARevoke(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
         BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
 
     if (apiPermissions & LWCA_AUTHZ_CERT_SIGN_PERMISSION)
     {
         dwError = LwCAAuthZLWCheckCertSign(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
         BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
 
     if (apiPermissions & LWCA_AUTHZ_CERT_REVOKE_PERMISSION)
     {
         dwError = LwCAAuthZLWCheckCertRevoke(pReqCtx, pcszCAId, pX509Data, &bAuthorized);
         BAIL_ON_LWCA_ERROR(dwError);
+        goto ret;
     }
 
-    *pbAuthorized = bAuthorized;
 
+ret:
+
+    *pbAuthorized = bAuthorized;
 
 cleanup:
 
@@ -81,10 +101,70 @@ error:
 }
 
 DWORD
+LwCAAuthZLWCheckGetCACert(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
+    PBOOLEAN                    pbAuthorized            // OUT
+    )
+{
+    DWORD                       dwError = 0;
+
+    if (!pbAuthorized)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    *pbAuthorized = TRUE;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pbAuthorized)
+    {
+        *pbAuthorized = FALSE;
+    }
+    goto cleanup;
+}
+
+DWORD
+LwCAAuthZLWCheckGetCACRL(
+    PLWCA_REQ_CONTEXT           pReqCtx,                // IN
+    PCSTR                       pcszCAId,               // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
+    PBOOLEAN                    pbAuthorized            // OUT
+    )
+{
+    DWORD                       dwError = 0;
+
+    if (!pbAuthorized)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
+    }
+
+    *pbAuthorized = TRUE;
+
+cleanup:
+
+    return dwError;
+
+error:
+
+    if (pbAuthorized)
+    {
+        *pbAuthorized = FALSE;
+    }
+    goto cleanup;
+}
+
+DWORD
 LwCAAuthZLWCheckCACreate(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     )
 {
@@ -93,7 +173,7 @@ LwCAAuthZLWCheckCACreate(
     BOOLEAN                 bIsCAOperator = FALSE;
     BOOLEAN                 bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -133,7 +213,7 @@ DWORD
 LwCAAuthZLWCheckCARevoke(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     )
 {
@@ -141,7 +221,7 @@ LwCAAuthZLWCheckCARevoke(
     BOOLEAN                 bIsCAAdmin = FALSE;
     BOOLEAN                 bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -180,14 +260,14 @@ DWORD
 LwCAAuthZLWCheckCertSign(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     )
 {
     DWORD                   dwError = 0;
     BOOLEAN                 bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }
@@ -227,7 +307,7 @@ DWORD
 LwCAAuthZLWCheckCertRevoke(
     PLWCA_REQ_CONTEXT           pReqCtx,                // IN
     PCSTR                       pcszCAId,               // IN
-    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN
+    LWCA_AUTHZ_X509_DATA        *pX509Data,             // IN OPTIONAL: Only needed if api AuthZ check requires X509 data
     PBOOLEAN                    pbAuthorized            // OUT
     )
 {
@@ -235,7 +315,7 @@ LwCAAuthZLWCheckCertRevoke(
     BOOLEAN                 bIsCAAdmin = FALSE;
     BOOLEAN                 bAuthorized = FALSE;
 
-    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pX509Data || !pbAuthorized)
+    if (!pReqCtx || IsNullOrEmptyString(pcszCAId) || !pbAuthorized)
     {
         BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_INVALID_PARAMETER);
     }

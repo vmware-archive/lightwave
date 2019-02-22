@@ -11,6 +11,14 @@
 
 noinst_LTLIBRARIES = libmdb-store.la
 
+if MDB_0_9_22
+    MDB_DIR = vmdir/thirdparty/openldap/libraries/liblmdb
+    MDB_LIB = libvmdirmdb.la
+else
+    MDB_DIR = lwraft/thirdparty/openldap/libraries/mdb
+    MDB_LIB = liblwraftmdb.la
+endif
+
 libmdb_store_la_SOURCES = \
     config.c \
     dbstate.c \
@@ -31,7 +39,7 @@ libmdb_store_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/$(MDB_DIR) \
     -I$(top_srcdir)/lwraft/server/include \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
@@ -39,5 +47,5 @@ libmdb_store_la_CPPFLAGS = \
 
 libmdb_store_la_LDFLAGS = \
     -static \
-    $(top_builddir)/lwraft/thirdparty/openldap/libraries/mdb/liblwraftmdb.la \
+    $(top_builddir)/$(MDB_DIR)/$(MDB_LIB) \
     @LW_LDFLAGS@

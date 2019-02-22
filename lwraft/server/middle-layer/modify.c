@@ -424,8 +424,8 @@ VmDirInternalModifyEntry(
         bHasTxn = FALSE;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(
             retVal, pszLocalErrMsg,
-            "txn commit (%u)(%s)",
-            retVal,
+            "txn commit logIndex %llu (%u)(%s)",
+            pOperation->logIndex, retVal,
             VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
 
         VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitEndTime);
@@ -435,8 +435,8 @@ VmDirInternalModifyEntry(
     {
         VMDIR_LOG_INFO(
                 VMDIR_LOG_MASK_ALL,
-                "Modify Entry (%s) blob size %d",
-                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize);
+                "Modify Entry (%s) blob size %d logIndex %llu",
+                VDIR_SAFE_STRING(pEntry->dn.lberbv_val), pEntry->encodedSize, pOperation->logIndex);
     }
 
 cleanup:

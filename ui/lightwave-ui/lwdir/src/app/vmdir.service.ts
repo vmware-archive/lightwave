@@ -61,22 +61,6 @@ export class VmdirService {
                .catch(err => this.utilsService.handleError(err))
     }
 
-    getOIDCClients(tenantName:string): Observable<string[]> {
-        this.server = this.authService.getServer();
-        let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
-        let rootDn = encodeURIComponent("cn=OIDCClients,cn=") + tenantName +
-                     encodeURIComponent(',cn=Tenants,cn=IdentityManager,cn=Services,') + this.utilsService.getRootDnQuery(tenantName)
-        console.log("root DN:" + rootDn);
-        this.getUrl += '?scope=sub&dn='+rootDn;
-        console.log(this.getUrl);
-        return this.httpClient.get(this.getUrl, {headers})
-               .share()
-               .map((res: Response) => res)
-               .do(listing => this.listing = listing)
-               .catch(err => this.utilsService.handleError(err))
-    }
-
     getAttributes(rootDn:string): Observable<string[]> {
         this.server = this.authService.getServer();
         let headers = this.authService.getAuthHeader();
@@ -279,19 +263,6 @@ export class VmdirService {
                .share()
                .map((res: Response) => res)
                .catch(err => this.utilsService.handleError(err))
-    }
-
-    getAllUsersAndGroups(){
-        this.server = this.authService.getServer();
-        let headers = this.authService.getAuthHeader();
-        this.getUrl = 'https://' + this.server + ':' + this.configService.API_PORT + '/v1/vmdir/ldap';
-        let url = this.getUrl + '?scope=sub&dn=' + this.authService.getRootDnQuery() + '&filter=' + encodeURIComponent('objectsid=*')+
-                  '&attrs=objectsid,cn,objectclass';
-        console.log(url);
-        return this.httpClient.get(url, {headers})
-           .share()
-           .map((res: Response) => res)
-           .catch(err => this.utilsService.handleError(err))
     }
 
     getObjectByGUID(objectGuid:string): Observable<string[]> {

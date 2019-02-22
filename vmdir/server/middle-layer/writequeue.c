@@ -86,6 +86,7 @@ VmDirWriteQueueWait(
 {
     DWORD      dwError = 0;
     uint64_t   iStartTime = 0;
+    uint64_t   iElapsedTime = 0;
     BOOLEAN    bInLock = FALSE;
     PVDIR_LINKED_LIST_NODE      pNode = NULL;
     PVMDIR_WRITE_QUEUE_ELEMENT  pWriteQueueHead = NULL;
@@ -108,6 +109,7 @@ VmDirWriteQueueWait(
 
         if (pWriteQueueHead->usn == pWriteQueueEle->usn)
         {
+            iElapsedTime = VmDirGetTimeInMilliSec() - iStartTime;
             VMDIR_LOG_INFO(LDAP_DEBUG_WRITE_QUEUE, "%s: usn: %"PRId64, __FUNCTION__, pWriteQueueEle->usn);
             break;
         }
@@ -137,6 +139,20 @@ VmDirWriteQueueWait(
         }
 
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ML_WRITE_TIMEOUT);
+    }
+    else if (iElapsedTime > gVmdirServerGlobals.dwEfficientWriteOpTimeMS)
+    {
+        //log - if more time is spent in the write queue
+        pWriteQueueHead = ((PVMDIR_WRITE_QUEUE_ELEMENT)pNode->pElement);
+
+        VMDIR_LOG_INFO(
+            VMDIR_LOG_MASK_ALL,
+            "%s: (Inefficient) time:"PRId64"(ms) HeadUSN: %"PRId64 "MyUSN: %"PRId64 "Queue size:%u",
+            __FUNCTION__,
+            iElapsedTime,
+            pWriteQueueHead->usn,
+            pWriteQueueEle->usn,
+            VmDirWriteQueueSizeInLock(pWriteQueue));
     }
 
 cleanup:
@@ -248,10 +264,25 @@ VmDirWriteQueueSize(
     if (pWriteQueue)
     {
         VMDIR_LOCK_MUTEX(bInLock, gVmDirServerOpsGlobals.pMutex);
-        iSize = pWriteQueue->pList->iSize;
+        iSize = VmDirWriteQueueSizeInLock(pWriteQueue);
     }
 
     VMDIR_UNLOCK_MUTEX(bInLock, gVmDirServerOpsGlobals.pMutex);
+
+    return iSize;
+}
+
+size_t
+VmDirWriteQueueSizeInLock(
+     PVMDIR_WRITE_QUEUE          pWriteQueue
+     )
+{
+    size_t   iSize = 0;
+
+    if (pWriteQueue)
+    {
+        iSize = pWriteQueue->pList->iSize;
+    }
 
     return iSize;
 }

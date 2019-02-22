@@ -515,10 +515,9 @@ VmDirMDBEntryBlobIterate(
         *pEntryId = pMdbIterator->entryId;
 
         dwError = mdb_cursor_get(pCursor, &key, &value, MDB_NEXT);
-        MDBDBTToEntryId(&key, &pMdbIterator->entryId);
-
         if (dwError == 0)
         {
+            MDBDBTToEntryId(&key, &pMdbIterator->entryId);
             pIterator->bHasNext = TRUE;
         }
         else

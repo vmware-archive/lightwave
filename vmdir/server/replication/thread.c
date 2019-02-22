@@ -713,7 +713,7 @@ collectmetrics:
         {
             VmMetricsHistogramUpdate(
                     pReplMetrics->pTimeCycleSucceeded,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+                    VMDIR_RESPONSE_TIME(uiStartTime, uiEndTime));
         }
         // avoid collecting benign error counts
         else if (retVal != LDAP_BUSY &&         // role exclusion
@@ -723,7 +723,7 @@ collectmetrics:
         {
             VmMetricsHistogramUpdate(
                     pReplMetrics->pTimeCycleFailed,
-                    VMDIR_RESPONSE_TIME(uiEndTime-uiStartTime));
+                    VMDIR_RESPONSE_TIME(uiStartTime, uiEndTime));
         }
     }
 

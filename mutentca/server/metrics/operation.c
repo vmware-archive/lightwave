@@ -65,3 +65,20 @@ LwCASecurityMetricsUpdate(
         VmMetricsHistogramUpdate(pHistogram, LWCA_RESPONSE_TIME(iEndTime - iStartTime));
     }
 }
+
+VOID
+LwCADbMetricsUpdate(
+    LWCA_METRICS_DB_APIS        api,
+    LWCA_METRICS_RESPONSE_CODES code,
+    uint64_t                    iStartTime,
+    uint64_t                    iEndTime
+    )
+{
+    PVM_METRICS_HISTOGRAM pHistogram = NULL;
+
+    pHistogram = gpDbMetrics[api][code];
+    if (pHistogram)
+    {
+        VmMetricsHistogramUpdate(pHistogram, LWCA_RESPONSE_TIME(iEndTime - iStartTime));
+    }
+}

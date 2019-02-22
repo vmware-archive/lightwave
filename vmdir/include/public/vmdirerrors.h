@@ -33,6 +33,7 @@
 #define VMDIR_SYSTEM_ERROR_BASE           0
 #define VMDIR_GENERIC_ERROR_BASE          100
 #define VMDIR_CUSTOMIZED_LDAP_ERROR_BASE  300
+#define VMDIR_QUEUE_ERROR_BASE            450
 #define VMDIR_SCHEMA_ERROR_BASE           600
 #define VMDIR_BACKEND_ERROR_BASE          700
 #define VMDIR_REST_ERROR_BASE             900 /* Using the same REST error base as in lwraft */
@@ -165,6 +166,14 @@
     VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 99) )
 
 #define VMDIR_LDAP_ERROR_PRE_CONDITION                (VMDIR_ERROR_BASE + VMDIR_CUSTOMIZED_LDAP_ERROR_BASE + 0) // 9300
+
+//////////////////////////////////////////////////////////////////////////////////////////////////
+// vmdir queue error (range 9450 - 9499)
+//////////////////////////////////////////////////////////////////////////////////////////////////
+#define IS_VMDIR_QUEUE_ERROR_SPACE(n) \
+    VMDIR_RANGE((n),(VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE) , (VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE + 49))
+
+#define VMDIR_ERROR_QUEUE_EMPTY                       (VMDIR_ERROR_BASE + VMDIR_QUEUE_ERROR_BASE + 0 )   // 9450
 
 //////////////////////////////////////////////////////////////////////////////////////////////////
 // schema error (range 9600 - 9699)

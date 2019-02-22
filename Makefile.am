@@ -14,8 +14,8 @@ SUBDIRS = \
         vmcommon \
         vmevent \
         vmidentity/ssoclients \
-        lwraft \
         vmdir \
+        lwraft \
         vmdns \
         vmafd \
         vmca \

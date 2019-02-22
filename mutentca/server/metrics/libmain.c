@@ -37,6 +37,12 @@ _LwCASecurityMetricsInit(
     );
 
 static
+DWORD
+_LwCADbMetricsInit(
+    VOID
+    );
+
+static
 VOID
 _LwCARestMetricsShutdown(
     VOID
@@ -51,6 +57,12 @@ _LwCAApiMetricsShutdown(
 static
 VOID
 _LwCASecurityMetricsShutdown(
+    VOID
+    );
+
+static
+VOID
+_LwCADbMetricsShutdown(
     VOID
     );
 
@@ -73,6 +85,9 @@ LwCAMetricsInitialize(
     dwError = _LwCASecurityMetricsInit();
     BAIL_ON_LWCA_ERROR(dwError);
 
+    dwError = _LwCADbMetricsInit();
+    BAIL_ON_LWCA_ERROR(dwError);
+
 cleanup:
     return dwError;
 
@@ -90,6 +105,7 @@ LwCAMetricsShutdown(
     _LwCARestMetricsShutdown();
     _LwCAApiMetricsShutdown();
     _LwCASecurityMetricsShutdown();
+    _LwCADbMetricsShutdown();
     VmMetricsDestroy(gpmContext);
 }
 
@@ -224,6 +240,50 @@ error:
     goto cleanup;
 }
 
+
+static
+DWORD
+_LwCADbMetricsInit(
+    VOID
+    )
+{
+    DWORD dwError = 0;
+    DWORD i = 0, j = 0;
+
+    VM_METRICS_LABEL labels[2] =
+        {
+            {"api", NULL},
+            {"response", NULL}
+        };
+
+    for (i = 0; i < LWCA_METRICS_DB_COUNT; i++)
+    {
+        for (j = 0; j < LWCA_METRICS_RESPONSE_COUNT; j++)
+        {
+            labels[0].pszValue = LwCAMetricsDbApiNameString(i);
+            labels[1].pszValue = LwCAMetricsResponseString(j);
+
+            dwError = VmMetricsHistogramNew(
+                        gpmContext,
+                        "mutentca_db_api_duration",
+                        labels, 2,
+                        "Histogram for DB Plugin API request duration",
+                        buckets, 8,
+                        &gpDbMetrics[i][j]);
+            BAIL_ON_LWCA_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    LWCA_LOG_ERROR("Failed to initialize DB Plugin API Metrics. Error %d", dwError);
+
+    goto cleanup;
+}
+
+
 static
 VOID
 _LwCARestMetricsShutdown(
@@ -263,6 +323,23 @@ _LwCAApiMetricsShutdown(
     }
 }
 
+static
+VOID
+_LwCADbMetricsShutdown(
+    VOID
+    )
+{
+    DWORD i = 0, j = 0;
+
+    for (i = 0; i < LWCA_METRICS_DB_COUNT; i++)
+    {
+        for (j = 0; j < LWCA_METRICS_RESPONSE_COUNT; j++)
+        {
+            // Cleanup is done in VmMetricsDestroy
+            gpDbMetrics[i][j] = NULL;
+        }
+    }
+}
 static
 VOID
 _LwCASecurityMetricsShutdown(

@@ -30,6 +30,8 @@ int main(VOID)
     }
 
     const struct CMUnitTest LwCAAuthZLWTests[] = {
+        cmocka_unit_test(Test_LwCAAuthZLWCheckGetCACert_Valid),
+        cmocka_unit_test(Test_LwCAAuthZLWCheckGetCACRL_Valid),
         cmocka_unit_test(Test_LwCAAuthZLWCheckCACreate_Valid),
         cmocka_unit_test(Test_LwCAAuthZLWCheckCACreate_InValid),
         cmocka_unit_test(Test_LwCAAuthZLWCheckCARevoke_Valid),

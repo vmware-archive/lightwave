@@ -63,11 +63,56 @@ VmDirLdapMetricsInit(
 
                 dwError = VmMetricsHistogramNew(
                         pmContext,
+                        "vmdir_ldap_middlelayer_preplugins",
+                        labels, 2,
+                        "Histogram for LDAP request durations in the pre-plugins",
+                        buckets, 8,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_PRE_PLUGINS]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "vmdir_ldap_middlelayer_writequeue",
+                        labels, 2,
+                        "Histogram for LDAP request durations in the writequeue",
+                        buckets, 8,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_WRITE_QUEUE]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
                         "vmdir_ldap_middlelayer_backend",
                         labels, 3,
                         "Histogram for LDAP request durations in the backend",
                         buckets, 8,
                         &gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "vmdir_ldap_middlelayer_backend_txnbegin",
+                        labels, 2,
+                        "Histogram for LDAP request durations in the backend txnbegin",
+                        buckets, 8,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND_TXN_BEGIN]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "vmdir_ldap_middlelayer_backend_txncommit",
+                        labels, 2,
+                        "Histogram for LDAP request durations in the backend txncommit",
+                        buckets, 8,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_BACKEND_TXN_COMMIT]);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                dwError = VmMetricsHistogramNew(
+                        pmContext,
+                        "vmdir_ldap_middlelayer_postplugins",
+                        labels, 2,
+                        "Histogram for LDAP request durations in the post-plugins",
+                        buckets, 8,
+                        &gpLdapMetrics[i][j][k][METRICS_LAYER_POST_PLUGINS]);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
         }
@@ -102,7 +147,7 @@ VmDirLdapMetricsUpdate(
     if (pHistogram)
     {
         VmMetricsHistogramUpdate(
-                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+                pHistogram, VMDIR_RESPONSE_TIME(iStartTime, iEndTime));
     }
 }
 

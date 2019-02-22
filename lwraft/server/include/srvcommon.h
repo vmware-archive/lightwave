@@ -664,6 +664,7 @@ typedef struct _VDIR_OPERATION
     DWORD               dwSentEntries; // number of entries sent back to client
     BOOLEAN             bSuppressLogInfo;
     BOOLEAN             bNoRaftLog; //The operation is derived or in local server scope - don't generate Raft log
+    uint64_t            logIndex; //Raft log index associated with this OP
 } VDIR_OPERATION, *PVDIR_OPERATION;
 
 typedef struct _VDIR_THREAD_INFO
@@ -749,6 +750,14 @@ typedef struct _VDIR_RAFT_LOG
     /* beCtx holdng raftlog txn to commit*/
     VDIR_BACKEND_CTX beCtx;
 } VDIR_RAFT_LOG, *PVDIR_RAFT_LOG;
+
+typedef struct _VMDIR_INDEXING_BATCH
+{
+    ENTRYID  startEID;
+    ENTRYID  endEID;
+    DWORD    dwBatchSize;
+    DWORD    dwNumEntryIndexed;
+} VMDIR_INDEXING_BATCH, *PVMDIR_INDEXING_BATCH;
 
 DWORD
 VmDirInitBackend();

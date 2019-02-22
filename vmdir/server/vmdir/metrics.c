@@ -77,7 +77,7 @@ VmDirRpcMetricsUpdate(
     if (pHistogram)
     {
         VmMetricsHistogramUpdate(
-                pHistogram, VMDIR_RESPONSE_TIME(iEndTime - iStartTime));
+                pHistogram, VMDIR_RESPONSE_TIME(iStartTime, iEndTime));
     }
 }
 

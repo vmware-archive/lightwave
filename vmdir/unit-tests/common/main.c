@@ -16,7 +16,8 @@
 
 int main(VOID)
 {
-    const struct CMUnitTest tests[] =
+    int   retVal = 0;
+    const struct CMUnitTest mergesort_tests[] =
     {
         cmocka_unit_test_setup_teardown(
                 VmDirMergeSort_OneNodeInput,
@@ -38,6 +39,10 @@ int main(VOID)
                 VmDirMergeSort_AscendingOrder,
                 NULL,
                 NULL),
+    };
+
+    const struct CMUnitTest linkedlist_tests[] =
+    {
         cmocka_unit_test_setup_teardown(
                 VmDirLinkedListAppendListToTail_ValidInput,
                 NULL,
@@ -68,5 +73,54 @@ int main(VOID)
                 NULL),
     };
 
-    return cmocka_run_group_tests(tests, NULL, NULL);
+    const struct CMUnitTest queue_tests[] =
+    {
+        cmocka_unit_test_setup_teardown(
+                VmDirTestQueueTestEnqueue,
+                VmDirTestQueueSetupEnqueue_EmptyQueue,
+                VmDirTestQueueTearDownEnqueue),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestQueueTestDequeue,
+                VmDirTestQueueSetupDequeue_Nonblocking,
+                VmDirTestQueueTearDownDequeue),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestQueueTestDequeue,
+                VmDirTestQueueSetupDequeue_Waiting,
+                VmDirTestQueueTearDownDequeue),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestQueueTestCompare,
+                VmDirTestQueueSetupCompare_Equal,
+                VmDirTestQueueTearDownCompare),
+        cmocka_unit_test_setup_teardown(
+                VmDirTestQueueTestCompare,
+                VmDirTestQueueSetupCompare_NotEqual,
+                VmDirTestQueueTearDownCompare),
+    };
+
+    retVal = cmocka_run_group_tests(mergesort_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("Merge sort tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = cmocka_run_group_tests(linkedlist_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("Linkedlist tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    retVal = cmocka_run_group_tests(queue_tests, NULL, NULL);
+    if (retVal)
+    {
+        print_message("queue tests failed: %d", retVal);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+cleanup:
+    return retVal;
+
+error:
+    goto cleanup;
 }

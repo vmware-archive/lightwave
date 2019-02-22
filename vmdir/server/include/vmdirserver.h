@@ -129,6 +129,7 @@ typedef struct _VMDIR_SERVER_GLOBALS
     DWORD                dwTombstoneThreadFrequency;
     DWORD                dwMaxInternalSearchLimit;
     DWORD                dwEfficientReadOpTimeMS;
+    DWORD                dwEfficientWriteOpTimeMS;
 
     // Flag that indicates whether this instance is promoted
     // It is set at two places:
@@ -617,10 +618,16 @@ VmDirCreateDomainController(
     PCSTR   pszDCName
     );
 
+// vmdir/middle-layer/writequeue.c
 size_t
 VmDirWriteQueueSize(
     PVMDIR_WRITE_QUEUE          pWriteQueue
     );
+
+size_t
+VmDirWriteQueueSizeInLock(
+     PVMDIR_WRITE_QUEUE          pWriteQueue
+     );
 
 // vmdir/dbcrosschk.c
 DWORD

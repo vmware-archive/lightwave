@@ -7,6 +7,7 @@ common_SOURCES = \
     linkedlist.c \
     sortedlinkedlist.c \
     mergesort.c \
+    queue.c \
     main.c
 
 common_CPPFLAGS = \

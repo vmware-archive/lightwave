@@ -81,4 +81,64 @@ VOID
 VmDirSortedLinkedListInsert_Descending(
     VOID    **state
     );
+
+///////////////
+// queue.c
+//////////////
+
+int
+VmDirTestQueueSetupEnqueue_EmptyQueue(
+    VOID    **state
+    );
+
+VOID
+VmDirTestQueueTestEnqueue(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueTearDownEnqueue(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueSetupDequeue_Nonblocking(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueSetupDequeue_Waiting(
+    VOID    **state
+    );
+
+VOID
+VmDirTestQueueTestDequeue(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueTearDownDequeue(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueSetupCompare_Equal(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueSetupCompare_NotEqual(
+    VOID    **state
+    );
+
+VOID
+VmDirTestQueueTestCompare(
+    VOID    **state
+    );
+
+int
+VmDirTestQueueTearDownCompare(
+    VOID    **state
+    );
+
 #endif

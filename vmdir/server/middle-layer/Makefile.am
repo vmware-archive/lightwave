@@ -20,6 +20,7 @@ libmiddle_layer_la_SOURCES = \
     indexplugin.c \
     krb.c \
     lockoutpolicy.c \
+    metrics.c \
     modify.c \
     pagedsearch.c \
     password.c \

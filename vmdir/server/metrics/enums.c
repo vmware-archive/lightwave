@@ -128,6 +128,38 @@ VmDirMetricsRpcOperationString(
     return pszRpcOperations[operation];
 }
 
+METRICS_LDAP_OPS
+VmDirMetricsMapLdapOperationToEnum(
+    ber_tag_t   operation
+    )
+{
+    METRICS_LDAP_OPS    match = METRICS_LDAP_OP_IGNORE;
+
+    switch (operation)
+    {
+    case LDAP_REQ_ADD:
+        match = METRICS_LDAP_OP_ADD;
+        break;
+
+    case LDAP_REQ_MODIFY:
+        match = METRICS_LDAP_OP_MODIFY;
+        break;
+
+    case LDAP_REQ_DELETE:
+        match = METRICS_LDAP_OP_DELETE;
+        break;
+
+    case LDAP_REQ_SEARCH:
+        match = METRICS_LDAP_OP_SEARCH;
+        break;
+
+    default:
+        break;// keep it IGNORE
+    }
+
+    return match;
+}
+
 METRICS_LDAP_OP_TYPES
 VmDirMetricsMapLdapOpTypeToEnum(
     VDIR_OPERATION_TYPE opType

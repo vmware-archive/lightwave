@@ -135,6 +135,7 @@ typedef struct _VMDIR_MUTEX* PVMDIR_MUTEX;
 typedef struct _VMDIR_RWLOCK* PVMDIR_RWLOCK;
 typedef struct _VM_DIR_CONNECTION_ *PVM_DIR_CONNECTION;
 typedef struct _VM_DIR_SECURITY_CONTEXT_ *PVM_DIR_SECURITY_CONTEXT;
+typedef struct _VMDIR_COND* PVMDIR_COND;
 
 typedef struct _VMDIR_IPC_DATA_CONTAINER
 {
@@ -172,6 +173,22 @@ typedef struct _VDIR_LINKED_LIST
     size_t                  iSize;
 
 } VDIR_LINKED_LIST, *PVDIR_LINKED_LIST;
+
+// QUEUE
+typedef struct _VDIR_QUEUE_NODE
+{
+    PVOID                       pElement;
+    struct _VDIR_QUEUE_NODE*    pNext;
+} VDIR_QUEUE_NODE, *PVDIR_QUEUE_NODE;
+
+typedef struct _VDIR_QUEUE
+{
+    PVDIR_QUEUE_NODE    pHead;
+    PVDIR_QUEUE_NODE    pTail;
+    PVMDIR_MUTEX        pMutex;
+    PVMDIR_COND         pCond;
+    size_t              iSize;
+} VDIR_QUEUE, *PVDIR_QUEUE;
 
 typedef BOOLEAN (*PFN_SORTED_LINKEDLIST_INSERT_COMPARE) (const PVOID, const PVOID);
 
@@ -1110,6 +1127,7 @@ typedef enum
 #define VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME    "OverridePassScheme"
 #define VMDIR_REG_KEY_MAX_INTERNAL_SEARCH     "maxInternalSearchLimit"
 #define VMDIR_REG_KEY_EFFICIENT_READ_OP       "efficientReadOpTimeMS"
+#define VMDIR_REG_KEY_EFFICIENT_WRITE_OP      "efficientWriteOpTimeMS"
 #define VMDIR_REG_KEY_INTEGRITY_CHK_PARTNER_POLICY  "IntegrityChkPartnerPolicy"
 #define VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC "IntegrityChkJobIntervalInSec"
 #define VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC "IntegrityRptJobIntervalInSec"
@@ -2856,6 +2874,38 @@ DWORD
 VmDirMergeSort(
     PVDIR_LINKED_LIST       pList,
     mergeSortCompareFunc    pCompareFunc
+    );
+
+// queue.c
+DWORD
+VmDirQueueInit(
+    PVDIR_QUEUE*    ppQueue
+    );
+
+DWORD
+VmDirQueueEnqueue(
+    BOOL        bInLock,
+    PVDIR_QUEUE pQueue,
+    PVOID       pElement
+    );
+
+DWORD
+VmDirQueueDequeue(
+    BOOL        bInLock,
+    PVDIR_QUEUE pQueue,
+    int64_t     iTimeoutMs,
+    PVOID*      ppElement
+    );
+
+BOOL
+VmDirQueueCompare(
+    PVDIR_QUEUE pLeftQueue,
+    PVDIR_QUEUE pRightQueue
+    );
+
+VOID
+VmDirQueueFree(
+    PVDIR_QUEUE pQueue
     );
 
 #ifdef __cplusplus
