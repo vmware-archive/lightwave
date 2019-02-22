@@ -1,4 +1,4 @@
-noinst_LTLIBRARIES = libvmdirmdb.la
+lib_LTLIBRARIES = libvmdirmdb.la
 
 libvmdirmdb_la_SOURCES = \
     mdb.c \
@@ -14,4 +14,4 @@ libvmdirmdb_la_CPPFLAGS = \
     -Wno-unused-result
 
 libvmdirmdb_la_LDFLAGS = \
-    -static
+    -version-number 9:11:0

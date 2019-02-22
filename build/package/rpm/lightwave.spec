@@ -1301,6 +1301,7 @@ users.
 
 %{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
+%{_lib64dir}/libvmdirmdb.so*
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
@@ -1432,6 +1433,7 @@ users.
 %{_bindir}/post_restore.sh
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
+%{_lib64dir}/libvmdirmdb.so*
 
 %{_datadir}/config/saslpostd.conf
 %{_datadir}/config/postschema.ldif

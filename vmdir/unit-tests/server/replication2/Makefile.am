@@ -42,6 +42,7 @@ replication2_LDADD = \
     $(top_builddir)/vmdir/server/acl/libvmacl.la \
     $(top_builddir)/vmdir/server/backend/libbackend.la \
     $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/libvmdirmdb.la \
     $(top_builddir)/vmdir/server/replication2/libreplication.la \
     $(top_builddir)/vmdir/server/clusterstate/libclusterstate.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \

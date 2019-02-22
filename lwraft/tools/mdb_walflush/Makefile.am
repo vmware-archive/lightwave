@@ -1,13 +1,5 @@
 bin_PROGRAMS = mdb_walflush
 
-if MDB_0_9_22
-    MDB_DIR = vmdir/thirdparty/openldap/libraries/liblmdb
-    MDB_LIB = libvmdirmdb.la
-else
-    MDB_DIR = lwraft/thirdparty/openldap/libraries/mdb
-    MDB_LIB = liblwraftmdb.la
-endif
-
 mdb_walflush_SOURCES = \
     main.c
 
@@ -15,7 +7,7 @@ mdb_walflush_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \
     -I$(top_srcdir)/lwraft/include/public \
     -I$(top_srcdir)/lwraft/server/include \
-    -I$(top_srcdir)/$(MDB_DIR) \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -40,5 +32,6 @@ mdb_walflush_LDADD = \
 
 mdb_walflush_LDFLAGS = \
     -static \
-    $(top_builddir)/$(MDB_DIR)/$(MDB_LIB) \
-    @LW_LDFLAGS@
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/.libs/libvmdirmdb.so \
+    @LW_LDFLAGS@ \
+    @OPENSSL_LDFLAGS@
