@@ -197,6 +197,11 @@ VmDirVmAclInit(
     );
 
 VOID
+VmDirVmAclShutdownFlush(
+    VOID
+    );
+
+VOID
 VmDirVmAclShutdown(
     VOID
     );
