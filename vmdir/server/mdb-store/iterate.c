@@ -571,3 +571,211 @@ VmDirMDBEntryBlobIteratorFree(
         VMDIR_SAFE_FREE_MEMORY(pIterator);
     }
 }
+
+DWORD
+VmDirMDBIteratorInit(
+    PSTR                             pszDBName,
+    PVMDIR_COMPACT_KV_PAIR         pData,
+    PVDIR_BACKEND_TABLE_ITERATOR*    ppIterator
+    )
+{
+    DWORD                    dwError = 0;
+    DWORD                    dwMDBFlags = 0;
+    VDIR_DB                  mdbDBi = 0;
+    VDIR_DB_DBT              key = {0};
+    VDIR_DB_DBT              value = {0};
+    PVDIR_DB_TXN             pTxn = NULL;
+    PVDIR_DB_DBC             pCursor = NULL;
+    PVDIR_MDB_ITERATOR       pMDBIterator = NULL;
+    VMDIR_COMPACT_KV_PAIR    data = {0};
+    PVDIR_BACKEND_TABLE_ITERATOR   pIterator = NULL;
+
+    if (IsNullOrEmptyString(pszDBName) || pData == NULL || ppIterator == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_BACKEND_TABLE_ITERATOR), (PVOID*)&pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateMemory(
+            sizeof(VDIR_MDB_ITERATOR), (PVOID*)&pMDBIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pIterator->pIterator = (PVOID) pMDBIterator;
+
+    dwError = VmDirMDBGetDBi(pszDBName, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMDBIterator->pTxn = pTxn;
+    pMDBIterator->bHasTxn = TRUE;
+
+    dwError = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pMDBIterator->pCursor = pCursor;
+
+    if (pData->pKeyAndValue == NULL)
+    {
+        dwError = mdb_cursor_get(pCursor, &key, &value, MDB_FIRST);
+    }
+    else
+    {
+        key.mv_data = pData->pKeyAndValue;
+        key.mv_size = pData->dwKeySize;
+
+        if (pData->dwValueSize)
+        {
+            value.mv_data = pData->pKeyAndValue + pData->dwKeySize;
+            value.mv_size = pData->dwValueSize;
+        }
+
+        dwError = mdb_dbi_flags(pTxn, mdbDBi, &dwMDBFlags);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = mdb_cursor_get(
+                pCursor,
+                &key,
+                &value,
+                (dwMDBFlags & MDB_DUPSORT) ? MDB_GET_BOTH_RANGE : MDB_SET_RANGE);
+    }
+
+    if (dwError == 0)
+    {
+        dwError = VmDirFillMDBIteratorDataContent(
+                key.mv_data, key.mv_size, value.mv_data, value.mv_size, &data);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pMDBIterator->data.pKeyAndValue = data.pKeyAndValue;
+        pMDBIterator->data.dwKeySize = data.dwKeySize;
+        pMDBIterator->data.dwValueSize = data.dwValueSize;
+
+        memset(&data, 0, sizeof(VMDIR_COMPACT_KV_PAIR));
+
+        pIterator->bHasNext = TRUE;
+    }
+    else
+    {
+        pIterator->bHasNext = FALSE;
+        dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppIterator = pIterator;
+
+cleanup:
+    VmDirFreeMDBIteratorDataContents(&data);
+    return dwError;
+
+error:
+    VmDirMDBIteratorFree(pIterator);
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBIterate(
+    PVDIR_BACKEND_TABLE_ITERATOR    pIterator,
+    PVMDIR_COMPACT_KV_PAIR        pData
+    )
+{
+    DWORD                    dwError = 0;
+    PVDIR_DB_DBC             pCursor = NULL;
+    VDIR_DB_DBT              newKey = {0};
+    VDIR_DB_DBT              newValue = {0};
+    PVDIR_MDB_ITERATOR       pMDBIterator = NULL;
+    VMDIR_COMPACT_KV_PAIR    data = {0};
+
+    if (!pIterator || !pData)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    pMDBIterator = pIterator->pIterator;
+    pCursor = pMDBIterator->pCursor;
+
+    assert(pData->pKeyAndValue == NULL);
+
+    if (pIterator->bHasNext)
+    {
+        pData->pKeyAndValue = pMDBIterator->data.pKeyAndValue;
+        pData->dwKeySize = pMDBIterator->data.dwKeySize;
+        pData->dwValueSize = pMDBIterator->data.dwValueSize;
+
+        memset(&pMDBIterator->data, 0, sizeof(VMDIR_COMPACT_KV_PAIR));
+
+        dwError = mdb_cursor_get(pCursor, &newKey, &newValue, MDB_NEXT);
+
+        if (dwError == 0)
+        {
+            dwError = VmDirFillMDBIteratorDataContent(
+                    newKey.mv_data, newKey.mv_size, newValue.mv_data, newValue.mv_size, &data);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pMDBIterator->data.pKeyAndValue = data.pKeyAndValue;
+            pMDBIterator->data.dwKeySize = data.dwKeySize;
+            pMDBIterator->data.dwValueSize = data.dwValueSize;
+
+            memset(&data, 0, sizeof(VMDIR_COMPACT_KV_PAIR));
+
+            pIterator->bHasNext = TRUE;
+        }
+        else
+        {
+            pIterator->bHasNext = FALSE;
+            dwError = dwError == MDB_NOTFOUND ? 0 : dwError;
+            pMDBIterator->bAbort = dwError ? TRUE : FALSE;
+        }
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VmDirFreeMDBIteratorDataContents(&data);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, " failed, error (%d)", dwError);
+    goto cleanup;
+}
+
+VOID
+VmDirMDBIteratorFree(
+    PVDIR_BACKEND_TABLE_ITERATOR    pIterator
+    )
+{
+    PVDIR_MDB_ITERATOR    pMDBIterator = NULL;
+
+    if (pIterator)
+    {
+        pMDBIterator = pIterator->pIterator;
+
+        if (pMDBIterator)
+        {
+            if (pMDBIterator->pCursor)
+            {
+                mdb_cursor_close(pMDBIterator->pCursor);
+            }
+
+            if (pMDBIterator->bHasTxn)
+            {
+                if (pMDBIterator->bAbort)
+                {
+                    mdb_txn_abort(pMDBIterator->pTxn);
+                }
+                else
+                {
+                    mdb_txn_commit(pMDBIterator->pTxn);
+                }
+            }
+
+            VmDirFreeMDBIteratorDataContents(&pMDBIterator->data);
+            VMDIR_SAFE_FREE_MEMORY(pMDBIterator);
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pIterator);
+    }
+}

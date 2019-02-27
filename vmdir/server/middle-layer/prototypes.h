@@ -474,6 +474,12 @@ VmDirIsSearchForIntegrityCheckStatus(
     );
 
 BOOLEAN
+VmDirIsSearchForDBIntegrityCheckStatus(
+    PVDIR_OPERATION            pOperation,
+    PVMDIR_DB_INTEGRITY_JOB*   ppDBIntegrityCheckJob
+    );
+
+BOOLEAN
 VmDirIsSearchForDBCrossCheckStatus(
     PVDIR_OPERATION                     pOp
     );

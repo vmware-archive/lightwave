@@ -659,6 +659,7 @@ VmDirIntegrityReportSetPartner(
     PVMDIR_INTEGRITY_REPORT pReport,
     PCSTR                   pszPartner
     );
+
 #ifdef __cplusplus
 }
 #endif

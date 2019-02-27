@@ -176,6 +176,13 @@ VMDIR_INTEGRITY_CHECK_GLOBALS gVmdirIntegrityCheck =
         VMDIR_SF_INIT(.pJob, NULL)
     };
 
+VMDIR_DB_INTEGRITY_CHECK_GLOBALS gVmdirDBIntegrityCheck =
+    {
+        // NOTE: order of fields MUST stay in sync with struct definition...
+        VMDIR_SF_INIT(.pMutex, NULL),
+        VMDIR_SF_INIT(.pJob, NULL)
+    };
+
 VMDIR_DB_CROSS_CHECK_GLOBALS gVmdirDBCrossCheck =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...

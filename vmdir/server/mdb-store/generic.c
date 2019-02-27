@@ -198,3 +198,197 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmDirMDBGetDBi(
+    PSTR        pszDBName,
+    PVDIR_DB    pDBi
+    )
+{
+    DWORD                       dwError = 0;
+    PVDIR_MDB_INDEX_DATABASE    pMdbIndexDB = NULL;
+
+    if (IsNullOrEmptyString(pszDBName) || !pDBi)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    *pDBi = 0;
+
+    if (VmDirStringCompareA(pszDBName, BE_MDB_SEQ_DB_NAME, FALSE) == 0)
+    {
+        *pDBi = gVdirMdbGlobals.mdbSeqDBi;
+    }
+    else if (VmDirStringCompareA(pszDBName, BE_MDB_GENERIC_DUPKEY_DB_NAME, FALSE) == 0)
+    {
+        *pDBi = gVdirMdbGlobals.mdbGenericDupKeyDBi;
+    }
+    else if (VmDirStringCompareA(pszDBName, BE_MDB_GENERIC_UNIQKEY_DB_NAME, FALSE) == 0)
+    {
+        *pDBi = gVdirMdbGlobals.mdbGenericUniqKeyDBi;
+    }
+    else if (VmDirStringCompareA(pszDBName, VMDIR_ENTRY_DB, FALSE) == 0)
+    {
+        *pDBi = gVdirMdbGlobals.mdbEntryDB.pMdbDataFiles[0].mdbDBi;
+    }
+    else
+    {
+        dwError = LwRtlHashMapFindKey(
+                gVdirMdbGlobals.mdbIndexDBs,
+                (PVOID*)&pMdbIndexDB,
+                pszDBName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        *pDBi = pMdbIndexDB->pMdbDataFiles[0].mdbDBi;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%u)", dwError);
+    VMDIR_SET_BACKEND_ERROR(dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBGetAllDBNames(
+    PVMDIR_STRING_LIST*    ppDBList
+    )
+{
+    PSTR            pszDBName = NULL;
+    DWORD           dwError = 0;
+    int             retVal = 0;
+    VDIR_DB         mdbDBi = 0;
+    BOOLEAN         bTxn = FALSE;
+    BOOLEAN         bTxnAbort = FALSE;
+    VDIR_DB_DBT     key = {0};
+    PVDIR_DB_TXN    pTxn = NULL;
+    PVDIR_DB_DBC    pCursor = NULL;
+    PVMDIR_STRING_LIST    pDBList = NULL;
+
+    if (ppDBList == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirStringListInitialize(&pDBList, 10);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    retVal = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    bTxn = TRUE;
+
+    retVal = mdb_open(pTxn, NULL, 0, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = mdb_cursor_open(pTxn, mdbDBi, &pCursor);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    while((retVal = mdb_cursor_get(pCursor, &key, NULL, MDB_NEXT)) == 0)
+    {
+        retVal = VmDirAllocateMemory(key.mv_size+1, (PVOID*) &pszDBName);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirCopyMemory(pszDBName, key.mv_size, key.mv_data, key.mv_size);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        retVal = VmDirStringListAdd(pDBList, pszDBName);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        pszDBName = NULL;
+    }
+    retVal = retVal == MDB_NOTFOUND ? 0 : retVal;
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    *ppDBList = pDBList;
+    pDBList = NULL;
+
+cleanup:
+    VmDirStringListFree(pDBList);
+    if (pCursor)
+    {
+        mdb_cursor_close(pCursor);
+    }
+
+    if (mdbDBi != 0)
+    {
+        mdb_close(gVdirMdbGlobals.mdbEnv, mdbDBi);
+    }
+
+    if (bTxn)
+    {
+        if (bTxnAbort)
+        {
+            mdb_txn_abort(pTxn);
+        }
+        else
+        {
+            mdb_txn_commit(pTxn);
+        }
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pszDBName);
+    return dwError;
+
+error:
+    bTxnAbort = TRUE;
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", retVal);
+    VMDIR_SET_BACKEND_ERROR(dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirMDBGetDBKeysCount(
+    PSTR     pszDBName,
+    PDWORD   pdwKeysCount
+    )
+{
+    DWORD           dwError = 0;
+    int             retVal = 0;
+    VDIR_DB         mdbDBi = 0;
+    BOOLEAN         bTxn = FALSE;
+    BOOLEAN         bTxnAbort = FALSE;
+    PVDIR_DB_TXN    pTxn = NULL;
+    VDIR_DB_STAT    mdbStat = {0};
+
+    if (pszDBName == NULL || pdwKeysCount == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    retVal = mdb_txn_begin(gVdirMdbGlobals.mdbEnv, NULL, MDB_RDONLY, &pTxn);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    bTxn = TRUE;
+
+    retVal = VmDirMDBGetDBi(pszDBName, &mdbDBi);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    retVal = mdb_stat(pTxn, mdbDBi, &mdbStat);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    *pdwKeysCount = mdbStat.ms_entries;
+
+cleanup:
+    if (bTxn)
+    {
+        if (bTxnAbort)
+        {
+            mdb_txn_abort(pTxn);
+        }
+        else
+        {
+            mdb_txn_commit(pTxn);
+        }
+    }
+
+    return dwError;
+
+error:
+    bTxnAbort = TRUE;
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", retVal);
+    VMDIR_SET_BACKEND_ERROR(dwError);
+    goto cleanup;
+}

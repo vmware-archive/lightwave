@@ -50,6 +50,7 @@ typedef MDB_env             VDIR_DB_ENV, *PVDIR_DB_ENV;
 typedef MDB_val             VDIR_DB_DBT, *PVDIR_DB_DBT;
 typedef MDB_cursor          VDIR_DB_DBC, *PVDIR_DB_DBC;
 typedef MDB_txn             VDIR_DB_TXN, *PVDIR_DB_TXN;
+typedef MDB_stat            VDIR_DB_STAT, *PVDIR_DB_STAT;
 
 // NOTE: mdb_hash_t is defined in mdb.c and not exposed in mdb.h
 typedef unsigned long long  mdb_hash_t;

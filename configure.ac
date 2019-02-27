@@ -1825,6 +1825,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/common/Makefile
                  vmdir/server/backend/Makefile
                  vmdir/server/mdb-store/Makefile
+                 vmdir/server/dbintegritychk/Makefile
                  vmdir/server/metrics/Makefile
                  vmdir/server/indexcfg/Makefile
                  vmdir/server/middle-layer/Makefile

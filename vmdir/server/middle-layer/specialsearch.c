@@ -35,6 +35,7 @@ VmDirHandleSpecialSearch(
     PVDIR_ENTRY_ARRAY   pEntryArray = NULL;
     VDIR_SPECIAL_SEARCH_ENTRY_TYPE entryType = REGULAR_SEARCH_ENTRY_TYPE;
     VMDIR_INTEGRITY_CHECK_JOB_STATE integrityCheckStat = INTEGRITY_CHECK_JOB_NONE;
+    PVMDIR_DB_INTEGRITY_JOB    pDBIntegrityCheckJob = NULL;
 
     static PCSTR pszEntryType[] =
     {
@@ -48,6 +49,7 @@ VmDirHandleSpecialSearch(
             "Cluster Vote",
             "Raft State",
             "DB Cross Check Status",
+            "DB Integrity Check Status",
     };
 
     if ( !pOp || !pLdapResult )
@@ -154,6 +156,46 @@ VmDirHandleSpecialSearch(
             {
                 pEntryArray->iSize = 1;
             }
+        }
+    }
+    else if (VmDirIsSearchForDBIntegrityCheckStatus(pOp, &pDBIntegrityCheckJob))
+    {
+        BOOLEAN bIsMember = FALSE;
+
+        entryType = SPECIAL_SEARCH_ENTRY_TYPE_DB_INTEGRITY_CHECK_STATUS;
+
+        dwError = VmDirIsBindDnMemberOfSystemDomainAdmins(NULL, &pOp->conn->AccessInfo, &bIsMember);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!bIsMember)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+        }
+
+        if (pDBIntegrityCheckJob->state == DB_INTEGRITY_CHECK_JOB_START)
+        {
+            dwError = VmDirDBIntegrityCheckStart(pDBIntegrityCheckJob);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            pDBIntegrityCheckJob = NULL; //transfer ownership
+        }
+        else if (pDBIntegrityCheckJob->state == DB_INTEGRITY_CHECK_JOB_STOP)
+        {
+            VmDirDBIntegrityCheckStop();
+        }
+        else if (pDBIntegrityCheckJob->state == DB_INTEGRITY_CHECK_JOB_SHOW_SUMMARY)
+        {
+            dwError = VmDirDBIntegrityCheckShowStatus(&pEntryArray->pEntry);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (pEntryArray->pEntry)
+            {
+                pEntryArray->iSize = 1;
+            }
+        }
+        else if (pDBIntegrityCheckJob->state == DB_INTEGRITY_CHECK_JOB_NONE)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
         }
     }
     else if (VmDirIsSearchForDBCrossCheckStatus(pOp))
@@ -266,6 +308,7 @@ VmDirHandleSpecialSearch(
     }
 
 cleanup:
+    VmDirDBIntegrityCheckJobFree(pDBIntegrityCheckJob);
     if (bHasTxn)
     {
         pOp->pBEIF->pfnBETxnCommit(pOp->pBECtx);
@@ -550,6 +593,95 @@ VmDirIsSearchForIntegrityCheckStatus(
     }
 
     return bRetVal;
+}
+
+BOOLEAN
+VmDirIsSearchForDBIntegrityCheckStatus(
+    PVDIR_OPERATION            pOperation,
+    PVMDIR_DB_INTEGRITY_JOB*   ppDBIntegrityCheckJob
+    )
+{
+    DWORD                      dwError = 0;
+    PSTR                       pszDN = NULL;
+    BOOLEAN                    bRetVal = FALSE;
+    SearchReq*                 pSearchReq = NULL;
+    PVDIR_FILTER               pFilter = NULL;
+    PVMDIR_DB_INTEGRITY_JOB    pDBIntegrityCheckJob = NULL;
+
+    if (!pOperation || !ppDBIntegrityCheckJob)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pszDN = pOperation->reqDn.lberbv.bv_val;
+    pSearchReq = &(pOperation->request.searchReq);
+    pFilter = pSearchReq ? pSearchReq->filter : NULL;
+
+    if (pszDN && VmDirStringCompareA(pszDN, DB_INTEGRITY_CHECK_STATUS_DN, FALSE) == 0 &&
+        pSearchReq && pFilter && pFilter->choice == LDAP_FILTER_PRESENT               &&
+        pFilter->filtComp.present.lberbv.bv_val                                       &&
+        VmDirStringNCompareA(
+            ATTR_OBJECT_CLASS,
+            pFilter->filtComp.present.lberbv.bv_val,
+            ATTR_OBJECT_CLASS_LEN,
+            FALSE) == 0)
+    {
+        bRetVal = TRUE;
+
+        dwError = VmDirAllocateMemory(sizeof(VMDIR_DB_INTEGRITY_JOB), (PVOID*)&pDBIntegrityCheckJob);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (pSearchReq->scope == LDAP_SCOPE_BASE && pSearchReq->attrs)
+        {
+            PSTR    pszState = pSearchReq->attrs[0].lberbv.bv_val;
+            PSTR    pszCmd = pSearchReq->attrs[1].lberbv.bv_val;
+
+            if (VmDirStringCompareA(pszState, "start", FALSE) == 0)
+            {
+                pDBIntegrityCheckJob->state = DB_INTEGRITY_CHECK_JOB_START;
+
+                if (pszCmd == NULL)
+                {
+                    pDBIntegrityCheckJob->command = DB_INTEGRITY_CHECK_LIST;
+                }
+                else if (VmDirStringCompareA(pszCmd, "all", FALSE) == 0)
+                {
+                    pDBIntegrityCheckJob->command = DB_INTEGRITY_CHECK_ALL;
+                }
+                else
+                {
+                    pDBIntegrityCheckJob->command = DB_INTEGRITY_CHECK_SUBDB;
+
+                    dwError = VmDirAllocateStringA(pszCmd, &pDBIntegrityCheckJob->pszDBName);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+            }
+            else if (VmDirStringCompareA(pszState, "stop", FALSE) == 0)
+            {
+                pDBIntegrityCheckJob->state = DB_INTEGRITY_CHECK_JOB_STOP;
+            }
+            else
+            {
+                pDBIntegrityCheckJob->state = DB_INTEGRITY_CHECK_JOB_NONE;
+            }
+        }
+        else if (pSearchReq->scope == LDAP_SCOPE_ONELEVEL)
+        {
+            pDBIntegrityCheckJob->state = DB_INTEGRITY_CHECK_JOB_SHOW_SUMMARY;
+        }
+
+        *ppDBIntegrityCheckJob = pDBIntegrityCheckJob;
+        pDBIntegrityCheckJob = NULL;
+    }
+
+cleanup:
+    VmDirDBIntegrityCheckJobFree(pDBIntegrityCheckJob);
+    return bRetVal;
+
+error:
+    bRetVal = FALSE;
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
+    goto cleanup;
 }
 
 /*
