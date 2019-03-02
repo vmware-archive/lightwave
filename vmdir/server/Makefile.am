@@ -27,6 +27,7 @@ SUBDIRS = \
     ldap-head \
     api \
     rest-head \
+	dbintegritychk \
     middle-layer \
     $(REPLDIR) \
     clusterstate \

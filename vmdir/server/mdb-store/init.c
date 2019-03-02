@@ -115,7 +115,12 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEGetAllAttrValueMetaData, VmDirMDBGetAllAttrValueMetaData),
         VMDIR_SF_INIT(.pfnBEUpdateAttrValueMetaData, VmDirMdbUpdateAttrValueMetaData),
         VMDIR_SF_INIT(.pfnBEDeleteAllAttrValueMetaData, VmDirMdbDeleteAllAttrValueMetaData),
-        VMDIR_SF_INIT(.pfnBEApplyIndicesNewMR, VmDirMdbApplyIndicesNewMR)
+        VMDIR_SF_INIT(.pfnBEApplyIndicesNewMR, VmDirMdbApplyIndicesNewMR),
+        VMDIR_SF_INIT(.pfnBEBackendDBIteratorInit, VmDirMDBIteratorInit),
+        VMDIR_SF_INIT(.pfnBEBackendDBIterator, VmDirMDBIterate),
+        VMDIR_SF_INIT(.pfnBEBackendDBIteratorFree, VmDirMDBIteratorFree),
+        VMDIR_SF_INIT(.pfnBEBackendGetAllDBNames, VmDirMDBGetAllDBNames),
+        VMDIR_SF_INIT(.pfnBEBackendGetDBKeysCount, VmDirMDBGetDBKeysCount)
     };
 
     return &mdbBEInterface;

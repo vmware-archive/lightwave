@@ -108,6 +108,13 @@ typedef struct _VDIR_BACKEND_ENTRYBLOB_ITERATOR
 
 } VDIR_BACKEND_ENTRYBLOB_ITERATOR, *PVDIR_BACKEND_ENTRYBLOB_ITERATOR;
 
+typedef struct _VDIR_BACKEND_TABLE_ITERATOR
+{
+    PVOID   pIterator;
+    BOOLEAN bHasNext;
+
+} VDIR_BACKEND_TABLE_ITERATOR, *PVDIR_BACKEND_TABLE_ITERATOR;
+
 /*
  * Next backend generated entry id
  * return error -
@@ -506,6 +513,44 @@ typedef DWORD (*PFN_BACKEND_DELETE_ALL_ATTR_VALUE_META_DATA)(
                     );
 
 /*
+ * Function to DB iterator init
+ */
+typedef DWORD (*PFN_BACKEND_DB_ITERATOR_INIT)(
+                    PSTR    pszDBName,
+                    PVMDIR_COMPACT_KV_PAIR          pData,
+                    PVDIR_BACKEND_TABLE_ITERATOR*   ppIterator
+                    );
+/*
+ * Function to DB iterator
+ */
+typedef DWORD (*PFN_BACKEND_DB_ITERATOR)(
+                    PVDIR_BACKEND_TABLE_ITERATOR  pIterator,
+                    PVMDIR_COMPACT_KV_PAIR        pData
+                    );
+
+/*
+ * Function to DB iterator free
+ */
+typedef VOID (*PFN_BACKEND_DB_ITERATOR_FREE)(
+                    PVDIR_BACKEND_TABLE_ITERATOR  pIterator
+                    );
+
+/*
+ * Function to get all DB Names
+ */
+typedef DWORD (*PFN_BACKEND_GET_ALL_DB_NAMES)(
+                    PVMDIR_STRING_LIST*    ppDBList
+                    );
+
+/*
+ * Function to get DB keys count
+ */
+typedef DWORD (*PFN_BACKEND_GET_DB_KEYS_COUNT)(
+                    PSTR     pszDBName,
+                    PDWORD   pdwKeysCount
+                    );
+
+/*
  * Apply new matching rules to indices during schema upgrade
  * return error -
  * ERROR_BACKEND_ERROR:             all others
@@ -777,6 +822,31 @@ typedef struct _VDIR_BACKEND_INTERFACE
      * Set Max Originating USN
      */
     PFN_BACKEND_SET_MAX_ORIGINATING_USN   pfnBESetMaxOriginatingUSN;
+
+    /*
+     * Backend DB iterator init
+     */
+    PFN_BACKEND_DB_ITERATOR_INIT           pfnBEBackendDBIteratorInit;
+
+    /*
+     * Backend DB iterator
+     */
+    PFN_BACKEND_DB_ITERATOR                pfnBEBackendDBIterator;
+
+    /*
+     * Backend DB iterator free
+     */
+    PFN_BACKEND_DB_ITERATOR_FREE           pfnBEBackendDBIteratorFree;
+
+    /*
+     * Backend get all DB Names
+     */
+    PFN_BACKEND_GET_ALL_DB_NAMES          pfnBEBackendGetAllDBNames;
+
+    /*
+     * Backend get db keys count
+     */
+    PFN_BACKEND_GET_DB_KEYS_COUNT         pfnBEBackendGetDBKeysCount;
 
 } VDIR_BACKEND_INTERFACE;
 

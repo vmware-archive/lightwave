@@ -330,6 +330,61 @@ typedef struct _VMDIR_INTEGRITY_REPORT
 
 } VMDIR_INTEGRITY_REPORT, *PVMDIR_INTEGRITY_REPORT;
 
+typedef enum
+{
+    DB_INTEGRITY_CHECK_JOB_NONE = 0,
+    DB_INTEGRITY_CHECK_JOB_START,
+    DB_INTEGRITY_CHECK_JOB_INPROGRESS,
+    DB_INTEGRITY_CHECK_JOB_COMPLETE,
+    DB_INTEGRITY_CHECK_JOB_STOP,
+    DB_INTEGRITY_CHECK_JOB_FAILED,
+    DB_INTEGRITY_CHECK_JOB_SHOW_SUMMARY
+
+} VMDIR_DB_INTEGRITY_CHECK_JOB_STATE, *PVMDIR_DB_INTEGRITY_CHECK_JOB_STATE;
+
+typedef enum
+{
+    DB_INTEGRITY_CHECK_LIST = 0,
+    DB_INTEGRITY_CHECK_ALL,
+    DB_INTEGRITY_CHECK_SUBDB
+
+} VMDIR_DB_INTEGRITY_CHECK_JOB_CMD, *PVMDIR_DB_INTEGRITY_CHECK_JOB_CMD;
+
+typedef struct _VMDIR_DB_INTEGRITY_JOB_PER_DB
+{
+    PSTR                                  pszDBName;
+    DWORD                                 dwKeysProcessed;
+    DWORD                                 dwTotalKeys;
+    struct timespec                       startTime;
+    struct timespec                       endTime;
+    VMDIR_DB_INTEGRITY_CHECK_JOB_STATE    state;
+
+} VMDIR_DB_INTEGRITY_JOB_PER_DB, *PVMDIR_DB_INTEGRITY_JOB_PER_DB;
+
+typedef struct _VMDIR_DB_INTEGRITY_JOB
+{
+    PSTR                                  pszDBName;
+    struct timespec                       startTime;
+    struct timespec                       endTime;
+    VMDIR_DB_INTEGRITY_CHECK_JOB_CMD      command;
+    VMDIR_DB_INTEGRITY_CHECK_JOB_STATE    state;
+    PVMDIR_STRING_LIST                    pAllDBNames;
+
+    PVMDIR_DB_INTEGRITY_JOB_PER_DB        pJobPerDB;
+    DWORD                                 dwNumJobPerDB;
+    DWORD                                 dwNumValidJobPerDB;
+
+} VMDIR_DB_INTEGRITY_JOB, *PVMDIR_DB_INTEGRITY_JOB;
+
+typedef struct _VMDIR_DB_INTEGRITY_CHECK_GLOBALS
+{
+    PVMDIR_MUTEX               pMutex;
+    PVMDIR_DB_INTEGRITY_JOB    pJob;
+
+} VMDIR_DB_INTEGRITY_CHECK_GLOBALS, *PVMDIR_DB_INTEGRITY_CHECK_GLOBALS;
+
+extern VMDIR_DB_INTEGRITY_CHECK_GLOBALS gVmdirDBIntegrityCheck;
+
 // krb.c
 DWORD
 VmDirKrbRealmNameNormalize(
@@ -556,6 +611,97 @@ VmDirFreeIntegrityReport(
 VOID
 VmDirFreeIntegrityReportList(
     PVDIR_LINKED_LIST   pReports
+    );
+
+//dbintegritychk.c
+DWORD
+VmDirDBIntegrityCheckStart(
+    PVMDIR_DB_INTEGRITY_JOB    pDBIntegrityCheckJob
+    );
+
+VOID
+VmDirDBIntegrityCheckStop(
+    VOID
+    );
+
+DWORD
+VmDirDBIntegrityCheckShowStatus(
+    PVDIR_ENTRY*    ppEntry
+    );
+
+DWORD
+VmDirDBIntegrityCheckStatusForListCommand_InLock(
+    PVMDIR_DB_INTEGRITY_JOB    pJob,
+    PVDIR_ENTRY*               ppEntry
+    );
+
+DWORD
+VmDirDBIntegrityCheckStatusForDBCommand_InLock(
+    PVMDIR_DB_INTEGRITY_JOB    pJob,
+    PVDIR_ENTRY*               ppEntry
+    );
+
+DWORD
+VmDirMDBSubDBIntegrityCheck(
+    DWORD    dwJobPerDBIndex
+    );
+
+//dbintegritcheckjob.c
+DWORD
+VmDirDBIntegrityCheckUpdateJobPerIter(
+    DWORD    dwJobPerDBIndex,
+    DWORD    dwKeysProcessed,
+    PVMDIR_DB_INTEGRITY_CHECK_JOB_STATE    pState
+    );
+
+VOID
+VmDirDBIntegrityCheckUpdateJobComplete(
+    DWORD    dwJobPerDBIndex,
+    DWORD    dwKeysProcessed,
+    VMDIR_DB_INTEGRITY_CHECK_JOB_STATE    state
+    );
+
+DWORD
+VmDirDBIntegrityCheckJobGetDBName(
+    DWORD    dwJobPerDBIndex,
+    PSTR*    ppszDBName
+    );
+
+DWORD
+VmDirDBIntegrityCheckGetCommand(
+    PVMDIR_DB_INTEGRITY_CHECK_JOB_CMD    pCmd
+    );
+
+DWORD
+VmDirDBIntegrityCheckGetDBName(
+    PSTR*    ppszDBName
+    );
+
+VOID
+VmDirDBIntegrityCheckComplete(
+    PVMDIR_STRING_LIST    pDBList,
+    VMDIR_DB_INTEGRITY_CHECK_JOB_STATE    state
+    );
+
+DWORD
+VmDirDBIntegrityCheckAllocateJobPerDB(
+    DWORD    dwSize
+    );
+
+DWORD
+VmDirDBIntegrityCheckPopulateJobPerDB(
+    PSTR    pszDBName
+    );
+
+VOID
+VmDirDBIntegrityCheckJobFree(
+    PVMDIR_DB_INTEGRITY_JOB    pJob
+    );
+
+// dbintegritychkthread.c
+DWORD
+VmDirDBIntegrityCheckCreateThread(
+    VOID
     );
 
 // metrics.c

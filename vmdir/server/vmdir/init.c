@@ -1822,6 +1822,9 @@ InitializeGlobalVars(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = VmDirAllocateMutex(&gVmdirDBIntegrityCheck.pMutex);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirAllocateMutex(&gVmdirIntegrityCheck.pMutex);
     BAIL_ON_VMDIR_ERROR(dwError);
 

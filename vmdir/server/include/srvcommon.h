@@ -875,6 +875,14 @@ typedef struct _VMDIR_SERVER_OBJECT
     DWORD       dwServerId;
 } VMDIR_SERVER_OBJECT, *PVMDIR_SERVER_OBJECT;
 
+typedef struct _VMDIR_COMPACT_KV_PAIR
+{
+    PVOID    pKeyAndValue;
+    DWORD    dwKeySize;
+    DWORD    dwValueSize;
+
+} VMDIR_COMPACT_KV_PAIR, *PVMDIR_COMPACT_KV_PAIR;
+
 //clusterstate/statecache.c
 DWORD
 VmDirClusterCacheCloneSrvObj(
@@ -1400,6 +1408,20 @@ VmDirDNCopySingleAttributeString(
     PCSTR   pszDN,
     PCSTR   pszAttr,
     PSTR    *ppszAttrVal
+    );
+
+DWORD
+VmDirFillMDBIteratorDataContent(
+    PVOID    pKey,
+    DWORD    dwKeySize,
+    PVOID    pValue,
+    DWORD    dwValueSize,
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    );
+
+VOID
+VmDirFreeMDBIteratorDataContents(
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
     );
 
 //accnt_mgmt.c

@@ -77,6 +77,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/server/rest-head/librest-head.la \
     $(top_builddir)/vmdir/server/indexcfg/libindexcfg.la \
     $(top_builddir)/vmdir/server/middle-layer/libmiddle-layer.la \
+    $(top_builddir)/vmdir/server/dbintegritychk/libdb-integritychk.la \
     $(top_builddir)/vmdir/server/schema/libschema.la \
     $(top_builddir)/vmdir/server/acl/libvmacl.la \
     $(top_builddir)/vmdir/server/backend/libbackend.la \
