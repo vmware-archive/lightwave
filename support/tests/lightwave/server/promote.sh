@@ -5,6 +5,9 @@ rpm -Uvh --nodeps buildrpms/x86_64/lightwave-client*.rpm
 rpm -Uvh --nodeps buildrpms/x86_64/lightwave-server*.rpm
 rpm -Uvh --nodeps buildrpms/x86_64/lightwave-1*.rpm
 
+# Need haveged for vmca
+/usr/sbin/haveged -w 1024 -v 1
+
 /opt/likewise/sbin/lwsmd --start-as-daemon
 
 #set multiplesan option so localhost can be added to cert

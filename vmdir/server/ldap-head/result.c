@@ -564,10 +564,31 @@ cleanup:
 
 error:
 
-    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+    if (pOperation && VMDIR_IS_OP_CTRL_REPL(pOperation) && pSrEntry)
+    {
+        for (pAttr = pSrEntry->attrs; pAttr != NULL; pAttr = pAttr->next)
+        {
+            VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                           "SendSearchEntry sync request failed, attr (%s) has metadata (%d)",
+                           pAttr->type.lberbv_val, pAttr->pMetaData ? 1:0);
+        }
+
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "SendSearchEntry sync request failed, skip DN=(%s),EID(%lu), (%u)(%s)",
+                         (pSrEntry && pSrEntry->dn.lberbv.bv_val) ? pSrEntry->dn.lberbv.bv_val : "",
+                         pSrEntry->eId, retVal, VDIR_SAFE_STRING( pszLocalErrorMsg));
+
+        // for sync request, we should ignore individual entry issue;
+        // otherwise, my partner would never be able to catch up with me.
+        retVal = 0;
+    }
+    else
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
                      "SendSearchEntry failed DN=(%s), (%u)(%s)",
                      (pSrEntry && pSrEntry->dn.lberbv.bv_val) ? pSrEntry->dn.lberbv.bv_val : "",
                      retVal, VDIR_SAFE_STRING( pszLocalErrorMsg));
+    }
 
     if ( !pOperation->ldapResult.pszErrMsg && pszLocalErrorMsg )
     {
