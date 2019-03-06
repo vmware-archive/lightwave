@@ -37,20 +37,12 @@ VmDirReplUpdateListFetch(
     LDAPControl*                   srvCtrls[2]  = {NULL, NULL};
     PVMDIR_REPLICATION_UPDATE_LIST pReplUpdateList = NULL;
     LDAP*                          pLd          = NULL;
-    struct timeval                 tv           = {0};
-    struct timeval*                pTv          = NULL;
     PSTR                           pszFilter    = NULL;
     LDAPMessage                    *pSearchRes   = NULL;
     LDAPControl                    **ppSearchResCtrls = NULL;
     int                            iEntriesReceived = 0;
     LDAPControl                    syncReqCtrl;
     USN                            lastSupplierUsnProcessed = 0;
-
-    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
-    {
-        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
-        pTv = &tv;
-    }
 
     pLd = pReplAgr->dcConn.pLd;
 
@@ -94,7 +86,7 @@ VmDirReplUpdateListFetch(
             FALSE,
             srvCtrls,
             NULL,
-            pTv, // default 60 sec - time out on client/server side.
+            NULL, // V2 fetch all changes in one call, no timeout.
             LDAP_NO_LIMIT,
             &pSearchRes);
 
