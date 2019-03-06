@@ -15,7 +15,7 @@
 #include "includes.h"
 
 #define MDB_ENV_MAX_DBS 100
-#define MDB_ENV_MAPSIZE 107374182400 //100G
+#define MDB_ENV_MAPSIZE 536870912000 //500G
 
 int
 main(int argc, char* argv[])
