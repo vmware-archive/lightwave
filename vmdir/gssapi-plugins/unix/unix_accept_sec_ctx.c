@@ -33,9 +33,9 @@
 
 #include <vmdirdefines.h>
 #include "includes.h"
-#include "unix_crypt.h"
 
 #include <config.h>
+#include <gssapi_creds_plugin.h>
 
 #ifdef _WIN32
 
@@ -176,55 +176,6 @@ error:
 }
 
 
-/* Create the temporary SRP secret using username shadow pwd entry */
-static int
-_srpVerifierInit(
-    char *username,
-    char *password,
-    unsigned char **ret_bytes_s,
-    int *ret_len_s,
-    unsigned char **ret_bytes_v,
-    int *ret_len_v)
-{
-    int sts = 0;
-    const unsigned char *bytes_s = NULL;
-    int len_s = 0;
-    const unsigned char *bytes_v = NULL;
-    int len_v = 0;
-
-    if (!username || !password || !ret_bytes_s || !ret_bytes_v)
-    {
-        sts = -1;
-        goto error;
-    }
-
-    srp_create_salted_verification_key(
-        G_alg,
-        G_ng_type,
-        username,
-        (const unsigned char *) password,
-        (int) strlen(password),
-        &bytes_s,
-        &len_s,
-        &bytes_v,
-        &len_v,
-        G_n_hex,
-        G_g_hex);
-    
-    srp_print_hex(bytes_s, len_s, 
-                  "_srpVerifierInit(accept_sec_context): bytes_s");
-    srp_print_hex(bytes_v, len_v, 
-                  "_srpVerifierInit(accept_sec_context): bytes_v");
-
-    *ret_bytes_s = (unsigned char *) bytes_s;
-    *ret_len_s   = len_s;
-
-    *ret_bytes_v = (unsigned char *) bytes_v;
-    *ret_len_v = len_v;
-
-error:
-    return 0;
-}
 
 static
 struct SRPVerifier *
@@ -300,6 +251,7 @@ error:
     return sts;
 }
 
+
 /*
  * Read SRP_AUTH_INIT token, verify version is compatible. Retrieve
  * user salt value from the /etc/shadow password file, then format
@@ -328,7 +280,10 @@ _unix_gss_auth_init(
     int berror = 0;
     char *unix_username = NULL;
     char *username_salt = NULL;
-    char *username_hash = NULL;
+    unsigned char *bytes_v = NULL;
+    int len_v = 0;
+    unsigned char *bytes_s = NULL;
+    int len_s = 0;
 
     ber_ctx.bv_val = (void *) input_token->value;
     ber_ctx.bv_len = input_token->length;
@@ -392,18 +347,33 @@ _unix_gss_auth_init(
     srp_debug_printf("_unix_gss_auth_init(): username=%s\n", unix_username);
 
     /* Retrieve the salt value from the shadow password file */
-    sts = get_sp_salt(unix_username, &username_salt, &username_hash);
+    //sts = get_sp_salt(unix_username, &username_salt, &username_hash);
+    //Retrieve salt value and "V" verifier value in one go
+    //This is done via a credentials provider plugin
+    sts = get_hashed_creds(
+              PLUGIN_TYPE_UNIX,
+              unix_username,
+              &username_salt,
+              &bytes_s,
+              &len_s,
+              &bytes_v,
+              &len_v);
     if (sts)
     {
         maj = GSS_S_FAILURE;
         goto error;
     }
-    srp_debug_printf("_unix_gss_auth_init(): salt=%s hash=%s\n",
-                     username_salt, username_hash);
-    srp_context_handle->username_hash = username_hash;
+    srp_debug_printf("_unix_gss_auth_init(): salt=%s\n", username_salt);
     srp_context_handle->unix_username = unix_username;
-    username_hash = NULL;
+    srp_context_handle->bytes_v = bytes_v;
+    srp_context_handle->len_v = len_v;
+    srp_context_handle->bytes_s = bytes_s;
+    srp_context_handle->len_s = len_s;
     unix_username = NULL;
+    bytes_v = NULL;
+    len_v = 0;
+    bytes_s = NULL;
+    len_s = 0;
 
     ber_resp = ber_alloc_t(LBER_USE_DER);
     if (!ber_resp)
@@ -462,6 +432,14 @@ error:
         free(username_salt);
     }
 
+    if (bytes_v)
+    {
+        free(bytes_v);
+    }
+    if (bytes_s)
+    {
+        free(bytes_s);
+    }
     ber_bvfree(flatten);
     ber_free(ber, 1);
     ber_free(ber_resp, 1);
@@ -485,10 +463,6 @@ _unix_gss_salt_resp(
 {
     OM_uint32 maj = 0;
     OM_uint32 min = 0;
-    unsigned char *bytes_s = NULL;
-    int len_s = 0;
-    unsigned char *bytes_v = NULL;
-    int len_v = 0;
     struct berval *flatten = NULL;
     BerElement *ber = NULL;
     BerElement *ber_resp = NULL;
@@ -503,28 +477,10 @@ _unix_gss_salt_resp(
     int len_B = 0;
     int sts = 0;
 
-    /*
-     * This call creates the temporary server-side SRP secret
-     *
-     * bytes_s: SRP salt, publically known to client/server
-     * bytes_v: SRP secret, privately known only by server
-     */
-    sts = _srpVerifierInit(
-              srp_context_handle->unix_username,
-              srp_context_handle->username_hash,
-              &bytes_s,
-              &len_s,
-              &bytes_v,
-              &len_v);
-    if (sts)
-    {
-        maj = GSS_S_FAILURE;
-        goto error;
-    }
-    srp_debug_printf("_unix_gss_salt_resp(): salt len=%d", len_s);
-    srp_print_hex(bytes_s, len_s, 
+    srp_debug_printf("_unix_gss_salt_resp(): salt len=%d", srp_context_handle->len_s);
+    srp_print_hex(srp_context_handle->bytes_s, srp_context_handle->len_s,
                   "_srp_gss_auth_init(accept_sec_context): bytes_s");
-    srp_print_hex(bytes_v, len_v, 
+    srp_print_hex(srp_context_handle->bytes_v, srp_context_handle->len_v,
                   "_srp_gss_auth_init(accept_sec_context): bytes_v");
 
 
@@ -567,10 +523,10 @@ _unix_gss_salt_resp(
 
     ver = _srpServerNew(
               srp_context_handle->unix_username,
-              bytes_s,
-              len_s,
-              bytes_v,
-              len_v,
+              srp_context_handle->bytes_s,
+              srp_context_handle->len_s,
+              srp_context_handle->bytes_v,
+              srp_context_handle->len_v,
               ber_bytes_A->bv_val,
               (int) ber_bytes_A->bv_len,
               &bytes_B,
@@ -593,8 +549,8 @@ _unix_gss_salt_resp(
 /* TBD: Make this a macro */
                  "SHA-1",
                  (ber_len_t) strlen("SHA-1"),
-                 bytes_s,
-                 (ber_len_t) len_s,
+                 srp_context_handle->bytes_s,
+                 (ber_len_t) srp_context_handle->len_s,
                  bytes_B,
                  (ber_len_t) len_B);
     if (berror == -1)
@@ -664,14 +620,6 @@ error:
     ber_bvfree(flatten);
     ber_free(ber, 1);
     ber_free(ber_resp, 1);
-    if (bytes_v)
-    {
-        free(bytes_v);
-    }
-    if (bytes_s)
-    {
-        free(bytes_s);
-    }
 
     if (maj)
     {

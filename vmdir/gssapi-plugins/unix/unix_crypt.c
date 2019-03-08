@@ -28,6 +28,8 @@
 
 #include <crypt.h>
 #include <stdio.h>
+#include <csrp/srp.h>
+#include <dlfcn.h>
 
 #define CRYPT_MD5         "$1$"
 #define CRYPT_BLOWFISH_2A "$2a$"
@@ -37,25 +39,16 @@
 #define CRYPT_SHA_256     "$5$"
 #define CRYPT_SHA_512     "$6$"
 
-#ifdef _WIN32
-int get_sp_salt(const char *username,
-                char **ret_salt,
-                char **ret_encpwd)
-{
-    /*
-     * This cannot be supported on Windows, as there is no
-     * /etc shadow password file. The equivalent "local provider"
-     * hash is not accessable, making this functionality impossible to 
-     * support on Win32 platforms.
-     */
-    return ERROR_NOT_SUPPORTED;
-}
-#else
+static SRP_HashAlgorithm G_alg     = SRP_SHA1;
+static SRP_NGType        G_ng_type = SRP_NG_2048;
+static const char        *G_n_hex  = 0;
+static const char        *G_g_hex  = 0;
+
 /*
  * This function looks up "username" in the shadow password file, determines
  * the hash algorithm type, and returns the salt and the password
  * hash for that user.
- * 
+ *
  * Given the salt and the user password, then the hash can be created.
  * The generated hash is used as an SRP password (client side), and
  * the generator for the SRP secret (server side).
@@ -98,7 +91,7 @@ int get_sp_salt(const char *username,
     char *encpwd = NULL;
     char *sp = NULL;
     int cur_uid = 0;
-    
+
     if (!username || !ret_salt || !ret_encpwd)
     {
         st = -1;
@@ -153,7 +146,7 @@ int get_sp_salt(const char *username,
     ulckpwdf();
     seteuid(cur_uid);
     is_locked = 0;
-   
+
     /* CRYPT_DES hash is not supported; how to test? */
 
     /* Determine the hash algorithn, and therefore the salt length */
@@ -212,4 +205,132 @@ error:
     }
     return st;
 }
-#endif
+
+/* Create the temporary SRP secret using username shadow pwd entry */
+static int
+_srpVerifierInit(
+    char *username,
+    char *password,
+    unsigned char **ret_bytes_s,
+    int *ret_len_s,
+    unsigned char **ret_bytes_v,
+    int *ret_len_v)
+{
+    int sts = 0;
+    const unsigned char *bytes_s = NULL;
+    int len_s = 0;
+    const unsigned char *bytes_v = NULL;
+    int len_v = 0;
+
+    if (!username ||
+        !password ||
+        !ret_bytes_s ||
+        !ret_len_s ||
+        !ret_bytes_v ||
+        !ret_len_v)
+    {
+        sts = -1;
+        goto error;
+    }
+
+    srp_create_salted_verification_key(
+        G_alg,
+        G_ng_type,
+        username,
+        (const unsigned char *) password,
+        (int) strlen(password),
+        &bytes_s,
+        &len_s,
+        &bytes_v,
+        &len_v,
+        G_n_hex,
+        G_g_hex);
+
+    *ret_bytes_s = (unsigned char *) bytes_s;
+    *ret_len_s   = len_s;
+
+    *ret_bytes_v = (unsigned char *) bytes_v;
+    *ret_len_v = len_v;
+
+error:
+    return sts;
+}
+
+int
+get_salt_and_v_value(
+    int plugin_type,
+    const char *username,
+    char **ret_salt,
+    unsigned char **ret_bytes_s,
+    int *ret_len_s,
+    unsigned char **ret_bytes_v,
+    int *ret_len_v
+    )
+{
+    int sts = 0;
+    char *user_salt = NULL;
+    char *encpwd = NULL;
+    unsigned char *bytes_s = NULL;
+    int len_s = 0;
+    unsigned char *bytes_v = NULL;
+    int len_v = 0;
+
+    if(!username ||
+       !ret_salt ||
+       !ret_bytes_s ||
+       !ret_len_s ||
+       !ret_bytes_v ||
+       !ret_len_v)
+    {
+        sts = EINVAL;
+        goto error;
+    }
+
+    //Check if we have privileges
+    if(getuid() != 0)
+    {
+        sts = EPERM;
+        goto error;
+    }
+
+    sts = get_sp_salt(username, &user_salt, &encpwd);
+    if(sts)
+    {
+        goto error;
+    }
+
+    /*
+     * This call creates the temporary server-side SRP secret
+     *
+     * bytes_s: SRP salt, publically known to client/server
+     * bytes_v: SRP secret, privately known only by server
+     */
+    sts = _srpVerifierInit(
+              (char *)username,
+              encpwd,
+              &bytes_s,
+              &len_s,
+              &bytes_v,
+              &len_v);
+    if (sts)
+    {
+        goto error;
+    }
+
+    *ret_salt = user_salt;
+    *ret_bytes_s = bytes_s;
+    *ret_len_s = len_s;
+    *ret_bytes_v = bytes_v;
+    *ret_len_v = len_v;
+cleanup:
+    return sts;
+
+error:
+    if(ret_salt)
+    {
+        *ret_salt = NULL;
+    }
+    free(user_salt);
+    free(encpwd);
+    goto cleanup;
+}

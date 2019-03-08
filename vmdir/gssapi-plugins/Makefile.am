@@ -1,4 +1,6 @@
 SUBDIRS = \
+    include \
+    common \
     ntlm \
     srp
 

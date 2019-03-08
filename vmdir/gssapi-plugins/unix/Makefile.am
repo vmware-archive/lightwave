@@ -13,12 +13,36 @@ unix_srp_CPPFLAGS = \
 
 unix_srp_LDADD = \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
-    $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     @CRYPT_LIBS@ \
     @OPENSSL_LDFLAGS@ \
     @CRYPTO_LIBS@
 
-lib_LTLIBRARIES = libgssapi_unix.la
+lib_LTLIBRARIES = libgssapi_unix.la libgssapi_unix_creds.la
+
+libgssapi_unix_creds_la_CPPFLAGS = \
+   -D_MIT_KRB5_1_11 \
+   -D_MIT_KRB5_1_12 \
+   -I. \
+   -I$(top_srcdir)/vmdir/gssapi-plugins/include/public \
+   -I$(top_srcdir)/vmdir/thirdparty \
+    @OPENSSL_INCLUDES@ \
+    @LW_INCLUDES@
+
+libgssapi_unix_creds_la_SOURCES = \
+        unix_creds_plugin.c \
+        unix_crypt.c
+
+libgssapi_unix_creds_la_LIBADD = \
+    $(top_builddir)/vmdir/client/libvmdirclient.la \
+    $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/vmdir/client/libvmdirclient_la-srp_verifier_cstub.lo \
+    @OPENSSL_LDFLAGS@ \
+    @CRYPT_LIBS@ \
+    @CRYPTO_LIBS@ \
+    @PTHREAD_LIBS@
+
+libgssapi_unix_creds_la_LDFLAGS = \
+    @LW_LDFLAGS@
 
 libgssapi_unix_la_CPPFLAGS = \
    -D_MIT_KRB5_1_11 \
@@ -30,6 +54,7 @@ libgssapi_unix_la_CPPFLAGS = \
    -I$(top_srcdir)/vmdir/include/public \
    -I$(top_srcdir)/vmdir/thirdparty \
    -I$(top_builddir)/vmdir/client \
+   -I$(top_srcdir)/vmdir/gssapi-plugins/include/public \
     @OPENSSL_INCLUDES@ \
     @LW_INCLUDES@
 
@@ -48,10 +73,10 @@ libgssapi_unix_la_SOURCES = \
 	unix_unwrap_iov.c \
 	unix_util.c \
         unixregutils.c \
-        unixreg.c \
-        unix_crypt.c
+        unixreg.c
 
 libgssapi_unix_la_LIBADD = \
+    $(top_builddir)/vmdir/gssapi-plugins/common/libgssapi_common.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/vmdir/client/libvmdirclient_la-srp_verifier_cstub.lo \

@@ -42,7 +42,7 @@ srp_gss_delete_sec_context(
     OM_uint32 tmp_minor = GSS_S_COMPLETE;
     OM_uint32 ret = GSS_S_COMPLETE;
 
-    if (context_handle == NULL)
+    if (context_handle == NULL || *context_handle == NULL)
     {
         return (GSS_S_FAILURE);
     }
@@ -57,10 +57,6 @@ srp_gss_delete_sec_context(
     if (srp_ctx->unix_username)
     {
         free(srp_ctx->unix_username);
-    }
-    if (srp_ctx->username_hash)
-    {
-        free(srp_ctx->username_hash);
     }
 
     if (srp_ctx->srp_session_key)
@@ -110,6 +106,14 @@ srp_gss_delete_sec_context(
     }
 #endif
 
+    if (srp_ctx->bytes_v)
+    {
+        free(srp_ctx->bytes_v);
+    }
+    if (srp_ctx->bytes_s)
+    {
+        free(srp_ctx->bytes_s);
+    }
     free(*context_handle);
     *context_handle = NULL;
     return (ret);

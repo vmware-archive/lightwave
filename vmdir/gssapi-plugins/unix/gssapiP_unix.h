@@ -165,10 +165,13 @@ typedef struct {
 #endif
         HMAC_CTX          hmac_ctx;
         char              *unix_username; /* UNIX username */
-        char              *username_hash; /* user shadow pwd file hash */
         char              *upn_name;     /* Kerberos UPN Name */
         unsigned char     *srp_session_key;
         int               srp_session_key_len;
+        unsigned char     *bytes_v;
+        int               len_v;
+        unsigned char     *bytes_s;
+        int               len_s;
 } srp_gss_ctx_id_rec, *srp_gss_ctx_id_t;
 
 

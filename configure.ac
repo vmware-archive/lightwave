@@ -1740,6 +1740,9 @@ AC_CONFIG_FILES([Makefile
                  vmdir/thirdparty/heimdal/ntlm/Makefile
                  vmdir/thirdparty/csrp/Makefile
                  vmdir/gssapi-plugins/Makefile
+                 vmdir/gssapi-plugins/include/Makefile
+                 vmdir/gssapi-plugins/include/public/Makefile
+                 vmdir/gssapi-plugins/common/Makefile
                  vmdir/gssapi-plugins/ntlm/Makefile
                  vmdir/gssapi-plugins/srp/Makefile
                  vmdir/gssapi-plugins/unix/Makefile

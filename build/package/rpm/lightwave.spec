@@ -133,6 +133,12 @@ VMware Lightwave Server
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
 
+%package client-libs
+Summary: Lightwave Client libs
+
+%description client-libs
+Client libraries to communicate with Lightwave Services
+
 %package client
 Summary: Lightwave Client
 
@@ -149,13 +155,13 @@ Requires:  boost = 1.60.0, likewise-open >= 6.2.11, sqlite-autoconf >= 3.14
 %endif
 
 %description client
-Client libraries to communicate with Lightwave services
+Client utils to communicate with Lightwave Services
 
 %package server
 Summary: Lightwave Server
 Requires: lightwave-client = %{_version}
 %description server
-Lightwave services
+Lightwave Services
 
 %package devel
 Summary: Lightwave Client Development Library
@@ -285,6 +291,9 @@ Lightwave Samples
 
 %post
 
+    # First argument is 1 => New Installation
+    # First argument is 2 => Upgrade
+
     lw_uid="$(id -u %{_lwuser})"
     lw_gid="$(id -g %{_lwgroup})"
 
@@ -370,6 +379,9 @@ Lightwave Samples
     chown -R %{_lwuser}:%{_lwgroup} %{_lightwavelogsdir} >/dev/null 2>&1
     chown %{_lwuser}:%{_lwgroup} %{_sbindir}/vmware-stsd.sh >/dev/null 2>&1
 
+    mkdir -p %{_ststmpdir}
+    chown -R %{_lwuser}:%{_lwgroup} %{_ststmpdir} >/dev/null 2>&1
+
 %post server
 
     # First argument is 1 => New Installation
@@ -408,6 +420,7 @@ Lightwave Samples
     # add vmdird.conf to sasl2 directory
     /bin/ln -s %{_datadir}/config/saslvmdird.conf %{_sasl2dir}/vmdird.conf
 
+    /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmdird-syslog-ng.conf ]; then
         /bin/rm %{_logconfdir}/vmdird-syslog-ng.conf
     fi
@@ -1064,6 +1077,12 @@ Lightwave Samples
 %{_jarsdir}/vmware-identity-diagnostics.jar
 %{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
+%{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/vmware-directory-rest-server.jar
+%{_jarsdir}/vmware-identity-idm-server.jar
+%{_jarsdir}/vmware-identity-rest-afd-server.jar
+%{_jarsdir}/vmware-identity-rest-core-server.jar
+%{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-protocol.jar
@@ -1161,6 +1180,23 @@ Lightwave Samples
 
 %{_configdir}/lw-firewall-server.json
 
+%files client-libs
+%{_lib64dir}/libvmafcfgapi.so*
+%{_lib64dir}/libvmafdclient.so*
+%{_lib64dir}/libvmeventclient.so*
+%{_lib64dir}/libvmcaclient.so*
+%{_lib64dir}/libvmdirclient.so*
+%{_lib64dir}/libkrb5crypto.so*
+%{_lib64dir}/libcsrp.so*
+%{_lib64dir}/libgssapi_ntlm.so*
+%{_lib64dir}/libgssapi_srp.so*
+%{_lib64dir}/libgssapi_unix.so*
+%{_lib64dir}/libgssapi_unix_creds.so*
+%{_lib64dir}/libvmdnsclient.so*
+%{_lib64dir}/libcfgutils.so*
+%{_lib64dir}/libssocommon.so*
+%{_lib64dir}/libssooidc.so*
+%{_lib64dir}/libvmcommon.so*
 
 %files client
 
@@ -1183,34 +1219,19 @@ Lightwave Samples
 %{_bindir}/vdcschema
 %{_bindir}/postschema
 %{_bindir}/vecs-cli
-%{_lib64dir}/libkrb5crypto.so*
-%{_lib64dir}/libcsrp.so*
 
 %{_sbindir}/vmafdd
 
 %{_lib64dir}/libvecsjni.so*
 %{_lib64dir}/libcdcjni.so*
 %{_lib64dir}/libheartbeatjni.so*
-%{_lib64dir}/libvmafcfgapi.so*
-%{_lib64dir}/libvmafdclient.so*
-%{_lib64dir}/libvmeventclient.so*
-%{_lib64dir}/libvmcaclient.so*
-%{_lib64dir}/libvmdirclient.so*
-%{_lib64dir}/libgssapi_ntlm.so*
-%{_lib64dir}/libgssapi_srp.so*
-%{_lib64dir}/libgssapi_unix.so*
-%{_lib64dir}/libvmdnsclient.so*
-%{_lib64dir}/libcfgutils.so*
 %{_lib64dir}/libidm.so*
 %{_lib64dir}/libpostclient.so*
 %{_lib64dir}/libssoafdclient.so*
-%{_lib64dir}/libssocommon.so*
 %{_lib64dir}/libssocoreclient.so*
 %{_lib64dir}/libssoidmclient.so*
-%{_lib64dir}/libssooidc.so*
 %{_lib64dir}/libssovmdirclient.so*
 %{_lib64dir}/libvmdirauth.so*
-%{_lib64dir}/libvmcommon.so*
 
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
@@ -1309,6 +1330,7 @@ Lightwave Samples
 %{_includedir}/vmhttpclient.h
 %{_includedir}/vmmemory.h
 %{_includedir}/vmutil.h
+%{_includedir}/gssapi_creds_plugin.h
 
 %{_lib64dir}/libcdcjni.a
 %{_lib64dir}/libcdcjni.la
@@ -1342,6 +1364,10 @@ Lightwave Samples
 %{_includedir}/ssovmdirclient.h
 %{_includedir}/vmevent.h
 
+%exclude %{_bindir}/common
+%exclude %{_bindir}/replication2
+%exclude %{_bindir}/srvcommon
+%exclude %{_bindir}/vmcasrvcommon
 %exclude %{_bindir}/vdcvmdirpromo
 %exclude %{_bindir}/vmdirclienttest
 %exclude %{_bindir}/*test
