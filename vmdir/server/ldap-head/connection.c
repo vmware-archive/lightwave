@@ -770,6 +770,7 @@ ProcessAConnection(
             if (retVal != LDAP_SASL_BIND_IN_PROGRESS)
             {
                 _VmDirCollectBindSuperLog(pConn, pOperation); // ignore error
+                operationTag = METRICS_LDAP_OP_BIND;
             }
             break;
 
