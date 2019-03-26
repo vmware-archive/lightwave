@@ -1171,6 +1171,100 @@ error:
     goto cleanup;
 }
 
+/*
+ * backup database to specified path
+ */
+DWORD
+VmDirIpcBackupDB(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    )
+{
+    DWORD dwError = 0;
+    UINT32 uResult = 0;
+    UINT32 apiType = VMDIR_IPC_BACKUP_DB;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    PBYTE pResponse = NULL;
+    DWORD dwResponseSize = 0;
+    VMW_TYPE_SPEC input_spec[] = BACKUP_DB_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+    PWSTR   pwszBackupPath = NULL;
+    PSTR    pszBackupPath = NULL;
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Entering %s", __FUNCTION__);
+
+    if (!VmDirIsAuthorizedSecurityContext(pSecurityContext))
+    {
+        VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
+                         "%s: Access Denied",
+                         __FUNCTION__);
+        dwError = ERROR_ACCESS_DENIED;
+        BAIL_ON_VMDIR_ERROR (dwError);
+    }
+
+    //
+    // Unmarshall the request buffer to the format
+    // that the API actually has
+    //
+    noOfArgsIn = VMDIR_ARRAY_SIZE(input_spec);
+    noOfArgsOut = VMDIR_ARRAY_SIZE(output_spec);
+
+    dwError = VmDirUnMarshal (
+                    apiType,
+                    VER1_INPUT,
+                    noOfArgsIn,
+                    pRequest,
+                    dwRequestSize,
+                    input_spec);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    pwszBackupPath = input_spec[0].data.pWString;
+
+    dwError = VmDirAllocateStringAFromW(pwszBackupPath, &pszBackupPath);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    uResult = VmDirSrvBackupDB(pszBackupPath);
+
+    output_spec[0].data.pUint32 = &uResult;
+
+    dwError = VmDirMarshalResponse (
+                    apiType,
+                    output_spec,
+                    noOfArgsOut,
+                    &pResponse,
+                    &dwResponseSize);
+    BAIL_ON_VMDIR_ERROR (dwError);
+
+    VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "Exiting %s", __FUNCTION__);
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszBackupPath);
+
+    *ppResponse = pResponse;
+    *pdwResponseSize = dwResponseSize;
+
+    return dwError;
+
+error:
+    VmDirHandleError(
+            apiType,
+            dwError,
+            output_spec,
+            noOfArgsOut,
+            &pResponse,
+            &dwResponseSize
+            );
+
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+
+    dwError = 0;
+    goto cleanup;
+}
+
 static
 VOID
 VmDirHandleError(
