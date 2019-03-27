@@ -83,6 +83,11 @@ VmDirFreeBindingHandle(
     handle_t *ppBinding
     );
 
+BOOLEAN
+VmDirIsNcalRpc(
+    handle_t                 IDL_handle
+    );
+
 /* rpc.c */
 DWORD
 VmDirRpcFreeString(
@@ -578,6 +583,11 @@ VmDirLocalSetSRPSecret(
     PCWSTR      pwszUPN,
     PCWSTR      pwszSecret
 );
+
+DWORD
+VmDirLocalBackupDB(
+    PCWSTR      pwszBackupPath
+    );
 
 DWORD
 VmDirGetLastLocalUsnProcessedForHostFromRADN(

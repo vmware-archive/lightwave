@@ -24,7 +24,8 @@ VmDirMetricsLdapOperationString(
             "add",
             "modify",
             "delete",
-            "search"
+            "search",
+            "bind"
     };
 
     return pszLdapOperations[operation];

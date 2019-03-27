@@ -700,3 +700,45 @@ cleanup:
 error:
     goto cleanup;
 }
+
+DWORD
+VmDirLocalBackupDB(
+    PCWSTR      pwszBackupPath
+    )
+{
+    DWORD dwError = 0;
+    UINT32 apiType = VMDIR_IPC_BACKUP_DB;
+    DWORD noOfArgsIn = 0;
+    DWORD noOfArgsOut = 0;
+    VMW_TYPE_SPEC input_spec[] = BACKUP_DB_INPUT_PARAMS;
+    VMW_TYPE_SPEC output_spec[] = RESPONSE_PARAMS;
+
+    noOfArgsIn = sizeof (input_spec) / sizeof (input_spec[0]);
+    noOfArgsOut = sizeof (output_spec) / sizeof (output_spec[0]);
+
+    if (IsNullOrEmptyString(pwszBackupPath))
+    {
+        BAIL_WITH_VMDIR_ERROR (dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    input_spec[0].data.pWString = (PWSTR) pwszBackupPath;
+
+    dwError = VmDirLocalIPCRequest(
+                    apiType,
+                    noOfArgsIn,
+                    noOfArgsOut,
+                    input_spec,
+                    output_spec);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = *(output_spec[0].data.pUint32);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeTypeSpecContent(output_spec, noOfArgsOut);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s failed (%u)", __FUNCTION__, dwError);
+    goto cleanup;
+}

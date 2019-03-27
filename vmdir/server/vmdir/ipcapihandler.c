@@ -164,6 +164,16 @@ VmDirLocalAPIHandler(
                         );
         break;
 
+      case VMDIR_IPC_BACKUP_DB:
+        dwError = VmDirIpcBackupDB(
+                        pSecurityContext,
+                        pRequest,
+                        dwRequestSize,
+                        &pResponse,
+                        &dwResponseSize
+                        );
+        break;
+
       default:
 
         dwError = ERROR_INVALID_PARAMETER;

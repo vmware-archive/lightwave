@@ -352,4 +352,14 @@ typedef struct _VMW_TYPE_SPEC_
         {NULL}\
     },\
 }
+
+#define BACKUP_DB_INPUT_PARAMS \
+{\
+    {\
+        "BackupPath",\
+        VMW_IPC_TYPE_WSTRING,\
+        {NULL}\
+    },\
+}
+
 #endif /* __TYPE_SPEC_H__ */

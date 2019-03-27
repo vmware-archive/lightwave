@@ -689,3 +689,43 @@ VmDirCloseServer(
     dwError = _VmDirCloseServerInternalH(pServerContext);
     return dwError;
 }
+
+BOOLEAN
+VmDirIsNcalRpc(
+    handle_t                 IDL_handle
+    )
+{
+    DWORD   dwError = 0;
+    ULONG   rpc_status = rpc_s_ok;
+    PSTR    pszRpcHandle = NULL;
+
+    if (! IDL_handle)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    rpc_binding_to_string_binding(
+         IDL_handle,
+         (unsigned_char_p_t *) &pszRpcHandle,
+         &rpc_status);
+    if (rpc_status != rpc_s_ok)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_GENERIC);
+    }
+
+    if (strncmp(pszRpcHandle, "ncalrpc:", 8) != 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_GENERIC);
+    }
+
+cleanup:
+    if (pszRpcHandle)
+    {
+        rpc_string_free((unsigned_char_p_t *)&pszRpcHandle, &rpc_status);
+    }
+
+    return dwError == 0;
+
+error:
+    goto cleanup;
+}

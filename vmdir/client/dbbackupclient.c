@@ -68,17 +68,27 @@ _VmDirBackupDBRInternal(
     dwError = VmDirAllocateStringWFromA(pszBackupPath, &pwszBackupPath);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_RPC_TRY
+    if (VmDirIsNcalRpc(hServer->hBinding))
     {
-        dwError = RpcVmDirBackupDB(
-            hServer->hBinding,
-            pwszBackupPath);
+        // switch to use IPC for local host scenario to handle large db file;
+        // otherwise, RPC would timeout after default 5 minutes.
+        dwError = VmDirLocalBackupDB(pwszBackupPath);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
-    VMDIR_RPC_CATCH
+    else
     {
-        VMDIR_RPC_GETERROR_CODE(dwError);
+        VMDIR_RPC_TRY
+        {
+            dwError = RpcVmDirBackupDB(
+                hServer->hBinding,
+                pwszBackupPath);
+        }
+        VMDIR_RPC_CATCH
+        {
+            VMDIR_RPC_GETERROR_CODE(dwError);
+        }
+        VMDIR_RPC_ENDTRY;
     }
-    VMDIR_RPC_ENDTRY;
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
