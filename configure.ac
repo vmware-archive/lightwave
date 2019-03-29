@@ -1852,6 +1852,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/testing/integration_tests/misc/Makefile
                  vmdir/testing/integration_tests/multitenancy/Makefile
                  vmdir/testing/integration_tests/passwordapis/Makefile
+                 vmdir/testing/integration_tests/ppolicy/Makefile
                  vmdir/testing/integration_tests/search/Makefile
                  vmdir/testing/unittests/Makefile
                  vmdir/testing/unittests/libcommon/Makefile
