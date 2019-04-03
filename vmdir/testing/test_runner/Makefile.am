@@ -1,4 +1,4 @@
-noinst_PROGRAMS = vmdir_test_runner
+vmdirtestbin_PROGRAMS = vmdir_test_runner
 
 vmdir_test_runner_SOURCES = \
     main.c \

@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libsearchtests.la
+vmdirtestlib_LTLIBRARIES = libsearchtests.la
 
 libsearchtests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

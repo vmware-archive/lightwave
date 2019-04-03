@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libmisctests.la
+vmdirtestlib_LTLIBRARIES = libmisctests.la
 
 libmisctests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

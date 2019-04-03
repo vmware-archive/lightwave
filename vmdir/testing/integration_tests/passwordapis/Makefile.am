@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libpasswordapistests.la
+vmdirtestlib_LTLIBRARIES = libpasswordapistests.la
 
 libpasswordapistests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

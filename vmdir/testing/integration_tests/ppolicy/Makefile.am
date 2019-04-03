@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libppolicytests.la
+vmdirtestlib_LTLIBRARIES = libppolicytests.la
 
 libppolicytests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

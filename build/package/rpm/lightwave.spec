@@ -41,6 +41,9 @@ VMware Lightwave Server
 
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
+%define _vmdirtestdir %{_prefix}/test/vmdir
+%define _vmdirtestbindir %{_vmdirtestdir}/bin
+%define _vmdirtestlibdir %{_vmdirtestdir}/lib64
 %define _stsdir %{_prefix}/vmware-sts
 %define _stssampledir %{_prefix}/vmware-sts-sample
 %define _webappsdir %{_stsdir}/webapps
@@ -185,6 +188,12 @@ Summary: Lightwave Samples
 Requires: lightwave-client >= %{_version}
 %description samples
 Lightwave Samples
+
+%package test
+Summary: Lightwave Test
+Requires: lightwave-client >= %{_version}
+%description test
+Lightwave Test
 
 %package casecurity-aws-kms
 Summary: Lightwave CA security plugin using Aws KMS
@@ -1535,11 +1544,6 @@ users.
 %exclude %{_lib64dir}/sasl2/*.a
 %exclude %{_lib64dir}/sasl2/*.la
 %exclude %{_lib64dir}/libcommonunittests.*
-%exclude %{_lib64dir}/libmisctests.*
-%exclude %{_lib64dir}/libmultitenancytests.*
-%exclude %{_lib64dir}/libpasswordapistests.*
-%exclude %{_lib64dir}/libsearchtests.*
-%exclude %{_lib64dir}/libsecuritydescriptortests.*
 
 %exclude %{_prefix}/site-packages/identity/*
 %exclude %{_webappsdir}/openidconnect-sample-rp.war
@@ -1553,6 +1557,17 @@ users.
 %{_servicedir}/vmware-sampled.service
 %{_stssampleconfdir}/*
 %{_stssamplebindir}/*
+
+%files test
+
+%defattr(-,root,root)
+%{_vmdirtestbindir}/vmdir_test_runner
+%{_vmdirtestlibdir}/libsecuritydescriptortests.*
+%{_vmdirtestlibdir}/libmisctests.*
+%{_vmdirtestlibdir}/libmultitenancytests.*
+%{_vmdirtestlibdir}/libpasswordapistests.*
+%{_vmdirtestlibdir}/libsearchtests.*
+%{_vmdirtestlibdir}/libppolicytests.*
 
 %files casecurity-aws-kms
 %defattr(-,root,root)

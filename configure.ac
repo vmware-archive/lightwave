@@ -1216,6 +1216,19 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
 
+vmdirtestdir=$prefix/test/vmdir
+AC_SUBST(vmdirtestdir)
+
+vmdirtestbindir=$vmdirtestdir/bin
+AC_SUBST(vmdirtestbindir)
+AS_AC_EXPAND(VMDIR_TEST_BIN_DIR, $vmdirtestbindir)
+AC_DEFINE_UNQUOTED(VMDIR_TEST_BIN_DIR, "$VMDIR_TEST_BIN_DIR", [Bin directory])
+
+vmdirtestlibdir=$vmdirtestdir/lib64
+AC_SUBST(vmdirtestlibdir)
+AS_AC_EXPAND(VMDIR_TEST_LIB_DIR, $vmdirtestlibdir)
+AC_DEFINE_UNQUOTED(VMDIR_TEST_LIB_DIR, "$VMDIR_TEST_LIB_DIR", [Lib directory])
+
 vmdnslibdir=$prefix/lib64
 AC_SUBST(vmdnslibdir)
 AS_AC_EXPAND(VMDNS_LIB_DIR, $vmdnslibdir)
