@@ -45,6 +45,11 @@ typedef struct _VMDIR_TEST_STATE
     //
     PTEST_CLEANUP_CALLBACK  pfnCleanupCallback;
 
+    //
+    // Per test context
+    //
+    PVOID  pContext;
+
     PCSTR pszServerName;        // The server name
     PCSTR pszUserUPN;           // UserUPN to connect with.
     PCSTR pszUserName;          // Username to connect with.
@@ -210,6 +215,16 @@ VmDirTestCreateUser(
     );
 
 DWORD
+VmDirTestCreateUserEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,     /* OPTIONAL */
+    PCSTR pszUserName,
+    PCSTR pszUserPassword,  /* OPTIONAL */
+    PCSTR pszAcl,           /* OPTIONAL */
+    PSTR*   ppszUserDN
+    );
+
+DWORD
 VmDirTestAddUserToGroupByDn(
     LDAP *pLd,
     PCSTR pszUserDn,
@@ -292,6 +307,15 @@ VmDirTestConnectionFromUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszUserName,
     LDAP **ppLd
+    );
+
+DWORD
+VmDirTestConnectionUser(
+    PCSTR   pszHost,
+    PCSTR   pszDomain,
+    PCSTR   pszUserName,
+    PCSTR   pszUserPassword,
+    LDAP**  ppLd
     );
 
 DWORD

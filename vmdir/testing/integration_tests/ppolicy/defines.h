@@ -12,5 +12,4 @@
  * under the License.
  */
 
-#if 0 // TODO
-#endif
+#define VMDIR_TEST_POLICY_USER_CN   "ppolicy_user_cn"

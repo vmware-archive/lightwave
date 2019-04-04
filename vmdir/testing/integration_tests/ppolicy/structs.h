@@ -12,3 +12,20 @@
  * under the License.
  */
 
+typedef struct _VMDIR_ORIGINAL_POLICY
+{
+    PSTR* ppszAttrAndValue;
+} VMDIR_ORIGINAL_POLICY, *PVMDIR_ORIGINAL_POLICY;
+
+typedef struct _VMDIR_PPOLICY_TEST_CONTEXT
+{
+    PVMDIR_TEST_STATE           pTestState;
+    VMDIR_ORIGINAL_POLICY        orgPolicy;
+    PSTR    pszPolicyDN;
+    PSTR    pszTestUserDN;
+    PSTR    pszTestUserCN;
+    PSTR    pszTestUserPassword;
+    LDAP*   pLdUser;
+
+} VMDIR_PPOLICY_TEST_CONTEXT, *PVMDIR_PPOLICY_TEST_CONTEXT;
+

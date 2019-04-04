@@ -351,6 +351,42 @@ error:
 }
 
 DWORD
+VmDirTestConnectionUser(
+    PCSTR   pszHost,
+    PCSTR   pszDomain,
+    PCSTR   pszUserName,
+    PCSTR   pszUserPassword,
+    LDAP**  ppLd
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszUserUPN = NULL;
+    LDAP *pLd;
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszUserUPN,
+                "%s@%s",
+                pszUserName,
+                pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBind(
+                &pLd,
+                pszHost,
+                pszUserUPN,
+                pszUserPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppLd = pLd;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserUPN);
+    return dwError;
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirTestDeleteContainerByDn(
     LDAP *pLd,
     PCSTR pszContainerDn

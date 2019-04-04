@@ -12,29 +12,7 @@
  * under the License.
  */
 
-#ifdef _WIN32
-#pragma once
-
-#include "targetver.h"
-
-#include <windows.h>
-#include <stdio.h>
 #include <stdlib.h>
-#include <stdint.h>
-#include <tchar.h>
-#include <winsock2.h>
-#include "ldap-int.h"
-#define LDAP_UNICODE 0
-
-#include <vmdir.h>
-#include <vmdirdefines.h>
-#include <vmdirerrors.h>
-#include <vmdircommon.h>
-#include <vmdirclient.h>
-
-#include "banned.h"
-#else
-
 #include <config.h>
 
 #include <vmdirsys.h>
@@ -47,9 +25,8 @@
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
 #include <vmdirclient.h>
-#endif
-
 #include <vmdirtesting.h>
 
+#include "defines.h"
 #include "prototypes.h"
 #include "structs.h"

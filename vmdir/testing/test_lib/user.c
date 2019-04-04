@@ -228,6 +228,43 @@ error:
 }
 
 DWORD
+VmDirTestCreateUserEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,     /* OPTIONAL */
+    PCSTR pszUserName,
+    PCSTR pszUserPassword,  /* OPTIONAL */
+    PCSTR pszAcl,           /* OPTIONAL */
+    PSTR*   ppszUserDN
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszUserDN = NULL;
+
+    assert(pState && pszUserName && ppszUserDN);
+
+    dwError = VmDirTestCreateUser(pState, pszContainer, pszUserName, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszUserDN,
+            "cn=%s,cn=%s,%s",
+            pszUserName,
+            pszContainer ? pszContainer: "users",
+            pszUserPassword ? pszUserPassword:pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppszUserDN = pszUserDN;
+    pszUserDN = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pszUserDN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirTestCreateUserWithSecurityDescriptor(
     PVMDIR_TEST_STATE pState,
     PCSTR pszContainer,
