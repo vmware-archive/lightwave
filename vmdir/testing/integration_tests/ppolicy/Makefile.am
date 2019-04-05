@@ -8,7 +8,10 @@ libppolicytests_la_CPPFLAGS = \
     @LW_INCLUDES@
 
 libppolicytests_la_SOURCES = \
-    main.c
+    main.c \
+    lockout.c \
+    recycle.c \
+    pwdstrength.c
 
 libppolicytests_la_LIBADD = \
     @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \

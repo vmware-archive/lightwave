@@ -28,5 +28,5 @@
 #include <vmdirtesting.h>
 
 #include "defines.h"
-#include "prototypes.h"
 #include "structs.h"
+#include "prototypes.h"

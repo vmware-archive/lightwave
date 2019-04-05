@@ -250,7 +250,7 @@ VmDirTestCreateUserEx(
             "cn=%s,cn=%s,%s",
             pszUserName,
             pszContainer ? pszContainer: "users",
-            pszUserPassword ? pszUserPassword:pState->pszBaseDN);
+            pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppszUserDN = pszUserDN;

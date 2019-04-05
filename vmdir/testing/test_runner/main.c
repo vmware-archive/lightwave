@@ -53,38 +53,6 @@ PostValidationRoutine(
     return 0;
 }
 
-DWORD VmDirSetBaseDN(
-    PVMDIR_TEST_STATE pState
-    )
-{
-    PSTR pszBaseDN = NULL;
-    DWORD dwError = 0;
-    PSTR pszDot = NULL;
-
-    pszDot = strchr(pState->pszDomain, '.');
-    if (pszDot == NULL)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-    *pszDot = '\0';
-
-    dwError = VmDirAllocateStringPrintf(
-                &pszBaseDN,
-                "dc=%s,dc=%s",
-                pState->pszDomain,
-                pszDot + 1);
-    *pszDot = '.';
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pState->pszBaseDN = pszBaseDN;
-
-cleanup:
-    return dwError;
-error:
-    VMDIR_SAFE_FREE_STRINGA(pszBaseDN);
-    goto cleanup;
-}
-
 DWORD
 TestInfrastructureCleanup(
     PVMDIR_TEST_STATE pState
@@ -231,7 +199,15 @@ TestInfrastructureInitialize(
     pState->pszTestContainerName = DEFAULT_TEST_CONTAINER_NAME;
     pState->pszInternalUserName = DEFAULT_INTERNAL_USER_NAME;
 
-    dwError = VmDirSetBaseDN(pState);
+    dwError = VmDirDomainNameToDN(pState->pszDomain, (PSTR*)&pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // assume default user container
+    dwError = VmDirAllocateStringPrintf(
+                (PSTR*)&pState->pszUserDN,
+                "cn=%s,cn=users,%s",
+                pState->pszUserName,
+                pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBind(

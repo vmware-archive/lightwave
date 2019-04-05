@@ -12,3 +12,17 @@
  * under the License.
  */
 
+DWORD
+TestPwdStrength(
+    PVMDIR_PPOLICY_TEST_CONTEXT   pPolicyContext
+    );
+
+DWORD
+TestLockout(
+    PVMDIR_PPOLICY_TEST_CONTEXT   pPolicyContext
+    );
+
+DWORD
+TestRecycle(
+    PVMDIR_PPOLICY_TEST_CONTEXT pPolicyContext
+    );

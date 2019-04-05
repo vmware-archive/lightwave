@@ -134,10 +134,19 @@ TestRunner(
     )
 {
     DWORD dwError = 0;
+    PVMDIR_PPOLICY_TEST_CONTEXT pPolicyContext = NULL;
+
+    pPolicyContext = (PVMDIR_PPOLICY_TEST_CONTEXT)pState->pContext;
 
     printf("Testing password policy code ...\n");
 
-    // TODO add real test cases
+    dwError = TestLockout(pPolicyContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestRecycle(pPolicyContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestPwdStrength(pPolicyContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("Password policy tests finished successfully.\n");
@@ -159,7 +168,8 @@ _TestGetPolicy(
 {
     DWORD dwError = 0;
     DWORD dwCnt = 0;
-    PCSTR ppszAttrs[] = {
+    PCSTR ppszAttrs[] =
+    {
         ATTR_PASS_AUTO_UNLOCK_SEC,
         ATTR_PASS_FAIL_ATTEMPT_SEC,
         ATTR_PASS_MAX_FAIL_ATTEMPT,
@@ -175,7 +185,7 @@ _TestGetPolicy(
         ATTR_PASS_RECYCLE_CNT,
         ATTR_ENABLED,
         NULL
-        };
+    };
     LDAPMessage *pResult = NULL;
     BerValue** ppBerValues = NULL;
 
@@ -323,7 +333,8 @@ _TestInitPolicy(
 {
     DWORD   dwError = 0;
     DWORD   dwSize = 0;
-    PCSTR    ppszInitPolicy[] = {
+    PCSTR    ppszInitPolicy[] =
+    {
         ATTR_PASS_AUTO_UNLOCK_SEC,    "0" ,
         ATTR_PASS_FAIL_ATTEMPT_SEC,   "0" ,
         ATTR_PASS_MAX_FAIL_ATTEMPT,   "1" ,
@@ -336,7 +347,7 @@ _TestInitPolicy(
         ATTR_PASS_MIN_SIZE,           "0" ,
         ATTR_PASS_MAX_SIZE,           "20" ,
         ATTR_PASS_EXP_IN_DAY,         "90" ,
-        ATTR_PASS_RECYCLE_CNT,        "3" ,
+        ATTR_PASS_RECYCLE_CNT,        "0" ,
         ATTR_ENABLED,                 "TRUE" ,
         NULL,
     };

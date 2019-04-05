@@ -52,10 +52,12 @@ typedef struct _VMDIR_TEST_STATE
 
     PCSTR pszServerName;        // The server name
     PCSTR pszUserUPN;           // UserUPN to connect with.
+    PCSTR pszUserDN;            // User DN to connect with.
     PCSTR pszUserName;          // Username to connect with.
     PCSTR pszPassword;          // Password to connect with.
     PCSTR pszDomain;            // The domain to use (e.g., vsphere.local)
     PCSTR pszBaseDN;            // The domain's DN.
+
     PCSTR pszTest;              // The name of a particular test to run or a directory to load tests from.
     PCSTR pszTestContainerName; // The name of the test container; all objects should be created beneath this.
     PCSTR pszInternalUserName;  // The name of the internal user we create for operations that shouldn't be run as admin.

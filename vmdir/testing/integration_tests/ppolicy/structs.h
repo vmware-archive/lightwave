@@ -29,3 +29,11 @@ typedef struct _VMDIR_PPOLICY_TEST_CONTEXT
 
 } VMDIR_PPOLICY_TEST_CONTEXT, *PVMDIR_PPOLICY_TEST_CONTEXT;
 
+typedef struct _VMDIR_STRENGTH_TEST_REC
+{
+    PSTR    pszAttr;
+    PSTR    pszTestValue;
+    PSTR    pszRestoreValue;
+    PSTR    pszGoodPwd;
+    PSTR    pszBadPwd;
+} VMDIR_STRENGTH_TEST_REC, *PVMDIR_STRENGTH_TEST_REC;
