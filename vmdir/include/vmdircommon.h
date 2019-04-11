@@ -290,6 +290,14 @@ typedef struct _VDIR_DB_COPY_CONTROL_VALUE
     DWORD   dwDataLen;
 } VDIR_DB_COPY_CONTROL_VALUE, *PVDIR_DB_COPY_CONTROL_VALUE;
 
+typedef struct _VMDIR_SASL_INTERACTIVE_DEFAULT
+{
+    PCSTR   pszRealm;
+    PCSTR   pszAuthName;
+    PCSTR   pszUser;
+    PCSTR   pszPass;
+} VMDIR_SASL_INTERACTIVE_DEFAULT, *PVMDIR_SASL_INTERACTIVE_DEFAULT;
+
 #ifdef _WIN32
 typedef HINSTANCE   VMDIR_LIB_HANDLE;
 #else
@@ -1167,6 +1175,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER  "EnableRegionalMaster"
 #define VMDIR_REG_KEY_LDAP_COPY_ENABLE        "EnableLdapCopy"
+#define VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC   "WarnPwdExpiringInSec"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1890,6 +1899,22 @@ DWORD
 VmDirAnonymousLDAPBind(
     LDAP**      ppLd,
     PCSTR       pszLdapURI
+    );
+
+int
+VmDirSASLGSSAPIInteraction(
+    LDAP *      pLd,
+    unsigned    flags,
+    void *      pDefaults,
+    void *      pIn
+    );
+
+int
+VmDirSASLSRPInteraction(
+    LDAP *      pLd,
+    unsigned    flags,
+    void *      pDefaults,
+    void *      pIn
     );
 
 int

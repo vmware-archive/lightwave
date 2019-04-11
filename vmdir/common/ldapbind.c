@@ -16,24 +16,6 @@
 
 #include "includes.h"
 
-static
-int
-_VmDirSASLGSSAPIInteraction(
-    LDAP *      pLd,
-    unsigned    flags,
-    void *      pDefaults,
-    void *      pIn
-    );
-
-static
-int
-_VmDirSASLSRPInteraction(
-    LDAP *      pLd,
-    unsigned    flags,
-    void *      pDefaults,
-    void *      pIn
-    );
-
 DWORD
 VmDirSASLGSSAPIBind(
      LDAP**     ppLd,
@@ -63,7 +45,7 @@ VmDirSASLGSSAPIBind(
                                             NULL,
                                             NULL,
                                             LDAP_SASL_QUIET,
-                                            _VmDirSASLGSSAPIInteraction,
+                                            VmDirSASLGSSAPIInteraction,
                                             NULL);
     BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
 
@@ -162,7 +144,7 @@ VmDirSASLSRPBindExt1(
                                                 NULL,
                                                 NULL,
                                                 LDAP_SASL_QUIET,
-                                                _VmDirSASLSRPInteraction,
+                                                VmDirSASLSRPInteraction,
                                                 &srpDefault);
         if (retVal == LDAP_SERVER_DOWN || retVal == LDAP_TIMEOUT)
         {
@@ -472,9 +454,8 @@ error:
     goto cleanup;
 }
 
-static
 int
-_VmDirSASLSRPInteraction(
+VmDirSASLSRPInteraction(
     LDAP *      pLd,
     unsigned    flags,
     void *      pDefaults,
@@ -514,9 +495,8 @@ _VmDirSASLSRPInteraction(
     return LDAP_SUCCESS;
 }
 
-static
 int
-_VmDirSASLGSSAPIInteraction(
+VmDirSASLGSSAPIInteraction(
     LDAP *      pLd,
     unsigned    flags,
     void *      pDefaults,

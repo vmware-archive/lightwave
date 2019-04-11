@@ -2,6 +2,7 @@ noinst_LTLIBRARIES = libvmdirtesting.la
 
 libvmdirtesting_la_SOURCES = \
     assert.c \
+    bind.c \
     connection.c \
     misc.c \
     ldap.c \

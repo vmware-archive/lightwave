@@ -430,6 +430,30 @@ VmDirTestCreateSimpleContainer(
     PCSTR pszContainerDN
     );
 
+DWORD
+VmDirTestSRPBind(
+     PCSTR      pszHost,
+     PCSTR      pszUPN,
+     PCSTR      pszPass,
+     int        iTimeout,
+     LDAPControl** psctrls,
+     LDAPControl** pcctrls,
+     LDAP**     ppOutLd,
+     LDAPMessage** ppOutResult
+     );
+
+DWORD
+VmDirTestSimpleBind(
+     PCSTR      pszHost,
+     PCSTR      pszDN,
+     PCSTR      pszPass,
+     int        iTimeout,
+     LDAPControl** psctrls,
+     LDAPControl** pcctrls,
+     LDAP**     ppOutLd,
+     LDAPMessage** ppOutResult
+     );
+
 #define TestAssertEquals(a, b) if (a != b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertNotEquals(a, b) if (a == b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }
 
