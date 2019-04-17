@@ -13,3 +13,6 @@
  */
 
 #define VMDIR_TEST_POLICY_USER_CN   "ppolicy_user_cn"
+
+#define TEST_SASL_SIMPLE "simple"
+#define TEST_SASL_SRP    "srp"

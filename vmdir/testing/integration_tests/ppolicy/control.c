@@ -11,14 +11,14 @@
  * License for the specific language governing permissions and limitations
  * under the License.
  */
+
 #include "includes.h"
 
 static
 DWORD
-_VmDirTestSRPBind(
+_DirTestSRPCtrlBind(
     LDAP*   pLd,
-    PCSTR      pszUPN,
-    PCSTR      pszPass,
+    PVMDIR_PP_CTRL_BIND pCtrlBind,
     LDAPControl** psctrls,
     LDAPControl** pcctrls,
     LDAPMessage**   ppResult
@@ -33,11 +33,11 @@ _VmDirTestSRPBind(
     PSTR        pszLowerCaseUPN = NULL;
     int         iRtn=0;
 
-    dwError = VmDirAllocASCIIUpperToLower(pszUPN, &pszLowerCaseUPN);
+    dwError = VmDirAllocASCIIUpperToLower(pCtrlBind->pszBindUPN, &pszLowerCaseUPN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     srpDefault.pszAuthName = pszLowerCaseUPN;
-    srpDefault.pszPass     = pszPass;
+    srpDefault.pszPass     = pCtrlBind->pszPassword;
 
     dwError = ldap_set_option(pLd, LDAP_OPT_X_SASL_NOCANON, &iSaslNoCanon);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -55,6 +55,7 @@ _VmDirTestSRPBind(
             pResult,
             &pszRtnMech,
             &iMsgId);
+
         if (dwError != LDAP_SASL_BIND_IN_PROGRESS)
         {
             break;
@@ -68,7 +69,8 @@ _VmDirTestSRPBind(
         }
 
     } while ( dwError == LDAP_SASL_BIND_IN_PROGRESS );
-    BAIL_ON_VMDIR_ERROR(dwError);
+    pCtrlBind->dwBindResult = dwError;
+    dwError = 0;
 
     *ppResult = pResult;
 
@@ -83,10 +85,9 @@ error:
 
 static
 DWORD
-_VmDirTestSimpleBind(
+_DirTestSimpleCtrlBind(
     LDAP*   pLd,
-    PCSTR      pszDN,
-    PCSTR      pszPass,
+    PVMDIR_PP_CTRL_BIND pCtrlBind,
     LDAPControl** psctrls,
     LDAPControl** pcctrls,
     LDAPMessage**   ppResult
@@ -97,19 +98,35 @@ _VmDirTestSimpleBind(
     BerValue    passwdBV = {0};
     LDAPMessage*    pResult = NULL;
     int         iRtn = 0;
+    int         iTLSNEVER = LDAP_OPT_X_TLS_NEVER;
+    SSL_CTX*    pSslCtx  = NULL;
 
-    passwdBV.bv_len = VmDirStringLenA(pszPass);
-    passwdBV.bv_val = (PSTR)pszPass;
+    pSslCtx = SSL_CTX_new(TLSv1_2_client_method());
+    if (!pSslCtx)
+    {
+        dwError = VMDIR_ERROR_NO_SSL_CTX;
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    // no server ssl cert verify, just channel encryption
+    SSL_CTX_set_verify(pSslCtx, SSL_VERIFY_NONE, NULL);
 
-    dwError = ldap_sasl_bind(
+    dwError = ldap_set_option(pLd, LDAP_OPT_X_TLS_CTX, pSslCtx);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_set_option(pLd, LDAP_OPT_X_TLS_REQUIRE_CERT, &iTLSNEVER);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    passwdBV.bv_len = VmDirStringLenA(pCtrlBind->pszPassword);
+    passwdBV.bv_val = (PSTR)pCtrlBind->pszPassword;
+
+    pCtrlBind->dwBindResult = ldap_sasl_bind(
         pLd,
-        pszDN,
+        pCtrlBind->pszBindDN,
         LDAP_SASL_SIMPLE,
         &passwdBV,
         psctrls,
         pcctrls,
         &iMsgId);
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     iRtn = ldap_result(pLd, iMsgId, LDAP_MSG_ALL, NULL, &pResult);
     if (iRtn != LDAP_RES_BIND || !pResult )
@@ -120,6 +137,10 @@ _VmDirTestSimpleBind(
     *ppResult = pResult;
 
 cleanup:
+    if (pSslCtx)
+    {
+        SSL_CTX_free(pSslCtx);
+    }
     return dwError;
 
 error:
@@ -127,14 +148,9 @@ error:
     goto cleanup;
 }
 
-static
 DWORD
-VmDirTestDirBind(
-     PCSTR      pszAuthMethod,
-     PCSTR      pszHost,
-     PCSTR      pszDN,
-     PCSTR      pszUPN,
-     PCSTR      pszPass,
+TestCtrlBind(
+     PVMDIR_PP_CTRL_BIND pCtrlBind,
      int        iTimeout,
      LDAPControl** psctrls,
      LDAPControl** pcctrls,
@@ -147,13 +163,14 @@ VmDirTestDirBind(
     LDAP*       pLd = NULL;
     const int   ldapVer = LDAP_VERSION3;
 
-    if (!ppOutLd || !pszHost || !ppOutResult || !pszPass  || (!pszDN && !pszUPN))
+    if (VmDirStringCompareA(pCtrlBind->pszMech, TEST_SASL_SIMPLE, FALSE) == 0)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        dwError = VmDirAllocateStringPrintf(&pszURI, "ldaps://%s:%s", pCtrlBind->pszHost, DEFAULT_LDAPS_PORT_STR);
     }
-
-    dwError = VmDirAllocateStringPrintf(&pszURI, "ldap://%s:%s", pszHost, DEFAULT_LDAP_PORT_STR);
+    else
+    {
+        dwError = VmDirAllocateStringPrintf(&pszURI, "ldap://%s:%s", pCtrlBind->pszHost, DEFAULT_LDAP_PORT_STR);
+    }
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = ldap_initialize(&pLd, pszURI);
@@ -171,23 +188,21 @@ VmDirTestDirBind(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (VmDirStringCompareA(pszAuthMethod, "simple", FALSE) == 0)
+    if (VmDirStringCompareA(pCtrlBind->pszMech, TEST_SASL_SIMPLE, FALSE) == 0)
     {
-        dwError = _VmDirTestSimpleBind(
+        dwError = _DirTestSimpleCtrlBind(
             pLd,
-            pszDN,
-            pszPass,
+            pCtrlBind,
             psctrls,
             pcctrls,
             ppOutResult);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
-    else if (VmDirStringCompareA(pszAuthMethod, "srp", FALSE) == 0)
+    else if (VmDirStringCompareA(pCtrlBind->pszMech, TEST_SASL_SRP, FALSE) == 0)
     {
-        dwError = _VmDirTestSRPBind(
+        dwError = _DirTestSRPCtrlBind(
             pLd,
-            pszUPN,
-            pszPass,
+            pCtrlBind,
             psctrls,
             pcctrls,
             ppOutResult);
@@ -206,51 +221,68 @@ error:
 }
 
 DWORD
-VmDirTestSRPBind(
-     PCSTR      pszHost,
-     PCSTR      pszUPN,
-     PCSTR      pszPass,
-     int        iTimeout,
-     LDAPControl** psctrls,
-     LDAPControl** pcctrls,
-     LDAP**     ppOutLd,
-     LDAPMessage** ppOutResult
-     )
+TestPPCtrlBind(
+    PVMDIR_PP_CTRL_BIND pCtrlBind
+    )
 {
-    return VmDirTestDirBind(
-                "srp",
-                pszHost,
-                NULL,
-                pszUPN,
-                pszPass,
-                iTimeout,
-                psctrls,
-                pcctrls,
-                ppOutLd,
-                ppOutResult);
-}
+    DWORD   dwError = 0;
 
-DWORD
-VmDirTestSimpleBind(
-     PCSTR      pszHost,
-     PCSTR      pszDN,
-     PCSTR      pszPass,
-     int        iTimeout,
-     LDAPControl** psctrls,
-     LDAPControl** pcctrls,
-     LDAP**     ppOutLd,
-     LDAPMessage** ppOutResult
-     )
-{
-    return VmDirTestDirBind(
-                "simple",
-                pszHost,
-                pszDN,
-                NULL,
-                pszPass,
-                iTimeout,
-                psctrls,
-                pcctrls,
-                ppOutLd,
-                ppOutResult);
+    LDAP*      pLd = NULL;
+    LDAPMessage*    pResult = NULL;
+    LDAPControl* psctrls = NULL;
+    LDAPControl** ppcctrls = NULL;
+    LDAPControl* srvCtrls[2]  = {NULL, NULL};
+    LDAPControl* pPPReplyCtrl = NULL;
+    int         errCode = 0;
+
+    dwError = ldap_control_create(
+        LDAP_CONTROL_PASSWORDPOLICYREQUEST,0, NULL, 0, &psctrls);
+    BAIL_ON_VMDIR_ERROR(dwError);;
+
+    srvCtrls[0] = psctrls;
+    srvCtrls[1] = NULL;
+
+    dwError = TestCtrlBind(
+        pCtrlBind,
+        3,
+        srvCtrls,
+        NULL,
+        &pLd,
+        &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pResult)
+    {
+        dwError = ldap_parse_result(
+            pLd,
+            pResult,
+            &errCode,
+            NULL,
+            NULL,
+            NULL,
+            &ppcctrls,
+            1); // free pResult
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        pPPReplyCtrl = ldap_control_find(LDAP_CONTROL_PASSWORDPOLICYREQUEST, ppcctrls, NULL);
+        if (pPPReplyCtrl)
+        {
+            pCtrlBind->bHasPPCtrlResponse = TRUE;
+            dwError = ldap_parse_passwordpolicy_control(
+                pLd,
+                pPPReplyCtrl,
+                &pCtrlBind->PPolicyState.iWarnPwdExpiring,
+                &pCtrlBind->PPolicyState.iWarnGraceAuthN,
+                &pCtrlBind->PPolicyState.PPolicyError);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+cleanup:
+    ldap_controls_free(ppcctrls);
+    VDIR_SAFE_LDAP_UNBIND_EXT_S(pLd);
+    return dwError;
+
+error:
+    goto cleanup;
 }

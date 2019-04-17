@@ -9,7 +9,9 @@ libppolicytests_la_CPPFLAGS = \
 
 libppolicytests_la_SOURCES = \
     main.c \
+    control.c \
     lockout.c \
+    policy.c \
     recycle.c \
     pwdstrength.c
 

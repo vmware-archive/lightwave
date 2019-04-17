@@ -24,6 +24,7 @@ typedef struct _VMDIR_PPOLICY_TEST_CONTEXT
     PSTR    pszPolicyDN;
     PSTR    pszTestUserDN;
     PSTR    pszTestUserCN;
+    PSTR    pszTestUserUPN;
     PSTR    pszTestUserPassword;
     LDAP*   pLdUser;
 
@@ -37,3 +38,18 @@ typedef struct _VMDIR_STRENGTH_TEST_REC
     PSTR    pszGoodPwd;
     PSTR    pszBadPwd;
 } VMDIR_STRENGTH_TEST_REC, *PVMDIR_STRENGTH_TEST_REC;
+
+typedef struct _VMDIR_PP_CTRL_BIND
+{
+    PCSTR pszMech;  // SASL Mech: "simple" or "srp"
+    PCSTR pszHost;
+    PCSTR pszBindCN;
+    PCSTR pszBindDN;
+    PCSTR pszBindUPN;
+    PCSTR pszPassword;
+    PCSTR pszDomain;
+
+    DWORD       dwBindResult;
+    BOOLEAN     bHasPPCtrlResponse;
+    VDIR_PPOLICY_STATE  PPolicyState;
+} VMDIR_PP_CTRL_BIND, *PVMDIR_PP_CTRL_BIND;

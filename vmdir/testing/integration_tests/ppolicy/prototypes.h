@@ -26,3 +26,23 @@ DWORD
 TestRecycle(
     PVMDIR_PPOLICY_TEST_CONTEXT pPolicyContext
     );
+
+DWORD
+TestPolicy(
+    PVMDIR_PPOLICY_TEST_CONTEXT   pPolicyContext
+    );
+
+DWORD
+TestCtrlBind(
+     PVMDIR_PP_CTRL_BIND pCtrlBind,
+     int        iTimeout,
+     LDAPControl** psctrls,
+     LDAPControl** pcctrls,
+     LDAP**     ppOutLd,
+     LDAPMessage** ppOutResult
+     );
+
+DWORD
+TestPPCtrlBind(
+    PVMDIR_PP_CTRL_BIND pCtrlBind
+    );

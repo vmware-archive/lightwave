@@ -53,10 +53,8 @@ error:
 
 VOID
 TestTriggerLoginLockout(
-    PVMDIR_PPOLICY_TEST_CONTEXT   pPolicyContext,
-    PCSTR   pszHost,
-    PCSTR   pszDomain,
-    PCSTR   pszUser
+    PVMDIR_PPOLICY_TEST_CONTEXT pPolicyContext,
+    PVMDIR_PP_CTRL_BIND         pCtrlBind
     )
 {
     DWORD   dwError = 0;
@@ -67,7 +65,12 @@ TestTriggerLoginLockout(
 
     for (dwCnt=0; dwCnt < 2; dwCnt++)
     {
-        dwError = VmDirTestConnectionUser(pszHost, pszDomain, pszUser, pszJunkPassword, &pLd);
+        dwError = VmDirTestConnectionUser(
+            pCtrlBind->pszHost,
+            pCtrlBind->pszDomain,
+            pCtrlBind->pszBindCN,
+            pszJunkPassword,
+            &pLd);
         TestAssertEquals(dwError, 9234); // invalid credentials
     }
 }
@@ -75,18 +78,13 @@ TestTriggerLoginLockout(
 DWORD
 TestFailedLoginLockout(
     PVMDIR_PPOLICY_TEST_CONTEXT   pPolicyContext,
-    PCSTR   pszHost,
-    PCSTR   pszDomain,
-    PCSTR   pszUser,
-    PCSTR   pszPassword,
-    LDAP**  ppLd
+    PVMDIR_PP_CTRL_BIND           pCtrlBind
     )
 {
     DWORD   dwError = 0;
 
-    TestTriggerLoginLockout(pPolicyContext, pszHost, pszDomain, pszUser);
-
-    dwError = VmDirTestConnectionUser(pszHost, pszDomain, pszUser, pszPassword, ppLd);
+    TestTriggerLoginLockout(pPolicyContext, pCtrlBind);
+    dwError = TestPPCtrlBind(pCtrlBind);
 
     return dwError;
 }
@@ -99,18 +97,20 @@ TestAdminFailedLoginLockout(
 {
     DWORD   dwError = 0;
     PVMDIR_TEST_STATE pState = pPolicyContext->pTestState;
-    LDAP*   pLd = NULL;
+    VMDIR_PP_CTRL_BIND ctrlBind = {0};
+
+    ctrlBind.pszMech = TEST_SASL_SRP;
+    ctrlBind.pszHost = pState->pszServerName;
+    ctrlBind.pszDomain = pState->pszDomain;
+    ctrlBind.pszBindCN = pState->pszUserName;
+    ctrlBind.pszBindUPN = pState->pszUserUPN;
+    ctrlBind.pszBindDN = pState->pszUserDN;
+    ctrlBind.pszPassword = pState->pszPassword;
 
     dwError = TestFailedLoginLockout(
         pPolicyContext,
-        pState->pszServerName,
-        pState->pszDomain,
-        pState->pszUserName,
-        pState->pszPassword,
-        &pLd);
-    TestAssertEquals(dwError, 0);  // admin NOT subject to lockout
-
-    ldap_unbind_ext_s(pLd, NULL, NULL);
+        &ctrlBind);
+    TestAssertEquals(ctrlBind.dwBindResult, 0);  // admin NOT subject to lockout
 
     return dwError;
 }
@@ -122,18 +122,23 @@ TestUserFailedLoginLockout(
 {
     DWORD   dwError = 0;
     PVMDIR_TEST_STATE pState = pPolicyContext->pTestState;
-    LDAP*   pLd = NULL;
+    VMDIR_PP_CTRL_BIND ctrlBind = {0};
+
+    ctrlBind.pszMech = TEST_SASL_SRP;
+    ctrlBind.pszHost = pState->pszServerName;
+    ctrlBind.pszDomain = pState->pszDomain;
+    ctrlBind.pszBindCN = pPolicyContext->pszTestUserCN;
+    ctrlBind.pszBindUPN = pPolicyContext->pszTestUserUPN;
+    ctrlBind.pszBindDN = pPolicyContext->pszTestUserDN;
+    ctrlBind.pszPassword = pPolicyContext->pszTestUserPassword;
 
     dwError = TestFailedLoginLockout(
         pPolicyContext,
-        pState->pszServerName,
-        pState->pszDomain,
-        pPolicyContext->pszTestUserCN,
-        pPolicyContext->pszTestUserPassword,
-        &pLd);
-    TestAssertEquals(dwError, 9234);  // user lockout
+        &ctrlBind);
+    TestAssertEquals(ctrlBind.dwBindResult, 49);
+    TestAssertEquals(ctrlBind.PPolicyState.PPolicyError, PP_accountLocked);
 
-    return 0;
+    return dwError;
 }
 
 DWORD
@@ -253,11 +258,9 @@ TestLockout(
     dwError = TestUserFailedLoginLockout(pPolicyContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // by now, user should be in lockout state
     dwError = TestUserFailedLoginAutoUnlock(pPolicyContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    // by now, user should be in active state
     dwError = TestUserFailedLoginAttemptInterval(pPolicyContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 

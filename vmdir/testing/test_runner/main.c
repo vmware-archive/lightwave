@@ -347,6 +347,8 @@ VmDirMain(
                 State.pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    SSL_library_init();
+
     printf("VmDir integration tests starting ...\n");
 
     dwError = TestInfrastructureInitialize(&State);

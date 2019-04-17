@@ -281,6 +281,15 @@ typedef struct
     DWORD dwSize; // Max number of strings we can store currently.
 } VMDIR_STRING_LIST, *PVMDIR_STRING_LIST;
 
+typedef struct _VDIR_PPOLICY_STATE
+{
+    BOOLEAN bLockedout;
+    BOOLEAN bPwdExpired;
+    int     iWarnPwdExpiring;
+    int     iWarnGraceAuthN;
+    LDAPPasswordPolicyError  PPolicyError;
+} VDIR_PPOLICY_STATE, *PVDIR_PPOLICY_STATE;
+
 typedef struct _VDIR_DB_COPY_CONTROL_VALUE
 {
     PSTR    pszPath;
@@ -1968,6 +1977,12 @@ DWORD
 VmDirParseDBCopyReplyControlContent(
     LDAPControl*                pDbCopyReplyCtrl,
     PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal
+    );
+
+int
+VmDirCreatePPolicyReplyCtrlContent(
+    PVDIR_PPOLICY_STATE pPPolicyState,
+    LDAPControl*        pPPCtrl
     );
 
 // common/ldaputil.c

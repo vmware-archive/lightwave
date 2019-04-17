@@ -120,7 +120,6 @@ VmDirTestCreateUserWithLimitedAccount(
     PCSTR valsCn[] = {pszUserName, NULL};
     PCSTR valssAMActName[] = {pszUserName, NULL};
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
-    PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsUPN[] = {NULL, NULL};
     PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
@@ -129,13 +128,12 @@ VmDirTestCreateUserWithLimitedAccount(
         {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
-        {LDAP_MOD_ADD, ATTR_PASSWORD_NEVER_EXPIRES, {(PSTR*)valsPNE}},
         {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsUPN}},
         {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
         {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_ACL_STRING, {(PSTR*)valsAcl}},
     };
-    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], &mod[7], NULL};
+    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], NULL};
 
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pState->pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -144,7 +142,7 @@ VmDirTestCreateUserWithLimitedAccount(
 
     if (IsNullOrEmptyString(pszAcl))
     {
-        attrs[7] = NULL;
+        attrs[6] = NULL;
     }
 
     dwError = VmDirAllocateStringPrintf(
@@ -180,7 +178,6 @@ VmDirTestCreateUser(
     PCSTR valsCn[] = {pszUserName, NULL};
     PCSTR valssAMActName[] = {pszUserName, NULL};
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
-    PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsUPN[] = {NULL, NULL};
     PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
@@ -189,13 +186,12 @@ VmDirTestCreateUser(
         {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
-        {LDAP_MOD_ADD, ATTR_PASSWORD_NEVER_EXPIRES, {(PSTR*)valsPNE}},
         {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsUPN}},
         {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
         {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_ACL_STRING, {(PSTR*)valsAcl}},
     };
-    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], &mod[7], NULL};
+    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], NULL};
 
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pState->pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -204,7 +200,7 @@ VmDirTestCreateUser(
 
     if (IsNullOrEmptyString(pszAcl))
     {
-        attrs[7] = NULL;
+        attrs[6] = NULL;
     }
 
     dwError = VmDirAllocateStringPrintf(
@@ -277,7 +273,6 @@ VmDirTestCreateUserWithSecurityDescriptor(
     PCSTR valsCn[] = {pszUserName, NULL};
     PCSTR valssAMActName[] = {pszUserName, NULL};
     PCSTR valsClass[] = {OC_USER, OC_PERSON, OC_TOP, OC_ORGANIZATIONAL_PERSON, NULL};
-    PCSTR valsPNE[] = {"TRUE", NULL};
     PCSTR valsPN[] = {NULL, NULL};
     PCSTR valsPass[] = {pState->pszPassword, NULL};
     PSTR pszUPN = NULL;
@@ -286,7 +281,6 @@ VmDirTestCreateUserWithSecurityDescriptor(
         {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
         {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
         {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
-        {LDAP_MOD_ADD, ATTR_PASSWORD_NEVER_EXPIRES, {(PSTR*)valsPNE}},
         {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsPN}},
         {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
         {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
@@ -294,7 +288,7 @@ VmDirTestCreateUserWithSecurityDescriptor(
     };
     BerValue *pbvSecurityDescriptors[2] = {NULL, NULL};
     BerValue bvSecurityDescriptor = {0};
-    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], &mod[7], NULL};
+    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], &mod[6], NULL};
 
     dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszUserName, pState->pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -304,7 +298,7 @@ VmDirTestCreateUserWithSecurityDescriptor(
     bvSecurityDescriptor.bv_len = dwLength;
     bvSecurityDescriptor.bv_val = (char*)pbSecurityDescriptor;
     pbvSecurityDescriptors[0] = &bvSecurityDescriptor;
-    mod[7].mod_vals.modv_bvals = pbvSecurityDescriptors;
+    mod[6].mod_vals.modv_bvals = pbvSecurityDescriptors;
 
     dwError = VmDirAllocateStringPrintf(
             &pszDN,

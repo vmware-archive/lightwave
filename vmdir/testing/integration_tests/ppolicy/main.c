@@ -72,6 +72,13 @@ TestSetup(
         VMDIR_TEST_POLICY_USER_CN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateStringPrintf(
+        &pPolicyContext->pszTestUserUPN,
+        "%s@%s",
+        VMDIR_TEST_POLICY_USER_CN,
+        pState->pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // ignore error
     VmDirTestDeleteUser(pState, NULL, pPolicyContext->pszTestUserCN);
 
@@ -139,6 +146,9 @@ TestRunner(
     pPolicyContext = (PVMDIR_PPOLICY_TEST_CONTEXT)pState->pContext;
 
     printf("Testing password policy code ...\n");
+
+    dwError = TestPolicy(pPolicyContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = TestLockout(pPolicyContext);
     BAIL_ON_VMDIR_ERROR(dwError);
