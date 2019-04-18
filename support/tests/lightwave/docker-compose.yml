@@ -16,6 +16,22 @@ services:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
         - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
     tty: true
+  lightwave-server-n2:
+    build: server
+    hostname: server-n2.${LIGHTWAVE_DOMAIN}
+    command: scripts/promote.sh
+    volumes:
+     - ./server:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     lightwave:
+       aliases:
+         - server-n2.${LIGHTWAVE_DOMAIN}
+    privileged: true
+    environment:
+        - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
+        - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
+    tty: true
   lightwave-client:
     build: client
     hostname: client.${LIGHTWAVE_DOMAIN}

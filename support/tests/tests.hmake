@@ -29,6 +29,7 @@ targets:
     cmds:
       - bash run_hmake_sanity.sh
       - bash run_hmake_afd_rest.sh
+      - bash run_hmake_vmdir_test.sh
 
   # deploy mutentca node on top of basic test env
   # join the mutentca node to the server

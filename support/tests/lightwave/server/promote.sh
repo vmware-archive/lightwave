@@ -6,9 +6,11 @@ if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
   exit 1
 fi
 
+LIGHTWAVE_NODE_1=server.$LIGHTWAVE_DOMAIN
+
 #if a hostname variable is not already set, set one
 if [ -z "$LIGHTWAVE_HOSTNAME" ]; then
-  LIGHTWAVE_HOSTNAME=server.$LIGHTWAVE_DOMAIN
+  LIGHTWAVE_HOSTNAME=$LIGHTWAVE_NODE_1
 fi
 
 #prepare by installing rpms built in this build
@@ -31,10 +33,21 @@ rpm -Uvh --nodeps buildrpms/x86_64/lightwave-1*.rpm
 /opt/likewise/bin/lwsm autostart
 sleep 1
 
-/opt/vmware/bin/configure-lightwave-server \
-  --domain $LIGHTWAVE_DOMAIN \
-  --password $LIGHTWAVE_PASS \
-  --ssl-subject-alt-name "${LIGHTWAVE_HOSTNAME},localhost"
+if [ $LIGHTWAVE_HOSTNAME = $LIGHTWAVE_NODE_1 ]
+then
+  /opt/vmware/bin/configure-lightwave-server \
+    --domain $LIGHTWAVE_DOMAIN \
+    --password $LIGHTWAVE_PASS \
+    --ssl-subject-alt-name "${LIGHTWAVE_HOSTNAME},localhost"
+else
+  /opt/vmware/bin/configure-lightwave-server \
+    --domain $LIGHTWAVE_DOMAIN \
+    --password $LIGHTWAVE_PASS \
+    --server $LIGHTWAVE_NODE_1 \
+    --ssl-subject-alt-name "${LIGHTWAVE_HOSTNAME},localhost"
+fi
+
+/opt/likewise/bin/lwsm restart vmdir
 
 /opt/likewise/bin/lwsm restart vmca
 
