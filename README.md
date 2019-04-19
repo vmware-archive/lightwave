@@ -176,10 +176,13 @@ This should pull all required depencies for lightwave.
 
 This is step is required for every lightwave node. Edit the /etc/hosts file
 to look like given below:
+*NOTE* You should replace the variables with appropriate values as they may not be set by default on a fresh PhotonOS install.
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 echo -e "127.0.0.1\tlocalhost" > /etc/hosts
 echo -e "${VM_IP}\t${VM_HOSTNAME}.${VM_DOMAIN_NAME} ${VM_HOSTNAME}" >> /etc/hosts
 hostnamectl set-hostname --static ${VM_HOSTNAME}
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Note that the VM_DOMAIN_NAME can be chosen for the first server and should be the
 same for all partner nodes in a cluster.
