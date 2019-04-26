@@ -484,6 +484,15 @@ extern "C" {
         goto ldaperror;                                             \
     }
 
+#define BAIL_ON_SSO_ERROR(dwError)                          \
+    if (dwError)                                                    \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
+        goto ssoerror;                                             \
+    }
+
 #define BAIL_ON_SIMPLE_LDAP_ERROR(dwError)                          \
     if (dwError)                                                    \
     {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \

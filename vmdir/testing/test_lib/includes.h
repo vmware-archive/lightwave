@@ -41,11 +41,18 @@
 #include <ldap.h>
 #include <lber.h>
 
+#include <ssotypes.h>
+#include <ssocommon.h>
+#include <ssoerrors.h>
+#include <oidc_types.h>
+#include <oidc.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
+#include <vmdircommon_rest.h>
 #include <vmdirclient.h>
 #endif
 

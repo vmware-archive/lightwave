@@ -59,6 +59,12 @@ extern "C" {
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
 #define LEGACY_DEFAULT_LDAPS_PORT_STR      "11712"
 
+#define VMDIR_STR_DN                        "dn"
+#define VMDIR_STR_SCOPE                     "scope"
+#define VMDIR_STR_SCOPE_BASE                "base"
+#define VMDIR_STR_SCOPE_ONE                 "one"
+#define VMDIR_STR_SCOPE_SUB                 "sub"
+
 // Fixed DNs
 #define DSE_ROOT_DN                             ""
 #define PERSISTED_DSE_ROOT_DN                   "cn=DSE Root"

@@ -46,6 +46,7 @@
 #include <vmdirdefines.h>
 #include <vmdirerrors.h>
 #include <vmdircommon.h>
+#include <vmdircommon_rest.h>
 #include <vmdirclient.h>
 #endif
 

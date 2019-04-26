@@ -24,6 +24,8 @@ typedef struct _VMDIR_TEST_STATE
     //
     LDAP *pLd;
 
+    PCSTR   pszAdminAccessToken;
+
     //
     // Connection to server using a non-admin account.
     //
@@ -64,6 +66,14 @@ typedef struct _VMDIR_TEST_STATE
     BOOLEAN bKeepGoing;         // Keep going if an individual test fails.
     BOOLEAN bBreakIntoDebugger; // Break into the debugger when a test fails.
 } VMDIR_TEST_STATE, *PVMDIR_TEST_STATE;
+
+DWORD
+VmDirTestOidcTokenAcquire(
+    PCSTR       pszSSOServer,
+    DWORD       dwSSOPort,
+    PVMDIR_OIDC_ACQUIRE_TOKEN_INFO pTokenInfo,
+    PSTR*       ppszToken
+    );
 
 VOID
 VmDirTestLdapUnbind(

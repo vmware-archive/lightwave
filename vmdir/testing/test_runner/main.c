@@ -188,6 +188,38 @@ error:
 }
 
 DWORD
+_TestAcquireAdminToken(
+    PVMDIR_TEST_STATE pState
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszToken = NULL;
+    VMDIR_OIDC_ACQUIRE_TOKEN_INFO TokenInfo = {0};
+
+    TokenInfo.method = METHOD_PASSWORD;
+    TokenInfo.pszDomain = pState->pszDomain;
+    TokenInfo.pszUPN = pState->pszUserUPN;
+    TokenInfo.pszPassword = pState->pszPassword;
+    TokenInfo.pszScope = OIDC_TOKEN_SCOPE_VMDIR;
+
+    dwError = VmDirTestOidcTokenAcquire(
+        pState->pszServerName,
+        OIDC_DEFAULT_PORT,
+        &TokenInfo,
+        &pszToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pState->pszAdminAccessToken = pszToken;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszToken);
+    goto cleanup;
+}
+
+DWORD
 TestInfrastructureInitialize(
     PVMDIR_TEST_STATE pState
     )
@@ -215,6 +247,16 @@ TestInfrastructureInitialize(
                 pState->pszServerName,
                 pState->pszUserUPN,
                 pState->pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _TestAcquireAdminToken(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestRestPing(
+        pState->pszServerName,
+        DEFAULT_HTTPS_PORT_NUM,
+        pState->pszAdminAccessToken,
+        NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //
@@ -348,6 +390,9 @@ VmDirMain(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     SSL_library_init();
+
+    dwError = OidcClientGlobalInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("VmDir integration tests starting ...\n");
 
