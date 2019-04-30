@@ -6,4 +6,4 @@ LABEL vendor="VMware, Inc."
 
 RUN tdnf makecache -q
 RUN tdnf update likewise-open --disablerepo=* --enablerepo=lightwave -qy
-RUN tdnf install net-tools shadow findutils gawk jansson sqlite-devel jq gcc glibc-devel git go-1.9.1 -qy
+RUN tdnf install net-tools shadow findutils gawk jansson sqlite-devel jq gcc glibc-devel git go-1.9.1 netcat -qy
