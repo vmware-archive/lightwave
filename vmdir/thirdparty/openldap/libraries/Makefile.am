@@ -1,3 +1,2 @@
 SUBDIRS = \
-    liblmdb \
-    mdb
+    liblmdb

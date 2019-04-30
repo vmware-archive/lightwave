@@ -31,7 +31,7 @@ libmdb_store_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/include \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
-    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblmdb \
     -I$(top_srcdir)/lwraft/server/include \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \

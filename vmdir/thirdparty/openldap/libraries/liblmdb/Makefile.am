@@ -14,7 +14,7 @@ libvmdirmdb_la_CPPFLAGS = \
     -Wno-unused-result
 
 libvmdirmdb_la_LDFLAGS = \
-    -version-number 9:22:0
+    -version-number 0:9:22
 
 bin_PROGRAMS = mdb_stat mdb_verify_checksum
 

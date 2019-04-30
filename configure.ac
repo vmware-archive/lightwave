@@ -252,27 +252,6 @@ fi
 AM_CONDITIONAL(REPLICATION_V2, [$REPLICATION_V2])
 
 #--------------------------------------------------------------------
-# MDB 0.9.22 flag
-
-MDB_0_9_22=false
-AC_ARG_ENABLE([mdb_0_9_22],
-    [AC_HELP_STRING([--enable-mdb-0-9-22],
-                    [enable mdb 0.9.22 (default: disabled)])],
-    [
-        if test x"$enableval" = x"yes"
-        then
-            MDB_0_9_22=true
-        fi
-    ])
-
-if $MDB_0_9_22
-then
-AC_DEFINE_UNQUOTED(MDB_0_9_22, 1, [ enable mdb 0.9.22 ])
-fi
-
-AM_CONDITIONAL(MDB_0_9_22, [$MDB_0_9_22])
-
-#--------------------------------------------------------------------
 # client only build
 
 ENABLE_SERVER=true
@@ -1817,7 +1796,6 @@ AC_CONFIG_FILES([Makefile
                  lwraft/thirdparty/Makefile
                  lwraft/thirdparty/openldap/Makefile
                  lwraft/thirdparty/openldap/libraries/Makefile
-                 lwraft/thirdparty/openldap/libraries/mdb/Makefile
                  lwraft/thirdparty/heimdal/Makefile
                  lwraft/thirdparty/heimdal/asn1/Makefile
                  lwraft/thirdparty/heimdal/krb5-crypto/Makefile
@@ -1890,7 +1868,6 @@ AC_CONFIG_FILES([Makefile
                  vmdir/thirdparty/Makefile
                  vmdir/thirdparty/openldap/Makefile
                  vmdir/thirdparty/openldap/libraries/Makefile
-                 vmdir/thirdparty/openldap/libraries/mdb/Makefile
                  vmdir/thirdparty/openldap/libraries/liblmdb/Makefile
                  vmdir/thirdparty/heimdal/Makefile
                  vmdir/thirdparty/heimdal/asn1/Makefile

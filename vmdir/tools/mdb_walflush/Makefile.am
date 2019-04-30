@@ -7,14 +7,14 @@ lw_mdb_walflush_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/server/include \
-    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblmdb \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
 lw_mdb_walflush_LDADD = \
     $(top_builddir)/vmdir/common/libcommon.la \
-    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/.libs/libvmdirmdb.so \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/.libs/libvmdirmdb.so \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

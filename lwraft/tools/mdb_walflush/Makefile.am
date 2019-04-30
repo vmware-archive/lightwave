@@ -7,7 +7,7 @@ mdb_walflush_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/include \
     -I$(top_srcdir)/lwraft/include/public \
     -I$(top_srcdir)/lwraft/server/include \
-    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/mdb \
+    -I$(top_srcdir)/vmdir/thirdparty/openldap/libraries/liblmdb \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
@@ -32,6 +32,6 @@ mdb_walflush_LDADD = \
 
 mdb_walflush_LDFLAGS = \
     -static \
-    $(top_builddir)/vmdir/thirdparty/openldap/libraries/mdb/.libs/libvmdirmdb.so \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/.libs/libvmdirmdb.so \
     @LW_LDFLAGS@ \
     @OPENSSL_LDFLAGS@
