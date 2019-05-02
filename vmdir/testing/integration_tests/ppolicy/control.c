@@ -264,6 +264,8 @@ TestPPCtrlBind(
             1); // free pResult
         BAIL_ON_VMDIR_ERROR(dwError);
 
+        pCtrlBind->dwBindResult = errCode; // async call get result
+
         pPPReplyCtrl = ldap_control_find(LDAP_CONTROL_PASSWORDPOLICYREQUEST, ppcctrls, NULL);
         if (pPPReplyCtrl)
         {
