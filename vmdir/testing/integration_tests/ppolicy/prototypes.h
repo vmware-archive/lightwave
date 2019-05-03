@@ -46,3 +46,10 @@ DWORD
 TestPPCtrlBind(
     PVMDIR_PP_CTRL_BIND pCtrlBind
     );
+
+DWORD
+TestPPCtrlParseResult(
+    LDAP*           pLd,
+    LDAPMessage*    pResult,
+    PVMDIR_PP_CTRL_RESULT pCtrlResult
+    );

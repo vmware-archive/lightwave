@@ -69,7 +69,7 @@ _DirTestSRPCtrlBind(
         }
 
     } while ( dwError == LDAP_SASL_BIND_IN_PROGRESS );
-    pCtrlBind->dwBindResult = dwError;
+    pCtrlBind->ctrlResult.dwOpResult = dwError;
     dwError = 0;
 
     *ppResult = pResult;
@@ -119,7 +119,7 @@ _DirTestSimpleCtrlBind(
     passwdBV.bv_len = VmDirStringLenA(pCtrlBind->pszPassword);
     passwdBV.bv_val = (PSTR)pCtrlBind->pszPassword;
 
-    pCtrlBind->dwBindResult = ldap_sasl_bind(
+    pCtrlBind->ctrlResult.dwOpResult = ldap_sasl_bind(
         pLd,
         pCtrlBind->pszBindDN,
         LDAP_SASL_SIMPLE,
@@ -230,10 +230,7 @@ TestPPCtrlBind(
     LDAP*      pLd = NULL;
     LDAPMessage*    pResult = NULL;
     LDAPControl* psctrls = NULL;
-    LDAPControl** ppcctrls = NULL;
     LDAPControl* srvCtrls[2]  = {NULL, NULL};
-    LDAPControl* pPPReplyCtrl = NULL;
-    int         errCode = 0;
 
     dwError = ldap_control_create(
         LDAP_CONTROL_PASSWORDPOLICYREQUEST,0, NULL, 0, &psctrls);
@@ -253,36 +250,73 @@ TestPPCtrlBind(
 
     if (pResult)
     {
-        dwError = ldap_parse_result(
+        dwError = TestPPCtrlParseResult(
             pLd,
             pResult,
-            &errCode,
-            NULL,
-            NULL,
-            NULL,
-            &ppcctrls,
-            1); // free pResult
+            &pCtrlBind->ctrlResult
+            );
         BAIL_ON_VMDIR_ERROR(dwError);
-
-        pCtrlBind->dwBindResult = errCode; // async call get result
-
-        pPPReplyCtrl = ldap_control_find(LDAP_CONTROL_PASSWORDPOLICYREQUEST, ppcctrls, NULL);
-        if (pPPReplyCtrl)
-        {
-            pCtrlBind->bHasPPCtrlResponse = TRUE;
-            dwError = ldap_parse_passwordpolicy_control(
-                pLd,
-                pPPReplyCtrl,
-                &pCtrlBind->PPolicyState.iWarnPwdExpiring,
-                &pCtrlBind->PPolicyState.iWarnGraceAuthN,
-                &pCtrlBind->PPolicyState.PPolicyError);
-            BAIL_ON_VMDIR_ERROR(dwError);
-        }
     }
 
 cleanup:
-    ldap_controls_free(ppcctrls);
+    if (psctrls)
+    {
+        ldap_control_free(psctrls);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
     VDIR_SAFE_LDAP_UNBIND_EXT_S(pLd);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+TestPPCtrlParseResult(
+    LDAP*           pLd,
+    LDAPMessage*    pResult,
+    PVMDIR_PP_CTRL_RESULT pCtrlResult
+    )
+{
+    DWORD   dwError = 0;
+    LDAPControl** ppcctrls = NULL;
+    LDAPControl* pPPReplyCtrl = NULL;
+    int         errCode = 0;
+
+    dwError = ldap_parse_result(
+        pLd,
+        pResult,
+        &errCode,
+        NULL,
+        NULL,
+        NULL,
+        &ppcctrls,
+        0);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pCtrlResult->dwOpResult = errCode; // async call get result
+
+    pPPReplyCtrl = ldap_control_find(LDAP_CONTROL_PASSWORDPOLICYREQUEST, ppcctrls, NULL);
+    if (pPPReplyCtrl)
+    {
+        pCtrlResult->bHasPPCtrlResponse = TRUE;
+        dwError = ldap_parse_passwordpolicy_control(
+            pLd,
+            pPPReplyCtrl,
+            &pCtrlResult->PPolicyState.iWarnPwdExpiring,
+            &pCtrlResult->PPolicyState.iWarnGraceAuthN,
+            &pCtrlResult->PPolicyState.PPolicyError);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    if (ppcctrls)
+    {
+        ldap_controls_free(ppcctrls);
+    }
     return dwError;
 
 error:

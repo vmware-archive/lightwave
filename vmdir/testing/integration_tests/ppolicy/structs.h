@@ -37,7 +37,15 @@ typedef struct _VMDIR_STRENGTH_TEST_REC
     PSTR    pszRestoreValue;
     PSTR    pszGoodPwd;
     PSTR    pszBadPwd;
+    LDAPPasswordPolicyError PPolicyError;
 } VMDIR_STRENGTH_TEST_REC, *PVMDIR_STRENGTH_TEST_REC;
+
+typedef struct _VMDIR_PP_CTRL_RESULT
+{
+    DWORD       dwOpResult;
+    BOOLEAN     bHasPPCtrlResponse;
+    VDIR_PPOLICY_STATE  PPolicyState;
+} VMDIR_PP_CTRL_RESULT, *PVMDIR_PP_CTRL_RESULT;
 
 typedef struct _VMDIR_PP_CTRL_BIND
 {
@@ -49,7 +57,13 @@ typedef struct _VMDIR_PP_CTRL_BIND
     PCSTR pszPassword;
     PCSTR pszDomain;
 
-    DWORD       dwBindResult;
-    BOOLEAN     bHasPPCtrlResponse;
-    VDIR_PPOLICY_STATE  PPolicyState;
+    VMDIR_PP_CTRL_RESULT ctrlResult;
 } VMDIR_PP_CTRL_BIND, *PVMDIR_PP_CTRL_BIND;
+
+typedef struct _VMDIR_PP_CTRL_MODIFY
+{
+    PCSTR       pszTargetDN;
+    PCSTR       pszPassword;
+
+    VMDIR_PP_CTRL_RESULT    ctrlResult;
+} VMDIR_PP_CTRL_MODIFY, *PVMDIR_PP_CTRL_MODIFY;

@@ -110,7 +110,7 @@ TestAdminFailedLoginLockout(
     dwError = TestFailedLoginLockout(
         pPolicyContext,
         &ctrlBind);
-    TestAssertEquals(ctrlBind.dwBindResult, 0);  // admin NOT subject to lockout
+    TestAssertEquals(ctrlBind.ctrlResult.dwOpResult, 0);  // admin NOT subject to lockout
 
     return dwError;
 }
@@ -135,8 +135,9 @@ TestUserFailedLoginLockout(
     dwError = TestFailedLoginLockout(
         pPolicyContext,
         &ctrlBind);
-    TestAssertEquals(ctrlBind.dwBindResult, 49);
-    TestAssertEquals(ctrlBind.PPolicyState.PPolicyError, PP_accountLocked);
+
+    TestAssertEquals(ctrlBind.ctrlResult.dwOpResult,  49 /* TODO per RFC 50 */);
+    TestAssertEquals(ctrlBind.ctrlResult.PPolicyState.PPolicyError, PP_accountLocked);
 
     return dwError;
 }

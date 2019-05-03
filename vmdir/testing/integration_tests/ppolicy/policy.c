@@ -32,18 +32,18 @@ TestPolicyControlWarnExpire(
         PCSTR pszTargetDN;
         PCSTR pszTargetUPN;
         PCSTR pszTargetPasswd;
-        DWORD   dwResult;
-        DWORD   dwHasPPCtrlResp;
+        DWORD dwResult;
+        BOOLEAN bHasPPCtrlResp;
     }
     TestWarnExpireParam[] =
-    {   // normal user
+    {   // normal user password expiring warning
         {   pPolicyContext->pszTestUserDN,
             pPolicyContext->pszTestUserUPN,
             pPolicyContext->pszTestUserPassword,
             0,
             1
         },
-        // admin user
+        // admin user not subject to password expiring warning
         {   pPolicyContext->pTestState->pszUserDN,
             pPolicyContext->pTestState->pszUserUPN,
             pPolicyContext->pTestState->pszPassword,
@@ -74,36 +74,31 @@ TestPolicyControlWarnExpire(
 
         {
             ctrlBind.pszMech = TEST_SASL_SRP;
-            ctrlBind.bHasPPCtrlResponse = 0;
-            ctrlBind.dwBindResult = 0;
-            ctrlBind.PPolicyState.iWarnPwdExpiring = 0;
+            memset(&ctrlBind.ctrlResult, 0, sizeof(ctrlBind.ctrlResult));
 
             dwError = TestPPCtrlBind(&ctrlBind);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            TestAssertEquals(ctrlBind.bHasPPCtrlResponse, TestWarnExpireParam[dwCnt].dwHasPPCtrlResp);
-            TestAssertEquals(ctrlBind.dwBindResult, TestWarnExpireParam[dwCnt].dwResult);
-            if (ctrlBind.bHasPPCtrlResponse)
+            TestAssertEquals(ctrlBind.ctrlResult.bHasPPCtrlResponse, TestWarnExpireParam[dwCnt].bHasPPCtrlResp);
+            TestAssertEquals(ctrlBind.ctrlResult.dwOpResult, TestWarnExpireParam[dwCnt].dwResult);
+            if (ctrlBind.ctrlResult.bHasPPCtrlResponse)
             {   // expect expiring around 5 days
-                TestAssertBetween(5*24*60*60 - 10, ctrlBind.PPolicyState.iWarnPwdExpiring, 5*24*60*60 + 10);
+                TestAssertBetween(5*24*60*60 - 10, ctrlBind.ctrlResult.PPolicyState.iWarnPwdExpiring, 5*24*60*60 + 10);
             }
         }
 
         {
-            memset(&ctrlBind.PPolicyState, 0, sizeof(ctrlBind.PPolicyState));
             ctrlBind.pszMech = TEST_SASL_SIMPLE;
-            ctrlBind.bHasPPCtrlResponse = 0;
-            ctrlBind.dwBindResult = 0;
-            ctrlBind.PPolicyState.iWarnPwdExpiring = 0;
+            memset(&ctrlBind.ctrlResult, 0, sizeof(ctrlBind.ctrlResult));
 
             dwError = TestPPCtrlBind(&ctrlBind);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            TestAssertEquals(ctrlBind.bHasPPCtrlResponse, TestWarnExpireParam[dwCnt].dwHasPPCtrlResp);
-            TestAssertEquals(ctrlBind.dwBindResult, TestWarnExpireParam[dwCnt].dwResult);
-            if (ctrlBind.bHasPPCtrlResponse)
+            TestAssertEquals(ctrlBind.ctrlResult.bHasPPCtrlResponse, TestWarnExpireParam[dwCnt].bHasPPCtrlResp);
+            TestAssertEquals(ctrlBind.ctrlResult.dwOpResult, TestWarnExpireParam[dwCnt].dwResult);
+            if (ctrlBind.ctrlResult.bHasPPCtrlResponse)
             {
-                TestAssertBetween(5*24*60*60 - 10, ctrlBind.PPolicyState.iWarnPwdExpiring, 5*24*60*60 + 10);
+                TestAssertBetween(5*24*60*60 - 10, ctrlBind.ctrlResult.PPolicyState.iWarnPwdExpiring, 5*24*60*60 + 10);
             }
         }
     }
@@ -134,12 +129,12 @@ TestPolicyControlErrorExpire(
         PCSTR pszTargetDN;
         PCSTR pszTargetUPN;
         PCSTR pszTargetPasswd;
-        DWORD   dwResult;
-        DWORD   dwHasPPCtrlResp;
+        DWORD dwResult;
+        BOOLEAN bHasPPCtrlResp;
         LDAPPasswordPolicyError PolicyError;
     }
     TestErrorExpireParam[] =
-    {   // normal user
+    {   // normal user password expired
         {   pPolicyContext->pszTestUserDN,
             pPolicyContext->pszTestUserUPN,
             pPolicyContext->pszTestUserPassword,
@@ -147,7 +142,7 @@ TestPolicyControlErrorExpire(
             1,
             PP_passwordExpired
         },
-        // admin user
+        // admin user not subject to password expiration
         {   pPolicyContext->pTestState->pszUserDN,
             pPolicyContext->pTestState->pszUserUPN,
             pPolicyContext->pTestState->pszPassword,
@@ -179,31 +174,28 @@ TestPolicyControlErrorExpire(
 
         {
             ctrlBind.pszMech = TEST_SASL_SRP;
-            ctrlBind.bHasPPCtrlResponse = 0;
-            ctrlBind.dwBindResult = 0;
-            ctrlBind.PPolicyState.PPolicyError = PP_noError;
+            memset(&ctrlBind.ctrlResult, 0, sizeof(ctrlBind.ctrlResult));
+            ctrlBind.ctrlResult.PPolicyState.PPolicyError = PP_noError;
 
             dwError = TestPPCtrlBind(&ctrlBind);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            TestAssertEquals(ctrlBind.bHasPPCtrlResponse, TestErrorExpireParam[dwCnt].dwHasPPCtrlResp);
-            TestAssertEquals(ctrlBind.dwBindResult, TestErrorExpireParam[dwCnt].dwResult);
-            TestAssertEquals(ctrlBind.PPolicyState.PPolicyError, TestErrorExpireParam[dwCnt].PolicyError);
+            TestAssertEquals(ctrlBind.ctrlResult.bHasPPCtrlResponse, TestErrorExpireParam[dwCnt].bHasPPCtrlResp);
+            TestAssertEquals(ctrlBind.ctrlResult.dwOpResult, TestErrorExpireParam[dwCnt].dwResult);
+            TestAssertEquals(ctrlBind.ctrlResult.PPolicyState.PPolicyError, TestErrorExpireParam[dwCnt].PolicyError);
         }
 
         {
-            memset(&ctrlBind.PPolicyState, 0, sizeof(ctrlBind.PPolicyState));
             ctrlBind.pszMech = TEST_SASL_SIMPLE;
-            ctrlBind.bHasPPCtrlResponse = 0;
-            ctrlBind.dwBindResult = 0;
-            ctrlBind.PPolicyState.PPolicyError = PP_noError;
+            memset(&ctrlBind.ctrlResult, 0, sizeof(ctrlBind.ctrlResult));
+            ctrlBind.ctrlResult.PPolicyState.PPolicyError = PP_noError;
 
             dwError = TestPPCtrlBind(&ctrlBind);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            TestAssertEquals(ctrlBind.bHasPPCtrlResponse, TestErrorExpireParam[dwCnt].dwHasPPCtrlResp);
-            TestAssertEquals(ctrlBind.dwBindResult, TestErrorExpireParam[dwCnt].dwResult);
-            TestAssertEquals(ctrlBind.PPolicyState.PPolicyError, TestErrorExpireParam[dwCnt].PolicyError);
+            TestAssertEquals(ctrlBind.ctrlResult.bHasPPCtrlResponse, TestErrorExpireParam[dwCnt].bHasPPCtrlResp);
+            TestAssertEquals(ctrlBind.ctrlResult.dwOpResult, TestErrorExpireParam[dwCnt].dwResult);
+            TestAssertEquals(ctrlBind.ctrlResult.PPolicyState.PPolicyError, TestErrorExpireParam[dwCnt].PolicyError);
         }
     }
 
