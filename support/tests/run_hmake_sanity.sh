@@ -11,9 +11,9 @@ wait_for_server()
   local wait_seconds=5
 
   while [ $response -ne $http_ok ] && [ $attempts -lt $max_attempts ]; do
+    sleep $wait_seconds
     response=$(curl -k --write-out %{http_code} --silent --output /dev/null https://$lw_srv_node)
     echo "waiting for $lw_srv_node, response=$response [ $attempts/$max_attempts ]"
-    sleep $wait_seconds
     attempts=$[attempts+1]
   done
 
@@ -30,16 +30,25 @@ obtain_a_token()
 {
   local lw_srv_node=$1
 
+  local max_attempts=20
+  local attempts=1
   local http_ok='200'
   local response='000'
+  local wait_seconds=1
 
-  response=$(curl -k --write-out %{http_code} --silent --output /dev/null \
+  while [ $response -ne $http_ok ] && [ $attempts -lt $max_attempts ]; do
+      sleep $wait_seconds
+      response=$(curl -k --write-out %{http_code} --silent --output /dev/null \
          "https://$lw_srv_node/openidconnect/token/$LIGHTWAVE_DOMAIN" \
          -H 'content-type: application/x-www-form-urlencoded' \
          -d 'grant_type=password' \
          -d "username=administrator@$LIGHTWAVE_DOMAIN" \
          --data-urlencode "password=$LIGHTWAVE_PASS" \
          -d 'scope=openid rs_vmdir')
+
+    echo "acquire a token from $lw_srv_node, response=$response [ $attempts/$max_attempts ]"
+    attempts=$[attempts+1]
+  done
 
   if [ $response -eq $http_ok ]; then
     echo "Acquire token from $lw_srv_node success. Sanity test complete!"

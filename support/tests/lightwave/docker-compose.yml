@@ -28,6 +28,8 @@ services:
        aliases:
          - server-n2.${LIGHTWAVE_DOMAIN}
     privileged: true
+    depends_on:
+     - "lightwave-server"
     environment:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
         - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}
@@ -44,7 +46,7 @@ services:
        aliases:
          - client.${LIGHTWAVE_DOMAIN}
     depends_on:
-     - "lightwave-server"
+     - "lightwave-server-n2"
     environment:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
         - LIGHTWAVE_PASS=${LIGHTWAVE_PASS}

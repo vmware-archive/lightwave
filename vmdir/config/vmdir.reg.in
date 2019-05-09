@@ -68,14 +68,13 @@
     default = dword:00093a80
     doc     = "Maximum Ticket Renewable Lifetime"
 }
-"CopyDbBlockWriteInSec" = {
-    default = dword:0000001e
-}
-"CopyDbIntervalInSec" = {
-    default = dword:00000000
-}
-"CopyDbWritesMin" = {
+"EnableLdapCopy" = {
     default = dword:00000001
+    doc     = "Copy partner db via LDAP protocol"
+}
+"MdbEnableWal" = {
+    default = dword:00000001
+    doc     = "Enable MDB Write Ahead Logging"
 }
 "EnableRename" = {
     default = dword:00000000
