@@ -272,3 +272,95 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
     goto cleanup;
 }
+
+DWORD
+VmDirCreateSearchPlanControlContent(
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan,
+    BerValue*             pBerVOut
+    )
+{
+    DWORD       dwError = LDAP_SUCCESS;
+    BerElement* pBer = NULL;
+    BerValue    tmpBV = {0};
+    BerValue    localBV = {0};
+
+    if (!pSearchPlan)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    tmpBV.bv_val = pSearchPlan->pszIndex;
+    tmpBV.bv_len = pSearchPlan->pszIndex ? VmDirStringLenA(pSearchPlan->pszIndex) : 0;
+    if (ber_printf(pBer, "{eO}", pSearchPlan->searchAlgo, &tmpBV) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    if (ber_flatten2(pBer, &localBV, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    dwError = VmDirAllocateAndCopyMemory(localBV.bv_val, localBV.bv_len, (PVOID*) &pBerVOut->bv_val);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pBerVOut->bv_len = localBV.bv_len;
+
+cleanup:
+    VMDIR_SAFE_FREE_BER(pBer);
+    ber_memfree(localBV.bv_val);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
+VmDirParseSearchPlanControlContent(
+    LDAPControl*          pSearchPlanCtrl,
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan
+    )
+{
+    BerElement*     pBer          = NULL;
+    DWORD           dwError       = 0;
+    BerValue        localBerValue = {0};
+    ber_tag_t       berTag        = 0;
+
+    if (!pSearchPlanCtrl || !pSearchPlan)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pBer = ber_init(&pSearchPlanCtrl->ldctl_value);
+    if (pBer == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    berTag = ber_scanf(pBer, "{em}", &pSearchPlan->searchAlgo, &localBerValue);
+    if (berTag == LBER_ERROR)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+    }
+
+    if (localBerValue.bv_len > 0)
+    {
+        dwError = VmDirAllocateStringA(localBerValue.bv_val, &pSearchPlan->pszIndex);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+cleanup:
+    VMDIR_SAFE_FREE_BER(pBer);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "%s, error %d", __FUNCTION__, dwError);
+    goto cleanup;
+}
+

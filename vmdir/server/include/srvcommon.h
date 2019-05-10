@@ -257,6 +257,7 @@ typedef struct _VDIR_SUPERLOG_RECORD
 
 typedef struct _VDIR_CONN_REPL_SUPP_STATE
 {
+// TODO remove this
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
@@ -576,6 +577,7 @@ typedef struct SearchReq
     ACCESS_MASK     accessRequired;
     size_t          iNumEntrySent;      // total number entries sent for this request
     BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
+    VDIR_SRV_SEARCH_PLAN srvSearchPlan;
 } SearchReq;
 
 typedef union _VDIR_LDAP_REQUEST
@@ -773,6 +775,7 @@ typedef struct _VDIR_OPERATION
     PVDIR_LDAP_CONTROL  dbCopyCtrl;
     PVDIR_LDAP_CONTROL  pReplAgrDisableCtrl;
     PVDIR_LDAP_CONTROL  pReplAgrEnableCtrl;
+    PVDIR_LDAP_CONTROL  pSearchPlanCtrl;
 
     // SJ-TBD: If we add quite a few controls, we should consider defining a
     // structure to hold all those pointers.

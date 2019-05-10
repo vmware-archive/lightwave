@@ -19,6 +19,13 @@
 #define MAX_NUM_SECONDS_OF_SOCK_WRITE_RETRIES  10
 
 static
+DWORD
+_VmDirWriteResultControls(
+    PVDIR_OPERATION pOp,
+    BerElement*     pBer
+    );
+
+static
 int
 WriteAttributes(
    VDIR_OPERATION *   op,
@@ -186,29 +193,12 @@ VmDirSendLdapResult(
         goto done;
     }
 
-    // If Search, Replication, and one or more entries were sent back => Send back Sync Done Control
-    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->syncReqCtrl && pOperation->syncDoneCtrl)
+    if (_VmDirWriteResultControls(pOperation, ber))
     {
-        if (WriteSyncDoneControl(pOperation, ber) != LDAP_SUCCESS)
-        {
-            goto done;
-        }
-    }
-
-    if (pOperation->reqCode == LDAP_REQ_SEARCH && pOperation->showPagedResultsCtrl)
-    {
-        if (WritePagedSearchDoneControl(pOperation, ber) != LDAP_SUCCESS)
-        {
-            goto done;
-        }
-    }
-
-    if (pOperation->dbCopyCtrl)
-    {
-        if (VmDirWriteDbCopyReplyControl(pOperation, ber) != LDAP_SUCCESS)
-        {
-            goto done;
-        }
+        VMDIR_LOG_ERROR(
+                VMDIR_LOG_MASK_ALL,
+                "%s: _VmDirWriteResultControls failed", __FUNCTION__);
+        goto done;
     }
 
     if (ber_printf(ber, "N}") == -1)
@@ -958,4 +948,62 @@ SetSpecialReturnChar(
             *pSearchReqSpecialChars |= LDAP_SEARCH_REQUEST_CHAR_PASSWD;
         }
     }
+}
+
+/*
+ * write controls back as part of ldap result
+ * BER of controls looks like
+ * "LDAP_TAG_CONTROLS{{ctrl-1}{ctrl-2}...{ctrl-n}N}"
+ */
+static
+DWORD
+_VmDirWriteResultControls(
+    PVDIR_OPERATION pOp,
+    BerElement*     pBer
+    )
+{
+    DWORD   dwError = 0;
+
+    if ((pOp->reqCode == LDAP_REQ_SEARCH && pOp->syncReqCtrl && pOp->syncDoneCtrl) ||
+        (pOp->reqCode == LDAP_REQ_SEARCH && pOp->showPagedResultsCtrl)             ||
+        (pOp->reqCode == LDAP_REQ_SEARCH && pOp->pSearchPlanCtrl)                  ||
+        (pOp->dbCopyCtrl))
+    {
+
+        if (ber_printf( pBer, "t{"/*}*/, LDAP_TAG_CONTROLS ) == -1)
+        {
+           BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+
+        if (pOp->reqCode == LDAP_REQ_SEARCH && pOp->syncReqCtrl && pOp->syncDoneCtrl)
+        {
+            dwError = WriteSyncDoneControl(pOp, pBer);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pOp->reqCode == LDAP_REQ_SEARCH && pOp->showPagedResultsCtrl)
+        {
+            dwError = WritePagedSearchDoneControl(pOp, pBer);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pOp->reqCode == LDAP_REQ_SEARCH && pOp->pSearchPlanCtrl)
+        {
+            dwError = VmDirWriteSearchPlanControl(pOp, pBer);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pOp->dbCopyCtrl)
+        {
+            dwError = VmDirWriteDbCopyReplyControl(pOp, pBer);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (ber_printf( pBer, /*{*/"N}") == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+error:
+    return dwError;
 }

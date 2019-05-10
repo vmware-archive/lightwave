@@ -332,6 +332,10 @@ ParseRequestControls(
 
                 op->pReplAgrEnableCtrl = *control;
             }
+            if (VmDirStringCompareA((*control)->type, LDAP_SEARCH_PLAN_CONTROL, TRUE) == 0)
+            {
+                op->pSearchPlanCtrl = *control;
+            }
             if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -455,7 +459,7 @@ WriteSyncDoneControl(
 
     if ( op->syncDoneCtrl != NULL)
     {
-        if (ber_printf( ber, "t{{O", LDAP_TAG_CONTROLS, &(syncDoneCtrlType.lberbv) ) == -1 )
+        if (ber_printf( ber, "{O", &(syncDoneCtrlType.lberbv) ) == -1 )
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteSyncDoneControl: ber_printf (to print Sync Done Control ...) failed" );
             retVal = LDAP_OPERATIONS_ERROR;
@@ -533,7 +537,7 @@ WriteSyncDoneControl(
 #endif
         }
 
-        if (ber_printf( ber, "O}}", &bvCtrlVal.lberbv) == -1 )
+        if (ber_printf( ber, "ON}", &bvCtrlVal.lberbv) == -1 )
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WriteSyncDoneControl: ber_printf (to print Sync Done Control ...) failed" );
             retVal = LDAP_OPERATIONS_ERROR;
@@ -592,7 +596,7 @@ WritePagedSearchDoneControl(
         bvCtrlVal.lberbv.bv_val = ctrlValBer->ber_buf;
         bvCtrlVal.lberbv.bv_len = ctrlValBer->ber_ptr - ctrlValBer->ber_buf;
 
-        if (ber_printf(ber, "t{{sO}}", LDAP_TAG_CONTROLS, LDAP_CONTROL_PAGEDRESULTS, &bvCtrlVal.lberbv ) == -1)
+        if (ber_printf(ber, "{sON}", LDAP_CONTROL_PAGEDRESULTS, &bvCtrlVal.lberbv ) == -1)
         {
             VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "WritePagedSearchDoneControl: ber_printf (to print Search Done Control ...) failed" );
             retVal = LDAP_OPERATIONS_ERROR;
@@ -607,6 +611,41 @@ cleanup:
     return retVal;
 
 error:
+    goto cleanup;
+}
+
+int
+VmDirWriteSearchPlanControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    )
+{
+    int         retVal = LDAP_SUCCESS;
+    BerValue    lberCtrlBVOut = {0};
+
+    if (!pOp || !pBer)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    assert(pOp->pSearchPlanCtrl);
+
+    retVal = VmDirCreateSearchPlanControlContent(&pOp->request.searchReq.srvSearchPlan, &lberCtrlBVOut);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
+    if (ber_printf(pBer, "{sON}",
+                LDAP_SEARCH_PLAN_CONTROL,
+                &lberCtrlBVOut) == -1)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+    }
+
+ cleanup:
+     VMDIR_SAFE_FREE_MEMORY(lberCtrlBVOut.bv_val);
+     return retVal;
+
+ error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
     goto cleanup;
 }
 
@@ -1861,7 +1900,7 @@ VmDirWriteDbCopyReplyControl(
                                                     &lberCtrlBVOut);
         BAIL_ON_VMDIR_ERROR(retVal);
 
-        if (ber_printf(pBer, "t{{sO}}", LDAP_TAG_CONTROLS, LDAP_DB_COPY_CONTROL, &lberCtrlBVOut ) == -1)
+        if (ber_printf(pBer, "{sON}", LDAP_DB_COPY_CONTROL, &lberCtrlBVOut ) == -1)
         {
             BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
         }

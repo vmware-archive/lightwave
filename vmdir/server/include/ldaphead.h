@@ -149,6 +149,12 @@ WritePagedSearchDoneControl(
     );
 
 int
+VmDirWriteSearchPlanControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    );
+
+int
 WriteSyncStateControl(
    VDIR_OPERATION *   op,
    VDIR_ENTRY *       pEntry,

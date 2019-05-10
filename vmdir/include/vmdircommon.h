@@ -307,6 +307,19 @@ typedef struct _VMDIR_SASL_INTERACTIVE_DEFAULT
     PCSTR   pszPass;
 } VMDIR_SASL_INTERACTIVE_DEFAULT, *PVMDIR_SASL_INTERACTIVE_DEFAULT;
 
+typedef enum _VDIR_SRV_SEARCH_ALGO
+{
+    SEARCH_ALGO_CANDIDATE_LIST = 1,
+    SEARCH_ALGO_ITERATOR,
+    SEARCH_ALGO_UNKNOWN
+} VDIR_SRV_SEARCH_ALGO;
+
+typedef struct _VDIR_SRV_SEARCH_PLAN
+{
+    VDIR_SRV_SEARCH_ALGO    searchAlgo;
+    PSTR                    pszIndex;
+} VDIR_SRV_SEARCH_PLAN, *PVDIR_SRV_SEARCH_PLAN;
+
 #ifdef _WIN32
 typedef HINSTANCE   VMDIR_LIB_HANDLE;
 #else
@@ -1958,6 +1971,18 @@ VmDirCreateRaftVoteCtrlContent(
 VOID
 VmDirFreeCtrlContent(
     LDAPControl*    pCtrl
+    );
+
+DWORD
+VmDirParseSearchPlanControlContent(
+    LDAPControl*          pSearchPlanCtrl,
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan
+    );
+
+DWORD
+VmDirCreateSearchPlanControlContent(
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan,
+    BerValue*             pBerVOut
     );
 
 int

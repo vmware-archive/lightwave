@@ -541,6 +541,8 @@ extern "C" {
 #define LDAP_REPL_AGR_DISABLE_CONTROL           "1.3.6.1.4.1.6876.40.10.10"
 // vmw LDAP control for enabling a replication agreement
 #define LDAP_REPL_AGR_ENABLE_CONTROL            "1.3.6.1.4.1.6876.40.10.11"
+// vmw LDAP control to verify search algorithm (for testing purpose)
+#define LDAP_SEARCH_PLAN_CONTROL                "1.3.6.1.4.1.6876.40.10.12"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
