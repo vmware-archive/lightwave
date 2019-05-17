@@ -18,7 +18,7 @@ ShouldBeAbleToCreateTenants(
     );
 
 DWORD
-ShouldNotBeAbleToCreateTenantsOfACertainLength(
+ShouldBeAbleToCreateTenantsOfMultipleDepth(
     PVMDIR_TEST_STATE pState
     );
 

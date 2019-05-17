@@ -56,6 +56,16 @@ TestCleanup(
                 pState->pszPassword,
                 "foobar.net");
 
+    (VOID)VmDirDeleteTenant(
+                pState->pszUserUPN,
+                pState->pszPassword,
+                "com");
+
+    (VOID)VmDirDeleteTenant(
+                pState->pszUserUPN,
+                pState->pszPassword,
+                "net");
+
     return 0;
 }
 
@@ -79,7 +89,7 @@ TestRunner(
     InvalidCredentialsShouldFail(pState);
 
     ShouldBeAbleToCreateTenants(pState);
-    ShouldNotBeAbleToCreateTenantsOfACertainLength(pState);
+    ShouldBeAbleToCreateTenantsOfMultipleDepth(pState);
 
     ShouldBeAbleToEnumerateTenants(pState);
 
@@ -88,6 +98,7 @@ TestRunner(
     TestMultiTenancyPermissions(pState);
 
     printf("Multi-tenancy testing completed successfully.\n");
+    fflush(stdout);
 
     return 0;
 }

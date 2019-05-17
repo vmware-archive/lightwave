@@ -94,10 +94,6 @@ _VmDirTestGetDomains(
         {
             LDAPMessage* pEntry = ldap_first_entry(pLd, pResult);
 
-            //
-            // Grab the next entry. The first one will be the base DN itself.
-            //
-            pEntry = ldap_next_entry(pLd, pEntry);
             for (; pEntry != NULL; pEntry = ldap_next_entry(pLd, pEntry))
             {
                 dwError = VmDirStringListAddStrClone(ldap_get_dn(pLd, pEntry), pObjectList);
@@ -396,7 +392,7 @@ TestMultiTenancyPermissions(
     TestTenantPermissions(pState, pLdTestingDotLocal, "testing.local", 1);
     TestTenantPermissions(pState, pLdCustomerDotCom, "customer.com", 1);
     TestTenantPermissions(pState, pLdFoobarDotNet, "foobar.net", 1);
-    TestTenantPermissions(pState, pState->pLd, pState->pszDomain, 2);
+    TestTenantPermissions(pState, pState->pLd, pState->pszDomain, 3 /* see lw.local testing.local local */);
 
     //
     // Make sure that we can't add or delete entries from tenants even using

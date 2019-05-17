@@ -35,6 +35,46 @@ VmDirInternalUpdateObjectSD(
     );
 
 DWORD
+VmDirGetSecurityDescriptorForDN(
+    PCSTR                           pszDN,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
+    )
+{
+    DWORD	dwError = 0;
+    PVDIR_ENTRY pEntry = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pCurSecDesc = NULL;
+    ULONG   ulLength = 0;
+
+    if (!pszDN || !ppSecDesc || !pulSecDescLength)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwError = VmDirSimpleDNToEntry(pszDN, &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirGetSecurityDescriptorForEntry(
+            pEntry,
+            SecurityInformation,
+            &pCurSecDesc,
+            &ulLength);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    *ppSecDesc = pCurSecDesc;
+    *pulSecDescLength = ulLength;
+
+cleanup:
+    VmDirFreeEntry(pEntry);
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pCurSecDesc);
+    goto cleanup;
+}
+
+DWORD
 VmDirGetSecurityDescriptorForEntry(
     PVDIR_ENTRY                     pEntry,
     SECURITY_INFORMATION            SecurityInformation,

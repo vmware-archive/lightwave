@@ -301,6 +301,14 @@ VmDirGetSecurityDescriptorForEntry(
     );
 
 DWORD
+VmDirGetSecurityDescriptorForDN(
+    PCSTR                           pszDN,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
+    );
+
+DWORD
 VmDirSetSecurityDescriptorForDn(
     PCSTR                       pszObjectDn,
     PVMDIR_SECURITY_DESCRIPTOR  pSecDesc

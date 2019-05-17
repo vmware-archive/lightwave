@@ -727,16 +727,32 @@ _VmDirAclDomainObjects(
 {
     DWORD   dwError = 0;
     int     i = 0, j = 0;
-    ULONG   ulLength = 0;
     PCSTR   pszDomainDN = NULL;
-    PVDIR_ENTRY pDomainEntry = NULL;
+    ULONG   ulLength = 0;
+    ULONG   ulSysDomainSDLength = 0;
     PSECURITY_DESCRIPTOR_RELATIVE   pCurSecDesc = NULL;
+    PSECURITY_DESCRIPTOR_RELATIVE   pSysDomainRelativeSD = NULL;
+    VMDIR_SECURITY_DESCRIPTOR       systemDomainSecDesc = {0};
 
     SECURITY_INFORMATION    SecInfoAll =
             OWNER_SECURITY_INFORMATION |
             GROUP_SECURITY_INFORMATION |
-            DACL_SECURITY_INFORMATION |
+            DACL_SECURITY_INFORMATION  |
             SACL_SECURITY_INFORMATION;
+
+    dwError = VmDirGetSecurityDescriptorForDN(
+        gVmdirServerGlobals.systemDomainDN.lberbv_val,
+        SecInfoAll, &pSysDomainRelativeSD, &ulSysDomainSDLength);
+
+    if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
+    {   // system domain promotion case
+        dwError = 0;
+    }
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    systemDomainSecDesc.SecInfo = OWNER_SECURITY_INFORMATION | GROUP_SECURITY_INFORMATION;
+    systemDomainSecDesc.pSecDesc = pSysDomainRelativeSD;
+    systemDomainSecDesc.ulSecDesc = ulSysDomainSDLength;
 
     for (i = (int)VmDirStringLenA(pszLeafDomainDN) - 1; i >= 0; --i)
     {
@@ -745,29 +761,22 @@ _VmDirAclDomainObjects(
             j = (i == 0) ? 0 : i + 1 /* for , */;
             pszDomainDN = pszLeafDomainDN + j;
 
-            VmDirFreeEntry(pDomainEntry);
-            dwError = VmDirSimpleDNToEntry(pszDomainDN, &pDomainEntry);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
             VMDIR_SAFE_FREE_MEMORY(pCurSecDesc);
-            dwError = VmDirGetSecurityDescriptorForEntry(
-                    pDomainEntry, SecInfoAll, &pCurSecDesc, &ulLength);
+            dwError = VmDirGetSecurityDescriptorForDN(
+                    pszDomainDN, SecInfoAll, &pCurSecDesc, &ulLength);
 
             if (dwError == VMDIR_ERROR_NO_SECURITY_DESCRIPTOR)
             {
-                // if it does not exist, set new SD
-                dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN, pSecDesc);
-                BAIL_ON_VMDIR_ERROR(dwError);
-
-                if (i != 0)
+                if (i != 0 && pSysDomainRelativeSD)
                 {
-                    // non-leaf domain
-                    dwError = VmDirAppendAllowAceForDn(
-                        pszDomainDN,
-                        gVmdirServerGlobals.bvDefaultAdminDN.lberbv_val,
-                          VMDIR_ENTRY_WRITE_ACL |
-                          VMDIR_RIGHT_DS_WRITE_PROP |
-                          VMDIR_RIGHT_DS_DELETE_OBJECT);
+                    // non-leaf domain, use the same SD as system domain
+                    // i.e. own by system admins
+                    dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN, &systemDomainSecDesc);
+                    BAIL_ON_VMDIR_ERROR(dwError);
+                }
+                else
+                {   // target tenant, own by tenant admins; or system domain promotion.
+                    dwError = VmDirSetSecurityDescriptorForDn(pszDomainDN, pSecDesc);
                     BAIL_ON_VMDIR_ERROR(dwError);
                 }
             }
@@ -777,7 +786,7 @@ _VmDirAclDomainObjects(
 
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pCurSecDesc);
-    VmDirFreeEntry(pDomainEntry);
+    VMDIR_SAFE_FREE_MEMORY(pSysDomainRelativeSD);
     return dwError;
 
 error:
