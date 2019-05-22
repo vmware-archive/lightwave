@@ -967,6 +967,7 @@ _VmDirWriteResultControls(
     if ((pOp->reqCode == LDAP_REQ_SEARCH && pOp->syncReqCtrl && pOp->syncDoneCtrl) ||
         (pOp->reqCode == LDAP_REQ_SEARCH && pOp->showPagedResultsCtrl)             ||
         (pOp->reqCode == LDAP_REQ_SEARCH && pOp->pSearchPlanCtrl)                  ||
+        (pOp->pPPolicyCtrl)                                                        ||
         (pOp->dbCopyCtrl))
     {
 
@@ -996,6 +997,12 @@ _VmDirWriteResultControls(
         if (pOp->dbCopyCtrl)
         {
             dwError = VmDirWriteDbCopyReplyControl(pOp, pBer);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (pOp->pPPolicyCtrl)
+        {
+            dwError = VmDirWritePPolicyReplyControl(pOp, pBer);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 

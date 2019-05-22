@@ -2004,7 +2004,7 @@ VmDirParseDBCopyReplyControlContent(
     PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal
     );
 
-int
+DWORD
 VmDirCreatePPolicyReplyCtrlContent(
     PVDIR_PPOLICY_STATE pPPolicyState,
     LDAPControl*        pPPCtrl

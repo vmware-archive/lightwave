@@ -336,6 +336,10 @@ ParseRequestControls(
             {
                 op->pSearchPlanCtrl = *control;
             }
+            if (VmDirStringCompareA((*control)->type, LDAP_PPOLICY_CONTROL, TRUE) == 0)
+            {
+                op->pPPolicyCtrl = *control;
+            }
             if (ber_scanf( op->ber, "}") == LBER_ERROR) // end of control
             {
                 lr->errCode = LDAP_PROTOCOL_ERROR;
@@ -1912,6 +1916,54 @@ cleanup:
     return retVal;
 
 error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
+    goto cleanup;
+}
+
+int
+VmDirWritePPolicyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    )
+{
+    int                 retVal = LDAP_SUCCESS;
+    LDAPControl         PPCtrl = {0};
+    PVDIR_PPOLICY_STATE pPPolicyState = NULL;
+
+    if (!pOp || !pBer)
+    {
+        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    pPPolicyState = &pOp->conn->PPolicyState;
+
+    if (pPPolicyState->iWarnPwdExpiring > 0    ||
+        pPPolicyState->iWarnGraceAuthN > 0     ||
+        pPPolicyState->PPolicyError != PP_noError)
+    {
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s send ppcontrol %d/%d/%d",
+                __FUNCTION__,
+                pPPolicyState->iWarnPwdExpiring,
+                pPPolicyState->iWarnGraceAuthN,
+                pPPolicyState->PPolicyError);
+
+        retVal = VmDirCreatePPolicyReplyCtrlContent(pPPolicyState, &PPCtrl);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        if (ber_printf(pBer, "{sbON}",
+                PPCtrl.ldctl_oid,
+                PPCtrl.ldctl_iscritical,
+                &PPCtrl.ldctl_value ) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
+        }
+    }
+
+ cleanup:
+     ber_memfree(PPCtrl.ldctl_value.bv_val);
+     return retVal;
+
+ error:
     VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s: error %d", __FUNCTION__, retVal);
     goto cleanup;
 }

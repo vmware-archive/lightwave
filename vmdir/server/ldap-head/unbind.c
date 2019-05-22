@@ -32,6 +32,7 @@ VmDirPerformUnbind(
    assert(pOperation && pOperation->conn);
 
    VmDirFreeAccessInfo(&(pOperation->conn)->AccessInfo);
+   VmDirResetPPolicyState(&(pOperation->conn->PPolicyState));
 
    VmDirLog( LDAP_DEBUG_TRACE, "PerformUnbind: End" );
 

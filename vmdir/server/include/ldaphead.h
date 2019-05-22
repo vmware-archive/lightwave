@@ -180,6 +180,12 @@ VmDirWriteDbCopyReplyControl(
     BerElement*         pBer
     );
 
+int
+VmDirWritePPolicyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    );
+
 // delete.c
 int
 VmDirPerformDelete(

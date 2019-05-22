@@ -544,6 +544,9 @@ extern "C" {
 // vmw LDAP control to verify search algorithm (for testing purpose)
 #define LDAP_SEARCH_PLAN_CONTROL                "1.3.6.1.4.1.6876.40.10.12"
 
+// https://tools.ietf.org/html/draft-behera-ldap-password-policy-10
+#define LDAP_PPOLICY_CONTROL                    "1.3.6.1.4.1.42.2.27.8.5.1"
+
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096
 

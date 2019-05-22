@@ -364,3 +364,95 @@ error:
     goto cleanup;
 }
 
+DWORD
+VmDirCreatePPolicyReplyCtrlContent(
+    PVDIR_PPOLICY_STATE pPPolicyState,
+    LDAPControl*        pPPCtrl
+    )
+{
+// context specific tags
+#define PPOLICY_WARNING_TAG 0xa0L
+#define PPOLICY_ERROR_TAG   0x81L
+
+#define PPOLICY_EXPIRE_TAG  0x80L
+#define PPOLICY_GRACE_TAG   0x81L
+
+    DWORD           dwError = LDAP_SUCCESS;
+    BerElement*     pBer = NULL;
+    BerElement*     pWarnBer = NULL;
+    BerValue        localWarnBV = {0};
+
+    if (!pPPolicyState || !pPPCtrl)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((pBer = ber_alloc()) == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+    }
+
+    if (pPPolicyState->iWarnPwdExpiring > 0 ||pPPolicyState->iWarnGraceAuthN > 0)
+    {
+        if ((pWarnBer = ber_alloc()) == NULL)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+        }
+    }
+
+    ber_init2(pBer, NULL, LBER_USE_DER);
+    ber_printf(pBer, "{" /*}*/ );
+
+    if (pPPolicyState->iWarnPwdExpiring > 0)
+    {
+        if (ber_printf(pWarnBer, "ti", PPOLICY_EXPIRE_TAG, pPPolicyState->iWarnPwdExpiring) == -1 ||
+            ber_flatten2(pWarnBer, &localWarnBV, 1) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+    else if (pPPolicyState->iWarnGraceAuthN > 0)
+    {
+        if (ber_printf(pWarnBer, "ti", PPOLICY_GRACE_TAG, pPPolicyState->iWarnGraceAuthN) == -1 ||
+            ber_flatten2(pWarnBer, &localWarnBV, 1) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+
+    if (localWarnBV.bv_len)
+    {
+        if (ber_printf(pBer, "tO", PPOLICY_WARNING_TAG, &localWarnBV) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+
+    if (pPPolicyState->PPolicyError != PP_noError)
+    {
+        if (ber_printf(pBer, "te", PPOLICY_ERROR_TAG, pPPolicyState->PPolicyError) == -1)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
+        }
+    }
+
+    ber_printf(pBer, /*{*/ "N}" );
+
+    memset(pPPCtrl, 0, sizeof( LDAPControl ));
+    pPPCtrl->ldctl_oid = LDAP_PPOLICY_CONTROL;
+    pPPCtrl->ldctl_iscritical = '0';
+    if (ber_flatten2(pBer, &pPPCtrl->ldctl_value, 1))
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
+    }
+
+cleanup:
+    ber_memfree(localWarnBV.bv_val);
+    VMDIR_SAFE_FREE_BER(pBer);
+    VMDIR_SAFE_FREE_BER(pWarnBer);
+    return dwError;
+
+error:
+    VmDirFreeCtrlContent(pPPCtrl);
+    goto cleanup;
+}

@@ -130,6 +130,7 @@ VmDirAllocateConnection(
     }
 
     pConn->ConnCtrlResource.dbCopyCtrlFd = -1;
+    pConn->PPolicyState.PPolicyError = PP_noError;
 
     *ppConn = pConn;
 

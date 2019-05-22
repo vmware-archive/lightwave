@@ -1812,3 +1812,12 @@ VmDirFreeMDBIteratorDataContents(
         VMDIR_SAFE_FREE_MEMORY(pMDBIteratorData->pKeyAndValue);
     }
 }
+
+VOID
+VmDirResetPPolicyState(
+    PVDIR_PPOLICY_STATE pPPolicyState
+    )
+{
+    memset(pPPolicyState, 0, sizeof(*pPPolicyState));
+    pPPolicyState->PPolicyError = PP_noError;
+}

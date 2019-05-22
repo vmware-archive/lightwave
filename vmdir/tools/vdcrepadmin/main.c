@@ -151,7 +151,8 @@ static
 VOID
 _VmDirPrintReplStateList(
     PVMDIR_REPL_STATE *pReplStateList,
-    DWORD dwListCount)
+    DWORD dwListCount,
+    BOOLEAN bVerbose)
 {
     PVMDIR_REPL_UTDVECTOR       pVector = NULL;
     DWORD dwCount = 0;
@@ -316,11 +317,14 @@ _VmDirPrintReplStateList(
                     BAIL_ON_VMDIR_ERROR(dwError);
             }
 
-            printf("  %-42s   %10s   %10s   %8s\n",
-                   pszPartnerName,
-                   pszHighestReplUsn,
-                   pszHighestOrigUsn,
-                   pszLag);
+            if (bPartnerFound || bVerbose)
+            {
+                printf("  %-42s   %10s   %10s   %8s\n",
+                       pszPartnerName,
+                       pszHighestReplUsn,
+                       pszHighestOrigUsn,
+                       pszLag);
+            }
 
             pVector = pVector->next;
         }
@@ -369,7 +373,8 @@ DWORD
 VmDirGetFederationStatus(
     PCSTR   pszHostName,
     PCSTR   pszUserName,
-    PCSTR   pszPassword
+    PCSTR   pszPassword,
+    BOOLEAN bVerbose
     )
 {
     DWORD   dwError = 0;
@@ -431,7 +436,7 @@ VmDirGetFederationStatus(
         ppReplStateList[dwListCount++] = pReplState;
     }
 
-    _VmDirPrintReplStateList(ppReplStateList, dwListCount);
+    _VmDirPrintReplStateList(ppReplStateList, dwListCount, bVerbose);
 
 cleanup:
     for (dwCnt = 0; dwCnt < dwListCount; dwCnt++)
@@ -1001,7 +1006,8 @@ VmDirMain(int argc, char* argv[])
            dwError = VmDirGetFederationStatus(
                            pszSrcHostName,
                            pszSrcUserName,
-                           pszSrcPassword
+                           pszSrcPassword,
+                           bVerbose
                            );
            BAIL_ON_VMDIR_ERROR(dwError);
 

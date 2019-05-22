@@ -267,6 +267,9 @@ typedef struct _VDIR_CONNECTION_CTRL_RESOURCE
     int     dbCopyCtrlFd;
 } VDIR_CONNECTION_CTRL_RESOURCE, *PVDIR_CONNECTION_CTRL_RESOURCE;
 
+#define VDIR_IS_LOGIN_BLOCKED(pPPolicyState)    \
+    (pPPolicyState->bLockedout || pPPolicyState->bPwdExpired)
+
 typedef struct _VDIR_CONNECTION
 {
     Sockbuf *               sb;
@@ -284,6 +287,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
     PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
     VDIR_CONNECTION_CTRL_RESOURCE ConnCtrlResource;
+    VDIR_PPOLICY_STATE          PPolicyState;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -776,6 +780,7 @@ typedef struct _VDIR_OPERATION
     PVDIR_LDAP_CONTROL  pReplAgrDisableCtrl;
     PVDIR_LDAP_CONTROL  pReplAgrEnableCtrl;
     PVDIR_LDAP_CONTROL  pSearchPlanCtrl;
+    PVDIR_LDAP_CONTROL  pPPolicyCtrl;
 
     // SJ-TBD: If we add quite a few controls, we should consider defining a
     // structure to hold all those pointers.
@@ -1533,6 +1538,11 @@ VmDirFillMDBIteratorDataContent(
 VOID
 VmDirFreeMDBIteratorDataContents(
     PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    );
+
+VOID
+VmDirResetPPolicyState(
+    PVDIR_PPOLICY_STATE pPPolicyState
     );
 
 //accnt_mgmt.c
