@@ -50,6 +50,21 @@ rpm -Uvh --nodeps buildrpms/x86_64/lightwave-1*.rpm
 
 /opt/likewise/sbin/lwsmd --start-as-daemon
 
+# set longer idle connection timeout to allow long running intergration test
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "LdapRecvTimeoutSec" REG_DWORD 0x400
+
+# set small tombstone reaping keys for testing
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "TombstoneExpirationPeriodInSec" REG_DWORD 0x05
+
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "TombstoneReapingThreadFreqInSec" REG_DWORD 0x0a
+
+# set vmdir log output to /var/log/lightwave/vmdird.log
+/opt/likewise/bin/lwregshell set_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir]' "Arguments" "/opt/vmware/sbin/vmdird -c -L /var/log/lightwave/vmdird.log -f /opt/vmware/share/config/vmdirschema.ldif"
+
 #set multiplesan option so localhost can be added to cert
 #cannot use cli for this before promote
 #if this is not done before promote, steps will get complicated
@@ -57,6 +72,7 @@ rpm -Uvh --nodeps buildrpms/x86_64/lightwave-1*.rpm
 /opt/likewise/bin/lwregshell add_value \
   '[HKEY_THIS_MACHINE\Services\vmca]' "ServerOption" REG_DWORD 0x1
 
+/opt/likewise/bin/lwsm refresh
 /opt/likewise/bin/lwsm autostart
 sleep 1
 
