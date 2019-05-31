@@ -332,6 +332,13 @@ VmDirSrvUpdateConfig(
         {
             gVmdirGlobals.bEnableRegionalMaster = pEntry->dwValue ? TRUE : FALSE;
         }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.iWarnPwdExpiring = pEntry->dwValue;
+        }
     }
 
 cleanup:

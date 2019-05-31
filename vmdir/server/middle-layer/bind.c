@@ -328,7 +328,7 @@ _VmDirBindHandleFailedPassword(
         retVal = VdirPasswordCheck( &pOperation->request.bindReq.cred, pEntry);
     }
     else if (pOperation->request.bindReq.method == LDAP_AUTH_SASL)
-    {
+    {   // for SASL bind, we already verified password by now.
         retVal = pOperation->conn->pSaslInfo->vmdirCode;
     }
 
@@ -338,7 +338,6 @@ _VmDirBindHandleFailedPassword(
                 pOperation,
                 BERVAL_NORM_VAL(pEntry->dn),
                 pEntry);
-        // ignore error
     }
 
     return retVal;

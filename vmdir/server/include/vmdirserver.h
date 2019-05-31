@@ -183,6 +183,7 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
     DWORD                           dwSupplierThrTimeoutInMilliSec;
     DWORD                           dwWriteTimeoutInMilliSec;
+    int                             iWarnPwdExpiring;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
