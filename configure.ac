@@ -1829,15 +1829,8 @@ AC_CONFIG_FILES([Makefile
                  vmdir/tools/vdcaclmgr/Makefile
                  vmdir/tools/vdcadmintool/Makefile
                  vmdir/tools/vdcpromo/Makefile
-                 vmdir/tools/vdcpass/Makefile
                  vmdir/tools/vdcrepadmin/Makefile
-                 vmdir/tools/vdcsetupldu/Makefile
-                 vmdir/tools/vdcbackup/Makefile
                  vmdir/tools/vmkdc_admin/Makefile
-                 vmdir/tools/vdcsrp/Makefile
-                 vmdir/tools/vdcupgrade/Makefile
-                 vmdir/tools/vdcleavefed/Makefile
-                 vmdir/tools/vdcresetMachineActCred/Makefile
                  vmdir/tools/vdcmetric/Makefile
                  vmdir/tools/vdcschema/Makefile
                  vmdir/tools/test/Makefile
