@@ -9,11 +9,7 @@
 
 STOREDIRS = mdb-store
 
-if REPLICATION_V2
-    REPLDIR = replication2
-else
-    REPLDIR = replication
-endif
+REPLDIR = replication2
 
 SUBDIRS = \
     kdcsrvcommon \

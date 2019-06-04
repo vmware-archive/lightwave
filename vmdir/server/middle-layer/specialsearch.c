@@ -265,11 +265,7 @@ VmDirHandleSpecialSearch(
         if (!IsNullOrEmptyString(pStatePing->pszFQDN) &&
             !IsNullOrEmptyString(pStatePing->pszInvocationId) &&
             VmDirReplMetricsCacheFind(pStatePing->pszFQDN, &pReplMetrics) == 0 &&
-#ifdef REPLICATION_V2
             VmDirUTDVectorGlobalCacheLookup(pStatePing->pszInvocationId, &local) == 0
-#else
-            VmDirUTDVectorCacheLookup(pStatePing->pszInvocationId, &local) == 0
-#endif
             )
         {
             if (pStatePing->maxOrigUsn >= local)

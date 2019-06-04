@@ -58,7 +58,6 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwLdapConnectTimeoutSec, 0),
         VMDIR_SF_INIT(.dwOperationsThreadTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwReplConsumerThreadTimeoutInMilliSec, 0),
-        VMDIR_SF_INIT(.dwEmptyPageCnt, 0),//TODO_REMOVE_REPLV2
         VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwWriteTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.mutex, NULL),
@@ -149,7 +148,6 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
         VMDIR_SF_INIT(.dwEfficientWriteOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
-        VMDIR_SF_INIT(.pReplDeadlockDetectionVector, NULL),//TODO_REMOVE_REPLV2
     };
 
 VMDIRD_SD_GLOBALS gVmdirdSDGlobals =

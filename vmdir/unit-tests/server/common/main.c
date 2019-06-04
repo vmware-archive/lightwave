@@ -51,14 +51,6 @@ int main(VOID)
                 VmDirMetaDataCreate_InvalidInput,
                 NULL,
                 NULL),
-        cmocka_unit_test_setup_teardown(
-                VmDirAttributeMetaDataToHashMap_ValidInput,
-                VmDirSetupMetaDataAttribute,
-                VmDirFreeMetaDataAttribute),
-        cmocka_unit_test_setup_teardown(
-                VmDirAttributeMetaDataToHashMap_InvalidInput,
-                VmDirSetupMetaDataAttribute,
-                VmDirFreeMetaDataAttribute),
         //valuemetadata.c
         cmocka_unit_test_setup_teardown(
                 VmDirValueMetaDataDeserialize_ValidInput,

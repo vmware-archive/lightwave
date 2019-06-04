@@ -4,11 +4,7 @@ idl_srcdir=$(top_srcdir)/vmdir/idl
 
 VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
 
-if REPLICATION_V2
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
-else
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
-endif
+VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
 
 libvmdird_la_SOURCES = \
     accountmgmt.c \

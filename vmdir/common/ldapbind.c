@@ -538,7 +538,6 @@ VmDirCreateSyncRequestControl(
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
 
-#ifdef REPLICATION_V2
     if (ber_printf(ber, "{i{sss}}", LDAP_SYNC_REFRESH_ONLY,
                    pszInvocationId,
                    pszLastLocalUsnProcessed,
@@ -548,18 +547,6 @@ VmDirCreateSyncRequestControl(
         retVal = LDAP_OPERATIONS_ERROR;
         BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
     }
-#else
-    if (ber_printf(ber, "{i{sss}b}", LDAP_SYNC_REFRESH_ONLY,
-                   pszInvocationId,
-                   pszLastLocalUsnProcessed,
-                   pszUtdVector,
-                   bFirstPage) == -1)
-    {
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "VmDirCreateSyncRequestControl: ber_printf failed." );
-        retVal = LDAP_OPERATIONS_ERROR;
-        BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
-    }
-#endif
 
     memset(syncReqCtrl, 0, sizeof(LDAPControl));
     syncReqCtrl->ldctl_oid = LDAP_CONTROL_SYNC;

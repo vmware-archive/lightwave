@@ -1,5 +1,3 @@
-if REPLICATION_V2
-
 bin_PROGRAMS = replication2
 
 check_PROGRAMS = replication2
@@ -81,4 +79,3 @@ replication2_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
     -Wl,--wrap,VmDirEntryGetAllMustAttrs
-endif

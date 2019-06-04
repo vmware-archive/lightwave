@@ -85,18 +85,6 @@ VmDirMetaDataCreate_InvalidInput(
     VOID    **state
     );
 
-//unit test functions - VmDirAttributeMetaDataToHashMap
-VOID
-VmDirAttributeMetaDataToHashMap_ValidInput(
-    VOID    **state
-    );
-
-
-VOID
-VmDirAttributeMetaDataToHashMap_InvalidInput(
-    VOID    **state
-    );
-
 //////////////////
 // valuemetadata.c
 //////////////////

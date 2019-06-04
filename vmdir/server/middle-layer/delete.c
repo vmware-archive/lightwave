@@ -549,7 +549,6 @@ _GenerateDeleteAttrsMods(
             bvDeletedObjDN.lberbv.bv_len);
     BAIL_ON_VMDIR_ERROR(retVal);
 
-#ifdef REPLICATION_V2
     retVal = VmDirAppendAMod(
             pOperation,
             MOD_OP_REPLACE,
@@ -567,7 +566,6 @@ _GenerateDeleteAttrsMods(
             (PSTR) gVmdirdSDGlobals.pSDdcAdminRPWPDE,
             gVmdirdSDGlobals.ulSDdcAdminRPWPDELen);
     BAIL_ON_VMDIR_ERROR(retVal);
-#endif
 
 cleanup:
     VmDirFreeMemory(bvDeletedObjDN.lberbv.bv_val);

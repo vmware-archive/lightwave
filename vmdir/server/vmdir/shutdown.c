@@ -200,13 +200,7 @@ VmDirCleanupGlobals(
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServicesRootDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.serverObjDN);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvServerObjName);
-#ifdef REPLICATION_V2
     VmDirFreeUTDVectorGlobalCache();
-#else
-    VmDirUTDVectorCacheShutdown();
-#endif
-    //TODO_REMOVE_REPLV2
-    VmDirDDVectorShutdown();
 
     // Free vmdir global 'gVmdirGlobals' upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirGlobals.pszBDBHome);

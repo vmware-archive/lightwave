@@ -89,14 +89,6 @@ typedef struct _VMDIR_UTDVECTOR_CACHE
 
 } VMDIR_UTDVECTOR_CACHE, *PVMDIR_UTDVECTOR_CACHE;
 
-//TODO_REMOVE_REPLV2
-typedef struct _VMDIR_REPL_DEADLOCKDETECTION_VECTOR
-{
-    PSTR          pszInvocationId;
-    PLW_HASHMAP   pEmptyPageSentMap;
-    PVMDIR_MUTEX  pMutex;
-} VMDIR_REPL_DEADLOCKDETECTION_VECTOR, *PVMDIR_REPL_DEADLOCKDETECTION_VECTOR;
-
 typedef struct _VMDIR_SERVER_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -136,9 +128,6 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // 1) At the end of VmDirSrvSetupHostInstance for the 1st node
     // 2) At the end of LoadServerGlobals for other nodes
     BOOLEAN              bPromoted;
-
-    //TODO_REMOVE_REPLV2
-    PVMDIR_REPL_DEADLOCKDETECTION_VECTOR  pReplDeadlockDetectionVector;
 
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
@@ -192,7 +181,6 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwLdapConnectTimeoutSec;
     DWORD                           dwOperationsThreadTimeoutInMilliSec;
     DWORD                           dwReplConsumerThreadTimeoutInMilliSec;
-    DWORD                           dwEmptyPageCnt; //TODO_REMOVE_REPLV2
     DWORD                           dwSupplierThrTimeoutInMilliSec;
     DWORD                           dwWriteTimeoutInMilliSec;
 

@@ -98,15 +98,6 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     );
 
-#ifndef REPLICATION_V2
-static
-BOOLEAN
-_VmDirShutdownConnection(
-    PVDIR_OPERATION  pOp,
-    uint64_t*        piStartSupplierTime
-    );
-#endif
-
 DWORD
 VmDirAllocateConnection(
     PVDIR_CONNECTION* ppConn
@@ -674,10 +665,6 @@ ProcessAConnection(
     BOOLEAN          bReplSearch = FALSE;
     uint64_t         iStartTime = 0;
     uint64_t         iEndTime = 0;
-#ifndef REPLICATION_V2
-    uint64_t         iStartSupplierTime = 0;
-    BOOLEAN          bShutdown = FALSE;
-#endif
     // increment operation thread counter
     retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -849,21 +836,13 @@ ProcessAConnection(
             _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
         }
 
-#ifndef REPLICATION_V2
-        bShutdown = _VmDirShutdownConnection(pOperation, &iStartSupplierTime);
-#endif
-
         VmDirFreeOperation(pOperation);
         pOperation = NULL;
 
         ber_free(ber, 1);
         ber = NULL;
 
-#ifndef REPLICATION_V2
-        if (retVal == LDAP_NOTICE_OF_DISCONNECT || bShutdown) // returned as a result of protocol parsing error.
-#else
         if (retVal == LDAP_NOTICE_OF_DISCONNECT) // returned as a result of protocol parsing error.
-#endif
         {
             // RFC 4511, section 4.1.1: If the server receives an LDAPMessage from the client in which the LDAPMessage
             // SEQUENCE tag cannot be recognized, the messageID cannot be parsed, the tag of the protocolOp is not
@@ -1439,61 +1418,3 @@ _VmDirPingAcceptThr(
 
     return;
 }
-
-#ifndef REPLICATION_V2
-/*
- * Graceful shutdown is best effort - supplier and consumer thread has a
- * timeout of 10 sec default.
- * Supplier thread
- *     - When vmdir in shutdown state, all external ports are blocked.
- *       From one successfull supplier cycle after shutdown, we can infer that all
- *       the orginating changes on this node reached atleast one partner.
- */
-static
-BOOLEAN
-_VmDirShutdownConnection(
-    PVDIR_OPERATION  pOp,
-    uint64_t*        piStartSupplierTime
-    )
-{
-    BOOLEAN   bShutdown = FALSE;
-    uint64_t  iTimeDiff = 0;
-
-    iTimeDiff = *piStartSupplierTime ? (VmDirGetTimeInMilliSec() - *piStartSupplierTime) : 0;
-
-    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-    {
-        if (pOp->syncReqCtrl == NULL)
-        {
-            bShutdown = TRUE;
-        }
-        else
-        {
-            if (*piStartSupplierTime == 0)
-            {
-                *piStartSupplierTime = VmDirGetTimeInMilliSec();
-            }
-            else if (pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue == FALSE)
-            {
-                VMDIR_LOG_INFO(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: supplier cycle complete, for: %s",
-                        __FUNCTION__,
-                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
-                bShutdown = TRUE;
-            }
-            else if (iTimeDiff >=  gVmdirGlobals.dwSupplierThrTimeoutInMilliSec)
-            {
-                VMDIR_LOG_WARNING(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: supplier timed out, for: %s",
-                        __FUNCTION__,
-                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
-                bShutdown = TRUE;
-            }
-        }
-    }
-
-    return  bShutdown;
-}
-#endif

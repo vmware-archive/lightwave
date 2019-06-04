@@ -395,55 +395,6 @@ DeleteControls(
    VMDIR_LOG_DEBUG( LDAP_DEBUG_TRACE, "DeleteControls: End." );
 }
 
-#ifndef REPLICATION_V2
-DWORD
-VmDirUpdateSyncDoneCtl(
-    PVDIR_OPERATION pOp,
-    DWORD           dwSentEntryCount
-    )
-{
-    BOOLEAN   bConsumingPartner = FALSE;
-    DWORD     dwError = 0;
-    PCSTR     pszInvocationId = NULL;
-
-    if (pOp && pOp->syncDoneCtrl && pOp->syncReqCtrl)
-    {
-        bConsumingPartner = VmDirConsumerRoleActive();
-
-        pszInvocationId = pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val;
-
-        if (bConsumingPartner && dwSentEntryCount == 0)
-        {
-            dwError = VmDirDDVectorToString(
-                    pszInvocationId,
-                    &pOp->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            VMDIR_LOG_INFO(
-                    LDAP_DEBUG_REPL,
-                    "%s: supplier sending vector: %s",
-                    __FUNCTION__,
-                    pOp->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
-        }
-
-        if ((pOp->request.searchReq.sizeLimit > 0 &&
-             pOp->request.searchReq.sizeLimit == dwSentEntryCount) ||
-             bConsumingPartner)
-        {
-            pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue = TRUE;
-        }
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d)", dwError);
-    goto cleanup;
-}
-#endif
-
-//TODO_REMOVE_REPLV2
 int
 WriteSyncDoneControl(
     VDIR_OPERATION *     op,
@@ -451,9 +402,6 @@ WriteSyncDoneControl(
     )
 {
     int                     retVal = LDAP_OPERATIONS_ERROR;
-#ifndef REPLICATION_V2
-    size_t                  deadlockDetectionVectorLen = 0;
-#endif
     PLW_HASHTABLE_NODE      pNode = NULL;
     LW_HASHTABLE_ITER       iter = LW_HASHTABLE_ITER_INIT;
     UptoDateVectorEntry *   pUtdVectorEntry = NULL;
@@ -469,30 +417,15 @@ WriteSyncDoneControl(
             retVal = LDAP_OPERATIONS_ERROR;
             BAIL_ON_VMDIR_ERROR( retVal );
         }
-        {
-#ifndef REPLICATION_V2
-            //pszDeadlockDetectionVector will be populated only for non replv2
-            if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
-            {
-                deadlockDetectionVectorLen = VmDirStringLenA(op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
-            }
-#endif
 
+        {
             int     numEntries = LwRtlHashTableGetCount( op->syncDoneCtrl->value.syncDoneCtrlVal.htUtdVector );
             char *  writer = NULL;
             size_t  tmpLen = 0;
-#ifdef REPLICATION_V2
             size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
                                 (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) + 1;
-#else
-            size_t bufferSize = (numEntries + 1 /* for lastLocalUsn */) *
-                                (VMDIR_GUID_STR_LEN + 1 + VMDIR_MAX_USN_STR_LEN + 1) +
-                                VMDIR_REPL_CONT_INDICATOR_LEN +
-                                deadlockDetectionVectorLen + 1;
-#endif
             // Sync Done control value looks like: <lastLocalUsnChanged>,<serverId1>:<server 1 last originating USN>,
             // <serverId2>,<server 2 originating USN>,...,
-            // [continue:1,vector:<servername>:<consecutiveEmptyPageCounter>,<servername>:<consecutiveEmptyPageCounter>...]
             if (VmDirAllocateMemory( bufferSize, (PVOID *)&bvCtrlVal.lberbv.bv_val) != 0)
             {
                 retVal = LDAP_OPERATIONS_ERROR;
@@ -518,27 +451,6 @@ WriteSyncDoneControl(
                 bvCtrlVal.lberbv.bv_len += tmpLen;
             }
 
-#ifndef REPLICATION_V2
-            //bContinue will be populated only for non replv2
-            if (op->syncDoneCtrl->value.syncDoneCtrlVal.bContinue)
-            {
-                VmDirStringPrintFA( writer, bufferSize, VMDIR_REPL_CONT_INDICATOR );
-                tmpLen = VmDirStringLenA( writer );
-                writer += tmpLen;
-                bufferSize -= tmpLen;
-                bvCtrlVal.lberbv.bv_len += tmpLen;
-            }
-
-            //pszDeadlockDetectionVector will be populated only for non replv2
-            if (op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector)
-            {
-                VmDirStringPrintFA(writer, bufferSize, op->syncDoneCtrl->value.syncDoneCtrlVal.pszDeadlockDetectionVector);
-                tmpLen = VmDirStringLenA(writer);
-                writer += tmpLen;
-                bufferSize -= tmpLen;
-                bvCtrlVal.lberbv.bv_len += tmpLen;
-            }
-#endif
         }
 
         if (ber_printf( ber, "ON}", &bvCtrlVal.lberbv) == -1 )
@@ -733,27 +645,6 @@ WriteSyncStateControl(
             {
                 entryState = LDAP_SYNC_ADD;
                 bHasFinalSyncState = TRUE;
-
-#ifndef REPLICATION_V2
-                if (bPresentInSyncStateOneMap == FALSE)
-                {
-                    retVal = VmDirAllocateStringA(pszIDBuf, &pszEID);
-                    BAIL_ON_VMDIR_ERROR(retVal);
-
-                    retVal = VmDirAllocateStringA(pAttr->vals[0].lberbv_val, &pszUSNCreated);
-                    BAIL_ON_VMDIR_ERROR(retVal);
-
-                    retVal = LwRtlHashMapInsert(op->conn->ReplConnState.phmSyncStateOneMap, pszEID, pszUSNCreated, NULL);
-                    BAIL_ON_VMDIR_ERROR(retVal);
-                    pszEID = NULL; pszUSNCreated = NULL; // map takes over
-
-                    VMDIR_LOG_VERBOSE(
-                            LDAP_DEBUG_REPL,
-                            "entry sync stat ADD %s at USNCreated %s",
-                            pEntry->dn.lberbv_val,
-                            pAttr->vals[0].lberbv_val);
-                }
-#endif
             }
         }
     }
@@ -1130,31 +1021,6 @@ ParseSyncRequestControlVal(
 
         tag = ber_peek_tag(ber, &len);
     }
-
-#ifndef REPLICATION_V2
-    if (tag == LBER_BOOLEAN)
-    {
-        ber_int_t firstPage;
-        if (ber_scanf(ber, "b", &firstPage) == LBER_ERROR)
-        {
-            VMDIR_LOG_ERROR(
-                    VMDIR_LOG_MASK_ALL,
-                    "ParseSyncRequestControlVal: Error in reading reloadHint from the PDU");
-
-            lr->errCode = LDAP_PROTOCOL_ERROR;
-            retVal = LDAP_NOTICE_OF_DISCONNECT;
-
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                    retVal,
-                    pszLocalErrorMsg,
-                    "Error in reading reloadHint from the PDU.");
-        }
-        if (firstPage)
-        {
-            syncReqCtrlVal->bFirstPage = TRUE;
-        }
-    }
-#endif
 
     if (ber_scanf(ber, "}") == LBER_ERROR) // End of control value
     {

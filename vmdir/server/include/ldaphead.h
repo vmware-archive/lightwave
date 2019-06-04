@@ -18,7 +18,6 @@
 #define LH_H_
 
 // add.c
-#ifdef REPLICATION_V2
 int
 VmDirParseBerToEntry(
     BerElement*     ber,
@@ -26,15 +25,6 @@ VmDirParseBerToEntry(
     ber_int_t*      pErrCode,
     PSTR*           ppszErrMsg
     );
-#else
-int
-VmDirParseBerToEntry(
-    BerElement *ber,
-    PVDIR_ENTRY e,
-    ber_int_t *pErrCode,
-    PSTR *ppszErrMsg
-    );
-#endif
 
 int
 VmDirParseEntry(
@@ -127,14 +117,6 @@ ParseAndFreeSyncStateControl(
     int*        piEntryState,
     USN*        pulPartnerUSN
     );
-
-#ifndef REPLICATION_V2
-DWORD
-VmDirUpdateSyncDoneCtl(
-    PVDIR_OPERATION   pOp,
-    DWORD     dwSentEntryCount
-    );
-#endif
 
 int
 WriteSyncDoneControl(

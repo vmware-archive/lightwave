@@ -1183,9 +1183,6 @@ typedef enum
 
 #define VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC "WriteTimeoutInMilliSec"
 
-//TODO_REMOVE_REPLV2
-#define VMDIR_REG_KEY_EMPTY_PAGE_COUNT "ReplEmptyPageCnt"
-
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
