@@ -65,6 +65,7 @@ typedef struct _VMDIR_TEST_STATE
     PCSTR pszInternalUserName;  // The name of the internal user we create for operations that shouldn't be run as admin.
     BOOLEAN bKeepGoing;         // Keep going if an individual test fails.
     BOOLEAN bBreakIntoDebugger; // Break into the debugger when a test fails.
+    BOOLEAN bRemoteOnly;        // skip IPC test cases
 } VMDIR_TEST_STATE, *PVMDIR_TEST_STATE;
 
 DWORD

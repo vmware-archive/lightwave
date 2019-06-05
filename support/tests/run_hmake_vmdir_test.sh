@@ -25,6 +25,8 @@ echo "VmDir integration test start" `date`
 	-u administrator \
 	-w $LIGHTWAVE_PASS \
 	-d $LIGHTWAVE_DOMAIN \
+	-k \
+	-r \
 	-t /opt/vmware/test/vmdir/lib64
 
 if [ $? -ne 0 ]; then
@@ -33,4 +35,3 @@ if [ $? -ne 0 ]; then
 else
   echo "VmDir integration test passed" `date`
 fi
-

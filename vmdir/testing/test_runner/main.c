@@ -29,6 +29,7 @@ ShowUsage(
     printf("\t-d/--domain domain -- The domain to use (e.g., vsphere.local)\n");
     printf("\t-b/--break -- Break into debugger if a test fails.\n");
     printf("\t-k/--keep-going -- Don't stop on failed test result.\n");
+    printf("\t-r/--remote-only -- skip IPC test cases.\n");
     printf("\t-t/--test -- The directory containing tests or the test DLL itself\n");
 }
 
@@ -363,6 +364,7 @@ VmDirMain(
         {'d', "domain", CL_STRING_PARAMETER, &State.pszDomain},
         {'b', "break", CL_NO_PARAMETER, &State.bBreakIntoDebugger},
         {'k', "keep-going", CL_NO_PARAMETER, &State.bKeepGoing},
+        {'r', "remote-only", CL_NO_PARAMETER, &State.bRemoteOnly},
         {'t', "test", CL_STRING_PARAMETER, &State.pszTest},
         {0, 0, 0, 0}
     };
