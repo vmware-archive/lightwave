@@ -15,7 +15,7 @@
 #include "includes.h"
 
 DWORD
-_VmDirTestModifyPassword(
+TestModifyPassword(
     LDAP *pLd,
     PVMDIR_PP_CTRL_MODIFY   pPPCtrlModify
     )
@@ -39,14 +39,11 @@ _VmDirTestModifyPassword(
 
     srvCtrls[0] = psctrls;
 
-    /* Initialize the attribute, specifying 'ADD' as the operation */
     addReplace.mod_op     = LDAP_MOD_REPLACE;
     addReplace.mod_type   = ATTR_USER_PASSWORD;
     addReplace.mod_values = (PSTR*) ppszValues;
 
-    /* Fill the attributes array (remember it must be NULL-terminated) */
     mods[0] = &addReplace;
-    mods[1] = NULL;
 
     dwError = ldap_modify_ext(
         pLd,
@@ -66,8 +63,7 @@ _VmDirTestModifyPassword(
     dwError = TestPPCtrlParseResult(
         pLd,
         pResult,
-        &pPPCtrlModify->ctrlResult
-        );
+        &pPPCtrlModify->ctrlResult);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -112,7 +108,7 @@ _TestPwdStrengthWithCtrl(
             pPolicyContext->pszTestUserDN,
             {
                 { 0, 0},
-                {19, 0} // TODO { 19, 1}
+                {19, 1}
             }
         },
         // admin modify user password
@@ -120,7 +116,7 @@ _TestPwdStrengthWithCtrl(
             pPolicyContext->pszTestUserDN,
             {
                 { 0, 0 },
-                {19, 0} // TODO { 19, 1}
+                {19, 1}
             }
         },
         // admin modify admin password
@@ -128,7 +124,7 @@ _TestPwdStrengthWithCtrl(
             pPolicyContext->pTestState->pszUserDN,
             {
                 { 0, 0},
-                {19, 0} //TODO { 19, 1}
+                {19, 1}
             }
         },
     };
@@ -139,26 +135,28 @@ _TestPwdStrengthWithCtrl(
         ctrlModify.pszTargetDN = TestPwdStrengthParam[dwCnt].pszTargetDN;
         ctrlModify.pszPassword = pRec->pszGoodPwd;
 
-        dwError = _VmDirTestModifyPassword(
+        dwError = TestModifyPassword(
             TestPwdStrengthParam[dwCnt].pLd,
             &ctrlModify);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         TestAssertEquals(ctrlModify.ctrlResult.bHasPPCtrlResponse, TestPwdStrengthParam[dwCnt].ctrlResult[0].bHasPPCtrlResp);
         TestAssertEquals(ctrlModify.ctrlResult.dwOpResult, TestPwdStrengthParam[dwCnt].ctrlResult[0].dwResult);
+        //printf("%s test %s, %d good password test passed\n", __FUNCTION__, pRec->pszAttr, dwCnt);
 
         memset(&ctrlModify, 0, sizeof(ctrlModify));
         ctrlModify.pszTargetDN = TestPwdStrengthParam[dwCnt].pszTargetDN;
         ctrlModify.pszPassword = pRec->pszBadPwd;
 
-        dwError = _VmDirTestModifyPassword(
+        dwError = TestModifyPassword(
             TestPwdStrengthParam[dwCnt].pLd,
             &ctrlModify);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         TestAssertEquals(ctrlModify.ctrlResult.bHasPPCtrlResponse, TestPwdStrengthParam[dwCnt].ctrlResult[1].bHasPPCtrlResp);
         TestAssertEquals(ctrlModify.ctrlResult.dwOpResult, TestPwdStrengthParam[dwCnt].ctrlResult[1].dwResult);
-        // TODO TestAssertEquals(ctrlModify.ctrlResult.PPolicyState.PPolicyError, pRec->PPolicyError);
+        TestAssertEquals(ctrlModify.ctrlResult.PPolicyState.PPolicyError, pRec->PPolicyError);
+        //printf("%s test %s, %d bad password test passed\n", __FUNCTION__, pRec->pszAttr, dwCnt);
 
     }
     BAIL_ON_VMDIR_ERROR(dwError);

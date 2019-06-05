@@ -78,6 +78,12 @@ VdirPasswordModifyPreCheck(
     PVDIR_OPERATION     pOperation
     );
 
+VOID
+VdirSetPPolicyError(
+    PVDIR_OPERATION     pOperation,
+    DWORD               dwPwdError
+    );
+
 // plugin.c
 /*
  * Called before backend add

@@ -1795,6 +1795,7 @@ VmDirWritePPolicyReplyControl(
     int                 retVal = LDAP_SUCCESS;
     LDAPControl         PPCtrl = {0};
     PVDIR_PPOLICY_STATE pPPolicyState = NULL;
+    BOOLEAN             bResetPolicyState = FALSE;
 
     if (!pOp || !pBer)
     {
@@ -1813,6 +1814,8 @@ VmDirWritePPolicyReplyControl(
                 pPPolicyState->iWarnGraceAuthN,
                 pPPolicyState->PPolicyError);
 
+        bResetPolicyState = TRUE;
+
         retVal = VmDirCreatePPolicyReplyCtrlContent(pPPolicyState, &PPCtrl);
         BAIL_ON_VMDIR_ERROR(retVal);
 
@@ -1823,9 +1826,16 @@ VmDirWritePPolicyReplyControl(
         {
             BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_IO);
         }
+
     }
 
  cleanup:
+     if (bResetPolicyState)
+     {
+         pPPolicyState->iWarnGraceAuthN = 0;
+         pPPolicyState->iWarnPwdExpiring = 0;
+         pPPolicyState->PPolicyError = PP_noError;
+     }
      ber_memfree(PPCtrl.ldctl_value.bv_val);
      return retVal;
 

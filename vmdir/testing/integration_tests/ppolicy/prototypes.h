@@ -53,3 +53,9 @@ TestPPCtrlParseResult(
     LDAPMessage*    pResult,
     PVMDIR_PP_CTRL_RESULT pCtrlResult
     );
+
+DWORD
+TestModifyPassword(
+    LDAP *pLd,
+    PVMDIR_PP_CTRL_MODIFY   pPPCtrlModify
+    );

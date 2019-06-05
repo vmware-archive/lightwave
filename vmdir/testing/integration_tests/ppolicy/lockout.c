@@ -136,7 +136,7 @@ TestUserFailedLoginLockout(
         pPolicyContext,
         &ctrlBind);
 
-    TestAssertEquals(ctrlBind.ctrlResult.dwOpResult,  49 /* TODO per RFC 50 */);
+    TestAssertEquals(ctrlBind.ctrlResult.dwOpResult,  50);
     TestAssertEquals(ctrlBind.ctrlResult.PPolicyState.PPolicyError, PP_accountLocked);
 
     return dwError;

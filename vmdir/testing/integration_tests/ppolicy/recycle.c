@@ -20,7 +20,6 @@ InitializeRecycleSetup(
     )
 {
     DWORD   dwError = 0;
-    DWORD   dwCnt = 0;
     PSTR ppszAttrValue[] = { NULL, NULL };
 
     struct _RecycleParam
@@ -33,16 +32,13 @@ InitializeRecycleSetup(
         { ATTR_PASS_RECYCLE_CNT,  "3" },
     };
 
-    for (dwCnt=0; dwCnt < sizeof(RecycleParam)/sizeof(RecycleParam[0]); dwCnt++)
-    {
-        ppszAttrValue[0] = RecycleParam[dwCnt].pszValue;
-        dwError = VmDirTestReplaceAttributeValues(
-            pPolicyContext->pTestState->pLd,
-            pPolicyContext->pszPolicyDN,
-            RecycleParam[dwCnt].pszAttrName,
-            (PCSTR*)ppszAttrValue);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    ppszAttrValue[0] = RecycleParam[0].pszValue;
+    dwError = VmDirTestReplaceAttributeValues(
+        pPolicyContext->pTestState->pLd,
+        pPolicyContext->pszPolicyDN,
+        RecycleParam[0].pszAttrName,
+        (PCSTR*)ppszAttrValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
     return dwError;
@@ -56,43 +52,62 @@ TestAdminRecycle(
     DWORD   dwError = 0;
     DWORD   dwCnt = 0;
     PVMDIR_TEST_STATE pState = pPolicyContext->pTestState;
-    PSTR ppszAttrValue[] = { NULL, NULL };
+    VMDIR_PP_CTRL_MODIFY   ctrlModify = {0};
 
     struct _RecycleRec
     {
         PSTR    pszPwd;
         DWORD   dwResult;
+        DWORD   dwPPolicyError;
     }
     RecycleRec[] =
     {
-        { "Recycle-0-1",  0 },
-        { "Recycle-0-2",  0 },
-        { "Recycle-0-3",  0 },
-        { "Recycle-0-3",  0 }, // admin NOT subject to recycle rule
-        { "Recycle-0-2",  0 },
-        { "Recycle-0-1",  0 },
+        { "Recycle-0-1",  0 , 0},
+        { "Recycle-0-2",  0 , 0},
+        { "Recycle-0-3",  0 , 0},
+        { "Recycle-0-3",  0 , 0}, // admin NOT subject to recycle rule
+        { "Recycle-0-2",  0 , 0}, // regardless who's password it modify
+        { "Recycle-0-1",  0 , 0},
     };
 
     for (dwCnt=0; dwCnt < sizeof(RecycleRec)/sizeof(RecycleRec[0]); dwCnt++)
     {
-        ppszAttrValue[0] = RecycleRec[dwCnt].pszPwd;
-        dwError = VmDirTestReplaceAttributeValues(
-            pState->pLd,
-            pState->pszUserDN,
-            ATTR_USER_PASSWORD,
-            (PCSTR*)ppszAttrValue);
-        TestAssertEquals(dwError, RecycleRec[dwCnt].dwResult);
+        memset(&ctrlModify, 0, sizeof(ctrlModify));
+        ctrlModify.pszTargetDN = pPolicyContext->pszTestUserDN;
+        ctrlModify.pszPassword = RecycleRec[dwCnt].pszPwd;
 
-        dwError = VmDirTestReplaceAttributeValues(
-            pState->pLd,
-            pPolicyContext->pszTestUserDN,
-            ATTR_USER_PASSWORD,
-            (PCSTR*)ppszAttrValue);
-        TestAssertEquals(dwError, RecycleRec[dwCnt].dwResult);
+        dwError = TestModifyPassword(
+            pPolicyContext->pTestState->pLd,    // admin user modify normal user pwd
+            &ctrlModify);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        TestAssertEquals(ctrlModify.ctrlResult.dwOpResult, RecycleRec[dwCnt].dwResult);
+        if (RecycleRec[dwCnt].dwPPolicyError != 0)
+        {
+            TestAssertEquals(ctrlModify.ctrlResult.bHasPPCtrlResponse, 1);
+            TestAssertEquals(ctrlModify.ctrlResult.PPolicyState.PPolicyError, RecycleRec[dwCnt].dwPPolicyError);
+        }
+
+        memset(&ctrlModify, 0, sizeof(ctrlModify));
+        ctrlModify.pszTargetDN = pPolicyContext->pTestState->pszUserDN;
+        ctrlModify.pszPassword = RecycleRec[dwCnt].pszPwd;
+
+        dwError = TestModifyPassword(
+            pPolicyContext->pTestState->pLd,    // admin user modify admin user pwd
+            &ctrlModify);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        TestAssertEquals(ctrlModify.ctrlResult.dwOpResult, RecycleRec[dwCnt].dwResult);
+        if (RecycleRec[dwCnt].dwPPolicyError != 0)
+        {
+            TestAssertEquals(ctrlModify.ctrlResult.bHasPPCtrlResponse, 1);
+            TestAssertEquals(ctrlModify.ctrlResult.PPolicyState.PPolicyError, RecycleRec[dwCnt].dwPPolicyError);
+        }
 
     }
 
-    return 0;
+error:
+    return dwError;
 }
 
 DWORD
@@ -103,35 +118,45 @@ TestUserRecycle(
     DWORD   dwError = 0;
     DWORD   dwCnt = 0;
     PVMDIR_TEST_STATE pState = pPolicyContext->pTestState;
-    PSTR ppszAttrValue[] = { NULL, NULL };
+    VMDIR_PP_CTRL_MODIFY   ctrlModify = {0};
 
     struct _RecycleRec
     {
         PSTR    pszPwd;
         DWORD   dwResult;
+        DWORD   dwPPolicyError;
     }
     RecycleRec[] =
     {
-        { "Recycle-1-1",  0 },
-        { "Recycle-1-2",  0 },
-        { "Recycle-1-3",  0 },
-        { "Recycle-1-1",  19 }, // user recycle should fail
-        { "Recycle-1-4",  0 },
-        { "Recycle-1-1",  0 },
+        { "Recycle-1-1",  0 , 0},
+        { "Recycle-1-2",  0 , 0},
+        { "Recycle-1-3",  0 , 0},
+        { "Recycle-1-1",  19, 8}, // user recycle should fail
+        { "Recycle-1-4",  0 , 0},
+        { "Recycle-1-1",  0 , 0}, // recycle ok, pass count 3.
     };
 
     for (dwCnt=0; dwCnt < sizeof(RecycleRec)/sizeof(RecycleRec[0]); dwCnt++)
     {
-        ppszAttrValue[0] = RecycleRec[dwCnt].pszPwd;
-        dwError = VmDirTestReplaceAttributeValues(
-            pPolicyContext->pLdUser,
-            pPolicyContext->pszTestUserDN,
-            ATTR_USER_PASSWORD,
-            (PCSTR*)ppszAttrValue);
-        TestAssertEquals(dwError, RecycleRec[dwCnt].dwResult);
+        memset(&ctrlModify, 0, sizeof(ctrlModify));
+        ctrlModify.pszTargetDN = pPolicyContext->pszTestUserDN;
+        ctrlModify.pszPassword = RecycleRec[dwCnt].pszPwd;
+
+        dwError = TestModifyPassword(
+            pPolicyContext->pLdUser,    // normal user modify self pwd
+            &ctrlModify);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        TestAssertEquals(ctrlModify.ctrlResult.dwOpResult, RecycleRec[dwCnt].dwResult);
+        if (RecycleRec[dwCnt].dwPPolicyError != 0)
+        {
+            TestAssertEquals(ctrlModify.ctrlResult.bHasPPCtrlResponse, 1);
+            TestAssertEquals(ctrlModify.ctrlResult.PPolicyState.PPolicyError, RecycleRec[dwCnt].dwPPolicyError);
+        }
     }
 
-    return 0;
+error:
+    return dwError;
 }
 
 /*

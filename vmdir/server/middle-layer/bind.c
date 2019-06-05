@@ -234,7 +234,6 @@ error:
                        "Bind failed (%s) (%u)",
                         VDIR_SAFE_STRING(pszLocalErrMsg), retVal);
 
-        retVal = LDAP_INVALID_CREDENTIALS;
         VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     }
 

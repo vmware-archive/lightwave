@@ -573,23 +573,27 @@ VdirUserActCtlFlagUnset(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    iUserActCtl &= (~(iTargetFlag));
-    VmDirStringNPrintFA(pszUserActCtl, sizeof(pszUserActCtl), sizeof(pszUserActCtl) - 1, "%ld", iUserActCtl);
+    if (iUserActCtl != (iUserActCtl & (~(iTargetFlag))))
+    {
+        iUserActCtl &= (~(iTargetFlag));
 
-    berUserActCtl.lberbv.bv_val = pszUserActCtl;
-    berUserActCtl.lberbv.bv_len = VmDirStringLenA(pszUserActCtl);
+        VmDirStringNPrintFA(pszUserActCtl, sizeof(pszUserActCtl), sizeof(pszUserActCtl) - 1, "%ld", iUserActCtl);
 
-    dwError = VmDirInternalEntryAttributeReplace(
+        berUserActCtl.lberbv.bv_val = pszUserActCtl;
+        berUserActCtl.lberbv.bv_len = VmDirStringLenA(pszUserActCtl);
+
+        dwError = VmDirInternalEntryAttributeReplace(
                     pEntry->pSchemaCtx,
                     BERVAL_NORM_VAL(pEntry->dn),
                     ATTR_USER_ACCOUNT_CONTROL,
                     &berUserActCtl);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "User account control - (%s): (%x) flag unset, new value=(%x)",
                     VDIR_SAFE_STRING(BERVAL_NORM_VAL(pEntry->dn)),
                     iTargetFlag, iUserActCtl );
+    }
 
 cleanup:
 
