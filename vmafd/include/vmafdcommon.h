@@ -414,6 +414,13 @@ VmAfdStringToLA(
     int base
     );
 
+DWORD
+VmAfdStringToINT64(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    INT64*    pOutVal
+    );
+
 int
 VmAfdStringToIA(
     PCSTR pStr

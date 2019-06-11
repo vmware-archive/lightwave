@@ -181,6 +181,14 @@ extern "C" {
         goto error;                                                \
     }
 
+#define BAIL_WITH_VMAFD_ERROR(dwError, ERROR_CODE) \
+    do                                                             \
+    {                                                              \
+        dwError = ERROR_CODE;                                      \
+        VmAfdLog( VMAFD_DEBUG_ERROR, "[Error - %d, %s:%d]", dwError, __FILE__, __LINE__); \
+        goto error;                                                \
+    } while (0)
+
 #define BAIL_ON_VMAFD_ERROR_NO_LOG(dwError) \
     if (dwError)                                                   \
     {                                                              \
@@ -478,5 +486,7 @@ typedef struct _VMAFD_CRED_CONTEXT_W
 #define VMAFD_REG_KEY_MUTENTCA_CAID   "MultiTenantedCAId"
 
 #define VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB   "JoinWithPreCopiedDB"
+
+#define VMDIR_REG_KEY_USER_ID_ATTRIBUTE "UserIdAttribute"
 
 #endif /* __VMAFDDEFINES_H__ */

@@ -39,6 +39,12 @@ DirCliGetDefaultDomainName(
     PSTR* ppDomainName
     );
 
+static
+DWORD
+_DirCliRegKeyUserIdAttr(
+    PSTR* ppszUserIdAttr
+    );
+
 DWORD
 VmDirSafeLDAPBind(
     LDAP**      ppLd,
@@ -1202,15 +1208,18 @@ DirCliLdapFindUser(
     LDAPMessage* pEntry = NULL;
     PSTR  pszDN = NULL;
     PSTR  pszUserDN = NULL;
+    PSTR  pszUserIdAttr = NULL;
     DWORD dwNumEntries = 0;
 
     dwError = DirCliGetDomainDN(pszDomain, &pszDomainDN);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+     _DirCliRegKeyUserIdAttr(&pszUserIdAttr); // ignore error
+
     dwError = VmAfdAllocateStringPrintf(
                     &pszFilter,
                     "(&(%s=%s)(%s=%s))",
-                    ATTR_NAME_ACCOUNT,
+                    pszUserIdAttr ? pszUserIdAttr : ATTR_NAME_ACCOUNT,
                     pszAccount,
                     ATTR_NAME_OBJECTCLASS,
                     OBJECT_CLASS_USER);
@@ -1273,6 +1282,7 @@ cleanup:
     }
     VMAFD_SAFE_FREE_MEMORY(pszFilter);
     VMAFD_SAFE_FREE_MEMORY(pszDomainDN);
+    VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
 
     return dwError;
 
@@ -1377,6 +1387,7 @@ DirCliLdapGetUserAttrLevelDefault(
     PSTR  ppszAttrs[] = {ATTR_NAME_UPN, NULL};
     PSTR* ppszAccount = NULL;
     PSTR* ppszUserUPN = NULL;
+    PSTR  pszUserIdAttr = NULL;
     LDAPMessage* pSearchRes = NULL;
     LDAPMessage* pEntry = NULL;
     BerElement* ber = NULL;
@@ -1400,12 +1411,14 @@ DirCliLdapGetUserAttrLevelDefault(
     dwError = DirCliGetDomainDN(pszDomain, &pszSearchBase);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    _DirCliRegKeyUserIdAttr(&pszUserIdAttr); // ignore error
+
     dwError = VmAfdAllocateStringPrintf(
                     &pszFilter,
                     "(&(%s=%s)(%s=%s))",
                     ATTR_NAME_OBJECTCLASS,
                     OBJECT_CLASS_USER,
-                    ATTR_NAME_ACCOUNT,
+                    pszUserIdAttr ? pszUserIdAttr : ATTR_NAME_ACCOUNT,
                     pszAccount);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -1489,6 +1502,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszSearchBase);
     VMAFD_SAFE_FREE_MEMORY(pszFilter);
     VMAFD_SAFE_FREE_MEMORY(pszAttr);
+    VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
 
     if (ppValues)
     {
@@ -1540,6 +1554,7 @@ DirCliLdapGetUserAttrLevelOne(
     PSTR* ppszUserUPN = NULL;
     PSTR* ppszUserFirstName = NULL;
     PSTR* ppszUserSN = NULL;
+    PSTR  pszUserIdAttr = NULL;
     LDAPMessage* pSearchRes = NULL;
     LDAPMessage* pEntry = NULL;
     BerElement* ber = NULL;
@@ -1565,12 +1580,14 @@ DirCliLdapGetUserAttrLevelOne(
     dwError = DirCliGetDomainDN(pszDomain, &pszSearchBase);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    _DirCliRegKeyUserIdAttr(&pszUserIdAttr); // ignore error
+
     dwError = VmAfdAllocateStringPrintf(
                     &pszFilter,
                     "(&(%s=%s)(%s=%s))",
                     ATTR_NAME_OBJECTCLASS,
                     OBJECT_CLASS_USER,
-                    ATTR_NAME_ACCOUNT,
+                    pszUserIdAttr ? pszUserIdAttr : ATTR_NAME_ACCOUNT,
                     pszAccount);
     BAIL_ON_VMAFD_ERROR(dwError);
 
@@ -1670,6 +1687,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszSearchBase);
     VMAFD_SAFE_FREE_MEMORY(pszFilter);
     VMAFD_SAFE_FREE_MEMORY(pszAttr);
+    VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
 
     if (ppValues)
     {
@@ -1712,6 +1730,7 @@ DirCliLdapGetUserAttrLevelTwo(
     PSTR  pszSearchBase = NULL;
     PSTR  pszFilter = NULL;
     PSTR  pszAttr = NULL;
+    PSTR  pszUserIdAttr = NULL;
 
     PSTR  ppszAttrs[] = {
         ATTR_NAME_UPN,
@@ -1749,10 +1768,12 @@ DirCliLdapGetUserAttrLevelTwo(
     dwError = DirCliGetDomainDN(pszDomain, &pszSearchBase);
     BAIL_ON_VMAFD_ERROR(dwError);
 
+    _DirCliRegKeyUserIdAttr(&pszUserIdAttr); // ignore error
+
     dwError = VmAfdAllocateStringPrintf(
                     &pszFilter,
                     "(&(%s=%s)(%s=%s))",
-                    ATTR_NAME_ACCOUNT,
+                    pszUserIdAttr ? pszUserIdAttr : ATTR_NAME_ACCOUNT,
                     pszAccount,
                     ATTR_NAME_OBJECTCLASS,
                     OBJECT_CLASS_USER);
@@ -1887,6 +1908,7 @@ cleanup:
     VMAFD_SAFE_FREE_MEMORY(pszAttr);
     VMAFD_SAFE_FREE_MEMORY(pszUserAccCtrl);
     VMAFD_SAFE_FREE_MEMORY(pszPwdNeverExp);
+    VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
 
     if (ppValues)
     {
@@ -2258,6 +2280,106 @@ cleanup:
 
 error :
 
+    goto cleanup;
+}
+
+DWORD
+DirCliLdapUserSetUserActControl(
+    LDAP* pLd,
+    PCSTR pszAccountDN,
+    PCSTR pszDomain,
+    int64_t iUserActCtl
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszOrgValue = NULL;
+    int64_t iOrgUserActCtl = 0;
+    CHAR    pszUserActCtl[DIR_CLI_SIZE_32] = {0};
+
+    dwError = DirCliLdapGetAttribute(
+            pLd,
+            pszAccountDN,
+            ATTR_USER_ACCOUNT_CONTROL,
+            &pszOrgValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszOrgValue)
+    {
+        dwError = VmAfdStringToINT64(pszOrgValue, NULL, &iOrgUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (iOrgUserActCtl != (iOrgUserActCtl | iUserActCtl))
+    {
+        iOrgUserActCtl |= iUserActCtl;
+
+        dwError = VmAfdStringPrintFA(pszUserActCtl, sizeof(pszUserActCtl)-1, "%ld", iOrgUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = DirCliLdapReplaceUserAttr(
+            pLd,
+            pszAccountDN,
+            ATTR_USER_ACCOUNT_CONTROL,
+            pszUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszOrgValue);
+
+    return dwError;
+
+error :
+    goto cleanup;
+}
+
+DWORD
+DirCliLdapUserUnsetUserActControl(
+    LDAP* pLd,
+    PCSTR pszAccountDN,
+    PCSTR pszDomain,
+    int64_t iUserActCtl
+    )
+{
+    DWORD dwError = 0;
+    PSTR  pszOrgValue = NULL;
+    int64_t iOrgUserActCtl = 0;
+    CHAR    pszUserActCtl[DIR_CLI_SIZE_32] = {0};
+
+    dwError = DirCliLdapGetAttribute(
+            pLd,
+            pszAccountDN,
+            ATTR_USER_ACCOUNT_CONTROL,
+            &pszOrgValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    if (pszOrgValue)
+    {
+        dwError = VmAfdStringToINT64(pszOrgValue, NULL, &iOrgUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (iOrgUserActCtl != (iOrgUserActCtl & (~iUserActCtl)))
+    {
+        iOrgUserActCtl &= (~iUserActCtl);
+
+        dwError = VmAfdStringPrintFA(pszUserActCtl, sizeof(pszUserActCtl)-1, "%ld", iOrgUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        dwError = DirCliLdapReplaceUserAttr(
+            pLd,
+            pszAccountDN,
+            ATTR_USER_ACCOUNT_CONTROL,
+            pszUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszOrgValue);
+
+    return dwError;
+
+error :
     goto cleanup;
 }
 
@@ -3805,6 +3927,75 @@ error :
 }
 
 DWORD
+DirCliLdapGetAttribute(
+    LDAP*    pLd,
+    PCSTR    pszObjectDN,
+    PCSTR    pszAttribute,
+    PSTR*    ppszValue
+    )
+{
+    DWORD dwError = 0;
+    PCHAR pszFilter = "(objectClass=*)";
+    PSTR  pszRetrievedValue = NULL;
+    DWORD dwNumEntries = 0;
+    LDAPMessage* pSearchResult = NULL;
+    PCHAR ppszAttr[] = { (PSTR)pszAttribute, NULL };
+
+    dwError = ldap_search_ext_s(
+                  pLd,
+                  (PSTR)pszObjectDN,
+                  LDAP_SCOPE_BASE,
+                  pszFilter,
+                  ppszAttr,      /* attributes      */
+                  FALSE,
+                  NULL,      /* server controls */
+                  NULL,      /* client controls */
+                  NULL,      /* timeout         */
+                  0,
+                  &pSearchResult);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwNumEntries = ldap_count_entries(pLd, pSearchResult);
+    if (dwNumEntries == 0)
+    {
+        // Caller should make sure that the ObjectDN passed in does exist
+        // by calling DirCliLdapCheckCAObject first.
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+    else if (dwNumEntries != 1)
+    {
+        dwError = ERROR_INVALID_STATE;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = DirCliCopyQueryResultAttributeString(pLd, pSearchResult,
+        pszAttribute, TRUE, &pszRetrievedValue);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszValue = pszRetrievedValue;
+    pszRetrievedValue = NULL;
+
+cleanup:
+    VMAFD_SAFE_FREE_MEMORY(pszRetrievedValue);
+    if (pSearchResult)
+    {
+        ldap_msgfree(pSearchResult);
+    }
+    VMAFD_SAFE_FREE_MEMORY(pszRetrievedValue);
+
+    return dwError;
+
+error :
+    if (dwError == LDAP_NO_SUCH_OBJECT)
+    {
+        dwError = 0;
+    }
+
+    goto cleanup;
+}
+
+DWORD
 DirCliLdapUpdateAttribute(
     LDAP*   pLd,
     PCSTR   pszObjectDN,
@@ -4236,4 +4427,37 @@ _doLdapConnectRetry(
             break;
     }
     return doRetry;
+}
+
+static
+DWORD
+_DirCliRegKeyUserIdAttr(
+    PSTR* ppszUserIdAttr
+    )
+{
+    DWORD dwError = 0;
+    PVMAF_CFG_CONNECTION pConnection = NULL;
+    PSTR  pszUserIdAttr = NULL;
+
+    dwError = VmAfConfigOpenConnection(&pConnection);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = DirCliGetStrRegKeyA(
+        pConnection,
+        VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
+        VMDIR_REG_KEY_USER_ID_ATTRIBUTE,
+        &pszUserIdAttr);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    *ppszUserIdAttr = pszUserIdAttr;
+    pszUserIdAttr = NULL;
+
+error:
+    VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
+    if (pConnection)
+    {
+        VmAfConfigCloseConnection(pConnection);
+    }
+
+    return dwError;
 }

@@ -78,6 +78,10 @@ typedef enum
     USER_MODIFY_NO_OPT        = 1 << 0,
     USER_MODIFY_PWD_NEVER_EXP = 1 << 1,
     USER_MODIFY_PWD_EXPIRE    = 1 << 2,
+    USER_MODIFY_LOCK          = 1 << 3,
+    USER_MODIFY_UNLOCK        = 1 << 4,
+    USER_MODIFY_ENABLE        = 1 << 5,
+    USER_MODIFY_DISABLE       = 1 << 6,
 } USER_MODIFY_OPT;
 
 typedef enum
@@ -119,6 +123,7 @@ typedef enum
 #define ATTR_NAME_PWD_LAST_SET     "pwdLastSet"
 #define ATTR_NAME_PWD_LOCKOUT_POLICY_CN "password and lockout policy"
 #define ATTR_NAME_OU          "ou"
+#define ATTR_USER_ACCOUNT_CONTROL   "userAccountControl"
 
 #define USER_ACC_CTRL_DISABLE_FLAG              0x00000002
 #define USER_ACC_CTRL_LOCKOUT_FLAG              0x00000010
@@ -149,3 +154,5 @@ typedef enum
 #define ERROR_LOCAL_PASSWORD_EMPTY                  (ERROR_LOCAL_BASE + 5)
 
 #define DirCliIsFlagSet(value, flag) ((value & flag) == (flag))
+
+#define DIR_CLI_SIZE_32     32
