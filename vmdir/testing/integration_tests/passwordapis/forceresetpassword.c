@@ -68,12 +68,9 @@ TestForceResetPassword(
     TestAssert(dwError == 0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    if (!pState->bRemoteOnly)
-    {
-        dwError = VmDirForceResetPassword(pszUserUPN, &pbPassword, &dwLength);
-        TestAssert(dwError == 0);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
+    dwError = VmDirForceResetPassword(pszUserUPN, &pbPassword, &dwLength);
+    TestAssert(dwError == 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _PasswordBytesToString(pbPassword, dwLength, &pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);

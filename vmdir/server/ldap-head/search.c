@@ -280,10 +280,10 @@ VmDirPerformSearch(
    retVal = pResult->errCode = VmDirMLSearch(pOperation);
    BAIL_ON_VMDIR_ERROR(retVal);
 
-   retVal = VmDirLogSearchParameters(pOperation);
-   BAIL_ON_VMDIR_ERROR(retVal);
-
 cleanup:
+    retVal = VmDirLogSearchParameters(pOperation);
+    BAIL_ON_VMDIR_ERROR(retVal);
+
     if (retVal != LDAP_NOTICE_OF_DISCONNECT)
     {
         VmDirSendLdapResult( pOperation );

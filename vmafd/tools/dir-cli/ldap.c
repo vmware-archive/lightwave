@@ -45,6 +45,13 @@ _DirCliRegKeyUserIdAttr(
     PSTR* ppszUserIdAttr
     );
 
+static
+DWORD
+_VmAfdPPCtrlParseResult(
+    LDAP*           pLd,
+    LDAPMessage*    pResult
+    );
+
 DWORD
 VmDirSafeLDAPBind(
     LDAP**      ppLd,
@@ -2283,6 +2290,67 @@ error :
     goto cleanup;
 }
 
+static
+DWORD
+_VmAfdPPCtrlParseResult(
+    LDAP*           pLd,
+    LDAPMessage*    pResult
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwLocalError = 0;
+    LDAPControl** ppcctrls = NULL;
+    LDAPControl* pPPReplyCtrl = NULL;
+    int         errCode = 0;
+    ber_int_t   iPPExpWarn = 0;
+    ber_int_t   iPPGraceWarn = 0;
+    LDAPPasswordPolicyError PPError = PP_noError;
+
+    dwError = ldap_parse_result(
+        pLd,
+        pResult,
+        &errCode,
+        NULL,
+        NULL,
+        NULL,
+        &ppcctrls,
+        0);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = errCode; // async call get result
+
+    pPPReplyCtrl = ldap_control_find(LDAP_CONTROL_PASSWORDPOLICYREQUEST, ppcctrls, NULL);
+    if (pPPReplyCtrl)
+    {
+        dwLocalError = ldap_parse_passwordpolicy_control(
+            pLd,
+            pPPReplyCtrl,
+            &iPPExpWarn,
+            &iPPGraceWarn,
+            &PPError);
+        BAIL_ON_VMAFD_ERROR(dwLocalError);
+
+        if (iPPExpWarn/(60*60*24) > 15)
+        {
+            fprintf(stderr, "Password expiring in %d days\n", iPPExpWarn/(60*60*24));
+        }
+        if (PPError != PP_noError)
+        {
+            fprintf(stderr, "Password modify failed: %s\n", ldap_passwordpolicy_err2txt(PPError));
+        }
+    }
+
+cleanup:
+    if (ppcctrls)
+    {
+        ldap_controls_free(ppcctrls);
+    }
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 DWORD
 DirCliLdapUserSetUserActControl(
     LDAP* pLd,
@@ -2396,6 +2464,11 @@ DirCliLdapChangePassword(
     LDAPMod*    mods[3] = {&mod[0], &mod[1], NULL};
     PSTR        vals_new[2] = {(PSTR)pszPasswordNew, NULL};
     PSTR        vals_old[2] = {(PSTR)pszPasswordCurrent, NULL};
+    LDAPControl*    psctrls = NULL;
+    LDAPControl*    srvCtrls[2] = {NULL, NULL};
+    LDAPMessage*    pResult = NULL;
+    int             iMsgId = 0;
+    int             iRtn = 0;
 
     if (IsNullOrEmptyString(pszUserDN) ||
         IsNullOrEmptyString(pszPasswordCurrent) ||
@@ -2405,6 +2478,12 @@ DirCliLdapChangePassword(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    dwError = ldap_control_create(
+        LDAP_CONTROL_PASSWORDPOLICYREQUEST, 0, NULL, 0, &psctrls);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    srvCtrls[0] = psctrls;
+
     mod[0].mod_op = LDAP_MOD_ADD;
     mod[0].mod_type = ATTR_USER_PASSWORD;
     mod[0].mod_vals.modv_strvals = vals_new;
@@ -2413,15 +2492,34 @@ DirCliLdapChangePassword(
     mod[1].mod_type = ATTR_USER_PASSWORD;
     mod[1].mod_vals.modv_strvals = vals_old;
 
-    dwError = ldap_modify_ext_s(
+    dwError = ldap_modify_ext(
                             pLd,
                             pszUserDN,
                             mods,
+                            srvCtrls,
                             NULL,
-                            NULL);
+                            &iMsgId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    iRtn = ldap_result(pLd, iMsgId, LDAP_MSG_ALL, NULL, &pResult);
+    if (iRtn != LDAP_RES_MODIFY || !pResult)
+    {
+        dwError = ERROR_PROTOCOL;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = _VmAfdPPCtrlParseResult(pLd, pResult);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:
+    if (psctrls)
+    {
+        ldap_control_free(psctrls);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
 
     return dwError;
 }
@@ -2437,6 +2535,11 @@ DirCliLdapResetPassword(
     LDAPMod  mod = {0};
     LDAPMod* mods[2] = {&mod, NULL};
     PSTR     vals[2] = {(PSTR)pszNewPassword, NULL};
+    LDAPControl*    psctrls = NULL;
+    LDAPControl*    srvCtrls[2] = {NULL, NULL};
+    LDAPMessage*    pResult = NULL;
+    int             iMsgId = 0;
+    int             iRtn = 0;
 
     if (IsNullOrEmptyString(pszUserDN) ||
         IsNullOrEmptyString(pszNewPassword))
@@ -2445,22 +2548,46 @@ DirCliLdapResetPassword(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
+    dwError = ldap_control_create(
+        LDAP_CONTROL_PASSWORDPOLICYREQUEST, 0, NULL, 0, &psctrls);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    srvCtrls[0] = psctrls;
+
     mod.mod_op = LDAP_MOD_REPLACE;
     mod.mod_type = ATTR_USER_PASSWORD;
     mod.mod_vals.modv_strvals = vals;
 
-    dwError = ldap_modify_ext_s(
+    dwError = ldap_modify_ext(
                     pLd,
                     pszUserDN,
                     mods,
+                    srvCtrls,
                     NULL,
-                    NULL);
+                    &iMsgId);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    iRtn = ldap_result(pLd, iMsgId, LDAP_MSG_ALL, NULL, &pResult);
+    if (iRtn != LDAP_RES_MODIFY || !pResult)
+    {
+        dwError = ERROR_PROTOCOL;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    dwError = _VmAfdPPCtrlParseResult(pLd, pResult);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 error:
+    if (psctrls)
+    {
+        ldap_control_free(psctrls);
+    }
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+    }
 
     return dwError;
-
 }
 
 VOID

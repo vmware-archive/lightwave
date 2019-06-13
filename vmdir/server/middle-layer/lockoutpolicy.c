@@ -562,7 +562,7 @@ VdirUserActCtlFlagUnset(
     PVDIR_ATTRIBUTE     pUserActCtlAttr = NULL;
     VDIR_BERVALUE       berUserActCtl = VDIR_BERVALUE_INIT;
     int64_t             iUserActCtl  = 0;
-    CHAR                pszUserActCtl[sizeof(iUserActCtl) + 1] = {0};
+    CHAR                pszUserActCtl[VMDIR_SIZE_32 + 1] = {0};
 
     assert(pEntry);
 
@@ -623,7 +623,7 @@ VdirUserActCtlFlagSet(
     PVDIR_ATTRIBUTE     pUserActCtlAttr = NULL;
     VDIR_BERVALUE       berUserActCtl = VDIR_BERVALUE_INIT;
     int64_t             iUserActCtl  = 0;
-    CHAR                pszUserActCtl[sizeof(iUserActCtl) + 1] = {0};
+    CHAR                pszUserActCtl[VMDIR_SIZE_32 + 1] = {0};
 
     assert(pEntry);
 
@@ -634,23 +634,26 @@ VdirUserActCtlFlagSet(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    iUserActCtl |= iTargetFlag;
-    VmDirStringNPrintFA(pszUserActCtl, sizeof(pszUserActCtl), sizeof(pszUserActCtl) - 1, "%ld", iUserActCtl);
+    if (iUserActCtl != (iUserActCtl | iTargetFlag))
+    {
+        iUserActCtl |= iTargetFlag;
+        VmDirStringNPrintFA(pszUserActCtl, sizeof(pszUserActCtl), sizeof(pszUserActCtl) - 1, "%ld", iUserActCtl);
 
-    berUserActCtl.lberbv.bv_val = pszUserActCtl;
-    berUserActCtl.lberbv.bv_len = VmDirStringLenA(pszUserActCtl);
+        berUserActCtl.lberbv.bv_val = pszUserActCtl;
+        berUserActCtl.lberbv.bv_len = VmDirStringLenA(pszUserActCtl);
 
-    dwError = VmDirInternalEntryAttributeReplace(
+        dwError = VmDirInternalEntryAttributeReplace(
                     pEntry->pSchemaCtx,
                     BERVAL_NORM_VAL(pEntry->dn),
                     ATTR_USER_ACCOUNT_CONTROL,
                     &berUserActCtl);
-    BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_ON_VMDIR_ERROR(dwError);
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
                     "User account control - (%s): (%x) flag set, new value=(%x)",
                     VDIR_SAFE_STRING(BERVAL_NORM_VAL(pEntry->dn)),
                     iTargetFlag, iUserActCtl );
+    }
 
 cleanup:
 
