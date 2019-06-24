@@ -93,6 +93,9 @@ VmDirToLDAPError(
                 break;
 
             case VMDIR_ERROR_PASSWORD_POLICY_VIOLATION:
+            case VMDIR_ERROR_PASSWORD_TOO_SHORT:
+            case VMDIR_ERROR_PASSWORD_INSUFFICIENT_QUALITY:
+            case VMDIR_ERROR_PASSWORD_IN_HISTORY:
             case VMDIR_ERROR_INVALID_POLICY_DEFINITION:
             case VMDIR_ERROR_PASSWORD_TOO_LONG:
             case VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION:
@@ -103,10 +106,10 @@ VmDirToLDAPError(
 
             case VMDIR_ERROR_USER_INVALID_CREDENTIAL:
             case VMDIR_ERROR_AUTH_BAD_DATA:
+            case VMDIR_ERROR_PASSWORD_EXPIRED:
                 dwError = LDAP_INVALID_CREDENTIALS;
                 break;
 
-            case VMDIR_ERROR_PASSWORD_EXPIRED:
             case VMDIR_ERROR_ACCOUNT_LOCKED:
             case VMDIR_ERROR_ACCOUNT_DISABLED:
             case VMDIR_ERROR_USER_LOCKOUT:

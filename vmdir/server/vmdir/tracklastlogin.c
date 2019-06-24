@@ -369,7 +369,7 @@ _VmDirTrackLastLoginTimeThreadFun(
 cleanup:
     if (_gpSuppressDNList)
     {
-        VmDirStringListFree(_gpSuppressDNList);
+        //VmDirStringListFree(_gpSuppressDNList); TBD to sync shutdown access in _VmDirSuppressDN
     }
     // we may have leak pLoginIime(s), but exiting anyway.
     VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "Exit track last login time thread" );

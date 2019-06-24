@@ -3,4 +3,5 @@ SUBDIRS = \
     misc \
     multitenancy \
     passwordapis \
+    ppolicy \
     search

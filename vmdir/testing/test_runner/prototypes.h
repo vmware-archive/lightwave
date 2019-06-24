@@ -17,3 +17,11 @@ _VmDirEnumerateTests(
     PCSTR pszDirectoryName,
     PVMDIR_STRING_LIST pStringList
     );
+
+DWORD
+VmDirTestRestPing(
+    PCSTR pszServer,
+    DWORD dwPort,
+    PCSTR pszToken,
+    PCSTR pszCAPath
+    );

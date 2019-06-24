@@ -1952,6 +1952,54 @@ DirCliExecUserRequest(
                                 BAIL_ON_VMAFD_ERROR(dwError);
                             }
                         }
+                        else if (!VmAfdStringCompareA(pszArg, "--lock", TRUE))
+                        {
+                            if ((userModifyOpt == USER_MODIFY_NO_OPT) ||
+                            !(userModifyOpt & USER_MODIFY_UNLOCK))
+                            {
+                                userModifyOpt |= USER_MODIFY_LOCK;
+                            }
+                            else{
+                                dwError = ERROR_INVALID_PARAMETER;
+                                BAIL_ON_VMAFD_ERROR(dwError);
+                            }
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--unlock", TRUE))
+                        {
+                            if ((userModifyOpt == USER_MODIFY_NO_OPT) ||
+                            !(userModifyOpt & USER_MODIFY_LOCK))
+                            {
+                                userModifyOpt |= USER_MODIFY_UNLOCK;
+                            }
+                            else{
+                                dwError = ERROR_INVALID_PARAMETER;
+                                BAIL_ON_VMAFD_ERROR(dwError);
+                            }
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--enable", TRUE))
+                        {
+                            if ((userModifyOpt == USER_MODIFY_NO_OPT) ||
+                            !(userModifyOpt & USER_MODIFY_DISABLE))
+                            {
+                                userModifyOpt |= USER_MODIFY_ENABLE;
+                            }
+                            else{
+                                dwError = ERROR_INVALID_PARAMETER;
+                                BAIL_ON_VMAFD_ERROR(dwError);
+                            }
+                        }
+                        else if (!VmAfdStringCompareA(pszArg, "--disable", TRUE))
+                        {
+                            if ((userModifyOpt == USER_MODIFY_NO_OPT) ||
+                            !(userModifyOpt & USER_MODIFY_ENABLE))
+                            {
+                                userModifyOpt |= USER_MODIFY_DISABLE;
+                            }
+                            else{
+                                dwError = ERROR_INVALID_PARAMETER;
+                                BAIL_ON_VMAFD_ERROR(dwError);
+                            }
+                        }
                         else if (!VmAfdStringCompareA(pszArg, "--login", TRUE))
                         {
                             submode = PARSE_SUB_MODE_LOGIN;
@@ -4858,6 +4906,8 @@ ShowUsage(
         "\tuser modify --account <account name>\n"
         "\t             [ --password-never-expires              ]\n"
         "\t             [ --password-expires                    ]\n"
+        "\t             [ --lock    | --unlock                  ]\n"
+        "\t             [ --disable | --enable                  ]\n"
         "\t             [ --login    <admin user id>            ]\n"
         "\t             [ --password <password>                 ]\n"
         "\tuser delete --account <account name>\n"

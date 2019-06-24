@@ -78,6 +78,12 @@ VdirPasswordModifyPreCheck(
     PVDIR_OPERATION     pOperation
     );
 
+VOID
+VdirSetPPolicyError(
+    PVDIR_OPERATION     pOperation,
+    DWORD               dwPwdError
+    );
+
 // plugin.c
 /*
  * Called before backend add
@@ -471,6 +477,12 @@ BOOLEAN
 VmDirIsSearchForIntegrityCheckStatus(
     PVDIR_OPERATION                     pOp,
     PVMDIR_INTEGRITY_CHECK_JOB_STATE    pState
+    );
+
+BOOLEAN
+VmDirIsSearchForDBIntegrityCheckStatus(
+    PVDIR_OPERATION            pOperation,
+    PVMDIR_DB_INTEGRITY_JOB*   ppDBIntegrityCheckJob
     );
 
 BOOLEAN

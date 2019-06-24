@@ -5,11 +5,7 @@ vmdird_SOURCES = \
 
 VMDIRD_BACKEND_STORE= $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la
 
-if REPLICATION_V2
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
-else
-    VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication/libreplication.la
-endif
+VMDIRD_REPLICATION_LIB = $(top_builddir)/vmdir/server/replication2/libreplication.la
 
 vmdird_CPPFLAGS = \
     -g \
@@ -32,6 +28,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/server/ldap-head/libldap-head.la \
     $(top_builddir)/vmdir/server/rest-head/librest-head.la \
     $(top_builddir)/vmdir/server/indexcfg/libindexcfg.la \
+    $(top_builddir)/vmdir/server/dbintegritychk/libdb-integritychk.la \
     $(top_builddir)/vmdir/server/middle-layer/libmiddle-layer.la \
     $(top_builddir)/vmdir/server/schema/libschema.la \
     $(top_builddir)/vmdir/server/acl/libvmacl.la \
@@ -46,6 +43,7 @@ vmdird_LDADD = \
     $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1db.la \
     $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1.la \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/.libs/libvmdirmdb.so \
     $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
     $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
     $(top_builddir)/vmcommon/libvmcommon.la \

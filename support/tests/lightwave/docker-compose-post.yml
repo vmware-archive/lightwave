@@ -1,0 +1,37 @@
+version: '3'
+services:
+  post-server:
+    build: post
+    hostname: server.${POST_DOMAIN}
+    command: scripts/postpromote.sh
+    volumes:
+     - ./post:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     lightwave:
+       aliases:
+         - server.${POST_DOMAIN}
+    privileged: true
+    environment:
+        - POST_DOMAIN=${POST_DOMAIN}
+        - POST_PASS=${LIGHTWAVE_PASS}
+    tty: true
+  post-server-n2:
+    build: post
+    hostname: server-n2.${POST_DOMAIN}
+    command: scripts/postpromote.sh
+    volumes:
+     - ./post:/scripts
+     - ../../../build/rpmbuild/RPMS:/buildrpms
+    networks:
+     lightwave:
+       aliases:
+         - server-n2.${POST_DOMAIN}
+    privileged: true
+    environment:
+        - POST_DOMAIN=${POST_DOMAIN}
+        - POST_PASS=${LIGHTWAVE_PASS}
+    tty: true
+networks:
+  lightwave:
+    driver: bridge

@@ -281,6 +281,15 @@ typedef struct
     DWORD dwSize; // Max number of strings we can store currently.
 } VMDIR_STRING_LIST, *PVMDIR_STRING_LIST;
 
+typedef struct _VDIR_PPOLICY_STATE
+{
+    BOOLEAN bLockedout;
+    BOOLEAN bPwdExpired;
+    int     iWarnPwdExpiring;
+    int     iWarnGraceAuthN;
+    LDAPPasswordPolicyError  PPolicyError;
+} VDIR_PPOLICY_STATE, *PVDIR_PPOLICY_STATE;
+
 typedef struct _VDIR_DB_COPY_CONTROL_VALUE
 {
     PSTR    pszPath;
@@ -289,6 +298,27 @@ typedef struct _VDIR_DB_COPY_CONTROL_VALUE
     PSTR    pszData;
     DWORD   dwDataLen;
 } VDIR_DB_COPY_CONTROL_VALUE, *PVDIR_DB_COPY_CONTROL_VALUE;
+
+typedef struct _VMDIR_SASL_INTERACTIVE_DEFAULT
+{
+    PCSTR   pszRealm;
+    PCSTR   pszAuthName;
+    PCSTR   pszUser;
+    PCSTR   pszPass;
+} VMDIR_SASL_INTERACTIVE_DEFAULT, *PVMDIR_SASL_INTERACTIVE_DEFAULT;
+
+typedef enum _VDIR_SRV_SEARCH_ALGO
+{
+    SEARCH_ALGO_CANDIDATE_LIST = 1,
+    SEARCH_ALGO_ITERATOR,
+    SEARCH_ALGO_UNKNOWN
+} VDIR_SRV_SEARCH_ALGO;
+
+typedef struct _VDIR_SRV_SEARCH_PLAN
+{
+    VDIR_SRV_SEARCH_ALGO    searchAlgo;
+    PSTR                    pszIndex;
+} VDIR_SRV_SEARCH_PLAN, *PVDIR_SRV_SEARCH_PLAN;
 
 #ifdef _WIN32
 typedef HINSTANCE   VMDIR_LIB_HANDLE;
@@ -1153,9 +1183,6 @@ typedef enum
 
 #define VMDIR_REG_KEY_WRITE_TIMEOUT_IN_MILLI_SEC "WriteTimeoutInMilliSec"
 
-//TODO_REMOVE_REPLV2
-#define VMDIR_REG_KEY_EMPTY_PAGE_COUNT "ReplEmptyPageCnt"
-
 #define VMDIR_REG_KEY_MDB_ENABLE_WAL          "MdbEnableWal"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL      "MdbChkptInterval"
 #define VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN  1
@@ -1167,6 +1194,7 @@ typedef enum
 #define VMDIR_REG_KEY_RAFT_PING_INTERVAL      "RaftPingIntervalMS"
 #define VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER  "EnableRegionalMaster"
 #define VMDIR_REG_KEY_LDAP_COPY_ENABLE        "EnableLdapCopy"
+#define VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC   "WarnPwdExpiringInSec"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1893,6 +1921,22 @@ VmDirAnonymousLDAPBind(
     );
 
 int
+VmDirSASLGSSAPIInteraction(
+    LDAP *      pLd,
+    unsigned    flags,
+    void *      pDefaults,
+    void *      pIn
+    );
+
+int
+VmDirSASLSRPInteraction(
+    LDAP *      pLd,
+    unsigned    flags,
+    void *      pDefaults,
+    void *      pIn
+    );
+
+int
 VmDirCreateSyncRequestControl(
     PCSTR           pszInvocationId,
     USN             lastLocalUsnProcessed,
@@ -1926,6 +1970,18 @@ VmDirFreeCtrlContent(
     LDAPControl*    pCtrl
     );
 
+DWORD
+VmDirParseSearchPlanControlContent(
+    LDAPControl*          pSearchPlanCtrl,
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan
+    );
+
+DWORD
+VmDirCreateSearchPlanControlContent(
+    PVDIR_SRV_SEARCH_PLAN pSearchPlan,
+    BerValue*             pBerVOut
+    );
+
 int
 VmDirCreateDbCopyControlContent(
     PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal,
@@ -1943,6 +1999,12 @@ DWORD
 VmDirParseDBCopyReplyControlContent(
     LDAPControl*                pDbCopyReplyCtrl,
     PVDIR_DB_COPY_CONTROL_VALUE pDbCopyCtrlVal
+    );
+
+DWORD
+VmDirCreatePPolicyReplyCtrlContent(
+    PVDIR_PPOLICY_STATE pPPolicyState,
+    LDAPControl*        pPPCtrl
     );
 
 // common/ldaputil.c

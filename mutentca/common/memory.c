@@ -551,11 +551,11 @@ LwCAFreeStringArray(
         {
             for (dwIdx = 0; dwIdx < pStrArray->dwCount; ++dwIdx)
             {
-                LwCAFreeStringA(pStrArray->ppData[dwIdx]);
+                LWCA_SAFE_FREE_STRINGA(pStrArray->ppData[dwIdx]);
             }
-            LwCAFreeMemory(pStrArray->ppData);
+            LWCA_SAFE_FREE_MEMORY(pStrArray->ppData);
         }
-        LwCAFreeMemory(pStrArray);
+        LWCA_SAFE_FREE_MEMORY(pStrArray);
     }
 }
 

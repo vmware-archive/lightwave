@@ -24,6 +24,8 @@ typedef struct _VMDIR_TEST_STATE
     //
     LDAP *pLd;
 
+    PCSTR   pszAdminAccessToken;
+
     //
     // Connection to server using a non-admin account.
     //
@@ -45,18 +47,34 @@ typedef struct _VMDIR_TEST_STATE
     //
     PTEST_CLEANUP_CALLBACK  pfnCleanupCallback;
 
+    //
+    // Per test context
+    //
+    PVOID  pContext;
+
     PCSTR pszServerName;        // The server name
     PCSTR pszUserUPN;           // UserUPN to connect with.
+    PCSTR pszUserDN;            // User DN to connect with.
     PCSTR pszUserName;          // Username to connect with.
     PCSTR pszPassword;          // Password to connect with.
     PCSTR pszDomain;            // The domain to use (e.g., vsphere.local)
     PCSTR pszBaseDN;            // The domain's DN.
+
     PCSTR pszTest;              // The name of a particular test to run or a directory to load tests from.
     PCSTR pszTestContainerName; // The name of the test container; all objects should be created beneath this.
     PCSTR pszInternalUserName;  // The name of the internal user we create for operations that shouldn't be run as admin.
     BOOLEAN bKeepGoing;         // Keep going if an individual test fails.
     BOOLEAN bBreakIntoDebugger; // Break into the debugger when a test fails.
+    BOOLEAN bRemoteOnly;        // skip IPC test cases
 } VMDIR_TEST_STATE, *PVMDIR_TEST_STATE;
+
+DWORD
+VmDirTestOidcTokenAcquire(
+    PCSTR       pszSSOServer,
+    DWORD       dwSSOPort,
+    PVMDIR_OIDC_ACQUIRE_TOKEN_INFO pTokenInfo,
+    PSTR*       ppszToken
+    );
 
 VOID
 VmDirTestLdapUnbind(
@@ -144,6 +162,20 @@ VmDirTestReportAssertionFailure(
     );
 
 VOID
+VmDirTestReportAssertionFailureDwordBetweenOperands(
+    PCSTR pszSideA,
+    PCSTR pszSideB,
+    PCSTR pszSideC,
+    DWORD dwValueA,
+    DWORD dwValueB,
+    DWORD dwValueC,
+    PCSTR pszFile,
+    PCSTR pszFunction,
+    DWORD dwLineNumber,
+    PVMDIR_TEST_STATE pState
+    );
+
+VOID
 VmDirTestReportAssertionFailureDwordOperands(
     PCSTR pszSideA,
     PCSTR pszSideB,
@@ -207,6 +239,16 @@ VmDirTestCreateUser(
     PCSTR pszContainer,
     PCSTR pszUserName,
     PCSTR pszAcl /* OPTIONAL */
+    );
+
+DWORD
+VmDirTestCreateUserEx(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,     /* OPTIONAL */
+    PCSTR pszUserName,
+    PCSTR pszUserPassword,  /* OPTIONAL */
+    PCSTR pszAcl,           /* OPTIONAL */
+    PSTR*   ppszUserDN
     );
 
 DWORD
@@ -292,6 +334,15 @@ VmDirTestConnectionFromUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszUserName,
     LDAP **ppLd
+    );
+
+DWORD
+VmDirTestConnectionUser(
+    PCSTR   pszHost,
+    PCSTR   pszDomain,
+    PCSTR   pszUserName,
+    PCSTR   pszUserPassword,
+    LDAP**  ppLd
     );
 
 DWORD
@@ -403,6 +454,11 @@ VmDirTestCreateSimpleContainer(
     PCSTR pszCN,
     PCSTR pszContainerDN
     );
+
+#define TestAssertBetween(a, b, c) if ((a < c && (a >= b || c <= b)) || \
+                                       (a > c && (c >= b || a <= b)) || \
+                                       (a == c)) \
+        { VmDirTestReportAssertionFailureDwordBetweenOperands(#a, #b, #c, a, b, c, __FILE__, __FUNCTION__, __LINE__, pState); }
 
 #define TestAssertEquals(a, b) if (a != b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, TRUE, __FILE__, __FUNCTION__, __LINE__, pState); }
 #define TestAssertNotEquals(a, b) if (a == b) { VmDirTestReportAssertionFailureDwordOperands(#a, #b, a, b, FALSE, __FILE__, __FUNCTION__, __LINE__, pState); }

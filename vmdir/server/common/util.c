@@ -1750,3 +1750,74 @@ error:
     VMDIR_SAFE_FREE_MEMORY(pszValue);
     goto cleanup;
 }
+
+DWORD
+VmDirFillMDBIteratorDataContent(
+    PVOID    pKey,
+    DWORD    dwKeySize,
+    PVOID    pValue,
+    DWORD    dwValueSize,
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    )
+{
+    DWORD    dwError = 0;
+    DWORD    dwSize = 0;
+    PVOID    pKeyAndValue = NULL;
+
+    if (pKey == NULL || dwKeySize == 0 || pMDBIteratorData == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    assert(pMDBIteratorData->pKeyAndValue == NULL);
+
+    dwSize = dwKeySize + dwValueSize;
+
+    dwError = VmDirAllocateMemory(dwSize, &pKeyAndValue);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirCopyMemory(pKeyAndValue, dwSize, pKey, dwKeySize);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (dwValueSize)
+    {
+        dwError = VmDirCopyMemory(
+                pKeyAndValue + dwKeySize, dwSize - dwKeySize, pValue, dwValueSize);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    pMDBIteratorData->pKeyAndValue = pKeyAndValue;
+    pMDBIteratorData->dwKeySize = dwKeySize;
+    pMDBIteratorData->dwValueSize = dwValueSize;
+    pKeyAndValue = NULL;
+
+cleanup:
+    VMDIR_SAFE_FREE_MEMORY(pKeyAndValue);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed error: %d", dwError);
+    goto cleanup;
+}
+
+VOID
+VmDirFreeMDBIteratorDataContents(
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    )
+{
+    if (pMDBIteratorData)
+    {
+        pMDBIteratorData->dwKeySize = 0;
+        pMDBIteratorData->dwValueSize = 0;
+        VMDIR_SAFE_FREE_MEMORY(pMDBIteratorData->pKeyAndValue);
+    }
+}
+
+VOID
+VmDirResetPPolicyState(
+    PVDIR_PPOLICY_STATE pPPolicyState
+    )
+{
+    memset(pPPolicyState, 0, sizeof(*pPPolicyState));
+    pPPolicyState->PPolicyError = PP_noError;
+}

@@ -9,11 +9,7 @@
 
 STOREDIRS = mdb-store
 
-if REPLICATION_V2
-    REPLDIR = replication2
-else
-    REPLDIR = replication
-endif
+REPLDIR = replication2
 
 SUBDIRS = \
     kdcsrvcommon \
@@ -27,6 +23,7 @@ SUBDIRS = \
     ldap-head \
     api \
     rest-head \
+    dbintegritychk \
     middle-layer \
     $(REPLDIR) \
     clusterstate \

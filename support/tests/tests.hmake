@@ -29,6 +29,7 @@ targets:
     cmds:
       - bash run_hmake_sanity.sh
       - bash run_hmake_afd_rest.sh
+      - bash run_hmake_vmdir_test.sh
 
   # deploy mutentca node on top of basic test env
   # join the mutentca node to the server
@@ -72,3 +73,23 @@ targets:
       - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
     cmds:
       - bash run_hmake_ca_tests.sh
+
+  deploy_post_test_env:
+    description: deploy two nodes post cluster
+    after:
+      - pack
+# need to deploy lightwave server to join post nodes
+#      - deploy_test_env
+    compose: support/tests/lightwave/docker-compose-post.yml
+
+  test-post:
+    description: run post tests
+    after:
+      - deploy_post_test_env
+    always: true
+    image: lightwave_lightwave-client
+    net: lightwave_lightwave
+    env:
+      - LIGHTWAVE_ENV_FILE=/src/support/tests/lightwave/.env
+    cmds:
+      - bash run_hmake_post_sanity.sh

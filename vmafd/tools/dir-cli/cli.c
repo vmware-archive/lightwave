@@ -2286,6 +2286,7 @@ DirCliModifyAttributeUserA(
     PCSTR pszPasswordLocal = pszPassword;
     LDAP* pLd = NULL;
     ATTR_SEARCH_RESULT attrStatus = ATTR_NOT_FOUND;
+    int64_t iUserActCtl = 0;
 
     if (IsNullOrEmptyString(pszAccount))
     {
@@ -2369,12 +2370,80 @@ DirCliModifyAttributeUserA(
         }
         BAIL_ON_VMAFD_ERROR(dwError);
     }
-    else
+
+    if (userModifyOpt & USER_MODIFY_LOCK || userModifyOpt & USER_MODIFY_DISABLE)
     {
-        dwError = ERROR_NOT_SUPPORTED;
+        iUserActCtl = 0;
+        if (userModifyOpt & USER_MODIFY_LOCK)
+        {
+            iUserActCtl |= USER_ACC_CTRL_LOCKOUT_FLAG;
+        }
+
+        if (userModifyOpt & USER_MODIFY_DISABLE)
+        {
+            iUserActCtl |= USER_ACC_CTRL_DISABLE_FLAG;
+        }
+
+        dwError = DirCliLdapUserSetUserActControl(
+                    pLd,
+                    pszAccountDN,
+                    pszDomain,
+                    iUserActCtl);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (userModifyOpt & USER_MODIFY_LOCK)
+        {
+            fprintf(
+                stdout,
+                "Account [%s] locked.\n",
+                VMAFD_SAFE_STRING(pszAccount));
+        }
+
+        if (userModifyOpt & USER_MODIFY_DISABLE)
+        {
+            fprintf(
+                stdout,
+                "Account [%s] disabled.\n",
+                VMAFD_SAFE_STRING(pszAccount));
+        }
     }
 
+    if (userModifyOpt & USER_MODIFY_UNLOCK || userModifyOpt & USER_MODIFY_ENABLE)
+    {
+        iUserActCtl = 0;
+        if (userModifyOpt & USER_MODIFY_UNLOCK)
+        {
+            iUserActCtl |= USER_ACC_CTRL_LOCKOUT_FLAG;
+        }
+
+        if (userModifyOpt & USER_MODIFY_ENABLE)
+        {
+            iUserActCtl |= USER_ACC_CTRL_DISABLE_FLAG;
+        }
+
+        dwError = DirCliLdapUserUnsetUserActControl(
+                    pLd,
+                    pszAccountDN,
+                    pszDomain,
+                    iUserActCtl);
+        BAIL_ON_VMAFD_ERROR(dwError);
+
+        if (userModifyOpt & USER_MODIFY_UNLOCK)
+        {
+            fprintf(
+                stdout,
+                "Account [%s] unlocked.\n",
+                VMAFD_SAFE_STRING(pszAccount));
+        }
+
+        if (userModifyOpt & USER_MODIFY_ENABLE)
+        {
+            fprintf(
+                stdout,
+                "Account [%s] enabled.\n",
+                VMAFD_SAFE_STRING(pszAccount));
+        }
+    }
 
 cleanup:
 

@@ -197,6 +197,11 @@ VmDirVmAclInit(
     );
 
 VOID
+VmDirVmAclShutdownFlush(
+    VOID
+    );
+
+VOID
 VmDirVmAclShutdown(
     VOID
     );
@@ -290,6 +295,14 @@ VmDirSrvAccessCheckEntry(
 DWORD
 VmDirGetSecurityDescriptorForEntry(
     PVDIR_ENTRY                     pEntry,
+    SECURITY_INFORMATION            SecurityInformation,
+    PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
+    PULONG                          pulSecDescLength
+    );
+
+DWORD
+VmDirGetSecurityDescriptorForDN(
+    PCSTR                           pszDN,
     SECURITY_INFORMATION            SecurityInformation,
     PSECURITY_DESCRIPTOR_RELATIVE*  ppSecDesc,
     PULONG                          pulSecDescLength

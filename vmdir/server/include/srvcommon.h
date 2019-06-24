@@ -80,11 +80,6 @@ extern "C" {
 #define VMDIR_REPL_CONT_INDICATOR       "continue:1,"
 #define VMDIR_REPL_CONT_INDICATOR_LEN   sizeof(VMDIR_REPL_CONT_INDICATOR)-1
 
-//TODO_REMOVE_REPLV2
-// Deadlock Detection (DD) vector indicator
-#define VMDIR_REPL_DD_VEC_INDICATOR  "vector:"
-#define VMDIR_REPL_CONT_INDICATOR_STR "continue:"
-
 #define VMDIR_RUN_MODE_NORMAL           "normal"
 #define VMDIR_RUN_MODE_RESTORE          "restore"
 #define VMDIR_RUN_MODE_STANDALONE       "standalone"
@@ -257,6 +252,7 @@ typedef struct _VDIR_SUPERLOG_RECORD
 
 typedef struct _VDIR_CONN_REPL_SUPP_STATE
 {
+// TODO remove this
     PLW_HASHMAP     phmSyncStateOneMap;
 } VDIR_CONN_REPL_SUPP_STATE, *PVDIR_CONN_REPL_SUPP_STATE;
 
@@ -265,6 +261,9 @@ typedef struct _VDIR_CONNECTION_CTRL_RESOURCE
     BOOLEAN bOwnDbCopyCtrlFd; //this is added to fix the case where VDIR_CONNECTION is allocated without calling VmDirAllocateConnection
     int     dbCopyCtrlFd;
 } VDIR_CONNECTION_CTRL_RESOURCE, *PVDIR_CONNECTION_CTRL_RESOURCE;
+
+#define VDIR_IS_LOGIN_BLOCKED(pPPolicyState)    \
+    (pPPolicyState->bLockedout || pPPolicyState->bPwdExpired)
 
 typedef struct _VDIR_CONNECTION
 {
@@ -283,6 +282,7 @@ typedef struct _VDIR_CONNECTION
     VDIR_CONN_REPL_SUPP_STATE   ReplConnState;
     PVMDIR_THREAD_LOG_CONTEXT   pThrLogCtx;
     VDIR_CONNECTION_CTRL_RESOURCE ConnCtrlResource;
+    VDIR_PPOLICY_STATE          PPolicyState;
 } VDIR_CONNECTION, *PVDIR_CONNECTION;
 
 typedef struct _VDIR_CONNECTION_CTX
@@ -576,6 +576,7 @@ typedef struct SearchReq
     ACCESS_MASK     accessRequired;
     size_t          iNumEntrySent;      // total number entries sent for this request
     BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
+    VDIR_SRV_SEARCH_PLAN srvSearchPlan;
 } SearchReq;
 
 typedef union _VDIR_LDAP_REQUEST
@@ -647,8 +648,6 @@ typedef struct SyncDoneControlValue
     //   (done in result.c/VmDirSendSearchEntry)
     // 2. full page request sent and there could be more changes pending.
     BOOLEAN                 bContinue;
-    //TODO_REMOVE_REPLV2
-    PSTR                    pszDeadlockDetectionVector;
 } SyncDoneControlValue;
 
 typedef struct _VDIR_PAGED_RESULT_CONTROL_VALUE
@@ -773,6 +772,8 @@ typedef struct _VDIR_OPERATION
     PVDIR_LDAP_CONTROL  dbCopyCtrl;
     PVDIR_LDAP_CONTROL  pReplAgrDisableCtrl;
     PVDIR_LDAP_CONTROL  pReplAgrEnableCtrl;
+    PVDIR_LDAP_CONTROL  pSearchPlanCtrl;
+    PVDIR_LDAP_CONTROL  pPPolicyCtrl;
 
     // SJ-TBD: If we add quite a few controls, we should consider defining a
     // structure to hold all those pointers.
@@ -896,7 +897,6 @@ typedef struct _VMDIR_REPLICATION_AGREEMENT
     VDIR_BERVALUE               dn;
     char                        ldapURI[VMDIR_MAX_LDAP_URI_LEN];
     PSTR                        pszHostname;
-    PSTR                        pszInvocationID; //TODO_REMOVE_REPLV2
     VDIR_BERVALUE               lastLocalUsnProcessed;
     BOOLEAN                     isDeleted;
     VMDIR_DC_CONNECTION         dcConn;
@@ -936,6 +936,14 @@ typedef struct _VMDIR_SERVER_OBJECT
     PSTR        pszInvocationId;
     DWORD       dwServerId;
 } VMDIR_SERVER_OBJECT, *PVMDIR_SERVER_OBJECT;
+
+typedef struct _VMDIR_COMPACT_KV_PAIR
+{
+    PVOID    pKeyAndValue;
+    DWORD    dwKeySize;
+    DWORD    dwValueSize;
+
+} VMDIR_COMPACT_KV_PAIR, *PVMDIR_COMPACT_KV_PAIR;
 
 //clusterstate/statecache.c
 DWORD
@@ -1508,6 +1516,25 @@ VmDirAllocateBerValueAVsnprintf(
     PVDIR_BERVALUE pbvValue,
     PCSTR pszFormat,
     ...
+    );
+
+DWORD
+VmDirFillMDBIteratorDataContent(
+    PVOID    pKey,
+    DWORD    dwKeySize,
+    PVOID    pValue,
+    DWORD    dwValueSize,
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    );
+
+VOID
+VmDirFreeMDBIteratorDataContents(
+    PVMDIR_COMPACT_KV_PAIR    pMDBIteratorData
+    );
+
+VOID
+VmDirResetPPolicyState(
+    PVDIR_PPOLICY_STATE pPPolicyState
     );
 
 //accnt_mgmt.c
@@ -2096,12 +2123,6 @@ DWORD
 VmDirMetaDataSerialize(
     PVMDIR_ATTRIBUTE_METADATA    pMetadata,
     PSTR                         pszMetadata
-    );
-
-DWORD
-VmDirAttributeMetaDataToHashMap(
-    PVDIR_ATTRIBUTE   pAttrAttrMetaData,
-    PLW_HASHMAP*      ppMetaDataMap
     );
 
 DWORD

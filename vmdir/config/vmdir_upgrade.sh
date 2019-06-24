@@ -13,7 +13,6 @@ VM_LOG_DIR="/var/log/lightwave"
 # registry keys
 VMAFD_PARAM_KEY="[HKEY_THIS_MACHINE\\Services\\vmafd\\Parameters]"
 VMDIR_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir]"
-VMDIR_UPGRADE_KEY="[HKEY_THIS_MACHINE\\Services\\vmdir-upgrade]"
 ADMIN="Administrator"
 LIST_VALUES="list_values"
 USAGE="vmdir_upgrade.sh [--password <password>] [--domainname <domain-name>]"
@@ -101,10 +100,7 @@ fi
 ADMIN_NAME="$ADMIN@$DOMAIN_NAME"
 
 if [ -z "$PASSWORD" ]; then
-    if ! exec </dev/tty; then
-        echo "To finish upgrading VMware Directory Service, run the following command to configure the server:"
-        echo $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN"
-    else
+    if exec </dev/tty; then
 
         echo "Enter password for $ADMIN_NAME >>> "
         read -s PASSWORD
@@ -112,12 +108,29 @@ if [ -z "$PASSWORD" ]; then
     fi
 fi
 
-echo "Running vdcupgrade"
-echo "$PASSWORD" | $VM_BIN_DIR/vdcupgrade -H localhost -D "$ADMIN_NAME" -d "$DCACCOUNTDN" \
-                                          >$VM_LOG_DIR/vdcupgrade.log 2>&1
-if [ $? -ne 0 ]; then
-    echo "vdcupgrade failed. Resolve issues in $VM_LOG_DIR/vdcupgrade.log before retrying."
-    exit_upgrade 1
+echo "Patch vmdir schema"
+LW_NEED_SCHEMA_PATCH=$($VM_BIN_DIR/vdcschema patch-schema-defs \
+                           --file $VM_CONFIG_DIR/vmdirschema.ldif \
+                           --domain $DOMAIN_NAME \
+                           --host localhost \
+                           --login $ADMIN \
+                           --passwd $PASSWORD \
+                           --dryrun \
+                       | grep "^dn: " | wc -l)
+
+if [ $LW_NEED_SCHEMA_PATCH -ne 0 ]; then
+
+    $VM_BIN_DIR/vdcschema patch-schema-defs \
+        --file $VM_CONFIG_DIR/vmdirschema.ldif \
+        --domain $DOMAIN_NAME \
+        --host localhost \
+        --login $ADMIN \
+        --passwd $PASSWORD
+
+    if [ $? -ne 0 ]; then
+        echo "ERROR: schema patch filed."
+        exit_upgrade 1
+    fi
 fi
 
 exit_upgrade 0

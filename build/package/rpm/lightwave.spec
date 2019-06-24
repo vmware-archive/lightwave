@@ -41,6 +41,9 @@ VMware Lightwave Server
 
 %define _jarsdir %{_prefix}/jars
 %define _bindir %{_prefix}/bin
+%define _vmdirtestdir %{_prefix}/test/vmdir
+%define _vmdirtestbindir %{_vmdirtestdir}/bin
+%define _vmdirtestlibdir %{_vmdirtestdir}/lib64
 %define _stsdir %{_prefix}/vmware-sts
 %define _stssampledir %{_prefix}/vmware-sts-sample
 %define _webappsdir %{_stsdir}/webapps
@@ -185,6 +188,12 @@ Summary: Lightwave Samples
 Requires: lightwave-client >= %{_version}
 %description samples
 Lightwave Samples
+
+%package test
+Summary: Lightwave Test
+Requires: lightwave-client >= %{_version}
+%description test
+Lightwave Test
 
 %package casecurity-aws-kms
 Summary: Lightwave CA security plugin using Aws KMS
@@ -1274,18 +1283,11 @@ users.
 %{_bindir}/test-logon
 %{_bindir}/test-svr
 %{_bindir}/vdcadmintool
-%{_bindir}/vdcbackup
-%{_bindir}/vdcleavefed
-%{_bindir}/vdcpass
 %{_bindir}/vdcrepadmin
-%{_bindir}/vdcsetupldu
-%{_bindir}/vdcsrp
 %{_bindir}/unix_srp
-%{_bindir}/vdcupgrade
 %{_bindir}/vmkdc_admin
 %{_bindir}/vdcmetric
 %{_bindir}/vmdir_upgrade.sh
-%{_bindir}/vdcresetMachineActCred
 %{_bindir}/run_backup.sh
 %{_bindir}/lw_backup.sh
 %{_bindir}/aws_backup_common.sh
@@ -1301,6 +1303,7 @@ users.
 
 %{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
+%{_lib64dir}/libvmdirmdb.so*
 
 %{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcad-syslog-ng.conf
@@ -1432,6 +1435,7 @@ users.
 %{_bindir}/post_restore.sh
 
 %{_lib64dir}/sasl2/libsaslpostdb.so*
+%{_lib64dir}/libvmdirmdb.so*
 
 %{_datadir}/config/saslpostd.conf
 %{_datadir}/config/postschema.ldif
@@ -1533,11 +1537,6 @@ users.
 %exclude %{_lib64dir}/sasl2/*.a
 %exclude %{_lib64dir}/sasl2/*.la
 %exclude %{_lib64dir}/libcommonunittests.*
-%exclude %{_lib64dir}/libmisctests.*
-%exclude %{_lib64dir}/libmultitenancytests.*
-%exclude %{_lib64dir}/libpasswordapistests.*
-%exclude %{_lib64dir}/libsearchtests.*
-%exclude %{_lib64dir}/libsecuritydescriptortests.*
 
 %exclude %{_prefix}/site-packages/identity/*
 %exclude %{_webappsdir}/openidconnect-sample-rp.war
@@ -1551,6 +1550,17 @@ users.
 %{_servicedir}/vmware-sampled.service
 %{_stssampleconfdir}/*
 %{_stssamplebindir}/*
+
+%files test
+
+%defattr(-,root,root)
+%{_vmdirtestbindir}/vmdir_test_runner
+%{_vmdirtestlibdir}/libsecuritydescriptortests.*
+%{_vmdirtestlibdir}/libmisctests.*
+%{_vmdirtestlibdir}/libmultitenancytests.*
+%{_vmdirtestlibdir}/libpasswordapistests.*
+%{_vmdirtestlibdir}/libsearchtests.*
+%{_vmdirtestlibdir}/libppolicytests.*
 
 %files casecurity-aws-kms
 %defattr(-,root,root)

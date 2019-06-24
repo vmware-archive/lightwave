@@ -37,8 +37,11 @@ TestRunner(
     DWORD dwError = 0;
 
     printf("Testing password APIs ...\n");
-    dwError = TestForceResetPassword(pState);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pState->bRemoteOnly)
+    {
+        dwError = TestForceResetPassword(pState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = TestGeneratePassword(pState);
     BAIL_ON_VMDIR_ERROR(dwError);

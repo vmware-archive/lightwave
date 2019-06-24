@@ -231,48 +231,6 @@ fi
 AM_CONDITIONAL(LIGHTWAVE_BUILD, [$LIGHTWAVE_BUILD])
 
 #--------------------------------------------------------------------
-# replication v2 flag
-
-REPLICATION_V2=true
-AC_ARG_ENABLE([replicationv2],
-    [AC_HELP_STRING([--enable-replication-v2],
-                    [enable replication v2 (default: disabled)])],
-    [
-        if test x"$enableval" = x"yes"
-        then
-            REPLICATION_V2=true
-        fi
-    ])
-
-if $REPLICATION_V2
-then
-AC_DEFINE_UNQUOTED(REPLICATION_V2, 1, [ enable replication v2 ])
-fi
-
-AM_CONDITIONAL(REPLICATION_V2, [$REPLICATION_V2])
-
-#--------------------------------------------------------------------
-# MDB 0.9.22 flag
-
-MDB_0_9_22=false
-AC_ARG_ENABLE([mdb_0_9_22],
-    [AC_HELP_STRING([--enable-mdb-0-9-22],
-                    [enable mdb 0.9.22 (default: disabled)])],
-    [
-        if test x"$enableval" = x"yes"
-        then
-            MDB_0_9_22=true
-        fi
-    ])
-
-if $MDB_0_9_22
-then
-AC_DEFINE_UNQUOTED(MDB_0_9_22, 1, [ enable mdb 0.9.22 ])
-fi
-
-AM_CONDITIONAL(MDB_0_9_22, [$MDB_0_9_22])
-
-#--------------------------------------------------------------------
 # client only build
 
 ENABLE_SERVER=true
@@ -1216,6 +1174,19 @@ AC_DEFINE_UNQUOTED(VMDIR_LIB_DIR, "$VMDIR_LIB_DIR", [Lib directory])
 vmdirsasldir=$vmdirlibdir/sasl2
 AC_SUBST(vmdirsasldir)
 
+vmdirtestdir=$prefix/test/vmdir
+AC_SUBST(vmdirtestdir)
+
+vmdirtestbindir=$vmdirtestdir/bin
+AC_SUBST(vmdirtestbindir)
+AS_AC_EXPAND(VMDIR_TEST_BIN_DIR, $vmdirtestbindir)
+AC_DEFINE_UNQUOTED(VMDIR_TEST_BIN_DIR, "$VMDIR_TEST_BIN_DIR", [Bin directory])
+
+vmdirtestlibdir=$vmdirtestdir/lib64
+AC_SUBST(vmdirtestlibdir)
+AS_AC_EXPAND(VMDIR_TEST_LIB_DIR, $vmdirtestlibdir)
+AC_DEFINE_UNQUOTED(VMDIR_TEST_LIB_DIR, "$VMDIR_TEST_LIB_DIR", [Lib directory])
+
 vmdnslibdir=$prefix/lib64
 AC_SUBST(vmdnslibdir)
 AS_AC_EXPAND(VMDNS_LIB_DIR, $vmdnslibdir)
@@ -1804,7 +1775,6 @@ AC_CONFIG_FILES([Makefile
                  lwraft/thirdparty/Makefile
                  lwraft/thirdparty/openldap/Makefile
                  lwraft/thirdparty/openldap/libraries/Makefile
-                 lwraft/thirdparty/openldap/libraries/mdb/Makefile
                  lwraft/thirdparty/heimdal/Makefile
                  lwraft/thirdparty/heimdal/asn1/Makefile
                  lwraft/thirdparty/heimdal/krb5-crypto/Makefile
@@ -1825,6 +1795,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/common/Makefile
                  vmdir/server/backend/Makefile
                  vmdir/server/mdb-store/Makefile
+                 vmdir/server/dbintegritychk/Makefile
                  vmdir/server/metrics/Makefile
                  vmdir/server/indexcfg/Makefile
                  vmdir/server/middle-layer/Makefile
@@ -1833,7 +1804,6 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/ldap-head/Makefile
                  vmdir/server/api/Makefile
                  vmdir/server/rest-head/Makefile
-                 vmdir/server/replication/Makefile
                  vmdir/server/replication2/Makefile
                  vmdir/server/clusterstate/Makefile
                  vmdir/server/saslvmdirdb/Makefile
@@ -1851,6 +1821,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/testing/integration_tests/misc/Makefile
                  vmdir/testing/integration_tests/multitenancy/Makefile
                  vmdir/testing/integration_tests/passwordapis/Makefile
+                 vmdir/testing/integration_tests/ppolicy/Makefile
                  vmdir/testing/integration_tests/search/Makefile
                  vmdir/testing/unittests/Makefile
                  vmdir/testing/unittests/libcommon/Makefile
@@ -1858,15 +1829,8 @@ AC_CONFIG_FILES([Makefile
                  vmdir/tools/vdcaclmgr/Makefile
                  vmdir/tools/vdcadmintool/Makefile
                  vmdir/tools/vdcpromo/Makefile
-                 vmdir/tools/vdcpass/Makefile
                  vmdir/tools/vdcrepadmin/Makefile
-                 vmdir/tools/vdcsetupldu/Makefile
-                 vmdir/tools/vdcbackup/Makefile
                  vmdir/tools/vmkdc_admin/Makefile
-                 vmdir/tools/vdcsrp/Makefile
-                 vmdir/tools/vdcupgrade/Makefile
-                 vmdir/tools/vdcleavefed/Makefile
-                 vmdir/tools/vdcresetMachineActCred/Makefile
                  vmdir/tools/vdcmetric/Makefile
                  vmdir/tools/vdcschema/Makefile
                  vmdir/tools/test/Makefile
@@ -1875,7 +1839,6 @@ AC_CONFIG_FILES([Makefile
                  vmdir/thirdparty/Makefile
                  vmdir/thirdparty/openldap/Makefile
                  vmdir/thirdparty/openldap/libraries/Makefile
-                 vmdir/thirdparty/openldap/libraries/mdb/Makefile
                  vmdir/thirdparty/openldap/libraries/liblmdb/Makefile
                  vmdir/thirdparty/heimdal/Makefile
                  vmdir/thirdparty/heimdal/asn1/Makefile
@@ -2004,6 +1967,7 @@ AC_CONFIG_FILES([Makefile
                  mutentca/tests/unit-tests/server/Makefile
                  mutentca/tests/unit-tests/server/api/Makefile
                  mutentca/tests/unit-tests/server/api/test-mutentca-config/Makefile
+                 mutentca/tests/unit-tests/server/oidc-auth/Makefile
                  mutentca/tests/unit-tests/server/authz/Makefile
                  mutentca/tests/unit-tests/server/common/Makefile
                  mutentca/tests/unit-tests/server/db/Makefile

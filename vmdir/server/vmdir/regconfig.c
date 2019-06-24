@@ -313,14 +313,6 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_EMPTY_PAGE_COUNT,
-                    TRUE))
-        {
-            //TODO_REMOVE_REPLV2
-            gVmdirGlobals.dwEmptyPageCnt = pEntry->dwValue;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
                     VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC,
                     TRUE))
         {
@@ -339,6 +331,13 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.bEnableRegionalMaster = pEntry->dwValue ? TRUE : FALSE;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC,
+                    TRUE))
+        {
+            gVmdirGlobals.iWarnPwdExpiring = pEntry->dwValue;
         }
     }
 

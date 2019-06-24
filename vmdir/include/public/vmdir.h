@@ -59,6 +59,12 @@ extern "C" {
 #define LEGACY_DEFAULT_LDAPS_PORT_NUM      11712
 #define LEGACY_DEFAULT_LDAPS_PORT_STR      "11712"
 
+#define VMDIR_STR_DN                        "dn"
+#define VMDIR_STR_SCOPE                     "scope"
+#define VMDIR_STR_SCOPE_BASE                "base"
+#define VMDIR_STR_SCOPE_ONE                 "one"
+#define VMDIR_STR_SCOPE_SUB                 "sub"
+
 // Fixed DNs
 #define DSE_ROOT_DN                             ""
 #define PERSISTED_DSE_ROOT_DN                   "cn=DSE Root"
@@ -74,6 +80,7 @@ extern "C" {
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
 #define INTEGRITY_CHECK_STATUS_DN               "cn=integritycheckstatus"
+#define DB_INTEGRITY_CHECK_STATUS_DN            "cn=dbintegritycheckstatus"
 #define DB_CROSS_CHECK_STATUS_DN                "cn=dbcrosscheckstatus"
 #define LDAPRPC_PING_DN                         "cn=ping,cn=ldaprpc"
 #define LDAPRPC_VOTE_DN                         "cn=vote,cn=ldaprpc"
@@ -453,6 +460,7 @@ extern "C" {
 
 // cn=integritycheck sudo entry
 #define INTEGRITY_CHECK_STATUS_CN       "IntegrityCheckStatus"
+#define DB_INTEGRITY_CHECK_STATUS_CN    "DBIntegrityCheckStatus"
 
 // cn=replicationstatus sudo entry
 #define REPLICATION_STATUS_CN           "ReplicationStatus"
@@ -533,6 +541,11 @@ extern "C" {
 #define LDAP_REPL_AGR_DISABLE_CONTROL           "1.3.6.1.4.1.6876.40.10.10"
 // vmw LDAP control for enabling a replication agreement
 #define LDAP_REPL_AGR_ENABLE_CONTROL            "1.3.6.1.4.1.6876.40.10.11"
+// vmw LDAP control to verify search algorithm (for testing purpose)
+#define LDAP_SEARCH_PLAN_CONTROL                "1.3.6.1.4.1.6876.40.10.12"
+
+// https://tools.ietf.org/html/draft-behera-ldap-password-policy-10
+#define LDAP_PPOLICY_CONTROL                    "1.3.6.1.4.1.42.2.27.8.5.1"
 
 // Logging stuff
 #define MAX_LOG_MESSAGE_LEN    4096

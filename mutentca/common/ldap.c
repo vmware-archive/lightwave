@@ -255,6 +255,7 @@ LwCAUPNToDN(
 {
     DWORD                   dwError = 0;
     long                    httpReqStatusCode = 0;
+    int                     inResultCount = 0;
     PVM_HTTP_CLIENT         pHTTPClient = NULL;
     PLWCA_JSON_OBJECT       pJson = NULL;
     PLWCA_JSON_OBJECT       pJsonResult = NULL;
@@ -345,6 +346,14 @@ LwCAUPNToDN(
 
     dwError = LwCAJsonLoadObjectFromString(pcszHTTPResponse, &pJson);
     BAIL_ON_LWCA_ERROR(dwError);
+
+    dwError = LwCAJsonGetIntegerFromKey(pJson, FALSE, LWCA_VMDIR_RESP_RESULT_COUNT, &inResultCount);
+    BAIL_ON_LWCA_ERROR(dwError);
+
+    if (inResultCount == 0)
+    {
+        BAIL_WITH_LWCA_ERROR(dwError, LWCA_ERROR_ENTRY_NOT_FOUND);
+    }
 
     dwError = LwCAJsonGetObjectFromKey(pJson, TRUE, LWCA_VMDIR_RESP_RESULT, &pJsonResult);
     BAIL_ON_LWCA_ERROR(dwError);

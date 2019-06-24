@@ -60,7 +60,6 @@ typedef EntryId               ENTRYID;
 #define VMDIR_MAX_TIMESTAMP_LEN   20
 #endif
 
-
 typedef struct _VMDIR_REPL_PARTNER_INFO
 {
     CHAR*       pszURI;

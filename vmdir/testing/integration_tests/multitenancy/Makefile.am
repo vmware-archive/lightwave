@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libmultitenancytests.la
+vmdirtestlib_LTLIBRARIES = libmultitenancytests.la
 
 libmultitenancytests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

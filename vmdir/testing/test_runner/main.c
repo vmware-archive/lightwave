@@ -29,6 +29,7 @@ ShowUsage(
     printf("\t-d/--domain domain -- The domain to use (e.g., vsphere.local)\n");
     printf("\t-b/--break -- Break into debugger if a test fails.\n");
     printf("\t-k/--keep-going -- Don't stop on failed test result.\n");
+    printf("\t-r/--remote-only -- skip IPC test cases.\n");
     printf("\t-t/--test -- The directory containing tests or the test DLL itself\n");
 }
 
@@ -51,38 +52,6 @@ PostValidationRoutine(
     }
 
     return 0;
-}
-
-DWORD VmDirSetBaseDN(
-    PVMDIR_TEST_STATE pState
-    )
-{
-    PSTR pszBaseDN = NULL;
-    DWORD dwError = 0;
-    PSTR pszDot = NULL;
-
-    pszDot = strchr(pState->pszDomain, '.');
-    if (pszDot == NULL)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-    *pszDot = '\0';
-
-    dwError = VmDirAllocateStringPrintf(
-                &pszBaseDN,
-                "dc=%s,dc=%s",
-                pState->pszDomain,
-                pszDot + 1);
-    *pszDot = '.';
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pState->pszBaseDN = pszBaseDN;
-
-cleanup:
-    return dwError;
-error:
-    VMDIR_SAFE_FREE_STRINGA(pszBaseDN);
-    goto cleanup;
 }
 
 DWORD
@@ -220,6 +189,38 @@ error:
 }
 
 DWORD
+_TestAcquireAdminToken(
+    PVMDIR_TEST_STATE pState
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pszToken = NULL;
+    VMDIR_OIDC_ACQUIRE_TOKEN_INFO TokenInfo = {0};
+
+    TokenInfo.method = METHOD_PASSWORD;
+    TokenInfo.pszDomain = pState->pszDomain;
+    TokenInfo.pszUPN = pState->pszUserUPN;
+    TokenInfo.pszPassword = pState->pszPassword;
+    TokenInfo.pszScope = OIDC_TOKEN_SCOPE_VMDIR;
+
+    dwError = VmDirTestOidcTokenAcquire(
+        pState->pszServerName,
+        OIDC_DEFAULT_PORT,
+        &TokenInfo,
+        &pszToken);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pState->pszAdminAccessToken = pszToken;
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_SAFE_FREE_MEMORY(pszToken);
+    goto cleanup;
+}
+
+DWORD
 TestInfrastructureInitialize(
     PVMDIR_TEST_STATE pState
     )
@@ -231,7 +232,15 @@ TestInfrastructureInitialize(
     pState->pszTestContainerName = DEFAULT_TEST_CONTAINER_NAME;
     pState->pszInternalUserName = DEFAULT_INTERNAL_USER_NAME;
 
-    dwError = VmDirSetBaseDN(pState);
+    dwError = VmDirDomainNameToDN(pState->pszDomain, (PSTR*)&pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    // assume default user container
+    dwError = VmDirAllocateStringPrintf(
+                (PSTR*)&pState->pszUserDN,
+                "cn=%s,cn=users,%s",
+                pState->pszUserName,
+                pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSafeLDAPBind(
@@ -239,6 +248,16 @@ TestInfrastructureInitialize(
                 pState->pszServerName,
                 pState->pszUserUPN,
                 pState->pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _TestAcquireAdminToken(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestRestPing(
+        pState->pszServerName,
+        DEFAULT_HTTPS_PORT_NUM,
+        pState->pszAdminAccessToken,
+        NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     //
@@ -345,6 +364,7 @@ VmDirMain(
         {'d', "domain", CL_STRING_PARAMETER, &State.pszDomain},
         {'b', "break", CL_NO_PARAMETER, &State.bBreakIntoDebugger},
         {'k', "keep-going", CL_NO_PARAMETER, &State.bKeepGoing},
+        {'r', "remote-only", CL_NO_PARAMETER, &State.bRemoteOnly},
         {'t', "test", CL_STRING_PARAMETER, &State.pszTest},
         {0, 0, 0, 0}
     };
@@ -369,6 +389,11 @@ VmDirMain(
                 "%s@%s",
                 State.pszUserName,
                 State.pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    SSL_library_init();
+
+    dwError = OidcClientGlobalInit();
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("VmDir integration tests starting ...\n");

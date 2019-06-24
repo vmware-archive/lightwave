@@ -119,6 +119,11 @@ VmDirMDBBEInterface (
         VMDIR_SF_INIT(.pfnBEIndexTableRead, VmDirMDBIndexTableReadRecord),
         VMDIR_SF_INIT(.pfnBEIndexTableWrite, VmDirMDBIndexTableWriteRecord),
         VMDIR_SF_INIT(.pfnBEBackendTableWrite, VmDirMDBBackendTableWriteRecord),
+        VMDIR_SF_INIT(.pfnBEBackendDBIteratorInit, VmDirMDBIteratorInit),
+        VMDIR_SF_INIT(.pfnBEBackendDBIterator, VmDirMDBIterate),
+        VMDIR_SF_INIT(.pfnBEBackendDBIteratorFree, VmDirMDBIteratorFree),
+        VMDIR_SF_INIT(.pfnBEBackendGetAllDBNames, VmDirMDBGetAllDBNames),
+        VMDIR_SF_INIT(.pfnBEBackendGetDBKeysCount, VmDirMDBGetDBKeysCount),
     };
 
     return &mdbBEInterface;

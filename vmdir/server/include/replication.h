@@ -126,8 +126,6 @@ VmDirReplMetricsLoadCountConflictPermanent(
 /*
  * UTD vector cache
  */
-#ifdef REPLICATION_V2
-
 DWORD
 VmDirUTDVectorGlobalCacheInit(
     VOID
@@ -154,113 +152,6 @@ VmDirFreeUTDVectorGlobalCache(
     VOID
     );
 
-#else
-
-DWORD
-VmDirUTDVectorCacheInit(
-    VOID
-    );
-
-DWORD
-VmDirUTDVectorCacheUpdate(
-    PCSTR   pszNewUTDVector
-    );
-
-DWORD
-VmDirUTDVectorCacheToString(
-    PSTR*   ppszUTDVector
-    );
-
-DWORD
-VmDirUTDVectorCacheLookup(
-    PCSTR   pszInvocationId,
-    USN*    pUsn
-    );
-
-VOID
-VmDirUTDVectorCacheShutdown(
-    VOID
-    );
-
-DWORD
-VmDirSyncDoneCtrlFromLocalCache(
-    USN              lastSupplierUsnProcessed,
-    PLW_HASHMAP      pUtdVectorMap,
-    struct berval*   pPageSyncDoneCtrl
-    );
-
-DWORD
-VmDirUTDVectorLookup(
-    PLW_HASHMAP pUtdVectorMap,
-    PCSTR   pszInvocationId,
-    USN*    pUsn
-    );
-
-DWORD
-VmDirStringToUTDVector(
-    PCSTR          pszUTDVector,
-    PLW_HASHMAP*   ppMap
-    );
-
-DWORD
-VmDirUTDVectorToString(
-    PLW_HASHMAP   pMap,
-    PSTR*         ppszUTDVector
-    );
-
-DWORD
-VmDirUpdateUtdVectorLocalCache(
-    PLW_HASHMAP      pUtdVectorMap,
-    struct berval*   pPageSyncDoneCtrl
-    );
-#endif
-
-//TODO_REMOVE_REPLV2
-/*
- * deadlockdetectionvector.c
- */
-DWORD
-VmDirDDVectorInit(
-    VOID
-    );
-
-VOID
-VmDirDDVectorShutdown(
-    VOID
-    );
-
-DWORD
-VmDirDDVectorUpdate(
-    PCSTR   pszInvocationId,
-    DWORD   dwValue
-    );
-
-BOOLEAN
-VmDirConsumerRoleActive(
-    VOID
-    );
-
-VOID
-VmDirDDVectorClear(
-    VOID
-    );
-
-DWORD
-VmDirDDVectorParseString(
-    PSTR       pszDeadlockDetectionVectorStr,
-    PBOOLEAN   pbCompleteReplCycle
-    );
-
-DWORD
-VmDirDDVectorToString(
-    PCSTR   pszInvocationId,
-    PSTR*   ppDeadlockDetectionVectorStr
-    );
-
-VOID
-VmDirPopulateInvocationIdInReplAgr(
-    VOID
-    );
 #ifdef __cplusplus
 }
 #endif

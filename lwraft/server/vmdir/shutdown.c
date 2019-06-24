@@ -51,31 +51,35 @@ VmDirShutdown(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: stop LDAP listening threads", __func__);
     VmDirShutdownConnAcceptThread();
 
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
-    VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);
-
-    if (!bRESTHeadStopped || !bLDAPHeadStopped)
-    {
-        //Cannot make a graceful shutdown
-        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL, "%s: timeout while waiting for LDAP/REST operation threads to stop.", __func__);
-        goto done;
-    } else
-    {
-        *pbVmDirStopped = TRUE;
-        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: operation threads stopped gracefully", __func__);
-    }
-
-    VmDirBkgdThreadShutdown();
-    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
-
     VmDirRpcServerShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: RPC service stopped", __func__);
 
     VmDirIpcServerShutDown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: IPC service stopped", __func__);
 
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: wait for LDAP operation threads to stop ...", __func__);
+    VmDirWaitForLDAPOpThr(&bLDAPHeadStopped);
+
+    VmDirBkgdThreadShutdown();
+    VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: background thread stopped", __func__);
+
     VmDirStopSrvThreads();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: server threads stopped", __func__);
+
+    if (!bRESTHeadStopped || !bLDAPHeadStopped)
+    {
+        //Cannot make a graceful shutdown
+        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
+            "%s: timeout while waiting for LDAP(%d)/REST(%d) operation threads to stop.",
+            __func__, bLDAPHeadStopped, bRESTHeadStopped);
+
+        goto done;
+    }
+    else
+    {
+        *pbVmDirStopped = TRUE;
+        VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: operation threads stopped gracefully", __func__);
+    }
 
     VmDirPasswordSchemeFree();
 
@@ -84,11 +88,6 @@ VmDirShutdown(
 
     VmDirMiddleLayerLibShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: shutdown middle layer complete.", __func__);
-
-    /* ssalley: Fixme after beta2:
-       Can't call VmDirOpensslShutdown until all threads using it have exited.
-    VmDirOpensslShutdown();
-    */
 
     VmDirSASLShutdown();
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "%s: SASL shutdown complete.", __func__);
@@ -103,14 +102,7 @@ VmDirShutdown(
     VmDirShutdownAndFreeAllBackends();
 
     VmDirCleanupGlobals();
-   /*
-    * TODO move curl_global_init/curl_global_cleanup out of OidcClient
-    * can't call OidcClientGlobalCleanup untill all threads have exited.
-    *
-    * #ifdef REST_ENABLED
-    *   OidcClientGlobalCleanup();
-    * #endif
-    */
+
     VmMetricsDestroy(pmContext);
 
     VmDirFreeThreadContext();

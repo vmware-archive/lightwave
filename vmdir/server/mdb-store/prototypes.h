@@ -167,4 +167,30 @@ MDBDropDB(
     VDIR_DB    mdbDBi
     );
 
+//iterate.c
+DWORD
+VmDirMDBIteratorInit(
+    PSTR                             pszDBName,
+    PVMDIR_COMPACT_KV_PAIR           pData,
+    PVDIR_BACKEND_TABLE_ITERATOR*    ppIterator
+    );
+
+DWORD
+VmDirMDBIterate(
+    PVDIR_BACKEND_TABLE_ITERATOR    pIterator,
+    PVMDIR_COMPACT_KV_PAIR          pData
+    );
+
+VOID
+VmDirMDBIteratorFree(
+    PVDIR_BACKEND_TABLE_ITERATOR    pIterator
+    );
+
+//generic.c
+DWORD
+VmDirMDBGetDBi(
+    PSTR        pszDBName,
+    PVDIR_DB    pDBi
+    );
+
 #endif /* MDB_H_ */

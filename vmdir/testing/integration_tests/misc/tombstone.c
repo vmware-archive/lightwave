@@ -163,7 +163,7 @@ _TombstoneWait(
     DWORD dwPeriod
     )
 {
-    VmDirSleep((dwFrequency + dwPeriod) * 1000);
+    VmDirSleep((dwFrequency*2 + 1) * 1000);
 }
 
 VOID
@@ -175,17 +175,20 @@ GetTombstoneTimeouts(
     DWORD dwFrequency = 0;
     DWORD dwPeriod = 0;
 
+    // test could be run on a non-server node, default to small value.
+    // in this case, expect server to have the same key values set.
+    //    (i.e. see support/tests/lightwave/server/promote.sh)
     (VOID)VmDirGetRegKeyValueDword(
             "Services\\vmdir\\Parameters",
             VMDIR_REG_KEY_TOMBSTONE_EXPIRATION_IN_SEC,
             &dwPeriod,
-            45 * 24 * 60 * 60);
+            5);
 
     (VOID)VmDirGetRegKeyValueDword(
             "Services\\vmdir\\Parameters",
             VMDIR_REG_KEY_TOMBSTONE_REAPING_FREQ_IN_SEC,
             &dwFrequency,
-            24 * 60 * 60);
+            10);
 
     *pdwFrequency = dwFrequency;
     *pdwPeriod = dwPeriod;
@@ -204,17 +207,27 @@ TestTombstone(
     PSTR pszGuid = NULL;
     DWORD dwFrequency = 0;
     DWORD dwPeriod = 0;
+    DWORD dwCnt = 0;
+    PSTR pszTombstoneTestUser[] = {
+        "tombstone-test-user-1",
+        "tombstone-test-user-2",
+        "tombstone-test-user-3",
+        "tombstone-test-user-4",
+        "tombstone-test-user-5",
+        NULL };
 
     printf("Testing tombstone reaping code ...\n");
 
     GetTombstoneTimeouts(&dwFrequency, &dwPeriod);
-    if (dwFrequency > 60 || dwPeriod > 60)
+    if (dwFrequency > 60 || dwPeriod > 60 || dwPeriod > dwFrequency)
     {
         printf("Tombstone timeouts are too big, making testing impossible.\n");
         printf("Skipping these tests for now. Please modify the values via the registry and restart vmdir\n");
         dwError = 0;
         goto cleanup;
     }
+    printf("TombstoneExpirationPeriodInSec=%d ...\n", dwPeriod);
+    printf("TombstoneReapingThreadFreqInSec=%d ...\n", dwFrequency);
 
     dwError = VmDirTestGetGuid(&psUserName);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -222,11 +235,25 @@ TestTombstone(
     dwError = VmDirTestCreateUser(pState, VmDirTestGetTestContainerCn(pState), psUserName, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // vmdir tombstone does batch/(5) delete
+    for (dwCnt=0; pszTombstoneTestUser[dwCnt] ; dwCnt++)
+    {
+        dwError = VmDirTestCreateUser(pState, VmDirTestGetTestContainerCn(pState), pszTombstoneTestUser[dwCnt], NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     dwError = _VdcGetObjectGuid(pState, VmDirTestGetTestContainerCn(pState), psUserName, &pszGuid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestDeleteUser(pState, VmDirTestGetTestContainerCn(pState), psUserName);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; pszTombstoneTestUser[dwCnt] ; dwCnt++)
+    {
+        dwError = VmDirTestDeleteUser(pState, VmDirTestGetTestContainerCn(pState), pszTombstoneTestUser[dwCnt]);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
 
     //
     // Check that user has a tombstone entry.
@@ -240,6 +267,7 @@ TestTombstone(
     TestAssertEquals(dwError, LDAP_NO_SUCH_OBJECT);
 
     printf("Tombstone tests succeded!\n");
+    fflush(stdout);
     dwError = 0;
 cleanup:
     VMDIR_SAFE_FREE_STRINGA(psUserName);

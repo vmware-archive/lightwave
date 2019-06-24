@@ -76,6 +76,16 @@ typedef struct _VDIR_MDB_ENTRYBLOB_ITERATOR
 
 } VDIR_MDB_ENTRYBLOB_ITERATOR, *PVDIR_MDB_ENTRYBLOB_ITERATOR;
 
+typedef struct _VDIR_MDB_ITERATOR
+{
+    BOOLEAN                    bAbort;
+    BOOLEAN                    bHasTxn;
+    PVDIR_DB_DBC               pCursor;
+    PVDIR_DB_TXN               pTxn;
+    VMDIR_COMPACT_KV_PAIR      data;
+
+} VDIR_MDB_ITERATOR, *PVDIR_MDB_ITERATOR;
+
 typedef struct _VDIR_MDB_GLOBALS
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...

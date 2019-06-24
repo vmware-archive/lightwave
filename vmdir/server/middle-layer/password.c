@@ -757,16 +757,18 @@ VdirPasswordModifyPreCheck(
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, " read entry (%s) failed",
                                      VDIR_SAFE_STRING(BERVAL_NORM_VAL(pOperation->request.modifyReq.dn)));
 
-        // handle krb logic first while we have clear text password
-        dwError = VmDirKrbUPNKeySet(  pOperation,
-                                      pEntry,
-                                      &pModAddPasswd->attr.vals[0]);
+        // calculate krb secret
+        dwError = VmDirKrbUPNKeySet(
+            pOperation,
+            pEntry,
+            &pModAddPasswd->attr.vals[0]);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        // handle srp password logic.
-        dwError = VmDirSRPSetSecret( pOperation,
-                                     pEntry,
-                                     &(pModAddPasswd->attr.vals[0]) );
+        // calculate srp secret
+        dwError = VmDirSRPSetSecret(
+            pOperation,
+            pEntry,
+            &(pModAddPasswd->attr.vals[0]));
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pAttrPasswd = VmDirFindAttrByName(pEntry, ATTR_USER_PASSWORD);
@@ -834,7 +836,6 @@ VdirPasswordModifyPreCheck(
     }
 
 cleanup:
-
     if (pEntry)
     {
         VmDirFreeEntry(pEntry);
@@ -847,10 +848,43 @@ cleanup:
     return dwError;
 
 error:
+    // if related to PPolicy, set control response accordingly
+    VdirSetPPolicyError(pOperation, dwError);
 
     VMDIR_SET_LDAP_RESULT_ERROR( &(pOperation->ldapResult), dwError, pszLocalErrMsg );
 
     goto cleanup;
+}
+
+VOID
+VdirSetPPolicyError(
+    PVDIR_OPERATION     pOperation,
+    DWORD               dwPwdError
+    )
+{
+    assert(pOperation);
+
+    if (pOperation->pPPolicyCtrl)
+    {
+        switch (dwPwdError)
+        {
+        case VMDIR_ERROR_PASSWORD_POLICY_VIOLATION:
+        case VMDIR_ERROR_PASSWORD_INSUFFICIENT_QUALITY:
+            pOperation->conn->PPolicyState.PPolicyError = PP_insufficientPasswordQuality;
+            break;
+
+        case VMDIR_ERROR_PASSWORD_TOO_SHORT:
+            pOperation->conn->PPolicyState.PPolicyError = PP_passwordTooShort;
+            break;
+
+        case VMDIR_ERROR_PASSWORD_IN_HISTORY:
+            pOperation->conn->PPolicyState.PPolicyError = PP_passwordInHistory;
+            break;
+
+        default:
+            break;
+        }
+    }
 }
 
 /*
@@ -916,17 +950,8 @@ error:
 
 /*
  * Password set/change scenario -
- * 1. Set Password by admin user- MOD request must have
- *    replace: userpassword
- *    userpassword: NEW_USER_PASSWORD
- * 2. Change Password by self user - MOD request must have -
-      delete: userpassword
-      userpassword: EXISTING_USER_PASSWORD
-      -
-      add: userpassword
-      userpassword: NEW_USER_PASSWORD
- *
- * TODO, for self change, consider replace as well?
+ * 1. use replace
+ * 2. use delete and add
  */
 static
 DWORD
@@ -993,6 +1018,7 @@ PasswdModifyRequestCheck(
     if (( bPasswdAdd && !bPasswdDelete) ||
         (!bPasswdAdd &&  bPasswdDelete))
     {
+        // Hmm, TODO this implies password deletion is NOT allowed.
         dwError = LDAP_UNWILLING_TO_PERFORM;
         BAIL_ON_VMDIR_ERROR_WITH_MSG(dwError, pszLocalErrMsg, "Password add and delete must come in pair" );
     }
@@ -1247,7 +1273,7 @@ OldPasswdRecycleCheck(
 
         if (memcmp(bvDigest.lberbv.bv_val, pszBlob, uPasswdSize) == 0)
         {
-            dwError = VMDIR_ERROR_PASSWORD_POLICY_VIOLATION;
+            dwError = VMDIR_ERROR_PASSWORD_IN_HISTORY;
             BAIL_ON_VMDIR_ERROR(dwError);
         }
     }
@@ -1329,11 +1355,14 @@ PasswordStrengthCheck(
 
     assert(pNewPasswd && pPolicy);
 
-    if (pNewPasswd->lberbv.bv_len > pPolicy->iMaxLen ||
-        pNewPasswd->lberbv.bv_len < pPolicy->iMinLen)
+    if (pNewPasswd->lberbv.bv_len > pPolicy->iMaxLen)
     {
-        dwError = VMDIR_ERROR_PASSWORD_POLICY_VIOLATION;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_POLICY_VIOLATION);
+    }
+
+    if (pNewPasswd->lberbv.bv_len < pPolicy->iMinLen)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_TOO_SHORT);
     }
 
     for (iCnt = 0; iCnt < pNewPasswd->lberbv.bv_len; iCnt++)
@@ -1372,8 +1401,7 @@ PasswordStrengthCheck(
             iSameCharCnt++;
             if (iSameCharCnt >= pPolicy->iMaxSameAdjacentCharCnt)
             {
-                dwError = VMDIR_ERROR_PASSWORD_POLICY_VIOLATION;
-                BAIL_ON_VMDIR_ERROR(dwError);
+                BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_INSUFFICIENT_QUALITY);
             }
         }
 
@@ -1389,8 +1417,7 @@ PasswordStrengthCheck(
         iLowerCnt   < pPolicy->iMinLowerCaseCnt          ||
         iAlphaCnt   < pPolicy->iMinAlphaCnt)
     {
-        dwError = VMDIR_ERROR_PASSWORD_POLICY_VIOLATION;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_INSUFFICIENT_QUALITY);
     }
 
 error:

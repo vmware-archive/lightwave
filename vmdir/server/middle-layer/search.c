@@ -1342,13 +1342,6 @@ VmDirProcessCandidateList(
                         pOperation->request.searchReq.sizeLimit);
     }
 
-#ifndef REPLICATION_V2
-    retVal = VmDirUpdateSyncDoneCtl(
-            pOperation,
-            numSentEntries);
-    BAIL_ON_VMDIR_ERROR(retVal);
-#endif
-
 cleanup:
     pOperation->dwSentEntries = numSentEntries;
     VmDirFreeEntryContent(pSrEntry);

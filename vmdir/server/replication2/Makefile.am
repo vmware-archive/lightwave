@@ -6,7 +6,6 @@ libreplication_la_SOURCES = \
     consumer.c \
     dbcopy.c \
     dbswap.c \
-    deadlockdetectionvector.c \
     drrestore.c \
     extractevents.c \
     firstreplcycle.c \

@@ -32,25 +32,16 @@ VmDirReplUpdateListFetch(
     )
 {
     int                            retVal       = LDAP_SUCCESS;
-    BOOLEAN                        bLogErr      = TRUE;
     PSTR                           pszUtdVector = NULL;
     LDAPControl*                   srvCtrls[2]  = {NULL, NULL};
     PVMDIR_REPLICATION_UPDATE_LIST pReplUpdateList = NULL;
     LDAP*                          pLd          = NULL;
-    struct timeval                 tv           = {0};
-    struct timeval*                pTv          = NULL;
     PSTR                           pszFilter    = NULL;
     LDAPMessage                    *pSearchRes   = NULL;
     LDAPControl                    **ppSearchResCtrls = NULL;
     int                            iEntriesReceived = 0;
     LDAPControl                    syncReqCtrl;
     USN                            lastSupplierUsnProcessed = 0;
-
-    if (gVmdirGlobals.dwLdapSearchTimeoutSec > 0)
-    {
-        tv.tv_sec =  gVmdirGlobals.dwLdapSearchTimeoutSec;
-        pTv = &tv;
-    }
 
     pLd = pReplAgr->dcConn.pLd;
 
@@ -94,22 +85,11 @@ VmDirReplUpdateListFetch(
             FALSE,
             srvCtrls,
             NULL,
-            pTv, // default 60 sec - time out on client/server side.
+            NULL, // V2 fetch all changes in one call, no timeout.
             LDAP_NO_LIMIT,
             &pSearchRes);
 
-    //TODO_REMOVE_REPLV2, busy is valid only in role exclusion case
-    if (retVal == LDAP_BUSY)
-    {
-        VMDIR_LOG_INFO(
-                LDAP_DEBUG_REPL,
-                "%s: partner (%s) is busy",
-                __FUNCTION__,
-                pReplAgr->dcConn.pszHostname);
-
-        bLogErr = FALSE;
-    }
-    else if (retVal)
+    if (retVal)
     {   // for all other errors, force disconnect
         pReplAgr->dcConn.connState = DC_CONNECTION_STATE_NOT_CONNECTED;
     }
@@ -210,18 +190,16 @@ cleanup:
     return retVal;
 
 ldaperror:
-    if (bLogErr)
-    {
-        VMDIR_LOG_ERROR(
-                VMDIR_LOG_MASK_ALL,
-                "%s: error: %d filter: '%s' received: %d usn: %llu utd: '%s'",
-                __FUNCTION__,
-                retVal,
-                VDIR_SAFE_STRING(pszFilter),
-                iEntriesReceived,
-                lastSupplierUsnProcessed,
-                VDIR_SAFE_STRING(pszUtdVector));
-    }
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s: error: %d filter: '%s' received: %d usn: %llu utd: '%s'",
+            __FUNCTION__,
+            retVal,
+            VDIR_SAFE_STRING(pszFilter),
+            iEntriesReceived,
+            lastSupplierUsnProcessed,
+            VDIR_SAFE_STRING(pszUtdVector));
+
     VmDirFreeReplUpdateList(pReplUpdateList);
     pReplUpdateList = NULL;
 

@@ -431,6 +431,11 @@ VmAfSrvPromoteVmDir(
                               VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
             BAIL_ON_VMAFD_ERROR(dwError);
 
+            VmAfdLog( VMAFD_DEBUG_ANY,
+                     "%s LDAP join to %s passed",
+                     __FUNCTION__,
+                     pszPartnerHostName);
+
             dwDNSRetry = 0;
 
             do
@@ -463,6 +468,8 @@ VmAfSrvPromoteVmDir(
                     dwError);
             }
             BAIL_ON_VMAFD_ERROR(dwError);
+
+            VmAfdLog( VMAFD_DEBUG_ANY, "%s DNS configured", __FUNCTION__);
         }
         else
         {   // join with pre-copied DB. need to create DNS rec before VmDirJoin
@@ -499,6 +506,8 @@ VmAfSrvPromoteVmDir(
              }
              BAIL_ON_VMAFD_ERROR(dwError);
 
+             VmAfdLog( VMAFD_DEBUG_ANY, "%s DNS configured", __FUNCTION__);
+
              dwError = VmDirJoin(
                                pszLotusServerName,
                                pszUserName,
@@ -507,6 +516,12 @@ VmAfSrvPromoteVmDir(
                                pszPartnerHostName,
                                VMAFD_FIRST_REPL_CYCLE_MODE_COPY_DB);
              BAIL_ON_VMAFD_ERROR(dwError);
+
+             VmAfdLog( VMAFD_DEBUG_ANY,
+                     "%s LDAP join to %s passed",
+                     __FUNCTION__,
+                     pszPartnerHostName);
+
         }
 
     }
@@ -658,7 +673,8 @@ VmAfSrvDemoteVmDir(
         {
             VmAfdLog(
                 VMAFD_DEBUG_ANY,
-                "%s failed to uninitialize dns. Error(%u)",
+                "%s failed to uninitialize %s dns. Error(%u)",
+                pszServerName,
                 __FUNCTION__,
                 dwError);
             dwError = 0;
@@ -667,7 +683,8 @@ VmAfSrvDemoteVmDir(
         {
             VmAfdLog(
                 VMAFD_DEBUG_ANY,
-                "%s successfully uninitialized dns.",
+                "%s successfully uninitialized %s dns.",
+                pszServerName,
                 __FUNCTION__);
         }
 
@@ -676,6 +693,12 @@ VmAfSrvDemoteVmDir(
                       pszUserName,
                       pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s successfully leave %s node.",
+            pszServerName,
+            __FUNCTION__);
     }
     else
     {
@@ -704,7 +727,7 @@ VmAfSrvDemoteVmDir(
         {
             VmAfdLog(
                 VMAFD_DEBUG_ANY,
-                "%s failed to uninitialize dns. Error(%u)",
+                "%s failed to uninitialize local node dns. Error(%u)",
                 __FUNCTION__,
                 dwError);
             dwError = 0;
@@ -713,7 +736,7 @@ VmAfSrvDemoteVmDir(
         {
             VmAfdLog(
                 VMAFD_DEBUG_ANY,
-                "%s successfully uninitialized dns.",
+                "%s successfully uninitialized local node dns.",
                 __FUNCTION__);
         }
 
@@ -724,6 +747,11 @@ VmAfSrvDemoteVmDir(
 
         dwError = VmDirDemote(pszUserName, pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
+
+        VmAfdLog(
+            VMAFD_DEBUG_ANY,
+            "%s successfully demote local node.",
+            __FUNCTION__);
 
         dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_NONE);
         BAIL_ON_VMAFD_ERROR(dwError);

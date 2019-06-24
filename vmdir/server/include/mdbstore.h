@@ -285,6 +285,17 @@ VmDirMDBUniqKeySetValue(
     PCSTR               pszValue
     );
 
+DWORD
+VmDirMDBGetAllDBNames(
+    PVMDIR_STRING_LIST*    ppDBList
+    );
+
+DWORD
+VmDirMDBGetDBKeysCount(
+    PSTR     pszDBName,
+    PDWORD   pdwKeysCount
+    );
+
 // index.c
 DWORD
 VmDirMDBInitializeIndexDB(

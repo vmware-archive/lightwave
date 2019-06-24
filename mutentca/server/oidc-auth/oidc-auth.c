@@ -153,9 +153,13 @@ error:
         *pbAuthenticated = FALSE;
     }
     LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPN);
+    pReqCtx->pszBindUPN = NULL;
     LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNDN);
+    pReqCtx->pszBindUPNDN = NULL;
     LWCA_SAFE_FREE_STRINGA(pReqCtx->pszBindUPNTenant);
+    pReqCtx->pszBindUPNTenant = NULL;
     LwCAFreeStringArray(pReqCtx->pBindUPNGroups);
+    pReqCtx->pBindUPNGroups = NULL;
 
     LWCA_LOG_ERROR(
             "[%s:%d] Failed to authenticate OIDC token. Error (%d) UPN (%s) ReqId (%s)",

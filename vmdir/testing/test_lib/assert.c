@@ -82,6 +82,27 @@ VmDirTestReportAssertionFailureDwordOperands(
 }
 
 VOID
+VmDirTestReportAssertionFailureDwordBetweenOperands(
+    PCSTR pszSideA,
+    PCSTR pszSideB,
+    PCSTR pszSideC,
+    DWORD dwValueA,
+    DWORD dwValueB,
+    DWORD dwValueC,
+    PCSTR pszFile,
+    PCSTR pszFunction,
+    DWORD dwLineNumber,
+    PVMDIR_TEST_STATE pState
+    )
+{
+    printf("%s:%d: %s:\n", pszFile, dwLineNumber, pszFunction);
+    printf("Assertion Failure: %s < %s < %s\n", pszSideA, pszSideB, pszSideC);
+    printf("Actual values: %d / %d / %d\n", dwValueA, dwValueB, dwValueC);
+
+    _VmDirTestAssertionWorker(pState);
+}
+
+VOID
 VmDirTestReportAssertionFailurePtrOperands(
     PCSTR pszSideA,
     PCSTR pszSideB,

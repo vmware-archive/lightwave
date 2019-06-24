@@ -484,6 +484,15 @@ extern "C" {
         goto ldaperror;                                             \
     }
 
+#define BAIL_ON_SSO_ERROR(dwError)                          \
+    if (dwError)                                                    \
+    {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
+        VmDirGetThreadLogContextValue(&pThreadLogContext);                  \
+        if (pThreadLogContext)                                              \
+        { pThreadLogContext->pszFuncName = __FUNCTION__; pThreadLogContext->dwFuncLine = __LINE__; } \
+        goto ssoerror;                                             \
+    }
+
 #define BAIL_ON_SIMPLE_LDAP_ERROR(dwError)                          \
     if (dwError)                                                    \
     {   PVMDIR_THREAD_LOG_CONTEXT pThreadLogContext = NULL;                 \
@@ -919,6 +928,7 @@ if ( VMDIR_ASCII_UPPER(c) )             \
 #define VMDIR_IPC_DELETE_TENANT        8
 #define VMDIR_IPC_ENUMERATE_TENANTS    9
 #define VMDIR_IPC_SERVER_RESET         10
+#define VMDIR_IPC_BACKUP_DB            11
 
 //VERSIONS
 #define VER1_INPUT 0

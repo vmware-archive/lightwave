@@ -407,11 +407,13 @@ ShowUsage(
 {
     PSTR pszUsageText =
            "Usage: lightwave domain demote { arguments }\n"
+           "    To demote a remote domain controller, stop lightwave services on the remote node.\n"
+           "    To demote a local domain controller, make sure all lightwave services are running locally.\n"
            "Arguments:\n"
            "    [--username <account name>]\n"
            "    --password  <password>\n"
            "    [--domain   <fully qualified domain name>]\n"
-           "    [--domain-controller <domain controller to demote>]\n";
+           "    [--domain-controller <fully qualified domain controller to demote>]\n";
 
     printf("%s", pszUsageText);
 }

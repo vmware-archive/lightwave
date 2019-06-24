@@ -116,14 +116,6 @@ typedef struct _VMDIR_LOG_CTX
 #endif
 #endif
 
-typedef struct _VMDIR_SASL_INTERACTIVE_DEFAULT
-{
-    PCSTR   pszRealm;
-    PCSTR   pszAuthName;
-    PCSTR   pszUser;
-    PCSTR   pszPass;
-} VMDIR_SASL_INTERACTIVE_DEFAULT, *PVMDIR_SASL_INTERACTIVE_DEFAULT;
-
 //IPC
 typedef struct  _VM_DIR_CONNECTION_
 {

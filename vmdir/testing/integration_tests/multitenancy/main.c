@@ -56,6 +56,16 @@ TestCleanup(
                 pState->pszPassword,
                 "foobar.net");
 
+    (VOID)VmDirDeleteTenant(
+                pState->pszUserUPN,
+                pState->pszPassword,
+                "com");
+
+    (VOID)VmDirDeleteTenant(
+                pState->pszUserUPN,
+                pState->pszPassword,
+                "net");
+
     return 0;
 }
 
@@ -73,21 +83,29 @@ TestRunner(
     PVMDIR_TEST_STATE pState
     )
 {
-    printf("Testing multi-tenancy code ...\n");
+    if (!pState->bRemoteOnly)
+    {
+        printf("Testing multi-tenancy code ...\n");
 
-    NullParametersShouldFail(pState);
-    InvalidCredentialsShouldFail(pState);
+        NullParametersShouldFail(pState);
+        InvalidCredentialsShouldFail(pState);
 
-    ShouldBeAbleToCreateTenants(pState);
-    ShouldNotBeAbleToCreateTenantsOfACertainLength(pState);
+        ShouldBeAbleToCreateTenants(pState);
+        ShouldBeAbleToCreateTenantsOfMultipleDepth(pState);
 
-    ShouldBeAbleToEnumerateTenants(pState);
+        ShouldBeAbleToEnumerateTenants(pState);
 
-    ShouldBeAbleToDeleteTenants(pState);
+        ShouldBeAbleToDeleteTenants(pState);
 
-    TestMultiTenancyPermissions(pState);
+        TestMultiTenancyPermissions(pState);
 
-    printf("Multi-tenancy testing completed successfully.\n");
+        printf("Multi-tenancy testing completed successfully.\n");
+    }
+    else
+    {
+        printf("Skip testing multi-tenancy code ...\n");
+    }
+    fflush(stdout);
 
     return 0;
 }

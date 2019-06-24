@@ -331,6 +331,37 @@ VmAfdStringToLA(
     return strtol( nptr, endptr, base );
 }
 
+DWORD
+VmAfdStringToINT64(
+    PCSTR     pszString,
+    PSTR*     ppEndPtr,
+    INT64*    pOutVal
+    )
+{
+    DWORD    dwError = 0;
+    INT64    value = 0;
+
+    if (!pszString || !pOutVal)
+    {
+        BAIL_WITH_VMAFD_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    errno = 0;
+    value = strtoll(pszString, ppEndPtr, 10);
+    if (errno)
+    {
+        BAIL_WITH_VMAFD_ERROR(dwError, ERROR_INVALID_PARAMETER);
+    }
+
+    *pOutVal = value;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
 int
 VmAfdStringToIA(
    PCSTR pStr

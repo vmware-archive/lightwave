@@ -247,7 +247,7 @@
         /*.pszName        = */ VMDIR_REG_KEY_LDAP_RECV_TIMEOUT_SEC,  \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
+        /*.dwMin          = */ 3,                                \
         /*.dwMax          = */ 65535,                            \
         /*.dwDefault      = */ 180,                              \
         /*.dwValue        = */ 0,                                \
@@ -441,17 +441,6 @@
         /*.pszValue       = */ NULL                              \
     },                                                           \
     {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_EMPTY_PAGE_COUNT,   \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 1,                                \
-        /*.dwMax          = */ 10,                               \
-        /*.dwDefault      = */ 1,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
         /*.pszName        = */ VMDIR_REG_KEY_SUPPLIER_THREAD_TIMEOUT_IN_MILLI_SEC, \
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
@@ -480,6 +469,17 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 1,                                \
         /*.dwDefault      = */ 0,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC, \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 100*24*60*60,                     \
+        /*.dwDefault      = */ 15*24*60*60,                      \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

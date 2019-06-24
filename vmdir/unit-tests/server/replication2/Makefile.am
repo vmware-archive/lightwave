@@ -1,5 +1,3 @@
-if REPLICATION_V2
-
 bin_PROGRAMS = replication2
 
 check_PROGRAMS = replication2
@@ -42,6 +40,7 @@ replication2_LDADD = \
     $(top_builddir)/vmdir/server/acl/libvmacl.la \
     $(top_builddir)/vmdir/server/backend/libbackend.la \
     $(top_builddir)/vmdir/server/mdb-store/libmdb-store.la \
+    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/libvmdirmdb.la \
     $(top_builddir)/vmdir/server/replication2/libreplication.la \
     $(top_builddir)/vmdir/server/clusterstate/libclusterstate.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
@@ -80,4 +79,3 @@ replication2_LDFLAGS = \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@ \
     -Wl,--wrap,VmDirEntryGetAllMustAttrs
-endif

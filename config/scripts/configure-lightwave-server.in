@@ -383,37 +383,20 @@ _get_lw_version
 # check if it's a promoted container
 if [[ "$DOMAIN_STATE" -eq 1 ]] && [[ -f /.dockerenv ]]; then
 
+    # perform vmdir upgrade and schema patch
+    $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
+                              --domainname $LOTUS_DOMAIN_DEFAULT
+
+    if [ $? -ne 0 ]; then
+        echo  "vmdir upgrade failed."
+        _exit 2
+    fi
+
     #check installed version
     _get_installed_version
 
     # Check if versions are different
     if [ "$INSTALLED_VERSION" != "$LW_VERSION" ]; then
-
-        # Set vmdir command line arguments to maintenance mode
-        VMDIR_ARG=`$LW_BIN_DIR/lwregshell list_values $VMDIR_KEY | \
-                grep 'Arguments' | sed 's/+//' | cut -d '"' -f4`
-
-        $LW_BIN_DIR/lwregshell set_value \
-                               $VMDIR_KEY Arguments "$VMDIR_ARG -m standalone"
-        $LW_BIN_DIR/lwsm refresh
-
-        # perform vmdir upgrade
-        $BIN_DIR/vmdir_upgrade.sh --password "$LOTUS_ADMIN_PASSWORD_DEFAULT" \
-                                  --domainname $LOTUS_DOMAIN_DEFAULT
-
-        if [ $? -ne 0 ]; then
-            echo  "Upgrade failed."
-            _exit 2
-        fi
-
-        # Upgrade successful, reset vmdir cli args
-        $LW_BIN_DIR/lwregshell set_value $VMDIR_KEY Arguments "$VMDIR_ARG"
-        $LW_BIN_DIR/lwsm refresh
-        # take vmdir out of maintenance mode using no-restart method
-        $LW_BIN_DIR/lwsm start vmafd
-        $BIN_DIR/dir-cli state set --state NORMAL \
-                                   --login $LOTUS_ADMIN_DEFAULT \
-                                   --password "$LOTUS_ADMIN_PASSWORD_DEFAULT"
 
         # Update installed version on upgrade success
         _set_installed_version

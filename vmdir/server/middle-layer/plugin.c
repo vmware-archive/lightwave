@@ -1064,15 +1064,15 @@ _VmDirPluginPasswordHashPreAdd(
     }
 
 cleanup:
-
     VMDIR_SAFE_FREE_MEMORY(pSalt);
 
     return dwError;
 
 error:
+    // if related to PPolicy, set control response accordingly
+    VdirSetPPolicyError(pOperation, dwError);
 
     VMDIR_APPEND_ERROR_MSG(pOperation->ldapResult.pszErrMsg, pszErrorContext);
-
     VmDirFreeBervalContent(&bervHashDigest);
 
     goto cleanup;
@@ -1792,14 +1792,7 @@ _VmDirpluginPasswordPostModifyCommit(
              dwPriorResult == VMDIR_ERROR_USER_INVALID_CREDENTIAL
            )
         {
-            // could be from VdirPasswordModifyPreCheck (pEntry has NO content) or
-            //          from password modify fail (bad password)
-            VdirPasswordFailEvent(
-                        pOperation,
-                        BERVAL_NORM_VAL(pOperation->request.modifyReq.dn),
-                        pEntry->eId != 0 ? pEntry : NULL);
-
-            // should always return LDAP_INVALID_CREDENTIALS
+            // should always return LDAP_INVALID_CREDENTIALS (TODO not clear why)
             dwError = LDAP_INVALID_CREDENTIALS;
 
             VMDIR_LOG_ERROR(

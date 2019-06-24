@@ -558,6 +558,15 @@ VmDirIpcServerReset(
     PDWORD pdwResponseSize
     );
 
+DWORD
+VmDirIpcBackupDB(
+    PVM_DIR_SECURITY_CONTEXT pSecurityContext,
+    PBYTE pRequest,
+    DWORD dwRequestSize,
+    PBYTE * ppResponse,
+    PDWORD pdwResponseSize
+    );
+
 // superlogging.h
 DWORD
 VmDirInitializeSuperLogging(
@@ -659,6 +668,7 @@ VmDirIntegrityReportSetPartner(
     PVMDIR_INTEGRITY_REPORT pReport,
     PCSTR                   pszPartner
     );
+
 #ifdef __cplusplus
 }
 #endif

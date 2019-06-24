@@ -1,4 +1,4 @@
-lib_LTLIBRARIES = libsecuritydescriptortests.la
+vmdirtestlib_LTLIBRARIES = libsecuritydescriptortests.la
 
 libsecuritydescriptortests_la_CPPFLAGS = \
     -I$(top_srcdir)/vmdir/include \

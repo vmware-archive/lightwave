@@ -17,6 +17,7 @@
 #include <ifaddrs.h>
 #include <arpa/inet.h>
 #include <config.h>
+#include <lber.h>
 #include <ldap.h>
 #include <sasl/sasl.h>
 #include <openssl/crypto.h>

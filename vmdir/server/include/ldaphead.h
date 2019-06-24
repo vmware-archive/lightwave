@@ -18,7 +18,6 @@
 #define LH_H_
 
 // add.c
-#ifdef REPLICATION_V2
 int
 VmDirParseBerToEntry(
     BerElement*     ber,
@@ -26,15 +25,6 @@ VmDirParseBerToEntry(
     ber_int_t*      pErrCode,
     PSTR*           ppszErrMsg
     );
-#else
-int
-VmDirParseBerToEntry(
-    BerElement *ber,
-    PVDIR_ENTRY e,
-    ber_int_t *pErrCode,
-    PSTR *ppszErrMsg
-    );
-#endif
 
 int
 VmDirParseEntry(
@@ -128,14 +118,6 @@ ParseAndFreeSyncStateControl(
     USN*        pulPartnerUSN
     );
 
-#ifndef REPLICATION_V2
-DWORD
-VmDirUpdateSyncDoneCtl(
-    PVDIR_OPERATION   pOp,
-    DWORD     dwSentEntryCount
-    );
-#endif
-
 int
 WriteSyncDoneControl(
     VDIR_OPERATION *     op,
@@ -146,6 +128,12 @@ int
 WritePagedSearchDoneControl(
     VDIR_OPERATION *    op,
     BerElement *        ber
+    );
+
+int
+VmDirWriteSearchPlanControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
     );
 
 int
@@ -170,6 +158,12 @@ VmDirCreateStatePingControlContent(
 
 int
 VmDirWriteDbCopyReplyControl(
+    VDIR_OPERATION*     pOp,
+    BerElement*         pBer
+    );
+
+int
+VmDirWritePPolicyReplyControl(
     VDIR_OPERATION*     pOp,
     BerElement*         pBer
     );

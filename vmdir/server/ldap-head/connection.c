@@ -98,15 +98,6 @@ _VmDirPingAcceptThr(
     DWORD   dwPort
     );
 
-#ifndef REPLICATION_V2
-static
-BOOLEAN
-_VmDirShutdownConnection(
-    PVDIR_OPERATION  pOp,
-    uint64_t*        piStartSupplierTime
-    );
-#endif
-
 DWORD
 VmDirAllocateConnection(
     PVDIR_CONNECTION* ppConn
@@ -130,6 +121,7 @@ VmDirAllocateConnection(
     }
 
     pConn->ConnCtrlResource.dbCopyCtrlFd = -1;
+    pConn->PPolicyState.PPolicyError = PP_noError;
 
     *ppConn = pConn;
 
@@ -522,9 +514,8 @@ BindListenOnPort(
        }
    }
 
-   if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0)
    {
-       sTimeout.tv_sec = gVmdirGlobals.dwLdapRecvTimeoutSec;
+       sTimeout.tv_sec = IDLE_SOCK_TIMEOUT_CHECK_FREQ;
        sTimeout.tv_usec = 0;
 
        if (setsockopt(*pSockfd, SOL_SOCKET, SO_RCVTIMEO, (const char*) &sTimeout, sizeof(sTimeout)) < 0)
@@ -580,6 +571,78 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirReadLdapHead(
+    VDIR_CONNECTION* pConn,
+    BerElement*     ber
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwreTries = 0;
+    DWORD   dwSockIdleTime = 0;
+    ber_len_t   len = 0;
+    ber_tag_t   tag = LBER_ERROR;
+
+    // Read complete LDAP request message (tag, length, and real message).
+    while (dwreTries < MAX_NUM_OF_SOCK_READ_RETRIES)
+    {
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, LDAP_NOTICE_OF_DISCONNECT);
+        }
+
+        if ((tag = ber_get_next(pConn->sb, &len, ber)) == LDAP_TAG_MESSAGE)
+        {
+            goto cleanup; // done reading socket
+        }
+
+        if (errno == EWOULDBLOCK || errno == EAGAIN)
+        {
+            if (ber->ber_len == 0)
+            {
+                dwSockIdleTime += IDLE_SOCK_TIMEOUT_CHECK_FREQ;
+                if (dwSockIdleTime < gVmdirGlobals.dwLdapRecvTimeoutSec)
+                {
+                    continue; // go back to ber_get_next
+                }
+
+                BAIL_WITH_VMDIR_ERROR(dwError, LDAP_NOTICE_OF_DISCONNECT);
+            }
+
+            //This may occur when not all data have recieved - set to EAGAIN/EWOULDBLOCK by ber_get_next,
+            // and in such case ber->ber_len > 0;
+            if (dwreTries > 0 && dwreTries % 5 == 0)
+            {
+                VMDIR_LOG_WARNING(VMDIR_LOG_MASK_ALL,
+                        "%s: ber_get_next() failed with errno = %d, peer (%s), re-trying (%d)",
+                        __func__,
+                        errno,
+                        pConn->szClientIP,
+                        dwreTries);
+            }
+            VmDirSleep(200);
+            dwreTries++;
+            continue;   // go back to ber_get_next
+        }
+        else
+        {
+            BAIL_WITH_VMDIR_ERROR(dwError, LDAP_NOTICE_OF_DISCONNECT);
+        }
+    }
+    BAIL_WITH_VMDIR_ERROR(dwError, LDAP_NOTICE_OF_DISCONNECT);
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
+            "%s: disconnect peer (%s), errno (%d), idle time (%d), dwError (%d), buf read (%d)",
+            __FUNCTION__, pConn->szClientIP, errno, dwSockIdleTime, dwError, ber->ber_len);
+
+    goto cleanup;
+}
+
 /*
  *  We own pConnection and delete it when done.
  */
@@ -596,17 +659,12 @@ ProcessAConnection(
     BerElement *     ber = NULL;
     ber_int_t        msgid = -1;
     PVDIR_OPERATION  pOperation = NULL;
-    int              reTries = 0;
     BOOLEAN          bDownOpThrCount = FALSE;
     PVDIR_CONNECTION_CTX pConnCtx = NULL;
     METRICS_LDAP_OPS operationTag = METRICS_LDAP_OP_IGNORE;
     BOOLEAN          bReplSearch = FALSE;
     uint64_t         iStartTime = 0;
     uint64_t         iEndTime = 0;
-#ifndef REPLICATION_V2
-    uint64_t         iStartSupplierTime = 0;
-    BOOLEAN          bShutdown = FALSE;
-#endif
     // increment operation thread counter
     retVal = VmDirSyncCounterIncrement(gVmdirGlobals.pOperationThrSyncCounter);
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -652,78 +710,10 @@ ProcessAConnection(
          *                       controls       [0] Controls OPTIONAL }
          */
 
+        iStartTime = VmDirGetTimeInMilliSec();
 
-        // reset retry count
-        reTries = 0;
-        // Read complete LDAP request message (tag, length, and real message).
-        while (reTries < MAX_NUM_OF_SOCK_READ_RETRIES)
-        {
-            iStartTime = VmDirGetTimeInMilliSec();
-
-            if ((tag = ber_get_next(pConn->sb, &len, ber)) == LDAP_TAG_MESSAGE)
-            {
-                break;
-            }
-
-#ifdef _WIN32
-            // in ber_get_next (liblber) call, sock_errset() call WSASetLastError()
-            errno = WSAGetLastError();
-            if (errno == EWOULDBLOCK || errno == EAGAIN || errno == WSAETIMEDOUT)
-#else
-            if (errno == EWOULDBLOCK || errno == EAGAIN)
-#endif
-            {
-                if (gVmdirGlobals.dwLdapRecvTimeoutSec > 0 && ber->ber_len == 0)
-                {
-                    VMDIR_LOG_INFO(
-                            LDAP_DEBUG_CONNS,
-                            "%s: disconnecting peer (%s), idle > %d seconds",
-                            __func__,
-                            pConn->szClientIP,
-                            gVmdirGlobals.dwLdapRecvTimeoutSec);
-
-                    retVal = LDAP_NOTICE_OF_DISCONNECT;
-                    BAIL_ON_VMDIR_ERROR(retVal);
-                }
-
-                //This may occur when not all data have recieved - set to EAGAIN/EWOULDBLOCK by ber_get_next,
-                // and in such case ber->ber_len > 0;
-                if (reTries > 0 && reTries % 5 == 0)
-                {
-                    VMDIR_LOG_WARNING(
-                            VMDIR_LOG_MASK_ALL,
-                            "%s: ber_get_next() failed with errno = %d, peer (%s), re-trying (%d)",
-                            __func__,
-                            errno,
-                            pConn->szClientIP,
-                            reTries);
-                }
-                VmDirSleep(200);
-                reTries++;
-                continue;
-            }
-
-            // Unexpected error case.
-            if (errno == 0)
-            {
-                VMDIR_LOG_INFO(
-                        LDAP_DEBUG_CONNS,
-                        "%s: ber_get_next() peer (%s) disconnected",
-                        __func__,
-                        pConn->szClientIP);
-            }
-            else
-            {
-                VMDIR_LOG_ERROR(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: ber_get_next() call failed with errno = %d peer (%s)",
-                        __func__,
-                        errno,
-                        pConn->szClientIP);
-            }
-            retVal = LDAP_NOTICE_OF_DISCONNECT;
-            BAIL_ON_VMDIR_ERROR(retVal);
-        }
+        retVal = _VmDirReadLdapHead(pConn, ber);
+        BAIL_ON_VMDIR_ERROR(retVal);
 
         // Read LDAP request messageID (tag, length (not returned since it is implicit/integer), and messageID value)
         if ((tag = ber_get_int(ber, &msgid)) != LDAP_TAG_MSGID)
@@ -768,6 +758,7 @@ ProcessAConnection(
             if (retVal != LDAP_SASL_BIND_IN_PROGRESS)
             {
                 _VmDirCollectBindSuperLog(pConn, pOperation); // ignore error
+                operationTag = METRICS_LDAP_OP_BIND;
             }
             break;
 
@@ -845,21 +836,13 @@ ProcessAConnection(
             _VmDirScrubSuperLogContent(tag, &pConn->SuperLogRec);
         }
 
-#ifndef REPLICATION_V2
-        bShutdown = _VmDirShutdownConnection(pOperation, &iStartSupplierTime);
-#endif
-
         VmDirFreeOperation(pOperation);
         pOperation = NULL;
 
         ber_free(ber, 1);
         ber = NULL;
 
-#ifndef REPLICATION_V2
-        if (retVal == LDAP_NOTICE_OF_DISCONNECT || bShutdown) // returned as a result of protocol parsing error.
-#else
         if (retVal == LDAP_NOTICE_OF_DISCONNECT) // returned as a result of protocol parsing error.
-#endif
         {
             // RFC 4511, section 4.1.1: If the server receives an LDAPMessage from the client in which the LDAPMessage
             // SEQUENCE tag cannot be recognized, the messageID cannot be parsed, the tag of the protocolOp is not
@@ -1435,61 +1418,3 @@ _VmDirPingAcceptThr(
 
     return;
 }
-
-#ifndef REPLICATION_V2
-/*
- * Graceful shutdown is best effort - supplier and consumer thread has a
- * timeout of 10 sec default.
- * Supplier thread
- *     - When vmdir in shutdown state, all external ports are blocked.
- *       From one successfull supplier cycle after shutdown, we can infer that all
- *       the orginating changes on this node reached atleast one partner.
- */
-static
-BOOLEAN
-_VmDirShutdownConnection(
-    PVDIR_OPERATION  pOp,
-    uint64_t*        piStartSupplierTime
-    )
-{
-    BOOLEAN   bShutdown = FALSE;
-    uint64_t  iTimeDiff = 0;
-
-    iTimeDiff = *piStartSupplierTime ? (VmDirGetTimeInMilliSec() - *piStartSupplierTime) : 0;
-
-    if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
-    {
-        if (pOp->syncReqCtrl == NULL)
-        {
-            bShutdown = TRUE;
-        }
-        else
-        {
-            if (*piStartSupplierTime == 0)
-            {
-                *piStartSupplierTime = VmDirGetTimeInMilliSec();
-            }
-            else if (pOp->syncDoneCtrl->value.syncDoneCtrlVal.bContinue == FALSE)
-            {
-                VMDIR_LOG_INFO(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: supplier cycle complete, for: %s",
-                        __FUNCTION__,
-                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
-                bShutdown = TRUE;
-            }
-            else if (iTimeDiff >=  gVmdirGlobals.dwSupplierThrTimeoutInMilliSec)
-            {
-                VMDIR_LOG_WARNING(
-                        VMDIR_LOG_MASK_ALL,
-                        "%s: supplier timed out, for: %s",
-                        __FUNCTION__,
-                        VDIR_SAFE_STRING(pOp->syncReqCtrl->value.syncReqCtrlVal.reqInvocationId.lberbv.bv_val));
-                bShutdown = TRUE;
-            }
-        }
-    }
-
-    return  bShutdown;
-}
-#endif

@@ -46,6 +46,7 @@ VmDirPerformBind(
    ber_tag_t    berTag = 0;
    BOOLEAN      bResultAlreadySent = FALSE;
    PCSTR        pszBindMethod = VMDIR_PCSTR_UNKNOWN;
+   PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
 
    memset( pBindReq, 0, sizeof( BindReq ));
 
@@ -73,7 +74,7 @@ VmDirPerformBind(
    switch (pBindReq->method)
    {
        case LDAP_AUTH_SIMPLE:
-               if ( ber_scanf( pOperation->ber, "m}", &(pBindReq->cred.lberbv) ) == LBER_ERROR )
+               if ( ber_scanf( pOperation->ber, "m", &(pBindReq->cred.lberbv) ) == LBER_ERROR )
                {
                    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "PerformBind: ber_scanf failed" );
                   BAIL_ON_STATIC_LDAP_ERROR( retVal, LDAP_PROTOCOL_ERROR, (pOperation->ldapResult.pszErrMsg),
@@ -99,7 +100,7 @@ VmDirPerformBind(
                    }
                }
 
-               if ( ber_scanf( pOperation->ber, /*{{*/ "}}" ) == LBER_ERROR )
+               if ( ber_scanf( pOperation->ber, /*{*/ "}" ) == LBER_ERROR )
                {
                    BAIL_ON_STATIC_LDAP_ERROR( retVal, LDAP_PROTOCOL_ERROR, (pOperation->ldapResult.pszErrMsg),
                                               "Decoding error.");
@@ -111,6 +112,17 @@ VmDirPerformBind(
        default:
            BAIL_ON_STATIC_LDAP_ERROR( retVal, LDAP_UNWILLING_TO_PERFORM,  (pOperation->ldapResult.pszErrMsg),
                                       "bind method not supported.");
+   }
+
+   retVal = ParseRequestControls(pOperation, pResult);
+   BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
+
+   if ( ber_scanf( pOperation->ber, "}") == LBER_ERROR )
+   {
+       VMDIR_LOG_ERROR( LDAP_DEBUG_ARGS, "ParseEntry: ber_scanf failed" );
+       pResult->errCode = LDAP_PROTOCOL_ERROR;
+       retVal = LDAP_NOTICE_OF_DISCONNECT;
+       BAIL_ON_SIMPLE_LDAP_ERROR(retVal);
    }
 
     retVal = VmDirMLBind( pOperation );

@@ -513,6 +513,22 @@ DirCliLdapUserModifyAttrPwdNeverExp(
     );
 
 DWORD
+DirCliLdapUserSetUserActControl(
+    LDAP* pLd,
+    PCSTR pszAccountDN,
+    PCSTR pszDomain,
+    int64_t iUserActCtl
+    );
+
+DWORD
+DirCliLdapUserUnsetUserActControl(
+    LDAP* pLd,
+    PCSTR pszAccountDN,
+    PCSTR pszDomain,
+    int64_t iUserActCtl
+    );
+
+DWORD
 DirCliLdapReplaceUserAttr(
     LDAP* pLd,
     PCSTR pszAccountDN,
@@ -629,6 +645,14 @@ DirCliLdapCheckAttribute(
     PCSTR    pszAttribute,
     PCSTR    pszValue,
     ATTR_SEARCH_RESULT* pAttrStatus
+    );
+
+DWORD
+DirCliLdapGetAttribute(
+    LDAP*    pLd,
+    PCSTR    pszObjectDN,
+    PCSTR    pszAttribute,
+    PSTR*    ppszValue
     );
 
 DWORD
