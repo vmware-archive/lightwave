@@ -1022,3 +1022,44 @@ error:
 
     goto cleanup;
 }
+
+DWORD
+VmDirCheckAdminGXAccess(
+    PVDIR_ACCESS_INFO   pAccessInfo
+    )
+{
+    DWORD                         dwError     = 0;
+    ACCESS_MASK                   samGranted  = 0;
+
+    if (!pAccessInfo)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    if (!gVmdirdSDGlobals.pSDdcAdminGXAbsolute)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
+    }
+
+    /*Check access rights*/
+    dwError = VmDirSrvAccessCheckEntry(
+            pAccessInfo->pAccessToken,
+            gVmdirdSDGlobals.pSDdcAdminGXAbsolute,
+            VMDIR_ENTRY_GENERIC_EXECUTE,
+            &samGranted);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (samGranted != VMDIR_ENTRY_GENERIC_EXECUTE)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
+    }
+
+    // grant builtin and dc admin group
+    pAccessInfo->accessRoleBitmap |= VDIR_ACCESS_IS_ADMIN_OR_DC_GROUP_MEMBER;
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}

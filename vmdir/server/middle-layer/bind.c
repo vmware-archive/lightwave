@@ -303,6 +303,9 @@ _VmDirBindSetupAccessInfo(
                                    &pAccessInfo->pszBindedDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // ignore error, just want to set pAccessInfo->accessRoleBitmap of builtin/dc admin member
+    VmDirCheckAdminGXAccess(pAccessInfo);
+
 cleanup:
     return dwError;
 

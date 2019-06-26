@@ -237,6 +237,8 @@ VmDirCleanupGlobals(
     // Free gVmdirdSDGlobals upon shutdown
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminGX);
     VMDIR_SAFE_FREE_MEMORY(gVmdirdSDGlobals.pSDdcAdminRPWPDE);
+    VmDirFreeAbsoluteSecurityDescriptor(&gVmdirdSDGlobals.pSDdcAdminGXAbsolute);
+    VmDirFreeAbsoluteSecurityDescriptor(&gVmdirdSDGlobals.pSDdcAdminRPWPDEAbsolute);
 
     VMDIR_SAFE_FREE_MUTEX(gVmDirServerOpsGlobals.pMutex);
     VmDirFreeLinkedList(gVmDirServerOpsGlobals.pWriteQueue->pList);

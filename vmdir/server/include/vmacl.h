@@ -291,6 +291,11 @@ VmDirSrvAccessCheckEntry(
     ACCESS_MASK*                    psamGranted
     );
 
+DWORD
+VmDirCheckAdminGXAccess(
+    PVDIR_ACCESS_INFO   pAccessInfo
+    );
+
 // security.c
 DWORD
 VmDirGetSecurityDescriptorForEntry(
