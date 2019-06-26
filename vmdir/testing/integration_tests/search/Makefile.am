@@ -10,7 +10,8 @@ libsearchtests_la_CPPFLAGS = \
 libsearchtests_la_SOURCES = \
     anonymous_search.c \
     main.c \
-    pagedsearch.c
+    pagedsearch.c \
+    provision.c
 
 libsearchtests_la_LIBADD = \
     @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \

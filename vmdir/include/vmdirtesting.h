@@ -223,7 +223,8 @@ VmDirTestGetInternalUserDn(
 DWORD
 VmDirTestCreateContainer(
     PVMDIR_TEST_STATE pState,
-    PCSTR pszName,
+    PCSTR pszContainer,
+    PCSTR pszContainerDN, /* OPTIONAL */
     PCSTR pszAcl /* OPTIONAL */
     );
 

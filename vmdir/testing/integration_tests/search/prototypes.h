@@ -31,3 +31,13 @@ DWORD
 PagedSearchTestCleanup(
     PVMDIR_TEST_STATE pState
     );
+
+DWORD
+TestProvisionSearchSetup(
+    PVMDIR_SEARCH_TEST_CONTEXT pContext
+    );
+
+DWORD
+TestProvisionSearchCleanup(
+    PVMDIR_SEARCH_TEST_CONTEXT pContext
+    );

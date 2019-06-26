@@ -65,6 +65,27 @@ rpm -Uvh --nodeps buildrpms/x86_64/lightwave-1*.rpm
 /opt/likewise/bin/lwregshell set_value \
   '[HKEY_THIS_MACHINE\Services\vmdir]' "Arguments" "/opt/vmware/sbin/vmdird -c -L /var/log/lightwave/vmdird.log -f /opt/vmware/share/config/vmdirschema.ldif"
 
+# set vmdir key for serach test cases
+# MaxIndexScan default 32/8192/512,  set to 1024
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "MaxIndexScan" REG_DWORD 0x400
+
+# SmallCandidateSet default 16/8192/32,  set to 128
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "SmallCandidateSet" REG_DWORD 0x80
+
+# MaxSizeLimitScan default 0/MAX/0,  set to 512
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "MaxSizeLimitScan" REG_DWORD 0x200
+
+# MaxIterationScan default 0/MAX/10000,  set to 512+128=640
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "MaxIterationScan" REG_DWORD 0x280
+
+# MaxIterationScanTxn default 0/50000/2000, set to 64
+/opt/likewise/bin/lwregshell add_value \
+  '[HKEY_THIS_MACHINE\Services\vmdir\Parameters]' "MaxIterationScanTxn" REG_DWORD 0x40
+
 #set multiplesan option so localhost can be added to cert
 #cannot use cli for this before promote
 #if this is not done before promote, steps will get complicated
@@ -85,6 +106,15 @@ then
 
   /opt/likewise/bin/lwsm restart vmdir
   /opt/likewise/bin/lwsm restart vmca
+
+  # provision schema for integration_tests
+  /opt/vmware/bin/vdcschema patch-schema-defs \
+      --file /scripts/vmdir_search_test_schema.ldif \
+      --domain $LIGHTWAVE_DOMAIN \
+      --host localhost \
+      --login administrator \
+      --passwd $LIGHTWAVE_PASS
+
 else
 
   wait_for_server $LIGHTWAVE_NODE_1

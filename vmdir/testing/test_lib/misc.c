@@ -166,6 +166,7 @@ DWORD
 VmDirTestCreateContainer(
     PVMDIR_TEST_STATE pState,
     PCSTR pszContainer,
+    PCSTR pszContainerDN, /* OPTIONAL */
     PCSTR pszAcl /* OPTIONAL */
     )
 {
@@ -181,26 +182,34 @@ VmDirTestCreateContainer(
     };
     LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], NULL};
 
-    if (IsNullOrEmptyString(pszContainer))
+    if (!pszContainer && pszContainerDN)
     {
-        valsCn[0] = VmDirTestGetTestContainerCn(pState);
-
-        dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,%s",
-                VmDirTestGetTestContainerCn(pState),
-                pState->pszBaseDN);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
-    else
+
+    if (!pszContainerDN)
     {
-        dwError = VmDirAllocateStringPrintf(
-                &pszDN,
-                "cn=%s,cn=%s,%s",
-                pszContainer,
-                VmDirTestGetTestContainerCn(pState),
-                pState->pszBaseDN);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (IsNullOrEmptyString(pszContainer))
+        {
+            valsCn[0] = VmDirTestGetTestContainerCn(pState);
+
+            dwError = VmDirAllocateStringPrintf(
+                    &pszDN,
+                    "cn=%s,%s",
+                    VmDirTestGetTestContainerCn(pState),
+                    pState->pszBaseDN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+        else
+        {
+            dwError = VmDirAllocateStringPrintf(
+                    &pszDN,
+                    "cn=%s,cn=%s,%s",
+                    pszContainer,
+                    VmDirTestGetTestContainerCn(pState),
+                    pState->pszBaseDN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
     }
 
     if (IsNullOrEmptyString(pszAcl))
@@ -209,7 +218,7 @@ VmDirTestCreateContainer(
     }
 
     dwError = ldap_add_ext_s(
-            pState->pLd, pszDN, attrs, NULL, NULL);
+            pState->pLd, pszContainerDN ? pszContainerDN : pszDN, attrs, NULL, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
