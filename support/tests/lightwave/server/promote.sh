@@ -107,13 +107,22 @@ then
   /opt/likewise/bin/lwsm restart vmdir
   /opt/likewise/bin/lwsm restart vmca
 
-  # provision schema for integration_tests
+  # provision schema for integration_tests/search
   /opt/vmware/bin/vdcschema patch-schema-defs \
       --file /scripts/vmdir_search_test_schema.ldif \
       --domain $LIGHTWAVE_DOMAIN \
       --host localhost \
       --login administrator \
       --passwd $LIGHTWAVE_PASS
+
+  # add default SD to objectclass vmwsearchtest, so authenticated user can read them
+  # TODO, should add this feature to vdcschema tool
+  ldapmodify -h localhost -Y SRP -U administrator@$LIGHTWAVE_DOMAIN -w $LIGHTWAVE_PASS  <<EOF
+dn: cn=vmwsearchtest,cn=schemacontext
+changetype: modify
+add: defaultsecuritydescriptor
+defaultSecurityDescriptor: D:(A;;RC;;;S-1-0-0-545)(A;;RP;;;S-1-0-0-515)
+EOF
 
 else
 

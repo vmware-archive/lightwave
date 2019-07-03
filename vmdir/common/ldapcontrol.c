@@ -296,7 +296,20 @@ VmDirCreateSearchPlanControlContent(
 
     tmpBV.bv_val = pSearchPlan->pszIndex;
     tmpBV.bv_len = pSearchPlan->pszIndex ? VmDirStringLenA(pSearchPlan->pszIndex) : 0;
-    if (ber_printf(pBer, "{eO}", pSearchPlan->searchAlgo, &tmpBV) == -1)
+
+    if (ber_printf(pBer, "{eOibbbiiiii}",
+            pSearchPlan->searchAlgo,
+            &tmpBV,
+            pSearchPlan->iEntrySent,
+            pSearchPlan->bPagedSearch,
+            pSearchPlan->bPagedSearchDone,
+            pSearchPlan->bExceedMaxIteration,
+            pSearchPlan->candiatePlan.iCandateSize,
+            pSearchPlan->IteratePlan.iIteratePriority,
+            pSearchPlan->IteratePlan.iNumIteration,
+            pSearchPlan->IteratePlan.iMDBKeyType,
+            pSearchPlan->IteratePlan.iMDBCursorFlag)
+        == -1)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
     }
@@ -343,7 +356,18 @@ VmDirParseSearchPlanControlContent(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
     }
 
-    berTag = ber_scanf(pBer, "{em}", &pSearchPlan->searchAlgo, &localBerValue);
+    berTag = ber_scanf(pBer, "{emibbbiiiii}",
+            &pSearchPlan->searchAlgo,
+            &localBerValue,
+            &pSearchPlan->iEntrySent,
+            &pSearchPlan->bPagedSearch,
+            &pSearchPlan->bPagedSearchDone,
+            &pSearchPlan->bExceedMaxIteration,
+            &pSearchPlan->candiatePlan.iCandateSize,
+            &pSearchPlan->IteratePlan.iIteratePriority,
+            &pSearchPlan->IteratePlan.iNumIteration,
+            &pSearchPlan->IteratePlan.iMDBKeyType,
+            &pSearchPlan->IteratePlan.iMDBCursorFlag);
     if (berTag == LBER_ERROR)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);

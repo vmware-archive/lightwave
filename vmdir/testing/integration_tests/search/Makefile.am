@@ -9,6 +9,7 @@ libsearchtests_la_CPPFLAGS = \
 
 libsearchtests_la_SOURCES = \
     anonymous_search.c \
+    control.c \
     main.c \
     pagedsearch.c \
     provision.c
