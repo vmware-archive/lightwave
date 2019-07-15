@@ -93,6 +93,7 @@ cleanup:
 
 error:
     VMDIR_APPEND_ERROR_MSG(pResult->pszErrMsg, pszLocalErrorMsg);
+    VMDIR_SET_LDAP_RESULT_ERROR(pResult, retVal, pszLocalErrorMsg);
     goto cleanup;
 }
 

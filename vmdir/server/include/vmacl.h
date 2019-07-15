@@ -291,6 +291,11 @@ VmDirSrvAccessCheckEntry(
     ACCESS_MASK*                    psamGranted
     );
 
+VOID
+VmDirSetAccessInfoRoleBitmap(
+    PVDIR_ACCESS_INFO   pAccessInfo
+    );
+
 DWORD
 VmDirCheckAdminGXAccess(
     PVDIR_ACCESS_INFO   pAccessInfo
