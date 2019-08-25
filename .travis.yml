@@ -1,0 +1,5 @@
+services:
+  - docker
+
+script:
+  - travis_wait 30 bash build.sh

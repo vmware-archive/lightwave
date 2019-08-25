@@ -60,7 +60,7 @@ package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
 	cd $(RPMBUILD_ROOT) && \
 	$(RM) -f $(RPMBUILD_RPMS)/$(ARCH)/*.rpm && \
 	$(RPMBUILD) \
-              -v \
+              --quiet \
               --bb \
               --noclean \
               --define "_topdir $(RPMBUILD_ROOT)" \
