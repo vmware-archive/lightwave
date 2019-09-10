@@ -1,5 +1,5 @@
 /*
- * Copyright © 2012-2016 VMware, Inc.  All Rights Reserved.
+ * Copyright ©2019 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the “License”); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,27 +12,14 @@
  * under the License.
  */
 
-#include <stdlib.h>
-#include <config.h>
-
-#include <vmdirsys.h>
-#include <ldap.h>
-#include <lber.h>
-
-#include <vmhttpclient.h>
-#include <vmjsonresult.h>
-#include <vmnetworkutil.h>
-
-#include <vmdir.h>
-#include <vmdirtypes.h>
-#include <vmdirdefines.h>
-#include <vmdirerrors.h>
-#include <vmdircommon.h>
-#include <vmdircommon_rest.h>
-#include <vmdirclient.h>
-#include <vmdirtesting.h>
-
-#include "defines.h"
-#include "structs.h"
-#include "prototypes.h"
-#include "testdefs.h"
+typedef struct _VMDIR_MODRDN_TEST_CONTEXT
+{
+    PVMDIR_TEST_STATE   pTestState;
+    PSTR                pszC1DN;
+    PSTR                pszC2DN;
+    PSTR                pszUser1DN;
+    PSTR                pszUser1NewDN;
+    PSTR                pszUser2DN;
+    PSTR                pszUser2NewDN;
+    PSTR                pszGroupDN;
+} VMDIR_MODRDN_TEST_CONTEXT, *PVMDIR_MODRDN_TEST_CONTEXT;

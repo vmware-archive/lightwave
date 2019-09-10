@@ -121,6 +121,37 @@ error:
     goto cleanup;
 }
 
+static
+DWORD
+_VmDirTestModifyAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    int   modType,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    )
+{
+    DWORD dwError = 0;
+
+    LDAPMod ldapMod = {0};
+    LDAPMod *mods[2];
+
+    /* Initialize the attribute, specifying 'ADD' as the operation */
+    ldapMod.mod_op     = modType;
+    ldapMod.mod_type   = (PSTR) pszAttribute;
+    ldapMod.mod_values = (PSTR*) ppszAttributeValues;
+
+    /* Fill the attributes array (remember it must be NULL-terminated) */
+    mods[0] = &ldapMod;
+    mods[1] = NULL;
+
+    /* ....initialize connection, etc. */
+
+    dwError = ldap_modify_ext_s(pLd, pszDN, mods, NULL, NULL);
+
+    return dwError;
+}
+
 DWORD
 VmDirTestReplaceAttributeValues(
     LDAP *pLd,
@@ -129,25 +160,117 @@ VmDirTestReplaceAttributeValues(
     PCSTR *ppszAttributeValues
     )
 {
+    return _VmDirTestModifyAttributeValues(pLd, pszDN, LDAP_MOD_REPLACE, pszAttribute, ppszAttributeValues);
+}
+
+DWORD
+VmDirTestAddAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    )
+{
+    return _VmDirTestModifyAttributeValues(pLd, pszDN, LDAP_MOD_ADD, pszAttribute, ppszAttributeValues);
+}
+
+DWORD
+VmDirTestDeleteAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    )
+{
+    return _VmDirTestModifyAttributeValues(pLd, pszDN, LDAP_MOD_DELETE, pszAttribute, ppszAttributeValues);
+}
+
+DWORD
+VmDirTestGetEntryAttributeValuesInStr(
+    LDAP *pLd,
+    PCSTR pBase,
+    int ldapScope,
+    PCSTR pszFilter,
+    PCSTR pszAttribute,
+    PVMDIR_STRING_LIST* ppList
+    )
+{
     DWORD dwError = 0;
+    DWORD dwCnt = 0;
+    PCSTR ppszAttrs[] = {NULL, NULL};
+    LDAPMessage* pEntry = NULL;
+    LDAPMessage *pResult = NULL;
+    BerValue** ppBerValues = NULL;
+    PSTR                pszValue = NULL;
+    PVMDIR_STRING_LIST  pLocalList = NULL;
 
-    LDAPMod addReplace;
-    LDAPMod *mods[2];
+    dwError = VmDirStringListInitialize(&pLocalList, 0);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    /* Initialize the attribute, specifying 'ADD' as the operation */
-    addReplace.mod_op     = LDAP_MOD_REPLACE;
-    addReplace.mod_type   = (PSTR) pszAttribute;
-    addReplace.mod_values = (PSTR*) ppszAttributeValues;
+    ppszAttrs[0] = pszAttribute;
+    dwError = ldap_search_ext_s(
+                pLd,
+                pBase,
+                ldapScope,
+                pszFilter ? pszFilter : NULL,
+                (PSTR*)ppszAttrs,
+                0,
+                NULL,
+                NULL,
+                NULL,
+                -1,
+                &pResult);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-    /* Fill the attributes array (remember it must be NULL-terminated) */
-    mods[0] = &addReplace;
-    mods[1] = NULL;
+    if (ldap_count_entries(pLd, pResult) == 0)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_ENTRY_NOT_FOUND);
+    }
+    else if (ldap_count_entries(pLd, pResult) > 1)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_DATA_CONSTRAINT_VIOLATION);
+    }
 
-    /* ....initialize connection, etc. */
+    pEntry = ldap_first_entry(pLd, pResult);
+    ppBerValues = ldap_get_values_len(pLd, pEntry, pszAttribute);
 
-    dwError = ldap_modify_ext_s(pLd, pszDN, mods, NULL, NULL);
+    if (ppBerValues != NULL && ldap_count_values_len(ppBerValues) > 0)
+    {
+        for (dwCnt = 0; ppBerValues[dwCnt] != NULL; dwCnt++)
+        {
+            dwError = VmDirAllocateStringA(
+                        ppBerValues[dwCnt]->bv_val,
+                        &pszValue);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringListAdd(pLocalList, pszValue);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pszValue = NULL;
+        }
+    }
+
+    *ppList = pLocalList;
+    pLocalList = NULL;
+
+cleanup:
+    VmDirStringListFree(pLocalList);
+
+    if (ppBerValues)
+    {
+        ldap_value_free_len(ppBerValues);
+        ppBerValues = NULL;
+    }
+
+    if (pResult)
+    {
+        ldap_msgfree(pResult);
+        pResult = NULL;
+    }
 
     return dwError;
+
+error:
+    goto cleanup;
 }
 
 DWORD

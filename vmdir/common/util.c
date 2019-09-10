@@ -3324,3 +3324,11 @@ error:
 
     goto cleanup;
 }
+
+VOID
+VmDirSearchExecPathFreeContent(
+    PVDIR_SEARCH_EXEC_PATH  pExecPath
+    )
+{
+    VMDIR_SAFE_FREE_MEMORY(pExecPath->pszIndex);
+}

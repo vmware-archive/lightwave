@@ -46,6 +46,7 @@ TestRunner(
     dwError = TestGeneratePassword(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
     printf("Password API tests successfully completed.\n");
+    fflush(stdout);
 
 cleanup:
     return dwError;

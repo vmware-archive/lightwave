@@ -322,7 +322,7 @@ VmDirFreeSearchRequest(
         }
 
         DeleteFilter(sr->filter);
-        VMDIR_SAFE_FREE_MEMORY(sr->srvSearchPlan.pszIndex);
+        VMDIR_SAFE_FREE_MEMORY(sr->srvExecPath.pszIndex);
 
         if (freeSelf)
         {

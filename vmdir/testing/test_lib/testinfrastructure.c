@@ -46,6 +46,14 @@ error:
 }
 
 PCSTR
+VmDirTestGetComputerCn(
+    PVMDIR_TEST_STATE pState
+    )
+{
+    return pState->pszComputerName;
+}
+
+PCSTR
 VmDirTestGetTestContainerCn(
     PVMDIR_TEST_STATE pState
     )
@@ -74,4 +82,27 @@ cleanup:
     return dwError;
 error:
     goto cleanup;
+}
+
+LDAP*
+VmDirTestGetLdapOwner(
+    PVMDIR_TEST_STATE           pState,
+    TEST_LDAP_CONNECTION_OWNER  owner
+    )
+{
+    switch (owner)
+    {
+    case LDAP_OWNER_NORMAL_USER:
+        return pState->pLdLimited;
+
+    case LDAP_OWNER_NORMAL_COMPUTER:
+        return pState->pLdComputer;
+
+    case LDAP_OWNER_ANONYMOUS:
+        return pState->pLdAnonymous;
+
+    case LDAP_OWNER_ADMIN:
+    default:
+        return pState->pLd;
+    }
 }

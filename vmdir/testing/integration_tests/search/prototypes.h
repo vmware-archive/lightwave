@@ -14,22 +14,12 @@
 
 DWORD
 TestAnonymousSearch(
-    PVMDIR_TEST_STATE pState
+    PVMDIR_SEARCH_TEST_CONTEXT pContext
     );
 
 DWORD
-TestPagedSearch(
-    PVMDIR_TEST_STATE pState
-    );
-
-DWORD
-PagedSearchTestSetup(
-    PVMDIR_TEST_STATE pState
-    );
-
-DWORD
-PagedSearchTestCleanup(
-    PVMDIR_TEST_STATE pState
+TestAbormalPagedSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT pContext
     );
 
 DWORD
@@ -44,6 +34,48 @@ TestProvisionSearchCleanup(
 
 DWORD
 TestLdapParseSearchPlanControl(
-    LDAPControl**           ppCtrls,
-    PVDIR_SRV_SEARCH_PLAN   pSearchPlan
+    LDAPControl**          ppCtrls,
+    PVDIR_SEARCH_EXEC_PATH pExecPath
+    );
+
+DWORD
+TestSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT pContext
+    );
+
+DWORD
+TestSendSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT  pContext,
+    PVMDIR_SEARCH_TEST_CASE     pCase,
+    PVMDIR_SEARCH_OP_CONTEXT    pOpCtx,
+    PVDIR_SEARCH_EXEC_PATH      pSearchExecPath
+    );
+
+DWORD
+TestValidateSearchResult(
+    PVMDIR_SEARCH_TEST_CASE     pCase,
+    PVMDIR_SEARCH_OP_CONTEXT    pOpCtx,
+    PVDIR_SEARCH_EXEC_PATH      pSearchExecPath
+    );
+
+DWORD
+TestExecuteNormalSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT  pContext,
+    PVMDIR_SEARCH_TEST_CASE     pCase
+    );
+
+DWORD
+TestExecutePagedSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT  pContext,
+    PVMDIR_SEARCH_TEST_CASE     pCase
+    );
+
+VOID
+TestFreeSearchOpCtxContent(
+    PVMDIR_SEARCH_OP_CONTEXT pOpCtx
+    );
+
+DWORD
+TestExecuteRestSearch(
+    PVMDIR_SEARCH_TEST_CONTEXT  pContext
     );

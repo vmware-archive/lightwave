@@ -540,7 +540,7 @@ VmDirWriteSearchPlanControl(
 
     assert(pOp->pSearchPlanCtrl);
 
-    retVal = VmDirCreateSearchPlanControlContent(&pOp->request.searchReq.srvSearchPlan, &lberCtrlBVOut);
+    retVal = VmDirCreateSearchPlanControlContent(&pOp->request.searchReq.srvExecPath, &lberCtrlBVOut);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     if (ber_printf(pBer, "{sON}",

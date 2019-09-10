@@ -70,6 +70,7 @@ echo "VmDir integration test start" `date`
 	-d $LIGHTWAVE_DOMAIN \
 	-k \
 	-r \
+	-s \
 	-t /opt/vmware/test/vmdir/lib64
 
 if [ $? -ne 0 ]; then

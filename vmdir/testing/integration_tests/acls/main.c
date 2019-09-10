@@ -103,6 +103,7 @@ TestRunner(
 #endif
 
     printf("Security descriptor tests finished successfully.\n");
+    fflush(stdout);
 
 cleanup:
     return dwError;

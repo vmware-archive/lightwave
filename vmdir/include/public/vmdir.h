@@ -64,6 +64,11 @@ extern "C" {
 #define VMDIR_STR_SCOPE_BASE                "base"
 #define VMDIR_STR_SCOPE_ONE                 "one"
 #define VMDIR_STR_SCOPE_SUB                 "sub"
+#define VMDIR_STR_FILTER                    "filter"
+
+#define VMDIR_STR_PAGE_SIZE                 "page_size"
+#define VMDiR_STR_PAGE_COOKIE               "paged_results_cookie"
+
 
 // Fixed DNs
 #define DSE_ROOT_DN                             ""
@@ -76,6 +81,7 @@ extern "C" {
 #define CFG_ROOT_DN_LEN                         sizeof(CFG_ROOT_DN)-1
 #define CFG_INDEX_ENTRY_DN                      "cn=indices,cn=config"
 #define CFG_INDEX_ORGANIZATION_DN               "cn=organization,cn=config"
+#define CFG_ITERATION_MAP_DN                    "cn=iteratorprimap,cn=config"
 #define SERVER_STATUS_DN                        "cn=serverstatus"
 #define REPLICATION_STATUS_DN                   "cn=replicationstatus"
 #define SCHEMA_REPL_STATUS_DN                   "cn=schemareplstatus"
@@ -88,6 +94,7 @@ extern "C" {
 #define RAFT_CONTEXT_DN                         "cn=raftcontext"
 #define SERVER_STATE_PING_DN                    "cn=ping,cn=serverstate"
 
+#define CFG_ITERATION_MAP                       "iteratorprimap"
 #define VMDIR_DOMAIN_CONTROLLERS_RDN_VAL        "Domain Controllers"
 #define VMDIR_COMPUTERS_RDN_VAL                 "Computers"
 #define VMDIR_MSAS_RDN_VAL                      "Managed Service Accounts"
@@ -384,6 +391,8 @@ extern "C" {
 #define ATTR_RAFT_CURRENT_TERM              "vmwRaftCurrentTerm"
 #define ATTR_RAFT_STATUS                    "vmwRaftStatus"
 #define ATTR_RAFT_VOTE_GRANTED              "vmwRaftVoteGranted"
+#define ATTR_SEARCH_TYPE_PRI                "vmwSearchTypePriority"
+#define ATTR_ATTR_TYPE_PRI                  "vmwAttributeTypePriority"
 
 // Object classes
 #define OC_TOP                              "top"
@@ -439,6 +448,7 @@ extern "C" {
 #define OC_CLUSTER_STATE                "vmwclusterstate"
 #define OC_CLUSTER_STATE_LEN            sizeof(OC_CLUSTER_STATE)-1
 #define OC_CLASS_RAFT_STATE             "vmwRaftClusterState"
+#define OC_ITERATOR_PRI_MAP             "vmwIteratorPriorityMap"
 #define RAFT_CONTEXT_DN_MAX_LEN         64
 #define OC_DELETED_OBJECT               "deletedObject"
 #define OC_DELETED_OBJECT_LEN           sizeof(OC_DELETED_OBJECT)-1

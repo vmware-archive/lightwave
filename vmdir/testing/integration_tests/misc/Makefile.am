@@ -11,6 +11,8 @@ libmisctests_la_SOURCES = \
     main.c \
     dcaccount.c \
     groupmembership.c \
+    modrdn.c \
+    multivalueattr.c \
     tombstone.c
 
 libmisctests_la_LIBADD = \

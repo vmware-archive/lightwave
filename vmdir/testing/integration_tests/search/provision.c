@@ -29,19 +29,27 @@ _TestProvisionSearchContainer(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pContext->pszSearchC1DN,
-            "%s,%s", VMDIR_TEST_SEARCH_CONTAINER_1_RDN, pContext->pszSearchDN);
+            "%s,%s", VMDIR_TEST_SEARCH_CONTAINER_1_BIG_RDN, pContext->pszSearchDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestCreateContainer(pContext->pTestState,
-            VMDIR_TEST_SEARCH_CONTAINER_1, pContext->pszSearchC1DN, NULL);
+            VMDIR_TEST_SEARCH_CONTAINER_1_BIG, pContext->pszSearchC1DN, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pContext->pszSearchC2DN,
-            "%s,%s", VMDIR_TEST_SEARCH_CONTAINER_2_RDN, pContext->pszSearchDN);
+            "%s,%s", VMDIR_TEST_SEARCH_CONTAINER_2_BIG_RDN, pContext->pszSearchDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirTestCreateContainer(pContext->pTestState,
-            VMDIR_TEST_SEARCH_CONTAINER_2, pContext->pszSearchC2DN, NULL);
+            VMDIR_TEST_SEARCH_CONTAINER_2_BIG, pContext->pszSearchC2DN, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(&pContext->pszSearchC3DN,
+            "%s,%s", VMDIR_TEST_SEARCH_CONTAINER_3_SMALL_RDN, pContext->pszSearchDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirTestCreateContainer(pContext->pTestState,
+            VMDIR_TEST_SEARCH_CONTAINER_3_SMALL, pContext->pszSearchC3DN, NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 error:
@@ -56,9 +64,10 @@ _TestAddObject(
     )
 {
     DWORD   dwError = 0;
+    PSTR    pszTmp = NULL;
     PCSTR   pszValCN[] = {pRec->pszCN, NULL};
     PCSTR   pszValDesc[] = {pRec->pszCN, NULL};
-    PCSTR   pszValStrIgnoreNonunique[] = {pRec->pszStrIgnoreNonunique, NULL};
+    PCSTR   pszValStrIgnoreNonunique[] = {pRec->pszStrIgnoreNonunique, NULL, NULL};
     PCSTR   pszValStrIgnoreUnique[] = {pRec->pszStrIgnoreUnique, NULL};
     PCSTR   pszValStrExactNonunique[] = {pRec->pszStrExactNonunique, NULL};
     PCSTR   pszValStrExactUnique[] = {pRec->pszStrExactUnique, NULL};
@@ -81,6 +90,13 @@ _TestAddObject(
 
     LDAPMod* addAttrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5],&mod[6], &mod[7], &mod[8], NULL};
 
+    // add multi-value attribute
+    dwError = VmDirAllocateStringPrintf(&pszTmp,
+            "%s-1", pRec->pszStrIgnoreNonunique);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pszValStrIgnoreNonunique[1] = pszTmp;
+
     dwError = ldap_add_ext_s(
             pContext->pTestState->pLd,
             pRec->pszDN,
@@ -89,26 +105,25 @@ _TestAddObject(
             NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirStringListAddStrClone(pRec->pszDN, pContext->pDNList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 error:
+    VMDIR_SAFE_FREE_MEMORY(pszTmp);
     return dwError;
 }
 
 static
 DWORD
 _TestProvisionSetAttribute(
-    PVMDIR_SEARCH_TEST_RECORD   pRec,
-    DWORD   dwCnt
+    PVMDIR_SEARCH_TEST_RECORD   pRec
     )
 {
     DWORD   dwError = 0;
 
-    dwError = VmDirAllocateStringPrintf(&pRec->pszIntegerNonunique, "%d", dwCnt%INTERGER_NONUNIQUE_MOD);
+    dwError = VmDirAllocateStringPrintf(
+            &pRec->pszIntegerNonunique, "%d", pRec->dwIndex % INTEGER_NONUNIQUE_MOD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirAllocateStringPrintf(&pRec->pszIntegerUnique, "%d", dwCnt);
+    dwError = VmDirAllocateStringPrintf(
+            &pRec->pszIntegerUnique, "%d", pRec->dwIndex);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&pRec->pszStrExactNonunique,
@@ -152,21 +167,25 @@ _TestFreeSearchTestRecordContent(
 }
 
 /*(
- *                   cn=testsearch
- *                   /       \    \
- *                cn=C1    cn=C2  (1K objects)
- *                 /         \
- *            (1K objects)  (1K objects)
+ *                   cn=testsearch  (3646 objects -s sub)
+ *                  /    /    \   \
+ *              cn=C1  cn=C2 cn=C3 \
+ *               /       /      \  (1204 obj)
+ *     (1205 obj)  (1204 obj)   \
+ *                             (29 obj)
  *
  *  A sample search entry looks like:
-    dn: cn=TestSearchCN-1000,cn=testSerachC1,cn=testSearch,dc=lw,dc=local
+ *
+    dn: cn=TestSearchCN-1000,cn=testSearchC1Big,cn=testSearch,dc=lw,dc=local
     vmwTestSearchIntegerUnique: 1000
-    vmwTestSearchIntegerNonunique: 104
+    vmwTestSearchIntegerNonunique: 0
     vmwTestSearchCaseExactStringUnique: StringExact1000
-    vmwTestSearchCaseExactStringNonunique: StringExact104
+    vmwTestSearchCaseExactStringNonunique: StringExact0
     vmwTestSearchCaseIgnoreStringUnique: StringIgnore1000
-    vmwTestSearchCaseIgnoreStringNonunique: StringIgnore104
+    vmwTestSearchCaseIgnoreStringNonunique: StringIgnore0    << multi-value
+    vmwTestSearchCaseIgnoreStringNonunique: StringIgnore0-1
     description: TestSearchCN-1000
+    objectClass: top
     objectClass: vmwSearchTest
     cn: TestSearchCN-1000
  */
@@ -180,6 +199,8 @@ _TestAddSearchObject(
     DWORD   dwError = 0;
     VMDIR_SEARCH_TEST_RECORD    record = {0};
     PSTR    pszBase = NULL;
+
+    record.dwIndex = dwCnt;
 
     switch (dwCnt%3)
     {
@@ -196,13 +217,18 @@ _TestAddSearchObject(
             break;
     }
 
+    if (! (dwCnt % VMDIR_SIZE_128))
+    {
+        pszBase = pContext->pszSearchC3DN;
+    }
+
     dwError = VmDirAllocateStringPrintf(&record.pszCN, "%s%d", VMDIR_TEST_SEARCH_OBJECT_CN, dwCnt);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringPrintf(&record.pszDN, "cn=%s,%s", record.pszCN, pszBase);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = _TestProvisionSetAttribute(&record, dwCnt);
+    dwError = _TestProvisionSetAttribute(&record);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _TestAddObject(pContext, &record);
@@ -255,32 +281,20 @@ TestProvisionSearchCleanup(
     )
 {
     DWORD dwError = 0;
-    DWORD dwCnt = 0;
 
-    dwError = VmDirStringListAddStrClone(pContext->pszSearchC1DN, pContext->pDNList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringListAddStrClone(pContext->pszSearchC2DN, pContext->pDNList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringListAddStrClone(pContext->pszSearchDN, pContext->pDNList);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    for (dwCnt=0; dwCnt < pContext->pDNList->dwCount; dwCnt++)
+    if (!pContext->pTestState->bSkipCleanup)
     {
-        dwError = ldap_delete_ext_s(
-                pContext->pTestState->pLd,
-                pContext->pDNList->pStringList[dwCnt],
-                NULL,
-                NULL);
+        dwError = VmDirTestDeleteContainerByDn(pContext->pTestState->pLd, pContext->pszSearchDN);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    VmDirStringListFree(pContext->pDNList);
+cleanup:
     VMDIR_SAFE_FREE_MEMORY(pContext->pszSearchC1DN);
     VMDIR_SAFE_FREE_MEMORY(pContext->pszSearchC2DN);
     VMDIR_SAFE_FREE_MEMORY(pContext->pszSearchDN);
 
-error:
     return dwError;
+
+error:
+    goto cleanup;
 }

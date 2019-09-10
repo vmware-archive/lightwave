@@ -166,6 +166,56 @@ error:
 }
 
 DWORD
+VmDirTestCreateComputer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszComputerName
+    )
+{
+    DWORD dwError = 0;
+    PCSTR valsCn[] = {pszComputerName, NULL};
+    PCSTR valssAMActName[] = {pszComputerName, NULL};
+    PCSTR valsClass[] = {OC_COMPUTER, NULL};
+    PCSTR valsUPN[] = {NULL, NULL};
+    PCSTR valsPass[] = {pState->pszPassword, NULL};
+    PSTR pszUPN = NULL;
+    PSTR pszDN = NULL;
+    LDAPMod mod[]={
+        {LDAP_MOD_ADD, ATTR_CN, {(PSTR*)valsCn}},
+        {LDAP_MOD_ADD, ATTR_SAM_ACCOUNT_NAME, {(PSTR*)valssAMActName}},
+        {LDAP_MOD_ADD, ATTR_OBJECT_CLASS, {(PSTR*)valsClass}},
+        {LDAP_MOD_ADD, ATTR_KRB_UPN, {(PSTR*)valsUPN}},
+        {LDAP_MOD_ADD, ATTR_USER_PASSWORD, {(PSTR*)valsPass}},
+        {LDAP_MOD_ADD, ATTR_SN, {(PSTR*)valsCn}},
+    };
+    LDAPMod *attrs[] = {&mod[0], &mod[1], &mod[2], &mod[3], &mod[4], &mod[5], NULL};
+
+    dwError = VmDirAllocateStringPrintf(&pszUPN, "%s@%s", pszComputerName, pState->pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    valsUPN[0] = pszUPN;
+
+    dwError = VmDirAllocateStringPrintf(
+            &pszDN,
+            "cn=%s,cn=%s,%s",
+            pszComputerName,
+            pszContainer ? pszContainer : "Users",
+            pState->pszBaseDN);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = ldap_add_ext_s(pState->pLd, pszDN, attrs, NULL, NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszDN);
+    VMDIR_SAFE_FREE_STRINGA(pszUPN);
+    return dwError;
+
+error:
+    goto cleanup;
+}
+
+DWORD
 VmDirTestCreateUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszContainer,
