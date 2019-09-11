@@ -15,29 +15,71 @@
 #include "includes.h"
 
 DWORD
-VmDirIndexCfgMap(
-    PLW_HASHMAP*    ppIndexCfgMap
+VmDirIndexMapGetProperty(
+    PVDIR_INDEX_PROPERTY*   ppIndexProperty
     )
 {
     DWORD   dwError = 0;
-    VDIR_SERVER_STATE   vmdirState = VmDirdState();
+    DWORD   dwCnt = 0;
+    DWORD   dwIdx = 0;
+    BOOLEAN bInLock = FALSE;
+    LW_HASHMAP_ITER         iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR         pair = {NULL, NULL};
+    PVDIR_INDEX_PROPERTY    pLocalProperty = NULL;
+    PVDIR_INDEX_CFG         pIndexCfg = NULL;
 
-    if (!ppIndexCfgMap)
+    if (!ppIndexProperty)
     {
-        dwError = VMDIR_ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMDIR_ERROR(dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    if (vmdirState != VMDIRD_STATE_STARTUP)
+    VMDIR_LOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+
+    dwCnt = LwRtlHashMapGetCount(gVdirIndexGlobals.pIndexCfgMap);
+    dwError = VmDirAllocateMemory(
+            sizeof(*pLocalProperty) * (dwCnt+1),
+            (PVOID)&pLocalProperty);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    while (LwRtlHashMapIterate(gVdirIndexGlobals.pIndexCfgMap, &iter, &pair))
     {
-        dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        pIndexCfg = (PVDIR_INDEX_CFG)pair.pValue;
+
+        dwError = VmDirAllocateStringA(pIndexCfg->pszAttrName, &(pLocalProperty[dwIdx].pszName));
         BAIL_ON_VMDIR_ERROR(dwError);
+
+        pLocalProperty[dwIdx].bGlobalUnique = pIndexCfg->bGlobalUniq;
+        dwIdx++;
     }
 
-    *ppIndexCfgMap = gVdirIndexGlobals.pIndexCfgMap;
+    *ppIndexProperty = pLocalProperty;
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gVdirIndexGlobals.mutex);
+    return dwError;
 
 error:
-    return dwError;
+    VmDirIndexMapFreeProperty(pLocalProperty);
+    goto cleanup;
+}
+
+VOID
+VmDirIndexMapFreeProperty(
+    PVDIR_INDEX_PROPERTY   pIndexProperty
+    )
+{
+    PVDIR_INDEX_PROPERTY   pLocalProperty = pIndexProperty;
+
+    if (pLocalProperty)
+    {
+        while (pLocalProperty->pszName)
+        {
+            VMDIR_SAFE_FREE_MEMORY(pLocalProperty->pszName);
+            pLocalProperty++;
+        }
+
+        VMDIR_SAFE_FREE_MEMORY(pIndexProperty);
+    }
 }
 
 DWORD

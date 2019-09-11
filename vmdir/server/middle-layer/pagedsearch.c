@@ -29,9 +29,21 @@ _VmDirPagedSearchFreeMapPair(
     );
 
 static
+DWORD
+_VmDirPagedSearchContextRecordAdd(
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
+    );
+
+static
 VOID
 _VmDirPagedSearchContextRecordRemove(
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
+    );
+
+static
+VOID
+_VmDirPagedSearchContextRecordRemoveInLock(
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
     );
 
 static
@@ -55,32 +67,24 @@ _VmDirPagedSearchGetContextUsingCookie(
     );
 
 static
-BOOLEAN
-_VmDirPagedSearchUpdateInProgressFlag(
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext,
-    BOOLEAN                    bUpdateValue
-    );
-
-static
 DWORD
-_VmDirProcessNextPage(
+_VmDirNextPageViaCandidateList(
     PVDIR_OPERATION            pOperation,
     PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     );
 
 static
 DWORD
-_VmDirPagedSearchGetEntryID(
-    PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext,
-    ENTRYID*                  pEId
+_VmDirNextPageViaIterator(
+    PVDIR_OPERATION            pOperation,
+    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     );
 
 static
 DWORD
 _VmDirPagedSearchUpdateCookie(
     PVDIR_OPERATION            pOperation,
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext,
-    PBOOLEAN                   pbSearchComplete
+    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     );
 
 static
@@ -90,23 +94,22 @@ _VmDirPagedSearchValidateRequest(
     PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     );
 
-/*
 static
 VOID
-_VmDirPagedSearchFreeStaleContextFromCache(
-    VOID
+_VmDirUpdatePagedSearchPlan(
+    PVDIR_OPERATION             pOperation,
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
     );
-*/
+
 DWORD
 VmDirProcessPagedSearch(
     PVDIR_OPERATION  pOperation
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bSearchComplete = FALSE;
     PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext = NULL;
 
-    if (pOperation == NULL)
+    if (pOperation == NULL || !VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation))
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -116,41 +119,61 @@ VmDirProcessPagedSearch(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
 
+    if (IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
+    {
+        // Very first paged search call, build candidate list.
+        // If too expensive, we will fall back to iterator based algorithm.
+        dwError = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, 0);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // TODO, not sure if this still valid with iterator based search support.
+        if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
+        {
+            dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+    }
+
+    // create or retrieve Paged Search Context
     dwError = _VmDirPagedSearchGetContext(pOperation, &pPagedSearchContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirPagedSearchValidateRequest(pOperation, pPagedSearchContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-   /*
-    * TODO - Add logic to free stale page context entries (abandoned by client)
-    * in the next page search task implementation
-    *
-    * _VmDirPagedSearchFreeStaleContextFromCache();
-    */
-
-    dwError = _VmDirProcessNextPage(pOperation, pPagedSearchContext);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = _VmDirPagedSearchUpdateCookie(pOperation, pPagedSearchContext, &bSearchComplete);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (bSearchComplete == TRUE)
+    if (pPagedSearchContext->searchAlgo == SEARCH_ALGO_ITERATOR)
     {
-        _VmDirPagedSearchContextRecordRemove(pPagedSearchContext);
-        pPagedSearchContext = NULL;
+        dwError = _VmDirNextPageViaIterator(pOperation, pPagedSearchContext);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else
+    {
+        dwError = _VmDirNextPageViaCandidateList(pOperation, pPagedSearchContext);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
+    dwError = _VmDirPagedSearchUpdateCookie(pOperation, pPagedSearchContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
 cleanup:
-    _VmDirPagedSearchUpdateInProgressFlag(pPagedSearchContext, FALSE);
+    if (pPagedSearchContext)
+    {
+        _VmDirUpdatePagedSearchPlan(pOperation, pPagedSearchContext);
+
+        if (pPagedSearchContext->bCompete)
+        {
+            _VmDirPagedSearchContextRecordRemove(pPagedSearchContext);
+        }
+    }
+
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-        VMDIR_LOG_MASK_ALL,
-        "%s failed, error(%d)",
-        __FUNCTION__,
-        dwError);
+    if (pPagedSearchContext)
+    {
+        pPagedSearchContext->bCompete = TRUE;
+    }
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, error(%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -195,32 +218,55 @@ VmDirPagedSearchContextFree(
     VMDIR_SAFE_FREE_MUTEX(gPagedSearchCtxCache.mutex);
 }
 
-/*static
+static
 VOID
-_VmDirPagedSearchFreeStaleContextFromCache(
-    VOID
+_VmDirUpdatePagedSearchPlan(
+    PVDIR_OPERATION             pOperation,
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
     )
 {
-    BOOLEAN         bInLock = FALSE;
-    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
-    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    DWORD   dwError = 0;
+    SearchReq *             pSReq = &pOperation->request.searchReq;
+    PVDIR_SEARCH_EXEC_PATH  pExecPath = &pOperation->request.searchReq.srvExecPath;
 
-    VMDIR_LOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
-    while (LwRtlHashMapIterate(gPagedSearchCtxCache.pHashMap, &iter, &pair))
+    if (VMDIR_IS_OP_CTRL_SEARCH_PLAN(pOperation) && pPagedSearchContext)
     {
-        PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext = (PVDIR_PAGED_SEARCH_RECORD) pair.pValue;
+        pExecPath->iEntrySent = pSReq->iNumEntrySent;
+        pExecPath->bPagedSearch = VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation);
+        pExecPath->bPagedSearchDone = pPagedSearchContext->bCompete;
 
-        if (pPagedSearchContext != NULL)
+        // pExecPath->bExceedMaxIteration set in search code
+
+        if (pPagedSearchContext->searchAlgo == SEARCH_ALGO_CANDIDATE_LIST)
         {
-            if (time(NULL) - pPagedSearchContext->tLastClientRead >= SECONDS_IN_HOUR &&
-                pPagedSearchContext->bSearchInProgress == FALSE)
-            {
-                _VmDirPagedSearchContextRecordFreeInLock(pPagedSearchContext);
-            }
+            pExecPath->searchAlgo = SEARCH_ALGO_CANDIDATE_LIST;
+            pExecPath->candiatePlan.iCandateSize =
+                    pPagedSearchContext->pTotalCandidates ? pPagedSearchContext->pTotalCandidates->size : 0;
         }
+        else if (pPagedSearchContext->searchAlgo == SEARCH_ALGO_ITERATOR)
+        {
+            // pExecPath->IteratePlan.iNumIteration set in search code
+            pExecPath->searchAlgo = SEARCH_ALGO_ITERATOR;
+
+            dwError = VmDirAllocateStringA(pPagedSearchContext->iterContext.pszIterTable, &pExecPath->pszIndex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+            "%s Algo %d table %s paged %d done %d, sent %d iter %d, cl size %d",
+            __FUNCTION__,
+            pExecPath->searchAlgo,
+            VDIR_SAFE_STRING(pExecPath->pszIndex),
+            pExecPath->bPagedSearch,
+            pExecPath->bPagedSearchDone,
+            pExecPath->iEntrySent,
+            pExecPath->IteratePlan.iNumIteration,
+            pExecPath->candiatePlan.iCandateSize);
     }
-    VMDIR_UNLOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
-}*/
+
+error:
+    return;
+}
 
 static
 VOID
@@ -238,9 +284,88 @@ _VmDirPagedSearchFreeMapPair(
 }
 
 static
+DWORD
+_VmDirPagedSearchContextRecordAdd(
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
+    )
+{
+    DWORD       dwError = 0;
+    DWORD       dwCnt = 0;
+    BOOLEAN     bInLock = FALSE;
+    LW_HASHMAP_ITER iter = LW_HASHMAP_ITER_INIT;
+    LW_HASHMAP_PAIR pair = {NULL, NULL};
+    time_t      tNow = time(NULL);
+
+    VMDIR_LOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
+
+    // age off out dated contexts
+    dwCnt = LwRtlHashMapGetCount(gPagedSearchCtxCache.pHashMap);
+    if (dwCnt > VMDIR_SIZE_64)
+    {
+        while (LwRtlHashMapIterate(gPagedSearchCtxCache.pHashMap, &iter, &pair))
+        {
+            PVDIR_PAGED_SEARCH_RECORD pRec = (PVDIR_PAGED_SEARCH_RECORD)pair.pValue;
+
+            if (tNow - pRec->tLastClientRead > gVmdirGlobals.dwLdapRecvTimeoutSec)
+            {   // default 180 (3 minutes) max idle time
+                VMDIR_LOG_WARNING(
+                    VMDIR_LOG_MASK_ALL,
+                    "%s: Paged search record aged off, cookie: %s",
+                    __FUNCTION__,
+                    pRec->pszGuid);
+
+                _VmDirPagedSearchContextRecordRemoveInLock(pRec);
+            }
+        }
+    }
+
+    if (LwRtlHashMapGetCount(gPagedSearchCtxCache.pHashMap) >= gVmdirGlobals.dwMaxFlowCtrlThr)
+    {   // throttle active page search session
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNWILLING_TO_PERFORM);
+    }
+
+    dwError = LwRtlHashMapInsert(
+            gPagedSearchCtxCache.pHashMap,
+            pPagedSearchContext->pszGuid,
+            pPagedSearchContext,
+            NULL);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VMDIR_UNLOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+        VMDIR_LOG_MASK_ALL,
+        "%s failed, error(%d)",
+        __FUNCTION__,
+       dwError);
+    goto cleanup;
+}
+
+static
+VOID
+_VmDirPagedSearchContextRecordRemoveInLock(
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
+    )
+{
+    if (pPagedSearchContext)
+    {
+        (VOID) LwRtlHashMapRemove(
+                   gPagedSearchCtxCache.pHashMap,
+                   pPagedSearchContext->pszGuid,
+                   NULL);
+
+        _VmDirPagedSearchContextRecordFree(pPagedSearchContext);
+    }
+}
+
+static
 VOID
 _VmDirPagedSearchContextRecordRemove(
-    PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext
+    PVDIR_PAGED_SEARCH_RECORD   pPagedSearchContext
     )
 {
     BOOLEAN bInLock = FALSE;
@@ -248,16 +373,11 @@ _VmDirPagedSearchContextRecordRemove(
     if (pPagedSearchContext)
     {
         VMDIR_LOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
-        //Remove from hashMap
-        (VOID) LwRtlHashMapRemove(
-                   gPagedSearchCtxCache.pHashMap,
-                   pPagedSearchContext->pszGuid,
-                   NULL);
-        _VmDirPagedSearchContextRecordFree(pPagedSearchContext);
+
+        _VmDirPagedSearchContextRecordRemoveInLock(pPagedSearchContext);
 
         VMDIR_UNLOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
     }
-
 }
 
 static
@@ -268,16 +388,11 @@ _VmDirPagedSearchContextRecordFree(
 {
     if (pPagedSearchContext)
     {
-        //Free Mutex
-        VMDIR_SAFE_FREE_MUTEX(pPagedSearchContext->mutex);
-        //Free cookie
         VmDirFreeStringA(pPagedSearchContext->pszGuid);
-        //Free pFilter and pCandidates
-        DeleteFilter(pPagedSearchContext->pFilter);
         DeleteCandidates(&pPagedSearchContext->pTotalCandidates);
-        //Free BerVal
         VmDirFreeBervalContent(&pPagedSearchContext->bvStrFilter);
-        //Free the context structure
+        VmDirIterContextFreeContent(&pPagedSearchContext->iterContext);
+
         VMDIR_SAFE_FREE_MEMORY(pPagedSearchContext);
     }
 }
@@ -300,7 +415,6 @@ _VmDirPagedSearchGetContext(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_PAGED_SEARCH_CONTEXT);
     }
 
-    //pszCookie cannot be NULL since, it is an char array
     pszCookie = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie;
 
     if (IsNullOrEmptyString(pszCookie))
@@ -313,18 +427,11 @@ _VmDirPagedSearchGetContext(
         dwError = _VmDirPagedSearchGetContextUsingCookie(pszCookie, &pPagedSearchContext);
         BAIL_ON_VMDIR_ERROR(dwError);
 
-        if (_VmDirPagedSearchUpdateInProgressFlag(pPagedSearchContext, TRUE) == FALSE)
-        {
-            BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PAGED_SEARCH_REQUEST);
-        }
-
         /*
          * RFC 2696: subsequent page search requests could have different page size, update the page size
          * for every page search.
          */
         pPagedSearchContext->dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
-        //update time stamp
-        pPagedSearchContext->tLastClientRead = time(NULL);
     }
 
     VMDIR_LOG_VERBOSE(
@@ -354,8 +461,9 @@ _VmDirPagedSearchGetContextUsingCookie(
     PVDIR_PAGED_SEARCH_RECORD*  ppPagedSearchContext
     )
 {
-    DWORD  dwError  = 0;
+    DWORD   dwError  = 0;
     BOOLEAN bInLock = FALSE;
+    time_t  tNow = time(NULL);
     PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext = NULL;
 
     if (IsNullOrEmptyString(pszCookie) || ppPagedSearchContext == NULL)
@@ -364,11 +472,15 @@ _VmDirPagedSearchGetContextUsingCookie(
     }
 
     VMDIR_LOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
+
     dwError = LwRtlHashMapFindKey(
                     gPagedSearchCtxCache.pHashMap,
                     (PVOID*)&pPagedSearchContext,
                     pszCookie);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // update time stamp
+    pPagedSearchContext->tLastClientRead = tNow;
 
     *ppPagedSearchContext = pPagedSearchContext;
 
@@ -385,31 +497,6 @@ error:
     //change to appropriate error code for client
     dwError = VMDIR_ERROR_NO_PAGED_SEARCH_CONTEXT;
     goto cleanup;
-}
-
-static
-BOOLEAN
-_VmDirPagedSearchUpdateInProgressFlag(
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext,
-    BOOLEAN                    bUpdateValue
-    )
-{
-    BOOLEAN bInLock  = FALSE;
-    BOOLEAN bSuccess = FALSE;
-
-    if (pPagedSearchContext)
-    {
-        VMDIR_LOCK_MUTEX(bInLock, pPagedSearchContext->mutex);
-        if ((bUpdateValue == TRUE && pPagedSearchContext->bSearchInProgress == FALSE) ||
-           (bUpdateValue == FALSE && pPagedSearchContext->bSearchInProgress == TRUE))
-        {
-            pPagedSearchContext->bSearchInProgress = bUpdateValue;
-            bSuccess = TRUE;
-        }
-        VMDIR_UNLOCK_MUTEX(bInLock, pPagedSearchContext->mutex);
-    }
-
-    return bSuccess;
 }
 
 static
@@ -472,10 +559,10 @@ _VmDirPagedSearchContextNodeAllocate(
     )
 {
     DWORD dwError = 0;
-    BOOLEAN bInLock = FALSE;
     PVDIR_PAGED_SEARCH_RECORD pPagedSearchContext = NULL;
     char szGuidStr[VMDIR_GUID_STR_LEN] = {0};
     uuid_t guid = {0};
+    SearchReq *pSReq = &pOperation->request.searchReq;
 
     if (pOperation == NULL || ppPagedSearchContext == NULL || pOperation->showPagedResultsCtrl == NULL)
     {
@@ -505,40 +592,44 @@ _VmDirPagedSearchContextNodeAllocate(
     dwError = FilterToStrFilter(pOperation->request.searchReq.filter, &pPagedSearchContext->bvStrFilter);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = StrFilterToFilter(pPagedSearchContext->bvStrFilter.lberbv.bv_val, &pPagedSearchContext->pFilter);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAllocateMutex(&pPagedSearchContext->mutex);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    pPagedSearchContext->pTotalCandidates = pOperation->request.searchReq.filter->candidates;
-    pOperation->request.searchReq.filter->candidates = NULL;
     pPagedSearchContext->dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
 
-    pPagedSearchContext->dwCandidatesProcessed = 0;
+    if (pSReq->srvExecPath.searchAlgo == SEARCH_ALGO_ITERATOR)
+    {
+        pPagedSearchContext->searchAlgo = SEARCH_ALGO_ITERATOR;
+        dwError = VmDirIterContextInitContent(
+                &pPagedSearchContext->iterContext,
+                &pSReq->iteratorSearchPlan);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    else if (pSReq->srvExecPath.searchAlgo == SEARCH_ALGO_CANDIDATE_LIST)
+    {
+        pPagedSearchContext->searchAlgo = SEARCH_ALGO_CANDIDATE_LIST;
+        pPagedSearchContext->dwCandidatesProcessed = 0;
+
+        pPagedSearchContext->pTotalCandidates = pOperation->request.searchReq.filter->candidates;
+        pOperation->request.searchReq.filter->candidates = NULL;
+        VmDirSortCandidateList(pPagedSearchContext->pTotalCandidates);
+    }
 
     pPagedSearchContext->tLastClientRead = time(NULL);
 
-    VMDIR_LOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
-
-    dwError = LwRtlHashMapInsert(gPagedSearchCtxCache.pHashMap,
-                pPagedSearchContext->pszGuid, pPagedSearchContext, NULL);
+    dwError = _VmDirPagedSearchContextRecordAdd(pPagedSearchContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *ppPagedSearchContext = pPagedSearchContext;
 
 cleanup:
-    VMDIR_UNLOCK_MUTEX(bInLock, gPagedSearchCtxCache.mutex);
     return dwError;
+
 error:
     _VmDirPagedSearchContextRecordFree(pPagedSearchContext);
     goto cleanup;
 }
 
-
 static
 DWORD
-_VmDirProcessNextPage(
+_VmDirNextPageViaCandidateList(
     PVDIR_OPERATION            pOperation,
     PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     )
@@ -547,116 +638,239 @@ _VmDirProcessNextPage(
     DWORD        entryCount = 0;
     ENTRYID      eId = 0;
     PVDIR_ENTRY  pEntry = NULL;
-    VDIR_ENTRY   entry = {0};
-    BOOLEAN      bInternalSearch = FALSE;
+    BOOLEAN      bEntrySent = FALSE;
     BOOLEAN      bStoreRsltInMem = FALSE;
 
-    if (pPagedSearchContext == NULL || pOperation == NULL || pPagedSearchContext->pTotalCandidates == NULL)
+    if (pPagedSearchContext == NULL || pOperation == NULL )
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
-    bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
+    bStoreRsltInMem = (pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL) ||
+                      pOperation->request.searchReq.bStoreRsltInMem;
 
-    /*
-     * Logic used to handle internal search and store result in memory is different from normal paged search
-     * Store result in memory is set only in the case of LDAP over REST paged search call. If bStoreRsltInMem is set
-     * to TRUE, then rather than sending the results to client, Process Next page module tries to build search
-     * result candidates in memory (which is internalSearchEntryArray.pEntry).
-     */
-
-    if (bInternalSearch || bStoreRsltInMem)
+    if (!pPagedSearchContext->pTotalCandidates  ||
+        pPagedSearchContext->pTotalCandidates->size == 0)
     {
-        VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
-
-        /*
-         * Ownership of the internalSearchEntryArray.pEntry is with the REST-head in the case bStoreRsltInMem.
-         * internalSearchEntryArray.pEntry will be freed by VmDirFreeOperationContent at the end
-         * of the corresponding search operation
-         */
-        dwError = VmDirAllocateMemory(
-                sizeof(VDIR_ENTRY) * pPagedSearchContext->dwPageSize,
-                (PVOID*)&pOperation->internalSearchEntryArray.pEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
+        pPagedSearchContext->bCompete = TRUE;
+        goto cleanup;
     }
 
     while (entryCount < pPagedSearchContext->dwPageSize &&
            pPagedSearchContext->dwCandidatesProcessed < pPagedSearchContext->pTotalCandidates->size)
     {
+        bEntrySent = FALSE;
+
         if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
         {
             BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
         }
 
-        /*
-         * Based on the search type decide whether to use stack variable or internalSearchEntryArray
-         * internalSearchEntryArray is like a cache to build all the candidates that satisfy the fiter criteria
-         * internalSearchEntryArray will be used by the REST-head to build the search result entries
-         */
-        pEntry = bInternalSearch || bStoreRsltInMem ?
-                        (pOperation->internalSearchEntryArray.pEntry + pOperation->internalSearchEntryArray.iSize) : &entry;
-
-        dwError = _VmDirPagedSearchGetEntryID(pPagedSearchContext, &eId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = pOperation->pBEIF->pfnBESimpleIdToEntry(eId, pEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (CheckIfEntryPassesFilter(pOperation, pEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
+        if (bStoreRsltInMem)
         {
-            dwError = VmDirBuildComputedAttribute(pOperation, pEntry);
+            dwError = VmDirAllocOrReallocEntryArray(&pOperation->internalSearchEntryArray);
+            BAIL_ON_VMDIR_ERROR(dwError);
+            pEntry = (pOperation->internalSearchEntryArray.pEntry + pOperation->internalSearchEntryArray.iSize);
+        }
+
+        eId = pPagedSearchContext->pTotalCandidates->eIds[pPagedSearchContext->dwCandidatesProcessed];
+
+        if (eId != pPagedSearchContext->lastEId)
+        {
+            pPagedSearchContext->lastEId = eId;
+            dwError = VmDirCheckAndSendEntry(
+                    eId,
+                    pOperation,
+                    pEntry,
+                    &bEntrySent);
             BAIL_ON_VMDIR_ERROR(dwError);
 
-            dwError = VmDirSendSearchEntry(pOperation, pEntry);
-            if (dwError == VMDIR_ERROR_INSUFFICIENT_ACCESS)
+            if (bEntrySent)
             {
-                VMDIR_LOG_WARNING(
-                    VMDIR_LOG_MASK_ALL,
-                    "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)",
-                    __FILE__,
-                    __LINE__,
-                    pOperation->conn->AccessInfo.pszBindedDn,
-                    pEntry->dn.lberbv.bv_val);
-
-                // make sure search continues
-               dwError = 0;
-            }
-            BAIL_ON_VMDIR_ERROR(dwError);
-
-            if (pEntry->bSearchEntrySent == TRUE)
-            {
-                if (bStoreRsltInMem || bInternalSearch)
-                {
-                    pOperation->internalSearchEntryArray.iSize++;
-                    pEntry = NULL;  // EntryArray takes over *pEntry content
-                }
-                entryCount++;
+               entryCount++;
             }
         }
-        /*
-         * Two cases here normal paged search and internal or paged search via REST
-         *     - In the case of normal paged search, entries that satisfy the search criteria are sent to the client
-         *       in perform action module, hence free the entry content.
-         *     - In the case of internal or paged search via REST, entries that satisfy the search criteria are saved
-         *       in the internalSearchEntryArray for further processing ownership is transfered (already done in perform action)
-         *       free will result in no-op.
-         */
-        VmDirFreeEntryContent(pEntry);
-        pEntry = NULL;
         pPagedSearchContext->dwCandidatesProcessed++;
+     }
+
+     if (pPagedSearchContext->dwCandidatesProcessed >= pPagedSearchContext->pTotalCandidates->size)
+     {
+         pPagedSearchContext->bCompete = TRUE;
+     }
+
+cleanup:
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, error(%d)", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+BOOLEAN
+VmDirCheckEidInMap(
+    PLW_HASHMAP     pMap,
+    ENTRYID         eId
+    )
+{
+    DWORD   dwError = 0;
+    BOOLEAN bIdSent = FALSE;
+    CHAR    eidStr[VMDIR_SIZE_64] = {0};
+
+    if (pMap)
+    {
+        dwError = VmDirStringPrintFA(eidStr, sizeof(eidStr), "%llu", eId);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = LwRtlHashMapFindKey(pMap, NULL, eidStr);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        bIdSent = TRUE;
+    }
+
+cleanup:
+    return bIdSent;
+
+error:
+    goto cleanup;
+}
+
+DWORD
+VmDirAddEidToMap(
+    PLW_HASHMAP     pMap,
+    ENTRYID         eId
+    )
+{
+    DWORD   dwError = 0;
+    PSTR    pEidStr = NULL;
+
+    if (pMap)
+    {
+        dwError = VmDirAllocateStringPrintf(&pEidStr,  "%llu", eId);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = LwRtlHashMapInsert(pMap, pEidStr, (PVOID)pEidStr, NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
     return dwError;
 
 error:
-    VmDirFreeEntryContent(pEntry);
-    VMDIR_LOG_ERROR(
-        VMDIR_LOG_MASK_ALL,
-        "%s failed, error(%d)",
-        __FUNCTION__,
-        dwError);
+    VMDIR_SAFE_FREE_MEMORY(pEidStr);
+    goto cleanup;
+}
+
+static
+DWORD
+_VmDirNextPageViaIterator(
+    PVDIR_OPERATION            pOperation,
+    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
+    )
+{
+    DWORD        dwError = 0;
+    DWORD        entryCount = 0;
+    PVDIR_ENTRY  pEntry = NULL;
+    BOOLEAN bEntrySent = FALSE;
+    PVDIR_INDEX_CFG pIndexCfg = NULL;
+    PVDIR_BACKEND_INDEX_ITERATOR  pIterator = NULL;
+    BOOLEAN     bAdminBind = FALSE;
+    BOOLEAN     bStoreRsltInMem = FALSE;
+    PVDIR_SEARCH_EXEC_PATH pExecPath = &pOperation->request.searchReq.srvExecPath;
+
+    bStoreRsltInMem = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL ||
+                      pOperation->request.searchReq.bStoreRsltInMem;
+
+    dwError = VmDirIndexCfgAcquire(
+            pPagedSearchContext->iterContext.pszIterTable,
+            VDIR_INDEX_READ,
+            &pIndexCfg);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = pOperation->pBEIF->pfnBEIndexIteratorInit(
+            pIndexCfg,
+            &pPagedSearchContext->iterContext,
+            &pIterator);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    bAdminBind = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL ||
+                 VMDIR_IS_ADMIN_OR_DC_GROUP_MEMBER(pOperation->conn->AccessInfo.accessRoleBitmap);
+
+    while (pIterator->bHasNext && entryCount < pPagedSearchContext->dwPageSize)
+    {
+        bEntrySent = FALSE;
+
+        if (VmDirdState() == VMDIRD_STATE_SHUTDOWN)
+        {
+            goto cleanup;
+        }
+
+        if (gVmdirGlobals.dwMaxSearchIteration  &&
+            !bAdminBind                         &&
+            pPagedSearchContext->iterContext.iIterCount > gVmdirGlobals.dwMaxSearchIteration)
+        {
+            pExecPath->bExceedMaxIteration = TRUE;
+
+            dwError = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s reached upper limit (%d) for iterator search (%d)",
+                             __FUNCTION__, gVmdirGlobals.dwMaxSearchIteration, dwError);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        if (!VmDirCheckEidInMap(pPagedSearchContext->iterContext.pSentIDMap,
+                pPagedSearchContext->iterContext.eId))
+        {
+            if (bStoreRsltInMem)
+            {
+                dwError = VmDirAllocOrReallocEntryArray(&pOperation->internalSearchEntryArray);
+                BAIL_ON_VMDIR_ERROR(dwError);
+                pEntry = (pOperation->internalSearchEntryArray.pEntry + pOperation->internalSearchEntryArray.iSize);
+            }
+
+            dwError = VmDirCheckAndSendEntry(
+                    pPagedSearchContext->iterContext.eId,
+                    pOperation,
+                    pEntry,
+                    &bEntrySent);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            if (bEntrySent)
+            {
+                dwError = VmDirAddEidToMap(
+                        pPagedSearchContext->iterContext.pSentIDMap,
+                        pPagedSearchContext->iterContext.eId);
+                BAIL_ON_VMDIR_ERROR(dwError);
+
+                entryCount++;
+            }
+        }
+        else
+        {
+            VMDIR_LOG_VERBOSE(LDAP_DEBUG_FILTER, "%s: eid already sent eId %llu",
+                    __func__, pPagedSearchContext->iterContext.eId);
+        }
+
+        dwError = pOperation->pBEIF->pfnBEIndexIterate(pIterator, &pPagedSearchContext->iterContext);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    if (pIterator->bHasNext == FALSE)
+    {
+        pPagedSearchContext->bCompete = TRUE;
+    }
+
+    pExecPath->IteratePlan.iNumIteration = pPagedSearchContext->iterContext.iIterCount;
+
+cleanup:
+    VmDirIndexCfgRelease(pIndexCfg);
+    if (pIterator)
+    {
+        pOperation->pBEIF->pfnBEIndexIteratorFree(pIterator);
+    }
+
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, error(%d)", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -664,83 +878,29 @@ static
 DWORD
 _VmDirPagedSearchUpdateCookie(
     PVDIR_OPERATION            pOperation,
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext,
-    PBOOLEAN                   pbSearchComplete
+    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext
     )
 {
     DWORD dwError = 0;
-
-    if (pPagedSearchContext == NULL ||
-        pOperation == NULL ||
-        pbSearchComplete == NULL ||
-        pPagedSearchContext->pTotalCandidates == NULL ||
-        pOperation->showPagedResultsCtrl == NULL)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    VMDIR_LOG_VERBOSE(
-        LDAP_DEBUG_TRACE,
-        "%s dwCandidatesProcessed:%d totalsize: %d",
-        __FUNCTION__,
-        pPagedSearchContext->dwCandidatesProcessed,
-        pPagedSearchContext->pTotalCandidates->size);
 
     if (IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
     {
         dwError = VmDirStringCpyA(
                   pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
                   VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
-                  pPagedSearchContext->pszGuid
-                  );
+                  pPagedSearchContext->pszGuid);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    if (pPagedSearchContext->dwCandidatesProcessed >= pPagedSearchContext->pTotalCandidates->size)
+    if (pPagedSearchContext->bCompete)
     {
         pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
-        *pbSearchComplete = TRUE;
     }
 
 cleanup:
     return dwError;
 
 error:
-    VMDIR_LOG_ERROR(
-        VMDIR_LOG_MASK_ALL,
-        "%s failed, error(%d)",
-        __FUNCTION__,
-        dwError);
-    goto cleanup;
-}
-
-static
-DWORD
-_VmDirPagedSearchGetEntryID(
-    PVDIR_PAGED_SEARCH_RECORD  pPagedSearchContext,
-    ENTRYID*                   pEId
-    )
-{
-    DWORD   dwError = 0;
-
-    if (pEId == NULL ||
-        pPagedSearchContext == NULL ||
-        pPagedSearchContext->pTotalCandidates == NULL ||
-        pPagedSearchContext->dwCandidatesProcessed >= pPagedSearchContext->pTotalCandidates->size)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    *pEId = pPagedSearchContext->pTotalCandidates->eIds[pPagedSearchContext->dwCandidatesProcessed];
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-        VMDIR_LOG_MASK_ALL,
-        "%s failed, error(%d)",
-        __FUNCTION__,
-        dwError);
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed, error(%d)", __FUNCTION__, dwError);
     goto cleanup;
 }

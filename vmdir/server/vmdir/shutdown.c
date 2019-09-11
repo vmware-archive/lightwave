@@ -189,6 +189,8 @@ VmDirCleanupGlobals(
     VOID
     )
 {
+    DWORD dwCnt = 0;
+
     // Free Server global 'gVmdirServerGlobals' upon shutdown
     VmDirFreeBervalContent(&gVmdirServerGlobals.invocationId);
     VmDirFreeBervalContent(&gVmdirServerGlobals.bvDefaultAdminDN);
@@ -244,4 +246,24 @@ VmDirCleanupGlobals(
     VmDirFreeLinkedList(gVmDirServerOpsGlobals.pWriteQueue->pList);
 
     VMDIR_SAFE_FREE_MEMORY(gVmDirServerOpsGlobals.pWriteQueue);
+
+    if (gVmdirServerGlobals.searchOptMap.bMapLoaded)
+    {
+        for (dwCnt=0; dwCnt < VMDIR_SEARCH_MAP_CACHE_SIZE; dwCnt++)
+        {
+            if (gVmdirServerGlobals.searchOptMap.ppAttrTypePriMap[dwCnt])
+            {
+                LwRtlHashMapClear(gVmdirServerGlobals.searchOptMap.ppAttrTypePriMap[dwCnt], VmDirSimpleHashMapPairFree, NULL);
+            }
+
+            if (gVmdirServerGlobals.searchOptMap.ppSearchTypePriMap[dwCnt])
+            {
+                LwRtlHashMapClear(gVmdirServerGlobals.searchOptMap.ppSearchTypePriMap[dwCnt], VmDirSimpleHashMapPairFree, NULL);
+            }
+        }
+
+        LwRtlFreeHashMap(gVmdirServerGlobals.searchOptMap.ppAttrTypePriMap);
+        LwRtlFreeHashMap(gVmdirServerGlobals.searchOptMap.ppSearchTypePriMap);
+    }
+
 }

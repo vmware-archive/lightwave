@@ -160,6 +160,7 @@ AndFilterResults(
                     }
                     goto done;
                 case FILTER_RES_FALSE:
+                case FILTER_RES_PENDING:
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }
@@ -176,6 +177,7 @@ AndFilterResults(
                     goto done;
                 case FILTER_RES_TRUE:
                 case FILTER_RES_FALSE:
+                case FILTER_RES_PENDING:
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }
@@ -183,6 +185,10 @@ AndFilterResults(
         case FILTER_RES_FALSE:
             DeleteCandidates( &(dst->candidates) );
             dst->computeResult = FILTER_RES_FALSE;
+            goto done;
+        case FILTER_RES_PENDING:
+            DeleteCandidates( &(dst->candidates) );
+            dst->computeResult = FILTER_RES_PENDING;
             goto done;
         case FILTER_RES_UNDEFINED:
             switch (dst->computeResult)
@@ -195,6 +201,7 @@ AndFilterResults(
                     dst->computeResult = FILTER_RES_UNDEFINED;
                     goto done;
                 case FILTER_RES_FALSE:
+                case FILTER_RES_PENDING:
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }
@@ -258,6 +265,9 @@ NotFilterResults(
         case FILTER_RES_UNDEFINED:
             dst->computeResult = FILTER_RES_UNDEFINED;
             goto done;
+        case FILTER_RES_PENDING:
+            dst->computeResult = FILTER_RES_PENDING;
+            goto done;
         default:
             assert( FALSE );
     }
@@ -303,6 +313,7 @@ OrFilterResults(
                 case FILTER_RES_NORMAL:
                     break; // normal processing of candidates lists is required.
                 case FILTER_RES_TRUE:
+                case FILTER_RES_PENDING:
                     goto done;
                 case FILTER_RES_FALSE:
                 case FILTER_RES_UNDEFINED:
@@ -320,10 +331,13 @@ OrFilterResults(
                 case FILTER_RES_NORMAL:
                 case FILTER_RES_TRUE:
                 case FILTER_RES_FALSE:
+                case FILTER_RES_PENDING:
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }
             break;
+        case FILTER_RES_PENDING:
+            goto done;
         case FILTER_RES_UNDEFINED:
             switch (dst->computeResult)
             {
@@ -333,6 +347,7 @@ OrFilterResults(
                 case FILTER_RES_FALSE:
                     dst->computeResult = FILTER_RES_UNDEFINED;
                     goto done;
+                case FILTER_RES_PENDING:
                 case FILTER_RES_UNDEFINED:
                     goto done;
             }

@@ -14,8 +14,6 @@
 
 // C REST ENGINE CONFIG VALUES
 #define REST_API_SPEC                   VMDIR_CONFIG_DIR VMDIR_PATH_SEP "vmdir-rest.json"
-#define VMDIR_REST_CLIENTCNT            64
-#define VMDIR_REST_WORKERTHCNT          64
 /* rest api for specific functions */
 #define REST_API_SPEC_2                 VMDIR_CONFIG_DIR VMDIR_PATH_SEP "vmdir-rest-api.json"
 #define VMDIR_REST_API_CLIENTCNT        10

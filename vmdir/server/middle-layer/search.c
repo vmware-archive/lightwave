@@ -24,36 +24,20 @@ ComputeRequiredAccess(
 
 static
 int
-BuildCandidateList(
-    PVDIR_OPERATION    pOperation,
-    VDIR_FILTER *      f,
-    ENTRYID            eStartingId
-    );
-
-static
-int
 VmDirProcessCandidateList(
     VDIR_OPERATION *    pOperation
     );
 
 static
 int
-_VmDirInternalNormalSearch(
-    VDIR_OPERATION *    pOperation
+_VmDirInternalSearchDispatch(
+    PVDIR_OPERATION     pOperation
     );
 
 static
 int
-_VmDirInternalPagedSearch(
-    VDIR_OPERATION *    pOperation
-    );
-
-static
-DWORD
-SetPagedSearchCookie(
-    PVDIR_OPERATION  pOp,
-    ENTRYID          eId,
-    DWORD            dwCandidatesProcessed
+_VmDirProcessNormalSearch(
+    PVDIR_OPERATION     pOperation
     );
 
 int
@@ -79,104 +63,6 @@ error:
     goto cleanup;
 }
 
-static
-DWORD
-ProcessPreValidatedEntries(
-    PVDIR_OPERATION pOperation,
-    DWORD dwEntryCount,
-    ENTRYID *pValidatedEntries
-    )
-{
-    DWORD   i = 0;
-    DWORD   dwError = 0;
-    DWORD   dwSentEntries = 0;
-    BOOLEAN bInternalSearch = FALSE;
-    BOOLEAN bStoreRsltInMem = FALSE;
-    VDIR_ENTRY  srEntry = {0};
-    PVDIR_ENTRY pSrEntry = NULL;
-
-    if (dwEntryCount == 0)
-    {
-        goto cleanup;
-    }
-
-    bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
-    bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
-
-    if (bInternalSearch || bStoreRsltInMem)
-    {
-        VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
-        dwError = VmDirAllocateMemory(
-                sizeof(VDIR_ENTRY) * (dwEntryCount + 1),
-                (PVOID*)&pOperation->internalSearchEntryArray.pEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-    for (; i < dwEntryCount; ++i)
-    {
-        pSrEntry = bInternalSearch || bStoreRsltInMem ?
-                (pOperation->internalSearchEntryArray.pEntry +
-                 pOperation->internalSearchEntryArray.iSize) : &srEntry;
-
-        dwError = pOperation->pBEIF->pfnBESimpleIdToEntry(
-                pValidatedEntries[i], pSrEntry);
-        if (dwError != 0)
-        {
-            // Ignore errors resolving ENTRYIDs.
-            VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                    "%s pfnBESimpleIdToEntry EID(%u), error (%u)",
-                    __FUNCTION__, pValidatedEntries[i], dwError);
-            continue;
-        }
-
-        dwError = VmDirBuildComputedAttribute(pOperation, pSrEntry);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        dwError = VmDirSendSearchEntry(pOperation, pSrEntry);
-        if (dwError == VMDIR_ERROR_INSUFFICIENT_ACCESS)
-        {
-            VMDIR_LOG_WARNING(
-                    VMDIR_LOG_MASK_ALL,
-                    "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)",
-                    __FILE__,
-                    __LINE__,
-                    pOperation->conn->AccessInfo.pszBindedDn,
-                    pSrEntry->dn.lberbv.bv_val);
-
-            // make sure search continues
-            dwError = 0;
-        }
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (pSrEntry->bSearchEntrySent)
-        {
-            dwSentEntries++;
-            if (bInternalSearch || bStoreRsltInMem)
-            {
-                pOperation->internalSearchEntryArray.iSize++;
-                pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
-            }
-        }
-
-        VmDirFreeEntryContent(pSrEntry);
-        pSrEntry = NULL;
-    }
-
-    dwError = SetPagedSearchCookie(
-                pOperation,
-                pValidatedEntries[dwEntryCount - 1],
-                0);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    pOperation->dwSentEntries = dwSentEntries;
-    VmDirFreeEntryContent(pSrEntry);
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
 /* InternalSearch: Interface that can be used "internally" by the server code. One of the main differences between
  * this function and MLSearch is that this function does not send back an LDAP result to the client.
  *
@@ -188,11 +74,8 @@ VmDirInternalSearch(
     )
 {
     int     retVal = LDAP_SUCCESS;
-    DWORD   dwEntryCount = 0;
     BOOLEAN bHasTxn = FALSE;
     PSTR    pszLocalErrMsg = NULL;
-    ENTRYID     eId = 0;
-    ENTRYID*    pValidatedEntries = NULL;
     PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
     PVDIR_OPERATION_ML_METRIC  pMLMetrics = NULL;
 
@@ -252,7 +135,10 @@ VmDirInternalSearch(
         VMDIR_COLLECT_TIME(pMLMetrics->iBETxnBeginEndTime);
 
         // Lookup in the DN index.
-        retVal = pOperation->pBEIF->pfnBEDNToEntryId( pOperation->pBECtx, &(pOperation->reqDn), &eId );
+        retVal = pOperation->pBEIF->pfnBEDNToEntryId(
+            pOperation->pBECtx,
+            &(pOperation->reqDn),
+            &pOperation->request.searchReq.baseEID );
         BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "DNToEID (%u)(%s)",
                 retVal, VDIR_SAFE_STRING(pOperation->pBEErrorMsg));
     }
@@ -269,44 +155,8 @@ VmDirInternalSearch(
     retVal = AppendDNFilter( pOperation );
     BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Appending DN filter failed.");
 
-    /*
-     * TODO cleanup During background thread implementation of page search
-     */
-    if (gVmdirGlobals.bPagedSearchReadAhead)
-    {
-        if (pOperation->showPagedResultsCtrl != NULL &&
-            !IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
-        {
-            retVal = VmDirPagedSearchCacheRead(
-                        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
-                        &pValidatedEntries,
-                        &dwEntryCount);
-            BAIL_ON_VMDIR_ERROR(retVal);
-        }
-    }
-
-    if (pOperation->showPagedResultsCtrl == NULL)
-    {
-        retVal = _VmDirInternalNormalSearch(pOperation);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-    else
-    {
-        retVal = _VmDirInternalPagedSearch(pOperation);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
-
-    /*
-     * TODO cleanup During background thread implementation of page search
-     */
-    if (pValidatedEntries != NULL)
-    {
-        retVal = ProcessPreValidatedEntries(
-                    pOperation,
-                    dwEntryCount,
-                    pValidatedEntries);
-        BAIL_ON_VMDIR_ERROR(retVal);
-    }
+    retVal = _VmDirInternalSearchDispatch(pOperation);
+    BAIL_ON_VMDIR_ERROR(retVal);
 
     VMDIR_COLLECT_TIME(pMLMetrics->iBETxnCommitStartTime);
 
@@ -324,7 +174,6 @@ cleanup:
     VmDirInternalMetricsUpdate(pOperation);
     VmDirInternalMetricsLogInefficientOp(pOperation);
 
-    VMDIR_SAFE_FREE_MEMORY(pValidatedEntries);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
@@ -724,43 +573,70 @@ error:
 }
 
 static
-int
-_VmDirInternalNormalSearch(
-    VDIR_OPERATION *    pOperation
+VOID
+_VmDirUpdateNormalSearchPlan(
+    PVDIR_OPERATION     pOperation
     )
 {
-    int     retVal = LDAP_SUCCESS;
-    PSTR    pszLocalErrMsg = NULL;
-    ENTRYID eStartingId = 0;
+    DWORD   dwError = 0;
+    SearchReq *             pSReq = &pOperation->request.searchReq;
+    PVDIR_SEARCH_EXEC_PATH  pExecPath = &pOperation->request.searchReq.srvExecPath;
 
-    // should never happen - there are asserts in calling function
-    if (pOperation == NULL)
+    if (VMDIR_IS_OP_CTRL_SEARCH_PLAN(pOperation))
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+        pExecPath->iEntrySent = pSReq->iNumEntrySent;
+        pExecPath->bPagedSearch = VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation);
+        // pExecPath->bPagedSearchDone set in paged search code
+        // pExecPath->bExceedMaxIteration set in search code
+
+        if (pExecPath->searchAlgo == SEARCH_ALGO_CANDIDATE_LIST)
+        {
+            pExecPath->candiatePlan.iCandateSize = pSReq->filter->candidates->size;
+        }
+        else if (pExecPath->searchAlgo == SEARCH_ALGO_ITERATOR)
+        {
+            // pExecPath->IteratePlan.iNumIteration set in search code
+
+            dwError = VmDirAllocateStringA(pSReq->iteratorSearchPlan.attr.lberbv_val, &pExecPath->pszIndex);
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
+
+        VMDIR_LOG_VERBOSE(VMDIR_LOG_MASK_ALL,
+            "%s Algo %d table %s paged %d done %d, sent %d iter %d, cl size %d",
+            __FUNCTION__,
+            pExecPath->searchAlgo,
+            VDIR_SAFE_STRING(pExecPath->pszIndex),
+            pExecPath->bPagedSearch,
+            pExecPath->bPagedSearchDone,
+            pExecPath->iEntrySent,
+            pExecPath->IteratePlan.iNumIteration,
+            pExecPath->candiatePlan.iCandateSize);
     }
 
-    retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, eStartingId);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
+error:
+    return;
+}
 
-    if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
+static
+int
+_VmDirInternalSearchDispatch(
+    PVDIR_OPERATION     pOperation
+    )
+{
+    int         retVal = LDAP_SUCCESS;
+
+    if (VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation))
     {
-        retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(
-            retVal,
-            pszLocalErrMsg,
-            "Full scan of Entry DB is required. Refine your search.");
+        retVal = VmDirProcessPagedSearch(pOperation);
+        BAIL_ON_VMDIR_ERROR(retVal);
     }
-
-    retVal = VmDirProcessCandidateList(pOperation);
-    BAIL_ON_VMDIR_ERROR_WITH_MSG(
-        retVal,
-        pszLocalErrMsg,
-        "VmDirProcessCandidateList failed. (%u)(%s)",
-        retVal,
-        VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
+    else
+    {
+        retVal = _VmDirProcessNormalSearch(pOperation);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
 
 cleanup:
-    VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
     return retVal;
 
 error:
@@ -774,44 +650,43 @@ error:
 
 static
 int
-_VmDirInternalPagedSearch(
-    VDIR_OPERATION *    pOperation
+_VmDirProcessNormalSearch(
+    PVDIR_OPERATION     pOperation
     )
 {
-    int     retVal = LDAP_SUCCESS;
-    PSTR    pszLocalErrMsg = NULL;
+    int         retVal = LDAP_SUCCESS;
+    PSTR        pszLocalErrMsg = NULL;
+    SearchReq   *pSReq = &pOperation->request.searchReq;
 
-    // should never happen - there are asserts in calling function
-    if (pOperation == NULL)
+    retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, 0);
+    BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
+
+    if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
     {
-        BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INVALID_PARAMETER);
+        // BuildCandidateList tried to build a full result set but gave up eventually
+        // TODO, not sure if this still valid with iterator based search support.
+        retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg,
+            "Full scan of Entry DB is required. Refine your search.");
     }
-
-    /*
-     * New page search
-     * TODO: Iterator logic and ranking algorithm will be added in next tasks
-     */
-    if (pOperation->showPagedResultsCtrl != NULL &&
-        IsNullOrEmptyString(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie))
+    else if (pSReq->srvExecPath.searchAlgo == SEARCH_ALGO_ITERATOR)
     {
-        retVal = BuildCandidateList(pOperation, pOperation->request.searchReq.filter, 0);
-        BAIL_ON_VMDIR_ERROR_WITH_MSG(retVal, pszLocalErrMsg, "BuildCandidateList failed.");
-
-        if (pOperation->request.searchReq.filter->computeResult == FILTER_RES_TRUE)
-        {
-            retVal = VMDIR_ERROR_UNWILLING_TO_PERFORM;
-            BAIL_ON_VMDIR_ERROR_WITH_MSG(
-                retVal,
-                pszLocalErrMsg,
-                "Full scan of Entry DB is required. Refine your search.");
-        }
+        retVal = VmDirSearchViaIterator(pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG( retVal, pszLocalErrMsg, "Error on VmDirSearchViaIterator");
     }
-
-    retVal = VmDirProcessPagedSearch(pOperation);
-    BAIL_ON_VMDIR_ERROR(retVal);
+    else
+    {
+        // Candidate set has been built which is a super set of the final result.
+        retVal = VmDirProcessCandidateList(pOperation);
+        BAIL_ON_VMDIR_ERROR_WITH_MSG(
+            retVal, pszLocalErrMsg, "VmDirProcessCandidateList failed. (%u)(%s)",
+            retVal, VDIR_SAFE_STRING(pOperation->ldapResult.pszErrMsg));
+    }
 
 cleanup:
+    _VmDirUpdateNormalSearchPlan(pOperation);
     VMDIR_SAFE_FREE_MEMORY(pszLocalErrMsg);
+
     return retVal;
 
 error:
@@ -827,7 +702,6 @@ error:
  * the result set that we need to send back to the client.
  */
 
-static
 int
 BuildCandidateList(
     PVDIR_OPERATION    pOperation,
@@ -837,6 +711,11 @@ BuildCandidateList(
 {
     int             retVal = LDAP_SUCCESS;
     VDIR_FILTER *   nextFilter = NULL;
+    SearchReq *     pSearchReq = &pOperation->request.searchReq;
+    int             iMaxIndexScan = gVmdirGlobals.dwMaxIndexScan;
+    int             iSmallCandidateSet = gVmdirGlobals.dwSmallCandidateSet;
+
+    pOperation->request.searchReq.iBuildCandDepth++;
 
     if (f->computeResult != FILTER_RES_NORMAL)
     {
@@ -848,20 +727,9 @@ BuildCandidateList(
         case LDAP_FILTER_AND:
         {
             VDIR_FILTER *   specialFilter = NULL;
-            int             iMaxIndexScan = gVmdirGlobals.dwMaxIndexScan;
-            int             iSmallCandidateSet = gVmdirGlobals.dwSmallCandidateSet;
             BOOLEAN         bGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
-            SearchReq *     sr = &pOperation->request.searchReq;
 
             VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: AND" );
-
-            pOperation->pBECtx->iMaxScanForSizeLimit = 0;
-            if (pOperation->showPagedResultsCtrl == 0 && sr->sizeLimit > 0)
-            {
-                //pfnBEGetCandidates will try to avoid excessive index lookup when there is a sizeLimit hint
-                // - only if there is no page control
-                pOperation->pBECtx->iMaxScanForSizeLimit = gVmdirGlobals.dwMaxSizelimitScan;
-            }
 
             // Look for the "special" filters that ONLY need to be processed. Currently, special filters are:
             //      - equality match filter on a unique attribute (Priority 1)
@@ -924,7 +792,7 @@ BuildCandidateList(
             }
 
 first_pass:
-            // First pass - evalute non-composite filters in the AND component
+            // First pass - evaluate NON-COMPOSITE filters in the AND component
             // For each of the filters, we limit the number of index scan allowed.
             // If it exceeds this limit, we abandon it and move on to next one.
             // The loop stop once we have a small good positive filter/candidate.
@@ -950,14 +818,14 @@ first_pass:
                         goto candidate_build_done;
                     }
                     bGotPositiveCandidateSet = TRUE;
-                    //Continue loop looking for a better candidate set.
+                    // Continue loop looking for a better candidate set.
                 }
             }
 
-            // First pass - evaluate composite filters in the AND component
+            // First pass - evaluate COMPOSITE filters in the AND component
             // The loop stop once we have a small good positive filter/candidate,
             // otherwise, do not attempt the second pass if got any good positive candidate set.
-            // It passes in current bGotPositiveCandidateSet to the composit filters, so that
+            // It passes in current bGotPositiveCandidateSet to the composite filters, so that
             // their evaluations will not go through second pass when bGotPositiveCandidateSet is true.
             for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
             {
@@ -988,15 +856,53 @@ first_pass:
                 goto candidate_build_done;
             }
 
-            //////////////////////////////////////////////////////////////////////
-            // Second pass - get here when failing to get any positive candidate set
-            // Run through all filters w/o index scan limit.
-            //////////////////////////////////////////////////////////////////////
-            for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+            if (pSearchReq->iOrFilterDepth == 0)
             {
-                nextFilter->iMaxIndexScan = 0;
-                retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
-                BAIL_ON_VMDIR_ERROR( retVal );
+                // To reduce scope, only optimize iteration for external call
+                if (pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL)
+                {
+                    for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+                    {
+                       if (// nextFilter->choice == LDAP_FILTER_GE          ||
+                           // nextFilter->choice == LDAP_FILTER_LE          ||
+                           nextFilter->choice == LDAP_FILTER_EQUALITY       ||
+                           nextFilter->choice == LDAP_FILTER_SUBSTRINGS     ||
+                           nextFilter->choice == FILTER_ONE_LEVEL_SEARCH    ||
+                           nextFilter->choice == LDAP_FILTER_PRESENT)
+                       {
+                           // Loop through non-composite filters under current AND filter
+                           // find the best attribute type for iterator candidate (pri will be set > 0 if found).
+                           VmDirEvaluateIteratorCandidate(pOperation, nextFilter);
+                       }
+                    }
+
+                    if (pSearchReq->iteratorSearchPlan.pri > 0)
+                    {
+                        // Fall through index iterator because we found a good one.
+                        pSearchReq->srvExecPath.searchAlgo = SEARCH_ALGO_ITERATOR;
+                        f->computeResult = FILTER_RES_PENDING;
+
+                        VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL,
+                            "%s, -- iterate search, page search (%d) table (%s) value (%s)",
+                            __FUNCTION__,
+                            VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation),
+                            pSearchReq->iteratorSearchPlan.attr.lberbv.bv_val,
+                            pSearchReq->iteratorSearchPlan.attrNormVal.lberbv.bv_val);
+
+                        goto cleanup;
+                    }
+                }
+
+                //////////////////////////////////////////////////////////////////////
+                // Second pass - get here when failing to get any positive candidate set
+                // Run through all filters w/o index scan limit.
+                //////////////////////////////////////////////////////////////////////
+                for ( nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next )
+                {
+                    nextFilter->iMaxIndexScan = 0;
+                    retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
+                    BAIL_ON_VMDIR_ERROR( retVal );
+                }
             }
 
 candidate_build_done:
@@ -1023,12 +929,22 @@ candidate_build_done:
         case LDAP_FILTER_OR:
           VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: OR" );
 
+          pOperation->request.searchReq.iOrFilterDepth++;
+
           for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
           {
-              //nextFilter inherents the bAncestorGotPositiveCandidateSet
+              //nextFilter inherits bAncestorGotPositiveCandidateSet
               nextFilter->bAncestorGotPositiveCandidateSet = f->bAncestorGotPositiveCandidateSet;
+              nextFilter->iMaxIndexScan = iMaxIndexScan;
+
               retVal = BuildCandidateList(pOperation, nextFilter, eStartingId);
               BAIL_ON_VMDIR_ERROR( retVal );
+
+              if (!nextFilter->bLastScanPositive)
+              {   // a component failed to produce a complete set, give up on this OR filter
+                  pOperation->request.searchReq.iOrFilterDepth--;
+                  goto cleanup;
+              }
           }
           // First, "OR" no candidates lists or "positive" candidates lists
           for (nextFilter = f->filtComp.complex; nextFilter != NULL; nextFilter = nextFilter->next)
@@ -1046,10 +962,13 @@ candidate_build_done:
                   OrFilterResults( nextFilter, f);
               }
           }
+
+          pOperation->request.searchReq.iOrFilterDepth--;
           break;
 
         case LDAP_FILTER_NOT:
             VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "Filter choice: NOT" );
+
 #if 0
             nextFilter = f->filtComp.complex;
             retVal = BuildCandidateList( pOperation, nextFilter);
@@ -1073,7 +992,7 @@ candidate_build_done:
           retVal = pOperation->pBEIF->pfnBEGetCandidates(pOperation->pBECtx, f, eStartingId);
           if (retVal != 0)
           {
-              if ( retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND ) // SJ-TBD: What about DB_DEADLOCK error ??
+              if ( retVal == VMDIR_ERROR_BACKEND_ENTRY_NOTFOUND )
               {
                   retVal = LDAP_SUCCESS;
               }
@@ -1111,6 +1030,7 @@ candidate_build_done:
     }
 
 cleanup:
+    pOperation->request.searchReq.iBuildCandDepth--;
     return retVal;
 
 error:
@@ -1119,50 +1039,9 @@ error:
     goto cleanup;
 }
 
-static
-DWORD
-SetPagedSearchCookie(
-    PVDIR_OPERATION pOperation,
-    ENTRYID eId,
-    DWORD dwCandidatesProcessed
-    )
-{
-    DWORD dwError = 0;
-
-    if (gVmdirGlobals.bPagedSearchReadAhead)
-    {
-        dwError = VmDirPagedSearchCacheInsert(
-                    pOperation,
-                    dwCandidatesProcessed);
-    }
-
-    if (dwError != 0 || !gVmdirGlobals.bPagedSearchReadAhead)
-    {
-        //
-        // We were unable to cache the information necessary. Fallback to the
-        // old cookie mechanism.
-        //
-        dwError = VmDirStringPrintFA(
-                    pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie,
-                    VMDIR_ARRAY_SIZE(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie),
-                    "%llu",
-                    eId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-    }
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-/* VmDirProcessCandidateList: Goes thru the candidate list, constructed by processing the indexed attributes and logical
- * (AND/OR/NOT) relationship between them, and performs the following logic:
- *     - Read complete entry
- *     - Check if it passes the search filter
- *     - Build memberOf attribute, if needed
- *     - Send the search entry (if it has passed the filter) + computed attributes (e.g. memberOf)
+/* VmDirProcessCandidateList: this is invoked only a complete candidate list has been built
+ * which is a super set of the result set. The flow will go other functions if build candidate
+ * list turned out to use iterator based result set.
  *
  * Note: This whole processing is not part of an existing/bigger transaction, if any.
  */
@@ -1176,175 +1055,74 @@ VmDirProcessCandidateList(
     int               retVal = LDAP_SUCCESS;
     int               i = 0;
     VDIR_CANDIDATES * cl = pOperation->request.searchReq.filter->candidates;
-    VDIR_ENTRY        srEntry = {0};
     VDIR_ENTRY *      pSrEntry = NULL;
     int               numSentEntries = 0;
     BOOLEAN           bExternalSearch = FALSE;
     BOOLEAN           bInternalSearch = FALSE;
     BOOLEAN           bStoreRsltInMem = FALSE;
-    BOOLEAN           bPageResultsCtrl = FALSE;
-    DWORD             dwPageSize = 0;
-    ENTRYID           lastEID = 0;
-
-    /*
-     * If the page size is greater than or equal to the sizeLimit value,
-     * the server should ignore the control as the request can be satisfied in a single page.
-     */
-    if (pOperation->showPagedResultsCtrl && (pOperation->request.searchReq.sizeLimit == 0 ||
-        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize < (DWORD)pOperation->request.searchReq.sizeLimit))
-    {
-        VmDirLog( LDAP_DEBUG_TRACE, "showPagedResultsCtrl applies to this query." );
-
-        bPageResultsCtrl = TRUE;
-        dwPageSize = pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.pageSize;
-        lastEID = atoll(pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie);
-        pOperation->showPagedResultsCtrl->value.pagedResultCtrlVal.cookie[0] = '\0';
-
-        VmDirSortCandidateList(cl);  // sort candidate list if not yet sorted
-    }
+    ENTRYID           lastEId = 0;
 
     bExternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_EXTERNAL;
     bInternalSearch = pOperation->opType == VDIR_OPERATION_TYPE_INTERNAL;
     bStoreRsltInMem = pOperation->request.searchReq.bStoreRsltInMem;
 
-    if (cl && cl->size > 0)
+    if (cl == NULL || cl->size == 0)
     {
-        if (bInternalSearch || bStoreRsltInMem)
-        {   //TODO, we should have a hard limit on the cl->size we handle
-            VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
-            retVal = VmDirAllocateMemory(   sizeof(VDIR_ENTRY) * cl->size,
-                                            (PVOID*)&pOperation->internalSearchEntryArray.pEntry);
-            BAIL_ON_VMDIR_ERROR(retVal);
-        }
+        goto cleanup;
+    }
 
-        for (i = 0, numSentEntries = 0;
-             (i < cl->size) &&
-             (pOperation->request.searchReq.sizeLimit == 0 /* unlimited */ ||
-              numSentEntries < pOperation->request.searchReq.sizeLimit);
-             i++)
+    // data layer index scan does NOT guarantee uniqueness of CL
+    // thus sort CL and skip duplicate in following loop.
+    VmDirSortCandidateList(cl);
+
+    if (bInternalSearch || bStoreRsltInMem)
+    {   //TODO, we should have a hard limit on the cl->size we handle
+        VmDirFreeEntryArrayContent(&pOperation->internalSearchEntryArray);
+        retVal = VmDirAllocateMemory(
+                sizeof(VDIR_ENTRY) * cl->size,
+                (PVOID*)&pOperation->internalSearchEntryArray.pEntry);
+        BAIL_ON_VMDIR_ERROR(retVal);
+    }
+
+    for (i = 0, numSentEntries = 0;
+         (i < cl->size) &&
+         (pOperation->request.searchReq.sizeLimit == 0 /* unlimited */ ||
+          numSentEntries < pOperation->request.searchReq.sizeLimit);
+         i++)
+    {
+        BOOLEAN bEntrySent = FALSE;
+
+        if (bExternalSearch                         &&
+            VmDirdState() == VMDIRD_STATE_SHUTDOWN  &&
+            pOperation->syncReqCtrl == NULL)
         {
-            if (bExternalSearch &&
-                VmDirdState() == VMDIRD_STATE_SHUTDOWN &&
-                pOperation->syncReqCtrl == NULL)
-            {
-                retVal = LDAP_UNAVAILABLE; // stop all external search ops, except replication pull
-                goto cleanup;
-            }
-
-            if (!gVmdirGlobals.bPagedSearchReadAhead)
-            {
-                //skip entries we sent before in sorted cl->eIds.
-                if (bPageResultsCtrl && cl->eIds[i] <= lastEID)
-                {
-                    continue;
-                }
-            }
-
-            pSrEntry = bInternalSearch || bStoreRsltInMem ?
-                        (pOperation->internalSearchEntryArray.pEntry + pOperation->internalSearchEntryArray.iSize) : &srEntry;
-
-            retVal = pOperation->pBEIF->pfnBEIdToEntry(
-                        pOperation->pBECtx,
-                        pOperation->pSchemaCtx,
-                        cl->eIds[i],
-                        pSrEntry,
-                        VDIR_BACKEND_ENTRY_LOCK_READ);
-
-            if (retVal)
-            {
-                // Ignore BdbEIdToEntry errors.
-                VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                        "ProcessCandiateList BEIdToEntry EID(%u), error (%u)",
-                        cl->eIds[i], retVal);
-
-                continue;
-            }
-
-            if (CheckIfEntryPassesFilter(pOperation, pSrEntry, pOperation->request.searchReq.filter) == FILTER_RES_TRUE)
-            {
-                BOOLEAN bSendEntry = TRUE;
-                CHAR    sha1Digest[SHA_DIGEST_LENGTH] = {0};
-
-                retVal = VmDirBuildComputedAttribute( pOperation, pSrEntry );
-                BAIL_ON_VMDIR_ERROR( retVal );
-
-                if (pOperation->digestCtrl)
-                {
-                    retVal = VmDirEntrySHA1Digest(pSrEntry, sha1Digest);
-                    BAIL_ON_VMDIR_ERROR(retVal);
-
-                    if (memcmp(sha1Digest, pOperation->digestCtrl->value.digestCtrlVal.sha1Digest, SHA_DIGEST_LENGTH) == 0)
-                    {
-                        bSendEntry = FALSE;
-                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest match %s",
-                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
-                    }
-                    else
-                    {
-                        VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL,"%s digest mismatch %s",
-                                           __FUNCTION__, pSrEntry->dn.lberbv.bv_val);
-                    }
-                }
-
-                if (bSendEntry)
-                {
-                    retVal = VmDirSendSearchEntry(pOperation, pSrEntry);
-                    if (retVal == VMDIR_ERROR_INSUFFICIENT_ACCESS)
-                    {
-                        VMDIR_LOG_WARNING( VMDIR_LOG_MASK_ALL,
-                                "Access deny on search entry result [%s,%d] (bindedDN-%s) (targetDn-%s)\n",
-                                __FILE__,
-                                __LINE__,
-                                pOperation->conn->AccessInfo.pszBindedDn,
-                                pSrEntry->dn.lberbv.bv_val);
-                        // make sure search continues
-                        retVal = 0;
-                    }
-                    BAIL_ON_VMDIR_ERROR( retVal );
-
-                    if (pSrEntry->bSearchEntrySent)
-                    {
-                        numSentEntries++;
-                        if (bInternalSearch || bStoreRsltInMem)
-                        {
-                            pOperation->internalSearchEntryArray.iSize++;
-                            pSrEntry = NULL;    // EntryArray takes over *pSrEntry content
-
-                            if (pOperation->internalSearchEntryArray.iSize > gVmdirServerGlobals.dwMaxInternalSearchLimit)
-                            {
-                                BAIL_WITH_VMDIR_ERROR(retVal, VMDIR_ERROR_INTERNAL_SEARCH_LIMIT);
-                            }
-                        }
-                    }
-                }
-            }
-
-            //We have sent one page size of entries, so we can break here
-            if (bPageResultsCtrl && numSentEntries == dwPageSize)
-            {
-                retVal = SetPagedSearchCookie(pOperation, cl->eIds[i], i);
-                BAIL_ON_VMDIR_ERROR(retVal);
-                break;
-            }
-
-            VmDirFreeEntryContent( pSrEntry );
-            pSrEntry = NULL; // Reset to NULL so that DeleteEntry is no-op.
+            retVal = LDAP_UNAVAILABLE; // stop all external search ops, except replication pull
+            goto cleanup;
         }
 
-        VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "(%d) candiates processed and (%d) entries sent", cl->size, numSentEntries);
+        pSrEntry = bInternalSearch || bStoreRsltInMem ?
+                    (pOperation->internalSearchEntryArray.pEntry +
+                            pOperation->internalSearchEntryArray.iSize) : NULL;
+
+        if (lastEId == cl->eIds[i])
+        {   // skip duplicate EID
+            continue;
+        }
+        lastEId = cl->eIds[i];
+
+        retVal = VmDirCheckAndSendEntry(cl->eIds[i], pOperation, pSrEntry, &bEntrySent);
+        BAIL_ON_VMDIR_ERROR(retVal);
+
+        if (bEntrySent)
+        {
+            numSentEntries++;
+        }
     }
 
-    if ( pOperation->request.searchReq.sizeLimit && numSentEntries < pOperation->request.searchReq.sizeLimit &&
-         pOperation->pBECtx->iPartialCandidates)
-    {
-        retVal = LDAP_UNWILLING_TO_PERFORM;
-        VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "ProcessCandiateList may return none or paritial requested entries with sizelimit %d",
-                        pOperation->request.searchReq.sizeLimit);
-    }
+    VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "(%d) candiates processed and (%d) entries sent", cl->size, numSentEntries);
 
 cleanup:
     pOperation->dwSentEntries = numSentEntries;
-    VmDirFreeEntryContent(pSrEntry);
     return retVal;
 
 error:

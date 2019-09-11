@@ -236,13 +236,6 @@ VmDirSrvUpdateConfig(
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
-                    VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN,
-                    TRUE))
-        {
-            gVmdirGlobals.dwMaxSizelimitScan = VMDIR_MAX(pEntry->dwValue, 0);
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
                     VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR,
                     TRUE))
         {
@@ -261,13 +254,6 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.bTrackLastLoginTime = pEntry->dwValue ? TRUE : FALSE;
-        }
-        else if (!VmDirStringCompareA(
-                    pEntry->pszName,
-                    VMDIR_REG_KEY_PAGED_SEARCH_READ_AHEAD,
-                    TRUE))
-        {
-            gVmdirGlobals.bPagedSearchReadAhead = !!pEntry->dwValue;
         }
         else if (!VmDirStringCompareA(
                     pEntry->pszName,
@@ -338,6 +324,41 @@ VmDirSrvUpdateConfig(
                     TRUE))
         {
             gVmdirGlobals.iWarnPwdExpiring = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_SEARCH_ITERATION,
+                    TRUE))
+        {
+            gVmdirGlobals.dwMaxSearchIteration = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_MAX_SEARCH_ITERATION_TXN,
+                    TRUE))
+        {
+            gVmdirGlobals.dwMaxSearchIterationTxn = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_ENABLE_SEARCH_OPTIMIZATION,
+                    TRUE))
+        {
+            gVmdirGlobals.dwEnableSearchOptimization = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_REST_WORKER,
+                    TRUE))
+        {
+            gVmdirGlobals.dwRESTWorker = pEntry->dwValue;
+        }
+        else if (!VmDirStringCompareA(
+                    pEntry->pszName,
+                    VMDIR_REG_KEY_REST_CLIENT,
+                    TRUE))
+        {
+            gVmdirGlobals.dwRESTClient = pEntry->dwValue;
         }
     }
 

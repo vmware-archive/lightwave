@@ -29,13 +29,6 @@
 
 PVDIR_PASSWORD_HASH_SCHEME gpVdirPasswdSchemeGlobals = NULL;
 
-VDIR_PAGED_SEARCH_CACHE     gPagedSearchCache =
-    {
-        // NOTE: order of fields MUST stay in sync with struct definition...
-        VMDIR_SF_INIT(.mutex, NULL),
-        VMDIR_SF_INIT(.pHashTbl, NULL),
-    };
-
 VDIR_PAGED_SEARCH_CONTEXT   gPagedSearchCtxCache =
     {
         // NOTE: order of fields MUST stay in sync with struct definition...

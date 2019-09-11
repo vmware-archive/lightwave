@@ -47,6 +47,7 @@
 #include <replication.h>
 #include <clusterstate.h>
 #include <resthead.h>
+#include <mdbstore.h>
 
 #include <middlelayer.h>
 
@@ -79,6 +80,7 @@
 #define LW_STRICT_NAMESPACE
 #include <lw/types.h>
 #include <lw/hash.h>
+#include <lw/atomic.h>
 #include <lw/security-types.h>
 
 #include <vmdir.h>

@@ -335,10 +335,6 @@ typedef struct _VDIR_SEARCH_EXEC_PATH
     ber_int_t               bExceedMaxIteration;
     VDIR_SRV_CANDIDATE_SEARCH_PLAN candiatePlan;
     VDIR_SRV_ITERATOR_SEARCH_PLAN  IteratePlan;
-
-    // data needed to determine execution path
-    int                     iBuildCandDepth;
-    int                     iOrFilterDepth;
 } VDIR_SEARCH_EXEC_PATH, *PVDIR_SEARCH_EXEC_PATH;
 
 #ifdef _WIN32
@@ -1174,7 +1170,6 @@ typedef enum
 #define VMDIR_REG_KEY_DISABLE_VECS            "DisableVECSIntegration"
 #define VMDIR_REG_KEY_MAX_INDEX_SCAN          "MaxIndexScan"
 #define VMDIR_REG_KEY_SMALL_CANDIDATE_SET     "SmallCandidateSet"
-#define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN      "MaxSizeLimitScan"
 #define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR    "AllowImportOperationalAttrs"
 #define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
@@ -1224,6 +1219,8 @@ typedef enum
 #define VMDIR_REG_KEY_MAX_SEARCH_ITERATION      "MaxSearchIterationScan"
 #define VMDIR_REG_KEY_MAX_SEARCH_ITERATION_TXN  "MaxSearchIterationScanTxn"
 #define VMDIR_REG_KEY_ENABLE_SEARCH_OPTIMIZATION    "EnableSearchOptimization"
+#define VMDIR_REG_KEY_REST_WORKER               "NumRestWorkerThread"
+#define VMDIR_REG_KEY_REST_CLIENT               "NumRestClientThread"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"

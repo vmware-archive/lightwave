@@ -195,10 +195,6 @@ typedef struct _VDIR_BACKEND_CTX
     PSTR        pszBEErrorMsg;
     USN         wTxnUSN;            // lowest USN associates with a write txn (could be nested tnx)
                                     // i.e. should be the first USN number acquired per backend write txn.
-    DWORD       iMaxScanForSizeLimit;  // Maximum candiates scaned an index for the best effort candidates
-                                       // build when search has a size limit hint. Unlimited if it is 0
-    int         iPartialCandidates; // indicate at least one of the filters with candidates contains partial result
-                                    //   valid only when iMaxScanForSizeLimt > 0
 } VDIR_BACKEND_CTX, *PVDIR_BACKEND_CTX;
 
 // accessRoleBitmap is a bit map on bind dn access role if the info is valid
@@ -483,7 +479,8 @@ typedef struct _VDIR_ENTRY
 typedef struct _VDIR_ENTRY_ARRAY
 {
     PVDIR_ENTRY     pEntry;
-    size_t          iSize;
+    size_t          iSize;      // size of used array
+    size_t          iArraySize; // capacity of array.
 } VDIR_ENTRY_ARRAY, *PVDIR_ENTRY_ARRAY;
 
 typedef struct AttrValAssertion
@@ -507,6 +504,7 @@ typedef enum _VDIR_FILTER_COMPUTE_RESULT
     FILTER_RES_NORMAL = 0,
     FILTER_RES_TRUE,
     FILTER_RES_FALSE,
+    FILTER_RES_PENDING,
     FILTER_RES_UNDEFINED
 } VDIR_FILTER_COMPUTE_RESULT;
 
@@ -549,6 +547,7 @@ struct _VDIR_FILTER
     BOOLEAN                     bAncestorGotPositiveCandidateSet;  // any of ancestor filters got a positive candidate set
     VDIR_CANDIDATES *           candidates;    // Entry IDs candidate list that matches this filter, maintained for internal Ber operation.
     BerElement *                pBer; // If this filter was built by the server, then 'ber' must be deallocated when the filter is deallocated and this will not be NULL. Otherwise the filter components are 'owned' by the operation / client connection.
+    BOOLEAN                     bLastScanPositive;  // last index scan result in a complete set or not
 };
 
 typedef struct AddReq
@@ -582,6 +581,52 @@ typedef struct ModifyReq
     VDIR_BERVALUE           newdn;
 } ModifyReq;
 
+// metadata to evaluate iterator based search
+// loaded from CFG_ITERATION_MAP_DN entry
+#define VMDIR_SEARCH_MAP_CACHE_SIZE 5
+
+typedef struct _VDIR_SEARCH_OPT_DATA
+{
+    PLW_HASHMAP     *ppSearchTypePriMap;
+    PLW_HASHMAP     *ppAttrTypePriMap;
+    int64_t         iCurrent;
+    int64_t         iNext;
+    BOOLEAN         bMapLoaded;
+} VDIR_SEARCH_OPT_DATA, *PVDIR_SEARCH_OPT_DATA;
+
+// MDB KEY BLOB first byte is FWD/REV flag, bypass it to get the key content.
+#define VMDIR_FILTER_MDB_KEY_TO_STRING(bvMDB, bvStr)    \
+    {                                                   \
+        assert(bvMDB.lberbv_len > 1);                   \
+        bvStr.lberbv_val = bvMDB.lberbv_val+1;          \
+        bvStr.lberbv_len = bvMDB.lberbv_len-1;          \
+    }
+
+typedef struct _VDIR_ITERATOR_CONTEXT
+{
+    BOOLEAN         bInit;
+    int             iSearchType;    // Iterator Search (filter) Type.
+    BOOLEAN         bReverseSearch; // Reverse search flag - only DN substring is using reverse search now.
+    PSTR            pszIterTable;   // The table iterates on.
+    VDIR_BERVALUE   bvFilterValue;  // Filter value translated into appropriate MDB key format
+
+    ENTRYID         eId;            // The current entry id the iterator retrieved
+    VDIR_BERVALUE   bvCurrentKey;   // The current key (iterate) or
+                                    //   the first position wanted (iteratorInit for very first and subsequent calls)
+
+    PLW_HASHMAP     pSentIDMap;     // Used to track duplicated EID be sent to the client
+    int             iIterCount;     // The counter for total iterations - used to terminate expensive iteration search
+} VDIR_ITERATOR_CONTEXT, *PVDIR_ITERATOR_CONTEXT;
+
+typedef struct _VDIR_ITERATOR_SEARCH_PLAN
+{
+    VDIR_BERVALUE   attr;           // the attribute type selected for iterator based search
+    VDIR_BERVALUE   attrNormVal;    // the "normalized" value selected for iterator based search
+    int             pri;            // used to calculate which attribute will be used for iterator.
+    int             iterSearchType; // the search type used for the iterator search;
+    BOOLEAN         bReverseSearch; // whether it is a reverse search in iterator search.
+} VDIR_ITERATOR_SEARCH_PLAN, *PVDIR_ITERATOR_SEARCH_PLAN;
+
 typedef struct SearchReq
 {
     int             scope;
@@ -595,7 +640,14 @@ typedef struct SearchReq
     ACCESS_MASK     accessRequired;
     size_t          iNumEntrySent;      // total number entries sent for this request
     BOOLEAN         bStoreRsltInMem;    // store results in mem vs. writing to ber
-    VDIR_SEARCH_EXEC_PATH       srvExecPath;
+    ENTRYID         baseEID;
+
+    // data needed to determine execution path
+    int             iBuildCandDepth;
+    int             iOrFilterDepth;
+
+    VDIR_SEARCH_EXEC_PATH       srvExecPath;        // server search execution details
+    VDIR_ITERATOR_SEARCH_PLAN   iteratorSearchPlan; // iterator based plan details
 } SearchReq;
 
 typedef union _VDIR_LDAP_REQUEST
@@ -1839,6 +1891,32 @@ DWORD
 VmDirAttributeUpdateUsnValue(
     PVDIR_ATTRIBUTE    pAttr,
     USN                localUSN
+    );
+
+// iterContext.c
+DWORD
+VmDirIterSearchPlanInitContent(
+    int     iSearchType,
+    BOOLEAN bReverse,
+    PSTR    pszAttrName,
+    PSTR    pszAttrVal,
+    PVDIR_ITERATOR_SEARCH_PLAN  pIterSearchPlan
+    );
+
+VOID
+VmDirIterSearchPlanFreeContent(
+    PVDIR_ITERATOR_SEARCH_PLAN  pIterSearchPlan
+    );
+
+DWORD
+VmDirIterContextInitContent(
+    PVDIR_ITERATOR_CONTEXT      pIteratorContext,
+    PVDIR_ITERATOR_SEARCH_PLAN  pIteratorSearchPlan
+    );
+
+VOID
+VmDirIterContextFreeContent(
+    PVDIR_ITERATOR_CONTEXT pContext
     );
 
 // security-sd.c

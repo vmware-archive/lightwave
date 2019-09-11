@@ -129,6 +129,8 @@ typedef struct _VMDIR_SERVER_GLOBALS
     // 2) At the end of LoadServerGlobals for other nodes
     BOOLEAN              bPromoted;
 
+    VDIR_SEARCH_OPT_DATA searchOptMap;
+
 } VMDIR_SERVER_GLOBALS, *PVMDIR_SERVER_GLOBALS;
 
 extern VMDIR_SERVER_GLOBALS gVmdirServerGlobals;
@@ -166,6 +168,7 @@ typedef struct _VMDIR_GLOBALS
     BOOLEAN                         bAllowAdminLockout;
     BOOLEAN                         bDisableVECSIntegration;
     BOOLEAN                         bEnableRegionalMaster;
+    DWORD                           dwEnableSearchOptimization;
 
     PDWORD                          pdwLdapListenPorts;
     DWORD                           dwLdapListenPorts;
@@ -186,6 +189,10 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwSupplierThrTimeoutInMilliSec;
     DWORD                           dwWriteTimeoutInMilliSec;
     int                             iWarnPwdExpiring;
+    DWORD                           dwMaxSearchIteration;
+    DWORD                           dwMaxSearchIterationTxn;
+    DWORD                           dwRESTWorker;
+    DWORD                           dwRESTClient;
 
     // following fields are protected by mutex
     PVMDIR_MUTEX                    mutex;
@@ -233,13 +240,10 @@ typedef struct _VMDIR_GLOBALS
     DWORD                           dwMaxIndexScan;
     // # of candidate in search filter - used for search optimization
     DWORD                           dwSmallCandidateSet;
-    // Limit index scan for the best effort sizelimit search
-    DWORD                           dwMaxSizelimitScan;
 
     DWORD                           dwLdapSearchTimeoutSec;
     BOOLEAN                         bAllowImportOpAttrs;
     BOOLEAN                         bTrackLastLoginTime;
-    BOOLEAN                         bPagedSearchReadAhead;
 
     // Collect stats for estimate elapsed time with database copy
     DWORD                           dwLdapWrites;
@@ -846,6 +850,13 @@ VOID
 VmDirSrvFreeConfig(
     VOID
     );
+
+//middle-layer/searchopt.c
+DWORD
+VmDirLoadSearchPriorityMap(
+    VOID
+    );
+
 #endif
 #ifdef __cplusplus
 }

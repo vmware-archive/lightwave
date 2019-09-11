@@ -330,18 +330,32 @@ VmDirMDBIndicesPopulate(
     );
 
 // iterate.c
+
+// this should be move to server/common to avoid layer violation
+DWORD
+VmDirMDBIndexIteratorInitKey(
+    PVDIR_ITERATOR_CONTEXT  pIteratorContext,
+    PCSTR                   pszInit
+    );
+
+// this should be move to server/common to avoid layer violation
+DWORD
+VmDirMDBIndexIteratorInitParentIdKey(
+    PVDIR_ITERATOR_CONTEXT  pIteratorContext,
+    PCSTR                   pszNormValue
+    );
+
 DWORD
 VmDirMDBIndexIteratorInit(
-    PVDIR_INDEX_CFG                 pIndexCfg,
-    PSTR                            pszInitVal, // optional
-    PVDIR_BACKEND_INDEX_ITERATOR*   ppIterator
+    PVDIR_INDEX_CFG                  pIndexCfg,
+    PVDIR_ITERATOR_CONTEXT           pIterContext,
+    PVDIR_BACKEND_INDEX_ITERATOR*    ppIterator
     );
 
 DWORD
 VmDirMDBIndexIterate(
     PVDIR_BACKEND_INDEX_ITERATOR    pIterator,
-    PSTR*                           ppszVal,
-    ENTRYID*                        pEId
+    PVDIR_ITERATOR_CONTEXT          pIterContext
     );
 
 VOID

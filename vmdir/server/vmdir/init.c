@@ -1585,6 +1585,10 @@ LoadServerGlobals(
     // Set promoted flag to TRUE
     gVmdirServerGlobals.bPromoted = TRUE;
 
+    //If an error occurs (e.g. need schema patch, then the iterator
+    // optimization will not be activated - still using candidate sets operations.
+    VmDirLoadSearchPriorityMap();
+
     VmDirAssertServerGlobals();
 
 cleanup:

@@ -15,6 +15,7 @@ libsrvcommon_la_SOURCES = \
     dcconnthr.c           \
     entryencodedecode.c   \
     externaloputil.c      \
+    iterContext.c         \
     krbsrvutil.c          \
     metadata.c            \
     nodeidentity.c        \

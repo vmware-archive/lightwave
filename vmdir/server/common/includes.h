@@ -50,6 +50,8 @@
 
 #include <backend.h>
 #include <middlelayer.h>
+// TODO, this violates layer dependcy. should refactor mdb code later.
+#include <mdbstore.h>
 
 // SSO errors
 #include <ssoerrors.h>

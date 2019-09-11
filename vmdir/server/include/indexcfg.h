@@ -82,6 +82,12 @@ typedef struct _VDIR_INDEX_UPD
 
 } VDIR_INDEX_UPD;
 
+typedef struct _VDIR_INDEX_PROPERTY
+{
+    PSTR        pszName;
+    BOOLEAN     bGlobalUnique;
+} VDIR_INDEX_PROPERTY, *PVDIR_INDEX_PROPERTY;
+
 ///////////////////////////////////////////////////////////////////////////////
 // indexer library initialize / shutdown
 // indexer cache instantiation
@@ -133,6 +139,16 @@ VmDirFreeIndexCfg(
 ///////////////////////////////////////////////////////////////////////////////
 
 DWORD
+VmDirIndexMapGetProperty(
+    PVDIR_INDEX_PROPERTY*   ppIndexProperty
+    );
+
+VOID
+VmDirIndexMapFreeProperty(
+    PVDIR_INDEX_PROPERTY     pIndexProperty
+    );
+
+DWORD
 VmDirIndexCfgAcquire(
     PCSTR               pszAttrName,
     VDIR_INDEX_USAGE    usage,
@@ -147,11 +163,6 @@ VmDirIndexCfgRelease(
 BOOLEAN
 VmDirIndexExist(
     PCSTR   pszAttrName
-    );
-
-DWORD
-VmDirIndexCfgMap(
-    PLW_HASHMAP*    ppIndexCfgMap
     );
 
 DWORD
