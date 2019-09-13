@@ -1132,6 +1132,12 @@ VmDirSetSdGlobals()
     gVmdirdSDGlobals.pSDdcAdminGX = pGXSecDesc;
     pGXSecDesc = NULL;
 
+    /*Convert relative SD to absolute*/
+    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+            &gVmdirdSDGlobals.pSDdcAdminGXAbsolute,
+            gVmdirdSDGlobals.pSDdcAdminGX);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirAllocateStringPrintf(
             &pszRPWPDEACL,
             "O:%sG:%sD:AI(A;;RPWPDE;;;%s)(A;;RPWPDE;;;%s)(A;;RPWPDE;;;%s)",
@@ -1152,6 +1158,12 @@ VmDirSetSdGlobals()
     gVmdirdSDGlobals.pSDdcAdminRPWPDE = pRPWPDESecDesc;
     pRPWPDESecDesc = NULL;
     gVmdirdSDGlobals.ulSDdcAdminRPWPDELen = ulSecDescLen;
+
+    /*Convert relative SD to absolute*/
+    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
+            &gVmdirdSDGlobals.pSDdcAdminRPWPDEAbsolute,
+            gVmdirdSDGlobals.pSDdcAdminRPWPDE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(VMDIR_LOG_MASK_ALL, "%s: Set gVmdirdSDGlobals security descriptor", __FUNCTION__);
 

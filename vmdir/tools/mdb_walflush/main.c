@@ -17,6 +17,12 @@
 #define MDB_ENV_MAX_DBS 100
 #define MDB_ENV_MAPSIZE 536870912000 //500G
 
+static
+void
+ShowUsage(
+    VOID
+    );
+
 int
 main(int argc, char* argv[])
 {
@@ -25,18 +31,15 @@ main(int argc, char* argv[])
     mdb_mode_t      mode = 0;
     BOOLEAN         bMdbWalEnable = TRUE;
     MDB_env*        mdbEnv = NULL;
-#ifndef _WIN32
-    const char     *dbHomeDir = VMDIR_DB_DIR;
-#else
-    _TCHAR          dbHomeDir[MAX_PATH];
-    dwError = VmDirMDBGetHomeDir(dbHomeDir);
-    BAIL_ON_VMDIR_ERROR ( dwError );
-#endif
+    PCSTR           pszdbHomeDir = NULL;
 
-    if (argc == 2)
+    if (argc != 2)
     {
-        dbHomeDir = argv[1];
+        ShowUsage();
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
+
+    pszdbHomeDir = argv[1];
 
     dwError = mdb_env_create ( &mdbEnv );
     BAIL_ON_VMDIR_ERROR( dwError );
@@ -57,7 +60,7 @@ main(int argc, char* argv[])
 
     mode = S_IRUSR | S_IWUSR;
 
-    dwError = mdb_env_open ( mdbEnv, dbHomeDir, envFlags, mode );
+    dwError = mdb_env_open ( mdbEnv, pszdbHomeDir, envFlags, mode );
     BAIL_ON_VMDIR_ERROR( dwError );
 
     mdb_env_sync(mdbEnv, 1);
@@ -73,4 +76,15 @@ cleanup:
 error:
     VmDirLog( LDAP_DEBUG_ANY, "MDBInitializeDB failed with error code: %d, error string: %s", dwError, mdb_strerror(dwError) );
     goto cleanup;
+}
+
+static
+void
+ShowUsage(
+    VOID
+    )
+{
+    fprintf(
+        stdout,
+        "Usage: lw_mdb_walflush <Path to db>\n\n");
 }

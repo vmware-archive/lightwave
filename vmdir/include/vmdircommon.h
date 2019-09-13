@@ -314,10 +314,29 @@ typedef enum _VDIR_SRV_SEARCH_ALGO
     SEARCH_ALGO_UNKNOWN
 } VDIR_SRV_SEARCH_ALGO;
 
+typedef struct _VDIR_SRV_CANDIDATE_SEARCH_PLAN
+{
+    ber_int_t       iCandateSize;
+} VDIR_SRV_CANDIDATE_SEARCH_PLAN, *PVDIR_SRV_CANDIDATE_SEARCH_PLAN;
+
+typedef struct _VDIR_SRV_ITERATOR_SEARCH_PLAN
+{
+    ber_int_t       iIteratePriority;
+    ber_int_t       iNumIteration;
+    ber_int_t       iMDBKeyType;      // EQ/SUB..etc.
+    ber_int_t       iMDBCursorFlag;   // FWD/REV
+} VDIR_SRV_ITERATOR_SEARCH_PLAN, *PVDIR_SRV_ITERATOR_SEARCH_PLAN;
+
 typedef struct _VDIR_SRV_SEARCH_PLAN
 {
     VDIR_SRV_SEARCH_ALGO    searchAlgo;
     PSTR                    pszIndex;
+    ber_int_t               iEntrySent;
+    ber_int_t               bPagedSearch;
+    ber_int_t               bPagedSearchDone;
+    ber_int_t               bExceedMaxIteration;
+    VDIR_SRV_CANDIDATE_SEARCH_PLAN candiatePlan;
+    VDIR_SRV_ITERATOR_SEARCH_PLAN  IteratePlan;
 } VDIR_SRV_SEARCH_PLAN, *PVDIR_SRV_SEARCH_PLAN;
 
 #ifdef _WIN32

@@ -85,12 +85,6 @@ _ParseDbCopyControlVal(
     VDIR_LDAP_RESULT*               lr              // Output
     );
 
-static
-DWORD
-_VmDirCheckAdminGXAccess(
-    PVDIR_OPERATION pOperation
-    );
-
 /*
  * RFC 4511:
  * Section 4.1.1 Message Envelope:
@@ -320,14 +314,14 @@ ParseRequestControls(
             }
             if (VmDirStringCompareA((*control)->type, LDAP_REPL_AGR_DISABLE_CONTROL, TRUE) == 0)
             {
-                retVal = _VmDirCheckAdminGXAccess(op);
+                retVal = VmDirCheckAdminGXAccess(&op->conn->AccessInfo);
                 BAIL_ON_VMDIR_ERROR(retVal);
 
                 op->pReplAgrDisableCtrl = *control;
             }
             if (VmDirStringCompareA((*control)->type, LDAP_REPL_AGR_ENABLE_CONTROL, TRUE) == 0)
             {
-                retVal = _VmDirCheckAdminGXAccess(op);
+                retVal = VmDirCheckAdminGXAccess(&op->conn->AccessInfo);
                 BAIL_ON_VMDIR_ERROR(retVal);
 
                 op->pReplAgrEnableCtrl = *control;
@@ -1467,7 +1461,7 @@ _ParseDbCopyControlVal(
     ber_int_t           localBlock = 0;
     BerValue            localPath = {0};
 
-    retVal = _VmDirCheckAdminGXAccess(pOp);
+    retVal = VmDirCheckAdminGXAccess(&pOp->conn->AccessInfo);
     BAIL_ON_VMDIR_ERROR(retVal);
 
     ber_init2( ber, controlValue, LBER_USE_DER );
@@ -1844,50 +1838,4 @@ VmDirWritePPolicyReplyControl(
     goto cleanup;
 }
 
-static
-DWORD
-_VmDirCheckAdminGXAccess(
-    PVDIR_OPERATION pOperation
-    )
-{
-    DWORD                         dwError     = 0;
-    PSECURITY_DESCRIPTOR_ABSOLUTE pSecDescAbs = NULL;
-    ACCESS_MASK                   samGranted  = 0;
 
-    if (!pOperation)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
-    }
-
-    if (!gVmdirdSDGlobals.pSDdcAdminGX)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_STATE);
-    }
-
-    /*Convert relative SD to absolute*/
-    dwError = VmDirSecurityAclSelfRelativeToAbsoluteSD(
-                            &pSecDescAbs,
-                            gVmdirdSDGlobals.pSDdcAdminGX);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    /*Check access rights*/
-    dwError = VmDirSrvAccessCheckEntry(
-                            pOperation->conn->AccessInfo.pAccessToken,
-                            pSecDescAbs,
-                            VMDIR_ENTRY_GENERIC_EXECUTE,
-                            &samGranted);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    if (samGranted != VMDIR_ENTRY_GENERIC_EXECUTE)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INSUFFICIENT_ACCESS);
-    }
-
-cleanup:
-    VmDirFreeAbsoluteSecurityDescriptor(&pSecDescAbs);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "error %d, access granted: %d", dwError, samGranted);
-    goto cleanup;
-}

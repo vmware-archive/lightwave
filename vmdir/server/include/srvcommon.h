@@ -202,15 +202,34 @@ typedef struct _VDIR_BACKEND_CTX
 } VDIR_BACKEND_CTX, *PVDIR_BACKEND_CTX;
 
 // accessRoleBitmap is a bit map on bind dn access role if the info is valid
-#define VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO 0x0001            // valid info in accessRoleBitmap on system domain admins
-#define VDIR_ACCESS_IS_ADMIN_MEMBER 0x0002                    // bind dn is a member of system domain admins
+
+// valid info in accessRoleBitmap on system domain admins
+#define VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO             0x0001
+
+// bind dn is a member of system domain admins
+#define VDIR_ACCESS_IS_ADMIN_MEMBER                     0x0002
+
 #define VDIR_ACCESS_ADMIN_MEMBER_INFO VDIR_ACCESS_ADMIN_MEMBER_VALID_INFO
-#define VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO 0x0004          // valid info in accessRoleBitmap member of DC group
-#define VDIR_ACCESS_IS_DCGROUP_MEMBER 0x0008                  // bind dn is a member of DC group
+
+// valid info in accessRoleBitmap member of DC group
+#define VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO           0x0004
+
+// bind dn is a member of DC group
+#define VDIR_ACCESS_IS_DCGROUP_MEMBER                   0x0008
+
 #define VDIR_ACCESS_DCGROUP_MEMBER_INFO VDIR_ACCESS_DCGROUP_MEMBER_VALID_INFO
-#define VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO 0x0010   // valid info in accessRoleBitmap on member of DC client group
-#define VDIR_ACCESS_IS_DCCLIENT_GROUP_MEMBER 0x0020           // bind dn is a member of DC client group
+
+// valid info in accessRoleBitmap on member of DC client group
+#define VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO    0x0010
+
+// bind dn is a member of DC client group
+#define VDIR_ACCESS_IS_DCCLIENT_GROUP_MEMBER            0x0020
+
 #define VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_INFO VDIR_ACCESS_DCCLIENT_GROUP_MEMBER_VALID_INFO
+
+#define VMDIR_IS_ADMIN_OR_DC_GROUP_MEMBER(accessRoleBitmap) \
+    (accessRoleBitmap & (VDIR_ACCESS_IS_ADMIN_MEMBER | VDIR_ACCESS_IS_DCGROUP_MEMBER))
+
 typedef struct _VDIR_ACCESS_INFO
 {
     ENTRYID       bindEID;     // bind user ENTRYID

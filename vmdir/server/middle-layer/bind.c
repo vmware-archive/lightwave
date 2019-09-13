@@ -303,6 +303,9 @@ _VmDirBindSetupAccessInfo(
                                    &pAccessInfo->pszBindedDn);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // set pAccessInfo->accessRoleBitmap of builtin/dc and admin member
+    VmDirSetAccessInfoRoleBitmap(pAccessInfo);
+
 cleanup:
     return dwError;
 

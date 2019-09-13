@@ -1,0 +1,94 @@
+#
+# schema for vmdir/testing/integration_tests/search
+#
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.1
+    NAME 'vmwTestSearchCaseIgnoreStringNonunique'
+    DESC 'Case ignore directory string nonunique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.2
+    NAME 'vmwTestSearchCaseIgnoreStringUnique'
+    DESC 'Case ignore directory string unique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.3
+    NAME 'vmwTestSearchCaseExactStringNonunique'
+    DESC 'Case exact printable string nonunique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.4
+    NAME 'vmwTestSearchCaseExactStringUnique'
+    DESC 'Case exact printable string unique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.5
+    NAME 'vmwTestSearchIntegerNonunique'
+    DESC 'Integer nonunique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+attributeTypes: (
+    VMWare.DIR.test.attribute.0.6
+    NAME 'vmwTestSearchIntegerUnique'
+    DESC 'Integer unique'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    )
+
+#
+# TODO, other syntexes?
+#
+
+objectClasses: (
+    VMWare.DIR.test.objectclass.1
+    NAME 'vmwSearchTest'
+    DESC 'Object class defined for search integration tests.'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         )
+    MAY ( vmwTestSearchCaseIgnoreStringNonunique
+        $ vmwTestSearchCaseIgnoreStringUnique
+        $ vmwTestSearchCaseExactStringNonunique
+        $ vmwTestSearchCaseExactStringUnique
+        $ vmwTestSearchIntegerNonunique
+        $ vmwTestSearchIntegerUnique
+        )
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchCaseIgnoreStringNonUnique'
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchCaseIgnoreStringUnique'
+    GLOBALLY-UNIQUE
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchCaseExactStringNonUnique'
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchCaseExactStringUnique'
+    GLOBALLY-UNIQUE
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchIntegerNonUnique'
+    )
+
+attributeIndices: (
+    NAME 'vmwTestSearchIntegerUnique'
+    GLOBALLY-UNIQUE
+    )
+

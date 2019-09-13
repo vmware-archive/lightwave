@@ -13,14 +13,23 @@
  */
 #include "includes.h"
 
+VMDIR_SEARCH_TEST_CONTEXT _gSearchContext = {0};
+
 DWORD
 TestSetup(
     PVMDIR_TEST_STATE pState
     )
 {
     DWORD dwError = 0;
+    PVMDIR_SEARCH_TEST_CONTEXT pContext = NULL;
 
-    dwError = PagedSearchTestSetup(pState);
+    pContext = pState->pContext = &_gSearchContext;
+    _gSearchContext.pTestState = pState;
+
+    dwError = VmDirStringListInitialize(&pContext->pDNList, VMDIR_SIZE_256);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestProvisionSearchSetup(pContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -35,8 +44,12 @@ TestCleanup(
     )
 {
     DWORD dwError = 0;
+    PVMDIR_SEARCH_TEST_CONTEXT pContext = NULL;
 
-    dwError = PagedSearchTestCleanup(pState);
+    pContext = pState->pContext = &_gSearchContext;
+    _gSearchContext.pTestState = pState;
+
+    dwError = TestProvisionSearchCleanup(pContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
@@ -56,13 +69,11 @@ TestRunner(
     dwError = TestAnonymousSearch(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = TestPagedSearch(pState);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     printf("Search tests completed successfully.\n");
 
 cleanup:
     return dwError;
+
 error:
-goto cleanup;
+    goto cleanup;
 }

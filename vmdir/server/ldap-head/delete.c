@@ -31,6 +31,7 @@ VmDirPerformDelete(
 {
     int         retVal = LDAP_SUCCESS;
     DeleteReq * dr = &(pOperation->request.deleteReq);
+    PSTR        pszErrMsg = NULL;
 
     // Get entry DN. 'm' => pOperation->reqDn.lberbv.bv_val points to DN within (in-place) ber
     if ( ber_scanf( pOperation->ber, "m", &(pOperation->reqDn.lberbv) ) == LBER_ERROR )
@@ -59,6 +60,7 @@ cleanup:
     return retVal;
 
 error:
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszErrMsg);
     goto cleanup;
 }
 

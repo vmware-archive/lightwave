@@ -13,7 +13,7 @@ mdb_compact() {
     if [ -d "$vmdir_dir/xlogs" ]; then
         if [ ! -z "$(ls $vmdir_dir/xlogs)" ]; then
             echo "Vmdir did not shutdown gracefully. Flushing WAL."
-            /opt/vmware/bin/lw_mdb_walflush
+            /opt/vmware/bin/lw_mdb_walflush $vmdir_dir
             if [ "$?" -ne 0 ]; then
                 echo "Error while flushing WAL. Skipping compaction."
                 return

@@ -46,6 +46,7 @@ VmDirPerformBind(
    ber_tag_t    berTag = 0;
    BOOLEAN      bResultAlreadySent = FALSE;
    PCSTR        pszBindMethod = VMDIR_PCSTR_UNKNOWN;
+   PSTR         pszErrMsg = NULL;
    PVDIR_LDAP_RESULT   pResult = &(pOperation->ldapResult);
 
    memset( pBindReq, 0, sizeof( BindReq ));
@@ -151,7 +152,7 @@ cleanup:
     return retVal;
 
 ldaperror:
-    pOperation->ldapResult.errCode = retVal;
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszErrMsg);
 
     if (retVal != LDAP_NOTICE_OF_DISCONNECT && bResultAlreadySent == FALSE)
     {

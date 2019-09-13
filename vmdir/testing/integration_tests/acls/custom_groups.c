@@ -81,7 +81,7 @@ InitializeCustomSetup(
             pszClientsSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirTestCreateContainer(pState, "CustomObjects", pszContainerSD);
+    dwError = VmDirTestCreateContainer(pState, "CustomObjects", NULL, pszContainerSD);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Create users and assign memberships

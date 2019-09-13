@@ -330,6 +330,7 @@ VmDirPerformAdd(
    )
 {
     int retVal = LDAP_SUCCESS;
+    PSTR pszErrMsg = NULL;
 
     retVal = VmDirParseEntry( pOperation );
     BAIL_ON_VMDIR_ERROR(retVal);
@@ -345,6 +346,7 @@ cleanup:
     return retVal;
 
 error:
+    VMDIR_SET_LDAP_RESULT_ERROR(&pOperation->ldapResult, retVal, pszErrMsg);
     goto cleanup;
 }
 

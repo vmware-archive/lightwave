@@ -1,4 +1,21 @@
-/* mdb_verify_checksum.c - Tool to verify if two DBs have the same data */
+/*
+ * Copyright © 2019 VMware, Inc.  All Rights Reserved.
+ *
+ * Licensed under the Apache License, Version 2.0 (the "License"); you may not
+ * use this file except in compliance with the License.  You may obtain a copy
+ * of the License at http://www.apache.org/licenses/LICENSE-2.0
+ *
+ * Unless required by applicable law or agreed to in writing, software
+ * distributed under the License is distributed on an "AS IS" BASIS, without
+ * warranties or conditions of any kind, EITHER EXPRESS OR IMPLIED.  See the
+ * License for the specific language governing permissions and limitations
+ * under the License.
+ */
+
+/* Tool to verify
+ *   1. Whether two DBs have the same data. i.e. same checksum on all recrods.
+ *   2. Whether a DB integrity is intact by iterating through all records.
+ * */
 
 #include <stdio.h>
 #include <errno.h>
@@ -8,13 +25,16 @@
 #include <unistd.h>
 #include <signal.h>
 #include <openssl/sha.h>
+#include <pthread.h>
 #include "lmdb.h"
 
 static volatile sig_atomic_t gotsig;
 int alldbs = 0, envflags = 0, list = 0;
 char *subname = NULL;
 int nenv = 1;
-size_t mapsize = 107374182400;
+size_t mapsize = 5*107374182400;
+MDB_env *env = NULL;
+int multithread_iteration = 0;
 
 static void dumpsig( int sig )
 {
@@ -36,8 +56,11 @@ static int calc_checksum(SHA_CTX *ctx, MDB_txn *txn, MDB_dbi dbi)
             rc = EINTR;
             break;
         }
-        SHA1_Update(ctx, key.mv_data, key.mv_size);
-        SHA1_Update(ctx, data.mv_data, data.mv_size);
+        if (ctx)
+        {
+            SHA1_Update(ctx, key.mv_data, key.mv_size);
+            SHA1_Update(ctx, data.mv_data, data.mv_size);
+        }
     }
     if (rc == MDB_NOTFOUND)
         rc = MDB_SUCCESS;
@@ -47,12 +70,44 @@ static int calc_checksum(SHA_CTX *ctx, MDB_txn *txn, MDB_dbi dbi)
     return rc;
 }
 
+static void *subdb_thread(void *arg)
+{
+    int rc = 0;
+    MDB_txn *txn = NULL;
+    char *subdb = (char *) arg;
+    MDB_dbi db2;
+
+    rc = mdb_txn_begin(env, NULL, MDB_RDONLY, &txn);
+    if (rc)
+    {
+        fprintf(stderr, "mdb_txn_begin failed, error %d %s subdb:%s \n", rc, mdb_strerror(rc), subdb);
+        return NULL;
+    }
+
+    rc = mdb_open(txn, subdb, 0, &db2);
+    if (rc != MDB_SUCCESS)
+    {
+        fprintf(stderr, "Failed to open %s \n", subdb);
+    }
+    else
+    {
+        rc = calc_checksum(NULL, txn, db2);
+        mdb_close(env, db2);
+        printf("Finished iterating through %s SubDB \n", subdb);
+    }
+
+    mdb_txn_abort(txn);
+
+    return NULL;
+}
+
 static void usage(char *prog)
 {
-    fprintf(stderr, "usage: %s [-l] [-n] [-a|-s subdb] dbpath [dbpath2]\n", prog);
+    fprintf(stderr, "usage: %s [-l] [-n] [-i] [-a|-s subdb] dbpath [dbpath2]\n", prog);
     fprintf(stderr, "-l: List the names of subDBs\n-n: Use MDB_NOSUBDIR flag\n");
     fprintf(stderr, "-a: Iterate through all subDBs\n-s: Iterate through subDB provided in argument\n");
-    fprintf(stderr, "-m: Memory map size in bytes. Default is 100 GB.\n");
+    fprintf(stderr, "-i: multi-threads mode (to quickly validate DB integrity)\n");
+    fprintf(stderr, "-m: Memory map size in bytes. Default is 500 GB.\n");
     exit(EXIT_FAILURE);
 }
 
@@ -70,7 +125,7 @@ static void parse_args(int argc, char *argv[])
      * -n: use NOSUBDIR flag on env_open
      * (default) parse only the main DB
      */
-    while ((i = getopt(argc, argv, "alns:m:")) != EOF) {
+    while ((i = getopt(argc, argv, "alnis:m:")) != EOF) {
         switch(i) {
             case 'l':
                 list = 1;
@@ -90,6 +145,9 @@ static void parse_args(int argc, char *argv[])
             case 'm':
                 mapsize = atol(optarg);
                 break;
+            case 'i':
+                multithread_iteration = 1;
+                break;
             default:
                 usage(prog);
         }
@@ -107,7 +165,6 @@ static void parse_args(int argc, char *argv[])
 int main(int argc, char *argv[])
 {
     int rc = 0, i = 0;
-    MDB_env *env = NULL;
     MDB_txn *txn = NULL;
     MDB_dbi dbi;
     char *envname = NULL;
@@ -177,6 +234,8 @@ int main(int argc, char *argv[])
         if (alldbs) {
             MDB_cursor *cursor;
             MDB_val key;
+            pthread_t thread_id[100];
+            int db_count = 0;
 
             rc = mdb_cursor_open(txn, dbi, &cursor);
             if (rc) {
@@ -196,6 +255,17 @@ int main(int argc, char *argv[])
                 }
                 memcpy(str, key.mv_data, key.mv_size);
                 str[key.mv_size] = '\0';
+
+                if (multithread_iteration)
+                {
+                    pthread_create(&thread_id[db_count], NULL, subdb_thread, (void *)str);
+                    printf("Started thread %lu for subdb %s \n", thread_id[db_count], str);
+                    db_count++;
+                    free(str);
+
+                    continue;
+                }
+
                 /*Open Sub DB*/
                 rc = mdb_open(txn, str, 0, &db2);
                 if (rc == MDB_SUCCESS) {
@@ -219,7 +289,16 @@ int main(int argc, char *argv[])
             if (rc == MDB_NOTFOUND) {
                 rc = MDB_SUCCESS;
             }
-        } else {
+
+            if (multithread_iteration)
+            {
+                int thread_count = 0;
+                for (thread_count = 0; thread_count < db_count; thread_count++)
+                {
+                    pthread_join(thread_id[thread_count], NULL);
+                }
+            }
+        }else {
             /*Only calculate checksum of the specified Sub DB*/
             rc = calc_checksum(&ctx, txn, dbi);
         }
@@ -240,7 +319,7 @@ env_close:
     }
 
     if (n == 2 && memcmp(hash[0], hash[1], SHA_DIGEST_LENGTH)) {
-        fprintf(stderr, "DBs do not match.");
+        fprintf(stderr, "DBs do not match.\n");
         rc = 1;
     }
     else if (n == 1 && !list) {
@@ -248,6 +327,7 @@ env_close:
         for (i = 0; i < SHA_DIGEST_LENGTH; i++) {
             printf("%d", (int) hash[0][i]);
         }
+        printf("\n");
     }
 
 done:
