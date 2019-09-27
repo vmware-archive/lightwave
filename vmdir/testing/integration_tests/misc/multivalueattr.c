@@ -166,7 +166,7 @@ _TestVerifyAddAndDeleteAttrValue(
 
     if (pState->pSecondLd)
     {
-        for (dwCnt=0; _pszNode1Set2[dwCnt] != NULL; dwCnt++)
+        for (dwCnt=0; _pszNode2Set2[dwCnt] != NULL; dwCnt++)
         {
             dwError = VmDirStringListAddStrClone(_pszNode2Set2[dwCnt], pResultList);
             BAIL_ON_VMDIR_ERROR(dwError);

@@ -244,7 +244,7 @@ int main(int argc, char *argv[])
             }
             /*Iterate through MainDB*/
             while ((rc = mdb_cursor_get(cursor, &key, NULL, MDB_NEXT)) == 0) {
-                char *str;
+                char *str = NULL;
                 MDB_dbi db2;
                 SHA1_Update(&ctx, key.mv_data, key.mv_size);
                 str = malloc(key.mv_size+1);
@@ -261,7 +261,6 @@ int main(int argc, char *argv[])
                     pthread_create(&thread_id[db_count], NULL, subdb_thread, (void *)str);
                     printf("Started thread %lu for subdb %s \n", thread_id[db_count], str);
                     db_count++;
-                    free(str);
 
                     continue;
                 }

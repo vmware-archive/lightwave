@@ -179,7 +179,7 @@ TestModrdn(
     {
         dwError = VmDirTestAddUserToGroupByDn(
                     pContext->pTestState->pLd,
-                    pContext->pszUser2NewDN,
+                    pContext->pszUser2DN,
                     pContext->pszGroupDN);
         BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -230,8 +230,8 @@ _TestMoveEntryInGroupShouldFail(
 
     dwError = ldap_rename_s(
         pContext->pTestState->pLd,
-        pContext->pszUser2NewDN,
-        "cn="TEST_MODRDN_USER_2_NEW,
+        pContext->pszUser2DN,
+        "cn="TEST_MODRDN_USER_2,
         pContext->pszC1DN,
         0,
         NULL,
@@ -256,8 +256,8 @@ _TestRenameRDNEntryInGroupShouldFail(
 
     dwError = ldap_rename_s(
         pContext->pTestState->pLd,
-        pContext->pszUser2NewDN,
-        "cn="TEST_MODRDN_USER_2,
+        pContext->pszUser2DN,
+        "cn="TEST_MODRDN_USER_2_NEW,
         NULL,
         1,
         NULL,
@@ -278,7 +278,19 @@ _TestMoveEntry(
     )
 {
     DWORD   dwError=0;
+    DWORD   dwSleepTime = 0;
     PVMDIR_TEST_STATE pState = pContext->pTestState;
+    LDAP*   pLocalLd = pContext->pTestState->pLd;
+    PSTR    ppszCommentValues[] = { "test user1 comment", NULL };
+    PSTR    ppszDescValues[] = { "test user1 desc", NULL };
+
+    // made one change before rename
+    dwError = VmDirTestReplaceAttributeValues(
+        pContext->pTestState->pLd,
+        pContext->pszUser1DN,
+        ATTR_COMMENT,
+        (PCSTR*)ppszCommentValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = ldap_rename_s(
         pContext->pTestState->pLd,
@@ -290,8 +302,66 @@ _TestMoveEntry(
         NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // made one change after rename
+    dwError = VmDirTestAddAttributeValues(
+        pContext->pTestState->pLd,
+        pContext->pszUser1NewDN,
+        ATTR_DESCRIPTION,
+        (PCSTR*)ppszDescValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser1DN) == FALSE);
     TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser1NewDN) == TRUE);
+
+    if (pContext->pTestState->pSecondLd)
+    {
+        pLocalLd = pContext->pTestState->pSecondLd;
+        dwSleepTime = 2000;
+    }
+
+    {
+        PSTR ppszCommentValues_2[] = { "test user1 second comment", NULL };
+        PSTR ppszDescValues_2[] = { "test user1 second desc", NULL };
+
+        VmDirSleep(dwSleepTime);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser1DN) == FALSE);
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser1NewDN) == TRUE);
+
+        // made one change before rename
+        dwError = VmDirTestReplaceAttributeValues(
+            pLocalLd,
+            pContext->pszUser1NewDN,
+            ATTR_COMMENT,
+            (PCSTR*)ppszCommentValues_2);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = ldap_rename_s(
+            pLocalLd,
+            pContext->pszUser1NewDN,
+            "cn="TEST_MODRDN_USER_1,
+            pContext->pszC1DN,
+            0,
+            NULL,
+            NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser1DN) == TRUE);
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser1NewDN) == FALSE);
+
+        // made one change after rename
+        dwError = VmDirTestAddAttributeValues(
+            pLocalLd,
+            pContext->pszUser1DN,
+            ATTR_DESCRIPTION,
+            (PCSTR*)ppszDescValues_2);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirSleep(dwSleepTime);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser1DN) == TRUE);
+        TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser1NewDN) == FALSE);
+    }
 
 cleanup:
     return dwError;
@@ -311,7 +381,19 @@ _TestRenameRDN(
     )
 {
     DWORD   dwError=0;
+    DWORD   dwSleepTime = 0;
     PVMDIR_TEST_STATE pState = pContext->pTestState;
+    LDAP*   pLocalLd = pContext->pTestState->pLd;;
+    PSTR    ppszCommentValues[] = { "test user2 comment", NULL };
+    PSTR    ppszDescValues[] = { "test user2 desc", NULL };
+
+    // made one change before rename
+    dwError = VmDirTestReplaceAttributeValues(
+        pContext->pTestState->pLd,
+        pContext->pszUser2DN,
+        ATTR_COMMENT,
+        (PCSTR*)ppszCommentValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = ldap_rename_s(
         pContext->pTestState->pLd,
@@ -323,8 +405,66 @@ _TestRenameRDN(
         NULL);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // made one change after rename
+    dwError = VmDirTestAddAttributeValues(
+        pContext->pTestState->pLd,
+        pContext->pszUser2NewDN,
+        ATTR_DESCRIPTION,
+        (PCSTR*)ppszDescValues);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser2DN) == FALSE);
     TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser2NewDN) == TRUE);
+
+    if (pContext->pTestState->pSecondLd)
+    {
+        pLocalLd = pContext->pTestState->pSecondLd;
+        dwSleepTime = 2000;
+    }
+
+    {
+        PSTR ppszCommentValues_2[] = { "test user2 second comment", NULL };
+        PSTR ppszDescValues_2[] = { "test user2 second desc", NULL };
+
+        VmDirSleep(dwSleepTime);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser2DN) == FALSE);
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser2NewDN) == TRUE);
+
+        // made one change before rename
+        dwError = VmDirTestReplaceAttributeValues(
+            pLocalLd,
+            pContext->pszUser2NewDN,
+            ATTR_COMMENT,
+            (PCSTR*)ppszCommentValues_2);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = ldap_rename_s(
+            pLocalLd,
+            pContext->pszUser2NewDN,
+            "cn="TEST_MODRDN_USER_2,
+            NULL,
+            1,
+            NULL,
+            NULL);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser2DN) == TRUE);
+        TestAssert(VmDirTestCanReadSingleEntry(pLocalLd, pContext->pszUser2NewDN) == FALSE);
+
+        // made one change after rename
+        dwError = VmDirTestAddAttributeValues(
+            pLocalLd,
+            pContext->pszUser2DN,
+            ATTR_DESCRIPTION,
+            (PCSTR*)ppszDescValues_2);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        VmDirSleep(dwSleepTime);
+
+        TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser2DN) == TRUE);
+        TestAssert(VmDirTestCanReadSingleEntry(pContext->pTestState->pLd, pContext->pszUser2NewDN) == FALSE);
+    }
 
 cleanup:
     return dwError;
