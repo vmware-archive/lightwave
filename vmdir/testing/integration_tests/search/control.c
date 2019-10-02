@@ -17,21 +17,21 @@
 DWORD
 TestLdapParseSearchPlanControl(
     LDAPControl**           ppCtrls,
-    PVDIR_SRV_SEARCH_PLAN   pSearchPlan
+    PVDIR_SEARCH_EXEC_PATH  pExecPath
     )
 {
     DWORD   dwError = 0;
     LDAPControl* pSearchPlanReplyCtrl = NULL;
 
     assert(ppCtrls);
-    assert(pSearchPlan);
+    assert(pExecPath);
 
-    pSearchPlan->searchAlgo = SEARCH_ALGO_UNKNOWN;
+    pExecPath->searchAlgo = SEARCH_ALGO_UNKNOWN;
 
     pSearchPlanReplyCtrl = ldap_control_find(LDAP_SEARCH_PLAN_CONTROL, ppCtrls, NULL);
     if (pSearchPlanReplyCtrl)
     {
-        dwError = VmDirParseSearchPlanControlContent(pSearchPlanReplyCtrl, pSearchPlan);
+        dwError = VmDirParseSearchPlanControlContent(pSearchPlanReplyCtrl, pExecPath);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

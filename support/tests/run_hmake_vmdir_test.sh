@@ -62,19 +62,26 @@ LW_N2=server-n2.$LIGHTWAVE_DOMAIN
 echo "VmDir integration install test rpm"
 rpm -i /src/build/rpmbuild/RPMS/x86_64/lightwave-test*.rpm
 
+# give node 2 time to settle down
+sleep 5
+
 echo "VmDir integration test start" `date`
+#
+#  -r : remote only test case
+#  -s : skip cleanup, so we can verify replication converge
+#
 /opt/vmware/test/vmdir/bin/vmdir_test_runner \
 	-H $LW_N1 \
 	-u administrator \
 	-w $LIGHTWAVE_PASS \
 	-d $LIGHTWAVE_DOMAIN \
-	-k \
 	-r \
+	-s \
 	-t /opt/vmware/test/vmdir/lib64
 
 if [ $? -ne 0 ]; then
-  # TODO, should exit 2
-  echo "VmDir integration test failed" `date`
+  echo "VmDir integration test failed, error code $?" `date`
+  exit 2
 else
   echo "VmDir integration test passed" `date`
 fi
@@ -100,8 +107,8 @@ echo ========== $LW_N2 integrity report ==========
 cat /tmp/$LW_N2.integrityCheck.log
 
 if [ -n "${NODE_1_INTEGRITY}" -o -n "${NODE_2_INTEGRITY}" ]; then
-  # TODO, should exit 3
   echo "VmDir integrity check failed"
+  exit 3
 else
   echo "VmDir integrity check passed"
 fi

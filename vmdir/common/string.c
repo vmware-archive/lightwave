@@ -1001,4 +1001,36 @@ error:
     VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL, "failed, error (%d) errno: (%d)", dwError, errno);
     goto cleanup;
 }
+
+DWORD
+VmDirStringReverseA(
+    PSTR   pszString
+    )
+{
+    DWORD    dwError = 0;
+    DWORD    dwStringLen = 0;
+    DWORD    dwIter = 0;
+    char     temp = ' ';
+
+    if (pszString == NULL)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
+    }
+
+    dwStringLen = VmDirStringLenA(pszString);
+
+    while (dwIter < dwStringLen/2)
+    {
+        temp = pszString[dwIter];
+        pszString[dwIter] = pszString[dwStringLen-dwIter-1];
+        pszString[dwStringLen-dwIter-1] = temp;
+        dwIter++;
+    }
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
+}
 #endif //#ifndef _WIN32

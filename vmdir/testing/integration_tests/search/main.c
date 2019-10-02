@@ -26,14 +26,12 @@ TestSetup(
     pContext = pState->pContext = &_gSearchContext;
     _gSearchContext.pTestState = pState;
 
-    dwError = VmDirStringListInitialize(&pContext->pDNList, VMDIR_SIZE_256);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
     dwError = TestProvisionSearchSetup(pContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
 cleanup:
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -54,6 +52,7 @@ TestCleanup(
 
 cleanup:
     return dwError;
+
 error:
     goto cleanup;
 }
@@ -64,12 +63,21 @@ TestRunner(
     )
 {
     DWORD dwError = 0;
+    PVMDIR_SEARCH_TEST_CONTEXT pContext = NULL;
+
+    pContext = pState->pContext = &_gSearchContext;
+    _gSearchContext.pTestState = pState;
 
     printf("Starting search-related tests ...\n");
-    dwError = TestAnonymousSearch(pState);
+
+    dwError = TestSearch(pContext);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestAbormalPagedSearch(pContext);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("Search tests completed successfully.\n");
+    fflush(stdout);
 
 cleanup:
     return dwError;

@@ -275,8 +275,8 @@ error:
 
 DWORD
 VmDirCreateSearchPlanControlContent(
-    PVDIR_SRV_SEARCH_PLAN pSearchPlan,
-    BerValue*             pBerVOut
+    PVDIR_SEARCH_EXEC_PATH pSearchExecPath,
+    BerValue*              pBerVOut
     )
 {
     DWORD       dwError = LDAP_SUCCESS;
@@ -284,7 +284,7 @@ VmDirCreateSearchPlanControlContent(
     BerValue    tmpBV = {0};
     BerValue    localBV = {0};
 
-    if (!pSearchPlan)
+    if (!pSearchExecPath)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -294,21 +294,18 @@ VmDirCreateSearchPlanControlContent(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
     }
 
-    tmpBV.bv_val = pSearchPlan->pszIndex;
-    tmpBV.bv_len = pSearchPlan->pszIndex ? VmDirStringLenA(pSearchPlan->pszIndex) : 0;
+    tmpBV.bv_val = pSearchExecPath->pszIndex;
+    tmpBV.bv_len = pSearchExecPath->pszIndex ? VmDirStringLenA(pSearchExecPath->pszIndex) : 0;
 
-    if (ber_printf(pBer, "{eOibbbiiiii}",
-            pSearchPlan->searchAlgo,
+    if (ber_printf(pBer, "{eOibbbii}",
+            pSearchExecPath->searchAlgo,
             &tmpBV,
-            pSearchPlan->iEntrySent,
-            pSearchPlan->bPagedSearch,
-            pSearchPlan->bPagedSearchDone,
-            pSearchPlan->bExceedMaxIteration,
-            pSearchPlan->candiatePlan.iCandateSize,
-            pSearchPlan->IteratePlan.iIteratePriority,
-            pSearchPlan->IteratePlan.iNumIteration,
-            pSearchPlan->IteratePlan.iMDBKeyType,
-            pSearchPlan->IteratePlan.iMDBCursorFlag)
+            pSearchExecPath->iEntrySent,
+            pSearchExecPath->bPagedSearch,
+            pSearchExecPath->bPagedSearchDone,
+            pSearchExecPath->bExceedMaxIteration,
+            pSearchExecPath->candiatePlan.iCandateSize,
+            pSearchExecPath->IteratePlan.iNumIteration)
         == -1)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
@@ -336,8 +333,8 @@ error:
 
 DWORD
 VmDirParseSearchPlanControlContent(
-    LDAPControl*          pSearchPlanCtrl,
-    PVDIR_SRV_SEARCH_PLAN pSearchPlan
+    LDAPControl*           pSearchPlanCtrl,
+    PVDIR_SEARCH_EXEC_PATH pSearchExecPath
     )
 {
     BerElement*     pBer          = NULL;
@@ -345,7 +342,7 @@ VmDirParseSearchPlanControlContent(
     BerValue        localBerValue = {0};
     ber_tag_t       berTag        = 0;
 
-    if (!pSearchPlanCtrl || !pSearchPlan)
+    if (!pSearchPlanCtrl || !pSearchExecPath)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
@@ -356,18 +353,15 @@ VmDirParseSearchPlanControlContent(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_NO_MEMORY);
     }
 
-    berTag = ber_scanf(pBer, "{emibbbiiiii}",
-            &pSearchPlan->searchAlgo,
+    berTag = ber_scanf(pBer, "{emibbbii}",
+            &pSearchExecPath->searchAlgo,
             &localBerValue,
-            &pSearchPlan->iEntrySent,
-            &pSearchPlan->bPagedSearch,
-            &pSearchPlan->bPagedSearchDone,
-            &pSearchPlan->bExceedMaxIteration,
-            &pSearchPlan->candiatePlan.iCandateSize,
-            &pSearchPlan->IteratePlan.iIteratePriority,
-            &pSearchPlan->IteratePlan.iNumIteration,
-            &pSearchPlan->IteratePlan.iMDBKeyType,
-            &pSearchPlan->IteratePlan.iMDBCursorFlag);
+            &pSearchExecPath->iEntrySent,
+            &pSearchExecPath->bPagedSearch,
+            &pSearchExecPath->bPagedSearchDone,
+            &pSearchExecPath->bExceedMaxIteration,
+            &pSearchExecPath->candiatePlan.iCandateSize,
+            &pSearchExecPath->IteratePlan.iNumIteration);
     if (berTag == LBER_ERROR)
     {
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_IO);
@@ -375,7 +369,7 @@ VmDirParseSearchPlanControlContent(
 
     if (localBerValue.bv_len > 0)
     {
-        dwError = VmDirAllocateStringA(localBerValue.bv_val, &pSearchPlan->pszIndex);
+        dwError = VmDirAllocateStringA(localBerValue.bv_val, &pSearchExecPath->pszIndex);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 

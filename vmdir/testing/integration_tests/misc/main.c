@@ -18,7 +18,16 @@ TestSetup(
     PVMDIR_TEST_STATE pState
     )
 {
-    return 0;
+    DWORD dwError = 0;
+
+    dwError = TestMultiValueAttrSetup(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestModrdnSetup(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
 }
 
 DWORD
@@ -26,6 +35,9 @@ TestCleanup(
     PVMDIR_TEST_STATE pState
     )
 {
+    TestMultiValueAttrCleanup(pState);
+    TestModrdnCleanup(pState);
+
     return 0;
 }
 
@@ -37,6 +49,7 @@ TestRunner(
     DWORD dwError = 0;
 
     printf("Testing miscellaneous code\n");
+
     dwError = TestDCAccountPasswordCode(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -46,7 +59,14 @@ TestRunner(
     dwError = TestGroupMembership(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = TestModrdn(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = TestMultiValueAttr(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     printf("Miscellaneous tests completed successfully.\n");
+    fflush(stdout);
 
 cleanup:
     return dwError;

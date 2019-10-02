@@ -43,6 +43,7 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.bAllowAdminLockout, 0),
         VMDIR_SF_INIT(.bDisableVECSIntegration, 0),
         VMDIR_SF_INIT(.bEnableRegionalMaster, 0),
+        VMDIR_SF_INIT(.dwEnableSearchOptimization, 3),
         VMDIR_SF_INIT(.pdwLdapListenPorts, NULL),
         VMDIR_SF_INIT(.dwLdapListenPorts, 0),
         VMDIR_SF_INIT(.pdwLdapsListenPorts, NULL),
@@ -61,6 +62,10 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.dwSupplierThrTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.dwWriteTimeoutInMilliSec, 0),
         VMDIR_SF_INIT(.iWarnPwdExpiring, 0),
+        VMDIR_SF_INIT(.dwMaxSearchIteration, 0),
+        VMDIR_SF_INIT(.dwMaxSearchIterationTxn, 0),
+        VMDIR_SF_INIT(.dwRESTWorker, 0),
+        VMDIR_SF_INIT(.dwRESTClient, 0),
         VMDIR_SF_INIT(.mutex, NULL),
         VMDIR_SF_INIT(.pSrvThrInfo, NULL),
         VMDIR_SF_INIT(.bReplNow, FALSE),
@@ -88,11 +93,9 @@ VMDIR_GLOBALS gVmdirGlobals =
         VMDIR_SF_INIT(.iServerStartupTime, 0),
         VMDIR_SF_INIT(.dwMaxIndexScan, 512),
         VMDIR_SF_INIT(.dwSmallCandidateSet,32),
-        VMDIR_SF_INIT(.dwMaxSizelimitScan,0),
         VMDIR_SF_INIT(.dwLdapSearchTimeoutSec, 0),
         VMDIR_SF_INIT(.bAllowImportOpAttrs, FALSE),
         VMDIR_SF_INIT(.bTrackLastLoginTime, FALSE),
-        VMDIR_SF_INIT(.bPagedSearchReadAhead, FALSE),
         VMDIR_SF_INIT(.dwLdapWrites, 0),
         VMDIR_SF_INIT(.gpVdirSslCtx, NULL)
     };
@@ -149,6 +152,7 @@ VMDIR_SERVER_GLOBALS gVmdirServerGlobals =
         VMDIR_SF_INIT(.dwEfficientReadOpTimeMS, 0),
         VMDIR_SF_INIT(.dwEfficientWriteOpTimeMS, 0),
         VMDIR_SF_INIT(.bPromoted, FALSE),
+        VMDIR_SF_INIT(.searchOptMap, {0}),
     };
 
 VMDIRD_SD_GLOBALS gVmdirdSDGlobals =

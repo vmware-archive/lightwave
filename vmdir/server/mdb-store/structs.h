@@ -51,9 +51,23 @@ typedef struct _VDIR_MDB_INDEX_ITERATOR
 {
     PVDIR_DB_TXN    pTxn;
     PVDIR_DB_DBC    pCursor;
-    PSTR            pszVal;
-    ENTRYID         eId;
     BOOLEAN         bAbort;
+
+    // use to iteratte cursor (MDB_NEXT/MDB_PREV...)
+    DWORD           dwCursorFlag;
+
+    // use to position cursor (MDB_SET_RANGE...)
+    // 1. single call iterator based search (external or internal)
+    // 2. paged multiple calls iterator based search
+    // 3. iterator refresh txn
+    int             dwInitCursorFlag;
+
+    // if dwInitCursorFlag was MDB_FIRST, say in PRESENT search scenario, all subsequent
+    // calls to reposition cursor should use override flags
+    int             dwOverrideInitCursorFlag;
+
+    VDIR_DB         mdbDBi;
+    int             iIterCount;
 
 } VDIR_MDB_INDEX_ITERATOR, *PVDIR_MDB_INDEX_ITERATOR;
 

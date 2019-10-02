@@ -266,8 +266,8 @@ _VmDirRESTServerInitHTTP(
     config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
     config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
     config.pSSLContext = NULL;
-    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
-    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.nWorkerThr = gVmdirGlobals.dwRESTWorker;
+    config.nClientCnt = gVmdirGlobals.dwRESTClient;
     config.SSLCtxOptionsFlag = 0;
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;
@@ -344,8 +344,8 @@ _VmDirRESTServerInitHTTPS(
     config.connTimeoutSec = VMDIR_REST_CONN_TIMEOUT_SEC;
     config.maxDataPerConnMB = VMDIR_MAX_DATA_PER_CONN_MB;
     config.pSSLContext = gVmdirGlobals.gpVdirSslCtx;
-    config.nWorkerThr = VMDIR_REST_WORKERTHCNT;
-    config.nClientCnt = VMDIR_REST_CLIENTCNT;
+    config.nWorkerThr = gVmdirGlobals.dwRESTWorker;
+    config.nClientCnt = gVmdirGlobals.dwRESTClient;
     config.SSLCtxOptionsFlag = 0;
     config.pszSSLCertificate = NULL;
     config.pszSSLKey = NULL;

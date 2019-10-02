@@ -512,16 +512,27 @@ VmDirIndexCfgValidateUniqueScopeMods(
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
     PLW_HASHMAP pDetectedScopes = NULL;
     PSTR        pszLastVal = NULL;
-    PSTR        pszVal = NULL;
-    ENTRYID     eId = 0;
     VDIR_ENTRY  entry = {0};
     PSTR        pszIdxStatus = NULL;
+    VDIR_ITERATOR_CONTEXT       iterContext = {0};
+    VDIR_ITERATOR_SEARCH_PLAN   searchPlan = {0};
 
     if (!pIndexCfg)
     {
         dwError = VMDIR_ERROR_INVALID_PARAMETER;
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    dwError = VmDirIterSearchPlanInitContent(
+            LDAP_FILTER_PRESENT,
+            FALSE,
+            pIndexCfg->pszAttrName,
+            NULL,
+            &searchPlan);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirIterContextInitContent(&iterContext, &searchPlan);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     pNewScopes = pIndexCfg->pNewUniqScopes;
     pBadScopes = pIndexCfg->pBadUniqScopes;
@@ -538,7 +549,7 @@ VmDirIndexCfgValidateUniqueScopeMods(
     VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, pszIdxStatus );
 
     pBE = VmDirBackendSelect(NULL);
-    dwError = pBE->pfnBEIndexIteratorInit(pIndexCfg, NULL, &pIterator);
+    dwError = pBE->pfnBEIndexIteratorInit(pIndexCfg, &iterContext, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     /*
@@ -559,22 +570,19 @@ VmDirIndexCfgValidateUniqueScopeMods(
         }
         iCnt++;
 
-        dwError = pBE->pfnBEIndexIterate(pIterator, &pszVal, &eId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (!pszLastVal || VmDirStringCompareA(pszLastVal, pszVal, FALSE))
+        if (!pszLastVal || VmDirStringCompareA(pszLastVal, iterContext.bvCurrentKey.lberbv_val, FALSE))
         {
             LwRtlHashMapClear(pDetectedScopes, VmDirNoopHashMapPairFree, NULL);
+
             VMDIR_SAFE_FREE_MEMORY(pszLastVal);
-            pszLastVal = pszVal;
-            pszVal = NULL;
-        }
-        else
-        {
-            VMDIR_SAFE_FREE_MEMORY(pszVal);
+            dwError = VmDirAllocateAndCopyMemory(
+                    iterContext.bvCurrentKey.lberbv_val,
+                    iterContext.bvCurrentKey.lberbv_len,
+                    (PVOID*)&pszLastVal);
+            BAIL_ON_VMDIR_ERROR(dwError);
         }
 
-        dwError = pBE->pfnBESimpleIdToEntry(eId, &entry);
+        dwError = pBE->pfnBESimpleIdToEntry(iterContext.eId, &entry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pNode = pNewScopes->pTail;
@@ -618,16 +626,21 @@ VmDirIndexCfgValidateUniqueScopeMods(
             pNode = pNextNode;
         }
         VmDirFreeEntryContent(&entry);
+
+        dwError = pBE->pfnBEIndexIterate(pIterator, &iterContext);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
 cleanup:
+    VmDirIterSearchPlanFreeContent(&searchPlan);
+    VmDirIterContextFreeContent(&iterContext);
     pBE->pfnBEIndexIteratorFree(pIterator);
     LwRtlHashMapClear(pDetectedScopes, VmDirNoopHashMapPairFree, NULL);
     LwRtlFreeHashMap(&pDetectedScopes);
     VmDirFreeEntryContent(&entry);
     VMDIR_SAFE_FREE_MEMORY(pszLastVal);
-    VMDIR_SAFE_FREE_MEMORY(pszVal);
     VMDIR_SAFE_FREE_MEMORY(pszIdxStatus);
+
     return dwError;
 
 error:

@@ -17,12 +17,22 @@ typedef DWORD (*PTEST_SETUP_CALLBACK)(struct _VMDIR_TEST_STATE *pState);
 typedef DWORD (*PTEST_RUNNER_CALLBACK)(struct _VMDIR_TEST_STATE *pState);
 typedef DWORD (*PTEST_CLEANUP_CALLBACK)(struct _VMDIR_TEST_STATE *pState);
 
+typedef enum
+{
+    LDAP_OWNER_ADMIN = 0,
+    LDAP_OWNER_NORMAL_USER,
+    LDAP_OWNER_NORMAL_COMPUTER,
+    LDAP_OWNER_ANONYMOUS,
+    LDAP_OWNER_CUSTOM
+} TEST_LDAP_CONNECTION_OWNER;
+
 typedef struct _VMDIR_TEST_STATE
 {
     //
     // Admin connection to server.
     //
     LDAP *pLd;
+    LDAP *pSecondLd;
 
     PCSTR   pszAdminAccessToken;
 
@@ -42,6 +52,11 @@ typedef struct _VMDIR_TEST_STATE
     LDAP *pLdCustom;
 
     //
+    // Connection to server using a computer account.
+    //
+    LDAP *pLdComputer;
+
+    //
     // The test runner's cleanup callback. We'll call this when an assertion
     // fails and we're going to exit() the process.
     //
@@ -53,19 +68,26 @@ typedef struct _VMDIR_TEST_STATE
     PVOID  pContext;
 
     PCSTR pszServerName;        // The server name
+    PCSTR pszSecondServerName;  // The second LW server name
+
     PCSTR pszUserUPN;           // UserUPN to connect with.
     PCSTR pszUserDN;            // User DN to connect with.
-    PCSTR pszUserName;          // Username to connect with.
+    PCSTR pszUserName;          // User name to connect with.
+
     PCSTR pszPassword;          // Password to connect with.
     PCSTR pszDomain;            // The domain to use (e.g., vsphere.local)
     PCSTR pszBaseDN;            // The domain's DN.
 
     PCSTR pszTest;              // The name of a particular test to run or a directory to load tests from.
+
     PCSTR pszTestContainerName; // The name of the test container; all objects should be created beneath this.
     PCSTR pszInternalUserName;  // The name of the internal user we create for operations that shouldn't be run as admin.
+    PCSTR pszComputerName;      // The name of the computer we create.
+
     BOOLEAN bKeepGoing;         // Keep going if an individual test fails.
     BOOLEAN bBreakIntoDebugger; // Break into the debugger when a test fails.
     BOOLEAN bRemoteOnly;        // skip IPC test cases
+    BOOLEAN bSkipCleanup;       // skip test cleanup, so we can verify test are replicated correctly
 } VMDIR_TEST_STATE, *PVMDIR_TEST_STATE;
 
 DWORD
@@ -97,6 +119,11 @@ VmDirTestGetInternalUserCn(
     PVMDIR_TEST_STATE pState
     );
 
+PCSTR
+VmDirTestGetComputerCn(
+    PVMDIR_TEST_STATE pState
+    );
+
 DWORD
 VmDirTestDeleteUser(
     PVMDIR_TEST_STATE pState,
@@ -119,6 +146,32 @@ VmDirTestReplaceAttributeValues(
     PCSTR pszDN,
     PCSTR pszAttribute,
     PCSTR *ppszAttributeValues
+    );
+
+DWORD
+VmDirTestAddAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    );
+
+DWORD
+VmDirTestDeleteAttributeValues(
+    LDAP *pLd,
+    PCSTR pszDN,
+    PCSTR pszAttribute,
+    PCSTR *ppszAttributeValues
+    );
+
+DWORD
+VmDirTestGetEntryAttributeValuesInStr(
+    LDAP *pLd,
+    PCSTR pBase,
+    int ldapScope,
+    PCSTR pszFilter,
+    PCSTR pszAttribute,
+    PVMDIR_STRING_LIST* ppList
     );
 
 DWORD
@@ -235,6 +288,13 @@ VmDirTestDeleteContainer(
     );
 
 DWORD
+VmDirTestCreateComputer(
+    PVMDIR_TEST_STATE pState,
+    PCSTR pszContainer,
+    PCSTR pszComputerName
+    );
+
+DWORD
 VmDirTestCreateUser(
     PVMDIR_TEST_STATE pState,
     PCSTR pszContainer,
@@ -298,6 +358,12 @@ VmDirTestGetUserSid(
     PCSTR pszUserName,
     PCSTR pszUserContainer, // optional
     PSTR *ppszUserSid
+    );
+
+LDAP*
+VmDirTestGetLdapOwner(
+    PVMDIR_TEST_STATE           pState,
+    TEST_LDAP_CONNECTION_OWNER  owner
     );
 
 DWORD
@@ -454,6 +520,20 @@ VmDirTestCreateSimpleContainer(
     LDAP *pLd,
     PCSTR pszCN,
     PCSTR pszContainerDN
+    );
+
+BOOLEAN
+VmDirStringListContainsEx(
+    PVMDIR_STRING_LIST pvsList,
+    PCSTR pszString,
+    BOOLEAN bCaseSensitive
+    );
+
+BOOLEAN
+VmDirStringListEqualsNoOrder(
+    PVMDIR_STRING_LIST pStringListLHS,
+    PVMDIR_STRING_LIST pStringListRHS,
+    BOOLEAN bCaseSensitive
     );
 
 #define TestAssertBetween(a, b, c) if ((a < c && (a >= b || c <= b)) || \

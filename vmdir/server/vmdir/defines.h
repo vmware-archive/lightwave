@@ -281,8 +281,8 @@
         /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 32,                               \
-        /*.dwMax          = */ 8192,                             \
-        /*.dwDefault      = */ 512,                              \
+        /*.dwMax          = */ 10240,                            \
+        /*.dwDefault      = */ 2048,                             \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -292,7 +292,7 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 16,                               \
         /*.dwMax          = */ 8192,                             \
-        /*.dwDefault      = */ 32,                              \
+        /*.dwDefault      = */ 256,                              \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \
@@ -303,17 +303,6 @@
         /*.RegDataType    = */ REG_DWORD,                        \
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 1,                                \
-        /*.dwDefault      = */ 0,                                \
-        /*.dwValue        = */ 0,                                \
-        /*.pszDefault     = */ NULL,                             \
-        /*.pszValue       = */ NULL                              \
-    },                                                           \
-    {                                                            \
-        /*.pszName        = */ VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN, \
-        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
-        /*.RegDataType    = */ REG_DWORD,                        \
-        /*.dwMin          = */ 0,                                \
-        /*.dwMax          = */ UINT32_MAX,                       \
         /*.dwDefault      = */ 0,                                \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
@@ -480,6 +469,65 @@
         /*.dwMin          = */ 0,                                \
         /*.dwMax          = */ 100*24*60*60,                     \
         /*.dwDefault      = */ 15*24*60*60,                      \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_SEARCH_ITERATION,     \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1024 * 1024 * 1024,               \
+        /*.dwDefault      = */ 1024 * 100,                       \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_MAX_SEARCH_ITERATION_TXN,     \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1024 * 100,                       \
+        /*.dwDefault      = */ 128,                              \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_ENABLE_SEARCH_OPTIMIZATION,  \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 256,                              \
+        /* value 0: disable iterate based search */              \
+        /* value 1: eanble iterate based normal search */        \
+        /* value 2: eanble iterate based page search */          \
+        /* value 3: eanble iterate based normal and page search */        \
+        /*.dwDefault      = */ 3,                                \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_WORKER,        \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1024,                             \
+        /*.dwDefault      = */ 10,                               \
+        /*.dwValue        = */ 0,                                \
+        /*.pszDefault     = */ NULL,                             \
+        /*.pszValue       = */ NULL                              \
+    },                                                           \
+    {                                                            \
+        /*.pszName        = */ VMDIR_REG_KEY_REST_CLIENT,        \
+        /*.Type           = */ VMDIR_CONFIG_VALUE_TYPE_DWORD,    \
+        /*.RegDataType    = */ REG_DWORD,                        \
+        /*.dwMin          = */ 0,                                \
+        /*.dwMax          = */ 1024,                             \
+        /*.dwDefault      = */ 10,                               \
         /*.dwValue        = */ 0,                                \
         /*.pszDefault     = */ NULL,                             \
         /*.pszValue       = */ NULL                              \

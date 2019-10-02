@@ -19,55 +19,6 @@ PCSTR ppszGroups[] =
     "GroupTestGroup2",
 };
 
-
-BOOLEAN
-VmDirStringListContainsEx(
-    PVMDIR_STRING_LIST pvsList,
-    PCSTR pszString,
-    BOOLEAN bCaseSensitive
-    )
-{
-    DWORD dwIndex = 0;
-    BOOLEAN bFound = FALSE;
-
-    for (dwIndex = 0; dwIndex < pvsList->dwCount; ++dwIndex)
-    {
-        if (VmDirStringCompareA(pszString, pvsList->pStringList[dwIndex], bCaseSensitive) == 0)
-        {
-            bFound = TRUE;
-            break;
-        }
-    }
-
-    return bFound;
-}
-
-BOOLEAN
-VmDirStringListEqualsNoOrder(
-    PVMDIR_STRING_LIST pStringListLHS,
-    PVMDIR_STRING_LIST pStringListRHS,
-    BOOLEAN bCaseSensitive
-    )
-{
-    DWORD dwMatching = 0;
-    DWORD dwIndex = 0;
-
-    if (pStringListLHS->dwCount != pStringListRHS->dwCount)
-    {
-        return FALSE;
-    }
-
-    for (dwIndex = 0; dwIndex < pStringListLHS->dwCount; ++dwIndex)
-    {
-        if (VmDirStringListContainsEx(pStringListLHS, pStringListRHS->pStringList[dwIndex], bCaseSensitive))
-        {
-            dwMatching++;
-        }
-    }
-
-    return (dwMatching == pStringListLHS->dwCount);
-}
-
 //
 // Give the limited user delete access to the user.
 //
@@ -366,8 +317,14 @@ TestGroupMembership(
     dwError = TestModifyUserAcl(pState, pszUserDN, "SD");
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    // pause 2 seconds to allow replication converge
+    VmDirSleep(2000);
+
     dwError = TestImplicitlyRemovingUserFromGroups(pState, pszUserDN, pvslGroupDNs);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // pause 2 seconds to allow replication converge
+    VmDirSleep(2000);
 
     //
     // TestImplicitlyRemovingUserFromGroups deletes the user so we have to
@@ -377,6 +334,9 @@ TestGroupMembership(
     BAIL_ON_VMDIR_ERROR(dwError);
     dwError = TestAddingUserToGroups(pState, pszUserDN, pvslGroupDNs);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    // pause 2 seconds to allow replication converge
+    VmDirSleep(2000);
 
     dwError = TestExplicitlyRemovingUserFromGroups(pState, pszUserDN, pvslGroupDNs);
     BAIL_ON_VMDIR_ERROR(dwError);

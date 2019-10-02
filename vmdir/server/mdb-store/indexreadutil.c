@@ -22,8 +22,6 @@ MdbScanIndex(
     VDIR_BERVALUE *     attrType,
     PVDIR_DB_DBT        pKey,
     VDIR_FILTER *       pFilter,
-    int                 maxScanForSizeLimit,
-    int *               partialCandidates,
     ENTRYID             eStartingId
     );
 
@@ -620,12 +618,13 @@ VmDirMDBGetCandidates(
 
             key.mv_size = normValLen + 1;
 
-            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.ava.type), &key, pFilter, eStartingId);
             if ( pFilter->candidates )
             {
-                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), max scan (%d), bad filter (%d)",
                                    VDIR_SAFE_STRING(pFilter->filtComp.ava.type.lberbv.bv_val),
                                    pFilter->candidates->size,
+                                   pFilter->iMaxIndexScan,
                                    (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
             }
 
@@ -685,12 +684,13 @@ VmDirMDBGetCandidates(
                 assert( FALSE );
             }
 
-            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pTxn, &(pFilter->filtComp.subStrings.type), &key, pFilter, eStartingId);
             if ( pFilter->candidates )
             {
-                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), max scan (%d), bad filter (%d)",
                                    VDIR_SAFE_STRING(pFilter->filtComp.subStrings.type.lberbv.bv_val),
                                    pFilter->candidates->size,
+                                   pFilter->iMaxIndexScan,
                                    (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
             }
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -710,12 +710,13 @@ VmDirMDBGetCandidates(
             key.mv_data = &parentEIdBytes[0];
             MDBEntryIdToDBT(parentId, &key);
 
-            dwError = MdbScanIndex(pTxn, &(parentIdAttr), &key, pFilter, pBECtx->iMaxScanForSizeLimit, &pBECtx->iPartialCandidates, eStartingId);
+            dwError = MdbScanIndex(pTxn, &(parentIdAttr), &key, pFilter, eStartingId);
             if ( pFilter->candidates )
             {
-                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), bad filter (%d)",
+                VMDIR_LOG_VERBOSE( LDAP_DEBUG_FILTER, "scan %s, result set size (%d), max scan (%d), bad filter (%d)",
                                    VDIR_SAFE_STRING(parentIdAttr.lberbv.bv_val),
                                    pFilter->candidates->size,
+                                   pFilter->iMaxIndexScan,
                                    (pFilter->iMaxIndexScan && pFilter->candidates->size > pFilter->iMaxIndexScan) ? 1:0 );
             }
             BAIL_ON_VMDIR_ERROR(dwError);
@@ -1184,8 +1185,6 @@ MdbScanIndex(
     VDIR_BERVALUE *     attrType,
     PVDIR_DB_DBT        pKey,
     VDIR_FILTER *       pFilter,
-    int                 maxScanForSizeLimit,
-    int *               partialCandidates,
     ENTRYID             eStartingId
     )
 {
@@ -1204,6 +1203,8 @@ MdbScanIndex(
     BOOLEAN     bIsExactMatch = (pFilter->choice == LDAP_FILTER_EQUALITY || pFilter->choice == FILTER_ONE_LEVEL_SEARCH);
     BOOLEAN     bIsPartialMatch = (pFilter->choice == LDAP_FILTER_SUBSTRINGS);
 
+    pFilter->bLastScanPositive = TRUE;
+
     dwError = VmDirIndexCfgAcquire(
             attrType->lberbv.bv_val, VDIR_INDEX_READ, &pIndexCfg);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -1211,6 +1212,7 @@ MdbScanIndex(
     if (!pIndexCfg)
     {
         VMDIR_LOG_VERBOSE( LDAP_DEBUG_BACKEND, "ScanIndex: non-indexed attribute. attrType = %s", attrType->lberbv.bv_val);
+        pFilter->bLastScanPositive = FALSE;
         goto cleanup;
     }
 
@@ -1319,6 +1321,10 @@ MdbScanIndex(
             MDBDBTToEntryId( &value, &eId);
             if (eId >= eStartingId)
             {
+                // Note, we could add duplicate EID into candidate list. Logically, unique candidate set
+                // should be enforced in this function.  However, the real use case that an index
+                // return same EID multiple times is really rare. i.e. an entry has more than one match in index scan.
+                // Thus, push uniqueness enforcement to middle layer process candidate flow for better performance.
                 dwError = VmDirAddToCandidates(pFilter->candidates, eId);
                 BAIL_ON_VMDIR_ERROR(dwError);
             }
@@ -1327,17 +1333,10 @@ MdbScanIndex(
                  pFilter->candidates->size > pFilter->iMaxIndexScan
                )
             {
-                // Exceed max scan size, treats as data not found. BuildCandidateList logic will retry w/o limit.
-                // When candidates is set to NULL, AndFilterResults() will treat it as a non-indexed attribute.
+                pFilter->bLastScanPositive = FALSE;
                 DeleteCandidates( &(pFilter->candidates) );
-                dwError = MDB_NOTFOUND;
-                BAIL_ON_VMDIR_ERROR(dwError);
-            }
 
-            if (maxScanForSizeLimit > 0 && pFilter->candidates->size > maxScanForSizeLimit)
-            {
-                *partialCandidates = 1;
-                break;
+                BAIL_WITH_VMDIR_ERROR(dwError, MDB_NOTFOUND); // return NOTFOUND but w/o candidates
             }
 
             eId = 0;
@@ -1373,14 +1372,16 @@ cleanup:
     return dwError;
 
 error:
+     // if MDB_NOTFOUND, this scan is valid and return empty candidates;
+     // otherwise, this scan is invalid;
+     if (dwError != MDB_NOTFOUND)
+     {
+         pFilter->bLastScanPositive = FALSE;
+         DeleteCandidates( &(pFilter->candidates) );
 
-    if (dwError != MDB_NOTFOUND)
-    {
-        DeleteCandidates( &(pFilter->candidates) );
+         VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "ScanIndex failed with error code: %d, error string: %s",
+                   dwError, mdb_strerror(dwError) );
+     }
 
-        VMDIR_LOG_ERROR( LDAP_DEBUG_BACKEND, "ScanIndex failed with error code: %d, error string: %s",
-                  dwError, mdb_strerror(dwError) );
-    }
-
-    goto cleanup;
+     goto cleanup;
 }

@@ -534,8 +534,6 @@ MdbValidateAttrUniqueness(
     LW_HASHMAP_ITER         iter = LW_HASHMAP_ITER_INIT;
     LW_HASHMAP_PAIR         pair = {NULL, NULL};
     PVDIR_LINKED_LIST_NODE  pNode = NULL;
-    PSTR        pszVal = NULL;
-    ENTRYID     eId = 0;
     VDIR_ENTRY  entry = {0};
     PSTR        pszScope = NULL;
     PSTR        pszScopeCopy = NULL;
@@ -543,6 +541,8 @@ MdbValidateAttrUniqueness(
     PSTR        pszDNCopy = NULL;
     PVMDIR_MUTEX    pMutex = NULL;
     BOOLEAN         bInLock = FALSE;
+    VDIR_ITERATOR_CONTEXT       iterContext = {0};
+    VDIR_ITERATOR_SEARCH_PLAN   searchPlan = {0};
 
     if (!pIndexCfg || IsNullOrEmptyString(pszAttrVal))
     {
@@ -573,7 +573,18 @@ MdbValidateAttrUniqueness(
         }
     }
 
-    dwError = VmDirMDBIndexIteratorInit(pIndexCfg, pszAttrVal, &pIterator);
+    dwError = VmDirIterSearchPlanInitContent(
+            LDAP_FILTER_EQUALITY,
+            FALSE,
+            pIndexCfg->pszAttrName,
+            pszAttrVal,
+            &searchPlan);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirIterContextInitContent(&iterContext, &searchPlan);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirMDBIndexIteratorInit(pIndexCfg, &iterContext, &pIterator);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     pMutex = pIndexCfg->mutex;
@@ -582,15 +593,7 @@ MdbValidateAttrUniqueness(
     // find all uniqueness scopes that are already occupied
     while (pIterator->bHasNext)
     {
-        dwError = VmDirMDBIndexIterate(pIterator, &pszVal, &eId);
-        BAIL_ON_VMDIR_ERROR(dwError);
-
-        if (VmDirStringCompareA(pszAttrVal, pszVal, FALSE) != 0)
-        {
-            break;
-        }
-
-        dwError = VmDirMDBSimpleEIdToEntry(eId, &entry);
+        dwError = VmDirMDBSimpleEIdToEntry(iterContext.eId, &entry);
         BAIL_ON_VMDIR_ERROR(dwError);
 
         pszDN = BERVAL_NORM_VAL(entry.dn);
@@ -661,8 +664,10 @@ MdbValidateAttrUniqueness(
             }
         }
 
-        VMDIR_SAFE_FREE_MEMORY(pszVal);
         VmDirFreeEntryContent(&entry);
+
+        dwError = VmDirMDBIndexIterate(pIterator, &iterContext);
+        BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     // check if the new entry dn matches any occupied scope
@@ -702,8 +707,9 @@ cleanup:
         LwRtlHashMapClear(pOccupiedScopes, VmDirSimpleHashMapPairFree, NULL);
         LwRtlFreeHashMap(&pOccupiedScopes);
     }
-    VMDIR_SAFE_FREE_MEMORY(pszVal);
     VmDirFreeEntryContent(&entry);
+    VmDirIterSearchPlanFreeContent(&searchPlan);
+    VmDirIterContextFreeContent(&iterContext);
     return dwError;
 
 error:

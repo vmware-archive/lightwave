@@ -103,24 +103,8 @@ typedef struct _VDIR_LOCKOUT_REC
 
 } VDIR_LOCKOUT_REC, *PVDIR_LOCKOUT_REC;
 
-typedef struct _VDIR_PAGED_SEARCH_ENTRY_LIST
-{
-    ENTRYID *pEntryIds;
-    DWORD dwCount;
-} VDIR_PAGED_SEARCH_ENTRY_LIST, *PVDIR_PAGED_SEARCH_ENTRY_LIST;
-
 typedef struct _VDIR_PAGED_SEARCH_RECORD
 {
-    //
-    // Hash table boilerplate.
-    //
-    LW_HASHTABLE_NODE Node;
-
-    //
-    // Who's using the object.
-    //
-    DWORD dwRefCount;
-
     //
     // The number of entries in each page.
     //
@@ -130,6 +114,11 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     // Number of candidates we've processed.
     //
     DWORD dwCandidatesProcessed;
+
+    //
+    // Last EID processed. (To skip duplicate EId in candidate list)
+    //
+    ENTRYID lastEId;
 
     //
     // Key for the hash table. Sent in the cookie to the client.
@@ -142,68 +131,24 @@ typedef struct _VDIR_PAGED_SEARCH_RECORD
     PVDIR_CANDIDATES pTotalCandidates;
 
     //
-    // We cache the filter information so we don't need to re-parse it
-    // every time. The candidates pointer in this pFilter will be updated
-    // to include the right candidates from the total list above.
-    //
-    PVDIR_FILTER pFilter;
-
-    //
     // cache the string representation of filter as well, in order to validaate
     // subsequent page search request.
     //
     VDIR_BERVALUE bvStrFilter;
 
     //
-    // The queue of vetted ENTRYIDs. Each entry will be a page's worth of
-    // IDs.
-    //
-    PDEQUE pQueue;
-    PVMDIR_COND pDataAvailable;
-
-    //
-    // This is the information of our worker thread. We'll use this to signal
-    // the thread that we've read all the data and it can now exit.
-    //
-    PVDIR_THREAD_INFO pThreadInfo;
-
-    //
     // The last time the client read data.
     //
     time_t tLastClientRead;
 
-    //
-    // Indicates if the worker thread has completed processing all available
-    // data. The client hasn't necessarily read it all yet, though.
-    //
-    BOOLEAN bProcessingCompleted;
+    // Whether the paged search is via iterator or the candidate set.
+    VDIR_SRV_SEARCH_ALGO    searchAlgo;
 
-    //
-    // Indicates that the client has read all the data. This lets the worker
-    // thread know that it can exit.
-    //
-    BOOLEAN bSearchCompleted;
+    BOOLEAN         bCompete;
 
-    //
-    // Indicates search is in progress, protected by mutex
-    // To avoid processing multiple concurrent page search requests
-    //
-    PVMDIR_MUTEX mutex;
-    BOOLEAN bSearchInProgress;
+    VDIR_ITERATOR_CONTEXT   iterContext;
 } VDIR_PAGED_SEARCH_RECORD, *PVDIR_PAGED_SEARCH_RECORD;
 
-typedef struct _VDIR_PAGED_SEARCH_CACHE
-{
-    // NOTE: order of fields MUST stay in sync with struct initializer...
-    PVMDIR_MUTEX        mutex;
-    PLW_HASHTABLE       pHashTbl;
-} VDIR_PAGED_SEARCH_CACHE, *PVDIR_PAGED_SEARCH_CACHE;
-
-/*
- * TODO - Rename VDIR_PAGED_SEARCH_CONTEXT to VDIR_PAGED_SEARCH_CACHE
- * Rename VDIR_PAGED_SEARCH_RECORD to VDIR_PAGED_SEARCH_CTX
- * after the cleanup of paged search background thread related logic.
- */
 typedef struct _VDIR_PAGED_SEARCH_CONTEXT
 {
     // NOTE: order of fields MUST stay in sync with struct initializer...
@@ -267,3 +212,24 @@ typedef enum _VDIR_SPECIAL_SEARCH_ENTRY_TYPE
     REGULAR_SEARCH_ENTRY_TYPE
 } VDIR_SPECIAL_SEARCH_ENTRY_TYPE;
 
+typedef struct _VDIR_ATTR_TYPE_PRI
+{
+    PSTR    pszAttrType;
+    int     iPri;
+} VDIR_ATTR_TYPE_PRI, *PVDIR_ATTR_TYPE_PRI;
+
+typedef struct _VDIR_FILTER_TYPE_PRI
+{
+    int     iFilterType;
+    int     iPri;
+} VDIR_FILTER_TYPE_PRI, *PVDIR_FILTER_TYPE_PRI;
+
+typedef struct _VDIR_SEARCHOPT_PARAM
+{
+    int     iSearchType;
+    BOOLEAN bPagedSearch;
+    int     iSizeLimit;
+    int     iTimeLimit;
+    PSTR    pszAttrType;
+    PSTR    pszAttrVal;
+} VDIR_SEARCHOPT_PARAM, *PVDIR_SEARCHOPT_PARAM;

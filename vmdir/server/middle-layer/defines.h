@@ -65,9 +65,15 @@
         goto sasl_error;                                            \
     }
 
-//
-// The timeout for a client thread waiting for more data from the worker
-// thread (we'll loop until more data's available, but we wake up periodically
-// to check if the server's shutting down).
-//
-#define VMDIR_PSCACHE_READ_TIMEOUT 100
+//The initial size of the entry array for internal search or rest head (used as internal search)
+#define VMDIR_ENTRY_ARRAY_INIT_SIZE     16
+
+//The priority base value for globally unique attribute type
+#define UNIQ_ATTR_BASE_PRI              10
+
+//The priority base value for non-unique attribute type
+#define NON_UNIQ_ATTR_BASE_PRI          5
+
+// Increase the chance of using iterator search with paged, sizelimit or timelimit
+// since they are allowed to terminate prematurely with reduced resource.
+#define PAGED_OR_LIMIT_RAISED_PRI       3

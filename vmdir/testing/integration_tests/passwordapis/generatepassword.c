@@ -22,7 +22,13 @@ TestGeneratePassword(
     PBYTE pBytes = NULL;
     DWORD dwByteCount = 0;
 
-   dwError = VmDirGeneratePassword(NULL, NULL, NULL, &pBytes, &dwByteCount);
+   dwError = VmDirGeneratePassword(
+       pState->pszServerName,
+       pState->pszUserUPN,
+       pState->pszPassword,
+       &pBytes,
+       &dwByteCount);
+
    TestAssert(dwError == 0);
    TestAssert(pBytes != NULL);
    TestAssert(dwByteCount != 0);

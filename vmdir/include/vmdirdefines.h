@@ -742,7 +742,10 @@ extern "C" {
 #define VMDIR_ARRAY_SIZE(a) (sizeof(a) / sizeof((a)[0]))
 #endif
 
-#define VMDIR_IS_OP_CTRL_PASSBLOB(op) (op->passblobCtrl != NULL)
+#define VMDIR_IS_OP_CTRL_DIGEST(op)       (op->digestCtrl != NULL)
+#define VMDIR_IS_OP_CTRL_PASSBLOB(op)     (op->passblobCtrl != NULL)
+#define VMDIR_IS_OP_CTRL_PAGE_SEARCH(op)  (op->showPagedResultsCtrl != NULL)
+#define VMDIR_IS_OP_CTRL_SEARCH_PLAN(op)  (op->pSearchPlanCtrl != NULL)
 
 #define tcp_socket_close(s) (shutdown(s, SHUT_RDWR), close(s))
 

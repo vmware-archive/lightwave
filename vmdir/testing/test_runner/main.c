@@ -14,6 +14,7 @@
 #include "includes.h"
 
 #define DEFAULT_INTERNAL_USER_NAME "integration_tests_lua"
+#define DEFAULT_TEST_COMPUTER_NAME  "integration_tests_computer"
 #define DEFAULT_TEST_CONTAINER_NAME "testcontainer"
 
 VOID
@@ -31,6 +32,7 @@ ShowUsage(
     printf("\t-k/--keep-going -- Don't stop on failed test result.\n");
     printf("\t-r/--remote-only -- skip IPC test cases.\n");
     printf("\t-t/--test -- The directory containing tests or the test DLL itself\n");
+    printf("\t-s/--skip-cleanup -- skip test data cleanup.\n");
 }
 
 DWORD
@@ -66,6 +68,9 @@ TestInfrastructureCleanup(
         return 0;
     }
 
+    dwError = VmDirTestDeleteUser(pState, NULL, VmDirTestGetComputerCn(pState));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     dwError = VmDirTestDeleteUser(pState, NULL, VmDirTestGetInternalUserCn(pState));
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -75,6 +80,7 @@ TestInfrastructureCleanup(
 cleanup:
     VmDirFreeStringA((PSTR)pState->pszBaseDN);
     VmDirTestLdapUnbind(pState->pLd);
+    VmDirTestLdapUnbind(pState->pSecondLd);
     VmDirTestLdapUnbind(pState->pLdLimited);
     VmDirTestLdapUnbind(pState->pLdAnonymous);
     VmDirTestLdapUnbind(pState->pLdCustom);
@@ -82,6 +88,98 @@ cleanup:
 
 error:
     printf("Test cleanup failed with error %d\n", dwError);
+    goto cleanup;
+}
+
+DWORD
+_VmDirSetOptionalSecondNode(
+    PVMDIR_TEST_STATE pState
+    )
+{
+    DWORD   dwError = 0;
+    DWORD   dwCnt = 0;
+    PSTR    pszName = NULL;
+    PVMDIR_SERVER_INFO  pServerInfo = NULL;
+    DWORD               dwServerInfoCount = 0;
+
+    dwError = VmDirGetServers(
+                pState->pszServerName,
+                pState->pszUserName,
+                pState->pszPassword,
+                &pServerInfo,
+                &dwServerInfoCount
+                );
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pszName);
+
+        dwError = VmDirDnLastRDNToCn(
+            pServerInfo[dwCnt].pszServerDN,
+            &pszName);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        if (!VmDirStringStartsWith(pszName, pState->pszServerName, FALSE))
+        {
+            pState->pszSecondServerName = pszName;
+            pszName = NULL;
+            break;
+        }
+    }
+
+cleanup:
+    for (dwCnt=0; dwCnt<dwServerInfoCount; dwCnt++)
+    {
+        VMDIR_SAFE_FREE_MEMORY(pServerInfo[dwCnt].pszServerDN);
+    }
+
+    VMDIR_SAFE_FREE_MEMORY(pServerInfo);
+    VMDIR_SAFE_FREE_MEMORY(pszName);
+
+    return dwError;
+
+error:
+    printf("%s error %d\n", __FUNCTION__, dwError);
+    goto cleanup;
+}
+
+DWORD
+_VmDirTestCreateComputerAndConnection(
+    PVMDIR_TEST_STATE pState
+    )
+{
+    DWORD dwError = 0;
+    PSTR pszUserUPN = NULL;
+    LDAP *pLd;
+
+    dwError = VmDirTestCreateComputer(
+                pState,
+                NULL,
+                VmDirTestGetComputerCn(pState));
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAllocateStringPrintf(
+                &pszUserUPN,
+                "%s@%s",
+                VmDirTestGetComputerCn(pState),
+                pState->pszDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSafeLDAPBind(
+                &pLd,
+                pState->pszServerName,
+                pszUserUPN,
+                pState->pszPassword);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    pState->pLdComputer = pLd;
+
+cleanup:
+    VMDIR_SAFE_FREE_STRINGA(pszUserUPN);
+    return dwError;
+error:
+    printf("%s failed with error %d\n", __FUNCTION__, dwError);
     goto cleanup;
 }
 
@@ -231,6 +329,10 @@ TestInfrastructureInitialize(
     pState->pfnCleanupCallback = TestInfrastructureCleanup;
     pState->pszTestContainerName = DEFAULT_TEST_CONTAINER_NAME;
     pState->pszInternalUserName = DEFAULT_INTERNAL_USER_NAME;
+    pState->pszComputerName = DEFAULT_TEST_COMPUTER_NAME;
+
+    dwError = _VmDirSetOptionalSecondNode(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirDomainNameToDN(pState->pszDomain, (PSTR*)&pState->pszBaseDN);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -249,6 +351,36 @@ TestInfrastructureInitialize(
                 pState->pszUserUPN,
                 pState->pszPassword);
     BAIL_ON_VMDIR_ERROR(dwError);
+
+    if (pState->pszSecondServerName)
+    {
+        DWORD dwCnt = 0;
+
+        for (dwCnt=0; dwCnt < 10; dwCnt++)
+        {
+            dwError = VmDirSafeLDAPBind(
+                        &pState->pSecondLd,
+                        pState->pszSecondServerName,
+                        pState->pszUserUPN,
+                        pState->pszPassword);
+            if (dwError)
+            {
+                printf("Connect to %s failed %d \n", pState->pszSecondServerName, dwError);
+                VmDirSleep(1000);
+                continue;
+            }
+        }
+
+        if (dwError)
+        {
+            printf("Failed to connect to second node %s \n", pState->pszSecondServerName);
+            dwError = 0;
+        }
+        else
+        {
+            printf("Connected to second node %s \n", pState->pszSecondServerName);
+        }
+    }
 
     dwError = _TestAcquireAdminToken(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -270,8 +402,10 @@ TestInfrastructureInitialize(
                 &pState->pLdAnonymous);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-
     dwError = _VmDirTestCreateLimitedUserAndConnection(pState);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = _VmDirTestCreateComputerAndConnection(pState);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = _VmDirTestCreateTestContainer(pState);
@@ -332,10 +466,9 @@ _VmDirExecuteTestModule(
         printf("Test module %s failed with error %d\n", pszModule, dwError);
     }
 
-    dwError = (*pfnTestCleanup)(pState);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
 cleanup:
+    (*pfnTestCleanup)(pState);
+
     if (pDllHandle != NULL)
     {
         (VOID)dlclose(pDllHandle);
@@ -366,6 +499,7 @@ VmDirMain(
         {'k', "keep-going", CL_NO_PARAMETER, &State.bKeepGoing},
         {'r', "remote-only", CL_NO_PARAMETER, &State.bRemoteOnly},
         {'t', "test", CL_STRING_PARAMETER, &State.pszTest},
+        {'s', "skip-cleanup", CL_NO_PARAMETER, &State.bSkipCleanup},
         {0, 0, 0, 0}
     };
 

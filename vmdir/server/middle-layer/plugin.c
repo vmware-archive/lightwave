@@ -167,6 +167,12 @@
     VMDIR_SF_INIT(.pPluginFunc, VmDirPluginDCAccountPostModifyCommit), \
     VMDIR_SF_INIT(.pNext, NULL )                                    \
     },                                                              \
+    {                                                               \
+    VMDIR_SF_INIT(.usOpMask, VDIR_NOT_INTERNAL_OPERATIONS),         \
+    VMDIR_SF_INIT(.bSkipOnError, TRUE),                             \
+    VMDIR_SF_INIT(.pPluginFunc, _VmDirPluginSearchOptMapPostModifyCommit), \
+    VMDIR_SF_INIT(.pNext, NULL )                                    \
+    },                                                              \
 }
 
 // NOTE1: order of fields MUST stay in sync with struct definition...
@@ -359,6 +365,13 @@ _VmDirPluginDflUpdatePostModifyCommit(
 static
 DWORD
 _VmDirpluginPasswordPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult);
+
+static
+DWORD
+_VmDirPluginSearchOptMapPostModifyCommit(
     PVDIR_OPERATION  pOperation,
     PVDIR_ENTRY      pEntry,
     DWORD            dwPriorResult);
@@ -1765,6 +1778,28 @@ error:
     goto cleanup;
 
 #undef OBJ_ID_VAL_SIZE
+}
+
+
+/*
+ * update search optimization map global cache
+ */
+static
+DWORD
+_VmDirPluginSearchOptMapPostModifyCommit(
+    PVDIR_OPERATION  pOperation,
+    PVDIR_ENTRY      pEntry,
+    DWORD            dwPriorResult
+    )
+{
+    DWORD   dwError = 0;
+
+    if (VmDirStringCompareA(BERVAL_NORM_VAL(pEntry->dn), CFG_ITERATION_MAP_DN, FALSE) == 0)
+    {
+        dwError = VmDirLoadSearchPriorityMap();
+    }
+
+    return dwError;
 }
 
 /*

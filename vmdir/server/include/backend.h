@@ -100,9 +100,8 @@ typedef enum
 
 typedef struct _VDIR_BACKEND_INDEX_ITERATOR
 {
-    PVOID   pIterator;
-    BOOLEAN bHasNext;
-
+    PVOID          pIterator;
+    BOOLEAN        bHasNext;
 } VDIR_BACKEND_INDEX_ITERATOR, *PVDIR_BACKEND_INDEX_ITERATOR;
 
 typedef struct _VDIR_BACKEND_PARENT_ID_INDEX_ITERATOR
@@ -359,9 +358,9 @@ typedef DWORD (*PFN_BACKEND_INDEX_POPULATE)(
  * ERROR_BACKEND_ERROR:             all others
  */
 typedef DWORD (*PFN_BACKEND_INDEX_ITERATOR_INIT)(
-                    PVDIR_INDEX_CFG                 pIndexCfg,
-                    PSTR                            pszInitVal,
-                    PVDIR_BACKEND_INDEX_ITERATOR*   ppIterator
+                    PVDIR_INDEX_CFG                   pIndexCfg,
+                    PVDIR_ITERATOR_CONTEXT            pIteratorContext,
+                    PVDIR_BACKEND_INDEX_ITERATOR*     ppIterator
                     );
 /*
  * Iterate value and eid pairs in the index table
@@ -370,8 +369,7 @@ typedef DWORD (*PFN_BACKEND_INDEX_ITERATOR_INIT)(
  */
 typedef DWORD (*PFN_BACKEND_INDEX_ITERATE)(
                     PVDIR_BACKEND_INDEX_ITERATOR    pIterator,
-                    PSTR*                           ppszVal,
-                    ENTRYID*                        pEId
+                    PVDIR_ITERATOR_CONTEXT          pIteratorContext
                     );
 /*
  * Free index table iterator

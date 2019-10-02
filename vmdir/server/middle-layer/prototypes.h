@@ -308,30 +308,6 @@ VmDirInternalMetricsLogInefficientOp(
     PVDIR_OPERATION pOperation
     );
 
-// pscache.c
-DWORD
-VmDirPagedSearchCacheInit(
-    VOID
-    );
-
-VOID
-VmDirPagedSearchCacheFree(
-    VOID
-    );
-
-DWORD
-VmDirPagedSearchCacheInsert(
-    PVDIR_OPERATION pOperation,
-    DWORD dwCandidatesProcessed
-    );
-
-DWORD
-VmDirPagedSearchCacheRead(
-    PCSTR pszCookie,
-    ENTRYID **ppValidatedEntries,
-    DWORD *pdwEntryCount
-    );
-
 // pagesearch.c
 VOID
 VmDirPagedSearchContextFree(
@@ -510,6 +486,54 @@ VmDirIsSearchForStatePing(
 VOID
 VmDirUpdateMaxCommittedUSNInLock(
     USN   committedUSN
+    );
+
+void
+VmDirEvaluateIteratorCandidate(
+    PVDIR_OPERATION pOperation,
+    PVDIR_FILTER    pFilter
+    );
+
+int
+BuildCandidateList(
+    PVDIR_OPERATION    pOperation,
+    PVDIR_FILTER       pFilter,
+    ENTRYID            eStartingId
+    );
+
+int
+VmDirSearchViaIterator(
+    PVDIR_OPERATION     pOperation
+    );
+
+DWORD
+VmDirCheckAndSendEntry(
+    ENTRYID         eId,
+    PVDIR_OPERATION pOperation,
+    PVDIR_ENTRY     pEntry,
+    PBOOLEAN        pbEntrySent
+    );
+
+BOOLEAN
+VmDirCheckEidInMap(
+    PLW_HASHMAP     pMap,
+    ENTRYID         eId
+    );
+
+DWORD
+VmDirAddEidToMap(
+    PLW_HASHMAP     pMap,
+    ENTRYID         eId
+    );
+
+DWORD
+VmDirAllocOrReallocEntryArray(
+    PVDIR_ENTRY_ARRAY pEntryArray
+    );
+
+int
+VmDirGetSearchPri(
+    PVDIR_SEARCHOPT_PARAM pOptParm
     );
 
 #endif

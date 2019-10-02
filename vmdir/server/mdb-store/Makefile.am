@@ -19,6 +19,7 @@ libmdb_store_la_SOURCES = \
     globals.c \
     index.c \
     indexdesc.c \
+    indexiterate.c \
     indexreadutil.c \
     indexwriteutil.c \
     init.c \

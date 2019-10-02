@@ -19,6 +19,10 @@
 #include <ldap.h>
 #include <lber.h>
 
+#include <vmhttpclient.h>
+#include <vmjsonresult.h>
+#include <vmnetworkutil.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
@@ -31,4 +35,4 @@
 #include "defines.h"
 #include "structs.h"
 #include "prototypes.h"
-
+#include "testdefs.h"

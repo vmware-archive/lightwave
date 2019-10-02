@@ -151,6 +151,7 @@ VmDirInternalMetricsLogInefficientOp(
     )
 {
     uint64_t                  iRespTime = 0;
+    uint64_t                  iMaxTime = 0;
     PVDIR_OPERATION_ML_METRIC pMLMetrics = NULL;
     METRICS_LDAP_OPS          op = VmDirMetricsMapLdapOperationToEnum(pOperation->reqCode);
 
@@ -159,8 +160,21 @@ VmDirInternalMetricsLogInefficientOp(
         pMLMetrics = &pOperation->MLMetrics;
         iRespTime = VMDIR_RESPONSE_TIME(pMLMetrics->iMLStartTime, pMLMetrics->iMLEndTime);
 
-        if ((op == METRICS_LDAP_OP_SEARCH && iRespTime > gVmdirServerGlobals.dwEfficientReadOpTimeMS)
-                || iRespTime > gVmdirServerGlobals.dwEfficientWriteOpTimeMS)
+        if (op == METRICS_LDAP_OP_SEARCH)
+        {
+            iMaxTime = gVmdirServerGlobals.dwEfficientReadOpTimeMS;
+
+            if (VMDIR_IS_OP_CTRL_PAGE_SEARCH(pOperation))
+            {
+                iMaxTime *= 100;
+            }
+        }
+        else
+        {
+            iMaxTime = gVmdirServerGlobals.dwEfficientWriteOpTimeMS;
+        }
+
+        if (iRespTime > iMaxTime)
         {
             VMDIR_LOG_WARNING(
                     VMDIR_LOG_MASK_ALL,

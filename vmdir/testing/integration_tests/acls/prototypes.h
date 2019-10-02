@@ -148,14 +148,6 @@ _VdcSearchForEntryAndAttribute(
     );
 
 DWORD
-VmDirTestAddAttributeValues(
-    LDAP *pLd,
-    PCSTR pszDN,
-    PCSTR pszAttribute,
-    PCSTR *ppszAttributeValues
-    );
-
-DWORD
 _VdcGetObjectSecurityDescriptor(
     PVMDIR_TEST_STATE pState,
     PCSTR pszObjectDN,

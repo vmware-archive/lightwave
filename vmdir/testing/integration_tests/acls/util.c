@@ -118,31 +118,6 @@ error:
     goto cleanup;
 }
 
-DWORD
-VmDirTestAddAttributeValues(
-    LDAP *pLd,
-    PCSTR pszDN,
-    PCSTR pszAttribute,
-    PCSTR *ppszAttributeValues
-    )
-{
-    DWORD dwError = 0;
-
-    LDAPMod addition;
-    LDAPMod *mods[2];
-
-    addition.mod_op     = LDAP_MOD_ADD;
-    addition.mod_type   = (PSTR) pszAttribute;
-    addition.mod_values = (PSTR*) ppszAttributeValues;
-
-    mods[0] = &addition;
-    mods[1] = NULL;
-
-    dwError = ldap_modify_ext_s(pLd, pszDN, mods, NULL, NULL);
-
-    return dwError;
-}
-
 // TODO -- Get rid of this and just call VmDirTestGetAttributeValue
 DWORD
 _VdcGetObjectSecurityDescriptor(

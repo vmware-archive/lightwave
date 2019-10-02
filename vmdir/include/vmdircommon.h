@@ -309,7 +309,7 @@ typedef struct _VMDIR_SASL_INTERACTIVE_DEFAULT
 
 typedef enum _VDIR_SRV_SEARCH_ALGO
 {
-    SEARCH_ALGO_CANDIDATE_LIST = 1,
+    SEARCH_ALGO_CANDIDATE_LIST = 0,
     SEARCH_ALGO_ITERATOR,
     SEARCH_ALGO_UNKNOWN
 } VDIR_SRV_SEARCH_ALGO;
@@ -321,14 +321,12 @@ typedef struct _VDIR_SRV_CANDIDATE_SEARCH_PLAN
 
 typedef struct _VDIR_SRV_ITERATOR_SEARCH_PLAN
 {
-    ber_int_t       iIteratePriority;
     ber_int_t       iNumIteration;
-    ber_int_t       iMDBKeyType;      // EQ/SUB..etc.
-    ber_int_t       iMDBCursorFlag;   // FWD/REV
 } VDIR_SRV_ITERATOR_SEARCH_PLAN, *PVDIR_SRV_ITERATOR_SEARCH_PLAN;
 
-typedef struct _VDIR_SRV_SEARCH_PLAN
+typedef struct _VDIR_SEARCH_EXEC_PATH
 {
+    // execution path and statistics
     VDIR_SRV_SEARCH_ALGO    searchAlgo;
     PSTR                    pszIndex;
     ber_int_t               iEntrySent;
@@ -337,7 +335,7 @@ typedef struct _VDIR_SRV_SEARCH_PLAN
     ber_int_t               bExceedMaxIteration;
     VDIR_SRV_CANDIDATE_SEARCH_PLAN candiatePlan;
     VDIR_SRV_ITERATOR_SEARCH_PLAN  IteratePlan;
-} VDIR_SRV_SEARCH_PLAN, *PVDIR_SRV_SEARCH_PLAN;
+} VDIR_SEARCH_EXEC_PATH, *PVDIR_SEARCH_EXEC_PATH;
 
 #ifdef _WIN32
 typedef HINSTANCE   VMDIR_LIB_HANDLE;
@@ -746,6 +744,11 @@ VmDirStringToINT32(
     PCSTR     pszString,
     PSTR*     ppEndPtr,
     INT32*    pOutVal
+    );
+
+DWORD
+VmDirStringReverseA(
+    PSTR pszString
     );
 
 #ifdef _WIN32
@@ -1167,7 +1170,6 @@ typedef enum
 #define VMDIR_REG_KEY_DISABLE_VECS            "DisableVECSIntegration"
 #define VMDIR_REG_KEY_MAX_INDEX_SCAN          "MaxIndexScan"
 #define VMDIR_REG_KEY_SMALL_CANDIDATE_SET     "SmallCandidateSet"
-#define VMDIR_REG_KEY_MAX_SIZELIMIT_SCAN      "MaxSizeLimitScan"
 #define VMDIR_REG_KEY_ALLOW_IMPORT_OP_ATTR    "AllowImportOperationalAttrs"
 #define VMDIR_REG_KEY_LDAP_SEARCH_TIMEOUT_SEC "LdapSearchTimeoutSec"
 #define VMDIR_REG_KEY_TRACK_LAST_LOGIN_TIME   "TrackLastLoginTime"
@@ -1214,6 +1216,11 @@ typedef enum
 #define VMDIR_REG_KEY_ENABLE_REGIONAL_MASTER  "EnableRegionalMaster"
 #define VMDIR_REG_KEY_LDAP_COPY_ENABLE        "EnableLdapCopy"
 #define VMDIR_REG_KEY_WARN_PWD_EXPIRING_SEC   "WarnPwdExpiringInSec"
+#define VMDIR_REG_KEY_MAX_SEARCH_ITERATION      "MaxSearchIterationScan"
+#define VMDIR_REG_KEY_MAX_SEARCH_ITERATION_TXN  "MaxSearchIterationScanTxn"
+#define VMDIR_REG_KEY_ENABLE_SEARCH_OPTIMIZATION    "EnableSearchOptimization"
+#define VMDIR_REG_KEY_REST_WORKER               "NumRestWorkerThread"
+#define VMDIR_REG_KEY_REST_CLIENT               "NumRestClientThread"
 
 #ifdef _WIN32
 #define VMDIR_DEFAULT_KRB5_CONF             "C:\\ProgramData\\MIT\\Kerberos5\\krb5.ini"
@@ -1991,14 +1998,14 @@ VmDirFreeCtrlContent(
 
 DWORD
 VmDirParseSearchPlanControlContent(
-    LDAPControl*          pSearchPlanCtrl,
-    PVDIR_SRV_SEARCH_PLAN pSearchPlan
+    LDAPControl*           pSearchPlanCtrl,
+    PVDIR_SEARCH_EXEC_PATH pSearchExecPath
     );
 
 DWORD
 VmDirCreateSearchPlanControlContent(
-    PVDIR_SRV_SEARCH_PLAN pSearchPlan,
-    BerValue*             pBerVOut
+    PVDIR_SEARCH_EXEC_PATH pSearchExecPath,
+    BerValue*              pBerVOut
     );
 
 int
@@ -2125,6 +2132,11 @@ VmDirDNToRDNList(
     PCSTR               pszDN,
     BOOLEAN             bNotypes,
     PVMDIR_STRING_LIST* ppRDNStrList
+    );
+
+VOID
+VmDirSearchExecPathFreeContent(
+    PVDIR_SEARCH_EXEC_PATH  pExecPath
     );
 
 DWORD

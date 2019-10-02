@@ -52,4 +52,5 @@
 
 #include <vmdirtesting.h>
 
+#include "structs.h"
 #include "prototypes.h"

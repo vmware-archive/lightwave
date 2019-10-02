@@ -26,3 +26,34 @@ DWORD
 TestGroupMembership(
     PVMDIR_TEST_STATE pState
     );
+
+DWORD
+TestModrdn(
+    PVMDIR_TEST_STATE pState
+    );
+
+VOID
+TestModrdnCleanup(
+    PVMDIR_TEST_STATE pState
+    );
+
+DWORD
+TestModrdnSetup(
+    PVMDIR_TEST_STATE pState
+    );
+
+DWORD
+TestMultiValueAttr(
+    PVMDIR_TEST_STATE pState
+    );
+
+DWORD
+TestMultiValueAttrSetup(
+    PVMDIR_TEST_STATE pState
+    );
+
+VOID
+TestMultiValueAttrCleanup(
+    PVMDIR_TEST_STATE pState
+    );
+

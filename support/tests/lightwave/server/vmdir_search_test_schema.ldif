@@ -34,14 +34,14 @@ attributeTypes: (
     VMWare.DIR.test.attribute.0.5
     NAME 'vmwTestSearchIntegerNonunique'
     DESC 'Integer nonunique'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     )
 
 attributeTypes: (
     VMWare.DIR.test.attribute.0.6
     NAME 'vmwTestSearchIntegerUnique'
     DESC 'Integer unique'
-    SYNTAX 1.3.6.1.4.1.1466.115.121.1.44
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
     )
 
 #

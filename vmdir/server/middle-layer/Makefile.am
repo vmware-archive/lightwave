@@ -25,13 +25,14 @@ libmiddle_layer_la_SOURCES = \
     pagedsearch.c \
     password.c \
     plugin.c \
-    pscache.c \
     replplugin.c \
     sasl.c \
     saslsockbuf.c \
     schema.c \
     search.c \
     specialsearch.c \
+    searchopt.c \
+    searchoptmap.c \
     srputil.c \
     util.c \
     usn.c \

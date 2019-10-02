@@ -316,3 +316,52 @@ cleanup:
 error:
     goto cleanup;
 }
+
+BOOLEAN
+VmDirStringListContainsEx(
+    PVMDIR_STRING_LIST pvsList,
+    PCSTR pszString,
+    BOOLEAN bCaseSensitive
+    )
+{
+    DWORD dwIndex = 0;
+    BOOLEAN bFound = FALSE;
+
+    for (dwIndex = 0; dwIndex < pvsList->dwCount; ++dwIndex)
+    {
+        if (VmDirStringCompareA(pszString, pvsList->pStringList[dwIndex], bCaseSensitive) == 0)
+        {
+            bFound = TRUE;
+            break;
+        }
+    }
+
+    return bFound;
+}
+
+BOOLEAN
+VmDirStringListEqualsNoOrder(
+    PVMDIR_STRING_LIST pStringListLHS,
+    PVMDIR_STRING_LIST pStringListRHS,
+    BOOLEAN bCaseSensitive
+    )
+{
+    DWORD dwMatching = 0;
+    DWORD dwIndex = 0;
+
+    if (pStringListLHS->dwCount != pStringListRHS->dwCount)
+    {
+        return FALSE;
+    }
+
+    for (dwIndex = 0; dwIndex < pStringListLHS->dwCount; ++dwIndex)
+    {
+        if (VmDirStringListContainsEx(pStringListLHS, pStringListRHS->pStringList[dwIndex], bCaseSensitive))
+        {
+            dwMatching++;
+        }
+    }
+
+    return (dwMatching == pStringListLHS->dwCount);
+}
+
