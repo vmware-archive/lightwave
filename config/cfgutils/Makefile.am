@@ -14,6 +14,7 @@ libcfgutils_la_SOURCES = \
     validate.c
 
 libcfgutils_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/config/include \
     -I$(top_srcdir)/config/include/public \
     -I$(top_srcdir)/vmafd/include/public \
@@ -23,6 +24,7 @@ libcfgutils_la_CPPFLAGS = \
     @LW_INCLUDES@
 
 libcfgutils_la_LIBADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/vmafd/client/libvmafdclient.la \
     @top_builddir@/vmca/client/libvmcaclient.la \
     @top_builddir@/vmdns/client/libvmdnsclient.la \
@@ -33,10 +35,8 @@ libcfgutils_la_LIBADD = \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @CRYPTO_LIBS@
 
 libcfgutils_la_LDFLAGS = \

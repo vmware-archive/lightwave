@@ -29,6 +29,7 @@
 #include <cfgerrors.h>
 #include <cfgutils.h>
 
+#include <vmcommonincludes.h>
 #include <vmdirerrors.h>
 #include <vmafdclient.h>
 

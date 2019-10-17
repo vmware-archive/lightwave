@@ -12,6 +12,7 @@ lightwave_SOURCES = \
     dns.c
 
 lightwave_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/config/include \
     -I$(top_srcdir)/config/include/public \
     -I$(top_srcdir)/vmafd/include/public \
@@ -21,6 +22,7 @@ lightwave_CPPFLAGS = \
     @LW_INCLUDES@
 
 lightwave_LDADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/config/tools/lightwave/ca/libca.la \
     @top_builddir@/config/tools/lightwave/domain/libdomain.la \
     @top_builddir@/config/tools/lightwave/dns/libdns.la \
@@ -37,7 +39,6 @@ lightwave_LDADD = \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @LWADVAPI_LIBS@ \
     @CRYPTO_LIBS@ \

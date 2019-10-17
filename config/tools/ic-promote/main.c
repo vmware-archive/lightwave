@@ -46,6 +46,27 @@ ShowUsage(
     VOID
     );
 
+static
+DWORD
+_VmwDeployInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 int main(int argc, char* argv[])
 {
     DWORD dwError = 0;
@@ -66,6 +87,9 @@ int main(int argc, char* argv[])
         ShowUsage();
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
+
+    dwError = _VmwDeployInitVmRegConfig();
+    BAIL_ON_DEPLOY_ERROR(dwError);
 
     dwError = VmwDeployCreateLogContext(
                     VMW_DEPLOY_LOG_TARGET_FILE,
@@ -93,6 +117,7 @@ cleanup:
         VmwDeployReleaseLogContext(pContext);
     }
     VmwDeployShutdown();
+    VmRegConfigFree();
 
     return dwError;
 

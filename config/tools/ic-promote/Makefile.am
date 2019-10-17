@@ -4,6 +4,7 @@ ic_promote_SOURCES = \
     main.c
 
 ic_promote_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/config/include \
     -I$(top_srcdir)/config/include/public \
     -I$(top_srcdir)/vmafd/include/public \
@@ -13,6 +14,7 @@ ic_promote_CPPFLAGS = \
     @LW_INCLUDES@
 
 ic_promote_LDADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/config/cfgutils/libcfgutils.la \
     @top_builddir@/vmafd/client/libvmafdclient.la \
     @top_builddir@/vmca/client/libvmcaclient.la \
@@ -24,7 +26,6 @@ ic_promote_LDADD = \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @LWADVAPI_LIBS@ \
     @CRYPTO_LIBS@ \

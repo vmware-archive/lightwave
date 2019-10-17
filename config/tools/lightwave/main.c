@@ -27,6 +27,33 @@ LightwaveCommand(
     char *argv[]
     );
 
+static
+DWORD
+_VmwDeployInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDNS_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMCA_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 int
 main(
     int argc,
@@ -41,8 +68,14 @@ main(
     }
     else
     {
+        iRetCode = _VmwDeployInitVmRegConfig();
+        BAIL_ON_DEPLOY_ERROR(iRetCode);
+
         iRetCode = LightwaveCommand(argc-1, &argv[1]);
     }
+
+error:
+    VmRegConfigFree();
 
     return iRetCode;
 }
