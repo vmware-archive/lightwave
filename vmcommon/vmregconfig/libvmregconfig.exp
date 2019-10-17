@@ -1,0 +1,9 @@
+VmRegConfigInit
+VmRegConfigFree
+VmRegConfigMergeFile
+VmRegConfigAddFile
+VmRegConfigWriteFile
+VmRegConfigDeleteFile
+VmRegConfigGetKeyA
+VmRegConfigSetKeyA
+VmRegConfigDeleteKeyA

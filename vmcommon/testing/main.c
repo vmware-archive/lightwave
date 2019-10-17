@@ -13,6 +13,7 @@
  */
 
 #include "includes.h"
+#include "vmregconfigtest.h"
 #include "vmmetricstest.h"
 #include "vmhttpclienttest.h"
 #include "vmsignaturetest.h"
@@ -24,7 +25,8 @@ int main(int argc, char *argv[])
 {
     DWORD dwError = 0;
 
-    dwError = VmMetricsCounterTest();
+    dwError += VmRegConfigTest();
+    dwError += VmMetricsCounterTest();
     dwError += VmMetricsGaugeTest();
     dwError += VmMetricsHistogramTest();
     dwError += VmMetricsMixedTest();

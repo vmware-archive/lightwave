@@ -1,5 +1,6 @@
 SUBDIRS = \
     include \
+    vmregconfig \
     . \
     config \
     testing
@@ -9,6 +10,7 @@ lib_LTLIBRARIES = libvmcommon.la
 libvmcommon_la_CPPFLAGS = \
     -I$(top_srcdir)/vmcommon/include \
     -I$(top_srcdir)/vmcommon/include/public \
+    @YAML_INCLUDES@ \
     @CURL_INCLUDES@ \
     @JANSSON_INCLUDES@ \
     @LW_INCLUDES@
@@ -27,6 +29,8 @@ libvmcommon_la_SOURCES = \
     vmutil.c
 
 libvmcommon_la_LIBADD = \
+    $(top_builddir)/vmcommon/vmregconfig/libvmregconfig.la \
+    @YAML_LIBS@ \
     @CURL_LIBS@ \
     @JANSSON_LIBS@ \
     @LWBASE_LIBS@ \

@@ -34,11 +34,11 @@
 #include <lw/ntstatus.h>
 #include <lw/rtlstring.h>
 #include <lw/atomic.h>
-//#include <reg/lwreg.h>
+#include <reg/lwreg.h>
 
 #include <curl/curl.h>
 #include <jansson.h>
-//#include <yaml.h>
+#include <yaml.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/rsa.h>

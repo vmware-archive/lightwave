@@ -1,5 +1,5 @@
 /*
- * Copyright © 209 VMware, Inc.  All Rights Reserved.
+ * Copyright © 2098 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the ?~@~\License?~@~]); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -12,19 +12,22 @@
  * under the License.
  */
 
-#include <lw/types.h>
-#include <lw/hash.h>
+#ifndef LIGHTWAVE_VMREGCONFIGTEST_H
+#define LIGHTWAVE_VMREGCONFIGTEST_H
 
-#include <vmcommondefines.h>
-#include <vmcommonerror.h>
-#include <vmhttpclient.h>
-#include <vmjsonresult.h>
-#include <vmmemory.h>
-#include <vmmetrics.h>
-#include <vmnetworkutil.h>
-#include <vmregconfig.h>
-#include <vmstring.h>
-#include <vmstringlist.h>
-#include <vmthreading.h>
-#include <vmutil.h>
+#define VM_REGCONFIG_TEST_VMDIR_FILE    "/tmp/vmdirregconfig.yaml";
+#define VM_REGCONFIG_TEST_VMAFD_FILE    "/tmp/vmafdregconfig.yaml";
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
+DWORD  VmRegConfigTest(
+    VOID
+    );
+
+#ifdef __cplusplus
+}
+#endif
+
+#endif //LIGHTWAVE_VMREGCONFIGTEST_H

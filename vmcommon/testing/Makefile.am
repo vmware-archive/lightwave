@@ -13,6 +13,7 @@ vmcommon_test_SOURCES = \
     vmjsonresulttest.c \
     vmjsonresultobjectmaptest.c \
     vmjsonresultfromobjectmaptest.c \
+    vmregconfigtest.c \
     main.c
 
 vmcommon_test_CPPFLAGS = \

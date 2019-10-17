@@ -123,3 +123,40 @@ typedef struct _VM_JSON_RESULT
     int nJsonErrorLine;
     PSTR pszJsonErrorText;
 }VM_JSON_RESULT, *PVM_JSON_RESULT;
+
+/* vmregconfig */
+typedef struct _VM_REGCONFIG_LIST_KV
+{
+    PSTR    pszKey;
+    PSTR    pszValue;
+    size_t  iValueSize;
+
+    struct _VM_REGCONFIG_LIST_KV*  pNext;
+} VM_REGCONFIG_LIST_KV, *PVM_REGCONFIG_LIST_KV;
+
+typedef struct _VM_REGCONFIG_LIST_ENTRY
+{
+    // synchronize access among threads in a process
+    PVM_MUTEX       pMutex;
+
+    // config file name
+    PSTR            pszFileName;
+    // dummy file locking for cross processes write synchronization
+    PSTR            pszLockFileName;
+
+    PSTR            pszTopKey;
+    struct stat     fileStat;
+    BOOLEAN         bReadOnly;
+
+    PVM_REGCONFIG_LIST_KV pListKV;
+
+    struct _VM_REGCONFIG_LIST_ENTRY*  pNext;
+} VM_REGCONFIG_LIST_ENTRY, *PVM_REGCONFIG_LIST_ENTRY;
+
+typedef struct _VM_REGCONFIG_CONTEXT
+{
+    // No concurrent protection for pListEntry for now
+    // all config files should be loaded during startup time.
+    PVM_REGCONFIG_LIST_ENTRY pListEntry;
+
+} VM_REGCONFIG_CONTEXT;
