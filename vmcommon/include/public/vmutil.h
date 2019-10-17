@@ -89,3 +89,13 @@ VmDecodeToBase64(
     PBYTE       *ppBase64Decoded,
     DWORD       *pDecodedLen
     );
+
+VOID
+VmSleep(
+    DWORD       dwMilliseconds
+    );
+
+uint64_t
+VmGetTimeInMilliSec(
+    VOID
+    );

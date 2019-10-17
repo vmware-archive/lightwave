@@ -14,6 +14,26 @@
 
 #ifndef __VM_COMMON_DEFINE_H__
 #define __VM_COMMON_DEFINE_H__
+/*
+#define VM_SIZE_8192                    8192
+#define VM_SIZE_4096                    4096
+#define VM_SIZE_2048                    2048
+#define VM_SIZE_1024                    1024
+#define VM_SIZE_512                     512
+#define VM_SIZE_256                     256
+#define VM_SIZE_128                     128
+#define VM_SIZE_64                      64
+#define VM_SIZE_32                      32
+#define VM_SIZE_16                      16
+#define VM_SIZE_8                       8
+#define VM_SIZE_4                       4
+#define VM_SIZE_2                       2
+#define VM_SIZE_1                       1
+
+#define NSECS_PER_SEC                   1000000000
+#define NSECS_PER_MSEC                  1000000
+#define MSECS_PER_SEC                   1000
+*/
 
 #define BUFFER_SIZE                     1024
 #define VM_COMMON_MAX_TIME_BYTES        128
@@ -21,6 +41,11 @@
 #define VM_COMMON_HTTP_CONTENT_TYPE_KEY     "Content-Type"
 #define VM_COMMON_HTTP_CONTENT_TYPE_JSON    "application/json"
 #define VM_COMMON_HTTP_DATE                 "Date"
+
+#define VM_MAX_GWTPWR_BUF_LENGTH        16384
+
+#define VM_LIGHTWAVE_USER               "lightwave"
+#define VM_LIGHTWAVE_GROUP              "lightwave"
 
 #define HEADER_BEARER_AUTH "Authorization: Bearer %s"
 #define HEADER_HOTK_PK_AUTH "Authorization: hotk-pk %s"
@@ -96,5 +121,85 @@
 #endif
 
 #define VM_COMMON_GET_BASE64_ENCODE_LEN(x) ((x / 3 + 1) * 4 + 1)
+
+#define VM_COMMON_SAFE_FREE_MUTEX(mutex)      \
+    do {                                  \
+        if ((mutex)) {                    \
+            VmFreeMutex(mutex);           \
+            (mutex) = NULL;               \
+        }                                 \
+    } while(0)
+
+#define VM_COMMON_SAFE_FREE_RWLOCK(lock)      \
+    do {                                  \
+        if ((lock)) {                     \
+            VmFreeRWLock(lock);           \
+            (lock) = NULL;                \
+        }                                 \
+    } while(0)
+
+#define VM_COMMON_SAFE_FREE_CONDITION(cond)   \
+    do {                                  \
+        if ((cond)) {                     \
+            VmFreeCondition(cond);        \
+            (cond) = NULL;                \
+        }                                 \
+    } while(0)
+
+#define VM_LOCK_MUTEX(bInLock, mutex)           \
+    do {                                        \
+        if (!(bInLock))                         \
+        {                                       \
+            if (VmLockMutex(mutex) == 0)        \
+            {                                   \
+                (bInLock) = TRUE;               \
+            }                                   \
+        }                                       \
+    } while (0)
+
+#define VM_UNLOCK_MUTEX(bInLock, mutex)         \
+    do {                                        \
+        if ((bInLock))                          \
+        {                                       \
+            if (VmUnLockMutex(mutex) == 0)      \
+            {                                   \
+                (bInLock) = FALSE;              \
+            }                                   \
+        }                                       \
+    } while (0)
+
+#define VM_RWLOCK_READLOCK(bInLock, lock, dwMilliSec)           \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmRWLockReadLock(lock, dwMilliSec) == 0)        \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VM_RWLOCK_WRITELOCK(bInLock, lock, dwMilliSec)          \
+    do {                                                        \
+        if (!(bInLock))                                         \
+        {                                                       \
+            if (VmRWLockWriteLock(lock, dwMilliSec) == 0)       \
+            {                                                   \
+                (bInLock) = TRUE;                               \
+            }                                                   \
+        }                                                       \
+    } while (0)
+
+#define VM_RWLOCK_UNLOCK(bInLock, lock)             \
+    do {                                            \
+        if ((bInLock))                              \
+        {                                           \
+            if (VmRWLockUnlock(lock) == 0)          \
+            {                                       \
+                (bInLock) = FALSE;                  \
+            }                                       \
+        }                                           \
+    } while (0)
+
 
 #endif /* __VM_COMMON_DEFINE_H__ */

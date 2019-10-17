@@ -30,6 +30,14 @@ VmStringPrintFA(
     ...
 );
 
+DWORD
+VmStringNCatA(
+   PSTR     strDestination,
+   size_t   numberOfElements,
+   PCSTR    strSource,
+   size_t   number
+   );
+
 int
 VmStringCompareA(
     PCSTR pszStr1,
@@ -42,8 +50,55 @@ VmStringTrimSpace(
     PSTR pszStr
     );
 
+PSTR
+VmStringTokA(
+    PSTR    strToken,
+    PCSTR   strDelimit,
+    PSTR*   context
+    );
+
+PSTR
+VmStringStrA(
+    PCSTR   str,
+    PCSTR   strSearch
+    );
+
+PSTR
+VmStringCaseStrA(
+    PCSTR    pszSource,
+    PCSTR    pszPattern
+    );
+
 size_t
 VmStringLenA(
-    PCSTR pszStr
+    PCSTR   pszStr
     );
+
+PSTR
+VmStringChrA(
+    PCSTR   str,
+    int     c
+    );
+
+PSTR
+VmStringRChrA(
+    PCSTR   str,
+    int     c
+    );
+
+int
+VmStringNCompareA(
+    PCSTR       pszStr1,
+    PCSTR       pszStr2,
+    size_t      n,
+    BOOLEAN     bIsCaseSensitive
+    );
+
+BOOLEAN
+VmStringStartsWithA(
+    PCSTR       pszStr,
+    PCSTR       pszPrefix,
+    BOOLEAN     bIsCaseSensitive
+    );
+
 #endif /* __VM_COMMON_STRING_H__ */

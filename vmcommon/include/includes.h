@@ -18,6 +18,13 @@
 #include <string.h>
 #include <pthread.h>
 #include <errno.h>
+#include <assert.h>
+#include <sys/stat.h>
+#include <sys/file.h>
+#include <sys/types.h>
+#include <fcntl.h>
+#include <pwd.h>
+#include <unistd.h>
 #include <arpa/inet.h>
 
 #include <lw/types.h>
@@ -27,9 +34,11 @@
 #include <lw/ntstatus.h>
 #include <lw/rtlstring.h>
 #include <lw/atomic.h>
+//#include <reg/lwreg.h>
 
 #include <curl/curl.h>
 #include <jansson.h>
+//#include <yaml.h>
 #include <openssl/evp.h>
 #include <openssl/bio.h>
 #include <openssl/rsa.h>
@@ -37,12 +46,6 @@
 
 #include "defines.h"
 #include "errorcode.h"
-#include "vmmemory.h"
-#include "vmstring.h"
 #include "structs.h"
-#include "vmhttpclient.h"
-#include "vmjsonresult.h"
-#include "vmmetrics.h"
-#include "vmnetworkutil.h"
+#include "vmcommonincludes.h"
 #include "vmsignature.h"
-#include "vmutil.h"

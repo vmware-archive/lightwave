@@ -260,3 +260,40 @@ error:
 
     goto cleanup;
 }
+
+uint64_t
+VmGetTimeInMilliSec(
+    VOID
+    )
+{
+    uint64_t            iTimeInMSec = 0;
+
+#if !defined(__APPLE__)
+
+    struct timespec     timeValue = {0};
+
+    if (clock_gettime(CLOCK_REALTIME, &timeValue) == 0)
+    {
+        iTimeInMSec = timeValue.tv_sec * MSECS_PER_SEC + timeValue.tv_nsec / NSECS_PER_MSEC;
+    }
+
+#endif
+
+    return  iTimeInMSec;
+}
+
+VOID
+VmSleep(
+    DWORD      dwMilliseconds
+    )
+{
+    struct timespec req={0};
+    DWORD   dwSec = dwMilliseconds/1000;
+    DWORD   dwMS  = dwMilliseconds%1000;
+
+    req.tv_sec  = dwSec;
+    req.tv_nsec = dwMS*1000000;
+
+    nanosleep( &req, NULL ); // ignore error
+}
+

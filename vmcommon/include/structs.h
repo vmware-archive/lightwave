@@ -12,6 +12,25 @@
  * under the License.
  */
 
+/* threading */
+typedef struct _VM_MUTEX
+{
+    BOOLEAN         bInitialized;
+    pthread_mutex_t critSect;
+} VM_MUTEX, *PVM_MUTEX;
+
+typedef struct _VM_COND
+{
+    BOOLEAN         bInitialized;
+    pthread_cond_t  cond;
+} VM_COND, *PVM_COND;
+
+typedef struct _VM_RWLOCK
+{
+    BOOLEAN             bInitialized;
+    pthread_rwlock_t    lock;
+} VM_RWLOCK, *PVM_RWLOCK;
+
 /*
  * Counter metrics data
  */

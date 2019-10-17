@@ -17,11 +17,13 @@ libvmcommon_la_SOURCES = \
     memory.c \
     vmcommonerror.c \
     vmstring.c \
+    vmstringlist.c \
     vmhttpclient.c \
     vmjsonresult.c \
     vmmetrics.c \
     vmnetworkutil.c \
     vmsignature.c \
+    vmthreading.c \
     vmutil.c
 
 libvmcommon_la_LIBADD = \
