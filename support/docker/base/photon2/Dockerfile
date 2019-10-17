@@ -17,6 +17,7 @@ RUN tdnf update -y tdnf && \
          createrepo_c-0.10.0 \
          findutils-4.6.0 \
          gawk-4.1.3 \
+         libyaml-0.1.7-1.ph2 \
          jansson-2.9  \
          less-487 \
          likewise-open-6.2.11 \

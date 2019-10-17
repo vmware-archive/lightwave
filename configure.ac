@@ -1002,6 +1002,12 @@ AC_CHECK_LIB([curl],
     [],
     [$CURL_LDFLAGS])
 
+AC_CHECK_LIB([yaml],
+    [yaml_get_version_string],
+    [YAML_LIBS="-lyaml"],
+    [],
+    [$YAML_LDFLAGS])
+
 AC_CHECK_LIB([cmocka],
     [_cmocka_run_group_tests],
     [CMOCKA_LIBS="-lcmocka"],
@@ -1129,6 +1135,7 @@ AC_SUBST(LWSM_LIBS)
 AC_SUBST(CARES_LIBS)
 AC_SUBST(CURL_LIBS)
 AC_SUBST(CMOCKA_LIBS)
+AC_SUBST(YAML_LIBS)
 
 #--------------------------------------------------------------------
 
@@ -1568,6 +1575,26 @@ CURL_LDFLAGS="-L$CURL_BASE_PATH/lib"
 AC_SUBST(CURL_BASE_PATH)
 AC_SUBST(CURL_INCLUDES)
 AC_SUBST(CURL_LDFLAGS)
+
+#--------------------------------------------------------------------
+# YAML components
+
+AC_ARG_WITH([yaml],
+    [AC_HELP_STRING([--with-yaml=<dir>], [use YAML binaries rooted at prefix <dir> ])],
+    [
+        YAML_BASE_PATH="$withval"
+    ],
+    [
+        YAML_BASE_PATH="/usr"
+    ])
+
+YAML_INCLUDES="-I$YAML_BASE_PATH/include"
+YAML_LDFLAGS="-L$YAML_BASE_PATH/lib"
+
+AC_CHECK_HEADERS(yaml.h)
+AC_SUBST(YAML_BASE_PATH)
+AC_SUBST(YAML_INCLUDES)
+AC_SUBST(YAML_LDFLAGS)
 
 #--------------------------------------------------------------------
 # CMOCKA components
