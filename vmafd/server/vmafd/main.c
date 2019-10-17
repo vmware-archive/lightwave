@@ -27,6 +27,28 @@ static
 DWORD
 VmAfdNotifyLikewiseServiceManager();
 
+static
+DWORD
+_VmAfdInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+
 int
 main(
    int     argc,
@@ -46,7 +68,7 @@ main(
      */
     VmAfdBlockSelectedSignals();
 
-    dwError = VmAfCfgInit();
+    dwError = _VmAfdInitVmRegConfig();
     BAIL_ON_VMAFD_ERROR(dwError);
 
     /*
@@ -130,6 +152,7 @@ cleanup:
    VmAfdLog(VMAFD_DEBUG_ANY, "vmafdd: stop");
    VmAfdServerShutdown();
    VmAfdLogTerminate();
+   VmRegConfigFree();
 
    return dwError;
 

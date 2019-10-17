@@ -3,6 +3,7 @@ lib_LTLIBRARIES = libvecsdb.la
 
 libvecsdb_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmafd/server/include \
@@ -21,6 +22,7 @@ libvecsdb_la_SOURCES = \
     vecsdbutil.c
 
 libvecsdb_la_LIBADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/vmafd/common/libcommon.la \
     @SQLITE_LIBS@ \
     @LWBASE_LIBS@ \

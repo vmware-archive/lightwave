@@ -361,7 +361,6 @@ VmAfSrvPromoteVmDir(
         }
 
         dwDNSRetry = 0;
-
         do
         {
             dwError = VmAfSrvConfigureDNSW(
@@ -551,7 +550,9 @@ VmAfSrvPromoteVmDir(
     BAIL_ON_VMAFD_ERROR(dwError);
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    /* for Likewise vmdir provider integration
     dwError = VmAfSrvSignalVmdirProvider();
+    */
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
@@ -571,7 +572,9 @@ VmAfSrvPromoteVmDir(
 #endif
 
 #if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
+    /* for Likewise vmdir provider integration
     dwError = VmAfSrvSignalVmdirProvider();
+    */
     BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 

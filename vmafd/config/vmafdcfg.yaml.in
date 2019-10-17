@@ -1,0 +1,22 @@
+vmafd:
+    Description: "VMware afd Service"
+    User: "lightwave"
+    Group: "lightwave"
+
+    Parameters:
+        LogFile: "/var/log/vmware/vmafd/vmafdd.log"
+        DomainState: "0"
+        Krb5Conf: "/etc/@VMAFD_KRB5CONF_FILENAME@"
+        KeytabPath: "@VMAFD_KEYTAB_CONFIG_DIR@/krb5.keytab"
+        CertificateSyncInterval: "60"
+        DcCacheSyncInterval: "60"
+        DcCacheHeartBeat: "30"
+        EnableDCERPC: "0"
+        LegacyModeHA: "1"
+        EnableDnsUpdates: "0"
+        HeartbeatInterval: "10"
+        CAPath: "/etc/ssl/certs"
+        UseVmDirREST: "0"
+        UseMultiTenantedCA: "0"
+        MultiTenantedCAServer: ""
+        MultiTenantedCAId: ""

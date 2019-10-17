@@ -13,37 +13,13 @@ VmAfdRegGetString(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pParamsKey = NULL;
     PSTR  pszValue = NULL;
     PWSTR pwszValue = NULL;
 
     BAIL_ON_VMAFD_INVALID_POINTER(ppwszValue, dwError);
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pszSubKey,
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfConfigReadStringValue(
-                    pParamsKey,
-                    NULL,
+                    pszSubKey,
                     pszValueName,
                     &pszValue);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -54,19 +30,6 @@ VmAfdRegGetString(
     *ppwszValue = pwszValue;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmAfConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     VMAFD_SAFE_FREE_STRINGA(pszValue);
 
@@ -90,9 +53,6 @@ VmAfdRegSetString(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pParamsKey = NULL;
     PCSTR pszSubKey = pszSubKeyParam ? pszSubKeyParam : VMAFD_CONFIG_PARAMETER_KEY_PATH;
     PSTR  pszValue = NULL;
 
@@ -103,52 +63,16 @@ VmAfdRegSetString(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pszSubKey,
-                    0,
-                    KEY_SET_VALUE,
-                    &pParamsKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfdAllocateStringAFromW(pwszValue, &pszValue);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfConfigSetValue(
-                    pParamsKey,
+                    pszSubKey,
                     pszValueName,
-                    REG_SZ,
-                    (PBYTE)pszValue,
-                    (DWORD)strlen(pszValue) + 1);
+                    pszValue);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmAfConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
-
     VMAFD_SAFE_FREE_STRINGA(pszValue);
 
     return dwError;
@@ -165,37 +89,13 @@ VmAfdRegGetInteger(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pParamsKey = NULL;
     PCSTR pszSubKey = VMAFD_CONFIG_PARAMETER_KEY_PATH;
     DWORD dwValue = 0;
 
     BAIL_ON_VMAFD_INVALID_POINTER(pdwValue, dwError);
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pszSubKey,
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfConfigReadDWORDValue(
-                    pParamsKey,
-                    NULL,
+                    pszSubKey,
                     pszValueName,
                     &dwValue);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -203,19 +103,6 @@ VmAfdRegGetInteger(
     *pdwValue = dwValue;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmAfConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 
@@ -231,10 +118,8 @@ VmAfdRegSetInteger(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pParamsKey = NULL;
     PCSTR pszSubKey = VMAFD_CONFIG_PARAMETER_KEY_PATH;
+    CHAR  szValue[VM_SIZE_128] = {0};
 
     if (IsNullOrEmptyString(pszValueName))
     {
@@ -242,48 +127,17 @@ VmAfdRegSetInteger(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pszSubKey,
-                    0,
-                    KEY_SET_VALUE,
-                    &pParamsKey);
+    dwError = VmAfdStringPrintFA(
+            &szValue[0], VM_SIZE_128, "%d", dwValue);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfConfigSetValue(
-                    pParamsKey,
+                    pszSubKey,
                     pszValueName,
-                    REG_DWORD,
-                    (PBYTE)&dwValue,
-                    sizeof(DWORD));
+                    szValue);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmAfConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 
@@ -299,50 +153,14 @@ VmAfdRegDeleteValue(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pParamsKey = NULL;
-
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_SET_VALUE,
-                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pszSubKey,
-                    0,
-                    KEY_SET_VALUE,
-                    &pParamsKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfConfigDeleteValue(
-                    pParamsKey,
+                    pszSubKey,
                     pszValueName
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmAfConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 

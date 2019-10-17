@@ -9,7 +9,6 @@
 #ifndef _WIN32
 
 #include <config.h>
-#include <reg/regutil.h>
 
 #else
 
@@ -51,6 +50,8 @@
 #include <openssl/x509v3.h>
 #include <openssl/pem.h>
 #include <openssl/bio.h>
+
+#include <vmcommonincludes.h>
 
 #include <vmafd.h>
 #include <vmafddefines.h>

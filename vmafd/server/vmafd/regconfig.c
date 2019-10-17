@@ -187,18 +187,6 @@ VmAfdRegGetConfig(
 {
     DWORD dwError = 0;
     DWORD iEntry = 0;
-    PVMAF_CFG_CONNECTION pCfgHandle = NULL;
-    PVMAF_CFG_KEY pRootKey = NULL;
-
-    dwError = VmAfConfigOpenConnection(&pCfgHandle);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenRootKey(pCfgHandle,
-                                    "HKEY_LOCAL_MACHINE",
-                                    0,
-                                    KEY_READ,
-                                    &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     for (; iEntry < dwNumEntries; iEntry++)
     {
@@ -209,7 +197,6 @@ VmAfdRegGetConfig(
             case VMAFD_CONFIG_VALUE_TYPE_STRING:
 
                 dwError = VmAfConfigReadStringValue(
-                            pRootKey,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.pszValue);
@@ -226,7 +213,6 @@ VmAfdRegGetConfig(
             case VMAFD_CONFIG_VALUE_TYPE_DWORD:
 
                 dwError = VmAfConfigReadDWORDValue(
-                            pRootKey,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -265,7 +251,6 @@ VmAfdRegGetConfig(
             case VMAFD_CONFIG_VALUE_TYPE_BOOLEAN:
 
                 dwError = VmAfConfigReadDWORDValue(
-                            pRootKey,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -296,16 +281,6 @@ VmAfdRegGetConfig(
     dwError = 0;
 
 cleanup:
-
-    if (pCfgHandle)
-    {
-        VmAfConfigCloseConnection(pCfgHandle);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
 
     return dwError;
 

@@ -10,6 +10,7 @@ libvmafposixcfg_la_SOURCES = \
     libmain.c
 
 libvmafposixcfg_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmafd/vmafcfg/include \
@@ -18,6 +19,7 @@ libvmafposixcfg_la_CPPFLAGS = \
 
 libvmafposixcfg_la_LDFLAGS = \
     -static \
+    -I$(top_builddir)/vmcommon/libvmcommon.la \
     @LWRSUTILS_LIBS@ \
     @LWREG_LIBS@ \
     @LWBASE_LIBS@ \

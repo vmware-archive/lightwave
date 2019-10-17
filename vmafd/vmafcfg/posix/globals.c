@@ -18,19 +18,19 @@
 
 VMAF_CFG_PACKAGE gVmAfPosixCfgApiTable =
 {
-        .pfnOpenConnection  = &VmAfPosixCfgOpenConnection,
-        .pfnOpenRootKey     = &VmAfPosixCfgOpenRootKey,
-        .pfnOpenKey         = &VmAfPosixCfgOpenKey,
-        .pfnCreateKey       = &VmAfPosixCfgCreateKey,
-        .pfnDeleteKey       = &VmAfPosixCfgDeleteKey,
-        .pfnEnumKeys        = &VmAfPosixCfgEnumKeys,
+//        .pfnOpenConnection  = &VmAfPosixCfgOpenConnection,
+//        .pfnOpenRootKey     = &VmAfPosixCfgOpenRootKey,
+//        .pfnOpenKey         = &VmAfPosixCfgOpenKey,
+//        .pfnCreateKey       = &VmAfPosixCfgCreateKey,
+//        .pfnDeleteKey       = &VmAfPosixCfgDeleteKey,
+//        .pfnEnumKeys        = &VmAfPosixCfgEnumKeys,
         .pfnReadStringValue = &VmAfPosixCfgReadStringValue,
         .pfnReadDWORDValue  = &VmAfPosixCfgReadDWORDValue,
         .pfnSetValue        = &VmAfPosixCfgSetValue,
         .pfnDeleteValue     = &VmAfPosixCfgDeleteValue,
-        .pfnGetSecurity     = &VmAfPosixCfgGetSecurity,
-        .pfnCloseKey        = &VmAfPosixCfgCloseKey,
-        .pfnCloseConnection = &VmAfPosixCfgCloseConnection
+//        .pfnGetSecurity     = &VmAfPosixCfgGetSecurity,
+//        .pfnCloseKey        = &VmAfPosixCfgCloseKey,
+//        .pfnCloseConnection = &VmAfPosixCfgCloseConnection
 };
 
 PVMAF_CFG_PACKAGE gpVmAfPosixCfgApiTable = &gVmAfPosixCfgApiTable;

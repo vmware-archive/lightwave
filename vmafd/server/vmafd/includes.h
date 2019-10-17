@@ -38,7 +38,6 @@
 #include <lwrpcrt/lwrpcrt.h>
 #include <dce/rpc.h>
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 #include <djapi.h>
 #include <lwnet.h>
 #include <lwnet-utils.h>
@@ -54,6 +53,7 @@
 #include <lsa/vmdir-types.h>
 #endif
 
+#include <vmcommonincludes.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
 #include <vmafddefines.h>

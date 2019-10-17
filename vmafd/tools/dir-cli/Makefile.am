@@ -8,6 +8,7 @@ dir_cli_SOURCES = \
 
 dir_cli_CPPFLAGS = \
     -DLDAP_DEPRECATED \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmdir/include/public \
@@ -15,6 +16,7 @@ dir_cli_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 dir_cli_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
     $(top_builddir)/vmafd/common/libcommon.la \
     $(top_builddir)/vmafd/vmafcfg/api/libvmafcfgapi.la \

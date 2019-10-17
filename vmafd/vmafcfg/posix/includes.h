@@ -11,7 +11,7 @@
 #include <vmafdsys.h>
 
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
+#include <vmcommonincludes.h>
 
 #include <vmafd.h>
 #include <vmafddefines.h>

@@ -784,7 +784,6 @@ DirCliEnumerateOrgunits(
 
 DWORD
 DirCliGetStrRegKeyA(
-    PVMAF_CFG_CONNECTION    pConnection,
     PCSTR                   pszKeyPath,
     PCSTR                   pszKeyName,
     PSTR*                   ppszValue

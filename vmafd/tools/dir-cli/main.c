@@ -18,6 +18,27 @@
 
 static
 DWORD
+_VmAfdInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMAFD_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+static
+DWORD
 ParseArgs(
     int   argc,
     char* argv[]
@@ -174,7 +195,7 @@ int _tmain(int argc, _TCHAR* targv[])
 
 #endif /* ifdef _WIN32 */
 
-    dwError = VmAfCfgInit();
+    dwError = _VmAfdInitVmRegConfig();
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = ParseArgs(argc, argv);
@@ -183,6 +204,7 @@ int _tmain(int argc, _TCHAR* targv[])
 cleanup:
 
     VMAFD_SAFE_FREE_STRINGA(pszErrorDesc);
+    VmRegConfigFree();
     return dwError;
 
 error:

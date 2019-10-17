@@ -1905,6 +1905,7 @@ AC_CONFIG_FILES([Makefile
                  vmafd/include/public/Makefile
                  vmafd/config/Makefile
                  vmafd/config/vmafd.reg
+                 vmafd/config/vmafdcfg.yaml
                  vmafd/common/Makefile
                  vmafd/vmnetevent/Makefile
                  vmafd/vmafcfg/Makefile

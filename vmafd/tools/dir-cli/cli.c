@@ -36,7 +36,6 @@ DirCliParsePrincipal(
 static
 DWORD
 DirCliParsePrincipalEx(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR pszLogin,
     PSTR* ppszUser,
     PSTR* ppszDomain
@@ -109,7 +108,6 @@ _DirCliForeResetAdminCreds(
 static
 DWORD
 DirCliLDAPDBBackup(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR   pszServerName,
     PCSTR   pszLogin,
     PCSTR   pszPassword,
@@ -118,43 +116,22 @@ DirCliLDAPDBBackup(
 
 DWORD
 DirCliGetStrRegKeyA(
-    PVMAF_CFG_CONNECTION    pConnection,
     PCSTR                   pszKeyPath,
     PCSTR                   pszKeyName,
     PSTR*                   ppszValue
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
     PSTR pszValue = NULL;
 
-    if (!pConnection || !ppszValue || IsNullOrEmptyString(pszKeyPath) || IsNullOrEmptyString(pszKeyName))
+    if (!ppszValue || IsNullOrEmptyString(pszKeyPath) || IsNullOrEmptyString(pszKeyName))
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfConfigOpenRootKey(
-                pConnection,
-                "HKEY_LOCAL_MACHINE",
-                0,
-                KEY_READ,
-                &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                pConnection,
-                pRootKey,
-                pszKeyPath,
-                0,
-                KEY_READ,
-                &pSubKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = VmAfConfigReadStringValue(
-                pSubKey,
-                NULL,
+                pszKeyPath,
                 pszKeyName,
                 &pszValue);
     BAIL_ON_VMAFD_ERROR(dwError);
@@ -164,16 +141,6 @@ DirCliGetStrRegKeyA(
 
 cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszValue);
-
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
 
     return dwError;
 
@@ -2638,7 +2605,6 @@ error:
 static
 DWORD
 DirCliParsePrincipalEx(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR pszLogin,
     PSTR* ppszUser,
     PSTR* ppszDomain
@@ -2658,20 +2624,8 @@ DirCliParsePrincipalEx(
 
     if (!(pszCursor = strchr(pszLogin, '@')) || !pszCursor++)
     {
-        if (pConnection == NULL)
-        {
-            dwError = VmAfdGetDomainNameA(NULL, &pszDomain);
-            BAIL_ON_VMAFD_ERROR(dwError);
-        }
-        else
-        {
-            dwError = DirCliGetStrRegKeyA(
-                pConnection,
-                VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                VMAFD_REG_KEY_DOMAIN_NAME,
-                &pszDomain);
-            BAIL_ON_VMAFD_ERROR(dwError);
-        }
+        dwError = VmAfdGetDomainNameA(NULL, &pszDomain);
+        BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = VmAfdAllocateStringA(pszLogin, &pszUser);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -2719,7 +2673,7 @@ DirCliParsePrincipal(
     PSTR* ppszDomain
     )
 {
-    return DirCliParsePrincipalEx(NULL, pszLogin, ppszUser, ppszDomain);
+    return DirCliParsePrincipalEx(pszLogin, ppszUser, ppszDomain);
 }
 
 static
@@ -3300,16 +3254,11 @@ DirCliDRNodeRestoreFromDB(
     PSTR    pszDCName = NULL;
     DWORD   dwState = 0;
     PSTR    pszLocalPass = NULL;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
     BOOLEAN bResetPassword = FALSE;
     LDAP*   pLd = NULL;
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     // get DOMAIN from registry
     dwError = DirCliGetStrRegKeyA(
-        pConnection,
         VMAFD_CONFIG_PARAMETER_KEY_PATH,
         VMAFD_REG_KEY_DOMAIN_NAME,
         &pszDomain);
@@ -3317,7 +3266,6 @@ DirCliDRNodeRestoreFromDB(
 
     // get DCName from registry
     dwError = DirCliGetStrRegKeyA(
-        pConnection,
         VMAFD_CONFIG_PARAMETER_KEY_PATH,
         VMAFD_REG_KEY_DC_NAME,
         &pszDCName);
@@ -3390,10 +3338,6 @@ cleanup:
     {
         DirCliLdapClose(pLd);
     }
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
     VMAFD_SAFE_FREE_MEMORY(pszDCName);
     VMAFD_SAFE_FREE_MEMORY(pszDomain);
 
@@ -3412,7 +3356,6 @@ DirCliDBBackup(
     )
 {
     DWORD   dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
     PSTR    pszLocalLogin = NULL;
     PSTR    pszLocalPassword = NULL;
     PSTR    pszDomain = NULL;
@@ -3424,20 +3367,15 @@ DirCliDBBackup(
         BAIL_ON_VMAFD_ERROR(dwError);
     }
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     if (!pszLogin)
     {
         dwError = DirCliGetStrRegKeyA(
-            pConnection,
             VMAFD_VMDIR_CONFIG_KEY_PATH,
             VMAFD_REG_KEY_DC_ACCOUNT,
             &pszLocalLogin);
         BAIL_ON_VMAFD_ERROR(dwError);
 
         dwError = DirCliGetStrRegKeyA(
-            pConnection,
             VMAFD_VMDIR_CONFIG_KEY_PATH,
             VMAFD_REG_KEY_DC_PASSWORD,
             &pszLocalPassword);
@@ -3448,7 +3386,6 @@ DirCliDBBackup(
         if (!pszPassword)
         {
             dwError = DirCliGetStrRegKeyA(
-                pConnection,
                 VMAFD_CONFIG_PARAMETER_KEY_PATH,
                 VMAFD_REG_KEY_DOMAIN_NAME,
                 &pszDomain);
@@ -3460,7 +3397,6 @@ DirCliDBBackup(
     }
 
     dwError = DirCliLDAPDBBackup(
-        pConnection,
         pszLocalServerName,
         pszLogin ? pszLogin : pszLocalLogin,
         pszPassword ? pszPassword : pszLocalPassword,
@@ -3472,10 +3408,7 @@ DirCliDBBackup(
    printf(" --------------------------------------------------------------------------------------\n\n");
 
 cleanup:
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
+
     VMAFD_SAFE_FREE_MEMORY(pszLocalLogin);
     VMAFD_SAFE_FREE_MEMORY(pszLocalPassword);
     VMAFD_SAFE_FREE_MEMORY(pszDomain);
@@ -3492,7 +3425,6 @@ error:
 static
 DWORD
 DirCliLDAPDBBackup(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR   pszServerName,
     PCSTR   pszLogin,
     PCSTR   pszPassword,
@@ -3504,7 +3436,6 @@ DirCliLDAPDBBackup(
     PVMDIR_SERVER_CONTEXT hServer = NULL;
 
      dwError = DirCliGetStrRegKeyA(
-            pConnection,
             VMAFD_CONFIG_PARAMETER_KEY_PATH,
             VMAFD_REG_KEY_DOMAIN_NAME,
             &pszDomain);
@@ -3678,7 +3609,6 @@ DirCliPrintComputers(
 static
 DWORD
 DirCliIsManagementNode(
-    PVMAF_CFG_CONNECTION pConnection,
     BOOLEAN *pbManagementNode
     )
 {
@@ -3686,7 +3616,6 @@ DirCliIsManagementNode(
     PSTR pszDCAccountDN = NULL;
 
     dwError = DirCliGetStrRegKeyA(
-        pConnection,
         VMAFD_VMDIR_CONFIG_KEY_PATH,
         VMAFD_REG_KEY_DC_ACCOUNT_DN,
         &pszDCAccountDN);
@@ -3713,7 +3642,6 @@ error:
 static
 DWORD
 DirCliGetDCNameFromRegistry(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR pszSuppliedServerName, /* OPTIONAL */
     PSTR *ppszServerName
     )
@@ -3729,7 +3657,6 @@ DirCliGetDCNameFromRegistry(
     else
     {
         dwError = DirCliGetStrRegKeyA(
-            pConnection,
             VMAFD_CONFIG_PARAMETER_KEY_PATH,
             VMAFD_REG_KEY_DC_NAME,
             &pszServerName);
@@ -3750,68 +3677,34 @@ error:
 static
 DWORD
 DirCliUpdateLocalPassword(
-    PVMAF_CFG_CONNECTION pConnection,
     PCSTR pszPassword
     )
 {
-    PVMAF_CFG_KEY pRootKey = NULL;
-    PVMAF_CFG_KEY pSubKey = NULL;
     DWORD dwError = 0;
     PSTR pszOldPassword = NULL;
-
-    dwError = VmAfConfigOpenRootKey(
-                pConnection,
-                "HKEY_LOCAL_MACHINE",
-                0,
-                KEY_READ,
-                &pRootKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfConfigOpenKey(
-                pConnection,
-                pRootKey,
-                VMAFD_VMDIR_CONFIG_KEY_PATH,
-                0,
-                KEY_SET_VALUE | KEY_READ,
-                &pSubKey);
-    BAIL_ON_VMAFD_ERROR(dwError);
 
     /*
      * There might not be an existing password so ignore any errors.
      */
     (VOID)VmAfConfigReadStringValue(
-                pSubKey,
-                NULL,
+                VMAFD_VMDIR_CONFIG_KEY_PATH,
                 VMAFD_REG_KEY_DC_PASSWORD,
                 &pszOldPassword);
 
     dwError = VmAfConfigSetValue(
-                pSubKey,
+                VMAFD_VMDIR_CONFIG_KEY_PATH,
                 VMAFD_REG_KEY_DC_PASSWORD,
-                REG_SZ,
-                (PBYTE)pszPassword,
-                (DWORD)strlen(pszPassword) + 1);
+                pszPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = VmAfConfigSetValue(
-                pSubKey,
+                VMAFD_VMDIR_CONFIG_KEY_PATH,
                 VMAFD_REG_KEY_DC_OLD_PASSWORD,
-                REG_SZ,
-                (PBYTE)pszOldPassword,
-                (DWORD)strlen(pszOldPassword) + 1);
+                pszOldPassword);
     BAIL_ON_VMAFD_ERROR(dwError);
 
 cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszOldPassword);
-    if (pSubKey)
-    {
-        VmAfConfigCloseKey(pSubKey);
-    }
-
-    if (pRootKey)
-    {
-        VmAfConfigCloseKey(pRootKey);
-    }
 
     return dwError;
 
@@ -3893,7 +3786,6 @@ DirCliMachineAccountReset(
 {
     DWORD dwError = 0;
     BOOLEAN bManagementNode = FALSE;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
     PSTR pszMachineAccount = NULL;
     PSTR pszServerName = NULL;
     PSTR pszLoginUPN = NULL;
@@ -3902,20 +3794,15 @@ DirCliMachineAccountReset(
     PBYTE pBytePassword = NULL;
     DWORD dwPasswordSize = 0;
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = DirCliIsManagementNode(pConnection, &bManagementNode);
+    dwError = DirCliIsManagementNode(&bManagementNode);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliGetDCNameFromRegistry(
-                pConnection,
                 pszSuppliedServerName,
                 &pszServerName);
     BAIL_ON_VMAFD_ERROR(dwError);
 
     dwError = DirCliGetStrRegKeyA(
-                pConnection,
                 VMAFD_VMDIR_CONFIG_KEY_PATH,
                 VMAFD_REG_KEY_DC_ACCOUNT,
                 &pszMachineAccount);
@@ -3926,7 +3813,6 @@ DirCliMachineAccountReset(
      * re-constructing.
      */
     dwError = DirCliParsePrincipalEx(
-                pConnection,
                 pszLogin,
                 &pszUser,
                 &pszDomain);
@@ -3958,7 +3844,7 @@ DirCliMachineAccountReset(
                     (PSTR)pBytePassword);
         BAIL_ON_VMAFD_ERROR(dwError);
 
-        dwError = DirCliUpdateLocalPassword(pConnection, (PSTR)pBytePassword);
+        dwError = DirCliUpdateLocalPassword((PSTR)pBytePassword);
         BAIL_ON_VMAFD_ERROR(dwError);
     }
     else
@@ -3982,11 +3868,6 @@ cleanup:
     VMAFD_SAFE_FREE_STRINGA(pszDomain);
     VMAFD_SAFE_FREE_STRINGA(pszLoginUPN);
     VMAFD_SAFE_FREE_MEMORY(pBytePassword);
-
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 

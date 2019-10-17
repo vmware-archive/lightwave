@@ -111,6 +111,7 @@ extern "C" {
 #define ERROR_CANNOT_CONNECT_VMAFD      1021
 #define ERROR_CANNOT_PREJOIN_USING_REST 1022
 #define ERROR_FAILED_SET_INSECURE_FLAG  1023
+#define ERROR_DEPRECATED_FUNCTION       1024
 
 // oidc sso errors
 #define VMAFD_SSOERROR_NONE                                     0

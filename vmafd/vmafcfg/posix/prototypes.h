@@ -67,7 +67,6 @@ VmAfPosixCfgEnumKeys(
 
 DWORD
 VmAfPosixCfgReadStringValue(
-    PVMAF_CFG_KEY       pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
@@ -75,7 +74,6 @@ VmAfPosixCfgReadStringValue(
 
 DWORD
 VmAfPosixCfgReadDWORDValue(
-    PVMAF_CFG_KEY       pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
@@ -83,17 +81,15 @@ VmAfPosixCfgReadDWORDValue(
 
 DWORD
 VmAfPosixCfgSetValue(
-	PVMAF_CFG_KEY       pKey,
-	PCSTR               pszValue,
-	DWORD               dwType,
-	PBYTE               pValue,
-	DWORD               dwSize
+    PCSTR               pszSubkey,
+    PCSTR               pszName,
+    PCSTR               pszValue
 	);
 
 DWORD
 VmAfPosixCfgDeleteValue(
-	PVMAF_CFG_KEY       pKey,
-	PCSTR               pszValue
+    PCSTR               pszSubkey,
+    PCSTR               pszName
 	);
 
 DWORD

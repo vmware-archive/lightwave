@@ -4563,14 +4563,9 @@ _DirCliRegKeyUserIdAttr(
     )
 {
     DWORD dwError = 0;
-    PVMAF_CFG_CONNECTION pConnection = NULL;
     PSTR  pszUserIdAttr = NULL;
 
-    dwError = VmAfConfigOpenConnection(&pConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
     dwError = DirCliGetStrRegKeyA(
-        pConnection,
         VMAFD_VMDIR_CONFIG_PARAMETER_KEY_PATH,
         VMDIR_REG_KEY_USER_ID_ATTRIBUTE,
         &pszUserIdAttr);
@@ -4581,10 +4576,6 @@ _DirCliRegKeyUserIdAttr(
 
 error:
     VMAFD_SAFE_FREE_MEMORY(pszUserIdAttr);
-    if (pConnection)
-    {
-        VmAfConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 }

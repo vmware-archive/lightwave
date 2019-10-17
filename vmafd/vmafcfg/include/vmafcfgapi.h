@@ -57,31 +57,27 @@ typedef DWORD (*PFN_VMAF_CFG_ENUM_KEYS)(
                     );
 
 typedef DWORD (*PFN_VMAF_CFG_READ_STRING_VALUE)(
-                    PVMAF_CFG_KEY        pKey,
                     PCSTR                pszSubkey,
                     PCSTR                pszName,
                     PSTR*                ppszValue
                     );
 
 typedef DWORD (*PFN_VMAF_CFG_READ_DWORD_VALUE)(
-                    PVMAF_CFG_KEY        pKey,
                     PCSTR                pszSubkey,
                     PCSTR                pszName,
                     PDWORD               pdwValue
                     );
 
 typedef DWORD (*PFN_VMAF_CFG_SET_VALUE)(
-					PVMAF_CFG_KEY        pKey,
-					PCSTR                pszValue,
-					DWORD                dwType,
-					PBYTE                pValue,
-					DWORD                dwSize
-					);
+                    PCSTR                pszSubkey,
+                    PCSTR                pszName,
+                    PCSTR                pszValue
+                    );
 
 typedef DWORD (*PFN_VMAF_CFG_DELETE_VALUE)(
-					PVMAF_CFG_KEY        pKey,
-					PCSTR                pszValue
-					);
+                    PCSTR                pszSubkey,
+                    PCSTR                pszName
+                    );
 
 typedef DWORD (*PFN_VMAF_CFG_GET_SECURITY)(
                                         PVMAF_CFG_KEY        pKey,
@@ -98,19 +94,19 @@ typedef VOID (*PFN_VMAF_CFG_CLOSE_CONNECTION)(
 
 typedef struct _VMAF_CFG_PACKAGE
 {
-    PFN_VMAF_CFG_OPEN_CONNECTION   pfnOpenConnection;
-    PFN_VMAF_CFG_OPEN_ROOT_KEY     pfnOpenRootKey;
-    PFN_VMAF_CFG_OPEN_KEY          pfnOpenKey;
-    PFN_VMAF_CFG_CREATE_KEY        pfnCreateKey;
-    PFN_VMAF_CFG_DELETE_KEY        pfnDeleteKey;
-    PFN_VMAF_CFG_ENUM_KEYS         pfnEnumKeys;
+//    PFN_VMAF_CFG_OPEN_CONNECTION   pfnOpenConnection;
+//    PFN_VMAF_CFG_OPEN_ROOT_KEY     pfnOpenRootKey;
+//    PFN_VMAF_CFG_OPEN_KEY          pfnOpenKey;
+//    PFN_VMAF_CFG_CREATE_KEY        pfnCreateKey;
+//    PFN_VMAF_CFG_DELETE_KEY        pfnDeleteKey;
+//    PFN_VMAF_CFG_ENUM_KEYS         pfnEnumKeys;
     PFN_VMAF_CFG_READ_STRING_VALUE pfnReadStringValue;
     PFN_VMAF_CFG_READ_DWORD_VALUE  pfnReadDWORDValue;
     PFN_VMAF_CFG_SET_VALUE         pfnSetValue;
     PFN_VMAF_CFG_DELETE_VALUE      pfnDeleteValue;
-    PFN_VMAF_CFG_GET_SECURITY      pfnGetSecurity;
-    PFN_VMAF_CFG_CLOSE_KEY         pfnCloseKey;
-    PFN_VMAF_CFG_CLOSE_CONNECTION  pfnCloseConnection;
+//    PFN_VMAF_CFG_GET_SECURITY      pfnGetSecurity;
+//    PFN_VMAF_CFG_CLOSE_KEY         pfnCloseKey;
+//    PFN_VMAF_CFG_CLOSE_CONNECTION  pfnCloseConnection;
 
 } VMAF_CFG_PACKAGE, *PVMAF_CFG_PACKAGE;
 

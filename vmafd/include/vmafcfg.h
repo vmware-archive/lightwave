@@ -18,8 +18,8 @@
 extern "C" {
 #endif
 
-typedef struct _VMAF_CFG_CONNECTION* PVMAF_CFG_CONNECTION;
-typedef struct _VMAF_CFG_KEY*        PVMAF_CFG_KEY;
+typedef struct _VMAF_CFG_CONNECTION* PVMAF_CFG_CONNECTION;      // SUNG cleanup
+typedef struct _VMAF_CFG_KEY*        PVMAF_CFG_KEY;             // SUNG cleanup
 
 DWORD
 VmAfCfgInit(
@@ -77,7 +77,6 @@ VmAfConfigEnumKeys(
 
 DWORD
 VmAfConfigReadStringValue(
-    PVMAF_CFG_KEY        pKey,
     PCSTR                pszSubkey,
     PCSTR                pszName,
     PSTR*                ppszValue
@@ -85,7 +84,6 @@ VmAfConfigReadStringValue(
 
 DWORD
 VmAfConfigReadDWORDValue(
-    PVMAF_CFG_KEY       pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
@@ -93,16 +91,14 @@ VmAfConfigReadDWORDValue(
 
 DWORD
 VmAfConfigSetValue(
-	PVMAF_CFG_KEY       pKey,
+    PCSTR               pszSubkey,
 	PCSTR               pszName,
-	DWORD               dwType,
-	PBYTE               pValue,
-	DWORD               dwSize
+	PCSTR               pszValue
 	);
 
 DWORD
 VmAfConfigDeleteValue(
-	PVMAF_CFG_KEY       pKey,
+    PCSTR               pszSubkey,
 	PCSTR               pszName
 	);
 
