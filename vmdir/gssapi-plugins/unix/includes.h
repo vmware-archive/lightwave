@@ -19,7 +19,6 @@
 #ifndef _WIN32
 #include <lw/types.h>
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 #else
 #include <Windows.h>
 #define snprintf _snprintf

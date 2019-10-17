@@ -28,6 +28,27 @@ VmDirSetEnvironment(
     VOID
 );
 
+static
+DWORD
+_VmDirInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 int
 main(
    int     argc,
@@ -43,6 +64,9 @@ main(
     BOOLEAN      bVmDirInit = FALSE;
     BOOLEAN      bShutdownKDCService = FALSE;
     BOOLEAN      bWaitTimeOut = FALSE;
+
+    dwError = _VmDirInitVmRegConfig();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSrvUpdateConfig();
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -136,6 +160,7 @@ cleanup:
 
     VmDirSrvFreeConfig();
 
+    VmRegConfigFree();
 done:
     return dwError;
 

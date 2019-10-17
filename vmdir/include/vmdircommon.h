@@ -1112,11 +1112,6 @@ typedef enum
 #define VMDIR_CONFIG_PARAMETER_KEY_PATH     "Services\\Vmdir"
 #define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "Services\\Vmdir\\Parameters"
 #define VMDIR_LINUX_DB_PATH                 VMDIR_DB_DIR "/"
-#else
-#define VMDIR_CONFIG_PARAMETER_KEY_PATH     "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService"
-#define VMDIR_CONFIG_PARAMETER_V1_KEY_PATH  "SYSTEM\\CurrentControlSet\\services\\VMWareDirectoryService\\Parameters"
-#define VMDIR_CONFIG_SOFTWARE_KEY_PATH      "SOFTWARE\\VMware, Inc.\\VMware Directory Services"
-#define WIN_SYSTEM32_PATH                   "c:\\windows\\system32"
 #endif
 
 #ifndef _WIN32
@@ -2856,8 +2851,7 @@ DWORD
 VmDirSetRegKeyValueString(
     PCSTR pszConfigParamKeyPath,
     PCSTR pszKey,
-    PCSTR pszValue,
-    DWORD dwLength /* Should not include +1 for terminating null */
+    PCSTR pszValue
     );
 
 DWORD
@@ -2958,6 +2952,12 @@ VmDirConfigSetSZKey(
     PCSTR pszKeyPath,
     PCSTR pszKeyName,
     PCSTR pszKeyValue
+    );
+
+DWORD
+VmDirConfigDeleteKey(
+    PCSTR pszKeyPath,
+    PCSTR pszKeyName
     );
 
 // mergesort.c

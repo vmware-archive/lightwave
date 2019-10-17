@@ -50,8 +50,9 @@
 #include <lwrpcrt/lwrpcrt.h>
 #include <dce/rpc.h>
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 #include <lwstr.h>
+
+#include <vmregconfig.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>

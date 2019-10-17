@@ -31,7 +31,6 @@ libcommonunittests_la_LIBADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \
@@ -42,6 +41,7 @@ libcommonunittests_la_LIBADD = \
 
 libcommonunittests_la_LDFLAGS = \
     -export-symbols @top_srcdir@/vmdir/testing/unittests/libcommon/libcommonunittests.exp \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @DCERPC_LDFLAGS@ \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

@@ -51,6 +51,7 @@ libvmdird_la_SOURCES = \
 
 libvmdird_la_CPPFLAGS = \
     -g \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/openldap/include \
@@ -93,7 +94,6 @@ libvmdird_la_LIBADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @LWADVAPI_LIBS@ \
     @GSSAPI_LIBS@ \

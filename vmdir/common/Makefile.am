@@ -62,6 +62,7 @@ libcommon_la_SOURCES = \
 libcommon_la_CPPFLAGS = \
     -DOPENSSL_NO_KRB5 \
     -DLDAP_DEPRECATED \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/thirdparty/heimdal \
@@ -72,4 +73,5 @@ libcommon_la_CPPFLAGS = \
 
 libcommon_la_LDFLAGS = \
     -static \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @OPENSSL_LDFLAGS@

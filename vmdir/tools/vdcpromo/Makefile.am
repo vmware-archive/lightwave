@@ -5,6 +5,7 @@ vdcvmdirpromo_SOURCES = \
     main.c
 
 vdcvmdirpromo_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     @DCERPC_INCLUDES@ \
@@ -19,7 +20,6 @@ vdcvmdirpromo_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \

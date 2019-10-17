@@ -1,0 +1,15 @@
+vmdir:
+    Description: "VMware Directory Service"
+    User: "lightwave"
+    Group: "lightwave"
+
+    Parameters:
+        AllowInsecureAuthentication: "0"
+        KerberosPort: "88"
+        KdcClockSkew: "300"
+        KdcMaxLife: "28800"
+        KdcMaxRenewableLife: "604800"
+        EnableLdapCopy: "1"
+        MdbEnableWal: "1"
+        EnableRename: "0"
+        SslDisabledProtocols: "TLSv1\nTLSv1.1\n"

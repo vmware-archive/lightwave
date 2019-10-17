@@ -714,38 +714,13 @@ VmDirSetupHostInstanceTrust(
     )
 {
     DWORD   dwError = 0;
-    UCHAR   pszDCAccountPassword[VMDIR_KDC_RANDOM_PWD_LEN+1] = {0};
     PSTR    pszLotusServerNameCanon = NULL;
-    int     err = 0;
-    int     i = 0;
     PVM_DIR_CONNECTION pIPCConnection = NULL;
 
     if (VmDirOpenClientConnection(&pIPCConnection) != 0)
     {   // VMDIR is not listen on IPC port
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_UNAVAILABLE);
     }
-
-    // Generate an initial DC account password and store it in the registry.
-
-    err = RAND_pseudo_bytes(pszDCAccountPassword, VMDIR_KDC_RANDOM_PWD_LEN);
-    if (err != 1)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_PASSWORD_HASH);
-    }
-    for (i=0; i<VMDIR_KDC_RANDOM_PWD_LEN; i++)
-    {
-        pszDCAccountPassword[i] &= 0x7f;
-        if (pszDCAccountPassword[i] < 0x30)
-        {
-            pszDCAccountPassword[i] += 0x30;
-        }
-    }
-    pszDCAccountPassword[VMDIR_KDC_RANDOM_PWD_LEN] = '\0';
-
-    dwError = VmDirConfigSetDCAccountPassword(
-                        (PCSTR) pszDCAccountPassword,
-                        (DWORD) VmDirStringLenA((PCSTR) pszDCAccountPassword));
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     // Determine the name of lotus server
     dwError = VmDirGetLotusServerName( pszLotusServerName ? pszLotusServerName : "localhost",

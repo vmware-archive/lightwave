@@ -31,7 +31,6 @@ typedef void *VMCISLIB_BIND_T;
 #include <krb5.h>
 
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 
 #else //_ WIN32
 

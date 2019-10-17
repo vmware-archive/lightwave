@@ -31,6 +31,7 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
+#include <vmregconfig.h>
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>

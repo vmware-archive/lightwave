@@ -1839,6 +1839,7 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/main/Makefile
                  vmdir/client/Makefile
                  vmdir/config/vmdir.reg
+                 vmdir/config/vmdircfg.yaml
                  vmdir/testing/Makefile
                  vmdir/testing/query/Makefile
                  vmdir/testing/kerberos/Makefile

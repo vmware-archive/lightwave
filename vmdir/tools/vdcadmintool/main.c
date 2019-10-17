@@ -15,12 +15,35 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-int main(int argc, char* argv[])
-#else
-int _tmain(int argc, TCHAR *targv[])
-#endif
+static
+DWORD
+_VmDirInitVmRegConfig(
+    VOID
+    )
 {
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
+int main(int argc, char* argv[])
+{
+    if (_VmDirInitVmRegConfig())
+    {
+        printf("VmRegConfigInit failed\n");
+        goto cleanup;
+    }
+
     while (1)
     {
         CHAR pszChoice[16] = { '\0' };
@@ -96,6 +119,7 @@ int _tmain(int argc, TCHAR *targv[])
 
 cleanup:
 
+    VmRegConfigFree();
     return 0;
 
 }

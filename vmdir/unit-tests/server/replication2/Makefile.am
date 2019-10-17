@@ -59,7 +59,6 @@ replication2_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @LWADVAPI_LIBS@ \
     @GSSAPI_LIBS@ \

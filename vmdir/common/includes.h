@@ -35,6 +35,7 @@
 #include <sys/ucred.h>
 #endif
 
+#include <vmregconfig.h>
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
@@ -48,7 +49,6 @@
 #include "defines.h"
 
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 
 #else
 

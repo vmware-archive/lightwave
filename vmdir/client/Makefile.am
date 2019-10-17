@@ -47,7 +47,6 @@ libvmdirclient_la_LIBADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \

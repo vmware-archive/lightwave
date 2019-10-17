@@ -6,6 +6,7 @@ vdcadmintool_SOURCES = \
     util.c
 
 vdcadmintool_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     -I$(top_srcdir)/vmdir/tools/include \
@@ -16,6 +17,7 @@ vdcadmintool_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 vdcadmintool_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmdir/common/libcommon.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     @DCERPC_LIBS@ \
@@ -23,7 +25,6 @@ vdcadmintool_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \

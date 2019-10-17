@@ -28,5 +28,6 @@ krb5keys_test_LDADD = \
     @PTHREAD_LIBS@
 
 krb5keys_test_LDFLAGS = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @OPENSSL_LDFLAGS@ \
     @LW_LDFLAGS@

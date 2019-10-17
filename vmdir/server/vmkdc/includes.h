@@ -33,7 +33,6 @@
 #include <sys/resource.h>
 #include <lwrpcrt/lwrpcrt.h>
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 
 #include <net/if.h>
 #include <ifaddrs.h>

@@ -34,47 +34,35 @@ VmDirMain(
     char* argv[]
     );
 
-#ifdef _WIN32
-
-int wmain(int argc, wchar_t* argv[])
+static
+DWORD
+_VmDirInitVmRegConfig(
+    VOID
+    )
 {
-	DWORD dwError = 0;
-    PSTR* ppszArgs = NULL;
-	int   iArg = 0;
+    DWORD   dwError = 0;
 
-	dwError = VmDirAllocateMemory(sizeof(PSTR) * argc, (PVOID*)&ppszArgs);
-	BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-	for (; iArg < argc; iArg++)
-	{
-		dwError = VmDirAllocateStringAFromW(argv[iArg], &ppszArgs[iArg]);
-		BAIL_ON_VMDIR_ERROR(dwError);
-	}
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
 
-	dwError = VmDirMain(argc, ppszArgs);
-	BAIL_ON_VMDIR_ERROR(dwError);
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    return dwError;
 
 error:
-
-	if (ppszArgs)
-	{
-		for (iArg = 0; iArg < argc; iArg++)
-		{
-			VMDIR_SAFE_FREE_MEMORY(ppszArgs[iArg]);
-		}
-		VmDirFreeMemory(ppszArgs);
-	}
-
-	return dwError;
+    VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL, "%s failed (%d)", __FUNCTION__, dwError);
+    goto cleanup;
 }
-#else
 
 int main(int argc, char* argv[])
 {
 	return VmDirMain(argc, argv);
 }
-
-#endif
 
 static
 int VmDirMain(int argc, char* argv[])
@@ -101,6 +89,9 @@ int VmDirMain(int argc, char* argv[])
 #ifndef _WIN32
     setlocale(LC_ALL, "");
 #endif
+
+    dwError = _VmDirInitVmRegConfig();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirGetVmDirLogPath(pszPath, "vdcpromo.log");
     BAIL_ON_VMDIR_ERROR(dwError);
@@ -214,6 +205,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszPasswordBuf);
     VMDIR_SAFE_FREE_MEMORY(pszErrorMessage);
     VmDirLogTerminate();
+    VmRegConfigFree();
     VMDIR_SAFE_FREE_MEMORY(pszPartnerHostNameCanon);
 
     return dwError > 255 ? 255 : dwError;
