@@ -549,6 +549,8 @@ users.
     # First argument is 1 => New Installation
     # First argument is 2 => Upgrade
 
+    chown -R lightwave:lightwave %{_configdir}
+
     # config firewall service for server/post
 
     if [ ! -f /.dockerenv ]; then
@@ -1275,7 +1277,7 @@ users.
 
 %files server
 
-%defattr(-,root,root,0755)
+%defattr(-,lightwave,lightwave,0755)
 
 %{_bindir}/ic-promote
 %{_bindir}/configure-lightwave-server
@@ -1306,12 +1308,14 @@ users.
 %{_lib64dir}/libvmdirmdb.so*
 
 %{_datadir}/config/vmca.reg
+%{_datadir}/config/vmcacfg.yaml
 %{_datadir}/config/vmcad-syslog-ng.conf
 %{_datadir}/config/vmca-rest-v2.json
 %{_datadir}/config/vmca-telegraf.conf
 
 %{_datadir}/config/saslvmdird.conf
 %{_datadir}/config/vmdir.reg
+%{_datadir}/config/vmdircfg.yaml
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
 %{_datadir}/config/vmdir-rest.json
@@ -1319,6 +1323,7 @@ users.
 %{_datadir}/config/vmdir-telegraf.conf
 
 %{_datadir}/config/vmdns.reg
+%{_datadir}/config/vmdnscfg.yaml
 %{_datadir}/config/vmdns-rest.json
 %{_datadir}/config/vmdnsd-syslog-ng.conf
 %{_datadir}/config/vmdns-telegraf.conf
@@ -1328,7 +1333,7 @@ users.
 
 %files client
 
-%defattr(-,root,root)
+%defattr(-,lightwave,lightwave)
 
 %{_bindir}/ic-join
 %{_bindir}/lightwave
@@ -1379,6 +1384,7 @@ users.
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
 %{_datadir}/config/vmafd.reg
+%{_datadir}/config/vmafdcfg.yaml
 %{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/telegraf.conf

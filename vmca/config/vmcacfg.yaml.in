@@ -2,6 +2,7 @@ vmca:
     Description: "VMware Certificate Service"
     User: "lightwave"
     Group: "lightwave"
+    ServerOption: "1"
 
     Parameters:
         RootCert: "@VMCA_DB_DIR@/root.cer"
