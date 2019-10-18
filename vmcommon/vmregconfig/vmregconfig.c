@@ -64,8 +64,8 @@ VmRegConfigFree(
  */
 DWORD
 VmRegConfigAddFile(
-    PCSTR                   pszFileName,
-    BOOLEAN                 bReadOnly
+    PCSTR               pszFileName,
+    BOOLEAN             bReadOnly
     )
 {
     DWORD dwError = 0;
@@ -130,7 +130,7 @@ error:
  */
 DWORD
 VmRegConfigDeleteFile(
-    PCSTR                   pszFileName
+    PCSTR               pszFileName
     )
 {
     DWORD dwError = 0;
@@ -197,9 +197,9 @@ VmRegConfigMergeFile(
  */
 DWORD
 VmRegConfigGetKeyA(
-    PCSTR                   pszKeyName,
-    PSTR                    pszValue,     /* out */
-    size_t*                 piValueSize  /* in/out */
+    PCSTR               pszKeyName,
+    PSTR                pszValue,     /* out */
+    size_t*             piValueSize  /* in/out */
     )
 {
     DWORD dwError = 0;
@@ -255,9 +255,9 @@ error:
  */
 DWORD
 VmRegConfigGetMultiSZKeyA(
-    PCSTR                   pszKeyName,
-    PSTR                    pszValue,     /* out */
-    size_t*                 piValueSize   /* in/out */
+    PCSTR               pszKeyName,
+    PSTR                pszValue,     /* out */
+    size_t*             piValueSize   /* in/out */
     )
 {
     DWORD dwError = 0;
@@ -286,9 +286,9 @@ error:
  */
 DWORD
 VmRegConfigSetMultiSZKeyA(
-    PCSTR                   pszKeyName,
-    PCSTR                   pszValue,
-    size_t                  iValueSize
+    PCSTR               pszKeyName,
+    PCSTR               pszValue,
+    size_t              iValueSize
     )
 {
     DWORD   dwError = 0;
@@ -329,9 +329,9 @@ error:
  */
 DWORD
 VmRegConfigSetKeyA(
-    PCSTR                   pszKeyName,
-    PCSTR                   pszValue,
-    size_t                  iValueSize
+    PCSTR               pszKeyName,
+    PCSTR               pszValue,
+    size_t              iValueSize
     )
 {
     DWORD dwError = 0;
@@ -408,7 +408,7 @@ error:
  */
 DWORD
 VmRegConfigDeleteKeyA(
-    PCSTR                   pszKeyName
+    PCSTR               pszKeyName
     )
 {
     DWORD dwError = 0;

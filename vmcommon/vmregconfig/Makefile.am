@@ -3,6 +3,7 @@ noinst_LTLIBRARIES = libvmregconfig.la
 libvmregconfig_la_SOURCES = \
     globals.c \
     vmregconfig.c \
+    vmregcfgwrapper.c \
     readinternal.c \
     writeinternal.c \
     util.c

@@ -45,11 +45,23 @@ VmRegConfigFree(
 
 /*
  * merge new into current config
+ * TBD
  */
 DWORD
 VmRegConfigMergeFile(
-    PCSTR    pszCurrentFileName,
-    PCSTR    pszNewFileName
+    PCSTR               pszCurrentFileName,
+    PCSTR               pszNewFileName
+    );
+
+/*
+ * merge new into current config
+ * TBD
+ */
+DWORD
+VmRegConfigMergeKey(
+    PCSTR               pszCurrentFileName,
+    PCSTR               pszKey,
+    PCSTR               pszValue
     );
 
 /*
@@ -57,8 +69,8 @@ VmRegConfigMergeFile(
  */
 DWORD
 VmRegConfigAddFile(
-    PCSTR                   pszFileName,
-    BOOLEAN                 bReadOnly
+    PCSTR               pszFileName,
+    BOOLEAN             bReadOnly
     );
 
 /*
@@ -66,15 +78,7 @@ VmRegConfigAddFile(
  */
 DWORD
 VmRegConfigDeleteFile(
-    PCSTR                   pszFileName
-    );
-
-/*
- * set key prefix
- */
-DWORD
-VmRegConfigSetKeyPrefix(
-    PCSTR                 pszKeyPrefix
+    PCSTR               pszFileName
     );
 
 /*
@@ -102,9 +106,9 @@ VmRegConfigGetMultiSZKeyA(
  */
 DWORD
 VmRegConfigSetMultiSZKeyA(
-    PCSTR                   pszKeyName,
-    PCSTR                   pszValue,
-    size_t                  iValueSize
+    PCSTR               pszKeyName,
+    PCSTR               pszValue,
+    size_t              iValueSize
     );
 
 /*
@@ -122,7 +126,81 @@ VmRegConfigSetKeyA(
  */
 DWORD
 VmRegConfigDeleteKeyA(
-    PCSTR                 pszKeyName
+    PCSTR               pszKeyName
     );
+
+/*
+ * wrapper get string key
+ */
+DWORD
+VmRegCfgGetKeyStringA(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    PSTR                pszValue,
+    size_t              iValueLen
+    );
+
+/*
+ * wrapper get multisz key
+ */
+DWORD
+VmRegCfgGetKeyMultiSZA(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    PSTR                pszValue,     /* out */
+    size_t*             piValueSize   /* in/out */
+    );
+
+/*
+ * wrapper get dword key
+ */
+DWORD
+VmRegCfgGetKeyDword(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    PDWORD              pdwValue,
+    DWORD               dwDefault
+    );
+
+/*
+ * wrapper set string key
+ */
+DWORD
+VmRegCfgSetKeyStringA(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    PCSTR               pszValue
+    );
+
+/*
+ * wrapper set multisz key
+ */
+DWORD
+VmRegCfgSetKeyMultiSZA(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    PCSTR               pszValue,
+    size_t              iValueSize
+    );
+
+/*
+ * wrapper set dword key
+ */
+DWORD
+VmRegCfgSetKeyDword(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName,
+    DWORD               dwValue
+    );
+
+/*
+ * wrapper delete key
+ */
+DWORD
+VmRegCfgDeleteKeyA(
+    PCSTR               pszSubKey,
+    PCSTR               pszKeyName
+    );
+
 
 #endif /* VM_REGCONFIG_H_ */
