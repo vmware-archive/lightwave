@@ -86,6 +86,10 @@ extern time_t expire;
 
 #define VMCA_OPTION_MULTIPLE_SAN            "multiplesan"
 
+#define VMREGCONFIG_VMDIR_REG_CONFIG_FILE               "/opt/vmware/share/config/vmdircfg.yaml"
+#define VMREGCONFIG_VMAFD_REG_CONFIG_FILE               "/opt/vmware/share/config/vmafdcfg.yaml"
+#define VMREGCONFIG_VMCA_REG_CONFIG_FILE                "/opt/vmware/share/config/vmcacfg.yaml"
+
 enum VMCA_FILE_ENCODING
 {
     VMCA_FILE_ENCODING_UTF8,

@@ -1,0 +1,8 @@
+vmca:
+    Description: "VMware Certificate Service"
+    User: "lightwave"
+    Group: "lightwave"
+
+    Parameters:
+        RootCert: "@VMCA_DB_DIR@/root.cer"
+        RootPrivateKey: "@VMCA_DB_DIR@/privatekey.pem"

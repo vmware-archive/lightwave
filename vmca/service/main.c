@@ -19,7 +19,8 @@ PrintCurrentState(
     VOID
     );
 
-static DWORD
+static
+DWORD
 VMCAParseArgs(
     int argc,
     char* argv[],
@@ -62,6 +63,30 @@ error:
     return dwError;
 }
 
+static
+DWORD
+VMCAInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMCA_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 int
 main(
     int   argc,
@@ -95,6 +120,9 @@ main(
     {
         gVMCALogType = VMCA_LOG_TYPE_FILE;
     }
+
+    dwError = VMCAInitVmRegConfig();
+    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError  = VMCAInitialize(0, 0);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -142,6 +170,7 @@ main(
 
 cleanup:
 
+    VmRegConfigFree();
     VMCAShutdown();
 #ifdef REST_ENABLED
 #ifndef _WIN32

@@ -1943,6 +1943,7 @@ AC_CONFIG_FILES([Makefile
                  vmca/include/public/Makefile
                  vmca/config/Makefile
                  vmca/config/vmca.reg
+                 vmca/config/vmcacfg.yaml
                  vmca/common/Makefile
                  vmca/service/Makefile
                  vmca/service/common/Makefile

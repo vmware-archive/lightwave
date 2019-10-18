@@ -59,9 +59,6 @@ typedef char const       *LPCSTR;
 
 typedef struct _VMCA_LDAP_CONTEXT*  PVMCA_LDAP_CONTEXT;
 
-typedef struct _VMW_CFG_CONNECTION* PVMW_CFG_CONNECTION;
-typedef struct _VMW_CFG_KEY*        PVMW_CFG_KEY;
-
 #define FILE_EXISTS 1
 #define FILE_DOES_NOT_EXIST 0
 
@@ -1453,32 +1450,7 @@ VMCAOpenVmAfdClientLib(
 //
 
 DWORD
-VmwConfigOpenConnection(
-    PVMW_CFG_CONNECTION* ppConnection
-    );
-
-DWORD
-VmwConfigOpenRootKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PCSTR               pszKeyName,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    );
-
-DWORD
-VmwConfigOpenKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PVMW_CFG_KEY        pKey,
-    PCSTR               pszSubKey,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    );
-
-DWORD
 VmwConfigReadStringValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
@@ -1486,7 +1458,6 @@ VmwConfigReadStringValue(
 
 DWORD
 VmwConfigReadStringArrayValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwNumValues,
@@ -1495,20 +1466,9 @@ VmwConfigReadStringArrayValue(
 
 DWORD
 VmwConfigReadDWORDValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
-    );
-
-VOID
-VmwConfigCloseKey(
-    PVMW_CFG_KEY pKey
-    );
-
-VOID
-VmwConfigCloseConnection(
-    PVMW_CFG_CONNECTION pConnection
     );
 
 DWORD

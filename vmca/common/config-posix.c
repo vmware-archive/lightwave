@@ -16,173 +16,25 @@
 
 #include "includes.h"
 
-static
-PVMW_CFG_CONNECTION
-VmwPosixCfgAcquireConnection(
-    PVMW_CFG_CONNECTION pConnection
-    );
-
-static
-VOID
-VmwPosixCfgFreeConnection(
-    PVMW_CFG_CONNECTION pConnection
-    );
-
-DWORD
-VmwPosixCfgOpenRootKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PCSTR               pszKeyName,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    )
-{
-    DWORD dwError = 0;
-    PVMW_CFG_KEY pKey = NULL;
-
-    if (!pConnection || IsNullOrEmptyString(pszKeyName) || !ppKey)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-    if (strcmp(pszKeyName, "HKEY_LOCAL_MACHINE"))
-    {
-        dwError = ERROR_NOT_SUPPORTED;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-    dwError = VmwPosixCfgOpenKey(
-                    pConnection,
-                    NULL,
-                    "HKEY_THIS_MACHINE",
-                    dwOptions,
-                    dwAccess,
-                    &pKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    *ppKey = pKey;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    if (ppKey)
-    {
-        *ppKey = NULL;
-    }
-
-//    if (pKey)
-//    {
-//        VmwPosixCfgCloseKey(pKey);
-//    }
-
-    goto cleanup;
-}
-
-DWORD
-VmwPosixCfgOpenConnection(
-    PVMW_CFG_CONNECTION* ppConnection
-    )
-{
-    DWORD dwError = 0;
-    PVMW_CFG_CONNECTION pConnection = NULL;
-
-    dwError = VMCAAllocateMemory(sizeof(*pConnection), (PVOID*)&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    pConnection->refCount = 1;
-
-    dwError = RegOpenServer(&pConnection->hConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    *ppConnection = pConnection;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    *ppConnection = NULL;
-
-    if (pConnection)
-    {
-        VmwPosixCfgCloseConnection(pConnection);
-    }
-
-    goto cleanup;
-}
-
-DWORD
-VmwPosixCfgOpenKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PVMW_CFG_KEY        pKey,
-    PCSTR               pszSubKey,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    )
-{
-    DWORD dwError = 0;
-    PVMW_CFG_KEY pKeyLocal = NULL;
-
-    dwError = VMCAAllocateMemory(sizeof(*pKeyLocal), (PVOID*)&pKeyLocal);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                    pConnection->hConnection,
-                    (pKey ? pKey->hKey : NULL),
-                    pszSubKey,
-                    dwOptions,
-                    dwAccess,
-                    &pKeyLocal->hKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    pKeyLocal->pConnection = VmwPosixCfgAcquireConnection(pConnection);
-
-    *ppKey = pKeyLocal;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    *ppKey = NULL;
-
-    if (pKeyLocal)
-    {
-        VmwPosixCfgCloseKey(pKeyLocal);
-    }
-
-    goto cleanup;
-}
-
 DWORD
 VmwPosixCfgReadStringValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
     )
 {
     DWORD dwError = 0;
+    CHAR  szKey[VM_SIZE_512] = {0};
     CHAR  szValue[VMW_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
-    DWORD dwszValueSize = sizeof(szValue);
+    size_t dwszValueSize = sizeof(szValue);
     PSTR  pszValue = NULL;
 
-    dwError = RegGetValueA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszSubkey,
-                    pszName,
-                    RRF_RT_REG_SZ,
-                    NULL,
-                    szValue,
-                    &dwszValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -212,7 +64,6 @@ error:
 
 DWORD
 VmwPosixCfgReadStringArrayValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwNumValues,
@@ -222,13 +73,14 @@ VmwPosixCfgReadStringArrayValue(
     DWORD               dwError = 0;
     DWORD               dwIndex = 0;
     DWORD               dwCursorLength = 0;
+    CHAR                szKey[VM_SIZE_512] = {0};
     CHAR                szValue[VMW_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
-    DWORD               dwValueSize = sizeof(szValue);
+    size_t              dwValueSize = sizeof(szValue);
     DWORD               dwNumValues = 0;
     PSTR                pszCursor = NULL;
     PSTR                *ppszValues = NULL;
 
-    if (!pKey ||
+    if (IsNullOrEmptyString(pszSubkey) ||
         IsNullOrEmptyString(pszName) ||
         !pdwNumValues ||
         !pppszValues)
@@ -237,15 +89,12 @@ VmwPosixCfgReadStringArrayValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = RegGetValueA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszSubkey,
-                    pszName,
-                    REG_MULTI_SZ,
-                    NULL,
-                    szValue,
-                    &dwValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigGetMultiSZKeyA(szKey, szValue, &dwValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -307,32 +156,29 @@ error:
 
 DWORD
 VmwPosixCfgReadDWORDValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
     )
 {
-    DWORD dwError =0;
-    DWORD dwValue = 0;
-    DWORD dwValueSize = sizeof(dwValue);
+    DWORD   dwError =0;
+    CHAR    szKey[VM_SIZE_512] = {0};
+    CHAR    szValue[VM_SIZE_128] = {0};
+    size_t  dwszValueSize = sizeof(szValue);
 
-    dwError = RegGetValueA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszSubkey,
-                    pszName,
-                    RRF_RT_REG_DWORD,
-                    NULL,
-                    (PVOID)&dwValue,
-                    &dwValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
     }
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *pdwValue = dwValue;
+    *pdwValue = atol(szValue);
 
 cleanup:
 
@@ -346,85 +192,36 @@ error:
 }
 
 DWORD
-VmwPosixCfgSetValue(
-    PVMW_CFG_KEY    pKey,
-    PCSTR           pszValue,
-    DWORD           dwType,
-    PBYTE           pValue,
-    DWORD           dwSize
+VmwPosixCfgSetDWORDValue(
+    PCSTR           pszSubkey,
+    PCSTR           pszName,
+    DWORD           dwValue
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
+    CHAR    szKey[VM_SIZE_512] = {0};
+    CHAR    szValue[VM_SIZE_128] = {0};
 
-    if (!pKey || IsNullOrEmptyString(pszValue))
+    if (!pszSubkey || !pszName)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = RegSetValueExA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszValue,
-                    0,
-                    dwType,
-                    pValue,
-                    dwSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmStringPrintFA(
+            &szValue[0], VM_SIZE_128,
+            "%lu", dwValue);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigSetKeyA(szKey, szValue, VmStringLenA(szValue));
     BAIL_ON_VMCA_ERROR(dwError);
 
 error:
 
     return dwError;
-}
-
-VOID
-VmwPosixCfgCloseKey(
-    PVMW_CFG_KEY pKey
-    )
-{
-    if (pKey->pConnection)
-    {
-        if (pKey->hKey)
-        {
-            RegCloseKey(pKey->pConnection->hConnection, pKey->hKey);
-        }
-
-        VmwPosixCfgCloseConnection(pKey->pConnection);
-    }
-    VMCAFreeMemory(pKey);
-}
-
-VOID
-VmwPosixCfgCloseConnection(
-    PVMW_CFG_CONNECTION pConnection
-    )
-{
-    if (InterlockedDecrement(&pConnection->refCount) == 0)
-    {
-        VmwPosixCfgFreeConnection(pConnection);
-    }
-}
-
-static
-PVMW_CFG_CONNECTION
-VmwPosixCfgAcquireConnection(
-    PVMW_CFG_CONNECTION pConnection
-    )
-{
-    InterlockedIncrement(&pConnection->refCount);
-
-    return pConnection;
-}
-
-static
-VOID
-VmwPosixCfgFreeConnection(
-    PVMW_CFG_CONNECTION pConnection
-    )
-{
-    if (pConnection->hConnection)
-    {
-        RegCloseServer(pConnection->hConnection);
-    }
-    VMCAFreeMemory(pConnection);
 }

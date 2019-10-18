@@ -42,6 +42,7 @@ vmcad_SOURCES += \
 endif
 
 vmcad_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmca/service/include \
@@ -59,6 +60,7 @@ vmcad_CPPFLAGS = \
     @CRESTENGINE_INCLUDES@
 
 vmcad_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmca/service/common/libvmcasrvcommon.la \
     $(top_builddir)/vmca/service/config/libvmcasrvconfig.la \
     $(top_builddir)/vmca/service/rest-head/libvmcaresthead.la \
@@ -73,7 +75,6 @@ vmcad_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \

@@ -24,6 +24,7 @@ libcommon_la_SOURCES = \
 
 libcommon_la_CPPFLAGS = \
     -DLDAP_DEPRECATED \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmafd/include/public \
@@ -31,9 +32,9 @@ libcommon_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 libcommon_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     @LDAP_LIBS@ \
     @LBER_LIBS@ \
-    @LWREG_LIBS@ \
     @LWRSUTILS_LIBS@
 
 libcommon_la_LDFLAGS = \

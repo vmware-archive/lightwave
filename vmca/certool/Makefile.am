@@ -6,6 +6,7 @@ certool_SOURCES = \
     utility.cpp
 
 certool_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmca/include \
     -I$(top_srcdir)/vmca/include/public \
     -I$(top_srcdir)/vmca/idl \
@@ -17,6 +18,7 @@ certool_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 certool_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmca/common/libcommon.la \
     $(top_builddir)/vmca/client/libvmcaclient.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
@@ -27,7 +29,6 @@ certool_LDADD = \
     @UUID_LIBS@ \
     @LWBASE_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ \
     @LWRSUTILS_LIBS@ \
     @CRYPTO_LIBS@ \
     @SCHANNEL_LIBS@ \

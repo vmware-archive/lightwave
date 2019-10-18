@@ -19,32 +19,7 @@
 #ifndef _WIN32
 
 DWORD
-VmwPosixCfgOpenConnection(
-    PVMW_CFG_CONNECTION* ppConnection
-    );
-
-DWORD
-VmwPosixCfgOpenRootKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PCSTR               pszKeyName,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    );
-
-DWORD
-VmwPosixCfgOpenKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PVMW_CFG_KEY        pKey,
-    PCSTR               pszSubKey,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    );
-
-DWORD
 VmwPosixCfgReadStringValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
@@ -52,7 +27,6 @@ VmwPosixCfgReadStringValue(
 
 DWORD
 VmwPosixCfgReadStringArrayValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwNumValues,
@@ -61,29 +35,16 @@ VmwPosixCfgReadStringArrayValue(
 
 DWORD
 VmwPosixCfgReadDWORDValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
     );
 
 DWORD
-VmwPosixCfgSetValue(
-    PVMW_CFG_KEY    pKey,
-    PCSTR           pszValue,
-    DWORD           dwType,
-    PBYTE           pValue,
-    DWORD           dwSize
-    );
-
-VOID
-VmwPosixCfgCloseKey(
-    PVMW_CFG_KEY pKey
-    );
-
-VOID
-VmwPosixCfgCloseConnection(
-    PVMW_CFG_CONNECTION pConnection
+VmwPosixCfgSetDWORDValue(
+    PCSTR           pszSubkey,
+    PCSTR           pszName,
+    DWORD           dwValue
     );
 
 #endif

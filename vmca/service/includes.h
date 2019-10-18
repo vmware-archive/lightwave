@@ -49,6 +49,7 @@ extern "C" {
 #include <openssl/engine.h>
 #endif
 
+#include <vmcommonincludes.h>
 #include <vmcatypes.h>
 #include <vmcacommon.h>
 #include <vmcasrvcommon.h>

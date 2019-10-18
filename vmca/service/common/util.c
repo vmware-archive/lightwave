@@ -201,9 +201,6 @@ VMCAUtilIsValueInWhitelist(
     DWORD                           dwError = 0;
     DWORD                           dwNumWhitelistEntries = 0;
     DWORD                           dwIdx = 0;
-    PVMW_CFG_CONNECTION             pConnection = NULL;
-    PVMW_CFG_KEY                    pRootKey = NULL;
-    PVMW_CFG_KEY                    pParamsKey = NULL;
     PSTR                            *ppszWhitelist = NULL;
     PSTR                            pszHostnameTemplate = NULL;
     PSTR                            pszHostname = NULL;
@@ -214,7 +211,6 @@ VMCAUtilIsValueInWhitelist(
     PSTR                            pszTempValue = NULL;
     PSTR                            pszTempValue2 = NULL;
     PSTR                            pszPtr = NULL;
-    PCSTR                           pcszParamsKeyPath = VMCA_CONFIG_PARAMETER_KEY_PATH;
     BOOLEAN                         bInWhitelist = FALSE;
     int                             nCount = 0;
 
@@ -226,29 +222,8 @@ VMCAUtilIsValueInWhitelist(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmwConfigOpenConnection(&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pcszParamsKeyPath,
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
     dwError = VmwConfigReadStringArrayValue(
-                    pParamsKey,
-                    NULL,
+                    VMCA_CONFIG_PARAMETER_KEY_PATH,
                     pcszRegValue,
                     &dwNumWhitelistEntries,
                     &ppszWhitelist);
@@ -443,18 +418,6 @@ ret:
 
 cleanup:
 
-    if (pParamsKey)
-    {
-        VmwConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmwConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmwConfigCloseConnection(pConnection);
-    }
     VMCAFreeStringArrayA(ppszWhitelist, dwNumWhitelistEntries);
     VMCA_SAFE_FREE_STRINGA(pszHostnameTemplate);
     VMCA_SAFE_FREE_STRINGA(pszHostnameValue);

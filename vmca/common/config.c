@@ -27,87 +27,8 @@
 #define VMDIR_REG_KEY_DC_ACCOUNT_DN "dcAccountDN"
 #define VMDIR_REG_KEY_DC_PASSWORD   "dcAccountPassword"
 
-
-DWORD
-VmwConfigOpenConnection(
-    PVMW_CFG_CONNECTION* ppConnection
-    )
-{
-    DWORD dwError = 0;
-#ifndef _WIN32
-    dwError = VmwPosixCfgOpenConnection(ppConnection);
-#else
-    dwError = VmwWinCfgOpenConnection(ppConnection);
-#endif
-    return dwError;
-}
-
-DWORD
-VmwConfigOpenRootKey(
-	PVMW_CFG_CONNECTION pConnection,
-	PCSTR               pszKeyName,
-	DWORD               dwOptions,
-	DWORD               dwAccess,
-	PVMW_CFG_KEY*       ppKey
-	)
-{
-    DWORD dwError = 0;
-
-#ifndef _WIN32
-    dwError = VmwPosixCfgOpenRootKey(
-    				pConnection,
-    				pszKeyName,
-    				dwOptions,
-    				dwAccess,
-    				ppKey);
-#else
-    dwError = VmwWinCfgOpenRootKey(
-    				pConnection,
-    				pszKeyName,
-    				dwOptions,
-    				dwAccess,
-    				ppKey);
-#endif
-
-    return dwError;
-}
-
-DWORD
-VmwConfigOpenKey(
-    PVMW_CFG_CONNECTION pConnection,
-    PVMW_CFG_KEY        pKey,
-    PCSTR               pszSubKey,
-    DWORD               dwOptions,
-    DWORD               dwAccess,
-    PVMW_CFG_KEY*       ppKey
-    )
-{
-    DWORD dwError = 0;
-
-#ifndef _WIN32
-    dwError = VmwPosixCfgOpenKey(
-                    pConnection,
-                    pKey,
-                    pszSubKey,
-                    dwOptions,
-                    dwAccess,
-                    ppKey);
-#else
-    dwError = VmwWinCfgOpenKey(
-                    pConnection,
-                    pKey,
-                    pszSubKey,
-                    dwOptions,
-                    dwAccess,
-                    ppKey);
-#endif
-
-    return dwError;
-}
-
 DWORD
 VmwConfigReadStringValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
@@ -117,7 +38,6 @@ VmwConfigReadStringValue(
 
 #ifndef _WIN32
     dwError = VmwPosixCfgReadStringValue(
-                    pKey,
                     pszSubkey,
                     pszName,
                     ppszValue);
@@ -134,7 +54,6 @@ VmwConfigReadStringValue(
 
 DWORD
 VmwConfigReadStringArrayValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwNumValues,
@@ -145,7 +64,6 @@ VmwConfigReadStringArrayValue(
 
 #ifndef _WIN32
     dwError = VmwPosixCfgReadStringArrayValue(
-                        pKey,
                         pszSubkey,
                         pszName,
                         pdwNumValues,
@@ -157,7 +75,6 @@ VmwConfigReadStringArrayValue(
 
 DWORD
 VmwConfigReadDWORDValue(
-    PVMW_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
@@ -167,7 +84,6 @@ VmwConfigReadDWORDValue(
 
 #ifndef _WIN32
     dwError = VmwPosixCfgReadDWORDValue(
-                    pKey,
                     pszSubkey,
                     pszName,
                     pdwValue);
@@ -184,20 +100,18 @@ VmwConfigReadDWORDValue(
 
 DWORD
 VmwConfigWriteDWORDValue(
-    PVMW_CFG_KEY        pKey,
-    PCSTR               pszName,
-    DWORD               dwValue
+    PCSTR           pszSubkey,
+    PCSTR           pszName,
+    DWORD           dwValue
     )
 {
     DWORD dwError = 0;
 
 #ifndef _WIN32
-    dwError = VmwPosixCfgSetValue(
-                    pKey,
+    dwError = VmwPosixCfgSetDWORDValue(
+                    pszSubkey,
                     pszName,
-                    REG_DWORD,
-                    (PBYTE)&dwValue,
-                    sizeof(DWORD));
+                    dwValue);
 #else
     dwError = VmwWinCfgSetValue(
                     pKey,
@@ -210,84 +124,25 @@ VmwConfigWriteDWORDValue(
     return dwError;
 }
 
-VOID
-VmwConfigCloseKey(
-    PVMW_CFG_KEY pKey
-    )
-{
-    if (pKey)
-    {
-#ifndef _WIN32
-        VmwPosixCfgCloseKey(pKey);
-#else
-        VmwWinCfgCloseKey(pKey);
-#endif
-    }
-}
-
-VOID
-VmwConfigCloseConnection(
-    PVMW_CFG_CONNECTION pConnection
-    )
-{
-    if (pConnection)
-    {
-#ifndef _WIN32
-        VmwPosixCfgCloseConnection(pConnection);
-#else
-        VmwWinCfgCloseConnection(pConnection);
-#endif
-    }
-}
-
-
 DWORD
 VMCAGetMachineAccountInfoA(
     PSTR* ppszAccount,
     PSTR* ppszPassword
     )
 {
-    DWORD dwError = 0;
-    PVMW_CFG_CONNECTION pConnection = NULL;
-    PVMW_CFG_KEY pRootKey = NULL;
-    CHAR         szParamsKeyPath[] = VMDIR_CONFIG_PARAMETER_KEY_PATH;
-    CHAR         szRegValName_Acct[] = VMDIR_REG_KEY_DC_ACCOUNT_DN;
-    CHAR         szRegValName_Pwd[] = VMDIR_REG_KEY_DC_PASSWORD;
-    PVMW_CFG_KEY pParamsKey = NULL;
-    PSTR         pszAccount = NULL;
-    PSTR         pszPassword = NULL;
-
-    dwError = VmwConfigOpenConnection(&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    &szParamsKeyPath[0],
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMCA_ERROR(dwError);
+    DWORD   dwError = 0;
+    PSTR    pszAccount = NULL;
+    PSTR    pszPassword = NULL;
 
     dwError = VmwConfigReadStringValue(
-                    pParamsKey,
-                    NULL,
-                    &szRegValName_Acct[0],
+                    VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    VMDIR_REG_KEY_DC_ACCOUNT_DN,
                     &pszAccount);
     BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VmwConfigReadStringValue(
-                    pParamsKey,
-                    NULL,
-                    &szRegValName_Pwd[0],
+                    VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                    VMDIR_REG_KEY_DC_PASSWORD,
                     &pszPassword);
     BAIL_ON_VMCA_ERROR(dwError);
 
@@ -295,19 +150,6 @@ VMCAGetMachineAccountInfoA(
     *ppszPassword = pszPassword;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmwConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmwConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmwConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 
@@ -327,34 +169,9 @@ VMCAConfigGetDword(
 {
     DWORD dwError = 0;
     DWORD dwValue = 0;
-    PVMW_CFG_CONNECTION pConnection = NULL;
-    PVMW_CFG_KEY pRootKey = NULL;
-    PVMW_CFG_KEY pParamsKey = NULL;
-    CHAR  szParamsKeyPath[] = VMCA_CONFIG_PARAMETER_KEY_PATH;
-
-    dwError = VmwConfigOpenConnection(&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    &szParamsKeyPath[0],
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VmwConfigReadDWORDValue(
-                    pParamsKey,
-                    NULL,
+                    VMCA_CONFIG_PARAMETER_KEY_PATH,
                     pcszValueName,
                     &dwValue);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -362,19 +179,6 @@ VMCAConfigGetDword(
     *pdwOutput = dwValue;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmwConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmwConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmwConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 
@@ -390,51 +194,14 @@ VMCAConfigSetDword(
     )
 {
     DWORD dwError = 0;
-    PVMW_CFG_CONNECTION pConnection = NULL;
-    PVMW_CFG_KEY pRootKey = NULL;
-    PVMW_CFG_KEY pParamsKey = NULL;
-    CHAR  szParamsKeyPath[] = VMCA_CONFIG_PARAMETER_KEY_PATH;
-
-    dwError = VmwConfigOpenConnection(&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    &szParamsKeyPath[0],
-                    0,
-                    KEY_SET_VALUE,
-                    &pParamsKey);
-    BAIL_ON_VMCA_ERROR(dwError);
 
     dwError = VmwConfigWriteDWORDValue(
-                    pParamsKey,
+                    VMCA_CONFIG_PARAMETER_KEY_PATH,
                     pcszValueName,
                     dwInput);
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmwConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmwConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmwConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 

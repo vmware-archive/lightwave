@@ -371,9 +371,6 @@ VMCAGetDomainName(
 {
     DWORD dwError = 0;
     PSTR pDomain = NULL;
-    PVMW_CFG_CONNECTION pConnection = NULL;
-    PVMW_CFG_KEY pRootKey = NULL;
-    PVMW_CFG_KEY pParamsKey = NULL;
 
     if (!ppDomain)
     {
@@ -381,29 +378,8 @@ VMCAGetDomainName(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmwConfigOpenConnection(&pConnection);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenRootKey(
-                            pConnection,
-                            "HKEY_LOCAL_MACHINE",
-                            0,
-                            KEY_READ,
-                            &pRootKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmwConfigOpenKey(
-                            pConnection,
-                            pRootKey,
-                            VMAFD_CONFIG_PARAMETER_KEY_PATH,
-                            0,
-                            KEY_READ,
-                            &pParamsKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
     dwError = VmwConfigReadStringValue(
-                            pParamsKey,
-                            NULL,
+                            VMAFD_CONFIG_PARAMETER_KEY_PATH,
                             VMAFD_REG_KEY_DOMAIN_NAME,
                             &pDomain);
     BAIL_ON_VMCA_ERROR(dwError);
@@ -411,12 +387,6 @@ VMCAGetDomainName(
     *ppDomain = pDomain;
 
 cleanup:
-    if (pParamsKey)
-        VmwConfigCloseKey(pParamsKey);
-    if (pRootKey)
-        VmwConfigCloseKey(pRootKey);
-    if (pConnection)
-        VmwConfigCloseConnection(pConnection);
     return dwError;
 
 error:

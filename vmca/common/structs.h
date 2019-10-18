@@ -139,24 +139,6 @@ typedef struct _VMCA_LDAP_CONTEXT
 
 #define VMW_MAX_CONFIG_VALUE_BYTE_LENGTH (2048)
 
-typedef struct _VMW_CFG_CONNECTION
-{
-    LONG   refCount;
-
-#ifndef _WIN32
-    HANDLE hConnection;
-#endif
-
-} VMW_CFG_CONNECTION;
-
-typedef struct _VMW_CFG_KEY
-{
-    PVMW_CFG_CONNECTION pConnection;
-
-    HKEY hKey;
-
-} VMW_CFG_KEY;
-
 typedef struct _VMCA_SASL_INTERACTIVE_DEFAULT
 {
     PCSTR   pszRealm;

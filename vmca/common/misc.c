@@ -355,6 +355,8 @@ VMCASetRegKeyValue(
 #ifndef _WIN32
 {
     DWORD   dwError = 0;
+    DWORD   dwLen = 0;
+    CHAR    szKey[VM_SIZE_512] = {0};
 
     if (IsNullOrEmptyString(pszConfigParamKeyPath) || IsNullOrEmptyString(pszKey))
     {
@@ -362,17 +364,15 @@ VMCASetRegKeyValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = RegUtilSetValue(
-        NULL,
-        HKEY_THIS_MACHINE,
-        pszConfigParamKeyPath,
-        NULL,
-        pszKey,
-        REG_SZ,
-        (PVOID)pszValue,
-        valueLen);
+    dwLen = VmStringLenA(pszValue);
+
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszConfigParamKeyPath, pszKey);
     BAIL_ON_VMCA_ERROR(dwError);
 
+    dwError = VmRegConfigSetKeyA(szKey, pszValue, dwLen);
+    BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
     return dwError;
@@ -432,41 +432,23 @@ VMCAGetRegKeyValue(
 #ifndef _WIN32
 {
     DWORD   dwError = 0;
-    PSTR    pszLocalValue = NULL;
-    DWORD   dwLocalValueLen = 0;
+    CHAR    szKey[VM_SIZE_512] = {0};
 
-    if (pszValue == NULL)
+    if (!pszConfigParamKeyPath || !pszKey || !pszValue)
     {
         dwError = ERROR_INVALID_PARAMETER;
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = RegUtilGetValue(
-        NULL,
-        HKEY_THIS_MACHINE,
-        NULL,
-        pszConfigParamKeyPath,
-        pszKey,
-        NULL,
-        (PVOID*)&pszLocalValue,
-        &dwLocalValueLen);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszConfigParamKeyPath, pszKey);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    if (dwLocalValueLen > valueLen) // in case of string values, dwLocalValueLen includes '\0' and therefore valueLen
-        // should also include space for '\0'
-    {
-        dwError = ERROR_INVALID_PARAMETER; // TBD: Better error code??
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
-
-
-    memcpy( pszValue, pszLocalValue, dwLocalValueLen );
+    dwError = VmRegConfigGetKeyA(szKey, pszValue, &valueLen);
+    BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
-    if (pszLocalValue)
-    {
-        RegFreeMemory(pszLocalValue);
-    }
     return dwError;
 
 error:
@@ -524,9 +506,10 @@ VMCAGetRegKeyValueDword(
     DWORD   dwDefaultValue
     )
 {
-    DWORD dwError = 0;
-    DWORD dwValue = 0;
-    REG_DATA_TYPE RegType = 0;
+    DWORD   dwError = 0;
+    CHAR    szKey[VM_SIZE_512] = {0};
+    CHAR    szValue[VM_SIZE_128] = {0};
+    size_t  dwszValueSize = sizeof(szValue);
 
     if (pszConfigParamKeyPath == NULL || pszKey == NULL || pdwValue == NULL)
     {
@@ -538,24 +521,15 @@ VMCAGetRegKeyValueDword(
 
     *pdwValue = dwDefaultValue;
 
-    dwError = RegUtilGetValue(
-                NULL,
-                HKEY_THIS_MACHINE,
-                NULL,
-                pszConfigParamKeyPath,
-                pszKey,
-                &RegType,
-                (PVOID*)&dwValue,
-                NULL);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszConfigParamKeyPath, pszKey);
     BAIL_ON_VMCA_ERROR(dwError);
 
-    if (RegType != REG_DWORD)
-    {
-        dwError = ERROR_INVALID_PARAMETER;
-        BAIL_ON_VMCA_ERROR(dwError);
-    }
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    BAIL_ON_VMCA_ERROR(dwError);
 
-    *pdwValue = dwValue;
+    *pdwValue = atol(szValue);
 
 cleanup:
     return dwError;

@@ -37,6 +37,22 @@
 #endif
 #endif
 
+extern "C"
+{
+DWORD VmRegConfigInit(
+    VOID
+    );
+
+DWORD VmRegConfigAddFile(
+    PCSTR,
+    BOOLEAN
+    );
+
+DWORD VmRegConfigFree(
+    VOID
+    );
+};
+
 namespace po = boost::program_options;
 po::variables_map argsMap;
 
@@ -1275,6 +1291,29 @@ error:
     goto cleanup;
 }
 
+DWORD
+VMCAInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMCA_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMCA_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 #ifdef WIN32
 int wmain(int argc, WCHAR* argv[])
 #else
@@ -1289,9 +1328,14 @@ int main(int argc, char* argv[])
     BAIL_ON_ERROR(dwError);
 #else
     PSTR* utf8Args = argv;
+
+    dwError = VMCAInitVmRegConfig();
+    BAIL_ON_ERROR(dwError);
 #endif
+
     dwError = ParseArgs(argc, utf8Args);
 cleanup:
+    VmRegConfigFree();
 #ifdef WIN32
     VMCAFreeCommandLineA(argc, utf8Args);
 #endif 
