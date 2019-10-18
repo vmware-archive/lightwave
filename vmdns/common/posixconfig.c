@@ -168,17 +168,11 @@ VmDnsPosixCfgReadStringValue(
     )
 {
     DWORD dwError = 0;
-    CHAR  szKey[VM_SIZE_512] = {0};
     CHAR  szValue[VMDNS_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
     size_t dwszValueSize = sizeof(szValue);
     PSTR  pszValue = NULL;
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubkey, pszName, szValue, dwszValueSize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateStringA(szValue, &pszValue);
@@ -210,19 +204,12 @@ VmDnsPosixCfgReadDWORDValue(
     )
 {
     DWORD dwError =0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-    CHAR    szValue[VM_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
+    DWORD dwValue = 0;
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
+    dwError = VmRegCfgGetKeyDword(pszSubkey, pszName, &dwValue,  0);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    *pdwValue = atol(szValue);
+    *pdwValue = dwValue;
 
 cleanup:
 

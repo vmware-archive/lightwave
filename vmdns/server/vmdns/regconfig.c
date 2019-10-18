@@ -35,22 +35,6 @@ VmDnsRegGetConfig(
 
 static
 DWORD
-VmDnsRegConfigGSetString(
-    PCSTR   pszSubKey,
-    PCSTR   pszKeyName,
-    PSTR    pszValue
-    );
-
-static
-DWORD
-VmDnsRegConfigGetDword(
-    PCSTR  pszSubKey,
-    PCSTR  pszKeyName,
-    PDWORD pdwValue
-    );
-
-static
-DWORD
 VmDnsRegConfigGetString(
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
@@ -126,13 +110,13 @@ VmDnsConfigSetAdminCredentials(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = VmDnsRegConfigGSetString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDNS_CONFIG_PARAMETER_KEY_PATH,
                 VMDNS_REG_KEY_ADMIN_DN,
                 pszUserDN);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsRegConfigGSetString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDNS_CONFIG_CREDS_KEY_PATH,
                 VMDNS_REG_KEY_ADMIN_PASSWD,
                 pszUserDN);
@@ -178,7 +162,7 @@ VmDnsRegGetConfig(
 
             case VMDNS_CONFIG_VALUE_TYPE_DWORD:
 
-                dwError = VmDnsRegConfigGetDword(
+                dwError = VmRegCfgGetKeyDword(
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -216,7 +200,7 @@ VmDnsRegGetConfig(
 
             case VMDNS_CONFIG_VALUE_TYPE_BOOLEAN:
 
-                dwError = VmDnsRegConfigGetDword(
+                dwError = VmRegCfgGetKeyDword(
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -256,56 +240,17 @@ error:
 
 static
 DWORD
-VmDnsRegConfigGetDword(
-    PCSTR  pszSubKey,
-    PCSTR  pszKeyName,
-    PDWORD pdwValue
-    )
-{
-    DWORD    dwError =0;
-     CHAR    szKey[VM_SIZE_512] = {0};
-     CHAR    szValue[VM_SIZE_128] = {0};
-     size_t  dwszValueSize = sizeof(szValue);
-
-     dwError = VmDirStringPrintFA(
-             &szKey[0], VM_SIZE_512,
-             "%s\\%s", pszSubKey, pszKeyName);
-     BAIL_ON_VMDNS_ERROR(dwError);
-
-     dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
-     BAIL_ON_VMDNS_ERROR(dwError);
-
-     *pdwValue = atol(szValue);
-
- cleanup:
-
-     return dwError;
-
- error:
-     *pdwValue = 0;
-
-     goto cleanup;
-}
-
-static
-DWORD
 VmDnsRegConfigGetString(
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
     PSTR    *ppszValue)
 {
     DWORD dwError = 0;
-    CHAR  szKey[VM_SIZE_512] = {0};
     char szValue[VMDNS_MAX_CONFIG_VALUE_LENGTH] = {0};
     DWORD dwszValueSize = sizeof(szValue);
-    PSTR pszValue = NULL;
+    PSTR pszValue = NULL;;
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszSubKey, pszKeyName);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubKey, pszKeyName, szValue, dwszValueSize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmAllocateStringA(szValue, &pszValue);
@@ -323,37 +268,6 @@ error:
 
     VMDNS_SAFE_FREE_STRINGA(pszValue);
 
-    goto cleanup;
-}
-
-static
-DWORD
-VmDnsRegConfigGSetString(
-    PCSTR   pszSubKey,
-    PCSTR   pszKeyName,
-    PSTR    pszValue
-    )
-{
-    DWORD   dwError =  0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-
-    if (!pszSubKey || !pszKeyName || !pszValue)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubKey, pszKeyName);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, pszValue, VmDirStringLenA(pszValue));
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
     goto cleanup;
 }
 

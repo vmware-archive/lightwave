@@ -24,17 +24,11 @@ VmwPosixCfgReadStringValue(
     )
 {
     DWORD dwError = 0;
-    CHAR  szKey[VM_SIZE_512] = {0};
     CHAR  szValue[VMW_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
     size_t dwszValueSize = sizeof(szValue);
     PSTR  pszValue = NULL;
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubkey, pszName, szValue, dwszValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -73,7 +67,6 @@ VmwPosixCfgReadStringArrayValue(
     DWORD               dwError = 0;
     DWORD               dwIndex = 0;
     DWORD               dwCursorLength = 0;
-    CHAR                szKey[VM_SIZE_512] = {0};
     CHAR                szValue[VMW_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
     size_t              dwValueSize = sizeof(szValue);
     DWORD               dwNumValues = 0;
@@ -89,12 +82,7 @@ VmwPosixCfgReadStringArrayValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigGetMultiSZKeyA(szKey, szValue, &dwValueSize);
+    dwError = VmRegCfgGetKeyMultiSZA(pszSubkey, pszName, szValue, &dwValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -162,23 +150,16 @@ VmwPosixCfgReadDWORDValue(
     )
 {
     DWORD   dwError =0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-    CHAR    szValue[VM_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
+    DWORD   dwValue = 0;
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyDword(pszSubkey, pszName, &dwValue, 0);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
     }
     BAIL_ON_VMCA_ERROR(dwError);
 
-    *pdwValue = atol(szValue);
+    *pdwValue = dwValue;
 
 cleanup:
 
@@ -199,8 +180,6 @@ VmwPosixCfgSetDWORDValue(
     )
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-    CHAR    szValue[VM_SIZE_128] = {0};
 
     if (!pszSubkey || !pszName)
     {
@@ -208,17 +187,7 @@ VmwPosixCfgSetDWORDValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmStringPrintFA(
-            &szValue[0], VM_SIZE_128,
-            "%lu", dwValue);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, szValue, VmStringLenA(szValue));
+    dwError = VmRegCfgSetKeyDword(pszSubkey, pszName, dwValue);
     BAIL_ON_VMCA_ERROR(dwError);
 
 error:

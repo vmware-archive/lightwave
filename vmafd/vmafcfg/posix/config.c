@@ -24,17 +24,11 @@ VmAfPosixCfgReadStringValue(
     )
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VM_SIZE_512] = {0};
     CHAR    szValue[VMAF_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
     size_t  dwszValueSize = sizeof(szValue);
     PSTR    pszValue = NULL;
 
-    dwError = VmAfdStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubkey, pszName, szValue, dwszValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -70,28 +64,21 @@ VmAfPosixCfgReadDWORDValue(
     )
 {
     DWORD   dwError =0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-    CHAR    szValue[VM_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
+    DWORD   dwValue =0;
 
     if (!pszSubkey || !pszName || !pdwValue)
     {
         BAIL_WITH_VMAFD_ERROR(dwError, ERROR_FILE_NOT_FOUND);
     }
 
-    dwError = VmAfdStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyDword(pszSubkey, pszName, &dwValue, 0);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
     }
     BAIL_ON_VMAF_POSIX_ERROR(dwError);
 
-    *pdwValue = atol(szValue);
+    *pdwValue = dwValue;
 
 cleanup:
 
@@ -112,23 +99,14 @@ VmAfPosixCfgSetValue(
 	)
 {
     DWORD dwError = 0;
-    CHAR  szKey[VM_SIZE_512+1] = {0};
-    DWORD dwValueLen = 0;
 
-	if (!pszSubkey || !pszName || IsNullOrEmptyString(pszValue))
-	{
-		dwError = ERROR_INVALID_PARAMETER;
-		BAIL_ON_VMAFD_ERROR(dwError);
-	}
+    if (!pszSubkey || !pszName || IsNullOrEmptyString(pszValue))
+    {
+	dwError = ERROR_INVALID_PARAMETER;
+	BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
-    dwValueLen = VmAfdStringLenA(pszValue);
-
-    dwError = VmAfdStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, pszValue, dwValueLen);
+    dwError = VmRegCfgSetKeyStringA(pszSubkey, pszName, pszValue);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;
@@ -147,20 +125,14 @@ VmAfPosixCfgDeleteValue(
     )
 {
     DWORD dwError = 0;
-    CHAR  szKey[VM_SIZE_512+1] = {0};
 
-	if (!pszSubkey || !pszName)
-	{
-		dwError = ERROR_INVALID_PARAMETER;
-		BAIL_ON_VMAFD_ERROR(dwError);
-	}
+    if (!pszSubkey || !pszName)
+    {
+        dwError = ERROR_INVALID_PARAMETER;
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
-    dwError = VmAfdStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszSubkey, pszName);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmRegConfigDeleteKeyA(szKey);
+    dwError = VmRegCfgDeleteKeyA(pszSubkey, pszName);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_FILE_NOT_FOUND;

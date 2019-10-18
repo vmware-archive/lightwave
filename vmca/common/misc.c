@@ -355,8 +355,6 @@ VMCASetRegKeyValue(
 #ifndef _WIN32
 {
     DWORD   dwError = 0;
-    DWORD   dwLen = 0;
-    CHAR    szKey[VM_SIZE_512] = {0};
 
     if (IsNullOrEmptyString(pszConfigParamKeyPath) || IsNullOrEmptyString(pszKey))
     {
@@ -364,14 +362,7 @@ VMCASetRegKeyValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwLen = VmStringLenA(pszValue);
-
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, pszValue, dwLen);
+    dwError = VmRegCfgSetKeyStringA(pszConfigParamKeyPath, pszKey, pszValue);
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
@@ -432,7 +423,6 @@ VMCAGetRegKeyValue(
 #ifndef _WIN32
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VM_SIZE_512] = {0};
 
     if (!pszConfigParamKeyPath || !pszKey || !pszValue)
     {
@@ -440,12 +430,7 @@ VMCAGetRegKeyValue(
         BAIL_ON_VMCA_ERROR(dwError);
     }
 
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, pszValue, &valueLen);
+    dwError = VmRegCfgGetKeyStringA(pszConfigParamKeyPath, pszKey, pszValue, valueLen);
     BAIL_ON_VMCA_ERROR(dwError);
 
 cleanup:
@@ -507,9 +492,6 @@ VMCAGetRegKeyValueDword(
     )
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VM_SIZE_512] = {0};
-    CHAR    szValue[VM_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
 
     if (pszConfigParamKeyPath == NULL || pszKey == NULL || pdwValue == NULL)
     {
@@ -519,17 +501,8 @@ VMCAGetRegKeyValueDword(
 
     VMCA_LOG_VERBOSE("Reading Reg: %s", pszKey);
 
-    *pdwValue = dwDefaultValue;
-
-    dwError = VmStringPrintFA(
-            &szKey[0], VM_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
+    dwError = VmRegCfgGetKeyDword(pszConfigParamKeyPath, pszKey, pdwValue, dwDefaultValue);
     BAIL_ON_VMCA_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
-    BAIL_ON_VMCA_ERROR(dwError);
-
-    *pdwValue = atol(szValue);
 
 cleanup:
     return dwError;
