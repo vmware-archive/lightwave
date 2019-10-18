@@ -21,7 +21,6 @@ vmdns_cli_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWBASE_LIBS@ \
-    @LWREG_LIBS@ \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \
     @UUID_LIBS@ \

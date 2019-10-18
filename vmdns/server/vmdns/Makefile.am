@@ -31,6 +31,7 @@ vmdnsd_CPPFLAGS = \
     @LW_INCLUDES@
 
 vmdnsd_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmdns/server/common/libsrvcommon.la \
     $(top_builddir)/vmdns/server/rest-head/librest-head.la \
     $(top_builddir)/vmdns/common/libcommon.la \
@@ -45,7 +46,6 @@ vmdnsd_LDADD = \
     @SCHANNEL_LIBS@ \
     @LWMSG_LIBS@ \
     @LWRSUTILS_LIBS@ \
-    @LWREG_LIBS@ \
     @LWBASE_LIBS@ \
     @CRYPTO_LIBS@ \
     @GSSAPI_LIBS@ \

@@ -334,66 +334,25 @@ VmDnsDirGetMachineAccountInfoA(
     )
 {
     DWORD dwError = 0;
-    PVMDNS_CFG_CONNECTION pConnection = NULL;
-    PVMDNS_CFG_KEY pRootKey = NULL;
-    CHAR szParamsKeyPath[] = VMDIR_CONFIG_PARAMETER_KEY_PATH;
-    CHAR szRegValName_Acct[] = VMDIR_REG_KEY_DC_ACCOUNT;
-    CHAR szRegValName_Pwd[] = VMDIR_REG_KEY_DC_PASSWORD;
-    CHAR szAfdParamsKeyPath[] = VMAFD_CONFIG_PARAMETER_KEY_PATH;
-    CHAR szRegValDomain_Name[] = VMAFD_REG_KEY_DOMAIN_NAME;
-    PVMDNS_CFG_KEY pParamsKey = NULL;
-    PVMDNS_CFG_KEY pAfdParamsKey = NULL;
     PSTR pszAccount = NULL;
     PSTR pszPassword = NULL;
     PSTR pszDomainName = NULL;
 
-    dwError = VmDnsConfigOpenConnection(&pConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenRootKey(
-                        pConnection,
-                        "HKEY_LOCAL_MACHINE",
-                        0,
-                        KEY_READ,
-                        &pRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenKey(
-                        pConnection,
-                        pRootKey,
-                        &szParamsKeyPath[0],
-                        0,
-                        KEY_READ,
-                        &pParamsKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
     dwError = VmDnsConfigReadStringValue(
-                        pParamsKey,
-                        NULL,
-                        &szRegValName_Acct[0],
+                        VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                        VMDIR_REG_KEY_DC_ACCOUNT,
                         &pszAccount);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsConfigReadStringValue(
-                        pParamsKey,
-                        NULL,
-                        &szRegValName_Pwd[0],
+                        VMDIR_CONFIG_PARAMETER_KEY_PATH,
+                        VMDIR_REG_KEY_DC_PASSWORD,
                         &pszPassword);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsConfigOpenKey(
-                        pConnection,
-                        pRootKey,
-                        &szAfdParamsKeyPath[0],
-                        0,
-                        KEY_READ,
-                        &pAfdParamsKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
     dwError = VmDnsConfigReadStringValue(
-                        pAfdParamsKey,
-                        NULL,
-                        &szRegValDomain_Name[0],
+                        VMAFD_CONFIG_PARAMETER_KEY_PATH,
+                        VMAFD_REG_KEY_DOMAIN_NAME,
                         &pszDomainName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
@@ -402,23 +361,6 @@ VmDnsDirGetMachineAccountInfoA(
     *ppszPassword = pszPassword;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmDnsConfigCloseKey(pParamsKey);
-    }
-    if (pAfdParamsKey)
-    {
-        VmDnsConfigCloseKey(pAfdParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmDnsConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmDnsConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 

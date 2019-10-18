@@ -133,7 +133,6 @@ VmDnsPosixCfgOpenKey(
 
 DWORD
 VmDnsPosixCfgReadStringValue(
-    PVMDNS_CFG_KEY  pKey,
     PCSTR           pszSubkey,
     PCSTR           pszName,
     PSTR*           ppszValue
@@ -141,7 +140,6 @@ VmDnsPosixCfgReadStringValue(
 
 DWORD
 VmDnsPosixCfgReadDWORDValue(
-    PVMDNS_CFG_KEY  pKey,
     PCSTR           pszSubkey,
     PCSTR           pszName,
     PDWORD          pdwValue

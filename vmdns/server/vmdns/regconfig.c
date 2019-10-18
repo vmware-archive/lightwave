@@ -35,14 +35,15 @@ VmDnsRegGetConfig(
 
 static
 DWORD
-VmDnsRegConfigHandleOpen(
-    PVMDNS_CONFIG_CONNECTION_HANDLE *ppCfgHandle
+VmDnsRegConfigGSetString(
+    PCSTR   pszSubKey,
+    PCSTR   pszKeyName,
+    PSTR    pszValue
     );
 
 static
 DWORD
 VmDnsRegConfigGetDword(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR  pszSubKey,
     PCSTR  pszKeyName,
     PDWORD pdwValue
@@ -51,16 +52,17 @@ VmDnsRegConfigGetDword(
 static
 DWORD
 VmDnsRegConfigGetString(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
     PSTR    *ppszValue
     );
 
 static
-VOID
-VmDnsRegConfigHandleClose(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle
+DWORD
+VmDnsRegConfigGSetString(
+    PCSTR   pszSubKey,
+    PCSTR   pszKeyName,
+    PSTR    *ppszValue
     );
 
 static
@@ -117,11 +119,6 @@ VmDnsConfigSetAdminCredentials(
     )
 {
     DWORD dwError = 0;
-    PCSTR pszParamsKeyPath      = VMDNS_CONFIG_PARAMETER_KEY_PATH;
-    PCSTR pszValueAdminDN       = VMDNS_REG_KEY_ADMIN_DN;
-    PCSTR pszCredsKeyPath       = VMDNS_CONFIG_CREDS_KEY_PATH;
-    PCSTR pszValueAdminPassword = VMDNS_REG_KEY_ADMIN_PASSWD;
-    HANDLE hConnection = NULL;
 
     if (IsNullOrEmptyString(pszUserDN) || !pszPassword)
     {
@@ -129,37 +126,19 @@ VmDnsConfigSetAdminCredentials(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = RegOpenServer(&hConnection);
+    dwError = VmDnsRegConfigGSetString(
+                VMDNS_CONFIG_PARAMETER_KEY_PATH,
+                VMDNS_REG_KEY_ADMIN_DN,
+                pszUserDN);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = RegUtilSetValue(
-                hConnection,
-                HKEY_THIS_MACHINE,
-                pszParamsKeyPath,
-                NULL,
-                pszValueAdminDN,
-                REG_SZ,
-                (PVOID)pszUserDN,
-                VmDnsStringLenA(pszUserDN));
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegUtilSetValue(
-                hConnection,
-                HKEY_THIS_MACHINE,
-                pszCredsKeyPath,
-                NULL,
-                pszValueAdminPassword,
-                REG_SZ,
-                (PVOID)pszPassword,
-                VmDnsStringLenA(pszPassword));
+    dwError = VmDnsRegConfigGSetString(
+                VMDNS_CONFIG_CREDS_KEY_PATH,
+                VMDNS_REG_KEY_ADMIN_PASSWD,
+                pszUserDN);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 error:
-
-    if (hConnection)
-    {
-        RegCloseServer(hConnection);
-    }
 
     return dwError;
 }
@@ -174,10 +153,6 @@ VmDnsRegGetConfig(
 {
     DWORD dwError = 0;
     DWORD iEntry = 0;
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
-
-    dwError = VmDnsRegConfigHandleOpen(&pCfgHandle);
-    BAIL_ON_VMDNS_ERROR(dwError);
 
     for (; iEntry < dwNumEntries; iEntry++)
     {
@@ -188,7 +163,6 @@ VmDnsRegGetConfig(
             case VMDNS_CONFIG_VALUE_TYPE_STRING:
 
                 dwError = VmDnsRegConfigGetString(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.pszValue);
@@ -205,7 +179,6 @@ VmDnsRegGetConfig(
             case VMDNS_CONFIG_VALUE_TYPE_DWORD:
 
                 dwError = VmDnsRegConfigGetDword(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -244,7 +217,6 @@ VmDnsRegGetConfig(
             case VMDNS_CONFIG_VALUE_TYPE_BOOLEAN:
 
                 dwError = VmDnsRegConfigGetDword(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -275,125 +247,68 @@ VmDnsRegGetConfig(
     dwError = 0;
 
 cleanup:
-
-    if (pCfgHandle)
-    {
-        VmDnsRegConfigHandleClose(pCfgHandle);
-    }
-
     return dwError;
 
 error:
 
     goto cleanup;
 }
-
-static
-DWORD
-VmDnsRegConfigHandleOpen(
-    PVMDNS_CONFIG_CONNECTION_HANDLE *ppCfgHandle)
-{
-    DWORD dwError = 0;
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
-
-    dwError = VmDnsAllocateMemory(
-                sizeof(VMDNS_CONFIG_CONNECTION_HANDLE),
-                (PVOID*)&pCfgHandle);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenServer(&pCfgHandle->hConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                pCfgHandle->hConnection,
-                NULL,
-                HKEY_THIS_MACHINE,
-                0,
-                KEY_READ,
-                &pCfgHandle->hKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    *ppCfgHandle = pCfgHandle;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    *ppCfgHandle = NULL;
-
-    if (pCfgHandle)
-    {
-        VmDnsRegConfigHandleClose(pCfgHandle);
-    }
-
-    goto cleanup;
-}
-
 
 static
 DWORD
 VmDnsRegConfigGetDword(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR  pszSubKey,
     PCSTR  pszKeyName,
     PDWORD pdwValue
     )
 {
-    DWORD dwError =0;
-    DWORD dwValue = 0;
-    DWORD dwValueSize = sizeof(dwValue);
+    DWORD    dwError =0;
+     CHAR    szKey[VM_SIZE_512] = {0};
+     CHAR    szValue[VM_SIZE_128] = {0};
+     size_t  dwszValueSize = sizeof(szValue);
 
-    dwError = RegGetValueA(
-                pCfgHandle->hConnection,
-                pCfgHandle->hKey,
-                pszSubKey,
-                pszKeyName,
-                RRF_RT_REG_DWORD,
-                NULL,
-                (PVOID)&dwValue,
-                &dwValueSize);
-    BAIL_ON_VMDNS_ERROR(dwError);
+     dwError = VmDirStringPrintFA(
+             &szKey[0], VM_SIZE_512,
+             "%s\\%s", pszSubKey, pszKeyName);
+     BAIL_ON_VMDNS_ERROR(dwError);
 
-    *pdwValue = dwValue;
+     dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+     BAIL_ON_VMDNS_ERROR(dwError);
 
-cleanup:
+     *pdwValue = atol(szValue);
 
-    return dwError;
+ cleanup:
 
-error:
+     return dwError;
 
-    *pdwValue = 0;
+ error:
+     *pdwValue = 0;
 
-    goto cleanup;
+     goto cleanup;
 }
 
 static
 DWORD
 VmDnsRegConfigGetString(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
     PSTR    *ppszValue)
 {
     DWORD dwError = 0;
+    CHAR  szKey[VM_SIZE_512] = {0};
     char szValue[VMDNS_MAX_CONFIG_VALUE_LENGTH] = {0};
     DWORD dwszValueSize = sizeof(szValue);
     PSTR pszValue = NULL;
 
-    dwError = RegGetValueA(
-                pCfgHandle->hConnection,
-                pCfgHandle->hKey,
-                pszSubKey,
-                pszKeyName,
-                RRF_RT_REG_SZ,
-                NULL,
-                szValue,
-                &dwszValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VMDIR_SIZE_512,
+            "%s\\%s", pszSubKey, pszKeyName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsAllocateStringA(szValue, &pszValue);
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmAllocateStringA(szValue, &pszValue);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     *ppszValue = pszValue;
@@ -412,32 +327,34 @@ error:
 }
 
 static
-VOID
-VmDnsRegConfigHandleClose(
-    PVMDNS_CONFIG_CONNECTION_HANDLE pCfgHandle
+DWORD
+VmDnsRegConfigGSetString(
+    PCSTR   pszSubKey,
+    PCSTR   pszKeyName,
+    PSTR    pszValue
     )
 {
-    if (pCfgHandle->hConnection)
-    {
-        if (pCfgHandle->hKey)
-        {
-            DWORD dwError = RegCloseKey(
-                        pCfgHandle->hConnection,
-                        pCfgHandle->hKey);
-            if (dwError != 0)
-            {   // Do not bail, best effort to cleanup.
-                VmDnsLog(
-                        VMDNS_LOG_LEVEL_INFO,
-                        "RegCloseKey failed, Error code: (%u)(%s)",
-                        dwError,
-                        VMDNS_SAFE_STRING(LwWin32ErrorToName(dwError)));
-            }
-        }
+    DWORD   dwError =  0;
+    CHAR    szKey[VM_SIZE_512] = {0};
 
-       RegCloseServer(pCfgHandle->hConnection);
+    if (!pszSubKey || !pszKeyName || !pszValue)
+    {
+        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
     }
 
-    VMDNS_SAFE_FREE_MEMORY(pCfgHandle);
+    dwError = VmDirStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubKey, pszKeyName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmRegConfigSetKeyA(szKey, pszValue, VmDirStringLenA(pszValue));
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+cleanup:
+    return dwError;
+
+error:
+    goto cleanup;
 }
 
 static

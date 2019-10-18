@@ -1,0 +1,8 @@
+vmdns:
+    Description: "VMware Domain Name Service"
+    User: "lightwave"
+    Group: "lightwave"
+
+    Parameters:
+        EnableDNSProtocol: "1"
+        RestListenPort: "7677p"

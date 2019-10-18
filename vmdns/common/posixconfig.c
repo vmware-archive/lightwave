@@ -162,26 +162,23 @@ error:
 
 DWORD
 VmDnsPosixCfgReadStringValue(
-    PVMDNS_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PSTR*               ppszValue
     )
 {
     DWORD dwError = 0;
+    CHAR  szKey[VM_SIZE_512] = {0};
     CHAR  szValue[VMDNS_MAX_CONFIG_VALUE_BYTE_LENGTH] = {0};
-    DWORD dwszValueSize = sizeof(szValue);
+    size_t dwszValueSize = sizeof(szValue);
     PSTR  pszValue = NULL;
 
-    dwError = RegGetValueA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszSubkey,
-                    pszName,
-                    RRF_RT_REG_SZ,
-                    NULL,
-                    szValue,
-                    &dwszValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
     BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsAllocateStringA(szValue, &pszValue);
@@ -207,28 +204,25 @@ error:
 
 DWORD
 VmDnsPosixCfgReadDWORDValue(
-    PVMDNS_CFG_KEY        pKey,
     PCSTR               pszSubkey,
     PCSTR               pszName,
     PDWORD              pdwValue
     )
 {
     DWORD dwError =0;
-    DWORD dwValue = 0;
-    DWORD dwValueSize = sizeof(dwValue);
+    CHAR    szKey[VM_SIZE_512] = {0};
+    CHAR    szValue[VM_SIZE_128] = {0};
+    size_t  dwszValueSize = sizeof(szValue);
 
-    dwError = RegGetValueA(
-                    pKey->pConnection->hConnection,
-                    pKey->hKey,
-                    pszSubkey,
-                    pszName,
-                    RRF_RT_REG_DWORD,
-                    NULL,
-                    (PVOID)&dwValue,
-                    &dwValueSize);
+    dwError = VmStringPrintFA(
+            &szKey[0], VM_SIZE_512,
+            "%s\\%s", pszSubkey, pszName);
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    *pdwValue = dwValue;
+    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    *pdwValue = atol(szValue);
 
 cleanup:
 

@@ -211,34 +211,9 @@ VmDnsConfigGetDword(
 {
     DWORD dwError = 0;
     DWORD dwValue = 0;
-    PVMDNS_CFG_CONNECTION pConnection = NULL;
-    PVMDNS_CFG_KEY pRootKey = NULL;
-    PVMDNS_CFG_KEY pParamsKey = NULL;
-    CHAR  szParamsKeyPath[] = VMDNS_CONFIG_PARAMETER_KEY_PATH;
-
-    dwError = VmDnsConfigOpenConnection(&pConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    &szParamsKeyPath[0],
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsConfigReadDWORDValue(
-                    pParamsKey,
-                    NULL,
+                    VMDNS_CONFIG_PARAMETER_KEY_PATH,
                     pcszValueName,
                     &dwValue);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -246,19 +221,6 @@ VmDnsConfigGetDword(
     *pdwOutput = dwValue;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmDnsConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmDnsConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmDnsConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 
@@ -276,33 +238,9 @@ VmDnsConfigGetStringA(
 {
     DWORD dwError = 0;
     PSTR  pszValue = 0;
-    PVMDNS_CFG_CONNECTION pConnection = NULL;
-    PVMDNS_CFG_KEY pRootKey = NULL;
-    PVMDNS_CFG_KEY pParamsKey = NULL;
-
-    dwError = VmDnsConfigOpenConnection(&pConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenRootKey(
-                    pConnection,
-                    "HKEY_LOCAL_MACHINE",
-                    0,
-                    KEY_READ,
-                    &pRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = VmDnsConfigOpenKey(
-                    pConnection,
-                    pRootKey,
-                    pcszKeyPath,
-                    0,
-                    KEY_READ,
-                    &pParamsKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsConfigReadStringValue(
-                    pParamsKey,
-                    NULL,
+                    pcszKeyPath,
                     pcszValueName,
                     &pszValue);
     BAIL_ON_VMDNS_ERROR(dwError);
@@ -310,19 +248,6 @@ VmDnsConfigGetStringA(
     *ppszOutput = pszValue;
 
 cleanup:
-
-    if (pParamsKey)
-    {
-        VmDnsConfigCloseKey(pParamsKey);
-    }
-    if (pRootKey)
-    {
-        VmDnsConfigCloseKey(pRootKey);
-    }
-    if (pConnection)
-    {
-        VmDnsConfigCloseConnection(pConnection);
-    }
 
     return dwError;
 

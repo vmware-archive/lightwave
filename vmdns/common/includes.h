@@ -25,6 +25,7 @@
 
 #include <config.h>
 
+#include <vmcommonincludes.h>
 #include <vmdnssys.h>
 
 #include <vmdns.h>

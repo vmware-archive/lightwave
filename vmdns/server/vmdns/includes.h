@@ -35,7 +35,7 @@
 #include <lwrpcrt/lwrpcrt.h>
 #include <dce/rpc.h>
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
+#include <vmcommonincludes.h>
 
 #else
 /* ========================= WIN32 ONLY ======================== */

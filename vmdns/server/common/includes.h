@@ -17,6 +17,8 @@
 #ifndef _WIN32
 #include <config.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdnssys.h>
 #include <vmdns.h>
 #include <vmdnstypes.h>
@@ -31,7 +33,6 @@
 #include <vmdnsserver.h>
 
 #include <reg/lwreg.h>
-#include <reg/regutil.h>
 
 #else
 

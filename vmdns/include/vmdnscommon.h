@@ -710,7 +710,6 @@ VmDnsConfigOpenKey(
 
 DWORD
 VmDnsConfigReadStringValue(
-    PVMDNS_CFG_KEY          pKey,
     PCSTR                   pszSubkey,
     PCSTR                   pszName,
     PSTR*                   ppszValue
@@ -718,7 +717,6 @@ VmDnsConfigReadStringValue(
 
 DWORD
 VmDnsConfigReadDWORDValue(
-    PVMDNS_CFG_KEY          pKey,
     PCSTR                   pszSubkey,
     PCSTR                   pszName,
     PDWORD                  pdwValue

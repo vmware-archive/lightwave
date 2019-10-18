@@ -33,6 +33,30 @@ static
 DWORD
 VmDnsNotifyLikewiseServiceManager();
 
+static
+DWORD
+VMDNSInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDIR_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMDNS_REG_CONFIG_FILE, FALSE);
+    BAIL_ON_VMDNS_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 int
 main(
    int     argc,
@@ -73,6 +97,9 @@ main(
                 &gVmdnsGlobals.pszLogFile);
         BAIL_ON_VMDNS_ERROR(dwError);
     }
+
+    dwError = VMDNSInitVmRegConfig();
+    BAIL_ON_VMDNS_ERROR(dwError);
 
     dwError = VmDnsConfigGetDword(VMDNS_KEY_VALUE_LOG_CAP, &gVmdnsGlobals.dwMaximumOldFiles);
     if (dwError)
@@ -118,6 +145,8 @@ cleanup:
    VmDnsLog( VMDNS_LOG_LEVEL_INFO, "Vmdnsd: stop" );
 
    VmDnsLogTerminate();
+
+   VmRegConfigFree();
 
    return dwError;
 
