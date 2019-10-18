@@ -252,6 +252,8 @@ error:
 
 /*
  * get MultiSZ key value
+ * 
+ * out pszValue must be in this format "value1\0value2\0"
  */
 DWORD
 VmRegConfigGetMultiSZKeyA(
@@ -260,8 +262,14 @@ VmRegConfigGetMultiSZKeyA(
     size_t*             piValueSize   /* in/out */
     )
 {
-    DWORD dwError = 0;
-    DWORD dwCnt = 0;
+    DWORD  dwError = 0;
+    DWORD  dwCnt = 0;
+    size_t iSize = 0;
+
+    if (piValueSize)
+    {
+        iSize = *piValueSize;
+    }
 
     dwError = VmRegConfigGetKeyA( pszKeyName, pszValue, piValueSize);
     BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -274,6 +282,16 @@ VmRegConfigGetMultiSZKeyA(
         }
     }
 
+    if (pszValue[dwCnt-1] != '\0')
+    {
+        if (dwCnt+1 >= iSize)
+	{
+            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_REGCONFIG_VALUE_TOO_BIG);
+	}
+
+        *piValueSize = dwCnt+1;
+    }
+
 cleanup:
     return dwError;
 
@@ -283,6 +301,8 @@ error:
 
 /*
  * set MultiSZ key value
+ *
+ * pszValue must be in this format "value1\0value2\0"
  */
 DWORD
 VmRegConfigSetMultiSZKeyA(
@@ -295,12 +315,12 @@ VmRegConfigSetMultiSZKeyA(
     DWORD   dwCnt = 0;
     PSTR    pszLocalStr = NULL;
 
-    dwError = VmAllocateMemory(iValueSize+1, (PVOID*)&pszLocalStr);
+    dwError = VmAllocateMemory(iValueSize+2, (PVOID*)&pszLocalStr);
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = VmCopyMemory(
             pszLocalStr,
-            iValueSize+1,
+            iValueSize+2,
             pszValue,
             iValueSize);
     BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -311,6 +331,12 @@ VmRegConfigSetMultiSZKeyA(
         {
             pszLocalStr[dwCnt] = '\n';
         }
+    }
+
+    if (pszLocalStr[iValueSize-1] != '\n')
+    {   // make sure every SZ ends with newline
+        pszLocalStr[iValueSize] = '\n';
+        iValueSize++;
     }
 
     dwError = VmRegConfigSetKeyA(pszKeyName, pszLocalStr, iValueSize);
