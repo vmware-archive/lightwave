@@ -832,12 +832,12 @@ _VmDirCtxSetOptions(
     };
 
     // use registry key value if exists
-    if (VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH, // vmdir/parameters
+    if (VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH, // vmdir/parameters
                              VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS,
                              szSslDisabledProtocols,
                              VMDIR_SSL_DISABLED_PROTOCOL_LEN - 1 ) == 0
         ||
-        VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH, // 6.0 b/c key location
+        VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH, // 6.0 b/c key location
                              VMDIR_REG_KEY_SSL_DISABLED_PROTOCOLS,
                              szSslDisabledProtocols,
                              VMDIR_SSL_DISABLED_PROTOCOL_LEN - 1 ) == 0
@@ -885,7 +885,7 @@ _VmDirCtxSetCipherSuite(
     PCSTR   pszCipherSuite = VMDIR_SSL_STRONG_CIPHER_SUITE;
 
     // use registry key value if exists
-    if (VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+    if (VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                              VMDIR_REG_KEY_SSL_CIPHER_SUITE,
                              szSslCipherSuite,
                              VMDIR_SSL_CIPHER_SUITE_LEN - 1) == 0

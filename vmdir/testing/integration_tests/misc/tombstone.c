@@ -178,13 +178,13 @@ GetTombstoneTimeouts(
     // test could be run on a non-server node, default to small value.
     // in this case, expect server to have the same key values set.
     //    (i.e. see support/tests/lightwave/server/promote.sh)
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
             "Services\\vmdir\\Parameters",
             VMDIR_REG_KEY_TOMBSTONE_EXPIRATION_IN_SEC,
             &dwPeriod,
             5);
 
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
             "Services\\vmdir\\Parameters",
             VMDIR_REG_KEY_TOMBSTONE_REAPING_FREQ_IN_SEC,
             &dwFrequency,

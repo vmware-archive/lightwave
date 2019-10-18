@@ -319,7 +319,7 @@ VmDirSrvSetupHostInstance(
     // This server DN
 
     // vdcpromo sets this key.
-    dwError = VmDirGetRegKeyValue(
+    dwError = VmRegCfgGetKeyStringA(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DC_ACCOUNT,
             pszHostName,

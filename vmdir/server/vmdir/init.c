@@ -290,7 +290,7 @@ VmDirCheckForDirtyShutdown(
     /*
      * Get the DirtyShutdown value (if it doesn't exist it's not dirty).
      */
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             &dwDirtyShutdown,
@@ -301,7 +301,7 @@ VmDirCheckForDirtyShutdown(
      * Assume the worst and write out that we had a dirty shutdown. When we
      * cleanly shutdown we'll update this value.
      */
-    dwError = VmDirSetRegKeyValueDword(
+    dwError = VmRegCfgSetKeyDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_DIRTY_SHUTDOWN,
                 TRUE);
@@ -611,7 +611,7 @@ _VmDirRestoreInstance(
                 VMDIR_LOG_MASK_ALL,
                 "Single node deployment topology, skip restore procedure.");
 
-        dwError = VmDirSetRegKeyValueDword(
+        dwError = VmRegCfgSetKeyDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_RESTORE_STATUS,
                 VMDIR_RESTORE_NOT_REQUIRED);
@@ -652,7 +652,7 @@ _VmDirRestoreInstance(
     {
         // Failed to contact partners.
         // Next server start needs to be in readonly.
-        dwError = VmDirSetRegKeyValueDword(
+        dwError = VmRegCfgSetKeyDword(
                         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                         VMDIR_REG_KEY_RESTORE_STATUS,
                         VMDIR_RESTORE_READONLY);
@@ -821,7 +821,7 @@ _VmDirRestoreInstance(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set registry to indicate that restore succeeded
-    dwError = VmDirSetRegKeyValueDword(
+    dwError = VmRegCfgSetKeyDword(
             VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_RESTORE_STATUS,
             VMDIR_RESTORE_NOT_REQUIRED);
@@ -1900,7 +1900,7 @@ VmDirCheckRestoreStatus(
     // Get the RestoreStatus value.
     // Ignore error meaning val doesn't exist, proceed with
     // requested startup.
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_RESTORE_STATUS,
                 &dwRestoreStatus,
@@ -1917,7 +1917,7 @@ VmDirCheckRestoreStatus(
         // Set to restore failure.
         // Restore action will change this as needed but failure
         // is asssumed until restore determine otherwise.
-        dwError = VmDirSetRegKeyValueDword(
+        dwError = VmRegCfgSetKeyDword(
                         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                         VMDIR_REG_KEY_RESTORE_STATUS,
                         VMDIR_RESTORE_FAILED);
@@ -1929,7 +1929,7 @@ VmDirCheckRestoreStatus(
     {
         targetState = VMDIRD_STATE_READ_ONLY;
 
-        dwError = VmDirSetRegKeyValueDword(
+        dwError = VmRegCfgSetKeyDword(
                         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                         VMDIR_REG_KEY_RESTORE_STATUS,
                         VMDIR_RESTORE_REQUIRED);

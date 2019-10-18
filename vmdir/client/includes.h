@@ -65,6 +65,8 @@ typedef void *VMCISLIB_BIND_T;
 #include <gssapi/gssapi.h>
 #include <gssapi/gssapi_ext.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirdefines.h>
 #include <vmdirerrorcode.h>

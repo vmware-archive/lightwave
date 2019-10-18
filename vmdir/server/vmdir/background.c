@@ -239,7 +239,7 @@ VmDirBkgdCreateNewIntegChkReport(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
         VMDIR_REG_KEY_INTEGRITY_CHK_INTERVAL_IN_SEC,
         &dwJobInterval,
@@ -295,7 +295,7 @@ VmDirBkgdCompareIntegChkReports(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
         VMDIR_REG_KEY_INTEGRITY_RPT_INTERVAL_IN_SEC,
         &dwJobInterval,

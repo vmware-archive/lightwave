@@ -88,7 +88,7 @@ VmDirSrvBackupDB(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // default mode is to disable WAL
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_MDB_ENABLE_WAL,
         &dwMdbWalEnable,

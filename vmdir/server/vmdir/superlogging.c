@@ -65,12 +65,12 @@ _VmDirSuperLoggingReadRegistry(
     DWORD dwEnabled = 0;
     DWORD dwCapacity = 0;
 
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_SUPER_LOGGING_ENABLE,
             &dwEnabled,
             FALSE);
-    (VOID)VmDirGetRegKeyValueDword(
+    (VOID)VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_SUPER_LOGGING_CAPACITY,
             &dwCapacity,
@@ -249,7 +249,7 @@ VmDirEnableSuperLogging(
 {
     pLogger->bEnabled = TRUE;
 
-    (VOID)VmDirSetRegKeyValueDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_ENABLE, TRUE);
+    (VOID)VmRegCfgSetKeyDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_ENABLE, TRUE);
 
     return ERROR_SUCCESS;
 }
@@ -264,7 +264,7 @@ VmDirDisableSuperLogging(
 {
     pLogger->bEnabled = FALSE;
 
-    (VOID)VmDirSetRegKeyValueDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_ENABLE, FALSE);
+    (VOID)VmRegCfgSetKeyDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_ENABLE, FALSE);
 
     return ERROR_SUCCESS;
 }
@@ -299,7 +299,7 @@ VmDirSetSuperLoggingSize(
     dwError = VmDirCircularBufferSetCapacity(pLogger->pCircularBuffer, dwSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    (VOID)VmDirSetRegKeyValueDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_CAPACITY, dwSize);
+    (VOID)VmRegCfgSetKeyDword(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_SUPER_LOGGING_CAPACITY, dwSize);
 
 error:
     return dwError;

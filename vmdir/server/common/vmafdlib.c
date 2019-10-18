@@ -64,7 +64,7 @@ VmDirOpenVmAfdClientLib(
 
     PSTR pszVmafdName = NULL;
 
-    dwError = VmDirGetRegKeyValue(
+    dwError = VmRegCfgGetKeyStringA(
             VMAFD_KEY_ROOT,
             VMAFD_LIB_KEY,
             pszRegLibPath,

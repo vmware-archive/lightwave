@@ -1271,7 +1271,7 @@ VmDirStoreLduGuidtoDC(
     char    pszHostName[VMDIR_MAX_HOSTNAME_LEN];
 
     // vdcpromo sets this key.
-    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH,
                                    VMDIR_REG_KEY_DC_ACCOUNT,
                                    pszHostName,
                                    sizeof(pszHostName)-1);
@@ -4668,7 +4668,7 @@ VmDirAppendRaftState(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    if (VmDirGetRegKeyValueDword(
+    if (VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_LDAP_PORT,
                 &dwTmpLdapPort,

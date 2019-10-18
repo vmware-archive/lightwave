@@ -1,6 +1,7 @@
 lib_LTLIBRARIES = libcommonunittests.la
 
 libcommonunittests_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
@@ -25,6 +26,7 @@ libcommonunittests_la_SOURCES = \
     VmDirStringToTokenList.c
 
 libcommonunittests_la_LIBADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

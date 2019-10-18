@@ -1,6 +1,7 @@
 vmdirtestlib_LTLIBRARIES = libmisctests.la
 
 libmisctests_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmdir/include \
     -I$(top_srcdir)/vmdir/include/public \
     @OPENSSL_INCLUDES@ \
@@ -16,6 +17,7 @@ libmisctests_la_SOURCES = \
     tombstone.c
 
 libmisctests_la_LIBADD = \
+    @top_builddir@/vmcommon/libvmcommon.la \
     @top_builddir@/vmdir/testing/test_lib/libvmdirtesting.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

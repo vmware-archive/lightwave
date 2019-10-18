@@ -17,208 +17,12 @@
 #include "includes.h"
 
 DWORD
-VmDirGetRegKeyValue(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PSTR    pszValue,
-    size_t  valueLen
-    )
-{
-    DWORD   dwError = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-
-    if (!pszConfigParamKeyPath || !pszKey || !pszValue)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, pszValue, &valueLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    VMDIR_LOG_VERBOSE( VMDIR_LOG_MASK_ALL, "VmDirGetRegKeyValue failed with error (%u)(%s)\n", dwError, pszKey);
-
-    goto cleanup;
-}
-
-DWORD
-VmDirGetRegKeyValueDword(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PDWORD  pdwValue,
-    DWORD   dwDefaultValue
-    )
-{
-    DWORD   dwError = 0;
-    DWORD   dwValue = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-    CHAR    szValue[VMDIR_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
-
-    if (!pszConfigParamKeyPath || !pszKey || !pdwValue)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwValue = atol(szValue);
-
-cleanup:
-    *pdwValue = dwValue;
-    return dwError;
-
-error:
-    dwValue = dwDefaultValue;
-    goto cleanup;
-}
-
-DWORD
-VmDirSetRegKeyValueString(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    PCSTR pszValue
-    )
-{
-    DWORD   dwError =  0;
-    DWORD   dwLen = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-
-    if (!pszConfigParamKeyPath || !pszKey || !pszValue)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwLen = VmDirStringLenA(pszValue);
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, pszValue, dwLen);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-VmDirSetRegKeyValueDword(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    DWORD dwValue
-    )
-{
-    DWORD   dwError =  0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-    CHAR    szValue[VMDIR_SIZE_128] = {0};
-
-    if (!pszConfigParamKeyPath || !pszKey)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszConfigParamKeyPath, pszKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirStringPrintFA(
-            &szValue[0], VMDIR_SIZE_128,
-            "%lu", dwValue);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigSetKeyA(szKey, szValue, VmDirStringLenA(szValue));
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-VmDirConfigSetSZKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName,
-    PCSTR pszKeyValue
-    )
-{
-    DWORD   dwError = 0;
-
-    if (!pszKeyPath || !pszKeyName || !pszKeyValue)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirSetRegKeyValueString(
-            pszKeyPath,
-            pszKeyName,
-            pszKeyValue);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
-VmDirConfigDeleteKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName
-    )
-{
-    DWORD   dwError = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-
-    if (!pszKeyPath || !pszKeyPath)
-    {
-        BAIL_WITH_VMDIR_ERROR(dwError, ERROR_INVALID_PARAMETER);
-    }
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszKeyPath, pszKeyName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigDeleteKeyA(szKey);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    return dwError;
-
-error:
-    goto cleanup;
-}
-
-DWORD
 VmDirGetRegGuid(
     PCSTR pszKey,
     PSTR  pszGuid
     )
 {
-    return VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH, pszKey, pszGuid, VMDIR_GUID_STR_LEN );
+    return VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH, pszKey, pszGuid, VMDIR_GUID_STR_LEN );
 }
 
 DWORD
@@ -226,7 +30,7 @@ VmDirGetRegKeyTabFile(
     PSTR  pszKeyTabFile
     )
 {
-    return VmDirGetRegKeyValue( VMAFD_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_KEYTAB_FILE, pszKeyTabFile,
+    return VmRegCfgGetKeyStringA( VMAFD_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_KEYTAB_FILE, pszKeyTabFile,
                                 VMDIR_MAX_FILE_NAME_LEN );
 }
 
@@ -254,7 +58,7 @@ VmDirWriteDCAccountOldPassword(
 {
     DWORD dwError = 0;
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DC_ACCOUNT_OLD_PWD,
                 pszOldPassword);
@@ -276,7 +80,7 @@ VmDirWriteDCAccountPassword(
 {
     DWORD dwError = 0;
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DC_ACCOUNT_PWD,
                 pszPassword);
@@ -302,7 +106,7 @@ VmDirReadDCAccountPassword(
             (PVOID *)&pLocalPassword );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetRegKeyValue(
+    dwError = VmRegCfgGetKeyStringA(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DC_ACCOUNT_PWD, pLocalPassword,
             VMDIR_KDC_RANDOM_PWD_LEN + 1);
@@ -331,7 +135,7 @@ VmDirReadDCAccountOldPassword(
             (PVOID *)&pLocalPassword );
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirGetRegKeyValue(
+    dwError = VmRegCfgGetKeyStringA(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_DC_ACCOUNT_OLD_PWD, pLocalPassword,
             VMDIR_KDC_RANDOM_PWD_LEN + 1);
@@ -357,7 +161,7 @@ VmDirRegReadDCAccount(
     PSTR    pszLocal = NULL;
     char    pszBuf[512] = {0};
 
-    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH,
                                    VMDIR_REG_KEY_DC_ACCOUNT,
                                    pszBuf,
                                    sizeof(pszBuf)-1 );
@@ -388,7 +192,7 @@ VmDirRegReadDCAccountDn(
     PSTR    pszLocal = NULL;
     char    pszBuf[512] = {0};
 
-    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH,
                                    VMDIR_REG_KEY_DC_ACCOUNT_DN,
                                    pszBuf,
                                    sizeof(pszBuf)-1 );
@@ -419,7 +223,7 @@ VmDirRegReadKrb5Conf(
     PSTR    pszLocal = NULL;
     char    pszBuf[512] = {0};
 
-    dwError = VmDirGetRegKeyValue( VMAFD_CONFIG_PARAMETER_KEY_PATH,
+    dwError = VmRegCfgGetKeyStringA( VMAFD_CONFIG_PARAMETER_KEY_PATH,
                                    VMAFD_REG_KEY_KRB5_CONF,
                                    pszBuf,
                                    sizeof(pszBuf)-1 );
@@ -454,7 +258,7 @@ VmDirRegReadPreSetMaxServerId(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID,
         &dwLocalID,
@@ -475,7 +279,7 @@ VmDirRegSetPreSetMaxServerId(
     DWORD   dwMaxServerId
     )
 {
-    return VmDirSetRegKeyValueDword(
+    return VmRegCfgSetKeyDword(
             VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_JOIN_WITH_PRE_SET_SERVER_ID,
             dwMaxServerId);
@@ -488,7 +292,7 @@ VmDirRegReadJoinWithPreCopiedDB(
 {
     DWORD   dwPreCopiedDB = 0;
 
-    VmDirGetRegKeyValueDword(
+    VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB,
         &dwPreCopiedDB,
@@ -502,10 +306,10 @@ VmDirRegSetJoinWithPreCopiedDB(
     BOOLEAN bValue
     )
 {
-    return VmDirSetRegKeyValueDword(
+    return VmRegCfgSetKeyDword(
             VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_JOIN_WITH_PRE_COPIED_DB,
-            bValue);
+            (DWORD)bValue);
 }
 
 DWORD
@@ -522,13 +326,13 @@ VmDirConfigSetDefaultSiteandLduGuid(
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_SITE_GUID,
             pszDefaultSiteGuid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
             VMDIR_CONFIG_PARAMETER_KEY_PATH,
             VMDIR_REG_KEY_LDU_GUID,
             pszDefaultLduGuid);
@@ -575,28 +379,28 @@ VmDirConfigSetDCAccountInfo(
                 dwPasswordSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DC_ACCOUNT_DN,
                 pszDCAccountDN);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DC_ACCOUNT,
                 pszDCAccount);
     BAIL_ON_VMDIR_ERROR(dwError);
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_DC_ACCOUNT_PWD,
                 pszPasswordBuf);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Ignore error
-    VmDirConfigDeleteKey(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_DC_ACCOUNT_OLD_PWD);
+    VmRegCfgDeleteKeyA(VMDIR_CONFIG_PARAMETER_KEY_PATH, VMDIR_REG_KEY_DC_ACCOUNT_OLD_PWD);
 
-    dwError = VmDirSetRegKeyValueString(
+    dwError = VmRegCfgSetKeyStringA(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 VMDIR_REG_KEY_MACHINE_GUID,
                 pszMachineGUID);

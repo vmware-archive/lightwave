@@ -107,10 +107,11 @@ _VmDirIsRenameSupported(
     DWORD dwRenameSupported = 0;
     DWORD dwFunctionalLevel = 0;
 
-    (VOID)VmDirGetRegKeyValueDword(VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
-                                   VMDIR_REG_KEY_ENABLE_RENAME,
-                                   &dwRenameSupported,
-                                   0);
+    (VOID)VmRegCfgGetKeyDword(
+            VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
+            VMDIR_REG_KEY_ENABLE_RENAME,
+            &dwRenameSupported,
+            0);
     if (dwRenameSupported == 0)
     {
         // Registry is not enabling support

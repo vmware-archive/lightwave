@@ -26,14 +26,6 @@ VmDirRegGetConfig(
 
 static
 DWORD
-VmDirRegConfigGetDword(
-    PCSTR  pszSubKey,
-    PCSTR  pszKeyName,
-    PDWORD pdwValue
-    );
-
-static
-DWORD
 VmDirRegConfigGetString(
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
@@ -478,10 +470,11 @@ VmDirRegGetConfig(
 
             case VMDIR_CONFIG_VALUE_TYPE_DWORD:
 
-                dwError = VmDirRegConfigGetDword(
+                dwError = VmRegCfgGetKeyDword(
                             pszSubKey,
                             pEntry->pszName,
-                            &pEntry->dwValue);
+                            &pEntry->dwValue,
+                            0);
                 if (dwError != 0)
                 {
                     pEntry->dwValue = pEntry->dwDefault;
@@ -502,10 +495,11 @@ VmDirRegGetConfig(
 
             case VMDIR_CONFIG_VALUE_TYPE_BOOLEAN:
 
-                dwError = VmDirRegConfigGetDword(
+                dwError = VmRegCfgGetKeyDword(
                             pszSubKey,
                             pEntry->pszName,
-                            &pEntry->dwValue);
+                            &pEntry->dwValue,
+                            0);
 
                 if (dwError != 0)
                 {
@@ -534,39 +528,6 @@ error:
 
 static
 DWORD
-VmDirRegConfigGetDword(
-    PCSTR  pszSubKey,
-    PCSTR  pszKeyName,
-    PDWORD pdwValue
-    )
-{
-    DWORD   dwError =0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
-    CHAR    szValue[VMDIR_SIZE_128] = {0};
-    size_t  dwszValueSize = sizeof(szValue);
-
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszSubKey, pszKeyName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    *pdwValue = atol(szValue);
-
-cleanup:
-
-    return dwError;
-
-error:
-    *pdwValue = 0;
-
-    goto cleanup;
-}
-
-static
-DWORD
 VmDirRegConfigGetString(
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
@@ -574,17 +535,11 @@ VmDirRegConfigGetString(
     )
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
     CHAR    szValue[VMDIR_MAX_CONFIG_VALUE_LENGTH] = {0};
     size_t  dwszValueSize = sizeof(szValue);
     PSTR    pszValue = NULL;
 
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszSubKey, pszKeyName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigGetKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubKey, pszKeyName, szValue, dwszValueSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(szValue, &pszValue);
@@ -597,7 +552,6 @@ cleanup:
     return dwError;
 
 error:
-    *ppszValue = NULL;
     VMDIR_SAFE_FREE_STRINGA(pszValue);
 
     goto cleanup;
@@ -612,17 +566,11 @@ VmDirRegConfigGetMultiString(
     )
 {
     DWORD   dwError = 0;
-    CHAR    szKey[VMDIR_SIZE_512] = {0};
     CHAR    szValue[VMDIR_MAX_CONFIG_VALUE_LENGTH] = {0};
     size_t  dwszValueSize = sizeof(szValue);
     PSTR    pszValue = NULL;
 
-    dwError = VmDirStringPrintFA(
-            &szKey[0], VMDIR_SIZE_512,
-            "%s\\%s", pszSubKey, pszKeyName);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmRegConfigGetMultiSZKeyA(szKey, szValue, &dwszValueSize);
+    dwError = VmRegCfgGetKeyMultiSZA(pszSubKey, pszKeyName, szValue, &dwszValueSize);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateAndCopyMemory(szValue, dwszValueSize+1, (PVOID*)&pszValue);
@@ -634,7 +582,6 @@ cleanup:
     return dwError;
 
 error:
-    *ppszValue = NULL;
     VMDIR_SAFE_FREE_STRINGA(pszValue);
     goto cleanup;
 }
@@ -769,10 +716,11 @@ VmDirGetMaxDbSizeMb(
     DWORD keyValue = 0;
     DWORD dwError = 0;
 
-    dwError = VmDirRegConfigGetDword(
+    dwError = VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
             VMDIR_REG_KEY_MAXIMUM_DB_SIZE_MB,
-            &keyValue);
+            &keyValue,
+            20*1024);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pMaxDbSizeMb = keyValue;
@@ -799,10 +747,11 @@ VmDirGetMdbWalEnable(
 
     *pbMdbEnableWal = FALSE;
 
-    dwError = VmDirRegConfigGetDword(
+    dwError = VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
             VMDIR_REG_KEY_MDB_ENABLE_WAL,
-            &keyValue);
+            &keyValue,
+            1);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pbMdbEnableWal = (BOOLEAN)(keyValue!=0);
@@ -830,10 +779,11 @@ VmDirGetMdbChkptInterval(
 
     *pdwMdbChkptInterval = VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT;
 
-    dwError = VmDirRegConfigGetDword(
+    dwError = VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
             VMDIR_REG_KEY_MDB_CHKPT_INTERVAL,
-            &keyValue);
+            &keyValue,
+            VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_DEFAULT);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (keyValue < VMDIR_REG_KEY_MDB_CHKPT_INTERVAL_MIN ||
@@ -867,10 +817,11 @@ VmDirGetLdapCopyEnable(
 
     *pbLdapCopyEnable = FALSE;
 
-    dwError = VmDirRegConfigGetDword(
+    dwError = VmRegCfgGetKeyDword(
             VMDIR_CONFIG_PARAMETER_PARAMS_KEY_PATH,
             VMDIR_REG_KEY_LDAP_COPY_ENABLE,
-            &keyValue);
+            &keyValue,
+            0);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     *pbLdapCopyEnable = (BOOLEAN)(keyValue!=0);

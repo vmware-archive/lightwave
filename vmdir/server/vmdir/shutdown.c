@@ -116,7 +116,7 @@ VmDirShutdown(
 
     VmDirFreeThreadContext();
 
-    (VOID)VmDirSetRegKeyValueDword(
+    (VOID)VmRegCfgSetKeyDword(
             VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
             VMDIR_REG_KEY_DIRTY_SHUTDOWN,
             FALSE);

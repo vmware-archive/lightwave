@@ -12,4 +12,4 @@ vmdir:
         EnableLdapCopy: "1"
         MdbEnableWal: "1"
         EnableRename: "0"
-        SslDisabledProtocols: "TLSv1\nTLSv1.1\n"
+        SslDisabledProtocols: "TLSv1,TLSv1.1"

@@ -88,7 +88,7 @@ VmDirSrvCreateServerObj(
     }
 
     // vdcpromo sets this key.
-    dwError = VmDirGetRegKeyValue( VMDIR_CONFIG_PARAMETER_KEY_PATH,
+    dwError = VmRegCfgGetKeyStringA( VMDIR_CONFIG_PARAMETER_KEY_PATH,
                                    VMDIR_REG_KEY_DC_ACCOUNT,
                                    pszHostName,
                                    sizeof(pszHostName)-1);

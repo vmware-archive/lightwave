@@ -199,7 +199,7 @@ _VmDirGetBackupTimeTaken(
     DWORD   dwError = 0;
     DWORD   dwBackupTimeTaken = 0;
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_BACKUP_TIME_TAKEN,
         &dwBackupTimeTaken,
@@ -212,7 +212,7 @@ _VmDirGetBackupTimeTaken(
 
     if (dwBackupTimeTaken)
     {   // backup job set value, report then reset it.
-        dwError = VmDirSetRegKeyValueDword(
+        dwError = VmRegCfgSetKeyDword(
                     VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                     VMDIR_REG_KEY_BACKUP_TIME_TAKEN,
                     0);

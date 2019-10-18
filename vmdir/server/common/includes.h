@@ -33,6 +33,8 @@
 #include <openssl/sha.h>
 #include <openssl/rand.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>

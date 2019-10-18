@@ -30,6 +30,8 @@
 #include <sasl/sasl.h>
 #include <sasl/saslutil.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>

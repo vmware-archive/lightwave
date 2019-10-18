@@ -23,13 +23,13 @@ TestDwordRoundTrip(
     DWORD dwError = 0;
 
     dwTestValue = 42;
-    dwError = VmDirSetRegKeyValueDword(
+    dwError = VmRegCfgSetKeyDword(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 "TestValue",
                 dwTestValue);
     TestAssertEquals(dwError, 0);
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 "TestValue",
                 &dwComparisonValue,
@@ -48,7 +48,7 @@ TestDwordDefaultValue(
     DWORD dwError = 0;
 
     dwTestValue = 42;
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 "TestValueDoesNotExist",
                 &dwComparisonValue,
@@ -67,13 +67,13 @@ TestMaxDwordValueRoundTrip(
     DWORD dwError = 0;
 
     dwTestValue = 0xFFFFFFFF; // Biggest possible DWORD
-    dwError = VmDirSetRegKeyValueDword(
+    dwError = VmRegCfgSetKeyDword(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 "TestMaxValue",
                 dwTestValue);
     TestAssertEquals(dwError, 0);
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_KEY_PATH,
                 "TestMaxValue",
                 &dwComparisonValue,

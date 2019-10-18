@@ -2832,29 +2832,6 @@ VmDirGetLocalSiteGuid(
     );
 
 DWORD
-VmDirGetRegKeyValue(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PSTR    pszValue,
-    size_t  valueLen
-    );
-
-DWORD
-VmDirGetRegKeyValueDword(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PDWORD  pdwValue,
-    DWORD   dwDefaultValue
-    );
-
-DWORD
-VmDirSetRegKeyValueString(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    PCSTR pszValue
-    );
-
-DWORD
 VmDirWriteDCAccountOldPassword(
     PCSTR pszOldPassword,
     DWORD dwLength /* Length of the string, not including null */
@@ -2864,21 +2841,6 @@ DWORD
 VmDirWriteDCAccountPassword(
     PCSTR pszPassword,
     DWORD dwLength /* Length of the string, not including null */
-    );
-
-DWORD
-VmDirSetRegKeyValueDword(
-    PCSTR pszConfigParamKeyPath,
-    PCSTR pszKey,
-    DWORD dwValue
-    );
-
-//sung has this?
-DWORD
-VmDirGetRegKeyValueQword(
-    PCSTR   pszConfigParamKeyPath,
-    PCSTR   pszKey,
-    PINT64  pi64Value
     );
 
 DWORD
@@ -2945,19 +2907,6 @@ VmDirConfigSetDCAccountInfo(
     PCSTR pszDCAccountPassword,
     DWORD dwPasswordSize,
     PCSTR pszMachineGUID
-    );
-
-DWORD
-VmDirConfigSetSZKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName,
-    PCSTR pszKeyValue
-    );
-
-DWORD
-VmDirConfigDeleteKey(
-    PCSTR pszKeyPath,
-    PCSTR pszKeyName
     );
 
 // mergesort.c

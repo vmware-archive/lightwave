@@ -34,6 +34,8 @@
 #include <openssl/ssl.h>
 #include <openssl/err.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>

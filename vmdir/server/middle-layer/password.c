@@ -195,7 +195,7 @@ VmDirPasswordSchemeInit(
     PVDIR_PASSWORD_HASH_SCHEME  pScheme = NULL;
     DWORD       dwOverrideSchemeId = 0;
 
-    (VOID) VmDirGetRegKeyValueDword(
+    (VOID) VmRegCfgGetKeyDword(
                 VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
                 VMDIR_REG_KEY_OVERRIDE_PASS_SCHEME,
                 &dwOverrideSchemeId,

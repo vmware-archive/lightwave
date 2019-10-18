@@ -1501,7 +1501,7 @@ _VmDirGetRaftParamters(
     DWORD dwError = 0;
     VDIR_RAFT_CFG raftCfg = {0, 0};
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_RAFT_ELECTION_TIMEOUT,
         &raftCfg.dwRaftElectionTimeoutMS,
@@ -1511,7 +1511,7 @@ _VmDirGetRaftParamters(
         raftCfg.dwRaftElectionTimeoutMS = RaftElectionTimeoutDefault;
     }
 
-    dwError = VmDirGetRegKeyValueDword(
+    dwError = VmRegCfgGetKeyDword(
         VMDIR_CONFIG_PARAMETER_V1_KEY_PATH,
         VMDIR_REG_KEY_RAFT_PING_INTERVAL,
         &raftCfg.dwRaftPingIntervalMS,

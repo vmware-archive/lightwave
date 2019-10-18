@@ -728,9 +728,10 @@ VmDirSetupHostInstanceTrust(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set registry key DCAccount.  So in server RPC VmDirSrvInitializeHost, it can read and use DCAccount.
-    dwError = VmDirConfigSetSZKey( VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                                   VMDIR_REG_KEY_DC_ACCOUNT,
-                                   pszLotusServerNameCanon);
+    dwError = VmRegCfgSetKeyStringA(
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_REG_KEY_DC_ACCOUNT,
+            pszLotusServerNameCanon);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError =  VmDirSetupHostInstanceEx(
@@ -862,9 +863,10 @@ VmDirJoin(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     // Set registry key DCAccount.  So in server RPC VmDirSrvInitializeHost, it can read and use DCAccount.
-    dwError = VmDirConfigSetSZKey( VMDIR_CONFIG_PARAMETER_KEY_PATH,
-                                   VMDIR_REG_KEY_DC_ACCOUNT,
-                                   pszLotusServerNameCanon);
+    dwError = VmRegCfgSetKeyStringA(
+            VMDIR_CONFIG_PARAMETER_KEY_PATH,
+            VMDIR_REG_KEY_DC_ACCOUNT,
+            pszLotusServerNameCanon);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     printf("System Host Name: %s\n", pszLotusServerNameCanon);

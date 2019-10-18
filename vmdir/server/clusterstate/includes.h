@@ -30,6 +30,8 @@
 
 #include <krb5/krb5.h>
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>

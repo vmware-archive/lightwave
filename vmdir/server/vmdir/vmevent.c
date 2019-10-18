@@ -29,7 +29,7 @@ _VmDirGetEventLogLibPath(
     PSTR    pszEventLogLibPath = NULL;
 
 #ifndef _WIN32
-    dwError = VmDirGetRegKeyValue( VMAFD_CONFIG_KEY_ROOT,
+    dwError = VmRegCfgGetKeyStringA( VMAFD_CONFIG_KEY_ROOT,
                                    VMAFD_REG_KEY_PATH,
                                    pszRegLibPath,
                                    sizeof(pszRegLibPath)-1);
