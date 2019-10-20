@@ -59,6 +59,7 @@ VMware Lightwave Server
 %define _stsdbdir %{_localstatedir}/vmware-sts
 %define _lwuser lightwave
 %define _lwgroup lightwave
+%define _machinecertdir /etc/vmware/vmware-vmafd
 
 %if 0%{?_likewise_open_prefix:1} == 0
 %define _likewise_open_prefix /opt/likewise
@@ -600,6 +601,9 @@ users.
     /bin/mkdir -m 700 -p %{_vmafd_dbdir}
     /bin/mkdir -m 700 -p %{_vecsdir}
     /bin/mkdir -m 700 -p %{_crlsdir}
+
+    /bin/mkdir -m 700 -p %{_machinecertdir}
+    chown %{_lwuser}:%{_lwgroup} %{_machinecertdir} >/dev/null 2>&1
 
     /bin/mkdir -m 755 -p %{_logconfdir}
     if [ -a %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
@@ -1385,6 +1389,7 @@ users.
 %{_datadir}/config/certool.cfg
 %{_datadir}/config/vmafd.reg
 %{_datadir}/config/vmafdcfg.yaml
+%{_datadir}/config/vmdircfg.yaml
 %{_datadir}/config/vmdir-client.reg
 %{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/telegraf.conf
