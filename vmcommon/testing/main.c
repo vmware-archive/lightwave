@@ -12,7 +12,7 @@
  * under the License.
  */
 
-#include "includes.h"
+#include "vmincludes.h"
 #include "vmregconfigtest.h"
 #include "vmmetricstest.h"
 #include "vmhttpclienttest.h"

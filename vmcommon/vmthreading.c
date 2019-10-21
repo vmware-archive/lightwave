@@ -13,7 +13,7 @@
  */
 
 
-#include "includes.h"
+#include "vmincludes.h"
 
 DWORD
 VmAllocateMutex(

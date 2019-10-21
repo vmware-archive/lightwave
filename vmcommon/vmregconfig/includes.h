@@ -12,6 +12,8 @@
  * under the License.
  */
 
+#include <vmincludes.h>
+
 #include "defines.h"
 #include "externs.h"
 #include "structs.h"

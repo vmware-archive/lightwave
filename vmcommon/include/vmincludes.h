@@ -44,8 +44,8 @@
 #include <openssl/rsa.h>
 #include <openssl/pem.h>
 
-#include "defines.h"
-#include "errorcode.h"
-#include "structs.h"
+#include "vmdefines.h"
+#include "vmerrorcode.h"
+#include "vmstructs.h"
 #include "vmcommonincludes.h"
 #include "vmsignature.h"

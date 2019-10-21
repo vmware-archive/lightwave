@@ -12,6 +12,9 @@
  * under the License.
  */
 
+#ifndef VMCOMMON_STRUCTS_H
+#define VMCOMMON_STRUCTS_H
+
 /* threading */
 typedef struct _VM_MUTEX
 {
@@ -160,3 +163,5 @@ typedef struct _VM_REGCONFIG_CONTEXT
     PVM_REGCONFIG_LIST_ENTRY pListEntry;
 
 } VM_REGCONFIG_CONTEXT;
+
+#endif //VMCOMMON_STRUCTS_H

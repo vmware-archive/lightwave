@@ -12,7 +12,7 @@
  * under the License.
  */
 
-#include "includes.h"
+#include "vmincludes.h"
 #include "vmhttpclient.h"
 
 static

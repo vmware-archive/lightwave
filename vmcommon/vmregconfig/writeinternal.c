@@ -13,7 +13,6 @@
  */
 
 #include "includes.h"
-#include "vmregconfigincludes.h"
 
 static uid_t _gLightwaveUid = 0;
 static gid_t _gLightwaveGid = 0;

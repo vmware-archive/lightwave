@@ -12,7 +12,7 @@
  * under the License.
  */
 
-#include "includes.h"
+#include "vmincludes.h"
 #include "vmsignaturetest.h"
 
 #define REQUEST_URI "/v1/vmdir/ldap?dn=cn%3DDSE%20Root"

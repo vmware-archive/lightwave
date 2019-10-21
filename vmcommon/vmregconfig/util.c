@@ -13,7 +13,6 @@
  */
 
 #include "includes.h"
-#include "vmregconfigincludes.h"
 
 VOID
 VmRegConfigConstructorKVFree(
