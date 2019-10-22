@@ -538,9 +538,9 @@ users.
             cp %{_datadir}/config/vmcacfg.yaml.current %{_datadir}/config/vmcacfg.yaml
             cp  %{_datadir}/config/vmdnscfg.yaml.current %{_datadir}/config/vmdnscfg.yaml
 
-            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
-            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmcacfg.yaml
-            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdnscfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmcacfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdnscfg.yaml
 
             chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
 
@@ -696,8 +696,8 @@ users.
             cp %{_datadir}/config/vmafdcfg.yaml.current %{_datadir}/config/vmafdcfg.yaml
             cp %{_datadir}/config/vmdircfg.yaml.current %{_datadir}/config/vmdircfg.yaml
 
-            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
-            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
 
             %{_likewise_open_bindir}/lwsm restart vmafd
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
@@ -1364,7 +1364,7 @@ users.
 %{_bindir}/vdcschema
 %{_bindir}/postschema
 %{_bindir}/vecs-cli
-%{_bindir}/lw-cli
+%{_bindir}/lwcommon-cli
 %{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/libcsrp.so*
 

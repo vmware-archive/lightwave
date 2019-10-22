@@ -1,21 +1,21 @@
 SUBDIRS = \
     regcfg
 
-bin_PROGRAMS = lw-cli
+bin_PROGRAMS = lwcommon-cli
 
-lw_cli_SOURCES = \
+lwcommon_cli_SOURCES = \
     main.c
 
-lw_cli_CPPFLAGS = \
+lwcommon_cli_CPPFLAGS = \
     -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmcommon/include \
     @LW_INCLUDES@
 
-lw_cli_LDADD = \
+lwcommon_cli_LDADD = \
     @top_builddir@/vmcommon/libvmcommon.la \
-    @top_builddir@/vmcommon/tools/lw-cli/regcfg/libregcfgcli.la \
+    @top_builddir@/vmcommon/tools/lwcommon-cli/regcfg/libregcfgcli.la \
     @PTHREAD_LIBS@
 
-lw_cli_LDFLAGS = \
+lwcommon_cli_LDFLAGS = \
     @LW_LDFLAGS@ \
     @OPENSSL_LDFLAGS@
