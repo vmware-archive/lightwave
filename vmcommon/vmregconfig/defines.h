@@ -1,5 +1,5 @@
 /*
- * Copyright Â   2019 VMware, Inc.  All Rights Reserved.
+ * Copyright ï¿½   2019 VMware, Inc.  All Rights Reserved.
  *
  * Licensed under the Apache License, Version 2.0 (the ?~@~\License?~@~]); you may not
  * use this file except in compliance with the License.  You may obtain a copy
@@ -14,11 +14,6 @@
 
 #ifndef __VM_REGCONFIG_DEFINE_H__
 #define __VM_REGCONFIG_DEFINE_H__
-
-#define VM_REGCONFIG_KEY_SEPARATOR_STR  "\\"
-#define VM_REGCONFIG_KEY_SEPARATOR      '\\'
-#define VM_REGCONFIG_TOP_KEY_PATH       "Services"
-#define VM_REGCONFIG_TOP_KEY_PATH_LEN   sizeof(VM_REGCONFIG_TOP_KEY_PATH)-1
 
 #define VM_REGCONFIG_INDENTATION        4
 #define VM_REGCONFIG_INDENTATION_STR    "    "

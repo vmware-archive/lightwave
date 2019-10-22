@@ -125,71 +125,77 @@ error:
 }
 
 /*
- * delete config file in context
+ * merge filenamefrom content into filenameinto
+ *
+ * New keys will be added.
+ * Existing keys will NOT be overridden.
  */
 DWORD
-VmRegConfigDeleteFile(
-    PCSTR               pszFileName
+VmRegConfigMergeFile(
+    PCSTR              pszFileNameFrom,
+    PCSTR              pszFileNameInto
     )
 {
-    DWORD dwError = 0;
+    DWORD   dwError = 0;
+    PSTR    pszTopKey = NULL;
+    CHAR    keyBuf[VM_SIZE_512] = {0};
+    CHAR    valueBuf[VM_SIZE_4096] = {0};
+    size_t  valueBufSize = sizeof(valueBuf);
     PVM_REGCONFIG_LIST_ENTRY    pEntry = NULL;
-    PVM_REGCONFIG_LIST_ENTRY    pPrevEntry = NULL;
-    BOOLEAN                     bInLock = FALSE;
+    PVM_REGCONFIG_LIST_KV       pKV = NULL;
 
-    if (!pszFileName)
+    if (!pszFileNameFrom || !pszFileNameInto)
     {
         BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_INVALID_PARAMETER);
     }
 
-    if (!_gpVmRegConfig)
-    {
-        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_REGCONFIG_INVALID_STATE);
-    }
+    dwError = VmRegConfigAddFile(pszFileNameFrom, TRUE);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
 
-    for (pEntry = _gpVmRegConfig->pListEntry; pEntry; pPrevEntry = pEntry, pEntry = pEntry->pNext)
+    dwError = VmRegConfigAddFile(pszFileNameInto, FALSE);
+    BAIL_ON_VM_COMMON_ERROR(dwError);
+
+    for (pEntry = _gpVmRegConfig->pListEntry; pEntry; pEntry = pEntry->pNext)
     {
-        if (VmStringCompareA(pszFileName, pEntry->pszFileName, FALSE) == 0)
+        if (!pszTopKey)
         {
-            VM_LOCK_MUTEX(bInLock, pEntry->pMutex);
-
-            if (pPrevEntry)
+            pszTopKey = pEntry->pszTopKey;
+        }
+        else
+        {
+            if (VmStringCompareA(pszTopKey, pEntry->pszTopKey, FALSE) != 0)
             {
-                pPrevEntry->pNext = pEntry->pNext;
+                BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_REGCONFIG_INVALID_MERGE);
             }
-            else
-            {
-                _gpVmRegConfig->pListEntry = pEntry->pNext;
-            }
+        }
 
+        if (VmStringCompareA(pszFileNameFrom, pEntry->pszFileName, FALSE) == 0)
+        {
+            pKV = pEntry->pListKV;
             break;
         }
     }
 
-    if (!pEntry)
+    for (; pKV; pKV = pKV->pNext)
     {
-        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_NOT_FOUND);
+        dwError = VmStringPrintFA(
+                keyBuf, VM_SIZE_512,
+                "%s%s", VM_REGCONFIG_TOP_KEY_PATH, pKV->pszKey);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
+
+        valueBufSize = sizeof(valueBuf);
+        dwError = VmRegConfigGetKeyA(keyBuf, valueBuf, &valueBufSize);
+        if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
+        {
+            dwError = VmRegConfigSetKeyA(keyBuf, pKV->pszValue, VmStringLenA(pKV->pszValue));
+            BAIL_ON_VM_COMMON_ERROR(dwError);
+        }
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
-    VmRegConfigListEntryFree(pEntry);
-
-cleanup:
-    VM_UNLOCK_MUTEX(bInLock, pEntry->pMutex);
-
-    return dwError;
-
 error:
-    goto cleanup;
+    return dwError;
 }
-
-/*
- * merge new into current config
- */
-DWORD
-VmRegConfigMergeFile(
-    PCSTR              pszCurrentFileName,
-    PCSTR              pszNewFileName
-    );
 
 /*
  * get key value
@@ -385,15 +391,8 @@ VmRegConfigSetKeyA(
                 BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_OPERATION_NOT_PERMITTED);
             }
 
-            if ((fd = open(pEntry->pszLockFileName, O_CREAT, S_IRUSR| S_IWUSR)) == -1)
-            {
-                BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
-            }
-
-            if (flock(fd, LOCK_EX) == -1)
-            {
-                BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
-            }
+            dwError = VmRegConfigLockFile(pEntry->pszLockFileName, &fd);
+            BAIL_ON_VM_COMMON_ERROR(dwError);
 
             dwError = VmRegConfigForceReadInternal(pEntry);
             BAIL_ON_VM_COMMON_ERROR(dwError);
@@ -462,15 +461,8 @@ VmRegConfigDeleteKeyA(
                 BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_OPERATION_NOT_PERMITTED);
             }
 
-            if ((fd = open(pEntry->pszLockFileName, O_CREAT, S_IRUSR| S_IWUSR)) == -1)
-            {
-                BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
-            }
-
-            if (flock(fd, LOCK_EX) == -1)
-            {
-                BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
-            }
+            dwError = VmRegConfigLockFile(pEntry->pszLockFileName, &fd);
+            BAIL_ON_VM_COMMON_ERROR(dwError);
 
             dwError = VmRegConfigForceReadInternal(pEntry);
             BAIL_ON_VM_COMMON_ERROR(dwError);

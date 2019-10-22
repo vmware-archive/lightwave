@@ -3,6 +3,7 @@ SUBDIRS = \
     vmregconfig \
     . \
     config \
+    tools \
     testing
 
 lib_LTLIBRARIES = libvmcommon.la

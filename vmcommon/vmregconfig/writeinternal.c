@@ -656,3 +656,41 @@ error:
     }
     return dwError;
 }
+
+DWORD
+VmRegConfigLockFile(
+    PCSTR   pszLockFileName,
+    int*    pfd
+    )
+{
+    DWORD   dwError = 0;
+    int     fd = -1;
+
+    if (!pszLockFileName || !pfd)
+    {
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_INVALID_PARAMETER);
+    }
+
+    if ((fd = open(pszLockFileName, O_CREAT, S_IRUSR| S_IWUSR)) == -1)
+    {
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
+    }
+
+    if (getuid() == 0)
+    {   // root user, change lock file ownership to lightwave
+        if (chown(pszLockFileName, _gLightwaveUid, _gLightwaveGid) != 0)
+        {
+            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_CHANGE_OWNER);
+        }
+    }
+
+    if (flock(fd, LOCK_EX) == -1)
+    {
+        BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_IO);
+    }
+
+    *pfd = fd;
+
+error:
+    return dwError;
+}

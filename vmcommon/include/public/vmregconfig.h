@@ -49,8 +49,8 @@ VmRegConfigFree(
  */
 DWORD
 VmRegConfigMergeFile(
-    PCSTR               pszCurrentFileName,
-    PCSTR               pszNewFileName
+    PCSTR               pszFileNameFrom,
+    PCSTR               pszFileNameInto
     );
 
 /*
@@ -71,14 +71,6 @@ DWORD
 VmRegConfigAddFile(
     PCSTR               pszFileName,
     BOOLEAN             bReadOnly
-    );
-
-/*
- * delete config file in context
- */
-DWORD
-VmRegConfigDeleteFile(
-    PCSTR               pszFileName
     );
 
 /*

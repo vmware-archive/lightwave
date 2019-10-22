@@ -27,6 +27,11 @@
 #define VM_LIGHTWAVE_USER               "lightwave"
 #define VM_LIGHTWAVE_GROUP              "lightwave"
 
+#define VM_REGCONFIG_KEY_SEPARATOR_STR  "\\"
+#define VM_REGCONFIG_KEY_SEPARATOR      '\\'
+#define VM_REGCONFIG_TOP_KEY_PATH       "Services"
+#define VM_REGCONFIG_TOP_KEY_PATH_LEN   sizeof(VM_REGCONFIG_TOP_KEY_PATH)-1
+
 #define HEADER_BEARER_AUTH "Authorization: Bearer %s"
 #define HEADER_HOTK_PK_AUTH "Authorization: hotk-pk %s"
 

@@ -57,6 +57,11 @@ VmRegConfigWriteFileInternal(
     PVM_REGCONFIG_LIST_ENTRY   pEntry
     );
 
+DWORD
+VmRegConfigLockFile(
+    PCSTR   pszLockFileName,
+    int*    pfd
+    );
 
 /* util.c */
 VOID
