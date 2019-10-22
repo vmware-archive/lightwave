@@ -260,6 +260,9 @@ users.
             #
             # Upgrade
             #
+            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.current
+            mv %{_datadir}/config/vmcacfg.yaml %{_datadir}/config/vmcacfg.yaml.current
+            mv %{_datadir}/config/vmdnscfg.yaml %{_datadir}/config/vmdnscfg.yaml.current
             ;;
 
     esac
@@ -288,6 +291,8 @@ users.
             #
             # Upgrade
             #
+            mv %{_datadir}/config/vmafdcfg.yaml %{_datadir}/config/vmafdcfg.yaml.current
+            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.current
             ;;
     esac
 
@@ -525,11 +530,17 @@ users.
 
             try_starting_lwregd_svc=true
 
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir.reg
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdns.reg
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmca.reg
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
+            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmcacfg.yaml %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmdnscfg.yaml %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist}
+
+            cp %{_datadir}/config/vmdircfg.yaml.current %{_datadir}/config/vmdircfg.yaml
+            cp %{_datadir}/config/vmcacfg.yaml.current %{_datadir}/config/vmcacfg.yaml
+            cp  %{_datadir}/config/vmdnscfg.yaml.current %{_datadir}/config/vmdnscfg.yaml
+
+            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
+            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmcacfg.yaml
+            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdnscfg.yaml
 
             chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
 
@@ -679,18 +690,15 @@ users.
                 stop_lwsmd=1
             fi
 
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmafd.reg
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/vmdir-client.reg
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
-            %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
-            %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
-            if [ $? -ne 0 ]; then
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
-                %{_likewise_open_bindir}/lwsm restart lsass
-            fi
+            mv %{_datadir}/config/vmafdcfg.yaml %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
+
+            cp %{_datadir}/config/vmafdcfg.yaml.current %{_datadir}/config/vmafdcfg.yaml
+            cp %{_datadir}/config/vmdircfg.yaml.current %{_datadir}/config/vmdircfg.yaml
+
+            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
+            %{_bindir}/lw-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
+
             %{_likewise_open_bindir}/lwsm restart vmafd
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
 
@@ -1356,6 +1364,7 @@ users.
 %{_bindir}/vdcschema
 %{_bindir}/postschema
 %{_bindir}/vecs-cli
+%{_bindir}/lw-cli
 %{_lib64dir}/libkrb5crypto.so*
 %{_lib64dir}/libcsrp.so*
 
