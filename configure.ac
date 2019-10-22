@@ -1748,6 +1748,9 @@ AC_CONFIG_FILES([Makefile
                  vmcommon/include/public/Makefile
                  vmcommon/config/Makefile
                  vmcommon/vmregconfig/Makefile
+                 vmcommon/tools/Makefile
+                 vmcommon/tools/lw-cli/Makefile
+                 vmcommon/tools/lw-cli/regcfg/Makefile
                  vmcommon/testing/Makefile
                  plugins/Makefile
                  plugins/lwca_security_aws_kms/Makefile

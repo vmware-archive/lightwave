@@ -152,7 +152,7 @@ _CLIRegCfgHandleKey(
         break;
 
     default:
-        dwError = dwError = VM_COMMON_ERROR_INVALID_PARAMETER;;
+        dwError = VM_COMMON_ERROR_INVALID_PARAMETER;;
         break;
         }
 
