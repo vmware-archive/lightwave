@@ -16,14 +16,6 @@
 
 #include "includes.h"
 
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-static
-DWORD
-VmAfSrvSignalVmdirProvider(
-    VOID
-    );
-#endif
-
 static
 DWORD
 VmAfdAppendDomain(
@@ -549,14 +541,6 @@ VmAfSrvPromoteVmDir(
                     );
     BAIL_ON_VMAFD_ERROR(dwError);
 
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    /* for Likewise vmdir provider integration
-    dwError = VmAfSrvSignalVmdirProvider();
-    */
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
-
-
     dwError = VmAfdRegSetString(VMAFD_CONFIG_PARAMETER_KEY_PATH,
                            VMAFD_REG_KEY_DC_NAME,
                            pwszLotusServerName);
@@ -569,13 +553,6 @@ VmAfSrvPromoteVmDir(
         VmAfdLog(VMAFD_DEBUG_ANY, "Source IP init failed!");
         dwError = 0;
     }
-#endif
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    /* for Likewise vmdir provider integration
-    dwError = VmAfSrvSignalVmdirProvider();
-    */
-    BAIL_ON_VMAFD_ERROR(dwError);
 #endif
 
     dwError = CdcSrvInitDefaultHAMode(gVmafdGlobals.pCdcContext);
@@ -742,11 +719,6 @@ VmAfSrvDemoteVmDir(
                 "%s successfully uninitialized local node dns.",
                 __FUNCTION__);
         }
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-        dwError = VmAfSrvSignalVmdirProvider();
-        BAIL_ON_VMAFD_ERROR(dwError);
-#endif
 
         dwError = VmDirDemote(pszUserName, pszPassword);
         BAIL_ON_VMAFD_ERROR(dwError);
@@ -1431,11 +1403,6 @@ VmAfSrvJoinVmDir2(
     dwError = VmAfSrvSetDomainState(VMAFD_DOMAIN_STATE_CLIENT);
     BAIL_ON_VMAFD_ERROR(dwError);
 
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-    dwError = VmAfSrvSignalVmdirProvider();
-    BAIL_ON_VMAFD_ERROR(dwError);
-#endif
-
     VmAfdLog(VMAFD_DEBUG_ANY,
              "%s: joined Vmdir.",
              __FUNCTION__);
@@ -1654,11 +1621,6 @@ VmAfSrvLeaveVmDir(
                             pszPassword,
                             pszHostNameFQDN);
         BAIL_ON_VMAFD_ERROR(dwError);
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-        dwError = VmAfSrvSignalVmdirProvider();
-        BAIL_ON_VMAFD_ERROR(dwError);
-#endif
 
         // Machine credentials will be used if the user name or password are NULL.
 
@@ -2837,42 +2799,6 @@ error:
 
     goto cleanup;
 }
-
-#if !defined(_WIN32) && defined(NOTIFY_VMDIR_PROVIDER)
-static
-DWORD
-VmAfSrvSignalVmdirProvider(
-    VOID
-    )
-{
-    DWORD dwError = 0;
-    HANDLE hLsaConnection = (HANDLE)NULL;
-
-    dwError = LsaOpenServer(&hLsaConnection);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = LsaVmdirSignal(
-                    hLsaConnection,
-                    LSA_VMDIR_SIGNAL_RELOAD_CONFIG);
-    BAIL_ON_VMAFD_ERROR(dwError);
-
-cleanup:
-
-    if (hLsaConnection != (HANDLE)NULL)
-    {
-        LsaCloseServer(hLsaConnection);
-    }
-
-    return dwError;
-
-error:
-
-    VmAfdLog(VMAFD_DEBUG_ANY, "%s failed. Error(%u)",
-             __FUNCTION__, dwError);
-
-    goto cleanup;
-}
-#endif
 
 static
 DWORD
