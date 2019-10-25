@@ -27,6 +27,7 @@ libvmcommon_la_SOURCES = \
     vmnetworkutil.c \
     vmsignature.c \
     vmthreading.c \
+    vmdaemon.c \
     vmutil.c
 
 libvmcommon_la_LIBADD = \

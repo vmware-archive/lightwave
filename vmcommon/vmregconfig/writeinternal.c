@@ -14,9 +14,6 @@
 
 #include "includes.h"
 
-static uid_t _gLightwaveUid = 0;
-static gid_t _gLightwaveGid = 0;
-
 static
 DWORD
 _VmRegConfigWriteBuf(
@@ -451,10 +448,8 @@ VmRegConfigWriteFileInternal(
 
     if (processUid == 0)
     {
-        if (chown(pszTmpFile, _gLightwaveUid, _gLightwaveGid) != 0)
-        {
-            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_CHANGE_OWNER);
-        }
+        dwError = VmSetLWOwnership(pszTmpFile);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (rename(pszTmpFile, pEntry->pszFileName) != 0)
@@ -607,57 +602,6 @@ error:
 }
 
 DWORD
-VmRegConfigGetLWUserGroupId(
-    VOID
-    )
-{
-    DWORD   dwError = 0;
-    int     iStatus = 0;
-    struct  passwd pwd = { 0 };
-    struct  passwd *pResult = NULL;
-    size_t  ibufsize = 0;
-    CHAR*   pBuffer = NULL;
-    uid_t   processUid = getuid();
-
-    // LW services runs a Lightwave user/group
-    // Root user can run tools but need to keep the file r/w or Lightwave user
-    if (processUid == 0 && _gLightwaveUid == 0)
-    {
-        ibufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
-        if (ibufsize == -1)
-        {
-            ibufsize = VM_MAX_GWTPWR_BUF_LENGTH;
-        }
-
-        dwError = VmAllocateMemory(
-            ibufsize,
-            (PVOID*)&pBuffer);
-        BAIL_ON_VM_COMMON_ERROR(dwError);
-
-        iStatus = getpwnam_r(
-            VM_LIGHTWAVE_USER,
-            &pwd,
-            pBuffer,
-            ibufsize,
-            &pResult);
-        if (iStatus || !pResult)
-        {
-            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_NO_SUCH_USER);
-        }
-
-        _gLightwaveUid = pwd.pw_uid;
-        _gLightwaveGid = pwd.pw_gid;
-    }
-
-error:
-    if (pBuffer)
-    {
-        VM_COMMON_SAFE_FREE_MEMORY(pBuffer);
-    }
-    return dwError;
-}
-
-DWORD
 VmRegConfigLockFile(
     PCSTR   pszLockFileName,
     int*    pfd
@@ -678,10 +622,8 @@ VmRegConfigLockFile(
 
     if (getuid() == 0)
     {   // root user, change lock file ownership to lightwave
-        if (chown(pszLockFileName, _gLightwaveUid, _gLightwaveGid) != 0)
-        {
-            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_FILE_CHANGE_OWNER);
-        }
+        dwError = VmSetLWOwnership(pszLockFileName);
+        BAIL_ON_VM_COMMON_ERROR(dwError);
     }
 
     if (flock(fd, LOCK_EX) == -1)

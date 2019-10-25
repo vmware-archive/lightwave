@@ -25,7 +25,7 @@ VmRegConfigInit(
     DWORD dwError = 0;
     PVM_REGCONFIG_CONTEXT pContext = NULL;
 
-    dwError = VmRegConfigGetLWUserGroupId();
+    dwError = VmGetLWUserGroupId();
     BAIL_ON_VM_COMMON_ERROR(dwError);
 
     dwError = VmAllocateMemory(
