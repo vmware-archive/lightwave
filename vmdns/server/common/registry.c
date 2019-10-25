@@ -44,15 +44,8 @@ VmDnsRegSaveForwarders(
     )
 {
     DWORD dwError = 0;
-    HANDLE hConnection = NULL;
-    HKEY   hRootKey = NULL;
-    HKEY   hParamKey = NULL;
-
     PSTR pszStringForwarders = NULL;
     DWORD dwStringForwardersLen = 0;
-    PCSTR pszParamsKeyPath      = VMDNS_CONFIG_PARAMETER_KEY_PATH;
-    PCSTR pszForwarderValue     = VMDNS_REG_VALUE_FORWARDER;
-
 
     if (!ppszForwarders)
     {
@@ -68,54 +61,14 @@ VmDnsRegSaveForwarders(
                           );
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = RegOpenServer(&hConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                hConnection,
-                NULL,
-                HKEY_THIS_MACHINE,
-                0,
-                KEY_WRITE,
-                &hRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                hConnection,
-                hRootKey,
-                pszParamsKeyPath,
-                0,
-                KEY_WRITE,
-                &hParamKey
-                );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegSetValueExA(
-                        hConnection,
-                        hParamKey,
-                        pszForwarderValue,
-                        0,
-                        REG_MULTI_SZ,
-                        (PVOID)pszStringForwarders,
-                        dwStringForwardersLen
-                        );
+    dwError = VmRegCfgSetKeyMultiSZA(
+            VMDNS_CONFIG_PARAMETER_KEY_PATH,
+            VMDNS_REG_VALUE_FORWARDER,
+            pszStringForwarders,
+            (size_t)dwStringForwardersLen);
     BAIL_ON_VMDNS_ERROR(dwError);
 
 cleanup:
-
-
-    if (hParamKey)
-    {
-        RegCloseKey(hConnection, hParamKey);
-    }
-    if (hRootKey)
-    {
-        RegCloseKey(hConnection, hRootKey);
-    }
-    if (hConnection)
-    {
-        RegCloseServer(hConnection);
-    }
     VMDNS_SAFE_FREE_MEMORY(pszStringForwarders);
 
     return dwError;
@@ -130,17 +83,11 @@ VmDnsRegLoadForwarders(
     PSTR**         pppszForwarders
     )
 {
-    DWORD dwError = 0;
-    HANDLE hConnection = NULL;
-    HKEY   hRootKey = NULL;
-    HKEY   hParamKey = NULL;
-
-    DWORD dwCount = 0;
-    PSTR* ppszForwarders = NULL;
-    PCSTR pszParamsKeyPath      = VMDNS_CONFIG_PARAMETER_KEY_PATH;
-    PCSTR pszForwarderValue     = VMDNS_REG_VALUE_FORWARDER;
-    char szValue[VMDNS_MAX_CONFIG_VALUE_LENGTH] = {0};
-    DWORD dwszValueSize = sizeof(szValue);
+    DWORD   dwError = 0;
+    DWORD   dwCount = 0;
+    PSTR*   ppszForwarders = NULL;
+    char    szValue[VMDNS_MAX_CONFIG_VALUE_LENGTH] = {0};
+    size_t  dwszValueSize = sizeof(szValue);
 
 
     if (!pdwCount || !pppszForwarders)
@@ -149,40 +96,11 @@ VmDnsRegLoadForwarders(
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
-    dwError = RegOpenServer(&hConnection);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                hConnection,
-                NULL,
-                HKEY_THIS_MACHINE,
-                0,
-                KEY_READ,
-                &hRootKey);
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                hConnection,
-                hRootKey,
-                pszParamsKeyPath,
-                0,
-                KEY_READ,
-                &hParamKey
-                );
-    BAIL_ON_VMDNS_ERROR(dwError);
-
-
-    dwError = RegGetValue(
-                        hConnection,
-                        hParamKey,
-                        NULL,
-                        pszForwarderValue,
-                        0,
-                        NULL,
-                        (PVOID*)&szValue,
-                        &dwszValueSize
-                        );
-
+    dwError = VmRegCfgGetKeyMultiSZA(
+        VMDNS_CONFIG_PARAMETER_KEY_PATH,
+        VMDNS_REG_VALUE_FORWARDER,
+        szValue,
+        &dwszValueSize);
     if (dwError == LWREG_ERROR_NO_SUCH_KEY_OR_VALUE)
     {
         dwError = ERROR_NO_DATA;
@@ -201,21 +119,8 @@ VmDnsRegLoadForwarders(
     *pdwCount = dwCount;
 
 cleanup:
-
-    if (hParamKey)
-    {
-        RegCloseKey(hConnection, hParamKey);
-    }
-    if (hRootKey)
-    {
-        RegCloseKey(hConnection, hRootKey);
-    }
-    if (hConnection)
-    {
-        RegCloseServer(hConnection);
-    }
-
     return dwError;
+
 error:
 
     if (pppszForwarders)
