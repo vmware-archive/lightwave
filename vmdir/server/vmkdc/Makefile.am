@@ -38,6 +38,7 @@ libvmkdcserv_la_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 libvmkdcserv_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmdir/server/kdckrb5/libvmkrb5.la \
     $(top_builddir)/vmdir/server/kdctools/libvmkdctools.la \
     $(top_builddir)/vmdir/server/kdcsrvcommon/libkdcsrvcommon.la \

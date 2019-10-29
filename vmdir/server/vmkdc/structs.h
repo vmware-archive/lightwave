@@ -50,14 +50,6 @@ typedef struct _VMKDC_NTSERVICE_DATA
 
 #endif
 
-typedef struct _VMKDC_CONFIG_CONNECTION_HANDLE
-{
-#ifndef _WIN32
-    HANDLE hConnection;
-#endif
-    HKEY hKey;
-} VMKDC_CONFIG_CONNECTION_HANDLE, *PVMKDC_CONFIG_CONNECTION_HANDLE;
-
 typedef struct _VMKDC_CONFIG_ENTRY
 {
     PCSTR   pszName;

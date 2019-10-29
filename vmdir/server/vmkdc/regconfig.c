@@ -22,49 +22,6 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
-#define VmKdcRegOpenServer(phConnection) \
-    RegOpenServer(phConnection)
-
-#define VmKdcRegCloseServer(hConnection) \
-    RegCloseServer(hConnection)
-
-#define VmKdcRegOpenHKLM(hRegConnection, ulOptions,                   \
-                         AccessDesired, phkResult)                    \
-    RegOpenKeyExA(hRegConnection, NULL, HKEY_THIS_MACHINE, ulOptions, \
-                  AccessDesired, phkResult)
-
-#define VmKdcRegCloseKey(hConnection, hKey) \
-    RegCloseKey(hConnection, hKey)
-
-#define VmKdcRegGetValueA(hConnection, hKey, pSubKey, pValue, Flags, pdwType, \
-                          pvData, pcbData)                                    \
-    RegGetValueA(hConnection, hKey, pSubKey, pValue, Flags, pdwType,          \
-                 pvData, pcbData)
-
-#else
-
-#define VmKdcRegOpenServer(phConnection) \
-    ERROR_SUCCESS
-
-#define VmKdcRegCloseServer(hConnection)
-
-#define VmKdcRegOpenHKLM(hRegConnection, ulOptions,    \
-                      AccessDesired, phkResult)        \
-    RegOpenKeyExA(HKEY_LOCAL_MACHINE, NULL, ulOptions, \
-                  AccessDesired, phkResult)
-
-#define VmKdcRegCloseKey(hRegConnection, hKey) \
-    RegCloseKey(hKey)
-
-#define VmKdcRegGetValueA(hConnection, hKey, pSubKey, pValue, Flags, pdwType, \
-                          pvData, pcbData)                                    \
-    RegGetValueA(hKey, pSubKey, pValue, Flags, pdwType,                       \
-                 pvData, pcbData)
-
-#endif
-
 static
 DWORD
 VmKdcRegGetConfig(
@@ -75,14 +32,7 @@ VmKdcRegGetConfig(
 
 static
 DWORD
-VmKdcRegConfigHandleOpen(
-    PVMKDC_CONFIG_CONNECTION_HANDLE *ppCfgHandle
-    );
-
-static
-DWORD
 VmKdcRegConfigGetDword(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR  pszSubKey,
     PCSTR  pszKeyName,
     PDWORD pdwValue
@@ -91,16 +41,9 @@ VmKdcRegConfigGetDword(
 static
 DWORD
 VmKdcRegConfigGetString(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
     PSTR    *ppszValue
-    );
-
-static
-VOID
-VmKdcRegConfigHandleClose(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle
     );
 
 static
@@ -190,10 +133,6 @@ VmKdcRegGetConfig(
 {
     DWORD dwError = 0;
     DWORD iEntry = 0;
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
-
-    dwError = VmKdcRegConfigHandleOpen(&pCfgHandle);
-    BAIL_ON_VMKDC_ERROR(dwError);
 
     for (; iEntry < dwNumEntries; iEntry++)
     {
@@ -204,7 +143,6 @@ VmKdcRegGetConfig(
             case VMKDC_CONFIG_VALUE_TYPE_STRING:
 
                 dwError = VmKdcRegConfigGetString(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.pszValue);
@@ -220,7 +158,6 @@ VmKdcRegGetConfig(
             case VMKDC_CONFIG_VALUE_TYPE_DWORD:
 
                 dwError = VmKdcRegConfigGetDword(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -259,7 +196,6 @@ VmKdcRegGetConfig(
             case VMKDC_CONFIG_VALUE_TYPE_BOOLEAN:
 
                 dwError = VmKdcRegConfigGetDword(
-                            pCfgHandle,
                             pszSubKey,
                             pEntry->pszName,
                             &pEntry->cfgValue.dwValue);
@@ -289,64 +225,15 @@ VmKdcRegGetConfig(
     dwError = 0;
 
 cleanup:
-
-    if (pCfgHandle)
-    {
-        VmKdcRegConfigHandleClose(pCfgHandle);
-    }
-
     return dwError;
 
 error:
-
-    goto cleanup;
-}
-
-static
-DWORD
-VmKdcRegConfigHandleOpen(
-    PVMKDC_CONFIG_CONNECTION_HANDLE *ppCfgHandle)
-{
-    DWORD dwError = 0;
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle = NULL;
-
-    dwError = VmKdcAllocateMemory(
-                sizeof(VMKDC_CONFIG_CONNECTION_HANDLE),
-                (PVOID*)&pCfgHandle);
-    BAIL_ON_VMKDC_ERROR(dwError);
-
-    dwError = VmKdcRegOpenServer(&pCfgHandle->hConnection);
-    BAIL_ON_VMKDC_ERROR(dwError);
-
-    dwError = VmKdcRegOpenHKLM(
-                pCfgHandle->hConnection,
-                0,
-                KEY_READ,
-                &pCfgHandle->hKey);
-    BAIL_ON_VMKDC_ERROR(dwError);
-
-    *ppCfgHandle = pCfgHandle;
-
-cleanup:
-
-    return dwError;
-
-error:
-
-    *ppCfgHandle = NULL;
-
-    if (pCfgHandle)
-    {
-        VmKdcRegConfigHandleClose(pCfgHandle);
-    }
-
     goto cleanup;
 }
 
 static
 DWORD
 VmKdcRegConfigGetDword(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR  pszSubKey,
     PCSTR  pszKeyName,
     PDWORD pdwValue
@@ -354,17 +241,12 @@ VmKdcRegConfigGetDword(
 {
     DWORD dwError =0;
     DWORD dwValue = 0;
-    DWORD dwValueSize = sizeof(dwValue);
 
-    dwError = VmKdcRegGetValueA(
-                pCfgHandle->hConnection,
-                pCfgHandle->hKey,
+    dwError = VmRegCfgGetKeyDword(
                 pszSubKey,
                 pszKeyName,
-                RRF_RT_REG_DWORD,
-                NULL,
-                (PVOID)&dwValue,
-                &dwValueSize);
+                &dwValue,
+                0);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     *pdwValue = dwValue;
@@ -383,25 +265,16 @@ error:
 static
 DWORD
 VmKdcRegConfigGetString(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle,
     PCSTR   pszSubKey,
     PCSTR   pszKeyName,
     PSTR    *ppszValue)
 {
-    DWORD dwError = 0;
-    char szValue[VMKDC_MAX_CONFIG_VALUE_LENGTH] = {0};
-    DWORD dwszValueSize = sizeof(szValue);
-    PSTR pszValue = NULL;
+    DWORD   dwError = 0;
+    char    szValue[VMKDC_MAX_CONFIG_VALUE_LENGTH] = {0};
+    size_t  dwszValueSize = sizeof(szValue);
+    PSTR    pszValue = NULL;
 
-    dwError = VmKdcRegGetValueA(
-                pCfgHandle->hConnection,
-                pCfgHandle->hKey,
-                pszSubKey,
-                pszKeyName,
-                RRF_RT_REG_SZ,
-                NULL,
-                szValue,
-                &dwszValueSize);
+    dwError = VmRegCfgGetKeyStringA(pszSubKey, pszKeyName, szValue, dwszValueSize);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     dwError = VmKdcAllocateStringA(szValue, &pszValue);
@@ -420,29 +293,6 @@ error:
     VMKDC_SAFE_FREE_STRINGA(pszValue);
 
     goto cleanup;
-}
-
-static
-VOID
-VmKdcRegConfigHandleClose(
-    PVMKDC_CONFIG_CONNECTION_HANDLE pCfgHandle
-    )
-{
-    if (pCfgHandle->hKey)
-    {
-        DWORD dwError = VmKdcRegCloseKey(pCfgHandle->hConnection,
-                                         pCfgHandle->hKey);
-        if (dwError != 0)
-        {   // Do not bail, best effort to cleanup.
-            VMDIR_LOG_ERROR(VMDIR_LOG_MASK_ALL,
-                     "VmKdcRegCloseKey failed, Error code: (%u)",
-                     dwError);
-        }
-    }
-
-    VmKdcRegCloseServer(pCfgHandle->hConnection);
-
-    VMKDC_SAFE_FREE_MEMORY(pCfgHandle);
 }
 
 static

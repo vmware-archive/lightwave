@@ -34,6 +34,8 @@
 #include <lwrpcrt/lwrpcrt.h>
 #include <reg/lwreg.h>
 
+#include <vmcommonincludes.h>
+
 #include <net/if.h>
 #include <ifaddrs.h>
 
