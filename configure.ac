@@ -1841,7 +1841,6 @@ AC_CONFIG_FILES([Makefile
                  vmdir/server/vmdir/Makefile
                  vmdir/server/main/Makefile
                  vmdir/client/Makefile
-                 vmdir/config/vmdir.reg
                  vmdir/config/vmdircfg.yaml
                  vmdir/testing/Makefile
                  vmdir/testing/query/Makefile
@@ -1890,7 +1889,6 @@ AC_CONFIG_FILES([Makefile
                  vmdns/include/Makefile
                  vmdns/include/public/Makefile
                  vmdns/config/Makefile
-                 vmdns/config/vmdns.reg
                  vmdns/config/vmdnscfg.yaml
                  vmdns/common/Makefile
                  vmdns/vmsock/Makefile
@@ -1908,7 +1906,6 @@ AC_CONFIG_FILES([Makefile
                  vmafd/include/Makefile
                  vmafd/include/public/Makefile
                  vmafd/config/Makefile
-                 vmafd/config/vmafd.reg
                  vmafd/config/vmafdcfg.yaml
                  vmafd/common/Makefile
                  vmafd/vmnetevent/Makefile
@@ -1946,7 +1943,6 @@ AC_CONFIG_FILES([Makefile
                  vmca/include/Makefile
                  vmca/include/public/Makefile
                  vmca/config/Makefile
-                 vmca/config/vmca.reg
                  vmca/config/vmcacfg.yaml
                  vmca/common/Makefile
                  vmca/service/Makefile

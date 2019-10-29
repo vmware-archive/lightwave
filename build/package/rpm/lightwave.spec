@@ -248,21 +248,21 @@ users.
             #
             # New Installation
             #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                if [ -z "`pidof lwsmd`" ]; then
-                    /bin/systemctl start lwsmd
-                fi
-            fi
+
             ;;
 
         2)
             #
             # Upgrade
             #
-            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.current
-            mv %{_datadir}/config/vmcacfg.yaml %{_datadir}/config/vmcacfg.yaml.current
-            mv %{_datadir}/config/vmdnscfg.yaml %{_datadir}/config/vmdnscfg.yaml.current
+            mv %{_datadir}/config/vmdircfg.yaml %{_lw_tmp_dir}/vmdircfg.yaml
+            mv %{_datadir}/config/vmcacfg.yaml  %{_lw_tmp_dir}/vmcacfg.yaml
+            mv %{_datadir}/config/vmdnscfg.yaml %{_lw_tmp_dir}/vmdnscfg.yaml
+
+            /bin/systemctl stop vmware-vmdnsd.service
+            /bin/systemctl stop vmware-vmcad.service
+            /bin/systemctl stop vmware-vmdird.service
+            /bin/systemctl stop vmware-vmafdd.service
             ;;
 
     esac
@@ -279,20 +279,17 @@ users.
             #
             # New Installation
             #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                if [ -z "`pidof lwsmd`" ]; then
-                    /bin/systemctl start lwsmd
-                fi
-            fi
+
             ;;
 
         2)
             #
             # Upgrade
             #
-            mv %{_datadir}/config/vmafdcfg.yaml %{_datadir}/config/vmafdcfg.yaml.current
-            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.current
+            mv %{_datadir}/config/vmafdcfg.yaml %{_lw_tmp_dir}/vmafdcfg.yaml
+            mv %{_datadir}/config/vmdircfg.yaml %{_lw_tmp_dir}/vmdircfg.yaml
+
+            /bin/systemctl stop vmware-vmafdd.service
             ;;
     esac
 
@@ -306,12 +303,7 @@ users.
             #
             # New Installation
             #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                if [ -z "`pidof lwsmd`" ]; then
-                    /bin/systemctl start lwsmd
-                fi
-            fi
+
             ;;
 
         2)
@@ -331,12 +323,6 @@ users.
             #
             # New Installation
             #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                if [ -z "`pidof lwsmd`" ]; then
-                    /bin/systemctl start lwsmd
-                fi
-            fi
             ;;
 
         2)
@@ -373,30 +359,6 @@ users.
             /bin/install -d %{_lightwavelogsdir} -o %{_lwuser} -g %{_lwgroup} -m 755
             /bin/ln -s %{_lightwavelogsdir} %{_stslogsdir}
 
-            stop_lwsmd=0
-            if [ -f /.dockerenv ]; then
-                if [ -z "`pidof lwsmd`" ]; then
-                    echo "Starting lwsmd"
-                    %{_likewise_open_sbindir}/lwsmd &
-                    sleep 1
-                    stop_lwsmd=1
-                fi
-            fi
-
-            %{_likewise_open_bindir}/lwregshell import %{_configdir}/idm/idm.reg
-            # set version
-            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
-
             ;;
 
         2)
@@ -407,13 +369,6 @@ users.
             # Note: Upgrades are not handled in container
 
             /bin/systemctl daemon-reload
-
-            %{_likewise_open_bindir}/lwregshell upgrade %{_configdir}/idm/idm.reg
-            # set version
-            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Software\VMware\Identity]" "Version" "%{_version}"
-
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
 
             %{_sbindir}/configure-build.sh "%{_stsdbdir}"
 
@@ -455,9 +410,6 @@ users.
 
     lw_uid="$(id -u lightwave)"
     lw_gid="$(id -g lightwave)"
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir.reg
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdns.reg
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmca.reg
 
     # vmdir
     /bin/install -d %{_vmdir_dbdir} -o lightwave -g lightwave -m 700
@@ -490,35 +442,28 @@ users.
     fi
     /bin/ln -s %{_datadir}/config/vmcad-syslog-ng.conf %{_logconfdir}/vmcad-syslog-ng.conf
 
+    setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
+    setcap cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdnsd
+    setcap cap_dac_read_search+ep %{_sbindir}/vmcad
+
     case "$1" in
         1)
             #
             # New Installation
             #
-            stop_lwsmd=0
-            if [ -f /.dockerenv ]; then
-                if [ -z "`pidof lwsmd`" ]; then
-                    echo "Starting lwsmd"
-                    %{_likewise_open_sbindir}/lwsmd &
-                    sleep 1
-                    stop_lwsmd=1
-                fi
-            fi
 
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir.reg
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdns.reg
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmca.reg
+            /bin/systemctl enable vmware-vmafdd.service
+            /bin/systemctl enable vmware-vmdird.service
+            /bin/systemctl enable vmware-vmcad.service
+            /bin/systemctl enable vmware-vmdnsd.service
 
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
-
+            /bin/systemctl daemon-reload
+            # start vmdir the first time under MdbEnabelWal 0 is much faster
+            %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 0
+            /bin/systemctl start vmware-vmdird.service
+            /bin/systemctl stop vmware-vmdird.service
+            # set MdbEnable 1 default state
+            %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 1
             ;;
 
         2)
@@ -528,33 +473,34 @@ users.
 
             # Note: Upgrades are not handled in container
 
-            try_starting_lwregd_svc=true
+            mv %{_datadir}/config/vmdircfg.yaml %{_lw_tmp_dir}/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmcacfg.yaml  %{_lw_tmp_dir}/vmcacfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmdnscfg.yaml %{_lw_tmp_dir}/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist}
 
-            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
-            mv %{_datadir}/config/vmcacfg.yaml %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist}
-            mv %{_datadir}/config/vmdnscfg.yaml %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist}
+            cp %{_lw_tmp_dir}/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml
+            cp %{_lw_tmp_dir}/vmcacfg.yaml  %{_datadir}/config/vmcacfg.yaml
+            cp %{_lw_tmp_dir}/vmdnscfg.yaml %{_datadir}/config/vmdnscfg.yaml
 
-            cp %{_datadir}/config/vmdircfg.yaml.current %{_datadir}/config/vmdircfg.yaml
-            cp %{_datadir}/config/vmcacfg.yaml.current %{_datadir}/config/vmcacfg.yaml
-            cp  %{_datadir}/config/vmdnscfg.yaml.current %{_datadir}/config/vmdnscfg.yaml
-
-            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
-            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmcacfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmcacfg.yaml
-            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdnscfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmcacfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmcacfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmdnscfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdnscfg.yaml
 
             chown lightwave:lightwave /var/log/lightwave/vmca.log.* >/dev/null 2>&1
 
             ;;
     esac
 
-    setcap cap_dac_read_search,cap_sys_nice,cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdird
-    setcap cap_sys_resource,cap_net_bind_service+ep %{_sbindir}/vmdnsd
-    setcap cap_dac_read_search+ep %{_sbindir}/vmcad
-
     chown -R lightwave:lightwave %{_vmca_dbdir}
     chown -R lightwave:lightwave %{_vmdir_dbdir}
+    chown -R lightwave:lightwave %{_datadir}/config
     find %{_vmdir_dbdir} -type f -exec chmod 600 {} \;
     chown -R lightwave:lightwave %{_integchkdir}
+
+    /bin/systemctl daemon-reload
+    /bin/systemctl start vmware-vmafdd.service
+    /bin/systemctl start vmware-vmdird.service
+    /bin/systemctl start vmware-vmcad.service
+    /bin/systemctl start vmware-vmdnsd.service
 
 %post client
 
@@ -625,8 +571,6 @@ users.
     lw_uid="$(id -u lightwave)"
     lw_gid="$(id -g lightwave)"
     lw_user_sid="S-1-22-1-$lw_uid"
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmafd.reg
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/vmdir-client.reg
 
     /bin/install -d %{_rpcdir} -o lightwave -g lightwave -m 755
     /bin/install -d %{_ipcdir} -o lightwave -g lightwave -m 755
@@ -637,44 +581,18 @@ users.
     fi
     chown %{_lwuser}:%{_lwgroup} %{_lw_tmp_dir} >/dev/null 2>&1
 
+    /bin/systemctl daemon-reload
+
     case "$1" in
         1)
             #
             # New Installation
             #
-            stop_lwsmd=0
-            if [ -z "`pidof lwsmd`" ]; then
-                echo "Starting lwsmd"
-                %{_likewise_open_sbindir}/lwsmd &
-                sleep 1
-                stop_lwsmd=1
-            fi
 
-
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmafd.reg
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/vmdir-client.reg
-
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
-            %{_likewise_open_bindir}/lwregshell set_value "[HKEY_THIS_MACHINE\Services\vmafd\Parameters]" "EnableDCERPC" 0
-            %{_likewise_open_bindir}/lwregshell set_security '[HKEY_THIS_MACHINE]' "O:SYG:BAD:(A;;KR;;;WD)(A;;KA;;;SY)(A;;KA;;;$lw_user_sid)"
-            %{_likewise_open_bindir}/lwregshell list_values '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' | grep -i -q srp
-            if [ $? -ne 0 ]; then
-                # set vmdir provider bind protocol to srp
-                %{_likewise_open_bindir}/lwregshell set_value '[HKEY_THIS_MACHINE\Services\lsass\Parameters\Providers\VmDir]' BindProtocol srp
-                %{_likewise_open_bindir}/lwsm restart lsass
-            fi
-
-            %{_likewise_open_bindir}/lwsm restart vmafd
+            /bin/systemctl start vmware-vmafdd.service
+            /bin/systemctl restart vmware-vmafdd.service
+            #sleep 2
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
 
             ;;
 
@@ -682,32 +600,19 @@ users.
             #
             # Upgrade
             #
-            stop_lwsmd=0
-            if [ -z "`pidof lwsmd`" ]; then
-                echo "Starting lwsmd"
-                %{_likewise_open_sbindir}/lwsmd &
-                sleep 1
-                stop_lwsmd=1
-            fi
+            mv %{_datadir}/config/vmafdcfg.yaml %{_lw_tmp_dir}/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist}
+            mv %{_datadir}/config/vmdircfg.yaml %{_lw_tmp_dir}/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
 
-            mv %{_datadir}/config/vmafdcfg.yaml %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist}
-            mv %{_datadir}/config/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist}
+            cp %{_lw_tmp_dir}/vmafdcfg.yaml %{_datadir}/config/vmafdcfg.yaml
+            cp %{_lw_tmp_dir}/vmdircfg.yaml %{_datadir}/config/vmdircfg.yaml
 
-            cp %{_datadir}/config/vmafdcfg.yaml.current %{_datadir}/config/vmafdcfg.yaml
-            cp %{_datadir}/config/vmdircfg.yaml.current %{_datadir}/config/vmdircfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
+            %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
 
-            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
-            %{_bindir}/lwcommon-cli regcfg merge-file %{_datadir}/config/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
-
-            %{_likewise_open_bindir}/lwsm restart vmafd
+            /bin/systemctl start vmware-vmafdd.service
+            /bin/systemctl restart vmware-vmafdd.service
+            #sleep 2
             %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
 
             ;;
     esac
@@ -744,41 +649,12 @@ users.
             #
             # New Installation
             #
-            stop_lwsmd=0
-            if [ -f /.dockerenv ]; then
-                if [ -z "`pidof lwsmd`" ]; then
-                    echo "Starting lwsmd"
-                    %{_likewise_open_sbindir}/lwsmd &
-                    sleep 1
-                    stop_lwsmd=1
-                fi
-            fi
-
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/post.reg
-
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
-
             ;;
 
         2)
             #
             # Upgrade
             #
-
-            # Note: Upgrades are not handled in container
-
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/post.reg
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
             ;;
     esac
 
@@ -800,56 +676,25 @@ users.
     fi
     /bin/ln -s %{_datadir}/config/mutentcad-syslog-ng.conf %{_logconfdir}/mutentcad-syslog-ng.conf
 
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_datadir}/config/mutentca.reg
-
     case "$1" in
         1)
             #
             # New Installation
             #
-            stop_lwsmd=0
-            if [ -f /.dockerenv ]; then
-                if [ -z "`pidof lwsmd`" ]; then
-                    echo "Starting lwsmd"
-                    %{_likewise_open_sbindir}/lwsmd &
-                    sleep 1
-                    stop_lwsmd=1
-                fi
-            fi
-
-            %{_likewise_open_bindir}/lwregshell import %{_datadir}/config/mutentca.reg
-
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
-            if [ $stop_lwsmd -eq 1 ]; then
-                %{_likewise_open_bindir}/lwsm shutdown
-                while [ `pidof lwsmd` ];  do
-                    sleep 1
-                done
-            fi
-
             ;;
 
         2)
             #
             # Upgrade
             #
-
-            # Note: Upgrades are not handled in container
-
-            %{_likewise_open_bindir}/lwregshell upgrade %{_datadir}/config/mutentca.reg
-            %{_likewise_open_bindir}/lwsm -q refresh
-            sleep 5
-
             chown lightwave:lightwave /var/log/lightwave/mutentca.log.* >/dev/null 2>&1
 
             ;;
     esac
 
-    setcap cap_dac_read_search+ep %{_sbindir}/mutentcad
     chown -R lightwave:lightwave %{_mutentca_dbdir}
 
+    setcap cap_dac_read_search+ep %{_sbindir}/mutentcad
 
 %post samples
 
@@ -915,26 +760,31 @@ users.
             # Uninstall
             #
 
-            %{_likewise_open_bindir}/lwsm info vmca > /dev/null 2>&1
+            /bin/systemctl >/dev/null 2>&1
             if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop vmca
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmca'
-            fi
+                 if [ -f /etc/systemd/system/vmware-vmdnsd.service ]; then
+                     /bin/systemctl stop vmware-vmdnsd.service
+                     /bin/systemctl disable vmware-vmdnsd.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/vmware-vmdnsd.service
+                     /bin/rm -f /etc/systemd/system/vmware-vmdnsd.service
+                 fi
 
-            %{_likewise_open_bindir}/lwsm info vmdir > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop vmdir
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdir'
-            fi
+                 if [ -f /etc/systemd/system/vmware-vmcad.service ]; then
+                     /bin/systemctl stop vmware-vmcad.service
+                     /bin/systemctl disable vmware-vmcad.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/vmware-vmcad.service
+                     /bin/rm -f /etc/systemd/system/vmware-vmcad.service
+                 fi
 
-            %{_likewise_open_bindir}/lwsm info vmdns > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop vmdns
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmdns'
-            fi
+                 if [ -f /etc/systemd/system/vmware-vmdird.service ]; then
+                     /bin/systemctl stop vmware-vmdird.service
+                     /bin/systemctl disable vmware-vmdird.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/vmware-vmdird.service
+                     /bin/rm -f /etc/systemd/system/vmware-vmdird.service
+                 fi
 
-            /bin/systemctl restart lwsmd
-            sleep 5
+                 /bin/systemctl daemon-reload
+            fi
 
             if [ -h %{_logconfdir}/vmdird-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/vmdird-syslog-ng.conf
@@ -964,22 +814,22 @@ users.
             #
             # Uninstall
             #
-            %{_likewise_open_bindir}/lwsm info vmafd > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop vmafd
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\vmafd'
-                /bin/systemctl restart lwsmd
-                sleep 5
-            fi
-
             /bin/systemctl >/dev/null 2>&1
             if [ $? -eq 0 ]; then
+                 if [ -f /etc/systemd/system/vmware-vmafdd.service ]; then
+                     /bin/systemctl stop vmware-vmafdd.service
+                     /bin/systemctl disable vmware-vmafdd.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/vmware-vmafdd.service
+                     /bin/rm -f /etc/systemd/system/vmware-vmafdd.service
+                 fi
+
                  if [ -f /etc/systemd/system/firewall.service ]; then
                      /bin/systemctl stop firewall.service
                      /bin/systemctl disable firewall.service
                      /bin/rm -f /etc/systemd/system/multi-user.target.wants/firewall.service
-                     /bin/systemctl daemon-reload
                  fi
+
+                 /bin/systemctl daemon-reload
             fi
 
             if [ -h %{_logconfdir}/vmafdd-syslog-ng.conf ]; then
@@ -1004,13 +854,6 @@ users.
             #
             # Uninstall
             #
-            %{_likewise_open_bindir}/lwsm info post > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop post
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\post'
-                /bin/systemctl restart lwsmd
-                sleep 5
-            fi
             ;;
 
         1)
@@ -1030,15 +873,6 @@ users.
             #
             # Uninstall
             #
-
-            %{_likewise_open_bindir}/lwsm info mutentca > /dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                %{_likewise_open_bindir}/lwsm stop mutentca
-                %{_likewise_open_bindir}/lwregshell delete_tree 'HKEY_THIS_MACHINE\Services\mutentca'
-                /bin/systemctl restart lwsmd
-                sleep 5
-
-            fi
 
             if [ -h %{_logconfdir}/mutentcad-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/mutentcad-syslog-ng.conf
@@ -1094,15 +928,6 @@ users.
             #
             # Uninstall
             #
-
-            if [ -x "%{_lwisbindir}/lwregshell" ]
-            then
-                %{_lwisbindir}/lwregshell list_keys "[HKEY_THIS_MACHINE\Software\VMware\Identity]" > /dev/null 2>&1
-                if [ $? -eq 0 ]; then
-                    # delete key if exist
-                    %{_lwisbindir}/lwregshell delete_tree "[HKEY_THIS_MACHINE\Software\VMware\Identity]"
-                fi
-            fi
             ;;
 
         1)
@@ -1319,14 +1144,12 @@ users.
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
 %{_lib64dir}/libvmdirmdb.so*
 
-%{_datadir}/config/vmca.reg
 %{_datadir}/config/vmcacfg.yaml
 %{_datadir}/config/vmcad-syslog-ng.conf
 %{_datadir}/config/vmca-rest-v2.json
 %{_datadir}/config/vmca-telegraf.conf
 
 %{_datadir}/config/saslvmdird.conf
-%{_datadir}/config/vmdir.reg
 %{_datadir}/config/vmdircfg.yaml
 %{_datadir}/config/vmdirschema.ldif
 %{_datadir}/config/vmdird-syslog-ng.conf
@@ -1334,7 +1157,6 @@ users.
 %{_datadir}/config/vmdir-rest-api.json
 %{_datadir}/config/vmdir-telegraf.conf
 
-%{_datadir}/config/vmdns.reg
 %{_datadir}/config/vmdnscfg.yaml
 %{_datadir}/config/vmdns-rest.json
 %{_datadir}/config/vmdnsd-syslog-ng.conf
@@ -1342,6 +1164,10 @@ users.
 
 %{_configdir}/lw-firewall-server.json
 
+%{_servicedir}/vmware-vmdird.service
+%{_servicedir}/vmware-vmafdd.service
+%{_servicedir}/vmware-vmcad.service
+%{_servicedir}/vmware-vmdnsd.service
 
 %files client
 
@@ -1396,10 +1222,10 @@ users.
 
 %{_datadir}/config/java.security.linux
 %{_datadir}/config/certool.cfg
-%{_datadir}/config/vmafd.reg
 %{_datadir}/config/vmafdcfg.yaml
 %{_datadir}/config/vmdircfg.yaml
-%{_datadir}/config/vmdir-client.reg
+%{_datadir}/config/vmcacfg.yaml
+%{_datadir}/config/vmdnscfg.yaml
 %{_datadir}/config/vmafdd-syslog-ng.conf
 %{_datadir}/config/telegraf.conf
 %{_datadir}/config/vmafd-telegraf.conf
@@ -1433,6 +1259,7 @@ users.
 %{_configdir}/lightwave-syslog-logrotate.conf
 
 %{_servicedir}/firewall.service
+%{_servicedir}/vmware-vmafdd.service
 
 %{_sysconfdir}/vmware/java/vmware-override-java.security
 
