@@ -563,7 +563,6 @@ VmwDeploySetupServerPrimary(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_DCERPC_SVC_NAME,
         VMW_VMDNS_SVC_NAME,
         VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
@@ -608,6 +607,13 @@ VmwDeploySetupServerPrimary(
         BAIL_ON_DEPLOY_ERROR(dwError);
     }
 
+    // stop vmdir to disable mdbwal to speed up promote
+    dwError = VmwDeployStopService(VMW_DIR_SVC_NAME);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
+    dwError = system(VMW_DISABLE_MDBWAL);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
     for (; iSvc < sizeof(ppszServices)/sizeof(ppszServices[0]); iSvc++)
     {
         PCSTR pszService = ppszServices[iSvc];
@@ -639,7 +645,6 @@ VmwDeploySetupServerPartner(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_DCERPC_SVC_NAME,
         VMW_VMDNS_SVC_NAME,
         VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
@@ -906,6 +911,9 @@ VmwDeploySetupServerCommon(
 
     VMW_DEPLOY_LOG_INFO("Restarting service [%s]", VMW_DIR_SVC_NAME);
 
+    dwError = system(VMW_ENABLE_MDBWAL);
+    BAIL_ON_DEPLOY_ERROR(dwError);
+
     dwError = VmwDeployRestartService(VMW_DIR_SVC_NAME);
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -983,7 +991,6 @@ VmwDeploySetupClientWithDC(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_DCERPC_SVC_NAME,
         VMW_VMAFD_SVC_NAME
     };
     PCSTR pszHostname = "localhost";
@@ -1260,7 +1267,6 @@ VmwDeploySetupClient(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_DCERPC_SVC_NAME,
         VMW_VMAFD_SVC_NAME
     };
     PCSTR pszHostname = "localhost";
@@ -1550,58 +1556,15 @@ VmwDeployDisableAfdListener(
     )
 {
     DWORD dwError = 0;
-    HANDLE hConnection = NULL;
-    HKEY   hRootKey = NULL;
-    HKEY   hParamKey = NULL;
     DWORD  dwValue = 0;
 
-    dwError = RegOpenServer(&hConnection);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                    hConnection,
-                    NULL,
-                    "HKEY_THIS_MACHINE",
-                    0,
-                    KEY_READ,
-                    &hRootKey);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = RegOpenKeyExA(
-                    hConnection,
-                    hRootKey,
-                    "Services\\vmafd\\Parameters",
-                    0,
-                    KEY_SET_VALUE,
-                    &hParamKey);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = RegSetValueExA(
-                    hConnection,
-                    hParamKey,
-                    "EnableDCERPC",
-                    0,
-                    REG_DWORD,
-                    (PBYTE)&dwValue,
-                    sizeof(dwValue));
+    dwError = VmRegCfgSetKeyDword(
+            "Services\\vmafd\\Parameters",
+            "EnableDCERPC",
+            dwValue);
      BAIL_ON_DEPLOY_ERROR(dwError);
 
 cleanup:
-
-    if (hConnection)
-    {
-        if (hParamKey)
-        {
-            RegCloseKey(hConnection, hParamKey);
-        }
-        if (hRootKey)
-        {
-            RegCloseKey(hConnection, hRootKey);
-        }
-
-        RegCloseServer(hConnection);
-    }
-
     return dwError;
 
 error:

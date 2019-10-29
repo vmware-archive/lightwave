@@ -22,32 +22,26 @@ VmwDeployStartService(
     )
 {
     DWORD dwError = 0;
-    PWSTR pwszName = NULL;
-    LW_SERVICE_HANDLE hService = NULL;
 
-    dwError = VmwDeployAllocateStringWFromA(
-                    pszName,
-                    &pwszName);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = LwSmAcquireServiceHandle(
-                  pwszName,
-                  &hService);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = LwSmStartService(hService);
+    if (VmStringCompareA(pszName, "vmafd", FALSE) == 0)
+    {
+        dwError = system(VMW_START_VMAFDD);
+    }
+    else if (VmStringCompareA(pszName, "vmdir", FALSE) == 0)
+    {
+        dwError = system(VMW_START_VMDIRD);
+    }
+    else if (VmStringCompareA(pszName, "vmca", FALSE) == 0)
+    {
+        dwError = system(VMW_START_VMCAD);
+    }
+    else if (VmStringCompareA(pszName, "vmdns", FALSE) == 0)
+    {
+        dwError = system(VMW_START_VMDNSD);
+    }
     BAIL_ON_DEPLOY_ERROR(dwError);
 
 cleanup:
-
-    if (hService)
-    {
-        LwSmReleaseServiceHandle(hService);
-    }
-    if (pwszName)
-    {
-        VmwDeployFreeMemory(pwszName);
-    }
 
     return dwError;
 
@@ -62,32 +56,26 @@ VmwDeployStopService(
     )
 {
     DWORD dwError = 0;
-    PWSTR pwszName = NULL;
-    LW_SERVICE_HANDLE hService = NULL;
 
-    dwError = VmwDeployAllocateStringWFromA(
-                    pszName,
-                    &pwszName);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = LwSmAcquireServiceHandle(
-                  pwszName,
-                  &hService);
-    BAIL_ON_DEPLOY_ERROR(dwError);
-
-    dwError = LwSmStopService(hService);
+    if (VmStringCompareA(pszName, "vmafd", FALSE) == 0)
+    {
+        dwError = system(VMW_STOP_VMAFDD);
+    }
+    else if (VmStringCompareA(pszName, "vmdir", FALSE) == 0)
+    {
+        dwError = system(VMW_STOP_VMDIRD);
+    }
+    else if (VmStringCompareA(pszName, "vmca", FALSE) == 0)
+    {
+        dwError = system(VMW_STOP_VMCAD);
+    }
+    else if (VmStringCompareA(pszName, "vmdns", FALSE) == 0)
+    {
+        dwError = system(VMW_STOP_VMDNSD);
+    }
     BAIL_ON_DEPLOY_ERROR(dwError);
 
 cleanup:
-
-    if (hService)
-    {
-        LwSmReleaseServiceHandle(hService);
-    }
-    if (pwszName)
-    {
-        VmwDeployFreeMemory(pwszName);
-    }
 
     return dwError;
 

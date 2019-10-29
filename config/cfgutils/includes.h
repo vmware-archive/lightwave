@@ -15,7 +15,7 @@
 
 
 #include <config.h>
-
+#include <stdlib.h>
 #include <cfgsys.h>
 
 #ifdef HAVE_LWSM_LWSM_H
@@ -24,10 +24,6 @@
 
 #ifdef HAVE_REG_LWREG_H
 #include <reg/lwreg.h>
-#endif
-
-#ifdef HAVE_REG_REGUTIL_H
-#include <reg/regutil.h>
 #endif
 
 #ifdef HAVE_LDAP_H
@@ -41,6 +37,8 @@
 #ifdef HAVE_TERM_H
 #include <term.h>
 #endif
+
+#include <vmcommonincludes.h>
 
 #include <vmdirclient.h>
 #include <vmdirerrors.h>
