@@ -43,7 +43,8 @@
 #define VMAFD_OPTION_LOG_FILE_NAME 'L'
 #define VMAFD_OPTION_ENABLE_SYSLOG 's'
 #define VMAFD_OPTION_ENABLE_CONSOLE 'c'
-#define VMAFD_OPTIONS_VALID "f:l:L:p:sc"
+#define VMAFD_OPTION_ENABLE_DAEMON 'd'
+#define VMAFD_OPTIONS_VALID "l:L:p:scd"
 #define VMAFD_CERT_DB VMAFD_DB_DIR "/afd.db"
 #define VMAFD_OLD_CERT_DB VMAFD_DB_DIR "/vecs/afd.db"
 

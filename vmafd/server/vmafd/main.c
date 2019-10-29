@@ -16,16 +16,10 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
 //TODO, move to gVmafdGlobals?
 int  vmafd_syslog_level = 0;
 int  vmafd_syslog = 0;
 int  vmafd_console_log = 0;
-
-static
-DWORD
-VmAfdNotifyLikewiseServiceManager();
 
 static
 DWORD
@@ -58,9 +52,29 @@ main(
     int          logLevel = VMAFD_DEBUG_ERROR;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bEnableConsole = FALSE;
+    BOOLEAN      bEnableDaemon = FALSE;
     VMAFD_DOMAIN_STATE domainState = VMAFD_DOMAIN_STATE_NONE;
 
     umask(0);
+
+    dwError = VmAfdParseArgs(
+                    argc,
+                    argv,
+                    &logLevel,
+                    &bEnableSysLog,
+                    &bEnableConsole,
+                    &bEnableDaemon);
+    if(dwError != ERROR_SUCCESS)
+    {
+        ShowUsage( argv[0] );
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
+
+    if (bEnableDaemon)
+    {
+        dwError = VmDaemon();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     /*
      * Block selected signals.  This must be done prior to creating
@@ -77,18 +91,6 @@ main(
      */
     dwError = VmAfdSrvUpdateConfig(&gVmafdGlobals);
     BAIL_ON_VMAFD_ERROR(dwError);
-
-    dwError = VmAfdParseArgs(
-                    argc,
-                    argv,
-                    &logLevel,
-                    &bEnableSysLog,
-                    &bEnableConsole);
-    if(dwError != ERROR_SUCCESS)
-    {
-        ShowUsage( argv[0] );
-        BAIL_ON_VMAFD_ERROR(dwError);
-    }
 
     vmafd_syslog_level = logLevel;
     if( bEnableSysLog != FALSE )
@@ -108,8 +110,11 @@ main(
     }
     BAIL_ON_VMAFD_ERROR(dwError);
 
-    dwError = VmAfdNotifyLikewiseServiceManager();
-    BAIL_ON_VMAFD_ERROR(dwError);
+    if (bEnableDaemon)
+    {
+        dwError = VmDaemonReady();
+        BAIL_ON_VMAFD_ERROR(dwError);
+    }
 
     /*
      * Create a dedicated thread to handle signals synchronously.
@@ -160,54 +165,3 @@ error:
 
     goto cleanup;
 }
-
-static
-DWORD
-VmAfdNotifyLikewiseServiceManager()
-{
-    DWORD dwError = ERROR_SUCCESS;
-    PCSTR   pszSmNotify = NULL;
-    int  ret = 0;
-    int  notifyFd = -1;
-    char notifyCode = 0;
-
-    // interact with likewise service manager (start/stop control)
-    if ((pszSmNotify = getenv("LIKEWISE_SM_NOTIFY")) != NULL)
-    {
-        notifyFd = atoi(pszSmNotify);
-
-        do
-        {
-            ret = write(notifyFd, &notifyCode, sizeof(notifyCode));
-
-        } while (ret != sizeof(notifyCode) && errno == EINTR);
-
-        if (ret < 0)
-        {
-#define BUFFER_SIZE 1024
-            char buffer[BUFFER_SIZE]= {0};
-            int errorNumber = errno;
-
-            VmAfdStringErrorA( buffer, BUFFER_SIZE, errorNumber );
-            VmAfdLog( VMAFD_DEBUG_TRACE,
-                      "Could not notify service manager: %s (%i)",
-                      buffer,
-                      errorNumber);
-
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_VMAFD_ERROR(dwError);
-#undef BUFFER_SIZE
-        }
-
-    }
-
-error:
-    if(notifyFd != -1)
-    {
-        close(notifyFd);
-    }
-
-    return dwError;
-}
-
-#endif

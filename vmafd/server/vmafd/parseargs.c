@@ -16,15 +16,14 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
 DWORD
 VmAfdParseArgs(
     int argc,
     char* argv[],
     int* pLoggingLevel,
     PBOOLEAN pbEnableSysLog,
-    PBOOLEAN pbEnableConsole
+    PBOOLEAN pbEnableConsole,
+    PBOOLEAN pbEnableDaemon
 )
 {
     DWORD dwError = ERROR_SUCCESS;
@@ -55,6 +54,12 @@ VmAfdParseArgs(
                 *pbEnableConsole = TRUE;
             }
             break;
+        case VMAFD_OPTION_ENABLE_DAEMON:
+            if (pbEnableDaemon != NULL )
+            {
+                *pbEnableDaemon = TRUE;
+            }
+            break;
         default:
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMAFD_ERROR(dwError);
@@ -64,78 +69,18 @@ error:
     return dwError;
 }
 
-#else
-
-DWORD
-VmAfdParseArgs(
-    int argc,
-    char* argv[],
-    int* pLoggingLevel,
-    PBOOLEAN pbEnableSysLog,
-    PBOOLEAN pbEnableConsole
-)
-{
-    DWORD dwError = ERROR_SUCCESS;
-    int i = 1; // first arg is the <name of exe>.exe
-
-    while( i < argc )
-    {
-        if( VmAfdIsCmdLineOption( argv[i] ) != FALSE )
-        {
-            if ( VmAfdStringCompareA(
-                          VMAFD_OPTION_LOGGING_LEVEL, argv[i], TRUE ) == 0 )
-            {
-                dwError = VmAfdGetCmdLineIntOption(
-                    argc, argv, &i, pLoggingLevel
-                );
-                BAIL_ON_VMAFD_ERROR(dwError);
-            }
-            else if ( VmAfdStringCompareA(
-                          VMAFD_OPTION_ENABLE_SYSLOG, argv[i], TRUE ) == 0 )
-            {
-                if ( pbEnableSysLog != NULL )
-                {
-                    *pbEnableSysLog = TRUE;
-                }
-            }
-#ifdef _DEBUG
-            else if ( VmAfdStringCompareA(
-                          VMAFD_OPTION_ENABLE_CONSOLE, argv[i], TRUE ) == 0 ||
-                      VmAfdStringCompareA(
-                          VMAFD_OPTION_ENABLE_CONSOLE_LONG, argv[i], TRUE ) == 0 )
-            {
-                if ( pbEnableConsole != NULL )
-                {
-                    *pbEnableConsole = TRUE;
-                }
-            }
-#endif
-            else
-            {
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMAFD_ERROR(dwError);
-            }
-        }
-
-        i++;
-    } // while
-
-error:
-
-    return dwError;
-}
-
-#endif
-
 VOID
 ShowUsage(
     PSTR pName
 )
 {
-    //TODO, cleanup after use long opt
    fprintf(
        stderr,
-       "Usage: %s [-l <logging level>] [-s]",
+       "Usage: %s\n"
+       "          [-l <logging level>]\n"
+       "          [-s] log to syslog\n"
+       "          [-c] log to console\n"
+       "          [-d] enable daemon\n",
        pName
    );
 }

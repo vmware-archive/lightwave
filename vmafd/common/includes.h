@@ -30,6 +30,7 @@
 #include <fcntl.h>
 #include <pwd.h>
 #include <grp.h>
+#include <vmcommonincludes.h>
 #include <vmafd.h>
 #include <vmafdtypes.h>
 #include <vmafddefines.h>

@@ -10,6 +10,7 @@ vmafd_la_SOURCES = \
     afdclient.cpp
 
 vmafd_la_CPPFLAGS = \
+    -I$(top_srcdir)/vmcommon/include/public \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmafd/common \
@@ -22,6 +23,7 @@ vmafd_la_CPPFLAGS = \
 
 vmafd_la_LIBADD = \
     @BOOST_PYTHON_LDFLAGS@ \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
     @DL_LIBS@  \
     @PTHREAD_LIBS@ \
@@ -29,7 +31,6 @@ vmafd_la_LIBADD = \
     @UUID_LIBS@ \
     @LWBASE_LIBS@ \
     @LWMSG_LIBS@ \
-    @LWREG_LIBS@ \
     @LWRSUTILS_LIBS@ \
     @CRYPTO_LIBS@ \
     @SCHANNEL_LIBS@ \

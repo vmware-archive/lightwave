@@ -720,7 +720,8 @@ VmAfdParseArgs(
     char* argv[],
     int* pLoggingLevel,
     PBOOLEAN pbEnableSysLog,
-    PBOOLEAN pbEnableConsole
+    PBOOLEAN pbEnableConsole,
+    PBOOLEAN pbEnableDaemon
 );
 
 VOID

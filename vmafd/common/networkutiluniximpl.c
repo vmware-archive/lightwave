@@ -56,6 +56,9 @@ VmAfdOpenServerConnectionImpl(
 		BAIL_ON_VMAFD_ERROR(dwError);
 	}
 
+	dwError = VmSetLWOwnership(SOCKET_FILE_PATH);
+	BAIL_ON_VMAFD_ERROR(dwError);
+
 	if (listen (socket_fd, 5) < 0){
 		dwError = LwErrnoToWin32Error(errno);
 		BAIL_ON_VMAFD_ERROR(dwError);
@@ -97,7 +100,7 @@ VmAfdOpenClientConnectionImpl(
 {
 	DWORD dwError = 0;
 	int socket_fd = 0;
-	struct sockaddr_un address;
+	struct sockaddr_un address = {0};
 	PVM_AFD_CONNECTION pConnection = NULL;
 
 	socket_fd = socket (PF_UNIX, SOCK_STREAM, 0);
@@ -105,9 +108,8 @@ VmAfdOpenClientConnectionImpl(
 		dwError = LwErrnoToWin32Error(errno);
 		BAIL_ON_VMAFD_ERROR(dwError);
 	}
-	memset (&address, 0, sizeof(struct sockaddr_un));
 	address.sun_family = AF_UNIX;
-	snprintf (address.sun_path, sizeof(SOCKET_FILE_PATH), SOCKET_FILE_PATH);
+	snprintf (address.sun_path, sizeof(address.sun_path), SOCKET_FILE_PATH);
 
 	if (connect(socket_fd, (struct sockaddr *) &address, sizeof(struct sockaddr_un)) <0)
     {

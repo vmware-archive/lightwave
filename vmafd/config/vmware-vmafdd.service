@@ -1,0 +1,14 @@
+[Unit]
+Description=VMware Authentication Serivce
+After=syslog.target network.target haveged.service
+Requires=haveged.service
+
+[Service]
+Type=forking
+RestartSec=1
+Restart=always
+ExecStart=/opt/vmware/sbin/vmafdd -d -s
+ExecStop=/bin/kill -INT `pidof vmafdd`
+
+[Install]
+WantedBy=multi-user.target
