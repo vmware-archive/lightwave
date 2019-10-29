@@ -1,0 +1,16 @@
+[Unit]
+Description=VMware Certificate Serivce
+After=syslog.target network.target vmware-vmdird.service
+#Requires=
+
+[Service]
+Type=forking
+User=lightwave
+Group=lightwave
+RestartSec=1
+Restart=always
+ExecStart=/opt/vmware/sbin/vmcad -d -s
+ExecStop=/bin/kill -INT `pidof vmcad`
+
+[Install]
+WantedBy=multi-user.target

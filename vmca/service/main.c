@@ -25,18 +25,23 @@ VMCAParseArgs(
     int argc,
     char* argv[],
     PBOOL pbEnableSysLog,
-    PBOOL pbConsoleLogging
+    PBOOL pbConsoleLogging,
+    PBOOL pbEnableDaemon
 )
 {
     DWORD dwError = ERROR_SUCCESS;
     int opt = 0;
     BOOL bEnableSysLog = FALSE;
+    BOOL bEnableDaemon = FALSE;
     BOOL bEnableConsoleLogging = FALSE;
 
     while ( (opt = getopt( argc, argv, VMCA_OPTIONS_VALID)) != EOF )
     {
         switch ( opt )
         {
+        case VMCA_OPTION_ENABLE_DAEMON:
+            bEnableDaemon = TRUE;
+            break;
         case VMCA_OPTION_ENABLE_SYSLOG:
             bEnableSysLog = TRUE;
             break;
@@ -47,6 +52,11 @@ VMCAParseArgs(
             dwError = ERROR_INVALID_PARAMETER;
             BAIL_ON_VMCA_ERROR(dwError);
         }
+    }
+
+    if (pbEnableDaemon != NULL)
+    {
+        *pbEnableDaemon = bEnableDaemon;
     }
 
     if (pbEnableSysLog != NULL)
@@ -94,19 +104,22 @@ main(
     )
 {
     DWORD dwError = 0;
-    const char* pszSmNotify = NULL;
-    int notifyFd = -1;
-    int notifyCode = 0;
-    int ret = -1;
     BOOL bEnableSysLog = FALSE;
+    BOOL bEnableDaemon = FALSE;
     BOOL bConsoleLogging = FALSE;
 
     setlocale(LC_ALL, "");
 
     VMCABlockSelectedSignals();
 
-    dwError = VMCAParseArgs(argc, argv, &bEnableSysLog, &bConsoleLogging);
+    dwError = VMCAParseArgs(argc, argv, &bEnableSysLog, &bConsoleLogging, &bEnableDaemon);
     BAIL_ON_VMCA_ERROR(dwError);
+
+    if (bEnableDaemon)
+    {
+        dwError = VmDaemon();
+        BAIL_ON_VMCA_ERROR(dwError);
+    }
 
     if (bEnableSysLog)
     {
@@ -139,27 +152,10 @@ main(
 
     PrintCurrentState();
 
-    // interact with likewise service manager (start/stop control)
-    if ((pszSmNotify = getenv("LIKEWISE_SM_NOTIFY")) != NULL)
+    if (bEnableDaemon)
     {
-        notifyFd = atoi(pszSmNotify);
-
-        do
-        {
-            ret = write(notifyFd, &notifyCode, sizeof(notifyCode));
-
-        } while (ret != sizeof(notifyCode) && errno == EINTR);
-
-        if (ret < 0)
-        {
-            VMCA_LOG_ERROR("Could not notify service manager: %s (%i)",
-                            strerror(errno),
-                            errno);
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_VMCA_ERROR(dwError);
-        }
-
-        close(notifyFd);
+        dwError = VmDaemonReady();
+        BAIL_ON_VMCA_ERROR(dwError);
     }
 
     // main thread waits on signals

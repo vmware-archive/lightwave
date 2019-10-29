@@ -29,8 +29,9 @@
 #define VMCA_OPTION_LOGGING_LEVEL 'l'
 #define VMCA_OPTION_LOG_FILE_NAME 'L'
 #define VMCA_OPTION_ENABLE_SYSLOG 's'
+#define VMCA_OPTION_ENABLE_DAEMON 'd'
 #define VMCA_OPTION_CONSOLE_LOGGING 'c'
-#define VMCA_OPTIONS_VALID "f:l:L:p:sc"
+#define VMCA_OPTIONS_VALID "l:L:p:scd"
 
 //
 // These values are hard-coded in the VMCA.reg file also,
