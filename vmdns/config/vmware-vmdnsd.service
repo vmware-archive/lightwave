@@ -1,0 +1,16 @@
+[Unit]
+Description=VMware DNS Serivce
+After=syslog.target network.target vmware-vmdird.service
+#Requires=
+
+[Service]
+Type=forking
+User=lightwave
+Group=lightwave
+RestartSec=1
+Restart=always
+ExecStart=/opt/vmware/sbin/vmdnsd -d -s
+ExecStop=/bin/kill -INT `pidof vmdnsd`
+
+[Install]
+WantedBy=multi-user.target

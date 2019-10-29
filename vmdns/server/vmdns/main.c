@@ -22,16 +22,10 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
 //TODO, move to gVmdnsGlobals?
 int  vmdns_syslog_level = VMDNS_LOG_LEVEL_INFO;
 int  vmdns_syslog = 0;
 int  vmdns_debug = 0;
-
-static
-DWORD
-VmDnsNotifyLikewiseServiceManager();
 
 static
 DWORD
@@ -66,9 +60,7 @@ main(
     int         logLevel = VMDNS_LOG_LEVEL_INFO;
     PCSTR       pszLogFile = NULL;
     BOOLEAN     bEnableSysLog = FALSE;
-
-    //dwError = VmDnsSrvUpdateConfig();
-    //BAIL_ON_VMDNS_ERROR(dwError);
+    BOOLEAN     bEnableDaemon = FALSE;
 
     dwError = VmDnsParseArgs(
                     argc,
@@ -77,10 +69,17 @@ main(
                     &pszLogFile,
                     &gVmdnsGlobals.iListenPort,
                     &bEnableSysLog,
+                    &bEnableDaemon,
                     NULL);
     if(dwError != ERROR_SUCCESS)
     {
         ShowUsage( argv[0] );
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
+
+    if (bEnableDaemon)
+    {
+        dwError = VmDaemon();
         BAIL_ON_VMDNS_ERROR(dwError);
     }
 
@@ -125,8 +124,11 @@ main(
     dwError = VmDnsInit();
     BAIL_ON_VMDNS_ERROR(dwError);
 
-    dwError = VmDnsNotifyLikewiseServiceManager();
-    BAIL_ON_VMDNS_ERROR(dwError);
+    if (bEnableDaemon)
+    {
+        dwError = VmDaemonReady();
+        BAIL_ON_VMDNS_ERROR(dwError);
+    }
 
     VmDnsdStateSet(VMDNSD_RUNNING);
 
@@ -154,53 +156,3 @@ error:
 
     goto cleanup;
 }
-
-static
-DWORD
-VmDnsNotifyLikewiseServiceManager()
-{
-    DWORD dwError = ERROR_SUCCESS;
-    PCSTR   pszSmNotify = NULL;
-    int  ret = 0;
-    int  notifyFd = -1;
-    char notifyCode = 0;
-
-    // interact with likewise service manager (start/stop control)
-    if ((pszSmNotify = getenv("LIKEWISE_SM_NOTIFY")) != NULL)
-    {
-        notifyFd = atoi(pszSmNotify);
-
-        do
-        {
-            ret = write(notifyFd, &notifyCode, sizeof(notifyCode));
-
-        } while (ret != sizeof(notifyCode) && errno == EINTR);
-
-        if (ret < 0)
-        {
-#define BUFFER_SIZE 1024
-            char buffer[BUFFER_SIZE]= {0};
-            int errorNumber = errno;
-
-            VmDnsStringErrorA( buffer, BUFFER_SIZE, errorNumber );
-            VmDnsLog( VMDNS_LOG_LEVEL_DEBUG,
-                      "Could not notify service manager: %s (%i)",
-                      buffer,
-                      errorNumber);
-
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_VMDNS_ERROR(dwError);
-#undef BUFFER_SIZE
-        }
-    }
-
-error:
-    if(notifyFd != -1)
-    {
-        close(notifyFd);
-    }
-
-    return dwError;
-}
-
-#endif

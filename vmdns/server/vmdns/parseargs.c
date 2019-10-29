@@ -28,8 +28,6 @@
 
 #include "includes.h"
 
-#ifndef _WIN32
-
 DWORD
 VmDnsParseArgs(
     int argc,
@@ -38,6 +36,7 @@ VmDnsParseArgs(
     PCSTR* ppszLogFileName,
     int* pLdapPort,
     PBOOLEAN pbEnableSysLog,
+    PBOOLEAN pbEnableDaemon,
     PBOOLEAN pbConsoleMode
 )
 {
@@ -78,6 +77,13 @@ VmDnsParseArgs(
                 }
                 break;
 
+	    case VMDNS_OPTION_ENABLE_DAEMON:
+                if ( pbEnableDaemon != NULL )
+                {
+                    *pbEnableDaemon = TRUE;
+                }
+                break;
+
             default:
                 dwError = ERROR_INVALID_PARAMETER;
                 BAIL_ON_VMDNS_ERROR(dwError);
@@ -86,80 +92,6 @@ VmDnsParseArgs(
 error:
     return dwError;
 }
-
-#else
-
-DWORD
-VmDnsParseArgs(
-    int argc,
-    char* argv[],
-    int* pLoggingLevel,
-    PCSTR* ppszLogFileName,
-    int* pLdapPort,
-    PBOOLEAN pbEnableSysLog,
-    PBOOLEAN pbConsoleMode
-)
-{
-    DWORD dwError = ERROR_SUCCESS;
-    int i = 1; // first arg is the <name of exe>.exe
-
-    while( i < argc )
-    {
-        if( VmDnsIsCmdLineOption( argv[i] ) != FALSE )
-        {
-            if ( VmDnsStringCompareA(
-                          VMDNS_OPTION_LOGGING_LEVEL, argv[i], TRUE ) == 0 )
-            {
-                dwError = VmDnsGetCmdLineIntOption(
-                    argc, argv, &i, pLoggingLevel
-                );
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-            else if ( VmDnsStringCompareA(
-                          VMDNS_OPTION_LOG_FILE_NAME, argv[i], TRUE ) == 0 )
-            {
-                VmDnsGetCmdLineOption( argc, argv, &i, ppszLogFileName );
-            }
-            else if ( VmDnsStringCompareA(
-                          VMDNS_OPTION_PORT, argv[i], TRUE ) == 0 )
-            {
-                dwError = VmDnsGetCmdLineIntOption(
-                    argc, argv, &i, pLdapPort
-                );
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-            else if ( VmDnsStringCompareA(
-                          VMDNS_OPTION_ENABLE_SYSLOG, argv[i], TRUE ) == 0 )
-            {
-                if ( pbEnableSysLog != NULL )
-                {
-                    *pbEnableSysLog = TRUE;
-                }
-            }
-            else if (VmDnsStringCompareA(
-                VMDNS_OPTION_CONSOLE_MODE, argv[i], TRUE) == 0)
-            {
-                if (pbConsoleMode != NULL)
-                {
-                    *pbConsoleMode = TRUE;
-                }
-            }
-            else
-            {
-                dwError = ERROR_INVALID_PARAMETER;
-                BAIL_ON_VMDNS_ERROR(dwError);
-            }
-        }
-
-        i++;
-    } // while
-
-error:
-
-    return dwError;
-}
-
-#endif
 
 VOID
 ShowUsage(
@@ -172,4 +104,14 @@ ShowUsage(
        "Usage: %s [-d <logging level (an integer)>] [-p <ldap port>]",
        pName
    );
+   fprintf(
+        stderr,
+        "Usage: %s\n"
+        "          [-l <logging level>]\n"
+        "          [-L <log file name>]\n"
+        "          [-s] log to syslog\n"
+        "          [-p] ldap port\n"
+        "          [-d] enable daemon\n",
+        pName
+    );
 }

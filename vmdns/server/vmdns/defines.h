@@ -15,11 +15,12 @@
 
 #ifndef _WIN32
 
-#define VMDNS_OPTION_LOGGING_LEVEL 'l'
-#define VMDNS_OPTION_LOG_FILE_NAME 'L'
-#define VMDNS_OPTION_PORT 'p'
-#define VMDNS_OPTION_ENABLE_SYSLOG 's'
-#define VMDNS_OPTIONS_VALID "l:L:p:s"
+#define VMDNS_OPTION_LOGGING_LEVEL  'l'
+#define VMDNS_OPTION_LOG_FILE_NAME  'L'
+#define VMDNS_OPTION_PORT           'p'
+#define VMDNS_OPTION_ENABLE_SYSLOG  's'
+#define VMDNS_OPTION_ENABLE_DAEMON  'd'
+#define VMDNS_OPTIONS_VALID "l:L:p:sd"
 
 /*
  * Table to define and initialize VMDNS configuration data.

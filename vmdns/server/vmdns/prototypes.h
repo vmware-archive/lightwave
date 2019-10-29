@@ -178,7 +178,8 @@ VmDnsParseArgs(
     PCSTR* ppszLogFileName,
     int* pLdapPort,
     PBOOLEAN pbEnableSysLog,
-    PBOOLEAN pbConsoldeMode
+    PBOOLEAN pbConsoldeMode,
+    PBOOLEAN pbEnableDaemon
     );
 
 VOID
