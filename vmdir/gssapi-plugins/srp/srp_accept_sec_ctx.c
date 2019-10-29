@@ -191,17 +191,8 @@ _srp_gss_auth_create_machine_acct_binding(
     char *machine_acct_upn = NULL;
     char *machine_acct_pwd = NULL;
     char *hostname = NULL;
-    void *hRegistry = NULL;
     PVMDIR_SERVER_CONTEXT hServer = NULL;
     PSTR pEnv = NULL;
-
-    dwError = srp_reg_get_handle((void **) &hRegistry);
-    if (dwError)
-    {
-        maj = GSS_S_FAILURE;
-        min = dwError;
-        goto error;
-    }
 
     /* If invoked by lwraft or other server, it can override domain state
      * (to value 1) since it could obtain peer's credential from its database
@@ -214,7 +205,7 @@ _srp_gss_auth_create_machine_acct_binding(
     else
     {
         /* Determine if this system is a management node */
-        dwError = srp_reg_get_domain_state(hRegistry, &domainState);
+        dwError = srp_reg_get_domain_state(&domainState);
         if (dwError)
         {
             /* Assume infra node if registry lookup fails */
@@ -225,9 +216,7 @@ _srp_gss_auth_create_machine_acct_binding(
     /* Value "2" is a management node: Perform SRP pass-through */
     if (domainState == 2)
     {
-        dwError = srp_reg_get_machine_acct_upn(
-                      hRegistry,
-                      &machine_acct_upn);
+        dwError = srp_reg_get_machine_acct_upn(&machine_acct_upn);
         if (dwError)
         {
             maj = GSS_S_FAILURE;
@@ -235,9 +224,7 @@ _srp_gss_auth_create_machine_acct_binding(
             goto error;
         }
 
-        dwError = srp_reg_get_machine_acct_password(
-                      hRegistry,
-                      &machine_acct_pwd);
+        dwError = srp_reg_get_machine_acct_password(&machine_acct_pwd);
         if (dwError)
         {
             maj = GSS_S_FAILURE;
@@ -245,9 +232,7 @@ _srp_gss_auth_create_machine_acct_binding(
             goto error;
         }
 
-        dwError = srp_reg_get_dc_name(
-                      hRegistry,
-                      &hostname);
+        dwError = srp_reg_get_dc_name(&hostname);
         if (dwError)
         {
             maj = GSS_S_FAILURE;
@@ -290,10 +275,6 @@ error:
     if (hostname)
     {
         free(hostname);
-    }
-    if (hRegistry)
-    {
-        srp_reg_close_handle(hRegistry);
     }
     if (maj)
     {

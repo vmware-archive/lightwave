@@ -4,6 +4,7 @@ libgssapi_srp_la_CPPFLAGS = \
    -D_MIT_KRB5_1_11 \
    -D_MIT_KRB5_1_12 \
    -I. \
+   -I$(top_srcdir)/vmcommon/include/public \
    -I$(top_srcdir)/vmdir/gssapi-plugins/srp \
    -I$(top_srcdir)/vmdir/include \
    -I$(top_srcdir)/vmdir \
@@ -34,6 +35,7 @@ libgssapi_srp_la_SOURCES = \
         srprpc.c
 
 libgssapi_srp_la_LIBADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
     $(top_builddir)/vmdir/client/libvmdirclient_la-srp_verifier_cstub.lo \

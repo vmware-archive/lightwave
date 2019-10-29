@@ -24,6 +24,8 @@
 #define snprintf _snprintf
 #endif
 
+#include <vmcommonincludes.h>
+
 #include <vmdir.h>
 #include <vmdirtypes.h>
 #include <vmdirdefines.h>
