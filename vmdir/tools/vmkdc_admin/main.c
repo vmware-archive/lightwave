@@ -40,6 +40,24 @@
 VMKDC_GLOBALS gVmkdcGlobals = {0};
 char *VmKdc_argv0 = NULL;
 
+static
+DWORD
+_VmKdcAdminInitVmRegConfig(
+    VOID
+    )
+{
+    DWORD   dwError = 0;
+
+    dwError = VmRegConfigInit();
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+    dwError = VmRegConfigAddFile(VMREGCONFIG_VMAFD_REG_CONFIG_FILE, TRUE);
+    BAIL_ON_VMKDC_ERROR(dwError);
+
+error:
+    return dwError;
+}
+
 VOID
 ShowUsage(
     PSTR argv0,
@@ -120,43 +138,14 @@ VmKdcRegGetDefaultRealm(
 {
     DWORD dwError = 0;
     char szValue[VMKDC_MAX_CONFIG_VALUE_LENGTH] = {0};
-    DWORD dwValueSize = sizeof(szValue);
+    size_t dwValueSize = sizeof(szValue);
     PCHAR pszDefaultRealm = NULL;
-    HKEY hKey = NULL;
-#ifndef _WIN32
-    HANDLE hConnection = NULL;
-#endif
 
-#ifndef _WIN32
-    dwError = RegOpenServer(&hConnection);
-    BAIL_ON_VMKDC_ERROR(dwError);
-#endif
-
-    dwError = RegOpenKeyExA(
-#ifndef _WIN32
-                hConnection,
-                NULL,
-                HKEY_THIS_MACHINE,
-#else
-                HKEY_LOCAL_MACHINE,
-                NULL,
-#endif
-                0,
-                KEY_READ,
-                &hKey);
-    BAIL_ON_VMKDC_ERROR(dwError);
-
-    dwError = RegGetValueA(
-#ifndef _WIN32
-                           hConnection,
-#endif
-                           hKey,
-                           VMKDC_CONFIG_PARAMETER_KEY_PATH,
-                           VMKDC_REG_KEY_DEFAULT_REALM,
-                           RRF_RT_REG_SZ,
-                           NULL,
-                           szValue,
-                           &dwValueSize);
+    dwError = VmRegCfgGetKeyStringA(
+            VMKDC_CONFIG_PARAMETER_KEY_PATH,
+            VMKDC_REG_KEY_DEFAULT_REALM,
+            szValue,
+            dwValueSize);
     BAIL_ON_VMKDC_ERROR(dwError);
 
     dwError = VmKdcAllocateStringA(szValue,
@@ -166,23 +155,6 @@ VmKdcRegGetDefaultRealm(
     *ppszDefaultRealm = pszDefaultRealm;
 
 error:
-
-    if (hKey)
-    {
-        dwError = RegCloseKey(
-#ifndef _WIN32
-                           hConnection,
-#endif
-                           hKey);
-    }
-
-#ifndef _WIN32
-    if (hConnection)
-    {
-        RegCloseServer(hConnection);
-    }
-#endif
-
     return dwError;
 }
 
@@ -214,6 +186,9 @@ int _tmain(int argc, TCHAR *targv[])
 #else
     char pathsep = '/';
 #endif
+
+    dwError = _VmKdcAdminInitVmRegConfig();
+    BAIL_ON_VMKDC_ERROR(dwError);
 
     dwError = VmKdcRegGetDefaultRealm(&gVmkdcGlobals.pszDefaultRealm);
     if (dwError)
@@ -295,6 +270,8 @@ error:
 
     VmKdcDestroyKrb5(gVmkdcGlobals.pKrb5Ctx);
     gVmkdcGlobals.pKrb5Ctx = NULL;
+
+    VmRegConfigFree();
 
 #ifdef _WIN32
     VmKdcDeallocateArgsA(argc, allocArgv);

@@ -22,6 +22,7 @@ vmkdc_admin_CPPFLAGS = \
     @OPENSSL_INCLUDES@
 
 vmkdc_admin_LDADD = \
+    $(top_builddir)/vmcommon/libvmcommon.la \
     $(top_builddir)/vmdir/server/kdckrb5/libvmkrb5.la \
     $(top_builddir)/vmdir/kdccommon/libkdccommon.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
