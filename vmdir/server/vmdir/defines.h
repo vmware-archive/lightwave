@@ -18,14 +18,14 @@
 
 #ifndef _WIN32
 
-#define VMDIR_OPTION_BOOTSTRAP_SCHEMA_FILE  'f'
+#define VMDIR_OPTION_DAEMON                 'd'
 #define VMDIR_OPTION_LOGGING_LEVEL          'l'
 #define VMDIR_OPTION_LOG_FILE_NAME          'L'
 #define VMDIR_OPTION_LDAP_PORT              'p'
 #define VMDIR_OPTION_ENABLE_SYSLOG          's'
 #define VMDIR_OPTION_CONSOLE_MODE           'c'
 #define VMDIR_OPTION_RUN_MODE               'm' // Start server in restore or stand-alone mode
-#define VMDIR_OPTIONS_VALID                 "f:l:L:p:scm:"
+#define VMDIR_OPTIONS_VALID                 "l:L:p:m:scd"
 
 #define VMDIR_IF_HANDLE_T rpc_if_handle_t
 #define VMDIR_RPC_BINDING_VECTOR_P_T rpc_binding_vector_p_t

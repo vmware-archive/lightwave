@@ -18,12 +18,6 @@
 
 static
 DWORD
-VmDirNotifyLikewiseServiceManager(
-    VOID
-);
-
-static
-DWORD
 VmDirSetEnvironment(
     VOID
 );
@@ -56,25 +50,21 @@ main(
 {
     DWORD        dwError = 0;
     const char * logFileName = NULL;
-    const char * pszBootstrapSchemaFile = NULL;
+    const char * pszBootstrapSchemaFile = VMDIR_CONFIG_PATH "/vmdirschema.ldif";
     const char * pszStateDir = VMDIR_DB_DIR VMDIR_PATH_SEP;
     BOOLEAN      bEnableSysLog = FALSE;
     BOOLEAN      bConsoleMode = FALSE;
+    BOOLEAN      bDaemonMode = FALSE;
     int          iLocalLogMask = 0;
     BOOLEAN      bVmDirInit = FALSE;
     BOOLEAN      bShutdownKDCService = FALSE;
     BOOLEAN      bWaitTimeOut = FALSE;
 
-    dwError = _VmDirInitVmRegConfig();
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirSrvUpdateConfig();
-    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirParseArgs(
                     argc,
                     argv,
-                    &pszBootstrapSchemaFile,
+                    &bDaemonMode,
                     &iLocalLogMask,
                     &logFileName,
                     &bEnableSysLog,
@@ -84,6 +74,18 @@ main(
         ShowUsage( argv[0] );
         BAIL_ON_VMDIR_ERROR(dwError);
     }
+
+    if (bDaemonMode)
+    {
+        dwError = VmDaemon();
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    dwError = _VmDirInitVmRegConfig();
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirSrvUpdateConfig();
+    BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAllocateStringA(
             pszBootstrapSchemaFile,
@@ -120,8 +122,11 @@ main(
 
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL, "Lotus Vmkdcd: running...");
 
-        dwError = VmDirNotifyLikewiseServiceManager();
-        BAIL_ON_VMDIR_ERROR(dwError);
+        if (bDaemonMode)
+        {
+            dwError = VmDaemonReady();
+            BAIL_ON_VMDIR_ERROR(dwError);
+        }
 
         VmDirdStateSet( VmDirdGetTargetState() );
         VMDIR_LOG_INFO( VMDIR_LOG_MASK_ALL,
@@ -166,56 +171,6 @@ done:
 
 error:
     goto cleanup;
-}
-
-static
-DWORD
-VmDirNotifyLikewiseServiceManager(
-    VOID
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    PCSTR   pszSmNotify = NULL;
-    int  ret = 0;
-    int  notifyFd = -1;
-    char notifyCode = 0;
-
-    // interact with likewise service manager (start/stop control)
-    if ((pszSmNotify = getenv("LIKEWISE_SM_NOTIFY")) != NULL)
-    {
-        notifyFd = atoi(pszSmNotify);
-
-        do
-        {
-            ret = write(notifyFd, &notifyCode, sizeof(notifyCode));
-
-        } while (ret != sizeof(notifyCode) && errno == EINTR);
-
-        if (ret < 0)
-        {
-#define BUFFER_SIZE 1024
-            char buffer[BUFFER_SIZE]= {0};
-            int errorNumber = errno;
-
-            VmDirStringErrorA( buffer, BUFFER_SIZE, errorNumber );
-            VMDIR_LOG_ERROR( VMDIR_LOG_MASK_ALL,
-                      "Could not notify service manager: %s (%i)",
-                      buffer,
-                      errorNumber);
-
-            dwError = LwErrnoToWin32Error(errno);
-            BAIL_ON_VMDIR_ERROR(dwError);
-#undef BUFFER_SIZE
-        }
-    }
-
-error:
-    if(notifyFd != -1)
-    {
-        close(notifyFd);
-    }
-
-    return dwError;
 }
 
 static

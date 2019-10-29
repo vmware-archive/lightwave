@@ -820,7 +820,7 @@ DWORD
 VmDirParseArgs(
     int         argc,
     char*       argv[],
-    PCSTR*      ppszBootstrapSchemaFile,
+    PBOOLEAN    pbEnableDaemon,
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,

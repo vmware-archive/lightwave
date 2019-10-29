@@ -16,7 +16,7 @@
 
 #include <vmdirsys.h>
 
-#include <vmregconfig.h>
+#include <vmcommonincludes.h>
 
 #include <vmdir.h>
 #include <vmdirtypes.h>

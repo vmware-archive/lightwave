@@ -20,7 +20,7 @@ DWORD
 VmDirParseArgs(
     int         argc,
     char*       argv[],
-    PCSTR*      ppszBootstrapSchemaFile,
+    PBOOLEAN    pbDaemonMode,
     int*        pLoggingLevel,
     PCSTR*      ppszLogFileName,
     PBOOLEAN    pbEnableSysLog,
@@ -36,10 +36,10 @@ VmDirParseArgs(
     {
         switch ( opt )
         {
-            case VMDIR_OPTION_BOOTSTRAP_SCHEMA_FILE:
-                if( ppszBootstrapSchemaFile != NULL )
+            case VMDIR_OPTION_DAEMON:
+                if ( pbDaemonMode != NULL )
                 {
-                    *ppszBootstrapSchemaFile = optarg;
+                    *pbDaemonMode = TRUE;
                 }
                 break;
 
@@ -74,7 +74,6 @@ VmDirParseArgs(
             case VMDIR_OPTION_RUN_MODE:
                 if ( VmDirStringCompareA(VMDIR_RUN_MODE_RESTORE, optarg, TRUE ) == 0 )
                 {
-
                     VmDirdSetTargetState( VMDIRD_STATE_RESTORE );
                 }
                 else if ( VmDirStringCompareA(VMDIR_RUN_MODE_STANDALONE, optarg, TRUE ) == 0 )
@@ -108,10 +107,15 @@ ShowUsage(
     PSTR pName
 )
 {
-    //TODO, cleanup after use long opt
-   fprintf(
-       stderr,
-       "Usage: %s [-d <logging level (an integer)>] [-p <ldap port>]",
-       pName
-   );
+    fprintf(
+        stderr,
+        "Usage: %s\n"
+        "          [-l <logging level>]\n"
+        "          [-L <log file name>]\n"
+        "          [-s] log to syslog\n"
+        "          [-c] log to console\n"
+        "          [-d] enable daemon\n"
+        "          [-m] server run mode (standalone/restore)\n",
+        pName
+    );
 }

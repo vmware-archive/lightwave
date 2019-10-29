@@ -1,0 +1,16 @@
+[Unit]
+Description=VMware Directory Serivce
+After=syslog.target network.target haveged.service
+Requires=haveged.service
+
+[Service]
+Type=forking
+User=lightwave
+Group=lightwave
+RestartSec=1
+Restart=always
+ExecStart=/opt/vmware/sbin/vmdird -d -s -l 0
+ExecStop=/bin/kill -INT `pidof vmdird`
+
+[Install]
+WantedBy=multi-user.target
