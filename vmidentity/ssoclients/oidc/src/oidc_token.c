@@ -108,6 +108,7 @@ OidcTokenParse(
     PSSO_JWK pJwk = NULL;
     bool hasAudienceArrayClaim = false;
     bool hasHokJwksClaim = false;
+    bool hasTokenClassClaim = false;
     bool hasGroupsClaim = false;
 
     BAIL_ON_NULL_ARGUMENT(pp);
@@ -120,12 +121,17 @@ OidcTokenParse(
     e = SSOJwtParse(&p->pJwt, psz);
     BAIL_ON_ERROR(e);
 
-    e = SSOJwtGetStringClaim(p->pJwt, "token_class", &pszTokenClass);
+    e = SSOJwtHasClaim(p->pJwt, "lightwave_token_class", &hasTokenClassClaim);
     BAIL_ON_ERROR(e);
-    if (!SSOStringEqual(pszTokenClass, pszExpectedTokenClass))
+    if (hasTokenClassClaim)
     {
-        e = SSOERROR_INVALID_ARGUMENT;
+        e = SSOJwtGetStringClaim(p->pJwt, "lightwave_token_class", &pszTokenClass);
         BAIL_ON_ERROR(e);
+        if (!SSOStringEqual(pszTokenClass, pszExpectedTokenClass))
+        {
+            e = SSOERROR_INVALID_ARGUMENT;
+            BAIL_ON_ERROR(e);
+        }
     }
 
     e = SSOJwtGetStringClaim(p->pJwt, "token_type", &pszTokenType);
@@ -186,15 +192,15 @@ OidcTokenParse(
         BAIL_ON_ERROR(e);
     }
 
-    e = SSOJwtHasClaim(p->pJwt, "groups", &hasGroupsClaim);
+    e = SSOJwtHasClaim(p->pJwt, "lightwave_groups", &hasGroupsClaim);
     BAIL_ON_ERROR(e);
     if (hasGroupsClaim)
     {
-        e = SSOJwtGetStringArrayClaim(p->pJwt, "groups", &p->ppszGroups, &p->groupsSize);
+        e = SSOJwtHasClaim(p->pJwt, "lightwave_groups", &hasGroupsClaim);
         BAIL_ON_ERROR(e);
     }
 
-    e = SSOJwtGetStringClaim(p->pJwt, "tenant", &p->pszTenant);
+    e = SSOJwtGetStringClaim(p->pJwt, "lightwave_tenant", &p->pszTenant);
     BAIL_ON_ERROR(e);
 
     *pp = p;

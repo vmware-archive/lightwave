@@ -116,6 +116,15 @@ OidcServerMetadataAcquire(
     PCSTRING pszTenant,
     PCSTRING pszTlsCAPath /* OPT, see comment above */);
 
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcServerMetadataDelete it
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
+SSOERROR
+OidcServerMetadataAcquireFromIssuer(
+    POIDC_SERVER_METADATA* pp,
+    PCSTRING pszIssuer,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */);
+
 void
 OidcServerMetadataDelete(
     POIDC_SERVER_METADATA p);

@@ -45,3 +45,4 @@ OidcTokenSuccessResponseDelete
 OidcTokenSuccessResponseGetIDToken
 OidcTokenSuccessResponseGetAccessToken
 OidcTokenSuccessResponseGetRefreshToken
+OidcServerMetadataAcquireFromIssuer

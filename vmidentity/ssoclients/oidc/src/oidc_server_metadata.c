@@ -259,6 +259,92 @@ error:
     return e;
 }
 
+// <issuer>/.well-known/openid-configuration
+static
+SSOERROR
+OidcServerMetadataConstructMetadataEndpointFromIssuer(
+    PCSTRING pszIssuer,
+    PSTRING* ppszEndpoint)
+{
+    SSOERROR e = SSOERROR_NONE;
+
+    PSTRING pszEndpoint = NULL;
+    PSSO_STRING_BUILDER pSB = NULL;
+
+    e = SSOStringBuilderNew(&pSB);
+    BAIL_ON_ERROR(e);
+
+    e = SSOStringBuilderAppend(pSB, pszIssuer);
+    BAIL_ON_ERROR(e);
+    e = SSOStringBuilderAppend(pSB, "/.well-known/openid-configuration");
+    BAIL_ON_ERROR(e);
+
+    e = SSOStringBuilderGetString(pSB, &pszEndpoint);
+    BAIL_ON_ERROR(e);
+
+    *ppszEndpoint = pszEndpoint;
+
+error:
+
+    if (e != SSOERROR_NONE)
+    {
+        SSOStringFree(pszEndpoint);
+    }
+
+    SSOStringBuilderDelete(pSB);
+
+    return e;
+}
+
+// make sure you call OidcClientGlobalInit once per process before calling this
+// on success, pp will be non-null, when done, OidcServerMetadataDelete it
+// psztlsCAPath: NULL means skip tls validation, otherwise LIGHTWAVE_TLS_CA_PATH will work on lightwave client and server
+SSOERROR
+OidcServerMetadataAcquireFromIssuer(
+    POIDC_SERVER_METADATA* pp,
+    PCSTRING pszIssuer,
+    PCSTRING pszTlsCAPath /* OPT, see comment above */)
+{
+    SSOERROR e = SSOERROR_NONE;
+    POIDC_SERVER_METADATA p = NULL;
+    PSSO_HTTP_CLIENT pHttpClient = NULL;
+    PSTRING pszMetadataEndpoint = NULL;
+    PSTRING pszJwksEndpoint = NULL;
+
+    BAIL_ON_NULL_ARGUMENT(pp);
+    BAIL_ON_NULL_ARGUMENT(pszIssuer);
+
+    e = SSOMemoryAllocate(sizeof(OIDC_SERVER_METADATA), (void**) &p);
+    BAIL_ON_ERROR(e);
+
+    e = SSOHttpClientNew(&pHttpClient, pszTlsCAPath);
+    BAIL_ON_ERROR(e);
+
+    e = OidcServerMetadataConstructMetadataEndpointFromIssuer(pszIssuer, &pszMetadataEndpoint);
+    BAIL_ON_ERROR(e);
+
+    e = OidcServerMetadataAcquireEndpoints(pHttpClient, pszMetadataEndpoint, &p->pszTokenEndpointUrl, &pszJwksEndpoint);
+    BAIL_ON_ERROR(e);
+
+    e = OidcServerMetadataAcquireSigningCertificatePEM(pHttpClient, pszJwksEndpoint, &p->pszSigningCertificatePEM);
+    BAIL_ON_ERROR(e);
+
+    *pp = p;
+
+error:
+
+    SSOHttpClientDelete(pHttpClient);
+    SSOStringFree(pszMetadataEndpoint);
+    SSOStringFree(pszJwksEndpoint);
+
+    if (e != SSOERROR_NONE)
+    {
+        OidcServerMetadataDelete(p);
+    }
+
+    return e;
+}
+
 void
 OidcServerMetadataDelete(
     POIDC_SERVER_METADATA p)
