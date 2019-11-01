@@ -16,8 +16,8 @@
 
 static int      _gPipeFd[2] = {0};
 
-static uid_t    _gLightwaveUid = 0;
-static gid_t    _gLightwaveGid = 0;
+static uid_t    _gLightwaveUid = -1;
+static gid_t    _gLightwaveGid = -1;
 
 /*
  * fork child and make it a daemon process
@@ -143,7 +143,7 @@ VmGetLWUserGroupId(
 
     // LW services runs a Lightwave user/group
     // Root user can run tools but need to keep the file r/w for Lightwave user
-    if (getuid() == 0 && _gLightwaveUid == 0)
+    if (getuid() == 0 && _gLightwaveUid == -1)
     {
         ibufsize = sysconf(_SC_GETPW_R_SIZE_MAX);
         if (ibufsize == -1)
@@ -164,11 +164,14 @@ VmGetLWUserGroupId(
             &pResult);
         if (iStatus || !pResult)
         {
-            BAIL_WITH_VM_COMMON_ERROR(dwError, VM_COMMON_ERROR_NO_SUCH_USER);
+            _gLightwaveUid = 0;
+            _gLightwaveGid = 0;
         }
-
-        _gLightwaveUid = pwd.pw_uid;
-        _gLightwaveGid = pwd.pw_gid;
+        else
+        {
+            _gLightwaveUid = pwd.pw_uid;
+            _gLightwaveGid = pwd.pw_gid;
+        }
     }
 
 error:
@@ -191,7 +194,7 @@ VmSetLWOwnership(
 
     if (getuid() == 0)
     {
-        if (_gLightwaveUid == 0)
+        if (_gLightwaveUid == -1)
         {
             dwError = VmGetLWUserGroupId();
             BAIL_ON_VM_COMMON_ERROR(dwError);

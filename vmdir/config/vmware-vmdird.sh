@@ -37,7 +37,7 @@ StartService()
     fi
 
     # Start service
-    $SBIN_DIR/vmdird -L $LOG_DIR/vmdird.log > /dev/null 2>&1 &
+    su -c "$SBIN_DIR/vmdird -L $LOG_DIR/vmdird.log > /dev/null 2>&1 &" -s /bin/sh lightwave
 
     WaitForServiceStart vmdird
 
