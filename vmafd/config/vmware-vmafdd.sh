@@ -16,7 +16,7 @@ WaitForServiceStart()
    count=20
 
     while [ $count -ge 0 ]; do
-        sleep 1
+        sleep 2
         netstat -nap | grep $srvName | grep 2020 > /dev/null 2>&1
 
         if [ $? -eq 0 ]; then 
@@ -37,7 +37,7 @@ StartService()
     fi
 
     # Start service
-    $SBIN_DIR/vmafdd >> $LOG_DIR/vmafdd.log 2>&1 &
+    $SBIN_DIR/vmafdd -c >> $LOG_DIR/vmafdd.log 2>&1 &
 
     WaitForServiceStart vmafdd
 
