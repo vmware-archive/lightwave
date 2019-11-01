@@ -8,3 +8,5 @@ systemd_DATA = vmware-vmafdd.service
 javaetc_DATA = vmware-override-java.security
 
 bin_SCRIPTS = lw-support-bundle.sh
+
+sbin_SCRIPTS = vmware-vmafdd.sh

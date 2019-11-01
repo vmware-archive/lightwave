@@ -259,10 +259,12 @@ users.
             mv %{_datadir}/config/vmcacfg.yaml  %{_lw_tmp_dir}/vmcacfg.yaml
             mv %{_datadir}/config/vmdnscfg.yaml %{_lw_tmp_dir}/vmdnscfg.yaml
 
-            /bin/systemctl stop vmware-vmdnsd.service
-            /bin/systemctl stop vmware-vmcad.service
-            /bin/systemctl stop vmware-vmdird.service
-            /bin/systemctl stop vmware-vmafdd.service
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl stop vmware-vmdnsd.service
+                /bin/systemctl stop vmware-vmcad.service
+                /bin/systemctl stop vmware-vmdird.service
+                /bin/systemctl stop vmware-vmafdd.service
+            fi
             ;;
 
     esac
@@ -289,7 +291,9 @@ users.
             mv %{_datadir}/config/vmafdcfg.yaml %{_lw_tmp_dir}/vmafdcfg.yaml
             mv %{_datadir}/config/vmdircfg.yaml %{_lw_tmp_dir}/vmdircfg.yaml
 
-            /bin/systemctl stop vmware-vmafdd.service
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl stop vmware-vmafdd.service
+            fi
             ;;
     esac
 
@@ -368,7 +372,9 @@ users.
 
             # Note: Upgrades are not handled in container
 
-            /bin/systemctl daemon-reload
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl daemon-reload
+            fi
 
             %{_sbindir}/configure-build.sh "%{_stsdbdir}"
 
@@ -452,18 +458,20 @@ users.
             # New Installation
             #
 
-            /bin/systemctl enable vmware-vmafdd.service
-            /bin/systemctl enable vmware-vmdird.service
-            /bin/systemctl enable vmware-vmcad.service
-            /bin/systemctl enable vmware-vmdnsd.service
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl enable vmware-vmafdd.service
+                /bin/systemctl enable vmware-vmdird.service
+                /bin/systemctl enable vmware-vmcad.service
+                /bin/systemctl enable vmware-vmdnsd.service
 
-            /bin/systemctl daemon-reload
-            # start vmdir the first time under MdbEnabelWal 0 is much faster
-            %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 0
-            /bin/systemctl start vmware-vmdird.service
-            /bin/systemctl stop vmware-vmdird.service
-            # set MdbEnable 1 default state
-            %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 1
+                /bin/systemctl daemon-reload
+                # start vmdir the first time under MdbEnabelWal 0 is much faster
+                %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 0
+                /bin/systemctl start vmware-vmdird.service
+                /bin/systemctl stop vmware-vmdird.service
+                # set MdbEnable 1 default state
+                %{_bindir}/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 1
+            fi
             ;;
 
         2)
@@ -496,11 +504,13 @@ users.
     find %{_vmdir_dbdir} -type f -exec chmod 600 {} \;
     chown -R lightwave:lightwave %{_integchkdir}
 
-    /bin/systemctl daemon-reload
-    /bin/systemctl start vmware-vmafdd.service
-    /bin/systemctl start vmware-vmdird.service
-    /bin/systemctl start vmware-vmcad.service
-    /bin/systemctl start vmware-vmdnsd.service
+    if [ ! -f /.dockerenv ]; then
+        /bin/systemctl daemon-reload
+        /bin/systemctl start vmware-vmafdd.service
+        /bin/systemctl start vmware-vmdird.service
+        /bin/systemctl start vmware-vmcad.service
+        /bin/systemctl start vmware-vmdnsd.service
+    fi
 
 %post client
 
@@ -581,7 +591,9 @@ users.
     fi
     chown %{_lwuser}:%{_lwgroup} %{_lw_tmp_dir} >/dev/null 2>&1
 
-    /bin/systemctl daemon-reload
+    if [ ! -f /.dockerenv ]; then
+        /bin/systemctl daemon-reload
+    fi
 
     case "$1" in
         1)
@@ -589,10 +601,12 @@ users.
             # New Installation
             #
 
-            /bin/systemctl start vmware-vmafdd.service
-            /bin/systemctl restart vmware-vmafdd.service
-            #sleep 2
-            %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl start vmware-vmafdd.service
+                /bin/systemctl restart vmware-vmafdd.service
+                #sleep 2
+                %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+            fi
 
             ;;
 
@@ -609,10 +623,12 @@ users.
             %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmafdcfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmafdcfg.yaml
             %{_bindir}/lwcommon-cli regcfg merge-file %{_lw_tmp_dir}/vmdircfg.yaml.%{_version}.%{_patch}%{_dist} %{_datadir}/config/vmdircfg.yaml
 
-            /bin/systemctl start vmware-vmafdd.service
-            /bin/systemctl restart vmware-vmafdd.service
-            #sleep 2
-            %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl start vmware-vmafdd.service
+                /bin/systemctl restart vmware-vmafdd.service
+                #sleep 2
+                %{_bindir}/vecs-cli store permission --name MACHINE_SSL_CERT --user lightwave --grant read >/dev/null
+            fi
 
             ;;
     esac
@@ -1126,7 +1142,6 @@ users.
 %{_bindir}/unix_srp
 %{_bindir}/vmkdc_admin
 %{_bindir}/vdcmetric
-%{_bindir}/vmdir_upgrade.sh
 %{_bindir}/run_backup.sh
 %{_bindir}/lw_backup.sh
 %{_bindir}/aws_backup_common.sh
@@ -1137,8 +1152,11 @@ users.
 %{_bindir}/mdb_verify_checksum
 
 %{_sbindir}/vmcad
+%{_sbindir}/vmware-vmcad.sh
 %{_sbindir}/vmdird
+%{_sbindir}/vmware-vmdird.sh
 %{_sbindir}/vmdnsd
+%{_sbindir}/vmware-vmdnsd.sh
 
 %{_lib64dir}/libvmkdcserv.so*
 %{_lib64dir}/sasl2/libsaslvmdirdb.so*
@@ -1195,6 +1213,7 @@ users.
 %{_lib64dir}/libcsrp.so*
 
 %{_sbindir}/vmafdd
+%{_sbindir}/vmware-vmafdd.sh
 
 %{_lib64dir}/libvecsjni.so*
 %{_lib64dir}/libcdcjni.so*

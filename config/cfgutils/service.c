@@ -22,22 +22,40 @@ VmwDeployStartService(
     )
 {
     DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    struct stat statbuf={0};
+
+    PCSTR vmStart[] = {
+            "systemctl start vmware-vmdird.service",
+            "systemctl start vmware-vmafdd.service",
+            "systemctl start vmware-vmcad.service",
+            "systemctl start vmware-vmdnsd.service",
+            "/opt/vmware/sbin/vmware-vmdird.sh start",
+            "/opt/vmware/sbin/vmware-vmafdd.sh start",
+            "/opt/vmware/sbin/vmware-vmcad.sh start",
+            "/opt/vmware/sbin/vmware-vmdnsd.sh start"
+            };
+
+    if (stat("/.dockerenv", &statbuf) == 0)
+    {
+        dwIndex = 4;
+    }
 
     if (VmStringCompareA(pszName, "vmafd", FALSE) == 0)
     {
-        dwError = system(VMW_START_VMAFDD);
+        dwError = system(vmStart[dwIndex+1]);
     }
     else if (VmStringCompareA(pszName, "vmdir", FALSE) == 0)
     {
-        dwError = system(VMW_START_VMDIRD);
+        dwError = system(vmStart[dwIndex+0]);
     }
     else if (VmStringCompareA(pszName, "vmca", FALSE) == 0)
     {
-        dwError = system(VMW_START_VMCAD);
+        dwError = system(vmStart[dwIndex+2]);
     }
     else if (VmStringCompareA(pszName, "vmdns", FALSE) == 0)
     {
-        dwError = system(VMW_START_VMDNSD);
+        dwError = system(vmStart[dwIndex+3]);
     }
     BAIL_ON_DEPLOY_ERROR(dwError);
 
@@ -56,22 +74,40 @@ VmwDeployStopService(
     )
 {
     DWORD dwError = 0;
+    DWORD dwIndex = 0;
+    struct stat statbuf={0};
+
+    PCSTR vmStart[] = {
+            "systemctl stop vmware-vmdird.service",
+            "systemctl stop vmware-vmafdd.service",
+            "systemctl stop vmware-vmcad.service",
+            "systemctl stop vmware-vmdnsd.service",
+            "/opt/vmware/sbin/vmware-vmdird.sh stop",
+            "/opt/vmware/sbin/vmware-vmafdd.sh stop",
+            "/opt/vmware/sbin/vmware-vmcad.sh stop",
+            "/opt/vmware/sbin/vmware-vmdnsd.sh stop"
+            };
+
+    if (stat("/.dockerenv", &statbuf) == 0)
+    {
+        dwIndex = 4;
+    }
 
     if (VmStringCompareA(pszName, "vmafd", FALSE) == 0)
     {
-        dwError = system(VMW_STOP_VMAFDD);
+        dwError = system(vmStart[dwIndex+1]);
     }
     else if (VmStringCompareA(pszName, "vmdir", FALSE) == 0)
     {
-        dwError = system(VMW_STOP_VMDIRD);
+        dwError = system(vmStart[dwIndex+0]);
     }
     else if (VmStringCompareA(pszName, "vmca", FALSE) == 0)
     {
-        dwError = system(VMW_STOP_VMCAD);
+        dwError = system(vmStart[dwIndex+2]);
     }
     else if (VmStringCompareA(pszName, "vmdns", FALSE) == 0)
     {
-        dwError = system(VMW_STOP_VMDNSD);
+        dwError = system(vmStart[dwIndex+3]);
     }
     BAIL_ON_DEPLOY_ERROR(dwError);
 

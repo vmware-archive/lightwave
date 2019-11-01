@@ -40,16 +40,6 @@ typedef VOID (*PFN_LOG_CALLBACK)(
 #define VMW_LDAP_CONNECT_MAX_RETRIES 2
 #define VMW_LDAP_CONNECT_RETRY_DELAY_SECS 3
 
-#define VMW_START_VMDIRD "systemctl start vmware-vmdird.service"
-#define VMW_START_VMAFDD "systemctl start vmware-vmafdd.service"
-#define VMW_START_VMCAD  "systemctl start vmware-vmcad.service"
-#define VMW_START_VMDNSD "systemctl start vmware-vmdnsd.service"
-
-#define VMW_STOP_VMDIRD "systemctl stop vmware-vmdird.service"
-#define VMW_STOP_VMAFDD "systemctl stop vmware-vmafdd.service"
-#define VMW_STOP_VMCAD  "systemctl stop vmware-vmcad.service"
-#define VMW_STOP_VMDNSD "systemctl stop vmware-vmdnsd.service"
-
 #define VMW_ENABLE_MDBWAL   "/opt/vmware/bin/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 1"
 #define VMW_DISABLE_MDBWAL  "/opt/vmware/bin/lwcommon-cli regcfg set-key /vmdir/parameters/MdbEnableWal 0"
 

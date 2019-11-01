@@ -6,3 +6,5 @@ vmdnsconf_DATA = \
 
 systemd_DATA = \
     vmware-vmdnsd.service
+
+sbin_SCRIPTS = vmware-vmdnsd.sh

@@ -7,3 +7,5 @@ vmcaconf_DATA = \
 
 systemd_DATA = \
     vmware-vmcad.service
+
+sbin_SCRIPTS = vmware-vmcad.sh

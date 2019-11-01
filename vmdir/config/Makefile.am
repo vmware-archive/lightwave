@@ -10,4 +10,4 @@ vmdirconf_DATA = \
 systemd_DATA = \
     vmware-vmdird.service
 
-bin_SCRIPTS = vmdir_upgrade.sh
+sbin_SCRIPTS = vmware-vmdird.sh

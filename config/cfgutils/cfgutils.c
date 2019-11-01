@@ -563,10 +563,10 @@ VmwDeploySetupServerPrimary(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_VMDNS_SVC_NAME,
-        VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
-        VMW_VMCA_SVC_NAME
+        VMW_VMAFD_SVC_NAME,
+        VMW_VMCA_SVC_NAME,
+        VMW_VMDNS_SVC_NAME
     };
     int iSvc = 0;
 
@@ -645,10 +645,10 @@ VmwDeploySetupServerPartner(
     DWORD dwError = 0;
     PCSTR ppszServices[]=
     {
-        VMW_VMDNS_SVC_NAME,
-        VMW_VMAFD_SVC_NAME,
         VMW_DIR_SVC_NAME,
-        VMW_VMCA_SVC_NAME
+        VMW_VMAFD_SVC_NAME,
+        VMW_VMCA_SVC_NAME,
+        VMW_VMDNS_SVC_NAME
     };
     int iSvc = 0;
 
