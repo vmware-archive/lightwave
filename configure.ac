@@ -892,6 +892,10 @@ AC_CHECK_LIB([pthread],
     [pthread_self],
     [PTHREAD_LIBS="-lpthread"])
 
+AC_CHECK_LIB([resolv],
+    [ns_initparse],
+    [RESOLV_LIBS="-lresolv"])
+
 AC_CHECK_LIB([z],
     [inflate],
     [ZLIB_LIBS="-lz"],
@@ -1102,6 +1106,7 @@ AC_CHECK_LIB([python2.7],
 
 AC_SUBST(DL_LIBS)
 AC_SUBST(PTHREAD_LIBS)
+AC_SUBST(RESOLV_LIBS)
 AC_SUBST(MDB_LIBS)
 AC_SUBST(ZLIB_LIBS)
 AC_SUBST(BZIP_LIBS)
@@ -1708,8 +1713,6 @@ AC_SUBST(vmidmconfdir)
 
 systemddir="/lib/systemd/system"
 AC_SUBST(systemddir)
-
-#--------------------------------------------------------------------
 
 vmdircfgdir="$prefix/share/config"
 AS_AC_EXPAND(VMDIR_CONFIG_PATH, $vmdircfgdir)
