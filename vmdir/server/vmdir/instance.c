@@ -714,8 +714,8 @@ error:
 // Takes a DN of the form "dc=foo,dc=bar" and the respective admin DN (e.g.,
 // "cn=Administrator,cn=users,dc=foo,dc=bar")
 //
-// Also, grant system domainadmin 
-// VMDIR_ENTRY_WRITE_ACL | VMDIR_RIGHT_DS_WRITE_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT 
+// Also, grant system domainadmin
+// VMDIR_ENTRY_WRITE_ACL | VMDIR_RIGHT_DS_WRITE_PROP | VMDIR_RIGHT_DS_DELETE_OBJECT
 // permission to NON-LEAF domains.
 //
 DWORD
@@ -821,6 +821,9 @@ VmDirSrvSetupDomainInstance(
     PCSTR pszFSPsContainerName  = FSP_CONTAINER_RDN_ATTR_VALUE;
     PCSTR pszBuiltInUsersGroupName = "Users";
     PCSTR pszBuiltInAdministratorsGroupName = "Administrators";
+    PCSTR pszBuiltInLwSTSAccountsGroupName = "SecureTokenServer";
+    PCSTR pszBuiltInLwSTSContainerName = "SecureTokenServer";
+
 
     PSTR pszUsersContainerDN   = NULL; // CN=Users,<domain DN>
     PSTR pszSystemContainerDN  = NULL; // CN=System,<domain DN>
@@ -830,6 +833,8 @@ VmDirSrvSetupDomainInstance(
     PSTR pszBuiltInUsersGroupDN = NULL;
     PSTR pszBuiltInAdministratorsGroupDN = NULL;
     PSTR pszDefaultPasswdLockoutPolicyDN = NULL;
+    PSTR pszBuiltInLwSTSAccountsGroupDN = NULL; // CN=SecureTokenServer,CN=BuiltIn,<domain DN>
+    PSTR pszBuiltInLwSTSContainerDN = NULL; // CN=SecureTokenServer,<system domain DN>
     PSTR pszDCGroupDN = NULL;
     PSTR pszDCClientGroupDN = NULL;
     PSTR pszCertGroupDN = NULL;
@@ -850,6 +855,7 @@ VmDirSrvSetupDomainInstance(
     PSTR pszDomainClientsGroupSid = NULL;
     PSTR pszKrbtgtSid = NULL;
     PSTR pszAdminUserKrbUPN = NULL;
+    PSTR pszBuiltInLwSTSAccountsGroupSid = NULL;
 
     // Create host/tenant domain
 
@@ -1110,6 +1116,58 @@ VmDirSrvSetupDomainInstance(
     }
 
     //
+    // Create SecureTokenServer group only for the very first
+    // host setup.
+    //
+    if ( bSetupHost && bFirstNodeBootstrap )
+    {
+        // Dn for SecureTokenServer Group
+        dwError = VmDirAllocateStringPrintf(
+                &pszBuiltInLwSTSAccountsGroupDN,
+                "cn=%s,%s",
+                pszBuiltInLwSTSAccountsGroupName,
+                pszBuiltInContainerDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirGenerateWellknownSid(
+                pszDomainDN,
+                VMDIR_DOMAIN_STS_ACCOUNTS_RID,
+                &pszBuiltInLwSTSAccountsGroupSid);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = _VmDirSrvCreateBuiltInGroup(
+                pSchemaCtx,
+                pszBuiltInLwSTSAccountsGroupName,
+                pszBuiltInLwSTSAccountsGroupSid,
+                pszBuiltInLwSTSAccountsGroupDN);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+    //
+    // Create the SecureTokenServer container for tenant setup or for first host setup.
+    //
+    if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
+    {
+        // Dn for SecureTokenServer Group - the group is from system domain
+        dwError = VmDirAllocateStringPrintf(
+                &pszBuiltInLwSTSAccountsGroupDN,
+                "cn=%s,cn=%s,%s",
+                pszBuiltInLwSTSAccountsGroupName,
+                pszBuiltInContainerName,
+                gVmdirServerGlobals.systemDomainDN.lberbv_val);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSrvCreateDN(
+            pszBuiltInLwSTSContainerName, pszDomainDN, &pszBuiltInLwSTSContainerDN);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+        dwError = VmDirSrvCreateConfigContainer(
+                pSchemaCtx, pszBuiltInLwSTSContainerDN, pszBuiltInLwSTSContainerName );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
+
+    //
     // Create default security descriptor for internally-created entries.
     //
     dwError = VmDirSrvCreateSecurityDescriptor(
@@ -1271,6 +1329,32 @@ VmDirSrvSetupDomainInstance(
         }
     }
 
+    // lw sts group/container
+    if (bSetupHost && bFirstNodeBootstrap)
+    {
+        // SD for SecureTokenServer group
+        dwError = VmDirAppendSecurityDescriptorForDn(
+                pszBuiltInLwSTSAccountsGroupDN, &SecDescNoDelete, TRUE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+    if (bSetupHost == FALSE || bFirstNodeBootstrap == TRUE)
+    {
+        // set SD for SecureTokenServer container
+        // same as admin + SecureTokenServer group full access
+        dwError = VmDirAppendSecurityDescriptorForDn(
+            pszBuiltInLwSTSContainerDN, &SecDescFullAccess, TRUE);
+        BAIL_ON_VMDIR_ERROR(dwError);
+
+        // grant STSAccounts full access to STS container
+        dwError = VmDirAppendAllowAceForDnEx(
+            pszBuiltInLwSTSContainerDN,
+            pszBuiltInLwSTSAccountsGroupDN,
+        OBJECT_INHERIT_ACE | CONTAINER_INHERIT_ACE,
+            VMDIR_ENTRY_ALL_ACCESS
+        );
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
+
     // Create default password and lockout policy
     dwError = VmDirSrvCreateDN(
             PASSWD_LOCKOUT_POLICY_DEFAULT_CN,
@@ -1325,6 +1409,8 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDCClientGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszCertGroupDN);
     VMDIR_SAFE_FREE_MEMORY(pszDnsGroupDN);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInLwSTSAccountsGroupDN);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInLwSTSContainerDN);
     VMDIR_SAFE_FREE_MEMORY(pszTenantRealmName);
 
     VMDIR_SAFE_FREE_MEMORY(SecDescFullAccess.pSecDesc);
@@ -1339,6 +1425,7 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszDomainAdminsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
     VMDIR_SAFE_FREE_STRINGA(pszKrbtgtSid);
+    VMDIR_SAFE_FREE_MEMORY(pszBuiltInLwSTSAccountsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszAdminUserKrbUPN);
     VMDIR_SAFE_FREE_MEMORY(pszTgtDN);
     VMDIR_SAFE_FREE_MEMORY(pszKMDN);

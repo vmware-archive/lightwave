@@ -18,6 +18,9 @@
 #include <vmdirsys.h>
 #include <sys/types.h>
 #include <ifaddrs.h>
+#include <netinet/in.h>
+#include <arpa/nameser.h>
+#include <resolv.h>
 #include <arpa/inet.h>
 
 #else

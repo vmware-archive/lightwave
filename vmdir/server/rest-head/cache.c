@@ -67,6 +67,8 @@ VmDirRESTCacheRefresh(
     DWORD   dwOIDCError = 0;
     BOOLEAN bInLock = FALSE;
     PSTR    pszKey = NULL;
+    PSTR    pszIssuer = NULL;
+    PSTR    pszSystemDomain = NULL;
     PSTR    pszOIDCSigningCertPEM = NULL;
     POIDC_SERVER_METADATA   pOidcMetadata = NULL;
 
@@ -75,12 +77,29 @@ VmDirRESTCacheRefresh(
         BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_INVALID_PARAMETER);
     }
 
-    dwOIDCError = OidcServerMetadataAcquire(
-            &pOidcMetadata,
-            VDIR_SAFE_STRING(gVmdirServerGlobals.bvServerObjName.lberbv_val),
-            VMDIR_REST_OIDC_PORT,
-            pszDomainName,
-            LIGHTWAVE_TLS_CA_PATH);
+    dwError = VmDirDomainDNToName(
+        gVmdirServerGlobals.systemDomainDN.bvnorm_val,
+        &pszSystemDomain);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirRESTOidcIssuer(
+        pszSystemDomain,
+        pszDomainName,
+        NULL,
+        &pszIssuer);
+    if (dwError)
+    {
+        VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "Identifying Oidc Issuer for domain '%s' failed with (%d)",
+            pszDomainName, dwError);
+        BAIL_WITH_VMDIR_ERROR(dwError, VMDIR_ERROR_REST_OIDC_UNAVAILABLE);
+    }
+
+    dwOIDCError = OidcServerMetadataAcquireFromIssuer(
+        &pOidcMetadata,
+        pszIssuer,
+        LIGHTWAVE_TLS_CA_PATH);
     dwError = VmDirOidcToVmdirError(dwOIDCError);
     BAIL_ON_VMDIR_ERROR(dwError);
 
@@ -103,6 +122,8 @@ VmDirRESTCacheRefresh(
 
 cleanup:
     VMDIR_RWLOCK_UNLOCK(bInLock, pRestCache->pRWLock);
+    VMDIR_SAFE_FREE_MEMORY(pszIssuer);
+    VMDIR_SAFE_FREE_MEMORY(pszSystemDomain);
     OidcServerMetadataDelete(pOidcMetadata);
     return dwError;
 

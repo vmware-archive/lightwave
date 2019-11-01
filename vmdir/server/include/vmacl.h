@@ -134,6 +134,7 @@ extern "C" {
 #define VMDIR_DOMAIN_CLIENTS_RID         515 // Domain Users group
 #define VMDIR_DOMAIN_ALIAS_RID_ADMINS    544 // BUILTIN\Administrators group
 #define VMDIR_DOMAIN_ALIAS_RID_USERS     545 // BUILTIN\Users group
+#define VMDIR_DOMAIN_STS_ACCOUNTS_RID    600 // BUILTIN\LwSTSAccounts group
 
 //
 // Well-known SID for a user who has connected anonymously.
@@ -153,6 +154,13 @@ extern "C" {
 // when applied to objects.
 //
 #define VMDIR_NULL_SID_TEMPLATE "S-1-0-0"
+
+//
+// Null SID template to be used in defaultSecurityDescriptors.
+// This template will be replaced with SID of system domain
+// when applied to objects.
+//
+#define VMDIR_SYSTEM_DOMAIN_NULL_SID_TEMPLATE "S-1-0-1"
 
 // objectSid.c
 DWORD
@@ -341,6 +349,14 @@ DWORD
 VmDirAppendAllowAceForDn(
     PCSTR       pszObjectDn,
     PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    );
+
+DWORD
+VmDirAppendAllowAceForDnEx(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ULONG       aceFlags,
     ACCESS_MASK accessMask
     );
 

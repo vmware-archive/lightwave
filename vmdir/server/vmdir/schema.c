@@ -142,6 +142,7 @@ VmDirSchemaSetSystemDefaultSecurityDescriptors(
     DWORD   dwError = 0;
     PSTR    pszBuiltInUsersGroupSid = NULL;
     PSTR    pszDomainClientsGroupSid = NULL;
+    PSTR    pszSTSAccountsGroupSid = NULL;
     PSTR    pszDaclTemplate = NULL;
 
     // create builtin users group and domain clients group SID templates
@@ -153,12 +154,18 @@ VmDirSchemaSetSystemDefaultSecurityDescriptors(
             NULL, VMDIR_DOMAIN_CLIENTS_RID, &pszDomainClientsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
+    dwError = VmDirAllocateStringPrintf(
+            &pszSTSAccountsGroupSid, "%s-%u",
+            VMDIR_SYSTEM_DOMAIN_NULL_SID_TEMPLATE, VMDIR_DOMAIN_STS_ACCOUNTS_RID);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
     // grant built-in users group rights to read control & property of
     // any group/computer/certificates object
     dwError = VmDirAllocateStringPrintf(
             &pszDaclTemplate,
-            "D:(A;;RCRP;;;%s)",
-            pszBuiltInUsersGroupSid);
+            "D:(A;;RCRP;;;%s)(A;;RCRP;;;%s)",
+            pszBuiltInUsersGroupSid,
+            pszSTSAccountsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSetDefaultSecurityDescriptorForClass(
@@ -178,9 +185,10 @@ VmDirSchemaSetSystemDefaultSecurityDescriptors(
     VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
     dwError = VmDirAllocateStringPrintf(
             &pszDaclTemplate,
-            "D:(A;;RC;;;%s)(A;;RP;;;%s)",
+            "D:(A;;RC;;;%s)(A;;RP;;;%s)(A;;RP;;;%s)",
             pszBuiltInUsersGroupSid,
-            pszDomainClientsGroupSid);
+            pszDomainClientsGroupSid,
+            pszSTSAccountsGroupSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSetDefaultSecurityDescriptorForClass(
@@ -190,6 +198,7 @@ VmDirSchemaSetSystemDefaultSecurityDescriptors(
 cleanup:
     VMDIR_SAFE_FREE_MEMORY(pszBuiltInUsersGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDomainClientsGroupSid);
+    VMDIR_SAFE_FREE_MEMORY(pszSTSAccountsGroupSid);
     VMDIR_SAFE_FREE_MEMORY(pszDaclTemplate);
     return dwError;
 

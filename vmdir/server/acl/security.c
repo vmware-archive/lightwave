@@ -557,42 +557,14 @@ error:
 
     goto cleanup;
 }
-DWORD
-VmDirAppendAllowAceForDn(
-    PCSTR       pszObjectDn,
-    PCSTR       pszTrusteeDN,
-    ACCESS_MASK accessMask
-    )
-{
-    DWORD dwError = ERROR_SUCCESS;
-    PVDIR_ENTRY pEntry = NULL;
-
-    dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-    dwError = VmDirAppendAllowAceForEntry(pEntry, pszTrusteeDN, accessMask);
-    BAIL_ON_VMDIR_ERROR(dwError);
-
-cleanup:
-    VmDirFreeEntry(pEntry);
-    return dwError;
-
-error:
-    VMDIR_LOG_ERROR(
-            VMDIR_LOG_MASK_ALL,
-            "%s failed, error (%d)",
-            __FUNCTION__,
-            dwError);
-
-    goto cleanup;
-}
 
 // This function is only used internally to extend SD for a given entry
 // during instance bootstrap
 DWORD
-VmDirAppendAllowAceForEntry(
+VmDirAppendAllowAceForEntryEx(
     PVDIR_ENTRY pEntry,
     PCSTR       pszTrusteeDN,
+    ULONG       aceFlags,
     ACCESS_MASK accessMask
     )
 {
@@ -650,7 +622,7 @@ VmDirAppendAllowAceForEntry(
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirAddAccessAllowedAceEx(
-            pNewDacl, ACL_REVISION, 0, accessMask, pTrusteeSid);
+            pNewDacl, ACL_REVISION, aceFlags, accessMask, pTrusteeSid);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     dwError = VmDirSetDaclSecurityDescriptor(
@@ -689,6 +661,59 @@ cleanup:
     VMDIR_SAFE_FREE_MEMORY(pCurSecDescRel);
     VMDIR_SAFE_FREE_MEMORY(pTrusteeSid);
     VMDIR_SAFE_FREE_MEMORY(pNewDacl);
+    return dwError;
+
+error:
+    VMDIR_LOG_ERROR(
+            VMDIR_LOG_MASK_ALL,
+            "%s failed, error (%d)",
+            __FUNCTION__,
+            dwError);
+
+    goto cleanup;
+}
+
+// This function is only used internally to extend SD for a given entry
+// during instance bootstrap
+DWORD
+VmDirAppendAllowAceForEntry(
+    PVDIR_ENTRY pEntry,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    )
+{
+    return VmDirAppendAllowAceForEntryEx(pEntry, pszTrusteeDN, 0, accessMask);
+}
+
+DWORD
+VmDirAppendAllowAceForDn(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ACCESS_MASK accessMask
+    )
+{
+    return VmDirAppendAllowAceForDnEx(pszObjectDn, pszTrusteeDN, 0, accessMask);
+}
+
+DWORD
+VmDirAppendAllowAceForDnEx(
+    PCSTR       pszObjectDn,
+    PCSTR       pszTrusteeDN,
+    ULONG       aceFlags,
+    ACCESS_MASK accessMask
+    )
+{
+    DWORD dwError = ERROR_SUCCESS;
+    PVDIR_ENTRY pEntry = NULL;
+
+    dwError = VmDirSimpleDNToEntry(pszObjectDn, &pEntry);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+    dwError = VmDirAppendAllowAceForEntryEx(pEntry, pszTrusteeDN, aceFlags, accessMask);
+    BAIL_ON_VMDIR_ERROR(dwError);
+
+cleanup:
+    VmDirFreeEntry(pEntry);
     return dwError;
 
 error:

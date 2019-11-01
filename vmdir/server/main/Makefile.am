@@ -63,6 +63,7 @@ vmdird_LDADD = \
     @CRYPTO_LIBS@ \
     @CRYPT_LIBS@ \
     @PTHREAD_LIBS@ \
+    @RESOLV_LIBS@ \
     @JANSSON_LIBS@ \
     @COPENAPI_LIBS@ \
     @CRESTENGINE_LIBS@

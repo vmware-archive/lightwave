@@ -241,7 +241,9 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
     BOOLEAN bTmp = FALSE;
     ULONG   ulLength = 0;
     PCSTR   pszDomainSid = NULL;
+    PCSTR   pszSystemDomainSid = NULL;
     PSTR    pszClassDn = NULL;
+    PSTR    pszDaclInterim = NULL;
     PSTR    pszDacl = NULL;
     PSTR    pszOwnerSid = NULL;
     PSTR    pszGroupSid = NULL;
@@ -277,6 +279,8 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
     pAttr = VmDirFindAttrByName(pOCEntry, ATTR_DEFAULT_SECURITY_DESCRIPTOR);
     if (pAttr)
     {
+        pszSystemDomainSid = VmDirFindDomainSid(gVmdirServerGlobals.systemDomainDN.lberbv_val);
+
         pszDomainSid = VmDirFindDomainSid(pEntry->dn.lberbv.bv_val);
         if (IsNullOrEmptyString(pszDomainSid))
         {
@@ -293,7 +297,14 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
                     pAttr->vals[0].lberbv.bv_val,
                     VMDIR_NULL_SID_TEMPLATE,
                     pszDomainSid,
-                    &pszDacl);
+                    &pszDaclInterim);
+            BAIL_ON_VMDIR_ERROR(dwError);
+
+            dwError = VmDirStringReplaceAll(
+                     pszDaclInterim,
+                     VMDIR_SYSTEM_DOMAIN_NULL_SID_TEMPLATE,
+                     pszSystemDomainSid,
+                     &pszDacl);
             BAIL_ON_VMDIR_ERROR(dwError);
         }
 
@@ -359,6 +370,7 @@ _VmDirGetSchemaDefaultSecurityDescriptor(
 cleanup:
     VmDirFreeAbsoluteSecurityDescriptor(&pParentSecDescAbs);
     VMDIR_SAFE_FREE_STRINGA(pszClassDn);
+    VMDIR_SAFE_FREE_STRINGA(pszDaclInterim);
     VMDIR_SAFE_FREE_STRINGA(pszDacl);
     VMDIR_SAFE_FREE_STRINGA(pszOwnerSid);
     VMDIR_SAFE_FREE_STRINGA(pszGroupSid);

@@ -285,6 +285,15 @@ VmRESTIsValidOrigin(
     BOOLEAN                 *isValidOrigin
     );
 
+DWORD
+VmDirRESTOidcIssuer(
+    PCSTR pszDnsDomain,
+    PCSTR pszDomain,
+    PCSTR pszSite,
+    PSTR* ppszOidcIssuer
+    );
+
+
 // param.c
 DWORD
 VmDirRESTGetStrParam(
