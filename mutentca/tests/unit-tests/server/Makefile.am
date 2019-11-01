@@ -2,7 +2,7 @@ SUBDIRS = \
     authz \
     common \
     plugin \
-    oidc-auth \
+    #lw-next disable oidc-auth \
     #db \
     policy \
     security \
