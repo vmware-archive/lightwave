@@ -154,7 +154,7 @@ targets:
   pack:
     description: Create RPM Package
     after:
-      - pack-photon2
+      - pack-photon3
 
   docker-lightwave-base-photon1:
     description: build lightwave-base docker image
@@ -419,7 +419,7 @@ targets:
   clean:
     description: Cleanup
     after:
-      - clean-photon2
+      - clean-photon3
     always: true
 
 commands:

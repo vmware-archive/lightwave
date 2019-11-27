@@ -22,7 +22,7 @@ mdb_stat_SOURCES = \
     mdb_stat.c
 
 mdb_stat_LDADD = \
-    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/.libs/libvmdirmdb.so \
+    libvmdirmdb.la \
     @PTHREAD_LIBS@
 
 mdb_stat_LDFLAGS = \
@@ -32,7 +32,7 @@ mdb_verify_checksum_SOURCES = \
     mdb_verify_checksum.c
 
 mdb_verify_checksum_LDADD = \
-    $(top_builddir)/vmdir/thirdparty/openldap/libraries/liblmdb/.libs/libvmdirmdb.so \
+    libvmdirmdb.la \
     @PTHREAD_LIBS@ \
     @CRYPTO_LIBS@
 

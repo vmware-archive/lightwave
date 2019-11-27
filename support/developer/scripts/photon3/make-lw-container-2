@@ -1,0 +1,69 @@
+#!/bin/bash
+
+function check_lightwave
+{
+    node=$1
+    # Check if lightwave server is up
+    attempts=1
+    reachable="false"
+    total_attempts=50
+    while [ $attempts -lt $total_attempts ] && [ $reachable != "true" ]; do
+       http_code=$(curl -I -so /dev/null -w "%{response_code}" -s -X GET --insecure https://$node) || true
+       # The curl returns 000 when it fails to connect to the lightwave server
+       if [ "$http_code" == "000" ]; then
+          echo "Lightwave REST server $node not reachable (attempt $attempts/$total_attempts), will try again."
+          attempts=$[$attempts+1]
+          sleep 5
+       else
+          reachable="true"
+          break
+       fi
+    done
+
+    if [ $attempts -eq $total_attempts ]; then
+       echo "Could not connect to Lightwave REST client at $node after $total_attempts attempts"
+       exit 1
+    else
+       echo "Lightwave server at $node has been successfully deployed."
+    fi
+}
+
+LIGHTWAVE_DOMAIN=lw-testdom.com
+LIGHTWAVE_PASSWORD='Ca$hc0w1'
+LIGHTWAVE_SITE=Default-first-site
+LIGHTWAVE_HOSTNAME=lw-2.lw-testdom.com
+LIGHTWAVE_PARTNER_IP=$(docker inspect lightwave-lw-0 --format '{{ .NetworkSettings.Networks.lightwave.IPAddress}}')
+
+LIGHTWAVE_HOME=$HOME/lightwave
+LIGHTWAVE_CONFIG_DIR=$LIGHTWAVE_HOME/config-lw-2
+LIGHTWAVE_CONFIG_PATH=$LIGHTWAVE_CONFIG_DIR/lightwave-server.cfg
+
+mkdir -p $LIGHTWAVE_CONFIG_DIR
+
+cat << EOF > $LIGHTWAVE_CONFIG_PATH
+deployment=partner
+domain=$LIGHTWAVE_DOMAIN
+hostname=$LIGHTWAVE_HOSTNAME
+admin=Administrator
+password=$LIGHTWAVE_PASSWORD
+site-name=$LIGHTWAVE_SITE
+first-instance=false
+replication-partner-hostname=$LIGHTWAVE_PARTNER_IP
+EOF
+
+docker run -d \
+           --name lightwave-lw-2 \
+           --privileged \
+           --net lightwave \
+           --hostname $LIGHTWAVE_HOSTNAME \
+           --ip 192.168.114.5 \
+           --dns 192.168.114.3 \
+           --dns 192.168.114.4 \
+           --dns 192.168.114.5 \
+           --dns-search lw-testdom.com \
+           -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+           -v $LIGHTWAVE_CONFIG_DIR:/var/lib/vmware/config \
+           vmware/lightwave-sts-photon3
+
+check_lightwave 192.168.114.5
+

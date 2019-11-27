@@ -1,4 +1,4 @@
-C_PREREQ([2.69])
+AC_PREREQ([2.69])
 AC_INIT([lightwave], [1.3.0])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
