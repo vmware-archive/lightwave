@@ -4,8 +4,10 @@ DISTRO=`cat /etc/os-release | grep VERSION_ID | cut -d= -f2`
 
 if [ $DISTRO == "1.0" ]; then
     DIST="%{nil}"
-else
+elif [ $DISTRO == "2.0" ]; then
     DIST=".lwph2"
+else
+    DIST=".lwph3"
 fi
 
 PROJECT_ROOT=$(pwd)

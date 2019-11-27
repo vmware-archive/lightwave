@@ -301,17 +301,17 @@ _LwCAGetSSLCert(
     PVECS_STORE         pVECSStore = NULL;
     PVECS_CERT_ENTRY_A  pCertEntry = NULL;
 
-    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
-    {
-        dwError = LWCA_ERROR_INVALID_PARAMETER;
-        goto cleanup;
-    }
-
     fpVecsOpenCertStoreA    fpOpenStore = NULL;
     fpVecsGetEntryByAliasA  fpGetEntry = NULL;
     fpVecsGetKeyByAliasA    fpGetKey = NULL;
     fpVecsCloseCertStore    fpCloseStore = NULL;
     fpVecsFreeCertEntryA    fpFreeEntry = NULL;
+
+    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
+    {
+        dwError = LWCA_ERROR_INVALID_PARAMETER;
+        goto cleanup;
+    }
 
     if ( (fpOpenStore = (fpVecsOpenCertStoreA)LwCAGetLibSym(
                              plibHandle,
