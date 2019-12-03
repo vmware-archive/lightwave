@@ -88,7 +88,7 @@ app files will be created under tools/mac/x64/Debug folder by default. If you ne
 
 ####Using Xamarin Studio
 
-To build the tools indiviudally using Xamarin Studio, you need to build the pre-requisite interops first.
+To build the tools individually using Xamarin Studio, you need to build the pre-requisite interops first.
 
 If you have opened the .sln file for a tool, you would need to close it before you perform these steps.
 Perform the following steps before you open the solution for a tool.
