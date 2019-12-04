@@ -274,8 +274,8 @@ AM_CONDITIONAL(GO_ENABLED, [$GO_ENABLED])
 
 ENABLE_PLUGINS=false
 AC_ARG_ENABLE([plugins],
- [AS_HELP_STRING([--enable-plugins],
-                 [enable all plugin builds (default: disabled])],
+    [AC_HELP_STRING([--enable-plugins],
+                    [enable all plugin builds (default: disabled)])],
     [
         if test x"$enableval" = x"yes"
         then
@@ -283,7 +283,7 @@ AC_ARG_ENABLE([plugins],
             AC_DEFINE(ENABLE_PLUGINS, 1, [Build plugins?])
         fi
     ]
-])
+)
 AM_CONDITIONAL(ENABLE_PLUGINS, [$ENABLE_PLUGINS])
 
 #--------------------------------------------------------------------
@@ -291,8 +291,9 @@ AM_CONDITIONAL(ENABLE_PLUGINS, [$ENABLE_PLUGINS])
 
 ENABLE_SECURITY_AWS_KMS=false
 AC_ARG_ENABLE([security_aws_kms],
- [AS_HELP_STRING([--enable-security_aws_kms],
-                 [enable security plugin aws kms (default: disabled])],
+    [AC_HELP_STRING([--enable-security_aws_kms],
+                    [enable security plugin aws kms (default: disabled)])
+    ],
     [
         if test x"$enableval" = x"yes"
         then
@@ -308,7 +309,7 @@ AC_ARG_ENABLE([security_aws_kms],
             AC_DEFINE_UNQUOTED(SECURITY_AWS_KMS_CONFIG_DIR, "$SECURITY_AWS_KMS_CONFIG_DIR", [Config directory])
         fi
     ]
-])
+)
 AM_CONDITIONAL(ENABLE_SECURITY_AWS_KMS, [$ENABLE_SECURITY_AWS_KMS])
 
 #--------------------------------------------------------------------

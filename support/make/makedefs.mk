@@ -24,3 +24,4 @@ COMMONS_DAEMON?=/usr/share/java/
 ANT_HOME?=/var/opt/apache-ant
 TOMCAT_HOME?=/var/opt/apache-tomcat
 MAVEN_HOME?=/var/opt/apache-maven
+LIGHTWAVE_LOGDIR?=/var/log/lightwave

@@ -35,6 +35,24 @@ inject_docker_file_photon_2()
     rm $tmpfile
 }
 
+inject_docker_file_photon_3()
+{
+    #
+    # Assumes that sed and createrepo are already installed
+    #
+    tmpfile=$(mktemp /tmp/lw.XXXXXX)
+
+    cat >$tmpfile <<-EOF
+	COPY x86_64 /tmp/vmware/lightwave/x86_64
+	COPY lightwave.repo /etc/yum.repos.d
+	RUN createrepo /tmp/vmware/lightwave && \
+	tdnf makecache
+	EOF
+
+    sed -i -e "/# Build hook/r $tmpfile" -e "//d" $DOCKER_ROOT/Dockerfile
+    rm $tmpfile
+}
+
 #
 # Main
 #
@@ -83,6 +101,28 @@ case "$OSVER" in
                 ;;
         esac
         ;;
+    photon3)
+        case "$FLAVOR" in
+            server)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sts/photon3
+                ;;
+            client)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/client/photon3
+                ;;
+            ui)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/ui/photon3
+                ;;
+            sample)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/sample/photon3
+                ;;
+            post)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/post/photon3
+                ;;
+            post-ui)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/post-ui/photon3
+                ;;
+        esac
+        ;;
     *)
         echo "Error: Unsupported o/s version: $OSVER"
         exit 1
@@ -116,6 +156,9 @@ case "$OSVER" in
         ;;
     photon2)
         inject_docker_file_photon_2
+        ;;
+    photon3)
+        inject_docker_file_photon_3
         ;;
 esac
 

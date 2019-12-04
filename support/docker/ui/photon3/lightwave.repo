@@ -1,0 +1,8 @@
+[lightwave]
+name=VMware Lightwave (x86_64)
+baseurl=file:///tmp/vmware/lightwave
+gpgkey=file:///etc/pki/rpm-gpg/VMWARE-RPM-GPG-KEY
+gpgcheck=0
+enabled=1
+skip_if_unavailable=True
+

@@ -21,8 +21,28 @@ BuildRequires: apache-ant >= 1.9.4, apache-maven >= 3.3.9
 Requires:  shadow >= 4.2.1, likewise-open = 6.2.11, boost = 1.63.0,  openjre8 >= 1.8.0.152, krb5 >= 1.16, sqlite-devel >= 3.19.3
 BuildRequires: shadow >= 4.2.1, boost-devel = 1.63.0 , openjdk8 >= 1.8.0.152, cmocka >= 1.1
 %else
-Requires: shadow >= 4.2.1, likewise-open >= 6.2.11, boost = 1.60.0, openjre >= 1.8.0.131, krb5 >= 1.14, sqlite-autoconf >= 3.14
-BuildRequires: shadow >= 4.2.1, boost-devel = 1.60.0,  openjdk >= 1.8.0.131
+%if "%{_dist}" == ".lwph3"
+Requires: shadow >= 4.6
+Requires: likewise-open = 6.2.11.13
+Requires: boost = 1.66.0
+Requires: openjre8 >= 1.8.0.212
+Requires: krb5 >= 1.16
+Requires: sqlite-devel >= 3.19.3
+BuildRequires: shadow >= 4.6
+BuildRequires: boost-devel = 1.66.0
+BuildRequires: openjdk8 >= 1.8.0.212
+BuildRequires: cmocka >= 1.1
+%else
+Requires: shadow >= 4.2.1
+Requires: likewise-open >= 6.2.11
+Requires: boost = 1.60.0
+Requires: openjre >= 1.8.0.131
+Requires: krb5 >= 1.14
+Requires: sqlite-autoconf >= 3.14
+BuildRequires: shadow >= 4.2.1
+BuildRequires: boost-devel = 1.60.0
+BuildRequires: openjdk >= 1.8.0.131
+%endif
 %endif
 %endif
 
@@ -141,6 +161,12 @@ VMware Lightwave Server
 %define _vecsdir %{_vmafd_dbdir}/vecs
 %define _crlsdir %{_vmafd_dbdir}/crl
 
+%package client-libs
+Summary: Lightwave Client libs
+
+%description client-libs
+Client libraries to communicate with Lightwave Services
+
 %package client
 Summary: Lightwave Client
 
@@ -152,18 +178,26 @@ Requires: krb5 >= 1.14
 %if "%{_dist}" == ".lwph2"
 Requires:  boost = 1.63.0, likewise-open = 6.2.11, sqlite-devel >= 3.19.3
 %else
-Requires:  boost = 1.60.0, likewise-open >= 6.2.11, sqlite-autoconf >= 3.14
+%if "%{_dist}" == ".lwph3"
+Requires: boost = 1.66.0
+Requires: likewise-open >= 6.2.11.13
+Requires: sqlite-devel >= 3.19.3
+%else
+Requires: boost = 1.60.0
+Requires: likewise-open >= 6.2.11
+Requires: sqlite-autoconf >= 3.14
+%endif
 %endif
 %endif
 
 %description client
-Client libraries to communicate with Lightwave services
+Client utils to communicate with Lightwave Services
 
 %package server
 Summary: Lightwave Server
 Requires: lightwave-client = %{_version}
 %description server
-Lightwave services
+Lightwave Services
 
 %package devel
 Summary: Lightwave Client Development Library
@@ -194,18 +228,6 @@ Summary: Lightwave Test
 Requires: lightwave-client >= %{_version}
 %description test
 Lightwave Test
-
-%package casecurity-aws-kms
-Summary: Lightwave CA security plugin using Aws KMS
-Requires: aws-kms-libs >= 1.4.33
-Requires: lightwave-client >= %{_version}
-BuildRequires: aws-sdk-kms >= 1.4.33
-%description casecurity-aws-kms
-Security plugin implementing Aws KMS based envelope
-encryption for private keys. This implementation
-encapsulates encryption and allows key creation, sign
-and verify while hiding plain text private keys from
-users.
 
 %debug_package
 %build
@@ -626,11 +648,13 @@ users.
             # New Installation
             #
             stop_lwsmd=0
-            if [ -z "`pidof lwsmd`" ]; then
-                echo "Starting lwsmd"
-                %{_likewise_open_sbindir}/lwsmd &
-                sleep 1
-                stop_lwsmd=1
+            if [ -f /.dockerenv ]; then
+                if [ -z "`pidof lwsmd`" ]; then
+                    echo "Starting lwsmd"
+                    %{_likewise_open_sbindir}/lwsmd &
+                    sleep 1
+                    stop_lwsmd=1
+                fi
             fi
 
 
@@ -1234,6 +1258,12 @@ users.
 %{_jarsdir}/vmware-identity-diagnostics.jar
 %{_jarsdir}/vmware-identity-install.jar
 %{_jarsdir}/vmware-identity-sso-config.jar
+%{_jarsdir}/openidconnect-server.jar
+%{_jarsdir}/vmware-directory-rest-server.jar
+%{_jarsdir}/vmware-identity-idm-server.jar
+%{_jarsdir}/vmware-identity-rest-afd-server.jar
+%{_jarsdir}/vmware-identity-rest-core-server.jar
+%{_jarsdir}/vmware-identity-rest-idm-server.jar
 %{_jarsdir}/websso.jar
 %{_jarsdir}/sts.jar
 %{_jarsdir}/openidconnect-protocol.jar
@@ -1561,11 +1591,6 @@ users.
 %{_vmdirtestlibdir}/libpasswordapistests.*
 %{_vmdirtestlibdir}/libsearchtests.*
 %{_vmdirtestlibdir}/libppolicytests.*
-
-%files casecurity-aws-kms
-%defattr(-,root,root)
-%{_lib64dir}/liblwca_security_aws_kms.so
-%{_datadir}/config/casecurity-aws-kms.json
 
 # %doc ChangeLog README COPYING
 

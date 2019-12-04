@@ -65,17 +65,17 @@ _VMCAGetSSLCert(
     PVECS_STORE         pVECSStore = NULL;
     PVECS_CERT_ENTRY_A  pCertEntry = NULL;
 
-    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
-    {
-        dwError = VMCA_ARGUMENT_ERROR;
-        goto cleanup;
-    }
-
     fpVecsOpenCertStoreA    fpOpenStore = NULL;
     fpVecsGetEntryByAliasA  fpGetEntry = NULL;
     fpVecsGetKeyByAliasA    fpGetKey = NULL;
     fpVecsCloseCertStore    fpCloseStore = NULL;
     fpVecsFreeCertEntryA    fpFreeEntry = NULL;
+
+    if (plibHandle == NULL || ppszCert == NULL || ppszKey == NULL)
+    {
+        dwError = VMCA_ARGUMENT_ERROR;
+        goto cleanup;
+    }
 
     if ( (fpOpenStore = (fpVecsOpenCertStoreA) VMCAGetLibSym(plibHandle, FN_VECS_OPEN_CERT_STORE_A) ) == NULL
           ||
