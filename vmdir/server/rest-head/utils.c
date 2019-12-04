@@ -277,13 +277,11 @@ VmDirRESTOidcIssuer(
     VMDIR_LOG_INFO(
         VMDIR_LOG_MASK_ALL,
             "%s: Discovering oidc issuer for domain '%s'",
-            __FUNCTION__, pszDomain
-    );
+            __FUNCTION__, pszDomain);
 
     dwError = VmDirAllocateMemory(
         sizeof(*state),
-        (PVOID*)&state
-    );
+        (PVOID*)&state);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     if (res_ninit(state) < 0 )
@@ -291,8 +289,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: res_ninit() failed with (%d)",
-            __FUNCTION__, errno
-        );
+            __FUNCTION__, errno);
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
@@ -303,8 +300,7 @@ VmDirRESTOidcIssuer(
             &pszStsServerLookupName,
             "_sts._tcp.%s._sites.%s.",
             pszSite,
-            pszDnsDomain
-        );
+            pszDnsDomain);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
     else
@@ -312,16 +308,14 @@ VmDirRESTOidcIssuer(
         dwError = VmDirAllocateStringPrintf(
             &pszStsServerLookupName,
             "_sts._tcp.%s.",
-            pszDnsDomain
-        );
+            pszDnsDomain);
         BAIL_ON_VMDIR_ERROR(dwError);
     }
 
     VMDIR_LOG_DEBUG(
         VMDIR_LOG_MASK_ALL,
         "%s: searching for srv records with name '%s'",
-        __FUNCTION__, pszStsServerLookupName
-    );
+        __FUNCTION__, pszStsServerLookupName);
 
     if ( ( responseLen = res_nquery(
                state,
@@ -336,8 +330,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: res_nquery() failed with (%d)",
-            __FUNCTION__, h_errno
-        );
+            __FUNCTION__, h_errno);
 
         dwError = VmDirErrForNsErr(h_errno);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -351,8 +344,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: ns_initparse() failed with (%d)",
-            __FUNCTION__, errno
-        );
+            __FUNCTION__, errno);
 
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -366,8 +358,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: dns query returned error (%d)",
-            __FUNCTION__, ns_msg_getflag( handle, ns_f_rcode )
-        );
+            __FUNCTION__, ns_msg_getflag( handle, ns_f_rcode ));
 
         dwError = VmDirErrForDnsErr(ns_msg_getflag( handle, ns_f_rcode ));
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -395,8 +386,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: ns_parserr() failed with (%d)",
-            __FUNCTION__, errno
-        );
+            __FUNCTION__, errno);
 
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -433,7 +423,7 @@ VmDirRESTOidcIssuer(
     if ( dn_expand(
              ns_msg_base(handle),
              ns_msg_end(handle),
-             rdata,
+             ns_rr_rdata(rr) + 3 * NS_INT16SZ,
              stsSrv,
              NS_MAXDNAME
          ) < 0 )
@@ -441,8 +431,7 @@ VmDirRESTOidcIssuer(
         VMDIR_LOG_DEBUG(
             VMDIR_LOG_MASK_ALL,
             "%s: dn_expand() failed with (%d)",
-            __FUNCTION__, errno
-        );
+            __FUNCTION__, errno);
 
         dwError = LwErrnoToWin32Error(errno);
         BAIL_ON_VMDIR_ERROR(dwError);
@@ -463,8 +452,7 @@ VmDirRESTOidcIssuer(
     VMDIR_LOG_INFO(
         VMDIR_LOG_MASK_ALL,
             "%s: Oidc issuer for domain '%s' is '%s'",
-            __FUNCTION__, pszDomain, pszIssuer
-    );
+            __FUNCTION__, pszDomain, pszIssuer);
 
     *ppszOidcIssuer = pszIssuer;
 
@@ -483,8 +471,7 @@ error:
        VMDIR_LOG_MASK_ALL,
        "%s failed, error (%d)",
        __FUNCTION__,
-       dwError
-    );
+       dwError);
 
     VMDIR_SAFE_FREE_MEMORY(pszIssuer);
     goto cleanup;
