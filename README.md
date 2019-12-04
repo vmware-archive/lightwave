@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.com/vmware/lightwave.svg?branch=dev)](https://travis-ci.com/vmware/lightwave)
+
 What is Lightwave
 ================
 
