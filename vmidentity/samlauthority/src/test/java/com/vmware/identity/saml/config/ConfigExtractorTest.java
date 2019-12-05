@@ -75,7 +75,7 @@ public class ConfigExtractorTest {
 
       final String keyStoreName = "sts-store.jks";
       final String keyalias = "stskey";
-      final String storePass = "ca$hc0w";
+      final String storePass = "Passw0rd$";
       KeyStore ks = loadKeyStore(keyStoreName, storePass);
       Certificate[] certChain = ks.getCertificateChain(keyalias);
       List<X509Certificate> x509Certs = new ArrayList<X509Certificate>();

@@ -24,7 +24,7 @@ PSTRING systemTenantUsername;
 PSTRING systemTenantPassword;
 PCSTRING testTenant = "my-test-tenant.com";
 PCSTRING testTenantUsername = "Administrator@my-test-tenant.com";
-PCSTRING testTenantPassword = "Ca$hc0w1";
+PCSTRING testTenantPassword = "Passw0rd$";
 PCSTRING tlsCAPath;
 
 static

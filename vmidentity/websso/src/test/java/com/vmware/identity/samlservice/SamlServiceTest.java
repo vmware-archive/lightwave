@@ -82,7 +82,7 @@ public class SamlServiceTest {
         KeyStore ks = KeyStore.getInstance(KeyStore.getDefaultType());
         InputStream is = new FileInputStream(SamlServiceTest.class.getResource(
                 "/sts-store.jks").getFile());
-        char[] stsKeystorePassword = "ca$hc0w".toCharArray();
+        char[] stsKeystorePassword = "Passw0rd$".toCharArray();
         ks.load(is, stsKeystorePassword);
 
         String stsAlias = "stskey";

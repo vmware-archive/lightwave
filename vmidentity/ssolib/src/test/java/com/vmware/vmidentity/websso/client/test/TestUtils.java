@@ -70,7 +70,7 @@ public class TestUtils {
     // sending to the library.
 
     private static KeyStore ks = null;
-    private static char[] stsKeystorePassword = "ca$hc0w".toCharArray();
+    private static char[] stsKeystorePassword = "Passw0rd$".toCharArray();
     private static String stsAlias = "stskey";
     private static PrivateKey signingKey = null;
     private static X509Certificate signingCertificate = null;

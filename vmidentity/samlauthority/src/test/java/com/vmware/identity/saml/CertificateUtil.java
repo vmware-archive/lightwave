@@ -29,7 +29,7 @@ public final class CertificateUtil {
 
    public static final String STS_CERT_ALIAS = "stskey";
    private static final String CERT_STORE_JKS = "sts-store.jks";
-   private static final String PASSWORD = "ca$hc0w";
+   private static final String PASSWORD = "Passw0rd$";
    private final KeyStore ks;
 
    public CertificateUtil() {

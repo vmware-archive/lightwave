@@ -67,7 +67,7 @@
         <beans:constructor-arg value="administrator@lw-testdom.com"/>
     </beans:bean>
     <beans:bean id="tenantAdminPassword" class="java.lang.String">
-        <beans:constructor-arg value="Ca$hc0w1"/>
+        <beans:constructor-arg value="Passw0rd$"/>
     </beans:bean>
     <beans:bean id="spPort" class="java.lang.String">
         <beans:constructor-arg value="443"/>
