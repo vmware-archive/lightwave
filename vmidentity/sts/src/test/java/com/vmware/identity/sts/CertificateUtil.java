@@ -33,7 +33,7 @@ public final class CertificateUtil {
    public static final String STS_STORE_JKS = "sts-store.jks";
    public static final String SOLUTION_STORE_JKS = "solution.jks";
    
-   public static final String PASSWORD = "ca$hc0w";
+   public static final String PASSWORD = "Passw0rd$";
    
    private final KeyStore ks;
 

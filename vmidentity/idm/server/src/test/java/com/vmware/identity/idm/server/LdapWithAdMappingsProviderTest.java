@@ -125,7 +125,7 @@ public class LdapWithAdMappingsProviderTest
       realADProviderstoreData.setProviderType(IdentityStoreType.IDENTITY_STORE_TYPE_ACTIVE_DIRECTORY);
       realADProviderstoreData.setConnectionStrings(Arrays.asList("ldap://dc-1.ssolabs.eng.vmware.com"));
       realADProviderstoreData.setUserName("CN=Administrator,CN=Users,DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
-      realADProviderstoreData.setPassword("ca$hc0w");
+      realADProviderstoreData.setPassword("Passw0rd$");
       realADProviderstoreData.setUserBaseDn( "DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       realADProviderstoreData.setGroupBaseDn("DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       realADProviderstoreData.setAlias(AD_DOMAIN_ALIAS);
@@ -589,7 +589,7 @@ public class LdapWithAdMappingsProviderTest
        data.setProviderType(IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING);
        data.setConnectionStrings(Arrays.asList("ldap://dc-1.ssolabs.eng.vmware.com"));
        data.setUserName("CN=Administrator,CN=Users,DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
-       data.setPassword("ca$hc0w");
+       data.setPassword("Passw0rd$");
        data.setUserBaseDn( "DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
        data.setGroupBaseDn("DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
        data.setAlias(AD_DOMAIN_ALIAS);
@@ -604,7 +604,7 @@ public class LdapWithAdMappingsProviderTest
       data.setProviderType(IdentityStoreType.IDENTITY_STORE_TYPE_LDAP_WITH_AD_MAPPING);
       data.setConnectionStrings(Arrays.asList("ldap://dc-1.ssolabs.eng.vmware.com"));
       data.setUserName("CN=Administrator,CN=Users,DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
-      data.setPassword("ca$hc0w");
+      data.setPassword("Passw0rd$");
       data.setUserBaseDn( "DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       data.setGroupBaseDn("DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM");
       data.setAlias(AD_DOMAIN_ALIAS);

@@ -133,7 +133,7 @@ public class ComponentUtils {
     private static final String SESSION_COOKIE_NAME = "SSOLIB-SAMPLE-SESSION";
     private static final String SESSION_INDEX_COOKIE_NAME = "SSOLIB-SAMPLE-SESSION-INDEX";
     private static final String KEYSTORE_FILENAME = "sts-store.jks";
-    private static final String KEYSTORE_PASSWORD = "ca$hc0w";
+    private static final String KEYSTORE_PASSWORD = "Passw0rd$";
 
     private static ServiceLocator serviceLocator = null;
 

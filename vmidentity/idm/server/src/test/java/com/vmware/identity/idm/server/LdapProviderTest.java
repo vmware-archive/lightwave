@@ -72,7 +72,7 @@ public class LdapProviderTest
    private static final String OPENLDAP_DOMAIN_NAME_USER = OPENLDAP_DOMAIN_NAME;
    private static final String OPENLDAP_DOMAIN_NAME_GROUP = OPENLDAP_DOMAIN_NAME;
    private final static String CFG_KEY_STS_KEYSTORE = "sts-store.jks";
-   private final static String CFG_KEY_STS_KEYSTORE_PASSWORD = "ca$hc0w";
+   private final static String CFG_KEY_STS_KEYSTORE_PASSWORD = "Passw0rd$";
    private static final String CFG_KEY_LDAPS_KEY_ALIAS = "/slapd.cer";
    private static final String TENANT_NAME = "TestTenant";
 

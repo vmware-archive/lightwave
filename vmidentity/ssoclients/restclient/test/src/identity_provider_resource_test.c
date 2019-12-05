@@ -73,7 +73,7 @@ IdmIdentityProviderCreateTest()
     PCSTRING friendlyName = "test_friendlyName";
     SSO_LONG searchTimeOutInSeconds = 10000;
     PCSTRING username = "cn=Administrator, cn=users, dc=lw-testdom, dc=com";
-    PCSTRING password = "Ca$hc0w1";
+    PCSTRING password = "Passw0rd$";
     bool machineAccount = false;
     PCSTRING servicePrincipalName = "test_servicePrincipalName";
     PCSTRING userBaseDN = "cn=users, dc=lw-testdom, dc=com";
@@ -283,7 +283,7 @@ IdmIdentityProviderProbeTest()
     PCSTRING friendlyName = "test_friendlyName";
     SSO_LONG searchTimeOutInSeconds = 10000;
     PCSTRING username = "cn=Administrator, cn=users, dc=lw-testdom, dc=com";
-    PCSTRING password = "Ca$hc0w1";
+    PCSTRING password = "Passw0rd$";
     bool machineAccount = false;
     PCSTRING servicePrincipalName = "test_servicePrincipalName";
     PCSTRING userBaseDN = "cn=users, dc=lw-testdom, dc=com";
@@ -544,7 +544,7 @@ IdmIdentityProviderUpdateTest()
     PCSTRING friendlyName = "test_friendlyName";
     SSO_LONG searchTimeOutInSeconds = 10000;
     PCSTRING username = "cn=Administrator, cn=users, dc=lw-testdom, dc=com";
-    PCSTRING password = "Ca$hc0w1";
+    PCSTRING password = "Passw0rd$";
     bool machineAccount = false;
     PCSTRING servicePrincipalName = "test_servicePrincipalName";
     PCSTRING userBaseDN = "cn=users, dc=lw-testdom, dc=com";

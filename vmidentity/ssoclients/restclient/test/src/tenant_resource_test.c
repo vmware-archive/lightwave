@@ -45,7 +45,7 @@ IdmTenantCreateTest()
     PCSTRING guid = "test_tenant_guid";
     PCSTRING issuer = "test_tenant_issuer";
     PCSTRING username = "administrator@lw-testdom.com";
-    PCSTRING password = "Ca$hc0w1";
+    PCSTRING password = "Passw0rd$";
 
     // create private key
     e = IdmPrivateKeyDataNew(&pPrivateKey, privateKeyEncoded, privateKeyAlgorithm);

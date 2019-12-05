@@ -31,7 +31,7 @@ function check_lightwave_join
 }
 
 LIGHTWAVE_DOMAIN=lw-testdom.com
-LIGHTWAVE_PASSWORD='Ca$hc0w1'
+LIGHTWAVE_PASSWORD='Passw0rd$'
 LIGHTWAVE_SITE=Default-first-site
 LIGHTWAVE_HOSTNAME=lw-c-0.lw-testdom.com
 

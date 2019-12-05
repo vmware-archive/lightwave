@@ -55,7 +55,7 @@ public class LdapTest
     // AD - ssolabs
     String adHostname = "dc-1.ssolabs.eng.vmware.com";
     String bindAdDN   = "CN=Administrator,CN=Users,DC=SSOLABS,DC=ENG,DC=VMWARE,DC=COM";
-    String adPassword = "ca$hc0w";
+    String adPassword = "Passw0rd$";
     int    adPort = LdapConstants.LDAP_PORT;
 
     // AD-topology lab for SASL bind (sasl bind only succeeds when we successfully set up krb5.conf
@@ -66,7 +66,7 @@ public class LdapTest
     String adSaslHostname = "dc-1.ssolabs.eng.vmware.com";
     String adSaslUserName = "administrator";
     String adSaslDomainname = "ssolabs.eng.vmware.com";
-    String adSaslPassword = "ca$hc0w";
+    String adSaslPassword = "Passw0rd$";
 
     String olHostname = "10.136.33.172";
     String bindOlDN   = "cn=administrator,dc=ssolabs-openldap,dc=eng,dc=vmware,dc=com";
