@@ -4,5 +4,4 @@ VOLUME ["/sys/fs/cgroup"]
 LABEL vendor="VMware, Inc."
 
 RUN tdnf makecache -q
-RUN tdnf update likewise-open --disablerepo=* --enablerepo=lightwave -qy
-RUN tdnf install net-tools shadow findutils gawk jansson libyaml sqlite-devel copenapi apache-tomcat netcat -qy
+RUN tdnf install net-tools shadow findutils gawk jansson libyaml sqlite-devel copenapi apache-tomcat netcat bindutils -qy

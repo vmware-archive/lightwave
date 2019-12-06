@@ -14,27 +14,25 @@ if [ -z "$LIGHTWAVE_DOMAIN" -o -z "$LIGHTWAVE_PASS" ]; then
   exit 1
 fi
 
-/opt/likewise/sbin/lwsmd --start-as-daemon
-
 #before joining, set the flag to use vmdirrest
 #this test is going to exercise a join with rest paths
 #enabled.
-/opt/likewise/bin/lwregshell set_value \
-  '[HKEY_THIS_MACHINE\Services\vmafd\Parameters]' \
-  UseVmDirREST 0x1
+/opt/vmware/bin/lwcommon-cli regcfg set-key /vmafd/Parameters/UseVmDirREST 1
+systemctl restart vmware-vmafdd.service
 
 primary=server.$LIGHTWAVE_DOMAIN
+sts_N1=client.$LIGHTWAVE_DOMAIN
 vmdir_rest_api=$primary:7479/v1/vmdir/api
 
-/opt/likewise/bin/lwsm autostart
 sleep 1
 
 #download certs from server so the cert refresh path can succeed
 #get a token to exercise rest apis
 #note the insecure flag till a certs api is invoked
 #and local cert installed
+echo "get a token from sts server"
 TOK=$(curl -k \
-     "https://$primary/openidconnect/token/$LIGHTWAVE_DOMAIN" \
+     "https://$sts_N1/$LIGHTWAVE_DOMAIN/idp/oidc/token" \
      -H 'content-type: application/x-www-form-urlencoded' \
      -d 'grant_type=password' \
      -d "username=administrator@$LIGHTWAVE_DOMAIN" \
@@ -44,6 +42,7 @@ TOK=$(curl -k \
 
 #install server cert in local cache. without this, the very first
 #cert refresh call (which is going to be over rest) will fail
+echo "get root certs from vmdir rest api"
 CERTSJSON=$(curl -k \
 "https://$vmdir_rest_api/certs/rootcerts?detail=true" \
 -H "Authorization: Bearer ${TOK}")
@@ -58,6 +57,7 @@ mv /etc/ssl/certs/$primary.cert /etc/ssl/certs/$CERTHASH.0
 #this join is going to use ldap to communicate to directory
 #for the join process but it will use rest for
 #cert refresh and pass refresh.
+echo "join client node"
 /opt/vmware/bin/ic-join \
   --domain-controller $primary \
   --domain $LIGHTWAVE_DOMAIN \
@@ -73,3 +73,4 @@ mkdir -p /etc/vmware/vmware-vmafd
 
 #run a force refresh
 /opt/vmware/bin/vecs-cli force-refresh
+echo "vecs-cli force-refresh return $?"

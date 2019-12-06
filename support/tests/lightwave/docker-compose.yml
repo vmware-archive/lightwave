@@ -11,6 +11,11 @@ services:
      lightwave:
        aliases:
          - server.${LIGHTWAVE_DOMAIN}
+       ipv4_address: 172.254.0.2
+    dns:
+     - 172.254.0.2
+     - 172.254.0.3
+     - 8.8.8.8
     privileged: true
     environment:
         - LIGHTWAVE_DOMAIN=${LIGHTWAVE_DOMAIN}
@@ -27,6 +32,11 @@ services:
      lightwave:
        aliases:
          - server-n2.${LIGHTWAVE_DOMAIN}
+       ipv4_address: 172.254.0.3
+    dns:
+     - 172.254.0.2
+     - 172.254.0.3
+     - 8.8.8.8
     privileged: true
     depends_on:
      - "lightwave-server"
@@ -45,6 +55,10 @@ services:
      lightwave:
        aliases:
          - client.${LIGHTWAVE_DOMAIN}
+    dns:
+     - 172.254.0.2
+     - 172.254.0.3
+     - 8.8.8.8
     depends_on:
      - "lightwave-server-n2"
     environment:
@@ -54,3 +68,9 @@ services:
 networks:
   lightwave:
     driver: bridge
+#    driver_opts:
+#  com.docker.network.enable_ip_masquerade: "false"
+    ipam:
+      driver: default
+      config:
+        - subnet: 172.254.0.0/16

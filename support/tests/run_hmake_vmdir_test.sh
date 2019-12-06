@@ -58,6 +58,7 @@ fi
 
 LW_N1=server.$LIGHTWAVE_DOMAIN
 LW_N2=server-n2.$LIGHTWAVE_DOMAIN
+STS_N1=client.$LIGHTWAVE_DOMAIN
 
 echo "VmDir integration install test rpm"
 rpm -i /src/build/rpmbuild/RPMS/x86_64/lightwave-test*.rpm
@@ -72,6 +73,7 @@ echo "VmDir integration test start" `date`
 #
 /opt/vmware/test/vmdir/bin/vmdir_test_runner \
 	-H $LW_N1 \
+	-S $STS_N1 \
 	-u administrator \
 	-w $LIGHTWAVE_PASS \
 	-d $LIGHTWAVE_DOMAIN \
