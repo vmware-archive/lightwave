@@ -623,3 +623,11 @@ vmidentity/lightwaveui/web/share
 *ConfigPaths.java
 !*ConfigPaths.java.in
 !go.mod
+
+# sts
+sts/cmd/stssetup/static/config_vfsdata.go
+sts/internal/pkg/idm/types/types_gen.go
+sts/internal/pkg/oidc/protocol/enums_gen.go
+sts/internal/pkg/oidc/protocol/marshall_gen.go
+sts/web/static/assets/assets_vfsdata.go
+sts/web/static/templates/templates_vfsdata.go
