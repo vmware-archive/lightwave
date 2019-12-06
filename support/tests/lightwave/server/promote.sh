@@ -110,7 +110,6 @@ EOF
 
   /opt/vmware/sbin/vmware-vmcad.sh stop
   /opt/vmware/sbin/vmware-vmcad.sh start
-/bin/bash
 else
 
   wait_for_server $LIGHTWAVE_NODE_1
@@ -128,8 +127,8 @@ else
   /opt/vmware/sbin/vmware-vmdird.sh start
 
   /opt/vmware/sbin/vmware-vmcad.sh stop
+  /opt/vmware/sbin/vmware-vmcad.sh start
 
-/bin/bash
   LW_NODE_NUM=$(/opt/vmware/bin/vdcrepadmin  -f showservers -h localhost -u administrator -w $LIGHTWAVE_PASS | wc -l)
   if [ $LW_NODE_NUM -ne 2 ]
   then
