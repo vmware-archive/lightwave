@@ -50,8 +50,11 @@ TestRunner(
 
     printf("Testing miscellaneous code\n");
 
-    dwError = TestDCAccountPasswordCode(pState);
-    BAIL_ON_VMDIR_ERROR(dwError);
+    if (!pState->bRemoteOnly)
+    {
+        dwError = TestDCAccountPasswordCode(pState);
+        BAIL_ON_VMDIR_ERROR(dwError);
+    }
 
     dwError = TestTombstone(pState);
     BAIL_ON_VMDIR_ERROR(dwError);

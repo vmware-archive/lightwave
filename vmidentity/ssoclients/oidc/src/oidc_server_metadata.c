@@ -14,10 +14,10 @@
 
 #include "includes.h"
 
-#define LOCALHOST_TOKEN_URL "https://%s/openidconnect/token/%s"
-#define LOCALHOST_JWKS_URL "https://%s/openidconnect/jwks/%s"
+#define LOCALHOST_TOKEN_URL "https://%s/%s/idp/oidc/token"
+#define LOCALHOST_JWKS_URL  "https://%s/%s/idp/oidc/jwks"
 
-// https://<server>/openidconnect/<tenant>/.well-known/openid-configuration
+// https://<server>/<tenant>/idp/oidc/.well-known/openid-configuration
 static
 SSOERROR
 OidcServerMetadataConstructMetadataEndpoint(
@@ -46,11 +46,11 @@ OidcServerMetadataConstructMetadataEndpoint(
     BAIL_ON_ERROR(e);
     e = SSOStringBuilderAppend(pSB, pszPortNumber);
     BAIL_ON_ERROR(e);
-    e = SSOStringBuilderAppend(pSB, "/openidconnect/");
+    e = SSOStringBuilderAppend(pSB, "/");
     BAIL_ON_ERROR(e);
     e = SSOStringBuilderAppend(pSB, pszTenant);
     BAIL_ON_ERROR(e);
-    e = SSOStringBuilderAppend(pSB, "/.well-known/openid-configuration");
+    e = SSOStringBuilderAppend(pSB, "/idp/.well-known/openid-configuration");
     BAIL_ON_ERROR(e);
 
     e = SSOStringBuilderGetString(pSB, &pszEndpoint);

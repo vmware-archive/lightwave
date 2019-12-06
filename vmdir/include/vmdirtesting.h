@@ -67,6 +67,8 @@ typedef struct _VMDIR_TEST_STATE
     //
     PVOID  pContext;
 
+    PCSTR pszSTSServerName;     // The sts server name
+
     PCSTR pszServerName;        // The server name
     PCSTR pszSecondServerName;  // The second LW server name
 

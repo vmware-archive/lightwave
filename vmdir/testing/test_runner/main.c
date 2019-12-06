@@ -302,7 +302,7 @@ _TestAcquireAdminToken(
     TokenInfo.pszScope = OIDC_TOKEN_SCOPE_VMDIR;
 
     dwError = VmDirTestOidcTokenAcquire(
-        pState->pszServerName,
+        pState->pszSTSServerName,
         OIDC_DEFAULT_PORT,
         &TokenInfo,
         &pszToken);
@@ -492,6 +492,7 @@ VmDirMain(
     VMDIR_COMMAND_LINE_OPTION CommandLineOptions[] =
     {
         {'H', "host", CL_STRING_PARAMETER, &State.pszServerName},
+        {'S', "stshost", CL_STRING_PARAMETER, &State.pszSTSServerName},
         {'u', "username", CL_STRING_PARAMETER, &State.pszUserName},
         {'w', "password", CL_STRING_PARAMETER, &State.pszPassword},
         {'d', "domain", CL_STRING_PARAMETER, &State.pszDomain},

@@ -262,8 +262,8 @@ VmDirRESTOidcIssuer(
     int responseLen = 0;
     ns_msg handle = {0};
     ns_rr rr = {0};
-//    u_int priority = 0;
-//    u_int weight = 0;
+    u_int priority = 0;
+    u_int weight = 0;
     u_int port = 0;
     const u_char * rdata = NULL;
 
@@ -416,9 +416,14 @@ VmDirRESTOidcIssuer(
     }
 
     rdata = ns_rr_rdata(rr);
-//    NS_GET16(priority, rdata);
-//    NS_GET16(weight, rdata);
+    NS_GET16(priority, rdata);
+    NS_GET16(weight, rdata);
     NS_GET16(port, rdata);
+
+    VMDIR_LOG_DEBUG(
+        VMDIR_LOG_MASK_ALL,
+            "%s: Oidc issuer for domain '%s' %d,%d,%d",
+            __FUNCTION__, pszDomain, port, priority, weight);
 
     if ( dn_expand(
              ns_msg_base(handle),
@@ -445,8 +450,7 @@ VmDirRESTOidcIssuer(
         "https://%s:%d/%s/idp",
         stsSrv,
         port,
-        pszDomain
-    );
+        pszDomain);
     BAIL_ON_VMDIR_ERROR(dwError);
 
     VMDIR_LOG_INFO(
