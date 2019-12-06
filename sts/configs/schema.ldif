@@ -1,0 +1,353 @@
+# schema_version=0.0.1.0
+
+#-------------------------------------
+# Lightwave STS Attributes
+#-------------------------------------
+
+attributetypes: (
+    Lightwave.STS.attribute.1
+    NAME 'lightwaveSTSDomainName'
+    DESC 'Lightwave STS - DomainName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.2
+    NAME 'lightwaveSTSTenantKey'
+    DESC 'Lightwave STS - Tenant key'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.3
+    NAME 'lightwaveSTSClockTolerance'
+    DESC 'Lightwave STS - Clock Tolerance'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.4
+    NAME 'lightwaveSTSDelegationCount'
+    DESC 'Lightwave STS - Delegation Count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.5
+    NAME 'lightwaveSTSRenewCount'
+    DESC 'Lightwave STS - Renew Count'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.6
+    NAME 'lightwaveSTSMaxBearerTokenLifetime'
+    DESC 'Lightwave STS - Max Bearer Token Lifetime'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.7
+    NAME 'lightwaveSTSMaxBearerRefreshTokenLifetime'
+    DESC 'Lightwave STS - Max Bearer Refresh Token Lifetime'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.8
+    NAME 'lightwaveSTSMaxHOKTokenLifetime'
+    DESC 'Lightwave STS - Max Holder of Key Token Lifetime'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.9
+    NAME 'lightwaveSTSMaxHOKRefreshTokenLifetime'
+    DESC 'Lightwave STS - Max Holder of Key Refresh Token Lifetime'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.10
+    NAME 'lightwaveSTSAttributeType'
+    DESC 'Lightwave STS - Attribute Type'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.11
+    NAME 'lightwaveSTSAttributeValue'
+    DESC 'Lightwave STS - Attribute Value'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.12
+    NAME 'lightwaveSTSTimeout'
+    DESC 'Lightwave STS - Timeout'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.13
+    NAME 'lightwaveSTSUserBaseDN'
+    DESC 'Lightwave STS - User Search Base DN'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.14
+    NAME 'lightwaveSTSGroupBaseDN'
+    DESC 'Lightwave STS - Group Search Base DN'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.15
+    NAME 'lightwaveSTSConnectionStrings'
+    DESC 'Lightwave STS - Connection Strings'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.16
+    NAME 'lightwaveSTSAuthenticationType'
+    DESC 'Lightwave STS - Authentication Type'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.17
+    NAME 'lightwaveSTSAuthnTypes'
+    DESC 'Lightwave STS - Client Authn types allowed'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.18
+    NAME 'lightwaveSTSSigners'
+    DESC 'Lightwave STS - Token signing certificates (last n)'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.40
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.19
+    NAME 'lightwaveSTSProviderType'
+    DESC 'Lightwave STS - ProviderType'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.20
+    NAME 'lightwaveSTSAlias'
+    DESC 'Lightwave STS - Alias'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.21
+    NAME 'lightwaveSTSUserName'
+    DESC 'Lightwave STS - UserName'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.22
+    NAME 'lightwaveSTSPassword'
+    DESC 'Lightwave STS - Pwd'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.23
+    NAME 'lightwaveSTSSessionLifetime'
+    DESC 'Lightwave STS - Lifetime of a session'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.24
+    NAME 'lightwaveSTSRedirectURIs'
+    DESC 'Redirection URIs'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.25
+    NAME 'lightwaveSTSOidcClientAuthMethod'
+    DESC 'Lightwave STS - Oidc client authentication method'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.26
+    NAME 'lightwaveSTSPostLogoutRedirectURI'
+    DESC 'Lightwave STS - Post logout redirect URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.27
+    NAME 'lightwaveSTSLogoutURI'
+    DESC 'Lightwave STS - Logout URI'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.28
+    NAME 'lightwaveSTSClientAssertionLifetimeMS'
+    DESC 'Lightwave STS - Authentication Request Client Assertion Lifetime MS'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.27
+    SINGLE-VALUE
+    )
+
+attributetypes: (
+    Lightwave.STS.attribute.29
+    NAME 'lightwaveSTSCrossTenant'
+    DESC 'Lightwave STS - Whether associated entiry operates across tenants (such as an oidc-client)'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.7
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.30
+    NAME 'lightwaveSTSPublicEndpoint'
+    DESC 'Lightwave STS - Public endpoint'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+attributeTypes: (
+    Lightwave.STS.attribute.31
+    NAME 'lightwaveSTSSchemaVersion'
+    DESC 'Lightwave STS - schema version'
+    SYNTAX 1.3.6.1.4.1.1466.115.121.1.15
+    SINGLE-VALUE
+    )
+
+#-------------------------------------
+# Lightwave STS Object classes
+#-------------------------------------
+
+objectClasses: (
+    Lightwave.STS.objectclass.1
+    NAME 'lightwaveSTSTenantReference'
+    DESC 'Lightwave STS - Alias to Tenant'
+    SUP alias
+    STRUCTURAL
+    MUST ( cn
+         $ lightwaveSTSTenantKey
+         )
+    )
+
+objectClasses: (
+    Lightwave.STS.objectclass.2
+    NAME 'lightwaveSTSTenant'
+    DESC 'Lightwave STS - Tenant'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+        $ lightwaveSTSDomainName
+        $ privateKey
+        $ userCertificate
+        $ lightwaveSTSSigners
+ )
+    MAY ( lightwaveSTSClockTolerance
+        $ lightwaveSTSDelegationCount
+        $ lightwaveSTSRenewCount
+        $ lightwaveSTSMaxBearerTokenLifetime
+        $ lightwaveSTSMaxHOKTokenLifetime
+        $ lightwaveSTSAuthnTypes
+        $ lightwaveSTSMaxBearerRefreshTokenLifetime
+        $ lightwaveSTSMaxHOKRefreshTokenLifetime
+        $ lightwaveSTSSessionLifetime
+        )
+    )
+
+objectClasses: (
+    Lightwave.STS.objectclass.3
+    NAME 'lightwaveSTSIdentityStore'
+    DESC 'Lightwave STS - IdentityStore'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ lightwaveSTSDomainName
+         $ lightwaveSTSAuthenticationType
+         $ lightwaveSTSProviderType
+         )
+    MAY  ( lightwaveSTSAlias
+         $ lightwaveSTSUserName
+         $ lightwaveSTSPassword
+         $ lightwaveSTSUserBaseDN
+         $ lightwaveSTSGroupBaseDN
+         $ lightwaveSTSConnectionStrings
+         $ userCertificate
+         $ lightwaveSTSAuthnTypes
+         )
+    )
+
+objectClasses: (
+    Lightwave.STS.objectclass.4
+    NAME 'lightwaveSTSIDSAttribute'
+    DESC 'Lightwave STS - IdentityStore Attribute'
+    SUP top
+    STRUCTURAL
+    MUST ( cn
+         $ lightwaveSTSAttributeType
+         )
+    MAY  ( lightwaveSTSAttributeValue )
+    )
+
+objectClasses: (
+    Lightwave.STS.objectclass.5
+    NAME 'lightwaveSTSOidcClient'
+    DESC 'Lightwave STS - OpenID Connect Client'
+    STRUCTURAL
+    MUST ( cn
+         $ lightwaveSTSRedirectURIs
+         )
+    MAY ( lightwaveSTSOidcClientAuthMethod
+        $ lightwaveSTSPostLogoutRedirectURI
+        $ lightwaveSTSLogoutURI
+        $ lightwaveSTSClientAssertionLifetimeMS
+        $ lightwaveSTSCrossTenant
+        )
+    )
+
+objectClasses: (
+    Lightwave.STS.objectclass.6
+    NAME 'lightwaveSTSDeployment'
+    DESC 'Lightwave STS - Deployment information'
+    STRUCTURAL
+    MUST ( cn
+         $ lightwaveSTSPublicEndpoint
+         $ lightwaveSTSSchemaVersion
+         )
+    )
+
+#
+#    attributeIndices: (
+#        NAME 'vmwSTSTenantizedUserPrincipalName'
+#        GLOBALLY-UNIQUE
+#    )
+#

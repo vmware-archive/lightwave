@@ -1,0 +1,67 @@
+#!/bin/bash
+
+function check_sts_up
+{
+    node=$1
+    expected_domain=$2
+
+    # todo: we should check /available once implemented
+    max_attempts=20
+    attempts=1
+    response='000'
+    http_ok='200'
+    wait_seconds=5
+
+    while [ $response -ne $http_ok ] && [ $attempts -lt $max_attempts ]; do
+      response=$(curl -k --write-out %{http_code} --silent --output /dev/null https://192.168.114.14/${expected_domain}/idp/.well-known/openid-configuration)
+      echo "waiting for $node, response=$response [ $attempts/$max_attempts ]"
+      sleep $wait_seconds
+      attempts=$[attempts+1]
+    done
+
+    elapsed=$[$attempts*$wait_seconds]
+
+    if [ $response -eq $http_ok ]; then
+      echo "Sts on $node up in $elapsed seconds..."
+    else
+      echo "Sts on $node seems to be down. Waited $elapsed seconds. Giving up. Expected $http_ok. Got $response"
+      exit 1
+    fi
+}
+
+LIGHTWAVE_DOMAIN=lw-testdom.com
+LIGHTWAVE_PASSWORD='Ca$hc0w1'
+LIGHTWAVE_SITE=Default-first-site
+LIGHTWAVE_HOSTNAME=lw-sts-0.lw-testdom.com
+
+LIGHTWAVE_HOME=$HOME/lightwave
+LIGHTWAVE_CONFIG_DIR=$LIGHTWAVE_HOME/config-lw-sts-0
+LIGHTWAVE_CONFIG_PATH=$LIGHTWAVE_CONFIG_DIR/lightwave-client.cfg
+LIGHTWAVE_LOG_DIR=$LIGHTWAVE_HOME/logs-lw-sts-0
+mkdir -p $LIGHTWAVE_CONFIG_DIR
+mkdir -p $LIGHTWAVE_LOG_DIR
+
+cat << EOF > $LIGHTWAVE_CONFIG_PATH
+domain=$LIGHTWAVE_DOMAIN
+hostname=$LIGHTWAVE_HOSTNAME
+admin=Administrator
+password=$LIGHTWAVE_PASSWORD
+site-name=$LIGHTWAVE_SITE
+EOF
+
+docker run -d \
+           --name lightwave-sts-0 \
+           --privileged \
+           --net lightwave \
+           --hostname $LIGHTWAVE_HOSTNAME \
+           --ip 192.168.114.14 \
+           --dns 192.168.114.3 \
+           --dns 192.168.114.4 \
+           --dns 192.168.114.5 \
+           --dns-search lw-testdom.com \
+           -v /sys/fs/cgroup:/sys/fs/cgroup:ro \
+           -v $LIGHTWAVE_CONFIG_DIR:/var/lib/vmware/config \
+           -v $LIGHTWAVE_LOG_DIR:/var/lwlogs \
+           vmware/sts-photon2
+
+check_sts_up lightwave-sts-0 $LIGHTWAVE_DOMAIN

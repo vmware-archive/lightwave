@@ -21,4 +21,5 @@ cd $PROJECT_ROOT/build && \
                 vmdns \
                 vmevent \
                 vmidentity \
+                sts \
                 vmmetrics

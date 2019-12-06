@@ -1,0 +1,430 @@
+{{- $input := . -}}{{- $tab := "" -}}
+{{- if not (not $input.DecodingFormats.q)}}
+
+func (s *{{$input.TypeName}}) UnMarshalQuery(vals url.Values) diag.Error {
+	var err diag.Error
+	var v string
+	{{- if $input.SupportPartialDecode}}
+	var resErr diag.Error{{end}}
+	{{- range $index, $element := $input.Fields}}
+
+	v, err = getSingleQueryParam("{{$element.SerFieldName}}", vals, !{{$element.OmitEmpty}}, {{$element.ErrorType}})
+	if err != nil {
+		{{if $input.SupportPartialDecode}}if resErr == nil {
+			resErr = err
+		}{{else}}return err{{end}}
+	}{{- $tab = "" -}}
+	{{- if $element.OmitEmpty}}{{$tab = "	"}}
+	if len(v) > 0 { {{- end -}}
+	{{- if eq $element.StructFieldSimpleType "string" -}}
+		{{- if $element.IsPointer}}
+	{{$tab}}s.{{$element.StructFieldName}} = &v
+		{{- else}}
+	{{$tab}}s.{{$element.StructFieldName}} = v
+		{{- end -}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+	{{$tab}}v{{$index}}, err{{$index}} := url.Parse(v)
+	{{$tab}}if err{{$index}} != nil {
+	{{$tab}}	{{if $input.SupportPartialDecode}}if resErr == nil {
+	{{$tab}}		resErr = diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}})
+	{{$tab}}	}{{else}}return diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}}){{end}}
+	{{$tab}}}
+	{{- if $element.IsPointer}}
+	{{$tab}}s.{{$element.StructFieldName}} = v{{$index}}{{else}}
+	{{$tab}}s.{{$element.StructFieldName}} = *v{{$index}}{{end}}
+	{{- else if eq $element.StructFieldSimpleType "enum" -}}
+	{{- if $element.IsPointer}}
+	{{$tab}}s.{{$element.StructFieldName}}=new({{$element.StructFieldType}}){{end}}
+	{{$tab}}err{{$index}} := s.{{$element.StructFieldName}}.From(v)
+	{{$tab}}if err{{$index}} != nil {
+		{{$tab}}{{if $input.SupportPartialDecode}}if resErr == nil {
+			{{$tab}}resErr = diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}})
+		{{$tab}}}{{else}}return diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}}){{end}}
+	{{$tab}}}
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+	{{$tab}}v{{$index}}, err{{$index}} := strconv.ParseInt(v, 10, {{if not $element.StructFieldIntSize}}strconv.IntSize{{else}}{{$element.StructFieldIntSize}}{{end}})
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+	{{$tab}}v{{$index}}, err{{$index}} := strconv.ParseUint(v, 10, {{if not $element.StructFieldIntSize}}strconv.IntSize{{else}}{{$element.StructFieldIntSize}}{{end}})
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+	{{$tab}}v{{$index}}, err{{$index}} := strconv.ParseBool(v)
+		{{- else}}
+	{{$tab}}!!!!Unsupported Type!!!!
+		{{- end}}
+	{{$tab}}if err{{$index}} != nil {
+	{{$tab}}	{{if $input.SupportPartialDecode}}if resErr == nil {
+	{{$tab}}		resErr = diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}})
+	{{$tab}}	}{{else}}return diag.MakeError({{$element.ErrorType}}, "Failed to unmarshal {{$input.TypeName}} from query: %v", err{{$index}}){{end}}
+	{{$tab}}}
+		{{- if $element.IsPointer}}
+	{{$tab}}s.{{$element.StructFieldName}}:=new({{$element.StructFieldType}})
+	{{$tab}}*(s.{{$element.StructFieldName}})={{$element.StructFieldType}}(v{{$index}})
+		{{- else}}
+	{{$tab}}s.{{$element.StructFieldName}} = {{$element.StructFieldType}}(v{{$index}}){{end}}
+	{{- end}}
+	{{- if $element.OmitEmpty}}
+	}
+	{{- end -}}
+{{- end}}
+
+	{{if $input.SupportPartialDecode}}return resErr{{else}}return nil{{end}}
+}
+{{- end -}}
+
+{{- if not (not $input.EncodingFormats.q)}}
+
+func (s *{{$input.TypeName}}) marshalQuery(w io.Writer) diag.Error {
+	var err error
+	var v string
+	var written bool
+{{- range $index, $element := $input.Fields}}
+
+	{{- if eq $element.StructFieldSimpleType "string" -}}
+		{{- if $element.IsPointer}}
+	v = *s.{{$element.StructFieldName}}
+		{{- else}}
+	v = s.{{$element.StructFieldName}}
+		{{- end -}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+	v = s.{{$element.StructFieldName}}.String()
+	{{- else if eq $element.StructFieldSimpleType "enum"}}
+	v = s.{{$element.StructFieldName}}.String()
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatInt(int64(*s.{{$element.StructFieldName}}), 10)
+			{{- else}}
+	v = strconv.FormatInt(int64(s.{{$element.StructFieldName}}), 10)
+			{{- end -}}
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatUint(uint64(*s.{{$element.StructFieldName}}), 10)
+			{{- else}}
+	v = strconv.FormatUint(uint64(s.{{$element.StructFieldName}}), 10)
+			{{- end -}}
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatBool(*s.{{$element.StructFieldName}})
+			{{- else}}
+	v = strconv.FormatBool(s.{{$element.StructFieldName}})
+			{{- end -}}
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end -}}
+	{{- end}}
+
+	{{- $tab = "" -}}
+	{{- if $element.OmitEmpty}}{{ $tab = "	"}}
+	if len(v) > 0 { {{- end}}
+	{{$tab}}if written {
+	{{$tab}}	_, err = w.Write([]byte("&"))
+	{{$tab}}	if err != nil {
+	{{$tab}}		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to query: %v", err)
+	{{$tab}}	}
+	{{$tab -}} }
+	{{$tab}}_, err = fmt.Fprintf(w, "%s=%s", url.QueryEscape("{{$element.SerFieldName}}"), url.QueryEscape(v))
+	{{$tab}}if err != nil {
+	{{$tab}}	return diag.MakeError(OidcErrorEncodeError, "Failed to marshal {{$input.TypeName}} to query: %v", err)
+	{{$tab -}} }
+	{{$tab}}written = true{{if $element.OmitEmpty}}
+	} {{- end -}}
+{{- end}}
+
+	return nil
+}
+{{- end -}}
+
+{{- if not (not $input.EncodingFormats.f)}}
+
+func (s *{{$input.TypeName}}) marshalHtml(w io.Writer) diag.Error {
+	var err error
+
+	_, err = w.Write([]byte(formPostHtmlStart))
+	if err != nil {
+		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to form: %v", err)
+	}
+
+	derr := s.marshalForm(w)
+	if derr != nil {
+		return derr
+	}
+
+	_, err = w.Write([]byte(formPostHtmlEnd))
+	if err != nil {
+		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to form: %v", err)
+	}
+
+	return nil
+}
+
+func (s *{{$input.TypeName}}) marshalForm(w io.Writer) diag.Error {
+	var err error
+
+	_, err = w.Write([]byte(formStartBegin))
+	if err != nil {
+		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to form: %v", err)
+	}
+	template.HTMLEscape(w, []byte(s.{{$input.FormActionFieldName}}.String()))
+	_, err = w.Write([]byte(formStartEnd))
+	if err != nil {
+		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to form: %v", err)
+	}
+
+	derr := s.marshalFields(w)
+	if derr != nil {
+		return derr
+	}
+
+	_, err = w.Write([]byte(formend))
+	if err != nil {
+		return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to form: %v", err)
+	}
+
+	return nil
+}
+
+func (s *{{$input.TypeName}}) marshalFields(w io.Writer) diag.Error {
+	var err error
+	var v string
+
+	{{- range $index, $element := $input.Fields}}
+
+	{{- if eq $element.StructFieldSimpleType "string" -}}
+		{{- if $element.IsPointer}}
+	v = *s.{{$element.StructFieldName}}
+		{{- else}}
+	v = s.{{$element.StructFieldName}}
+		{{- end -}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+	v = s.{{$element.StructFieldName}}.String()
+	{{- else if eq $element.StructFieldSimpleType "enum"}}
+	v = s.{{$element.StructFieldName}}.String()
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatInt(int64(*s.{{$element.StructFieldName}}), 10)
+			{{- else}}
+	v = strconv.FormatInt(int64(s.{{$element.StructFieldName}}), 10)
+			{{- end -}}
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatUint(uint64(*s.{{$element.StructFieldName}}), 10)
+			{{- else}}
+	v = strconv.FormatUint(uint64(s.{{$element.StructFieldName}}), 10)
+			{{- end -}}
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+			{{- if $element.IsPointer}}
+	v = strconv.FormatBool(*s.{{$element.StructFieldName}})
+			{{- else}}
+	v = strconv.FormatBool(s.{{$element.StructFieldName}})
+			{{- end -}}
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end -}}
+	{{- end}}
+
+	{{- $tab = "" -}}
+	{{- if $element.OmitEmpty}}{{ $tab = "	"}}
+	if len(v) > 0 { {{- end}}
+	{{$tab}}_, err = fmt.Fprintf(w, inputField, url.QueryEscape("{{$element.SerFieldName}}"), url.QueryEscape(v))
+	{{$tab}}if err != nil {
+	{{$tab}}	return diag.MakeError(OidcErrorStreamWriteError, "Failed to marshal {{$input.TypeName}} to query: %v", err)
+	{{$tab -}} }
+	{{- if $element.OmitEmpty}}
+	} {{- end -}}
+{{- end}}
+
+	return nil
+}
+{{end -}}
+
+{{- if not (not $input.EncodingFormats.j)}}
+
+func (s *{{$input.TypeName}}) MarshalJSONObject(enc *gojay.Encoder) {
+
+	{{- range $index, $element := $input.Fields}}
+
+	{{- if eq $element.StructFieldSimpleType "string"}}
+		{{- if $element.IsArray}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}", gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+		for _, v := range s.{{$element.StructFieldName}} {
+			enc.String(v)
+		}
+	}))
+		{{- else}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}s.{{$element.StructFieldName}})
+		{{- end}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", s.{{$element.StructFieldName}}.String())
+	{{- else if eq $element.StructFieldSimpleType "enum"}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", s.{{$element.StructFieldName}}.String())
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+	enc.Int{{$element.StructFieldIntSize}}Key{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+	enc.Uint{{$element.StructFieldIntSize}}Key{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+	enc.BoolKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "array"}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", &s.{{$element.StructFieldName}})
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end -}}
+	{{- end}}
+{{- end}}
+
+}
+
+func (s *{{$input.TypeName}}) IsNil() bool {
+	return s == nil
+}
+{{end -}}
+
+{{- if not (not $input.DecodingFormats.j)}}
+
+func (s *{{$input.TypeName}}) UnmarshalJSONObject(dec *gojay.Decoder, key string) error {
+
+	var err error
+	switch key {
+	{{- range $index, $element := $input.Fields}}
+	case "{{$element.SerFieldName}}" : {
+	{{- if eq $element.StructFieldSimpleType "string"}}
+		{{- if $element.IsArray -}}
+		err = dec.DecodeArray(gojay.DecodeArrayFunc(func(dec *gojay.Decoder) error {
+			var str string
+			err = dec.String(&str)
+			if err != nil {
+				return err
+			}
+			if s.{{$element.StructFieldName}} == nil {
+				s.{{$element.StructFieldName}} = make([]string, 0, 5)
+			}
+			s.{{$element.StructFieldName}} = append(s.{{$element.StructFieldName}}, str)
+			return nil
+		}))
+		{{- else}}
+		err = dec.String({{if not $element.IsPointer}}&{{end}}s.{{$element.StructFieldName}})
+		{{- end -}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+		v{{$index}} := ""
+		err = dec.String(&v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		url{{$index}}, err := url.URL.Parse(v{{$index}})
+	{{- else if eq $element.StructFieldSimpleType "enum"}}
+		v{{$index}} := ""
+		err = dec.String(&v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		var ve{{$index}} {{$element.StructFieldType}}
+		err = ve{{$index}}.From(v{{$index}})
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+		err = dec.Int{{$element.StructFieldIntSize}}({{if not $element.IsPointer}}&{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+		err = dec.Uint({{$element.StructFieldIntSize}}({{if $element.IsPointer}}*{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+		err = dec.Bool({{if not $element.IsPointer}}&{{end}}s.{{$element.StructFieldName}})
+		{{- else if eq $element.StructFieldSimpleType "array"}}
+		err = dec.Array(&s.{{$element.StructFieldName}})
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end}}
+	{{- end}}
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+	}
+{{- end}}
+	}
+	return nil
+}
+
+func (s *{{$input.TypeName}}) NKeys() int {
+	return {{$input.FieldsNum}}
+}
+{{end -}}
+
+{{- if or $input.EncodingFormats.j $input.EncodingFormats.q $input.EncodingFormats.f}}
+
+func (s *{{$input.TypeName}}) Marshal(w io.Writer, format MarshalFormat) diag.Error {
+	switch format {
+	case MarshalFormatJSON:
+		{
+			{{- if not $input.EncodingFormats.j}}
+			return diag.MakeError(OidcErrorEncodeError, "Type '{{$input.TypeName}}' does not support Json serialization", nil)
+			{{- else}}
+			bytes, e := gojay.MarshalJSONObject(s)
+			if e != nil {
+				return diag.MakeError(OidcErrorEncodeError, "Failed to serialize json", e)
+			}
+			_, e = w.Write(bytes)
+			if e != nil {
+				return diag.MakeError(OidcErrorEncodeError, "Failed to serialize json", e)
+			}
+			return nil
+			{{- end}}
+		}
+	case MarshalFormatQuery, MarshalFormatFragment:
+		{
+			{{- if not $input.EncodingFormats.q}}
+			return diag.MakeError(OidcErrorEncodeError, "Type '{{$input.TypeName}}' does not support Query serialization", nil)
+			{{- else}}
+			resURL := &url.URL{
+				Scheme:  s.{{$input.FormActionFieldName}}.Scheme,
+				Host:    s.{{$input.FormActionFieldName}}.Host,
+				Path:    s.{{$input.FormActionFieldName}}.Path,
+				RawPath: s.{{$input.FormActionFieldName}}.RawPath,
+			}
+			_, e := w.Write([]byte(resURL.String()))
+			if e != nil {
+				return diag.MakeError(OidcErrorStreamWriteError, "Failed to serialize query", e)
+			}
+			if format == MarshalFormatQuery {
+				if len(resURL.RawQuery) > 0 {
+					_, e = w.Write([]byte("&"))
+					if e != nil {
+						return diag.MakeError(OidcErrorStreamWriteError, "Failed to serialize query", e)
+					}
+				} else {
+					_, e = w.Write([]byte("?"))
+					if e != nil {
+						return diag.MakeError(OidcErrorStreamWriteError, "Failed to serialize query", e)
+					}
+				}
+			} else {
+				_, e = w.Write([]byte("#"))
+				if e != nil {
+					return diag.MakeError(OidcErrorStreamWriteError, "Failed to serialize query", e)
+				}
+			}
+			return s.marshalQuery(w)
+			{{- end}}
+		}
+	case MarshalFormatForm:
+		{
+			{{- if not $input.EncodingFormats.f}}
+			return diag.MakeError(OidcErrorEncodeError, "Type '{{$input.TypeName}}' does not support Form serialization", nil)
+			{{- else}}
+			return s.marshalForm(w)
+			{{- end}}
+		}
+	case MarshalFormatHTML:
+		{
+			{{- if not $input.EncodingFormats.f}}
+			return diag.MakeError(OidcErrorEncodeError, "Type '{{$input.TypeName}}' does not support HTML serialization", nil)
+			{{- else}}
+			return s.marshalHtml(w)
+			{{- end}}
+		}
+	default:
+		{
+			return diag.MakeError(OidcErrorEncodeError,
+				fmt.Sprintf("Unsupported marshal format: %v", format), nil)
+		}
+	}
+}
+{{end -}}

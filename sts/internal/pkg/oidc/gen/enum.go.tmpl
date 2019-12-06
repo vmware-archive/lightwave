@@ -1,0 +1,106 @@
+{{$input := .}}
+const ( {{- range $index, $element := $input.Values}}{{if eq $index 0}}
+	{{$input.TypeName}}{{$element.ValueName}} {{$input.TypeName}} = {{if eq $input.UTypeName "string"}}"{{$element.Value}}"{{else}}iota + 1{{end}}{{else}}
+	{{$input.TypeName}}{{$element.ValueName}}{{if eq $input.UTypeName "string"}} {{$input.TypeName}} = "{{$element.Value}}"{{end}}{{end}}{{end}}
+)
+
+func (e {{$input.TypeName}}) String() string {
+	{{if eq $input.UTypeName "string"}}return string(e){{else}}switch e { {{- range $index, $element := $input.Values}}
+		case {{$input.TypeName}}{{$element.ValueName}} : return val{{$input.TypeName}}{{$element.ValueName}}{{end}}
+	}
+	return ""{{end}}
+}
+
+func (e {{$input.TypeName}}) Known() bool {
+	switch e { {{- range $index, $element := $input.Values}}
+		case {{$input.TypeName}}{{$element.ValueName}} : return true{{end}}
+	}
+	return false
+}
+
+func (e *{{$input.TypeName}}) From(s string) diag.Error {
+	if e == nil {
+		return diag.MakeError(OidcErrorServerError, "Unable to unmarshal '{{$input.TypeName}}' into nil", nil)
+	}
+	{{if eq $input.UTypeName "string"}}*e = {{$input.TypeName}}(s)
+	return nil{{else}}
+	switch s { {{- range $index, $element := $input.Values}}
+		case val{{$input.TypeName}}{{$element.ValueName}} : *e = {{$input.TypeName}}{{$element.ValueName}}{{end}}
+		default : return diag.MakeError({{$input.ErrorType}}, fmt.Sprintf("Unexpected value of {{$input.TypeName}}: '%s'", s), nil )
+	}
+	return nil{{end}}
+}
+
+{{if ne $input.UTypeName "string"}}const( {{- range $index, $element := $input.Values}}
+	val{{$input.TypeName}}{{$element.ValueName}} = "{{$element.Value}}"{{end}}
+){{end}}
+{{if $input.IsSet}}
+type {{$input.TypeName}}Set {{if eq $input.UTypeName "string"}}map[{{$input.TypeName}}]struct{}{{else}}uint{{$input.SetType}}
+{{end}}
+func (s {{$input.TypeName}}Set) Len() int {
+	{{if eq $input.SetType "string"}}return len(s){{else}}return bits.OnesCount{{$input.SetType}}(uint{{$input.SetType}}(s)){{end}}
+}
+
+func (s {{$input.TypeName}}Set) Contains(v {{$input.TypeName}}) bool {
+	{{if eq $input.SetType "string"}}_, ok := s[v]
+	return ok{{else}}return (uint{{$input.SetType}}(s)&(0x1<<v) == uint{{$input.SetType}}(0x1<<v)){{end}}
+}
+
+func (s {{$input.TypeName}}Set) String() string {
+	if s.Len() <= 0 { return "" }
+	sb := &strings.Builder{}
+	first := true
+	s.Iterate(func(v {{$input.TypeName}}) diag.Error {
+		if !first {
+			sb.WriteString(" ")
+		} else {
+			first = false
+		}
+		sb.WriteString(v.String())
+		return nil
+	})
+	return sb.String()
+}
+
+func (s *{{$input.TypeName}}Set) From(input string) diag.Error {
+	if s == nil {
+		return diag.MakeError(OidcErrorServerError, "Unable to unmarshal '{{$input.TypeName}}Set' into nil", nil)
+	}
+	vals := strings.Fields(input)
+	for _, v := range vals{
+		var e {{$input.TypeName}}
+		if err := e.From(v); err != nil {
+			return err
+		}
+		s.add(e)
+	}
+	return nil
+}
+
+type {{$input.TypeName}}SetIteratorFunc func(v {{$input.TypeName}}) diag.Error
+
+func (s {{$input.TypeName}}Set) Iterate(f {{$input.TypeName}}SetIteratorFunc) diag.Error {
+	var err diag.Error{{if eq $input.SetType "string"}}
+	for k, _ := range s {
+		err = f(k)
+		if err != nil {
+			return err
+		}
+	}{{else}}{{range $index, $element := $input.Values}}
+	if s.Contains({{$input.TypeName}}{{$element.ValueName}}) {
+		err = f({{$input.TypeName}}{{$element.ValueName}})
+		if err != nil {
+			return err
+		}
+	}{{end}}{{end}}
+	return nil
+}
+
+// unexported setter
+func (s *{{$input.TypeName}}Set) add(v {{$input.TypeName}}) {
+	{{if eq $input.SetType "string"}}if (*s)==nil {
+		*s = {{$input.TypeName}}Set{}
+	}
+	(*s)[v]=exists{{else}}*s=*s|(0x1<<v){{end}}
+}
+{{- end}}

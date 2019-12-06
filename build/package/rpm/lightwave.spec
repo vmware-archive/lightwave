@@ -120,6 +120,18 @@ VMware Lightwave Server
 %define _oidc_prefix /opt/vmware
 %endif
 
+%if 0%{?_lwsts_sbindir:1} == 0
+%define _lwsts_sbindir %{_prefix}/sbin
+%endif
+
+%if 0%{?_lwsts_bindir:1} == 0
+%define _lwsts_bindir %{_prefix}/bin
+%endif
+
+%if 0%{?_lwsts_exe_ext:1} == 0
+%define _lwsts_exe_ext %{nil}
+%endif
+
 %define _sasl2dir %{_sasl_prefix}/lib64/sasl2
 %define _krb5_lib_dir %{_krb5_prefix}/lib64
 %define _krb5_gss_conf_dir /etc/gss
@@ -189,6 +201,12 @@ Summary: Lightwave Samples
 Requires: lightwave-client >= %{_version}
 %description samples
 Lightwave Samples
+
+%package sts
+Summary: Lightwave Secure Token Server
+Requires: lightwave-client >= %{_version}
+%description sts
+Lightwave Secure Token Server
 
 %package test
 Summary: Lightwave Test
@@ -1416,6 +1434,15 @@ users.
 %{_servicedir}/vmware-sampled.service
 %{_stssampleconfdir}/*
 %{_stssamplebindir}/*
+
+%files sts
+%defattr(-,root,root,0750)
+
+%{_lwsts_sbindir}/stssrv%{_lwsts_exe_ext}
+%{_lwsts_bindir}/stssetup%{_lwsts_exe_ext}
+
+%config %attr(0750, root, root) %{_lwsts_sbindir}/stssrv%{_lwsts_exe_ext}
+%config %attr(0750, root, root) %{_lwsts_bindir}/stssetup%{_lwsts_exe_ext}
 
 %files test
 

@@ -1,0 +1,393 @@
+{{- $input := . -}}
+{{- if not (not $input.EncodingFormats.j)}}
+
+func marshalJSONObject{{$input.TypeName}}(obj {{$input.QualifiedTypeName}}, enc *gojay.Encoder) {
+
+{{- range $index, $element := $input.Fields}}
+
+	{{- if eq $element.StructFieldSimpleType "string"}}
+		{{- if $element.IsArray}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}", gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+		for _, v := range obj.{{$element.Getter}}() {
+			enc.String(v)
+		}
+	}))
+		{{- else}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}obj.{{$element.Getter}}())
+		{{- end}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+			{{- if $element.IsArray}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}", gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+		for _, v := range obj.{{$element.Getter}}() {
+			enc.String(v.String())
+		}
+	}))
+		{{- else}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}",  obj.{{$element.Getter}}().String())
+		{{- end}}
+	{{- else if or (eq $element.StructFieldSimpleType "enum") (eq $element.StructFieldSimpleType "stringer")}}
+	enc.StringKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", obj.{{$element.Getter}}().String())
+	{{- else if eq $element.StructFieldType "time.Duration"}}
+	vi{{$index}} := int64({{if $element.IsPointer}}*{{end}}obj.{{$element.Getter}}()/time.Millisecond)
+	enc.Int64Key{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", vi{{$index}})
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+	enc.Int{{$element.StructFieldIntSize}}Key{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}obj.{{$element.Getter}}())
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+	enc.Uint{{$element.StructFieldIntSize}}Key{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}obj.{{$element.Getter}}())
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+	enc.BoolKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", {{if $element.IsPointer}}*{{end}}obj.{{$element.Getter}}())
+		{{- else if eq $element.StructFieldSimpleType "array"}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}("{{$element.SerFieldName}}", &obj.{{$element.Getter}}())
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end -}}
+	{{- end}}
+{{- end}}
+
+{{- range $index, $element := $input.Children}}
+	{{- if $element.IsArray}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}",
+		gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+			for _, obj := range obj.{{$element.Getter}}() {
+				enc.EncodeObject(gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+					marshalJSONObject{{$element.ChildSpec.TypeName}}(obj, enc)
+				}))
+			}
+	}))
+	{{- else if $element.ChildSpec.Map}}
+	enc.ArrayKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}",
+		gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+			obj.{{$element.Getter}}().Iterate(func(obj {{$element.ChildSpec.QualifiedTypeName}}) diag.Error {
+				enc.Object(gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+					marshalJSONObject{{$element.ChildSpec.TypeName}}(obj, enc)
+				}))
+				return nil
+			})
+	}))
+	{{- else}}
+	enc.AddObjectKey{{if $element.OmitEmpty}}OmitEmpty{{end}}(
+		"{{$element.SerFieldName}}",
+		gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+			marshalJSONObject{{$element.ChildSpec.TypeName}}(obj.{{$element.Getter}}(), enc)
+		}))
+	{{- end}}
+{{- end}}
+}
+
+{{- if not $input.SubType}}
+{{- if $input.Map}}
+func marshalJSONObject{{$input.TypeName}}Map(obj {{$input.QualifiedTypeName}}Map, enc *gojay.Encoder) error {
+	return enc.EncodeArray(gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+		obj.Iterate(func(obj {{$input.QualifiedTypeName}}) diag.Error {
+			enc.Object(gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+				marshalJSONObject{{$input.TypeName}}(obj, enc)
+			}))
+			return nil
+		})
+	}))
+}
+{{- else}}
+func marshalJSONObject{{$input.TypeName}}List(objs []{{$input.QualifiedTypeName}}, enc *gojay.Encoder) error {
+	return enc.EncodeArray(gojay.EncodeArrayFunc(func(enc *gojay.Encoder) {
+		for _, obj := range objs {
+			enc.Object(gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+				marshalJSONObject{{$input.TypeName}}(obj, enc)
+			}))
+		}
+	}))
+}
+{{- end}}
+{{- end}}
+{{end -}}
+
+{{- if not (not $input.DecodingFormats.j)}}
+
+func unmarshalJSONObject{{$input.TypeName}}(
+	b {{if $input.SubType}}{{$input.QualifiedParentTypeName}}{{else}}{{$input.QualifiedTypeName}}{{end}}Builder, dec *gojay.Decoder, key string) error {
+
+	var err error
+	switch key {
+{{- range $index, $element := $input.Fields}}
+	case "{{$element.SerFieldName}}" : {
+	{{- if eq $element.StructFieldSimpleType "string"}}
+		{{- if $element.IsArray -}}
+		var arr []string
+		err = dec.DecodeArray(gojay.DecodeArrayFunc(func(dec *gojay.Decoder) error {
+			var str string
+			err = dec.String(&str)
+			if err != nil {
+				return err
+			}
+			if len(arr) <= 0 {
+				arr = make([]string, 0, 5)
+			}
+			arr = append(arr, str)
+
+			return nil
+		}))
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}(arr)
+		{{- else}}
+		str := ""
+		err = dec.String(&str)
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}str)
+		{{- end -}}
+	{{- else if eq $element.StructFieldSimpleType "url.URL"}}
+			{{- if $element.IsArray -}}
+		var arr []{{if $element.IsPointer}}*{{end}}url.URL
+		err = dec.DecodeArray(gojay.DecodeArrayFunc(func(dec *gojay.Decoder) error {
+			var str string
+			err = dec.String(&str)
+			if err != nil {
+				return err
+			}
+			if len(arr) <= 0 {
+				arr = make([]{{if $element.IsPointer}}*{{end}}url.URL, 0, 5)
+			}
+			url, err := url.Parse(str)
+			if err != nil {
+				return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+			}
+
+			arr = append(arr, {{if not $element.IsPointer}}*{{end}}url)
+
+			return nil
+		}))
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}(arr)
+			{{- else}}
+		v{{$index}} := ""
+		err = dec.String(&v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		url{{$index}}, err := url.Parse(v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if not $element.IsPointer}}*{{end}}url{{$index}})
+			{{- end -}}
+	{{- else if or (eq $element.StructFieldSimpleType "enum") (eq $element.StructFieldSimpleType "stringer")}}
+		v{{$index}} := ""
+		err = dec.String(&v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		var ve{{$index}} {{$element.StructFieldType}}
+		err = ve{{$index}}.From(v{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}ve{{$index}})
+	{{- else if eq $element.StructFieldSimpleType "time.Duration"}}
+		var vi{{$index}} int64
+		err = dec.Int64(&vi{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		var vd{{$index}} time.Duration
+		vd{{$index}} = time.Duration(vi{{$index}})*time.Millisecond
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}vd{{$index}})
+	{{- else -}}
+		{{- if eq $element.StructFieldSimpleType "int"}}
+		var vi{{$index}} int{{$element.StructFieldIntSize}}
+		err = dec.Int{{$element.StructFieldIntSize}}(&vi{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}vi{{$index}})
+		{{- else if eq $element.StructFieldSimpleType "uint"}}
+		var vu{{$index}} uint{{$element.StructFieldIntSize}}
+		err = dec.Uint{{$element.StructFieldIntSize}}(&vu{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}vu{{$index}})
+		{{- else if eq $element.StructFieldSimpleType "bool"}}
+		var vb{{$index}} bool
+		err = dec.Bool(&vb{{$index}})
+		if err != nil {
+			return diag.MakeError({{$element.ErrorType}}, "Failed to un-marshal {{$input.TypeName}} from json: %v", err)
+		}
+		b.{{$element.Setter}}({{if $element.IsPointer}}&{{end}}vb{{$index}})
+		{{- else}}
+	!!!!Unsupported Type!!!!
+		{{- end}}
+	{{- end}}
+	}
+{{- end}}
+{{- range $index, $element := $input.Children}}
+	case "{{$element.SerFieldName}}" : {
+		{{- if $element.IsArray}}
+		arr{{$index}}, err = unMarshalJSONObject{{$element.ChildSpec.TypeName}}List(dec)
+		if err != nil {
+			return err
+		}
+		b.{{$element.Setter}}(arr{{$index}})
+		{{- else if $element.ChildSpec.Map}}
+		builder{{$index}} := {{$element.ChildSpec.MapBuilderFunction}}()
+		err = unMarshalJSONObject{{$element.ChildSpec.TypeName}}Map(builder{{$index}}, dec)
+		if err != nil {
+			return err
+		}
+		map{{$index}}, err := builder{{$index}}.Build()
+		if err != nil {
+			return err
+		}
+		b.{{$element.Setter}}(map{{$index}})
+		{{- else}}
+		builder{{$index}} := {{$element.ChildSpec.TypeName}}.BuilderFunction}}()
+		err = unmarshalJSONObject{{$element.ChildSpec.TypeName}}(builder{{$index}}, dec)
+		if err != nil {
+			return err
+		}
+		obj{{$index}}, err := builder{{$index}}.Build()
+		if err != nil {
+			return err
+		}
+		b.{{$element.Setter}}(obj{{$index}})
+		{{- end}}
+	}
+{{- end}}
+	}
+	return nil
+}
+
+{{- if not $input.SubType}}
+{{- if $input.Map}}
+func unMarshalJSONObject{{$input.TypeName}}Map(
+	b {{if $input.SubType}}{{$input.QualifiedParentTypeName}}{{else}}{{$input.QualifiedTypeName}}{{end}}MapBuilder, dec *gojay.Decoder) error {
+	err := dec.Array(gojay.DecodeArrayFunc( func(dec *gojay.Decoder) error {
+		builder := {{$input.BuilderFunction}}()
+		err := dec.DecodeObject(gojay.DecodeObjectFunc(func(dec *gojay.Decoder, k string) error {
+			return unmarshalJSONObject{{$input.TypeName}}(builder, dec, k)
+		}))
+		if err != nil {
+			return err
+		}
+		v, err := builder.Build()
+		if err != nil {
+			return err
+		}
+		b.Add(v)
+		return nil
+	}))
+	if err != nil {
+		return err
+	}
+	return nil
+}
+{{- else if $input.ChildArray}}
+func unMarshalJSONObject{{$input.TypeName}}List(dec *gojay.Decoder) ([]{{$input.TypeName}}, error) {
+	arr := make([]{{$input.TypeName}}, 5)
+	err := dec.Array(gojay.DecodeArrayFunc(func(dec *gojay.Dencoder) error {
+		builder := {{$input.BuilderFunction}}()
+		err := unmarshalJSONObject{{$input.TypeName}}(builder, dec)
+		if err != nil {
+			return err
+		}
+		v, err := builder.Build()
+		if err != nil {
+			return err
+		}
+		arr = append(arr, v)
+		return nil
+		})
+	}))
+	if err != nil {
+		return err
+	}
+	return arr, nil
+}
+{{- end}}
+{{- end}}
+{{end -}}
+
+{{- if $input.EncodingFormats.j}}
+
+func Marshal{{$input.TypeName}}(obj {{$input.QualifiedTypeName}}, w io.Writer) diag.Error {
+	enc := gojay.BorrowEncoder(w)
+	defer enc.Release()
+	err := enc.EncodeObject(gojay.EncodeObjectFunc(func(enc *gojay.Encoder) {
+		marshalJSONObject{{$input.TypeName}}(obj, enc)
+	}))
+	if err != nil {
+		return diag.MakeError(types.IdmErrorGeneric, "failed encoding object {{$input.QualifiedTypeName}}", err)
+	}
+	return nil
+}
+
+{{- if not $input.SubType}}
+{{- if $input.Map}}
+func Marshal{{$input.TypeName}}Map(obj {{$input.QualifiedTypeName}}Map, w io.Writer) diag.Error {
+	enc := gojay.BorrowEncoder(w)
+	defer enc.Release()
+	err := marshalJSONObject{{$input.TypeName}}Map(obj, enc)
+	if err != nil {
+		return diag.MakeError(types.IdmErrorGeneric, "failed encoding object {{$input.QualifiedTypeName}}", err)
+	}
+	return nil
+}
+{{- else}}
+func Marshal{{$input.TypeName}}List(objs []{{$input.QualifiedTypeName}}, w io.Writer) diag.Error {
+	enc := gojay.BorrowEncoder(w)
+	defer enc.Release()
+	err := marshalJSONObject{{$input.TypeName}}List(objs, enc)
+	if err != nil {
+		return diag.MakeError(types.IdmErrorGeneric, "failed encoding object {{$input.QualifiedTypeName}}", err)
+	}
+	return nil
+}
+{{- end}}
+{{- end}}
+{{end -}}
+
+{{- if $input.DecodingFormats.j}}
+
+func UnMarshal{{$input.TypeName}}(
+	b {{if $input.SubType}}{{$input.QualifiedParentTypeName}}{{else}}{{$input.QualifiedTypeName}}{{end}}Builder, r io.Reader) diag.Error {
+
+	dec := gojay.BorrowDecoder(r)
+	defer dec.Release()
+
+    err := dec.DecodeObject(gojay.DecodeObjectFunc(func(dec *gojay.Decoder, k string) error {
+		return unmarshalJSONObject{{$input.TypeName}}(b, dec, k)
+	}))
+
+	if err != nil {
+		return diag.MakeError(types.IdmErrorGeneric, "failed decoding object {{$input.QualifiedTypeName}}", err)
+	}
+
+	return nil
+}
+
+{{- if not $input.SubType}}
+{{- if $input.Map}}
+func UnMarshal{{$input.TypeName}}Map( b {{if $input.SubType}}{{$input.QualifiedParentTypeName}}{{else}}{{$input.QualifiedTypeName}}{{end}}MapBuilder, r io.Reader) diag.Error {
+
+	dec := gojay.BorrowDecoder(r)
+	defer dec.Release()
+
+    err := unMarshalJSONObject{{$input.TypeName}}Map(b, dec)
+
+	if err != nil {
+		return diag.MakeError(types.IdmErrorGeneric, "failed decoding object {{$input.QualifiedTypeName}}", err)
+	}
+
+	return nil
+}
+{{- end}}
+{{- end}}
+{{end -}}

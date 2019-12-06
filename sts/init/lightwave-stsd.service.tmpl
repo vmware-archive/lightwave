@@ -1,0 +1,14 @@
+[Unit]
+Description=Lightwave Secure Token Service
+After=syslog.target network.target lwsmd.service
+Requires=lwsmd.service
+
+[Service]
+Type=forking
+ExecStart={{.StsCmd}}
+SuccessExitStatus=0
+User={{.ProcessUserID}}
+Group={{.ProcessGroupID}}
+
+[Install]
+WantedBy=multi-user.target

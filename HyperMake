@@ -141,6 +141,13 @@ targets:
     always: true
     image: 'vmware/lightwave-toolchain-photon2:1.0.4'
 
+  docker-sts-pre-photon2:
+    description: Prepare for container build
+    cmds:
+      - ./support/scripts/prep-container-build.sh photon2 sts
+    always: true
+    image: 'vmware/lightwave-toolchain-photon2:1.0.4'
+
   docker-lightwave-client-pre-photon2:
     description: Prepare for container build
     cmds:
@@ -163,6 +170,15 @@ targets:
     after:
       - docker-lightwave-client-pre-photon1
     image: 'vmware/lightwave-client'
+    cmds:
+      - ./support/scripts/post-container-build.sh
+
+  docker-sts-photon2:
+    description: build lightwave sts docker image
+    build: ./build/docker
+    after:
+      - docker-sts-pre-photon2
+    image: 'vmware/sts-photon2'
     cmds:
       - ./support/scripts/post-container-build.sh
 

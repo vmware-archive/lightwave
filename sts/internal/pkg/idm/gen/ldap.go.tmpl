@@ -1,0 +1,552 @@
+{{$input := .}}
+
+{{- if not $input.SubType}}
+func ldapDnFromObject{{$input.TypeName}}(parentDn string, obj {{$input.QualifiedTypeName}}) string {
+	{{- if gt (len $input.ConstantCN) 0}}
+	return "cn={{$input.ConstantCN}}," + ldapContainerDn{{$input.TypeName}}(parentDn)
+	{{- else}}
+	return "cn=" + obj.{{$input.CN.Getter}}()
+	{{- if or ( eq $input.CN.SimpleType "enum" ) (eq $input.CN.SimpleType "stringer")}}.String()
+	{{- else if eq $input.CN.SimpleType "enumSet"}}.Strings()
+	{{- end -}} + "," + ldapContainerDn{{$input.TypeName}}(parentDn)
+	{{- end}}
+}
+
+func ldapDnFromCn{{$input.TypeName}}(parentDn string{{- if le (len $input.ConstantCN) 0}}, name string{{end}}) string {
+	return "cn=" + {{- if gt (len $input.ConstantCN) 0}}"{{$input.ConstantCN}}"{{else}}name{{end}} + "," + ldapContainerDn{{$input.TypeName}}(parentDn)
+}
+
+func ldapContainerDn{{$input.TypeName}}(parentDn string) string {
+	{{- if gt (len $input.ContainerCN) 0}}
+	return "cn={{$input.ContainerCN}}," + parentDn
+	{{- else}} return parentDn
+	{{- end}}
+}
+{{- end}}
+
+func ldapMods{{$input.TypeName}}(obj {{$input.QualifiedTypeName}}
+{{- if $input.DirectEncrypt}}, enc transformer{{end}}) ([]ldap.AttributeMod, diag.Error) {
+
+	attrMods := make([]ldap.AttributeMod, 0, {{$input.UpdateableAttributesNumber}})
+	{{- if gt $input.UpdateableAttributesNumber 0 }}
+	var modType ldap.ModType
+	var mod ldap.AttributeMod
+	var ldapVal ldap.Value
+	var err diag.Error
+	{{- end}}
+
+	{{- range $index, $element := $input.Attributes}}
+	{{- if not $element.AsChild }}
+	{{- if not $element.Readonly}}
+	{{- if $element.Updateable}}
+	modType = ldap.ModTypeReplace
+	{{- if $element.IsPointer}}
+	if obj.{{$element.Getter}}() == nil {
+		modType = ldap.ModTypeDelete
+		ldapVal = nil
+	}
+	{{- else if $element.IsArray}}
+	if len(obj.{{$element.Getter}}()) <= 0 {
+		modType = ldap.ModTypeDelete
+		ldapVal = nil
+	}
+	{{- else if eq $element.BaseType "string"}}
+	if len(obj.{{$element.Getter}}()) <= 0 {
+		modType = ldap.ModTypeDelete
+		ldapVal = nil
+	}
+	{{- else if eq $element.SimpleType "enum"}}
+	if len(obj.{{$element.Getter}}().String()) <= 0 {
+		modType = ldap.ModTypeDelete
+		ldapVal = nil
+	}
+	{{- else if eq $element.SimpleType "enumSet"}}
+	if len(obj.{{$element.Getter}}().Strings()) <= 0 {
+		modType = ldap.ModTypeDelete
+		ldapVal = nil
+	}
+	{{end}}
+
+	if modType == ldap.ModTypeReplace{
+		ldapVal, err = ldap.ValueFor{{$element.CvType}}(obj.{{$element.Getter}}()
+		{{- if or ( eq $element.SimpleType "enum" ) (eq $element.SimpleType "stringer")}}.String()
+		{{- else if eq $element.SimpleType "enumSet"}}.Strings()
+		{{- end -}})
+		if err != nil {
+			return []ldap.AttributeMod{}, err
+		}
+		if ldapVal.Len() <= 0 {
+			ldapVal = nil
+			modType = ldap.ModTypeDelete
+		}
+		{{- if $element.Encrypt }} else {
+			ldapVal = transformedValue(ldapVal, enc)
+		}{{end}}
+	}
+	mod = ldap.NewAttributeMod(modType, "{{$element.LdapAttribute}}", ldapVal)
+	attrMods = append(attrMods, mod)
+	{{- end}}{{- end}}{{- end}}{{- end}}
+
+	return attrMods, nil
+}
+
+{{- if not $input.SubType}}
+func ldapAttrs{{$input.TypeName}}(obj {{$input.QualifiedTypeName}}
+{{- if $input.DirectEncrypt}}, enc transformer{{end}}) ([]ldap.Attribute, diag.Error) {
+
+	attrs := make([]ldap.Attribute, 0, {{$input.AttributesNumber}} + 1{{if gt (len $input.ConstantCN) 0}} + 1{{end}})
+	var attr ldap.Attribute
+	var ldapVal ldap.Value
+	var err diag.Error
+
+	// objectClass
+	ldapVal, err = ldap.ValueForString("{{$input.ObjectClass}}")
+	if err != nil {
+		return []ldap.Attribute{}, err
+	}
+	attr = ldap.NewAttribute("objectClass", ldapVal)
+	attrs = append(attrs, attr)
+	{{- if gt (len $input.ConstantCN) 0}}
+	ldapVal, err = ldap.ValueForString("{{$input.ConstantCN}}")
+	if err != nil {
+		return []ldap.Attribute{}, err
+	}
+	attr = ldap.NewAttribute("cn", ldapVal)
+	attrs = append(attrs, attr)
+	{{end}}
+
+	{{- range $index, $element := $input.Attributes}}
+	{{- if not $element.AsChild }}
+	{{- if not $element.Readonly}}
+	ldapVal, err = ldap.ValueFor{{$element.CvType}}(obj.{{$element.Getter}}()
+	{{- if or ( eq $element.SimpleType "enum" ) (eq $element.SimpleType "stringer")}}.String()
+	{{- else if eq $element.SimpleType "enumSet" }}.Strings()
+	{{- end -}})
+	if err != nil {
+		return []ldap.Attribute{}, err
+	}
+	if ldapVal.Len() > 0 {
+		{{- if $element.Encrypt }}
+		ldapVal = transformedValue(ldapVal, enc)
+		{{- end}}
+
+		attr = ldap.NewAttribute("{{$element.LdapAttribute}}", ldapVal)
+		attrs = append(attrs, attr)
+	}
+	{{- end}}{{- end}}{{- end}}
+
+	return attrs, nil
+}
+
+func ldapAttrNames{{$input.TypeName}}() []string {
+	return ldapAttrNames{{$input.TypeName}}Const
+}
+
+var(
+	ldapAttrNames{{$input.TypeName}}Const = []string{
+		{{- range $index, $element := $input.Attributes}}
+		"{{$element.LdapAttribute}}",
+		{{- end}}
+	}
+)
+
+func ldapFromEntry{{$input.TypeName}}(e ldap.Entry,
+{{- if $input.DirectEncrypt}} dec transformer,{{end}} ctxt diag.RequestContext) ({{$input.QualifiedTypeName}}Builder,diag.Error) {
+	builder := {{$input.BuilderFunction}}()
+	var err diag.Error
+	var v ldap.Value
+
+	{{- range $index, $element := $input.Attributes}}
+	v, err = ldap.GetAttributeValue(e, "{{$element.LdapAttribute}}", {{$element.Required}}, ctxt)
+	if err != nil {
+		return nil, err
+	}
+
+	if v != nil {
+		{{- if $element.Encrypt }}
+		v = transformedValue(v, dec){{end -}}
+
+		{{- if or (eq $element.SimpleType "enum" ) (eq $element.SimpleType "stringer") (eq $element.SimpleType "enumSet")}}
+		var v{{$index}} {{$element.BaseType}}
+		vi{{$index}}, err := ldap.{{$element.CvType}}ForValue(v)
+		if err != nil {
+			return nil, err
+		}
+		err = v{{$index}}.From(vi{{$index}})
+		if err != nil {
+			return nil, err
+		}
+		builder.{{$element.Setter}}(v{{$index}})
+		{{- else}}
+		vi{{$index}}, err := ldap.{{$element.CvType}}ForValue(v)
+		if err != nil {
+			return nil, err
+		}
+		builder.{{$element.Setter}}(vi{{$index}})
+		{{- end}}
+	}{{end}}
+
+	return builder, nil
+}
+
+func ldapCreate{{$input.TypeName}}(conn ldap.Connection, parentDn string, obj {{$input.QualifiedTypeName}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+
+	{{- if gt (len $input.ContainerCN) 0}}
+	err := EnsureContainer(conn, parentDn, "{{$input.ContainerCN}}", ctxt)
+	if err != nil {
+		return err
+	}
+	{{- end}}
+	objectDn := ldapDnFromObject{{$input.TypeName}}(parentDn, obj)
+	attributes, err := ldapAttrs{{$input.TypeName}}(obj{{if $input.DirectEncrypt}}, enc{{end}})
+	if err != nil {
+		return err
+	}
+
+	err = conn.Add(objectDn, attributes, ctxt)
+	if err != nil {
+		return err
+	}
+
+	{{- range $index, $element := $input.Children}}
+	{{if $element.IsArray}}err = ldapCreate{{$element.ChildSpec.TypeName}}List(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else if $element.ChildSpec.Map}}err = ldapCreate{{$element.ChildSpec.TypeName}}Map(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else}}err = ldapCreate{{$element.ChildSpec.TypeName}}(conn, objectDn, ids.Attributes(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt){{end}}
+	if err != nil {
+		return err
+	}
+	{{- end}}
+
+	return nil
+}
+
+{{- if or $input.Map $input.ChildArray}}
+{{if $input.Map -}}
+func ldapCreate{{$input.TypeName}}Map(conn ldap.Connection, parentDn string, objs {{$input.QualifiedTypeName}}Map,
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+{{- else}}
+func ldapCreate{{$input.TypeName}}List(conn ldap.Connection, parentDn string, objs []{{$input.QualifiedTypeName}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+{{- end}}
+	{{- if gt (len $input.ContainerCN) 0}}
+	err := EnsureContainer(conn, parentDn, "{{$input.ContainerCN}}", ctxt)
+	if err != nil {
+		return err
+	}
+	{{- end}}
+	{{if $input.Map -}}
+	err = objs.Iterate(func(obj {{$input.QualifiedTypeName}}) diag.Error {
+	{{- else}}
+	for _, obj := range objs {
+	{{- end}}
+		objectDn := ldapDnFromObject{{$input.TypeName}}(parentDn, obj)
+		attributes, err := ldapAttrs{{$input.TypeName}}(obj{{if $input.DirectEncrypt}}, enc{{end}})
+		if err != nil {
+			return err
+		}
+
+		err = conn.Add(objectDn, attributes, ctxt)
+		if err != nil {
+			return err
+		}
+
+		{{- range $index, $element := $input.Children}}
+		{{if $element.IsArray}}ldapCreate{{$element.ChildSpec.TypeName}}List(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+		{{else if $element.ChildSpec.Map}}ldapCreate{{$element.ChildSpec.TypeName}}Map(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+		{{else}}ldapCreate{{$element.ChildSpec.TypeName}}(conn, objectDn, ids.Attributes(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt){{end}}
+		{{- end}}
+
+	{{if $input.Map -}}
+
+		return nil
+	})
+
+	return err
+	{{- else}}
+	}
+
+	return nil
+	{{- end}}
+}
+{{- end}}
+
+func ldapUpdate{{$input.TypeName}}(conn ldap.Connection, parentDn string, obj {{$input.QualifiedTypeName}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+
+	objectDn := ldapDnFromObject{{$input.TypeName}}(parentDn, obj)
+	attrMods, err := ldapMods{{$input.TypeName}}(obj{{if $input.DirectEncrypt}}, enc{{end}})
+	if err != nil {
+		return err
+	}
+
+	err = conn.Modify(objectDn, attrMods, ctxt)
+	if err != nil {
+		return err
+	}
+
+	{{- range $index, $element := $input.Children}}
+	{{if $element.IsArray}}err = ldapUpdate{{$element.ChildSpec.TypeName}}List(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else if $element.ChildSpec.Map}}err = ldapUpdate{{$element.ChildSpec.TypeName}}Map(conn, objectDn, obj.{{$element.Getter}}(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else}}err = ldapUpdate{{$element.ChildSpec.TypeName}}(conn, objectDn, ids.Attributes(){{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt){{end}}
+	{{- end}}
+	if err != nil {
+		return err
+	}
+	return nil
+}
+{{- else}}
+func ldapUpdate{{$input.TypeName}}(conn ldap.Connection, parentDn string, name string, obj {{$input.QualifiedTypeName}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+
+	objectDn := ldapDnFromCn{{$input.ParentTypeName}}(parentDn, name)
+	attrMods, err := ldapMods{{$input.TypeName}}(obj{{if $input.DirectEncrypt}}, enc{{end}})
+	if err != nil {
+		return err
+	}
+
+	err = conn.Modify(objectDn, attrMods, ctxt)
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+{{- end}}
+
+{{- if not $input.SubType}}
+{{- if or $input.Map $input.ChildArray}}
+{{if $input.Map -}}
+func ldapUpdate{{$input.TypeName}}Map(conn ldap.Connection, parentDn string, objs {{$input.QualifiedTypeName}}Map,
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+{{- else}}
+func ldapUpdate{{$input.TypeName}}List(conn ldap.Connection, parentDn string, objs []{{$input.QualifiedTypeName}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}enc transformer,{{end}} ctxt diag.RequestContext) diag.Error {
+{{- end}}
+	cdn := ldapContainerDn{{$input.TypeName}}(parentDn)
+
+	msg, err := conn.Search(
+		cdn, ldap.ScopeOneLevel, "(objectClass={{$input.ObjectClass}})",
+		[]string{}, false, 0, 0, ctxt)
+	if err != nil {
+		return err
+	}
+	defer msg.Close()
+
+	newObjects := make(map[string]{{$input.QualifiedTypeName}}, {{if $input.Map}}objs.Len(){{else}}len(objs){{end}})
+	{{- if $input.Map}}
+	objs.Iterate(func(obj {{$input.QualifiedTypeName}}) diag.Error {
+		newObjects[ldapDnFromObject{{$input.TypeName}}(parentDn, obj)] = obj
+		return nil
+	})
+	{{- else}}
+	for _, obj := ramge objs {
+		newObjects[ldapDnFromObject{{$input.TypeName}}(parentDn, obj)] = obj
+	}
+	{{- end}}
+
+	err = msg.IterateEntries(func(e ldap.Entry, ctxt diag.RequestContext) diag.Error {
+
+		dn, err := e.Dn(ctxt)
+		if err != nil {
+			return err
+		}
+
+		obj, ok := newObjects[dn]
+		if !ok {
+			// delete
+			{{- if gt $input.ChildrenNumber 0 }}
+			err := ldap.DeleteSubtree(conn, dn, true, ctxt)
+			{{- else}}
+			err := conn.Delete(dn, ctxt)
+			{{- end}}
+			if err != nil {
+				if !ldap.IsNoSuchObjectError(err) {
+					return err
+				}
+			}
+		} else {
+			// update
+			err := ldapUpdate{{$input.TypeName}}(conn, parentDn, obj{{- if or $input.DirectEncrypt $input.ChildEncrypt}}, enc{{end}}, ctxt)
+			if err != nil {
+				return err
+			}
+		}
+
+		delete(newObjects, dn)
+
+		return nil
+	}, ctxt)
+
+	if err != nil {
+		return err
+	}
+
+	for _, no := range newObjects {
+		err := ldapCreate{{$input.TypeName}}(conn, parentDn, no{{- if or $input.DirectEncrypt $input.ChildEncrypt }}, enc{{end}}, ctxt)
+		if err != nil {
+			return err
+		}
+	}
+
+	return nil
+}
+{{- end}}
+
+
+
+func ldapDelete{{$input.TypeName}}(conn ldap.Connection, parentDn string{{- if le (len $input.ConstantCN) 0}}, name string{{end}}, ctxt diag.RequestContext) diag.Error {
+
+	objectDn := ldapDnFromCn{{$input.TypeName}}(parentDn{{- if le (len $input.ConstantCN) 0}}, name{{end}})
+	{{if gt $input.ChildrenNumber 0}}err:=ldap.DeleteSubtree(conn, objectDn, true, ctxt)
+	{{- else}}err := conn.Delete(objectDn, ctxt){{end}}
+	if err != nil {
+		if !ldap.IsNoSuchObjectError(err) {
+			return err
+		}
+	}
+
+	return nil
+}
+
+{{- if or $input.Map $input.ChildArray}}
+{{if $input.Map -}}
+func ldapDelete{{$input.TypeName}}Map(conn ldap.Connection, parentDn string, ctxt diag.RequestContext) diag.Error {
+{{- else}}
+func ldapDelete{{$input.TypeName}}List(conn ldap.Connection, parentDn string, ctxt diag.RequestContext) diag.Error {
+{{- end}}
+	cdn := ldapContainerDn{{$input.TypeName}}(parentDn)
+	return ldap.DeleteSubtree(conn, cdn, (cdn != parentDn), ctxt)
+}
+{{- end}}
+
+{{if not $input.Map -}}
+func ldapGet{{$input.TypeName}}(conn ldap.Connection, parentDn string{{- if le (len $input.ConstantCN) 0}}, name string{{end}},
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}} dec transformer,{{end}} ctxt diag.RequestContext) ({{$input.QualifiedTypeName}}, diag.Error) {
+
+	var err diag.Error
+	objectDn := ldapDnFromCn{{$input.TypeName}}(parentDn{{- if le (len $input.ConstantCN) 0}}, name{{end}})
+	attrs := ldapAttrNames{{$input.TypeName}}()
+
+	// go-ldap does not allow for empty filter, check on this....
+	msg, err := conn.Search(objectDn, ldap.ScopeBase, "(objectClass=*)", attrs, false, 0, 0, ctxt)
+	if err != nil {
+		return nil, err
+	}
+	defer msg.Close()
+
+	len, err := msg.Len(ctxt)
+	if err != nil {
+		return nil, err
+	}
+
+	if len != 1 {
+		// todo: return error
+		//return nil, err
+	}
+
+	var b {{$input.QualifiedTypeName}}Builder
+
+	err = msg.IterateEntries(func(e ldap.Entry, ctxt diag.RequestContext) diag.Error {
+		b, err = ldapFromEntry{{$input.TypeName}}(e{{- if $input.DirectEncrypt }}, dec{{end}}, ctxt)
+		if err != nil {
+			return err
+		}
+		return nil
+	}, ctxt)
+
+	if err != nil {
+		return nil, err
+	}
+
+	{{- range $index, $element := $input.Children}}
+	{{if $element.IsArray}}v{{$index}}, err := ldapList{{$element.ChildSpec.TypeName}}(conn, objectDn{{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else if $element.ChildSpec.Map}}v{{$index}}, err := ldapGet{{$element.ChildSpec.TypeName}}Map(conn, objectDn{{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, enc{{end}}, ctxt)
+	{{else}}!!!!!! Unsupported Type !!!!!{{end}}
+	if err != nil {
+		return nil, err
+	}
+	b.{{$element.Getter}}(v{{$index}})
+	{{- end}}
+
+	return b.Build()
+}
+{{- end}}
+
+{{if $input.Map -}}
+func ldapGet{{$input.TypeName}}Map(conn ldap.Connection, parentDn string,
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}dec transformer,{{end}} ctxt diag.RequestContext) ({{$input.QualifiedTypeName}}Map, diag.Error) {
+{{- else}}
+func ldapList{{$input.TypeName}}(conn ldap.Connection, parentDn string,
+{{- if or $input.DirectEncrypt $input.ChildEncrypt}}dec transformer,{{end}} ctxt diag.RequestContext) ([]{{$input.QualifiedTypeName}}, diag.Error) {
+{{- end}}
+	var err diag.Error
+	cdn := ldapContainerDn{{$input.TypeName}}(parentDn)
+	attrs := ldapAttrNames{{$input.TypeName}}()
+
+	msg, err := conn.Search(
+		cdn, ldap.ScopeOneLevel, "(objectClass={{$input.ObjectClass}})",
+		attrs, false, 0, 0, ctxt)
+	if err != nil {
+		return {{if $input.Map}}nil{{else}}[]{{$input.QualifiedTypeName -}} {} {{- end}}, err
+	}
+	defer msg.Close()
+
+	{{- if $input.Map}}
+	builder := {{$input.MapBuilderFunction}}()
+	{{- else}}
+	num, err := msg.Len(ctxt)
+	if err != nil {
+		return {{if $input.Map}}nil{{else}}[]{{$input.QualifiedTypeName -}} {} {{- end}}, err
+	}
+	res := make([]{{$input.QualifiedTypeName}}, 0, num)
+	{{- end}}
+
+	err = msg.IterateEntries(func(e ldap.Entry, ctxt diag.RequestContext) diag.Error {
+
+		b, err := ldapFromEntry{{$input.TypeName}}(e{{- if $input.DirectEncrypt }}, dec{{end}}, ctxt)
+		if err != nil {
+			return err
+		}
+
+		{{- if gt $input.ChildrenNumber 0 }}
+		dn, err := e.Dn(ctxt)
+		if err != nil {
+			return err
+		}
+		{{- end}}
+
+		{{- range $index, $element := $input.Children}}
+		{{if $element.IsArray}}v{{$index}}, err := ldapList{{$element.ChildSpec.TypeName}}(conn, dn{{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, dec{{end}}, ctxt)
+		{{else if $element.ChildSpec.Map}}v{{$index}}, err := ldapGet{{$element.ChildSpec.TypeName}}Map(conn, dn{{- if or $element.ChildSpec.DirectEncrypt $element.ChildSpec.ChildEncrypt }}, dec{{end}}, ctxt)
+		{{else}}!!!!!! Unsupported Type !!!!!{{end}}
+		if err != nil {
+			return err
+		}
+		b.{{$element.Getter}}(v{{$index}})
+		{{- end}}
+
+		resv, err := b.Build()
+		if err != nil {
+			return err
+		}
+
+		{{- if $input.Map}}
+		builder.Add(resv)
+		{{- else}}
+		res = append(res, resv)
+		{{- end}}
+		return nil
+	}, ctxt)
+
+	if err != nil {
+		return {{if $input.Map}}nil{{else}}[]{{$input.QualifiedTypeName -}} {} {{- end}}, err
+	}
+
+	{{- if $input.Map}}
+	return builder.Build()
+	{{- else}}
+	return res, nil
+	{{- end}}
+}
+{{- end}}

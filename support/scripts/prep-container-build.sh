@@ -81,6 +81,9 @@ case "$OSVER" in
             post-ui)
                 DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/post-ui/photon2
                 ;;
+            sts)
+                DOCKER_SRC_ROOT=$PROJECT_ROOT/support/docker/lwsts/photon2
+                ;;
         esac
         ;;
     *)

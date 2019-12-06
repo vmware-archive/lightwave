@@ -1,0 +1,210 @@
+@charset "utf-8";
+/* CSS Document Login_genaric.css. style sheet for non-VC login.  */
+
+
+html {
+    height: 100%;
+}
+
+body {
+        background: rgba(100, 100, 100, 0.2);
+        background-repeat:no-repeat;
+        font-family: "Helvetica Neue",Helvetica,Arial,sans-serif;
+        margin: 0;
+        min-height: 100%;
+        font-size: 14px;
+        color: #565656;
+        background: #fff;
+        display: flex;
+        flex-direction : row;
+        box-sizing: border-box;
+}
+
+#mainContent{
+    display: flex;
+    flex-direction : row;
+    flex-grow: 1;
+    justify-content: flex-start;
+}
+
+#loginFormContainer{
+    max-width: 400px;
+    flex-basis: 350px;
+    flex-grow: 0;
+    flex-shrink:0;
+    padding: 24px 24px 24px 24px;
+}
+#imageContainer{
+    flex-grow: 1;
+    flex-shrink:1;
+    background: url(../../resources/img/bg-static.png);
+    background-size: cover;
+}
+
+#welcomeText {
+    font-size: 20px;
+    line-height: 12px;
+    padding-left:12px;
+    padding-top:12px;
+    padding-right:12px;
+    padding-bottom:12px;
+    font-weight: 200;
+    color: black;
+ }
+
+ #tenantBrand {
+    font-size: 32px;
+    line-height: 36px;
+    padding-left:12px;
+    padding-top:12px;
+    padding-right:12px;
+    padding-bottom:12px;
+    font-weight: 200;
+    color: black;
+ }
+
+ #loginForm {
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+ }
+
+#signInText{
+    padding-left:24px;
+    padding-top:12px;
+    padding-right:12px;
+    padding-bottom:0px;
+ }
+
+.loginRow {
+   display:flex;
+   padding-left:48px;
+   padding-top:12px;
+   padding-right:12px;
+   padding-bottom:0px;
+}
+
+#loginButtonRow {
+   clear: both;
+   display: flex;
+   padding-left:48px;
+   padding-top:24px;
+   padding-right:12px;
+   padding-bottom:12px;
+}
+
+#loginResponse{
+    display: flex;
+    padding-left:48px;
+    padding-top:0px;
+    padding-right:12px;
+    padding-bottom:12px;
+}
+
+.textInput {
+    flex-grow: 1;
+    display: block;
+    height: 24px;
+    padding: 0px 6px;
+    font-size: 14px;
+    line-height: 1.42857143;
+    color: #555;
+    background-color: #fff;
+    background-image: none;
+    border-bottom: 1px solid #ccc;
+    border-top:0px;
+    border-left:0px;
+    border-right:0px;
+ }
+
+ ::placeholder { /* Chrome, Firefox, Opera, Safari 10.1+ */
+    color: lightGrey;
+    opacity: 1; /* Firefox */
+}
+
+:-ms-input-placeholder { /* Internet Explorer 10-11 */
+    color: lightGrey;
+}
+
+::-ms-input-placeholder { /* Microsoft Edge */
+    color: lightGrey;
+}
+
+.button {
+   display: inline-block;
+    padding: 6px 12px;
+    flex-grow:1;
+    height:36px;
+    margin-bottom: 0;
+    font-size: 14px;
+    font-weight: 400;
+    line-height: 1.42857143;
+    text-align: center;
+    white-space: nowrap;
+    vertical-align: middle;
+    -ms-touch-action: manipulation;
+    touch-action: manipulation;
+    cursor: pointer;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
+    background-image: none;
+    border: 1px solid transparent;
+    border-radius: 3px;
+   color: #fff;
+   background-color: #337ab7;
+   border-color: #2e6da4;
+   text-transform: uppercase;
+}
+.button:hover {
+   text-decoration: none;
+}
+.button:active {
+   position: relative;
+   top: 1px;
+}
+
+/*
+.blue {
+}*/
+.blue:hover {
+   background: #007ead;
+   background: -webkit-gradient(linear, left top, left bottom, from(#0d84dc), to(#004d88));
+   background: -moz-linear-gradient(top,  #0d84dc,  #004d88);
+   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#0d84dc', endColorstr='#004d88');
+}
+.blue:active {
+   color: #fff;
+   background: -webkit-gradient(linear, left top, left bottom, from(#035a9d), to(#086fba));
+   background: -moz-linear-gradient(top,  #035a9d,  #086fba);
+   filter:  progid:DXImageTransform.Microsoft.gradient(startColorstr='#035a9d', endColorstr='#086fba');
+}
+
+#username:disabled,
+#password:disabled,
+#submit:disabled,
+#sspiCheckbox:disabled {
+   opacity:0.3;
+   filter:alpha(opacity=30);
+}
+
+#response {
+    display: none;
+    background: url(../../resources/img/error_red.png) left center no-repeat;
+    background-size: 20px auto;
+    color: #A32100;
+    background-color: #F5DBD9;
+    font-size: 13px;
+    padding-left: 20px;
+    line-height: 24px;
+    vertical-align: middle;
+    border-radius: 5px;
+    background-position-y: 2px;
+    flex-grow: 1;
+}
+
+#progressBar {
+    display: none;
+    flex-grow: 1;
+  }

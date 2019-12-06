@@ -1,0 +1,76 @@
+package config
+
+import(
+	"path/filepath"
+	"fmt"
+)
+
+type BuildInfo interface {
+	Major() uint32
+	Minor() uint32
+	Release() uint32
+	Patch() uint32
+	GitCommit() string
+
+	PrefixDir() string
+	LwBinDir() string
+	StsBinDir() string
+	StsSbinDir() string
+
+	VersionInfo() string
+}
+
+func GetBuildInfo() BuildInfo {
+	return buildinfo
+}
+
+type buildInfoImpl struct {
+	lwBinDir string
+}
+
+var buildinfo = &buildInfoImpl{
+	lwBinDir: filepath.Join("@VMDIR_PREFIX_DIR@", "bin"),
+}
+
+func (bi *buildInfoImpl) Major() uint32 {
+	return @LW_SERVER_MAJOR_VER@
+}
+
+func (bi *buildInfoImpl) Minor() uint32 {
+	return @LW_SERVER_MINOR_VER@
+}
+
+func (bi *buildInfoImpl) Release() uint32 {
+	return @LW_SERVER_RELEASE_VER@
+}
+
+func (bi *buildInfoImpl) Patch() uint32 {
+	return @LW_SERVER_PATCH_VER@
+}
+
+func (bi *buildInfoImpl) GitCommit() string {
+	return "@gitcommithash@"
+}
+
+func (bi *buildInfoImpl) PrefixDir() string {
+	return "@VMDIR_PREFIX_DIR@"
+}
+
+func (bi *buildInfoImpl) LwBinDir() string {
+	return bi.lwBinDir
+}
+
+func (bi *buildInfoImpl) StsBinDir() string {
+	return "@LWSTS_BIN_DIR@"
+}
+
+func (bi *buildInfoImpl) StsSbinDir() string {
+	return "@LWSTS_SBIN_DIR@"
+}
+
+func (bi *buildInfoImpl) VersionInfo() string{
+	return fmt.Sprintf(
+		"Version='%v.%v.%v.%v' GitCommit='%v'",
+		bi.Major(), bi.Minor(), bi.Release(), bi.Patch(),
+		bi.GitCommit())
+}

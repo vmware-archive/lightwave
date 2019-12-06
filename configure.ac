@@ -1714,6 +1714,50 @@ AC_SUBST(vmidmconfdir)
 systemddir="/lib/systemd/system"
 AC_SUBST(systemddir)
 
+#--------------------------------------------------------------------
+# LwSts
+
+# todo: as the rest of the makefile this should actually
+# be looking at target os/arch
+case "${host_os}:${host_cpu}" in
+    linux*:x86_64)
+        go_os=linux
+        go_arch=amd64
+        go_exe=
+        ;;
+    darwin*:x86_64)
+        go_os=darwin
+        go_arch=amd64
+        go_exe=
+        ;;
+    linux*:aarch64)
+        go_os=linux
+        go_arch=arm64
+        go_exe=
+        ;;
+    *)
+        AC_ERROR("Unsupported operating system - ${host_os}:${host_cpu}")
+        ;;
+esac
+AC_SUBST(go_os)
+AC_SUBST(go_arch)
+AC_SUBST(go_exe)
+
+LWSTS_SBIN_DIR="$prefix/sbin"
+AC_SUBST(LWSTS_SBIN_DIR)
+lwstssbindir="$LWSTS_SBIN_DIR"
+AC_SUBST(lwstssbindir)
+
+LWSTS_BIN_DIR="$prefix/bin"
+AC_SUBST(LWSTS_BIN_DIR)
+lwstsbindir="$LWSTS_BIN_DIR"
+AC_SUBST(lwstsbindir)
+
+LWSTS_EXE_EXT="$go_exe"
+AC_SUBST(LWSTS_EXE_EXT)
+
+#--------------------------------------------------------------------
+
 vmdircfgdir="$prefix/share/config"
 AS_AC_EXPAND(VMDIR_CONFIG_PATH, $vmdircfgdir)
 AC_DEFINE_UNQUOTED(VMDIR_CONFIG_PATH, "$vmdircfgdir", [VMware Directory Config Path])
@@ -2062,6 +2106,9 @@ AC_CONFIG_FILES([Makefile
                  vmidentity/ssoclients/restclient/test/src/Makefile
                  vmidentity/build-maven/Makefile
                  vmidentity/make-target/Makefile
+                 sts/build/make-go/Makefile
+                 sts/build/make-target/Makefile
+                 sts/Makefile
                  config/Makefile
                  config/jdepends/Makefile
                  config/cfgutils/Makefile

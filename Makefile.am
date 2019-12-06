@@ -21,6 +21,7 @@ SUBDIRS = \
         vmca \
         mutentca \
         vmidentity \
+        sts \
         config
 
 if ENABLE_PLUGINS
@@ -86,6 +87,9 @@ package: stage $(RPMBUILD_SPECS)/$(PKG_SPEC) | $(RPMBUILD_DIRS)
               --define "_version $(LW_SERVER_MAJOR_VER).$(LW_SERVER_MINOR_VER).$(LW_SERVER_RELEASE_VER)" \
               --define "_patch $(LW_SERVER_PATCH_VER)" \
               --define "_dist $(DIST)" \
+              --define "_lwsts_sbindir $(LWSTS_SBIN_DIR)" \
+              --define "_lwsts_bindir $(LWSTS_BIN_DIR)" \
+              --define "_lwsts_exe_ext $(LWSTS_EXE_EXT)" \
               --buildroot $(STAGEDIR) \
               SPECS/$(PKG_SPEC)
 

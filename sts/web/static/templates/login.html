@@ -1,0 +1,51 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8"/>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+    <title>{{.LoginTitle}}</title>
+    <script type="text/javascript">
+
+        var password_auth = {{.EnablePasswordAuth}};
+        var protocol = {{.Protocol}};
+        var responseMode = {{.ResponseMode}};
+        var responsePostForm = {{.ResponsePostForm}};
+
+        var genericError = {{.GenericError}};
+
+
+    </script>
+    <script type="text/javascript" src="{{.ResourcesPath}}/js/Base64.js"></script>
+    <script type="text/javascript" src="{{.ResourcesPath}}/js/login.js"></script>
+    <link rel="stylesheet" type="text/css" href="{{.ResourcesPath}}/css/login.css">
+    <link rel="icon" type="image/x-icon" href="{{.ResourcesPath}}/img/favicon.ico" />
+    <link rel="SHORTCUT ICON" href="{{.ResourcesPath}}/img/favicon.ico" />
+</head>
+<body onload="docReady()">
+    <div id="mainContent">
+        <div id="loginFormContainer">
+            <div id="welcomeText">{{.WelcomeTo}}</div>
+            <div id="tenantBrand">{{.TenantBrandName}}</div>
+
+            <div id="loginForm">
+                <span id="signInText" >{{.SignInText}}</span>
+                <div id="usernameID" class="loginRow" >
+                    <input id="username" class="textInput" type="text" placeholder="{{.UserNamePlaceHolder}}" onkeyup="enableLoginButton()" />
+                </div>
+                <div id="passwordID" class="loginRow" >
+                    <input id="password" class="textInput" type="password" />
+                </div>
+                <div id="loginButtonRow">
+                    <input id="submit" class="button blue" type="submit" value={{.Login}} onclick="submitentry()"/>
+                </div>
+                <div id="loginResponse">
+                    <div id="response"></div>
+                    <progress id="progressBar" ></progress>
+                    <div id="postFormContainer"></div>
+                </div>
+            </div>
+        </div>
+        <div id="imageContainer">
+        </div>
+    </div>
+</body>

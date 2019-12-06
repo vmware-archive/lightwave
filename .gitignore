@@ -572,6 +572,25 @@ __pycache__/
 
 # End of https://www.gitignore.io/api/c,c++,java,linux,macos,windows,eclipse,autotools,executable,visualstudio
 
+### Go ###
+# Binaries for programs and plugins
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+
+# Test binary, built with `go test -c`
+*.test
+
+# Output of the go coverage tool, specifically when used with LiteIDE
+*.out
+
+### Go Patch ###
+/vendor/
+/Godeps/
+
+# End of https://www.gitignore.io/api/go
 
 # lightwave files
 
@@ -589,6 +608,7 @@ build/vmdir/
 build/vmdns/
 build/vmevent/
 build/vmidentity/
+build/sts/
 build/vmmetrics/
 build/vmcommon/
 build/rpmbuild/
@@ -599,3 +619,7 @@ vmidentity/lightwaveui/web/share
 # hmake files
 .hmake
 .hmakerc
+
+*ConfigPaths.java
+!*ConfigPaths.java.in
+!go.mod
