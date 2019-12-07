@@ -107,6 +107,20 @@ targets:
       - ./support/scripts/build.sh
     image: 'vmware/lightwave-toolchain-photon3:1.0.1'
 
+  check-lightwave-photon3:
+    description: build Lightwave source code for linux
+    after:
+      - bootstrap-lightwave-photon3
+    watches:
+      - support/scripts/build.sh
+      - '**/**/*.cpp'
+      - '**/**/*.c'
+      - '**/**/*.h'
+      - '**/**/*.java'
+    cmds:
+      - ./support/scripts/check.sh
+    image: 'vmware/lightwave-toolchain-photon3:1.0.1'
+
   build-[osver:photon1,photon2,photon3]:
     description: build source code
     after:
@@ -116,6 +130,7 @@ targets:
     description: build source code
     after:
       - 'build-lightwave-*-photon3'
+      - 'check-lightwave-*-photon3'
 
   build-ui-photon2:
     cmds:
