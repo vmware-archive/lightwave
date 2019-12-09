@@ -49,8 +49,8 @@ vmcad_CPPFLAGS = \
     -I$(top_srcdir)/vmca/service/common \
     -I$(top_srcdir)/vmca/service/config \
     -I$(top_srcdir)/vmafd/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
     @POPT_INCLUDES@ \
@@ -68,8 +68,8 @@ vmcad_LDADD = \
     $(top_builddir)/vmca/common/libcommon.la \
     $(top_builddir)/vmca/vmcadb/libvmcadb.la \
     $(top_builddir)/vmafd/client/libvmafdclient.la \
-    $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
-    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    $(top_builddir)/sts/ssoclients/common/src/libssocommon.la \
+    $(top_builddir)/sts/ssoclients/oidc/src/libssooidc.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \
     @SCHANNEL_LIBS@ \

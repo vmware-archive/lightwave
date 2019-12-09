@@ -9,8 +9,8 @@ libca_la_CPPFLAGS = \
     -I$(top_srcdir)/config/include/public \
     -I$(top_srcdir)/vmafd/include/public \
     -I$(top_srcdir)/vmca/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
     @LW_INCLUDES@
 
 libca_la_LDFLAGS = \

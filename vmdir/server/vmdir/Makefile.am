@@ -86,8 +86,8 @@ libvmdird_la_LIBADD = \
     $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1db.la \
     $(top_builddir)/vmdir/thirdparty/heimdal/asn1/libasn1.la \
     $(top_builddir)/vmdir/thirdparty/csrp/libcsrp.la \
-    $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
-    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    $(top_builddir)/sts/ssoclients/common/src/libssocommon.la \
+    $(top_builddir)/sts/ssoclients/oidc/src/libssooidc.la \
     $(top_builddir)/vmcommon/libvmcommon.la \
     @DCERPC_LIBS@ \
     @LWIO_LIBS@ \

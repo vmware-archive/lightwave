@@ -37,8 +37,8 @@ vmdnsd_LDADD = \
     $(top_builddir)/vmdns/common/libcommon.la \
     $(top_builddir)/vmdns/vmsock/api/libvmsock.la \
     $(top_builddir)/vmdir/client/libvmdirclient.la \
-    $(top_builddir)/vmidentity/ssoclients/common/src/libssocommon.la \
-    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    $(top_builddir)/sts/ssoclients/common/src/libssocommon.la \
+    $(top_builddir)/sts/ssoclients/oidc/src/libssooidc.la \
     @DL_LIBS@ \
     @DCERPC_LIBS@ \
     @LDAP_LIBS@ \

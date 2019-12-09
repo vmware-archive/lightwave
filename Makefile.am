@@ -13,14 +13,13 @@ ACLOCAL_AMFLAGS = -I m4
 SUBDIRS = \
         vmcommon \
         vmevent \
-        vmidentity/ssoclients \
+        sts/ssoclients \
         vmdir \
         lwraft \
         vmdns \
         vmafd \
         vmca \
         mutentca \
-        vmidentity \
         sts \
         config
 

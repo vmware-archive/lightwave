@@ -31,8 +31,8 @@ lightwave_LDADD = \
     @top_builddir@/vmca/client/libvmcaclient.la \
     @top_builddir@/vmdns/client/libvmdnsclient.la \
     @top_builddir@/vmdir/client/libvmdirclient.la \
-    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
-    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    @top_builddir@/sts/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/sts/ssoclients/oidc/src/libssooidc.la \
     @LWSM_LIBS@ \
     @DCERPC_LIBS@ \
     @LWRSUTILS_LIBS@ \

@@ -12,8 +12,8 @@ testmutentcaoidcauth_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/include \
     -I$(top_srcdir)/mutentca/include/public \
     -I$(top_srcdir)/mutentca/server/include \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@
 
@@ -22,7 +22,7 @@ testmutentcaoidcauth_LDADD = \
     $(top_builddir)/mutentca/common/libcommon.la \
     $(top_builddir)/mutentca/server/common/libmutentcasrvcommon.la \
     $(top_builddir)/mutentca/server/oidc-auth/libmutentcaoidc.la \
-    $(top_builddir)/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    $(top_builddir)/sts/ssoclients/oidc/src/libssooidc.la \
     @PTHREAD_LIBS@ \
     @JANSSON_LIBS@ \
     @CRYPTO_LIBS@ \

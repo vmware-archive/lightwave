@@ -6,8 +6,8 @@ idl_srcdir=$(top_srcdir)/vmafd/idl
 libvmafdclient_la_CPPFLAGS = \
     -I$(top_srcdir)/vmafd/include \
     -I$(top_srcdir)/vmafd/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
     -I$(top_srcdir)/vmcommon/include/public \
     @DCERPC_INCLUDES@ \
     @LW_INCLUDES@ \
@@ -34,8 +34,8 @@ libvmafdclient_la_SOURCES = \
 libvmafdclient_la_LIBADD = \
     $(top_builddir)/vmcommon/libvmcommon.la \
     @top_builddir@/vmafd/common/libcommon.la \
-    @top_builddir@/vmidentity/ssoclients/common/src/libssocommon.la \
-    @top_builddir@/vmidentity/ssoclients/oidc/src/libssooidc.la \
+    @top_builddir@/sts/ssoclients/common/src/libssocommon.la \
+    @top_builddir@/sts/ssoclients/oidc/src/libssooidc.la \
     @DCERPC_LIBS@ \
     @LWBASE_LIBS@ \
     @GSSAPI_LIBS@ \

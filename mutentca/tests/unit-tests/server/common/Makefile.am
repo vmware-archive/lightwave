@@ -18,8 +18,8 @@ testmutentcasrvcommon_CPPFLAGS = \
     -I$(top_srcdir)/mutentca/server/common \
     -I$(top_srcdir)/mutentca/server/config \
     -I$(top_srcdir)/vmafd/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \
     @JANSSON_INCLUDES@

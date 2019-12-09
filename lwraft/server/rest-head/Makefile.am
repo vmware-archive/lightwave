@@ -41,8 +41,8 @@ librest_head_la_CPPFLAGS = \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/liblber \
     -I$(top_srcdir)/lwraft/thirdparty/openldap/libraries/libldap \
     -I$(top_srcdir)/lwraft/server/include \
-    -I$(top_srcdir)/vmidentity/ssoclients/common/include/public \
-    -I$(top_srcdir)/vmidentity/ssoclients/oidc/include/public \
+    -I$(top_srcdir)/sts/ssoclients/common/include/public \
+    -I$(top_srcdir)/sts/ssoclients/oidc/include/public \
     -I$(top_srcdir)/vmcommon/include/public \
     @LW_INCLUDES@ \
     @OPENSSL_INCLUDES@ \

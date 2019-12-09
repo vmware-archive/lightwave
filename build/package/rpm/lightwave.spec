@@ -229,32 +229,6 @@ users.
 %debug_package
 %build
 %install
-%pre
-
-    # First argument is 1 => New Installation
-    # First argument is 2 => Upgrade
-
-    case "$1" in
-        1)
-            #
-            # New Installation
-            #
-            ;;
-
-        2)
-            #
-            # Upgrade
-            #
-            if [ ! -d %{_stsdbdir} ];
-            then
-                /bin/install -d %{_stsdbdir} -o %{_lwuser} -g %{_lwgroup} -m 700
-            else
-                chown -R %{_lwuser}:%{_lwgroup} %{_stsdbdir} >/dev/null 2>&1
-            fi
-            /bin/cp "%{_stsconfdir}/server.xml" "%{_stsdbdir}/server.xml"
-            ;;
-    esac
-
 
 %pre server
 
@@ -353,64 +327,6 @@ users.
             #
             ;;
     esac
-
-%post
-
-    lw_uid="$(id -u %{_lwuser})"
-    lw_gid="$(id -g %{_lwgroup})"
-
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_configdir}/idm/idm.reg
-    sed -i -e "s|@LIGHTWAVE_UID@|$lw_uid|" -e "s|@LIGHTWAVE_GID@|$lw_gid|" %{_servicedir}/vmware-stsd.service
-
-    case "$1" in
-        1)
-            #
-            # New Installation
-            #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                /bin/systemctl enable vmware-stsd.service
-                /bin/systemctl daemon-reload
-            fi
-
-            # create logs dir and link tomcat logs there
-            if [ -d %{_stslogsdir} ]; then
-                /bin/rm -rf %{_stslogsdir}
-            fi
-
-            /bin/install -d %{_lightwavelogsdir} -o %{_lwuser} -g %{_lwgroup} -m 755
-            /bin/ln -s %{_lightwavelogsdir} %{_stslogsdir}
-
-            ;;
-
-        2)
-            #
-            # Upgrade
-            #
-
-            # Note: Upgrades are not handled in container
-
-            if [ ! -f /.dockerenv ]; then
-                /bin/systemctl daemon-reload
-            fi
-
-            %{_sbindir}/configure-build.sh "%{_stsdbdir}"
-
-            # Remove the cached lightwaveui directory if no corresponding war file is found
-            ROOTDIR="/opt/vmware/vmware-sts/webapps"
-            if [ ! -f "$ROOTDIR/lightwaveui.war" ]; then
-                rm -rf $ROOTDIR/lightwaveui
-            fi
-
-            ;;
-    esac
-
-    /bin/cp %{_sysconfdir}/vmware/java/vmware-override-java.security %{_stsconfdir}
-    chmod 600 %{_stsconfdir}/vmware-override-java.security
-
-    chown -R %{_lwuser}:%{_lwgroup} %{_stsdir} >/dev/null 2>&1
-    chown -R %{_lwuser}:%{_lwgroup} %{_lightwavelogsdir} >/dev/null 2>&1
-    chown %{_lwuser}:%{_lwgroup} %{_sbindir}/vmware-stsd.sh >/dev/null 2>&1
 
 %post server
 
@@ -754,35 +670,6 @@ users.
            %{_stssampleconfdir}
    chmod 600 %{_stssampleconfdir}/vmware-override-java.security
 
-%preun
-
-    # First argument is 0 => Uninstall
-    # First argument is 1 => Upgrade
-
-    case "$1" in
-        0)
-            #
-            # Uninstall
-            #
-
-            /bin/systemctl >/dev/null 2>&1
-            if [ $? -eq 0 ]; then
-                 if [ -f /etc/systemd/system/vmware-stsd.service ]; then
-                     /bin/systemctl stop vmware-stsd.service
-                     /bin/systemctl disable vmware-stsd.service
-                     /bin/rm -f /etc/systemd/system/vmware-stsd.service
-                     /bin/systemctl daemon-reload
-                 fi
-            fi
-            ;;
-
-        1)
-            #
-            # Upgrade
-            #
-            ;;
-    esac
-
 %preun server
 
     # First argument is 0 => Uninstall
@@ -950,27 +837,6 @@ users.
             ;;
     esac
 
-%postun
-
-    # First argument is 0 => Uninstall
-    # First argument is 1 => Upgrade
-
-    /sbin/ldconfig
-
-    case "$1" in
-        0)
-            #
-            # Uninstall
-            #
-            ;;
-
-        1)
-            #
-            # Upgrade
-            #
-            ;;
-    esac
-
 %postun server
 
     # First argument is 0 => Uninstall
@@ -1089,62 +955,6 @@ users.
     if [ -a %{_sasl2dir}/postd.conf ]; then
         /bin/rm %{_sasl2dir}/postd.conf
     fi
-
-%files
-
-%defattr(-,root,root,0755)
-
-%{_bindir}/configure-sts
-
-%{_sbindir}/vmware-stsd.sh
-%{_sbindir}/configure-build.sh
-%{_sbindir}/sso-config.sh
-%{_sbindir}/configure-pwd-policy.sh
-
-%{_configdir}/idm/*
-
-%{_jarsdir}/samlauthority.jar
-%{_jarsdir}/vmware-identity-diagnostics.jar
-%{_jarsdir}/vmware-identity-install.jar
-%{_jarsdir}/vmware-identity-sso-config.jar
-%{_jarsdir}/websso.jar
-%{_jarsdir}/sts.jar
-%{_jarsdir}/openidconnect-protocol.jar
-%{_jarsdir}/args4j-2.33.jar
-%{_jarsdir}/commons-codec-1.9.jar
-%{_jarsdir}/commons-lang-2.6.jar
-%{_jarsdir}/commons-lang3-3.3.2.jar
-%{_jarsdir}/commons-logging-1.2.jar
-%{_jarsdir}/jackson-jaxrs-json-provider-2.9.8.jar
-%{_jarsdir}/jackson-core-2.9.8.jar
-%{_jarsdir}/jackson-databind-2.9.8.jar
-%{_jarsdir}/jackson-annotations-2.9.8.jar
-%{_jarsdir}/jna-4.2.1.jar
-%{_jarsdir}/json-smart-1.3.1.jar
-%{_jarsdir}/httpclient-4.5.1.jar
-%{_jarsdir}/httpcore-4.4.4.jar
-%{_jarsdir}/slf4j-api-1.7.25.jar
-%{_jarsdir}/log4j-api-2.8.2.jar
-%{_jarsdir}/log4j-slf4j-impl-2.8.2.jar
-%{_jarsdir}/log4j-core-2.8.2.jar
-%{_jarsdir}/nimbus-jose-jwt-5.6.jar
-
-%{_webappsdir}/ROOT.war
-
-%{_servicedir}/vmware-stsd.service
-%{_stsconfdir}/sts.policy
-
-%config %attr(700, root, root) %{_stsbindir}/setenv.sh
-%config %attr(600, root, root) %{_stsbindir}/vmware-identity-tomcat-extensions.jar
-%config %attr(600, root, root) %{_stsbindir}/pro-grade-1.1.1.jar
-%config %attr(600, root, root) %{_stsconfdir}/catalina.policy
-%config %attr(600, root, root) %{_stsconfdir}/catalina.properties
-%config %attr(600, root, root) %{_stsconfdir}/context.xml
-%config %attr(600, root, root) %{_stsconfdir}/logging.properties
-%config %attr(600, root, root) %{_stsconfdir}/server.xml
-%config %attr(600, root, root) %{_stsconfdir}/web.xml
-%config %attr(600, root, root) %{_stsconfdir}/tomcat-users.xml
-%config %attr(600, root, root) %{_stsconfdir}/vmsts-telegraf.conf
 
 %files server
 
