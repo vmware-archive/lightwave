@@ -196,12 +196,6 @@ Requires: lightwave-client >= %{_version}
 %description mutentca
 Lightwave MutentCA Service
 
-%package samples
-Summary: Lightwave Samples
-Requires: lightwave-client >= %{_version}
-%description samples
-Lightwave Samples
-
 %package sts
 Summary: Lightwave Secure Token Server
 Requires: lightwave-client >= %{_version}
@@ -646,30 +640,6 @@ users.
 
     setcap cap_dac_read_search+ep %{_sbindir}/mutentcad
 
-%post samples
-
-    case "$1" in
-        1)
-            #
-            # New Installation
-            #
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                /bin/systemctl enable vmware-sampled.service
-                /bin/systemctl daemon-reload
-            fi
-            ;;
-        2)
-            #
-            # Upgrade
-            #
-            ;;
-   esac
-
-   /bin/cp %{_sysconfdir}/vmware/java/vmware-override-java.security \
-           %{_stssampleconfdir}
-   chmod 600 %{_stssampleconfdir}/vmware-override-java.security
-
 %preun server
 
     # First argument is 0 => Uninstall
@@ -807,36 +777,6 @@ users.
             ;;
     esac
 
-
-%preun samples
-
-    # First argument is 0 => Uninstall
-    # First argument is 1 => Upgrade
-
-    case "$1" in
-        0)
-            #
-            # Uninstall
-            #
-
-            if [ ! -f /.dockerenv ]; then
-                # Not in container
-                 if [ -f /etc/systemd/system/vmware-stsd.service ]; then
-                     /bin/systemctl stop vmware-sampled.service
-                     /bin/systemctl disable vmware-sampled.service
-                     /bin/rm -f /etc/systemd/system/vmware-sampled.service
-                     /bin/systemctl daemon-reload
-                 fi
-            fi
-            ;;
-
-        1)
-            #
-            # Upgrade
-            #
-            ;;
-    esac
-
 %postun server
 
     # First argument is 0 => Uninstall
@@ -962,9 +902,6 @@ users.
 
 %{_bindir}/ic-promote
 %{_bindir}/configure-lightwave-server
-%{_bindir}/test-ldapbind
-%{_bindir}/test-logon
-%{_bindir}/test-svr
 %{_bindir}/vdcadmintool
 %{_bindir}/vdcrepadmin
 %{_bindir}/unix_srp
@@ -1056,7 +993,6 @@ users.
 %{_lib64dir}/libgssapi_unix.so*
 %{_lib64dir}/libvmdnsclient.so*
 %{_lib64dir}/libcfgutils.so*
-%{_lib64dir}/libidm.so*
 %{_lib64dir}/libpostclient.so*
 %{_lib64dir}/libssoafdclient.so*
 %{_lib64dir}/libssocommon.so*
@@ -1064,7 +1000,6 @@ users.
 %{_lib64dir}/libssoidmclient.so*
 %{_lib64dir}/libssooidc.so*
 %{_lib64dir}/libssovmdirclient.so*
-%{_lib64dir}/libvmdirauth.so*
 %{_lib64dir}/libvmcommon.so*
 
 %{_datadir}/config/java.security.linux
@@ -1082,24 +1017,7 @@ users.
 %{_jreextdir}/afd-heartbeat-service.jar
 
 %{_jarsdir}/authentication-framework.jar
-%{_jarsdir}/vmware-identity-rest-idm-samples.jar
 %{_jarsdir}/vmware-vmca-client.jar
-%{_jarsdir}/samltoken.jar
-%{_jarsdir}/vmware-identity-rest-idm-common.jar
-%{_jarsdir}/vmware-directory-rest-common.jar
-%{_jarsdir}/vmware-directory-rest-client.jar
-%{_jarsdir}/vmware-identity-rest-core-common.jar
-%{_jarsdir}/vmware-identity-websso-client.jar
-%{_jarsdir}/vmware-identity-platform.jar
-%{_jarsdir}/vmware-identity-wsTrustClient.jar
-%{_jarsdir}/vmware-identity-rest-afd-common.jar
-%{_jarsdir}/openidconnect-common.jar
-%{_jarsdir}/openidconnect-client-lib.jar
-%{_jarsdir}/vmware-identity-idm-client.jar
-%{_jarsdir}/vmware-identity-idm-interface.jar
-%{_jarsdir}/vmware-identity-rest-afd-client.jar
-%{_jarsdir}/vmware-identity-rest-core-client.jar
-%{_jarsdir}/vmware-identity-rest-idm-client.jar
 
 %{_configdir}/lw-firewall-client.json
 %{_configdir}/setfirewallrules.py
@@ -1234,16 +1152,6 @@ users.
 
 %exclude %{_prefix}/site-packages/identity/*
 %exclude %{_webappsdir}/openidconnect-sample-rp.war
-
-%files samples
-
-%defattr(-,root,root)
-
-%{_sbindir}/vmware-sampled.sh
-%{_webappssampledir}/ssolib-sample.war
-%{_servicedir}/vmware-sampled.service
-%{_stssampleconfdir}/*
-%{_stssamplebindir}/*
 
 %files sts
 %defattr(-,root,root,0750)
