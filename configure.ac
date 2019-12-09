@@ -2,6 +2,7 @@ AC_PREREQ([2.69])
 AC_INIT([lightwave], [1.3.0])
 AC_CONFIG_AUX_DIR([.])
 AM_INIT_AUTOMAKE([-Wall -Werror foreign subdir-objects])
+AM_SILENT_RULES([yes])
 m4_pattern_allow([AM_PROG_AR])
 AM_PROG_AR
 LT_INIT

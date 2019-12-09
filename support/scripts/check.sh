@@ -3,4 +3,4 @@
 PROJECT_ROOT=$(pwd)
 
 cd $PROJECT_ROOT/build && \
-    make -sj
+    make -sj check
