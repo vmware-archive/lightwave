@@ -322,6 +322,30 @@ users.
             ;;
     esac
 
+%pre sts
+
+    # First argument is 1 => New Installation
+    # First argument is 2 => Upgrade
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl stop vmware-stsd.service
+            fi
+            ;;
+
+    esac
+
 %post server
 
     # First argument is 1 => New Installation
@@ -640,6 +664,33 @@ users.
 
     setcap cap_dac_read_search+ep %{_sbindir}/mutentcad
 
+%post sts
+
+    case "$1" in
+        1)
+            #
+            # New Installation
+            #
+
+            if [ ! -f /.dockerenv ]; then
+                /bin/systemctl enable vmware-stsd.service
+            fi
+            ;;
+
+        2)
+            #
+            # Upgrade
+            #
+
+            # Note: Upgrades are not handled in container
+            ;;
+    esac
+
+    if [ ! -f /.dockerenv ]; then
+        /bin/systemctl daemon-reload
+        /bin/systemctl start vmware-stsd.service
+    fi
+
 %preun server
 
     # First argument is 0 => Uninstall
@@ -767,6 +818,36 @@ users.
 
             if [ -h %{_logconfdir}/mutentcad-syslog-ng.conf ]; then
                 /bin/rm -f %{_logconfdir}/mutentcad-syslog-ng.conf
+            fi
+            ;;
+
+        1)
+            #
+            # Upgrade
+            #
+            ;;
+    esac
+
+%preun sts
+
+    # First argument is 0 => Uninstall
+    # First argument is 1 => Upgrade
+
+    case "$1" in
+        0)
+            #
+            # Uninstall
+            #
+            /bin/systemctl >/dev/null 2>&1
+            if [ $? -eq 0 ]; then
+                 if [ -f /etc/systemd/system/vmware-stsd.service ]; then
+                     /bin/systemctl stop vmware-stsd.service
+                     /bin/systemctl disable vmware-stsd.service
+                     /bin/rm -f /etc/systemd/system/multi-user.target.wants/vmware-stsd.service
+                     /bin/rm -f /etc/systemd/system/vmware-stsd.service
+                 fi
+
+                 /bin/systemctl daemon-reload
             fi
             ;;
 
@@ -1156,6 +1237,10 @@ users.
 %files sts
 %defattr(-,root,root,0750)
 
+%{_sbindir}/vmware-stsd.sh
+%{_servicedir}/vmware-stsd.service
+
+%{_lwsts_bindir}/configure-sts
 %{_lwsts_sbindir}/stssrv%{_lwsts_exe_ext}
 %{_lwsts_bindir}/stssetup%{_lwsts_exe_ext}
 

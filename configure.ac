@@ -2092,6 +2092,7 @@ AC_CONFIG_FILES([Makefile
                  sts/ssoclients/restclient/test/src/Makefile
                  sts/build/make-go/Makefile
                  sts/build/make-target/Makefile
+                 sts/configs/Makefile
                  sts/Makefile
                  config/Makefile
                  config/jdepends/Makefile

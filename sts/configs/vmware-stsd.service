@@ -1,0 +1,17 @@
+[Unit]
+Description=VMware Secure Token Service
+After=syslog.target network.target
+
+[Service]
+Type=forking
+User=lightwave
+Group=lightwave
+CapabilityBoundingSet=CAP_NET_BIND_SERVICE
+AmbientCapabilities=CAP_NET_BIND_SERVICE
+RestartSec=1
+Restart=always
+ExecStart=/opt/vmware/sbin/stssrv -config=/etc/vmware/stssrv.conf >> /var/log/lightwave/stssrv.log 2>&1
+ExecStop=/bin/kill -INT `pidof stssrv`
+
+[Install]
+WantedBy=multi-user.target

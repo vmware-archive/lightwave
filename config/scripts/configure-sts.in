@@ -1,35 +1,95 @@
 #!/bin/bash
 
-# Set up for Secure Token Service Installer
-JAVA_HOME=/etc/alternatives/jre
-JAVA_SEC_PROP=/etc/vmware/java/vmware-override-java.security
-JAVA=/etc/alternatives/java
-VMWARE_DIR=/opt/vmware
-CLASSPATH=$CLASSPATH:$VMWARE_DIR/jars/*
+prepare_sts_cert()
+{
+  CERT_PATH=/etc/vmware/ssl
+  mkdir -p $CERT_PATH
 
-# Lotus Defaults
-LOTUS_DOMAIN_DEFAULT=lightwave.local
-LOTUS_ADMIN_DEFAULT=Administrator
-LOTUS_ADMIN_PASSWORD_DEFAULT=
-LOTUS_HOSTNAME=
-LOTUS_ENDPOINT=
-LOTUS_ENDPOINT_ARG=
-LOTUS_ADMIN_PASSWORD_DEFAULT=
-LOTUS_SSL_SUBJECT_ALT_NAME=
+  /opt/vmware/bin/vecs-cli entry getkey \
+    --store MACHINE_SSL_CERT \
+    --alias __MACHINE_CERT \
+    --output $CERT_PATH/machine-ssl.key.tmp
 
-USAGE="configure-sts --password <password> [--domain <domain-name>] [--server <partner-host-name>] [--endpoint <LB Endpoint>] [--site <site-name>] [--hostname <hostname | IP Address>] [--ssl-subject-alt-name <SSL Subject Alternative name]"
+  sed '/^\s*$/d' $CERT_PATH/machine-ssl.key.tmp > $CERT_PATH/machine-ssl.key
+  chmod 0400 $CERT_PATH/machine-ssl.key
+  rm -f $CERT_PATH/machine-ssl.key.tmp
 
-_exit(){
-    if [ $RUN_LWSM ]; then
-        $LW_BIN_DIR/lwsm shutdown
+  /opt/vmware/bin/vecs-cli entry getcert \
+    --store MACHINE_SSL_CERT \
+    --alias __MACHINE_CERT \
+    --output $CERT_PATH/machine-ssl.crt
 
-        while [ `pidof lwsmd` ];  do
-            sleep 1
-        done
-    fi
+  cert_alias=$(/opt/vmware/bin/vecs-cli entry list --store TRUSTED_ROOTS | \
+                                                            grep "Alias" | \
+                                                            cut -d: -f2)
 
-    exit $1
+  # this only collects trusted cert during install time.
+  for cert in $cert_alias
+  do
+    /opt/vmware/bin/vecs-cli entry getcert \
+      --store TRUSTED_ROOTS \
+      --alias $cert \
+      --output $CERT_PATH/cert.tmp
+
+    echo "trust cert $cert"
+    cat $CERT_PATH/cert.tmp >> $CERT_PATH/trusted-ssl.crt
+
+  done
+
+  chown -R lightwave:lightwave /etc/vmware/ssl
+  ls -lR /etc/vmware/ssl
+  rm -f $CERT_PATH/cert.tmp
 }
+
+install_sts()
+{
+  ADMINUPN="$DEFAULT_DOMAIN_ADMIN@$LIGHTWAVE_DOMAIN"
+
+  /opt/vmware/bin/stssetup install \
+    -admin-pwd=$LIGHTWAVE_PASS \
+    -admin-uname=$ADMINUPN \
+    -cfg-file=$STS_CFG_FILE \
+    -dir-certs-file=$STS_DIR_CERTS_FILE \
+    -log-file=$STS_LOG_FILE \
+    -log-level=4 \
+    -port=$STS_PORT \
+    -primary \
+    -sts-endpoint=$STS_ENDPOINT \
+    -site=$DEFAULT_SITE \
+    -system-tenant=$DEFAULT_DOMAIN \
+    -tls-cert-file=$STS_TLS_CERT_FILE \
+    -tls-key-file=$STS_TLS_KEY_FILE \
+    -enabled-heads='oidc,rest' \
+    -daemon-group=$STS_GROUP \
+    -daemon-user=$STS_USER
+
+  if [ $? -ne 0 ]; then
+        echo  "Failed to install sts: log file $STS_LOG_FILE ."
+	tail -10 $STS_LOG_FILE
+        exit 1
+  fi
+
+  chown lightwave:lightwave $STS_LOG_FILE
+}
+
+# STS Defaults
+STS_CFG_FILE=/etc/vmware/stssrv.conf
+STS_DIR_CERTS_FILE=/etc/vmware/ssl/trusted-ssl.crt
+STS_TLS_CERT_FILE=/etc/vmware/ssl/machine-ssl.crt
+STS_TLS_KEY_FILE=/etc/vmware/ssl/machine-ssl.key
+STS_LOG_FILE=/var/log/lightwave/stssrv.log
+STS_PORT=443
+STS_ENDPOINT=`echo $HOSTNAME`:$STS_PORT
+STS_SITE=Default-First-Site
+STS_GROUP=lightwave
+STS_USER=lightwave
+
+DEFAULT_DOMAIN=
+DEFAULT_DOMAIN_ADMIN=
+DEFAULT_DOMAIN_PASS=
+DEFAULT_SITE=Default-First-Site
+
+USAGE="configure-sts --username <user-name>--password <password> --domain <domain-name> --site <site-name>"
 
 # Read passed parameters.
 if [ $# -gt 0 ]; then
@@ -47,24 +107,11 @@ if [ $# -gt 0 ]; then
                     "--password")
                       MODE="password"
                       ;;
-                    "--server")
-                      LOTUS_DEPLOYMENT=partner
-                      MODE="server"
-                      ;;
                     "--site")
                       MODE="site"
                       ;;
-                    "--hostname")
-                      MODE="hostname"
-                      ;;
-                    "--endpoint")
-                      MODE="endpoint"
-                      ;;
                     "--username")
                       MODE="username"
-                      ;;
-                    "--ssl-subject-alt-name")
-                      MODE="ssl-subject-alt-name"
                       ;;
                     *)
                       echo "Invalid parameter : $arg"
@@ -74,35 +121,19 @@ if [ $# -gt 0 ]; then
                 esac
                 ;;
              "domain")
-                LOTUS_DOMAIN_DEFAULT=$arg
+                DEFAULT_DOMAIN=$arg
                 MODE=open
                 ;;
              "password")
-                LOTUS_ADMIN_PASSWORD_DEFAULT=$arg
-                MODE=open
-                ;;
-             "server")
-                LOTUS_PARTNER_HOSTNAME=$arg
+                DEFAULT_DOMAIN_PASS=$arg
                 MODE=open
                 ;;
              "site")
-                LOTUS_SITE_NAME=$arg
-                MODE=open
-                ;;
-             "hostname")
-                LOTUS_HOSTNAME=$arg
-                MODE=open
-                ;;
-             "endpoint")
-                LOTUS_ENDPOINT=$arg
+                DEFAULT_SITE=$arg
                 MODE=open
                 ;;
              "username")
-                LOTUS_ADMIN_DEFAULT=$arg
-                MODE=open
-                ;;
-             "ssl-subject-alt-name")
-                LOTUS_SSL_SUBJECT_ALT_NAME=$arg
+                DEFAULT_DOMAIN_ADMIN=$arg
                 MODE=open
                 ;;
              *)
@@ -117,32 +148,10 @@ else
    exit 1
 fi
 
-if [ -z "$LOTUS_HOSTNAME" ]; then
-    LOTUS_HOSTNAME=`hostname -f`
-fi
+echo "preparing sts certs ..."
+prepare_sts_cert
 
-if [ ! -z "$LOTUS_SSL_SUBJECT_ALT_NAME" ]; then
-    LOTUS_SSL_SUBJECT_ALT_NAME_ARG="--ssl-subject-alt-name $LOTUS_SSL_SUBJECT_ALT_NAME"
-fi
-
-if [ ! -z "$LOTUS_ENDPOINT" ]; then
-    LOTUS_ENDPOINT_ARG="--endpoint $LOTUS_ENDPOINT"
-fi
-
-$JAVA -Djava.security.properties=$JAVA_SEC_PROP \
-      -Dinstall.log.file=/var/log/vmware/sso/install-upgrade.log \
-      -cp $CLASSPATH com.vmware.identity.configure.VMIdentityStandaloneInstaller \
-      --hostname $LOTUS_HOSTNAME \
-      --username $LOTUS_ADMIN_DEFAULT \
-      --domain $LOTUS_DOMAIN_DEFAULT \
-      --password $LOTUS_ADMIN_PASSWORD_DEFAULT \
-      $LOTUS_SSL_SUBJECT_ALT_NAME_ARG \
-      $LOTUS_ENDPOINT_ARG
-
-if [ $? -ne 0 ]; then
-        echo  "Failed to start Secure Token Service."
-        _exit 1
-fi
+echo "installing sts ..."
+install_sts
 
 echo "Secure Token Service was installed Successfully ! "
-

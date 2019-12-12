@@ -206,8 +206,6 @@ func (c *setupCmd) createStsAccount(conn ldap.Connection, accountName string, do
 	attr = ldap.NewAttribute("vmwPasswordNeverExpires", ldapVal) // todo: remove once pwd refresh is implemented
 	attrs = append(attrs, attr)
 	ldapVal, err = ldap.ValueForString(c.stsAccountPwd)
-	// TODO: bug bug - remove
-	logger.Tracef(diag.SETUP, "stsaccountpwd='%s'", c.stsAccountPwd)
 	if err != nil {
 		logger.Errorf(diag.SETUP, "Failed getting ldap value for '<pwd>': %v", err)
 		return err
