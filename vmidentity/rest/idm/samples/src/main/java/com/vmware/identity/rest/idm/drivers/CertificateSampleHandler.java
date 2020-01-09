@@ -20,7 +20,8 @@ import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 import java.util.List;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -44,11 +45,11 @@ public class CertificateSampleHandler extends SampleHandler {
 	 * Initializes CertificateSample and logger.
 	 */
 	public CertificateSampleHandler() {
-		log = Logger.getLogger(getClass().getName());
+		logger = LoggerFactory.getLogger(getClass().getName());
 		try {
 			sample = new CertificateSample();
 		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-			log.fatal("Error occured when initializing CertificateSample", e);
+			logger.error("Error occured when initializing CertificateSample", e);
 		}
 	}
 
@@ -64,10 +65,10 @@ public class CertificateSampleHandler extends SampleHandler {
 			if (operation.equalsIgnoreCase("gettenantcertificates") || operation.equalsIgnoreCase("getidpcertificates")) {
 				List<CertificateChainDTO> list;
 				if (operation.equalsIgnoreCase("gettenantcertificates")) {
-					log.info("Getting Tenant Certificates" + tenant);
+					logger.info("Getting Tenant Certificates" + tenant);
 					list = sample.getCertificateChain(tenant, CertificateScope.TENANT);
 				} else {
-					log.info("Getting IDP Certificates: " + tenant);
+					logger.info("Getting IDP Certificates: " + tenant);
 					list = sample.getCertificateChain(tenant, CertificateScope.EXTERNAL_IDP);
 				}
 				StringBuilder sb = new StringBuilder();
@@ -79,22 +80,22 @@ public class CertificateSampleHandler extends SampleHandler {
 					}
 					sb.append("-----END CHAIN " + count++ + "-----\n");
 				}
-				log.info(sb.toString());
+				logger.info(sb.toString());
 			} else if (operation.equalsIgnoreCase("getprivatekey")) {
-				log.info("Getting Private Key: " + tenant);
+				logger.info("Getting Private Key: " + tenant);
 				PrivateKeyDTO key = sample.getPrivateKey(tenant);
-				log.info(key.toPrettyString());
+				logger.info(key.toPrettyString());
 			} else if (operation.equalsIgnoreCase("delete")) {
 				JSONObject JSON = new JSONObject(payload);
-				log.info("Deleting Certificate: " + payload);
+				logger.info("Deleting Certificate: " + payload);
 				sample.delete(tenant, JSON.getString("fingerprint"));
 			} else {
-				log.fatal("Invalid command: " + operation);
+				logger.error("Invalid command: " + operation);
 			}
 		} catch (JSONException e) {
-			log.fatal("Error when parsing payload", e);
+			logger.error("Error when parsing payload", e);
 		} catch (Exception e) {
-			log.fatal("Error when calling sample", e);
+			logger.error("Error when calling sample", e);
 		}
 
 	}

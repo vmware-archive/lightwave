@@ -19,12 +19,13 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
-import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
 
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
+import org.slf4j.LoggerFactory;
+
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.data.UserDTO;
 import com.vmware.identity.rest.idm.samples.UserSample;
@@ -42,11 +43,11 @@ public class UserSampleHandler extends SampleHandler {
 	 * Initializes UserSample and logger.
 	 */
 	public UserSampleHandler() {
-		log = Logger.getLogger(getClass().getName());
+		logger = LoggerFactory.getLogger(getClass().getName());
 		try {
 			sample = new UserSample();
 		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-			log.fatal("Error occured when initializing UserSample", e);
+			logger.error("Error occured when initializing UserSample", e);
 		}
 	}
 
@@ -63,27 +64,27 @@ public class UserSampleHandler extends SampleHandler {
 				Gson g = new GsonBuilder().create();
 				UserDTO user = g.fromJson(payload, UserDTO.class);
 				if (operation.equalsIgnoreCase("create")) {
-					log.info("Creating User (Not Implemented): " + payload);
+					logger.info("Creating User (Not Implemented): " + payload);
 				} else {
-					log.info("Updating User (Not Implemented): " + payload);
+					logger.info("Updating User (Not Implemented): " + payload);
 				}
-				log.info(user.toPrettyString());
+				logger.info(user.toPrettyString());
 			} else if (operation.equalsIgnoreCase("read") || operation.equalsIgnoreCase("delete")) {
 				JSONObject JSON = new JSONObject(payload);
 				if (operation.equalsIgnoreCase("read")) {
-					log.info("Getting User: " + payload);
+					logger.info("Getting User: " + payload);
 					UserDTO user = sample.getUser(JSON.getString("name"), JSON.getString("domain"), tenant);
-					log.info(user.toPrettyString());
+					logger.info(user.toPrettyString());
 				} else {
-					log.info("Deleting User (Not Implemented): " + payload);
+					logger.info("Deleting User (Not Implemented): " + payload);
 				}
 			} else {
-				log.fatal("Invalid command: " + operation);
+				logger.error("Invalid command: " + operation);
 			}
 		} catch (JSONException e) {
-			log.fatal("Error when parsing payload", e);
+			logger.error("Error when parsing payload", e);
 		} catch (Exception e) {
-			log.fatal("Error when calling sample", e);
+			logger.error("Error when calling sample", e);
 		}
 
 	}

@@ -19,9 +19,9 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
-import org.apache.log4j.Logger;
 import org.json.JSONException;
 import org.json.JSONObject;
+import org.slf4j.LoggerFactory;
 
 import com.vmware.identity.rest.core.client.exceptions.ClientException;
 import com.vmware.identity.rest.idm.data.GroupDTO;
@@ -42,11 +42,11 @@ public class GroupSampleHandler extends SampleHandler {
 	 * Initializes GroupSample and logger.
 	 */
 	public GroupSampleHandler() {
-		log = Logger.getLogger(getClass().getName());
+		logger = LoggerFactory.getLogger(getClass().getName());
 		try {
 			sample = new GroupSample();
 		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-			log.fatal("Error occured when initializing GroupSample", e);
+			logger.error("Error occured when initializing GroupSample", e);
 		}
 	}
 
@@ -72,7 +72,7 @@ public class GroupSampleHandler extends SampleHandler {
 		} else if (memberType.equalsIgnoreCase("all")) {
 			type = MemberType.ALL;
 		} else {
-			log.fatal("Invalid member type: " + memberType);
+			logger.error("Invalid member type: " + memberType);
 		}
 		return type;
 	}
@@ -83,21 +83,21 @@ public class GroupSampleHandler extends SampleHandler {
 		try {
 			JSONObject JSON = new JSONObject(payload);
 			if (operation.equalsIgnoreCase("read")) {
-				log.info("Getting Group: " + payload);
+				logger.info("Getting Group: " + payload);
 				GroupDTO group = sample.getGroup(JSON.getString("name"), tenant);
-				log.info(group.toPrettyString());
+				logger.info(group.toPrettyString());
 			} else if (operation.equalsIgnoreCase("getmembers")) {
-				log.info("Getting Members: " + payload);
+				logger.info("Getting Members: " + payload);
 				SearchResultDTO s = sample.getMembers(JSON.getString("name"), tenant, getMemberType(JSON.getString("type").toLowerCase()),
 						JSON.getInt("limit"));
-				log.info(s.toPrettyString());
+				logger.info(s.toPrettyString());
 			} else {
-				log.fatal("Invalid command: " + operation);
+				logger.error("Invalid command: " + operation);
 			}
 		} catch (JSONException e) {
-			log.fatal("Error when parsing payload", e);
+			logger.error("Error when parsing payload", e);
 		} catch (Exception e) {
-			log.fatal("Error when calling sample", e);
+			logger.error("Error when calling sample", e);
 		}
 
 	}
