@@ -19,7 +19,8 @@ import java.security.KeyManagementException;
 import java.security.KeyStoreException;
 import java.security.NoSuchAlgorithmException;
 
-import org.apache.log4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -40,11 +41,11 @@ public class SolutionUserSampleHandler extends SampleHandler {
 	 * Initializes SolutionUserSample and logger.
 	 */
 	public SolutionUserSampleHandler() {
-		log = Logger.getLogger(getClass().getName());
+		logger = LoggerFactory.getLogger(getClass().getName());
 		try {
 			sample = new SolutionUserSample();
 		} catch (KeyManagementException | NoSuchAlgorithmException | KeyStoreException | ClientException | IOException e) {
-			log.fatal("Error occured when initializing SolutionUserSample", e);
+			logger.error("Error occured when initializing SolutionUserSample", e);
 		}
 	}
 
@@ -59,16 +60,16 @@ public class SolutionUserSampleHandler extends SampleHandler {
 		try {
 			JSONObject JSON = new JSONObject(payload);
 			if (operation.equalsIgnoreCase("read")) {
-				log.info("Getting Solution User: " + payload);
+				logger.info("Getting Solution User: " + payload);
 				SolutionUserDTO u = sample.getSoutionUser(JSON.getString("name"), tenant);
-				log.info(u.toPrettyString());
+				logger.info(u.toPrettyString());
 			} else {
-				log.fatal("Invalid command: " + operation);
+				logger.error("Invalid command: " + operation);
 			}
 		} catch (JSONException e) {
-			log.fatal("Error when parsing payload", e);
+			logger.error("Error when parsing payload", e);
 		} catch (Exception e) {
-			log.fatal("Error when calling sample", e);
+			logger.error("Error when calling sample", e);
 		}
 	}
 }

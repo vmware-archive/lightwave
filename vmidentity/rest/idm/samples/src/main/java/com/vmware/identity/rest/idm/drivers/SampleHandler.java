@@ -18,7 +18,7 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Paths;
 
-import org.apache.log4j.Logger;
+import org.slf4j.Logger;
 
 import com.vmware.identity.rest.idm.samples.Config;
 
@@ -29,7 +29,7 @@ import com.vmware.identity.rest.idm.samples.Config;
  *
  */
 public abstract class SampleHandler {
-	protected Logger log;
+	protected Logger logger;
 	protected final String tenant = Config.getProperty(Config.TENANT);
 
 	/**
@@ -44,7 +44,7 @@ public abstract class SampleHandler {
 			try {
 				json = (payload.indexOf("{") == -1) ? new String(Files.readAllBytes(Paths.get(payload))) : payload;
 			} catch (IOException e) {
-				log.fatal("Error in parsing payload: " + payload, e);
+				logger.error("Error in parsing payload: " + payload, e);
 				System.exit(1);
 			}
 		}
