@@ -1,4 +1,4 @@
-FROM vmware/lightwave-base-photon3:1.0.2
+FROM vmware/lightwave-base-photon3:1.0.3
 MAINTAINER "Sriram Nambakam" <snambakam@vmware.com>
 ENV container=docker
 VOLUME ["/sys/fs/cgroup"]
