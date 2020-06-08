@@ -291,6 +291,9 @@ $RECYCLE.BIN/
 ui/stage/
 lwraft-ui/target/
 ui/lwraft-ui/src/app/*.js*
+ui/lightwave-ui/idm/package-lock.json
+ui/lightwave-ui/lwdir/package-lock.json
+ui/lwraft-ui/package-lock.json
 
 # Build results
 [Dd]ebug/

@@ -1,4 +1,4 @@
-FROM photon:3.0-20191101
+FROM photon:3.0-20200522
 MAINTAINER "Sriram Nambakam" <snambakam@vmware.com>
 ENV container=docker
 ENV GOROOT=/usr/lib/golang

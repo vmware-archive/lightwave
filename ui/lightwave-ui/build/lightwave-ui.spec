@@ -1,7 +1,7 @@
 Summary:        A web based UI for lightwave server.
 Name:           lightwave-ui
 Version:        0.1
-Release:        1%{?dist}
+Release:        2%{?dist}
 License:        VMware
 URL:            http://vmware.github.io/lightwave
 Group:          Development/Tools
@@ -18,7 +18,7 @@ cd  ../../lightwave-ui/idm
 mkdir -p ~/.npm-global
 export NPM_CONFIG_PREFIX=~/.npm-global
 export PATH=$NPM_CONFIG_PREFIX/bin:$PATH
-npm i -g gulp-cli@2.0.1
+npm i -g gulp-cli@2.3.0
 npm install
 gulp
 
@@ -89,5 +89,6 @@ systemctl restart nginx
 /opt/vmware/config
 
 %changelog
+*    Mon Jul 08 2020 Sriram Nambakam <snambakam@vmware.com> 0.1-2
 *    Mon Jan 08 2018 Harish Udaiya Kumar <hudaiyakumar@vmware.com> 0.1-1
 -    Initial version of lightwave-ui
