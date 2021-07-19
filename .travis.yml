@@ -1,9 +1,0 @@
-services:
-  - docker
-
-script:
-  - bash build.sh bootstrap
-  - bash build.sh build
-  - bash build.sh check
-  - bash build.sh pack
-  - bash build.sh test
