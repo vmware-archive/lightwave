@@ -33,9 +33,9 @@ DCE/RPC is used as the control infrastructure for configuration of the Lightwave
 1.  Likewise Open
 
 The Likewise Open stack is used for its service control infrastructure, its registry infrastructure and its NT Security Descriptor support. Likewise Open
-also provides a easy mechanism to provide ssh support for Lightwave clients The first three packages are co-located within the Lightwave project. The
-Likewise Open project is a separate project and needs to be built from a separate git repository. A binary RPM is also available, please see instructions
-below to add the repository.
+also provides a easy mechanism to provide ssh support for Lightwave clients.
+
+The first three packages are co-located within the Lightwave project. The Likewise Open project is a separate project and needs to be built from a separate git repository. A binary RPM is also available; please see instructions below to add the repository.
 
 Source code
 -----------
@@ -60,17 +60,17 @@ distribution. (See wiki for building on other platforms)
 4.  As part of a successful build, the following RPMs should be created in the
     [workspace]/build/stage directory
 
-    1. lightwave-1.3.0-0.x86\_64.rpm
+    1. lightwave-1.3.0-0.x86_64.rpm
 
-    2. lightwave-client-1.3.0-0.x86\_64.rpm
+    2. lightwave-client-1.3.0-0.x86_64.rpm
 
-    3. lightwave-devel-1.3.0-0.x86\_64.rpm
+    3. lightwave-devel-1.3.0-0.x86_64.rpm
 
-    4. lightwave-post-1.3.0-0.x86\_64.rpm
+    4. lightwave-post-1.3.0-0.x86_64.rpm
 
-    5. lightwave-mutentca-1.3.0-0.x86\_64.rpm
+    5. lightwave-mutentca-1.3.0-0.x86_64.rpm
 
-    6. lightwave-server-1.3.0-0.x86\_64.rpm
+    6. lightwave-server-1.3.0-0.x86_64.rpm
 
 Deployment
 ----------
@@ -177,7 +177,7 @@ This should pull all required depencies for lightwave.
 #### Set up the hostname for the instance
 
 This is step is required for every lightwave node. Edit the /etc/hosts file
-to look like given below:
+to look like given content below:
 *NOTE* You should replace the variables with appropriate values as they may not be set by default on a fresh PhotonOS install.
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -216,7 +216,7 @@ Notes:
 The following packages are required to join the Photon system to the Lightwave
 Domain.
 
-1. lightwave-client-1.3.0-0.x86\_64.rpm
+1. lightwave-client-1.3.0-0.x86_64.rpm
 
 If using the YUM repositories for the pre-built binaries, install the Lightwave
 Domain Client using "tdnf install vmware-lightwave-clients".
