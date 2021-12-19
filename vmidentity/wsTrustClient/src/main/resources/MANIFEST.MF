@@ -3,5 +3,5 @@ Name : WSTrustClient
 Specification-Title : VMSTS component - WSTrustClient
 Specification-Vendor : VMware Inc.
 Specification-Version : 6.6.0
-Class-Path: samltoken-6.6.0.jar log4j-1.2-api-2.8.2.jar log4j-core-2.8.2.jar log4j-core-2.8.2.jar log4j-slf4j-impl-2.8.2.jar slf4j-api-1.7.25.jar commons-codec-1.4.jar
+Class-Path: samltoken-6.6.0.jar log4j-1.2-api-2.17.2.jar log4j-core-2.17.2.jar log4j-core-2.17.2.jar log4j-slf4j-impl-2.17.2.jar slf4j-api-1.7.25.jar commons-codec-1.4.jar
 

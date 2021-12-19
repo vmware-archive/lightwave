@@ -44,9 +44,9 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/httpclient-4.5.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/httpcore-4.4.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/slf4j-api-1.7.25.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.8.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-slf4j-impl-2.8.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-core-2.8.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.17.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-slf4j-impl-2.17.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-core-2.17.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/nimbus-jose-jwt-5.6.jar
 
 vmstswebapps_DATA= \
