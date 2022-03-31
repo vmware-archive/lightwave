@@ -3,5 +3,5 @@ Name: Identity Manager Client
 Specification-Title: VMSTS component - vmware-identity-idm-client
 Specification-Vendor: VMware Inc.
 Specification-Version: 6.6.1
-Class-Path: diagnostics-6.6.1.jar vmware-identity-idm-interface-6.6.1.jar java-support-7.1.0.jar serializer-2.7.2.jar xercesImpl-2.11.0.jar xml-apis-1.4.01.jar xml-resolver-1.2.jar commons-loggong-1.2.jar log4j-1.2-api-2.8.2.jar log4j-core-2.8.2.jar log4j-core-2.8.2.jar log4j-slf4j-impl-2.8.2.jar slf4j-api-1.7.25.jar
+Class-Path: diagnostics-6.6.1.jar vmware-identity-idm-interface-6.6.1.jar java-support-7.1.0.jar serializer-2.7.2.jar xercesImpl-2.11.0.jar xml-apis-1.4.01.jar xml-resolver-1.2.jar commons-loggong-1.2.jar log4j-1.2-api-2.17.2.jar log4j-core-2.17.2.jar log4j-core-2.17.2.jar log4j-slf4j-impl-2.17.2.jar slf4j-api-1.7.25.jar
 

@@ -34,19 +34,19 @@ vmstsjars_DATA= \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-codec-1.9.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang-2.6.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-lang3-3.3.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-jaxrs-json-provider-2.9.8.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-core-2.9.8.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-databind-2.9.8.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-annotations-2.9.8.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-jaxrs-json-provider-2.13.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-core-2.13.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-databind-2.13.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/jackson-annotations-2.13.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/jna-4.2.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/json-smart-1.3.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/commons-logging-1.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/httpclient-4.5.1.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/httpcore-4.4.4.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/slf4j-api-1.7.25.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.8.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-slf4j-impl-2.8.2.jar \
-    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-core-2.8.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-api-2.17.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-slf4j-impl-2.17.2.jar \
+    @top_builddir@/vmidentity/vmware-sts/packages/lib/log4j-core-2.17.2.jar \
     @top_builddir@/vmidentity/vmware-sts/packages/lib/nimbus-jose-jwt-5.6.jar
 
 vmstswebapps_DATA= \
