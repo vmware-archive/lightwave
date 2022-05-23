@@ -5,9 +5,10 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"fmt"
-	"gopkg.in/square/go-jose.v2"
 	"strings"
 	"time"
+
+	jose "gopkg.in/square/go-jose.v2"
 )
 
 const (
@@ -44,8 +45,8 @@ const (
 	IDTokenClass = "id_token"
 )
 
-// jwt interface represents a parsed/validated jwt
-type jwt interface {
+// JWT interface represents a parsed/validated JWT
+type JWT interface {
 	Issuer() string
 	Nonce() (string, bool)
 	Groups() ([]string, bool)
@@ -91,7 +92,7 @@ func parseTenantInToken(token string) (string, error) {
 }
 
 func parseToken(
-	token string, issuer string, audience string, nonce string, signers IssuerSigners, tokenType string, logger Logger) (jwt, error) {
+	token string, issuer string, audience string, nonce string, signers IssuerSigners, tokenType string, logger Logger) (JWT, error) {
 	var err error
 
 	if signers == nil {
@@ -128,8 +129,8 @@ func parseToken(
 }
 
 func verifyToken(token string, signers *jose.JSONWebKeySet, issuer string, audience string, nonce string,
-	clockTolerance int, logger Logger) (jwt, error) {
-	jwt, err := parseSignedToken(token, issuer, signers, clockTolerance)
+	clockTolerance int, logger Logger) (JWT, error) {
+	jwt, err := parseAndValidateSignedToken(token, issuer, signers, clockTolerance)
 
 	if err != nil {
 		PrintLog(logger, LogLevelError, "verifyToken: Parse signed token failed. Error: '%v'", err)
@@ -484,7 +485,22 @@ type jwtImpl struct {
 }
 
 // parseSignedToken parses jwt token from its string representation
-func parseSignedToken(token string, issuer string, keySet *jose.JSONWebKeySet, clockToleranceSecs int) (jwt, error) {
+func parseAndValidateSignedToken(token string, issuer string, keySet *jose.JSONWebKeySet, clockToleranceSecs int) (JWT, error) {
+	jwt, err := parseSignedToken(token, keySet)
+	if err != nil {
+		return nil, err
+	}
+	jwti := jwt.(*jwtImpl)
+	// validate and normalize expected claims.
+	err = validateAndNormalizeClaims(&jwti.claims, issuer, clockToleranceSecs)
+	if err != nil {
+		return nil, err
+	}
+	return jwt, nil
+}
+
+// parseSignedToken parses jwt token from its string representation
+func parseSignedToken(token string, keySet *jose.JSONWebKeySet) (JWT, error) {
 	jws, err := jose.ParseSigned(token)
 	if err != nil {
 		return nil, OIDCTokenInvalidError.MakeError("Token format is invalid", err)
@@ -522,13 +538,6 @@ func parseSignedToken(token string, issuer string, keySet *jose.JSONWebKeySet, c
 	if err != nil {
 		return nil, err
 	}
-
-	// validate and normalize expected claims.
-	err = validateAndNormalizeClaims(&tokenBody, issuer, clockToleranceSecs)
-	if err != nil {
-		return nil, err
-	}
-
 	return &jwtImpl{claims: tokenBody}, nil
 }
 
@@ -672,8 +681,8 @@ func decodePayload(payload []byte) (map[string]interface{}, error) {
 }
 
 func parseTokenMulti(
-	token string, audience string, nonce string, providerInfo []ProviderInfo, tokenType string, logger Logger) (jwt, int, error) {
-	var tok jwt
+	token string, audience string, nonce string, providerInfo []ProviderInfo, tokenType string, logger Logger) (JWT, int, error) {
+	var tok JWT
 	var index int
 	var err error
 	var info ProviderInfo
